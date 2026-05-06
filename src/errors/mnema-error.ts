@@ -83,7 +83,14 @@ export type MnemaError =
       readonly fromState: string;
       readonly toState: string;
     }
-  | { readonly kind: ErrorCode.AttachmentSourceNotFound; readonly path: string };
+  | { readonly kind: ErrorCode.AttachmentSourceNotFound; readonly path: string }
+  | { readonly kind: ErrorCode.DecisionNotFound; readonly decisionKey: string }
+  | {
+      readonly kind: ErrorCode.DecisionInvalidStatus;
+      readonly decisionKey: string;
+      readonly fromStatus: string;
+      readonly toStatus: string;
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

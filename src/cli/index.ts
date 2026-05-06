@@ -5,6 +5,7 @@ import { AdoptCommand } from './commands/adopt-command.js';
 import { AgentCommand } from './commands/agent-command.js';
 import { AttachCommand } from './commands/attach-command.js';
 import { AuditCommand } from './commands/audit-command.js';
+import { DecisionCommand } from './commands/decision-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
 import { HistoryCommand } from './commands/history-command.js';
 import { ImportCommand } from './commands/import-command.js';
@@ -35,6 +36,7 @@ export function createCli(): Command {
   new TaskCommand().register(program);
   new SprintCommand().register(program);
   new AttachCommand().register(program);
+  new DecisionCommand().register(program);
   new SkillCommand().register(program);
   new MemoryCommand().register(program);
   new SearchCommand().register(program);
