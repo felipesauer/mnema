@@ -28,6 +28,9 @@ export enum ErrorCode {
   AgentRunAlreadyEnded = 'AGENT_RUN_ALREADY_ENDED',
   DepthLimitExceeded = 'DEPTH_LIMIT_EXCEEDED',
   AgentPlanNotFound = 'AGENT_PLAN_NOT_FOUND',
+
+  NoActiveRun = 'NO_ACTIVE_RUN',
+  Conflict = 'CONFLICT',
 }
 
 /**

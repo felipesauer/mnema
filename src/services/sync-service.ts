@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'node
 import path from 'node:path';
 
 import type { Task } from '../domain/entities/task.js';
+import type { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import type { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 
@@ -10,8 +11,9 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
  *
  * - `Push` is used by the CLI; every mutation lands on disk before the
  *   command returns.
- * - `Buffer` is reserved for the MCP server; queued entries flush on
- *   timer, volume, or `agent_run_end`. Implemented in Phase 5.
+ * - `Buffer` is used by the MCP server: pending entries are written to
+ *   `.app/buffer.jsonl` and flushed on timer, volume threshold, or
+ *   `agent_run_end`.
  */
 export enum SyncMode {
   Push = 'push',
@@ -27,16 +29,40 @@ export interface SyncPaths {
 }
 
 /**
+ * Auto-flush thresholds. The MCP server overrides these from
+ * `mnema.config.json`.
+ */
+export interface SyncFlushPolicy {
+  /** Maximum buffered entries before an automatic flush. */
+  readonly volume: number;
+  /** Maximum time (ms) since the last flush before forcing one. */
+  readonly intervalMs: number;
+}
+
+const DEFAULT_FLUSH_POLICY: SyncFlushPolicy = {
+  volume: 50,
+  intervalMs: 30_000,
+};
+
+/**
  * Synchronises SQLite state to markdown files, one file per task,
  * grouped by state under `backlogDir/<STATE>/<KEY>.md`.
+ *
+ * In Push mode every mutation flushes synchronously; in Buffer mode the
+ * service persists pending updates to the {@link SyncBuffer} and flushes
+ * lazily based on {@link SyncFlushPolicy} or explicit calls to
+ * {@link flushAll}.
  */
 export class SyncService {
   private mode: SyncMode = SyncMode.Push;
+  private lastFlushAt = Date.now();
+  private flushPolicy: SyncFlushPolicy = DEFAULT_FLUSH_POLICY;
 
   constructor(
     private readonly taskRepository: TaskRepository,
     private readonly markdownIo: MarkdownIo,
     private readonly paths: SyncPaths,
+    private readonly buffer: SyncBuffer | null = null,
   ) {}
 
   /**
@@ -45,6 +71,9 @@ export class SyncService {
    * @param mode - Mode to apply
    */
   setMode(mode: SyncMode): void {
+    if (mode === SyncMode.Buffer && this.buffer === null) {
+      throw new Error('Buffer mode requires a SyncBuffer instance');
+    }
     this.mode = mode;
   }
 
@@ -56,27 +85,82 @@ export class SyncService {
   }
 
   /**
-   * Updates the markdown file for a single task. In Push mode this
-   * happens synchronously; in Buffer mode it is a no-op for now and
-   * will be wired to the persistent buffer in Phase 5.
+   * Configures the auto-flush policy for Buffer mode.
+   *
+   * @param policy - Volume and interval thresholds
+   */
+  setFlushPolicy(policy: SyncFlushPolicy): void {
+    this.flushPolicy = policy;
+  }
+
+  /**
+   * Updates (or queues) the markdown file for a single task.
+   *
+   * In Push mode the markdown is rewritten synchronously. In Buffer
+   * mode the entry is appended to the persistent buffer and an
+   * auto-flush check is performed.
    *
    * @param taskKey - Task whose markdown should be regenerated
+   * @param meta - Optional context (action, run_id) recorded in buffer
    */
-  syncTask(taskKey: string): void {
-    if (this.mode !== SyncMode.Push) return;
+  syncTask(taskKey: string, meta: { action?: string; runId?: string } = {}): void {
+    if (this.mode === SyncMode.Push) {
+      this.flushOne(taskKey);
+      return;
+    }
 
+    if (this.buffer === null) {
+      throw new Error('Buffer mode without a buffer instance — invariant violated');
+    }
     const task = this.taskRepository.findByKey(taskKey);
     if (task === null) return;
 
-    const targetPath = this.pathForTask(task);
-    this.ensureDir(path.dirname(targetPath));
-
-    this.relocateIfStateChanged(task, targetPath);
-    this.markdownIo.write(targetPath, {
-      mnemaData: serialiseTask(task),
-      otherFrontmatter: this.markdownIo.read(targetPath).otherFrontmatter,
-      content: this.markdownIo.read(targetPath).content || `# ${task.title}\n`,
+    this.buffer.append({
+      v: 1,
+      at: new Date().toISOString(),
+      kind: 'task_synced',
+      taskKey,
+      mdTarget: this.pathForTask(task),
+      action: meta.action,
+      runId: meta.runId,
     });
+
+    this.maybeAutoFlush();
+  }
+
+  /**
+   * Flushes every pending entry in the buffer to disk.
+   *
+   * No-op in Push mode (nothing buffered) or when no buffer is
+   * configured. Empties the buffer atomically once everything was
+   * written.
+   */
+  flushAll(): void {
+    if (this.buffer === null) return;
+    const entries = this.buffer.readAll();
+    if (entries.length === 0) {
+      this.lastFlushAt = Date.now();
+      return;
+    }
+    const seen = new Set<string>();
+    for (const entry of entries) {
+      if (seen.has(entry.taskKey)) continue;
+      this.flushOne(entry.taskKey);
+      seen.add(entry.taskKey);
+    }
+    this.buffer.truncate();
+    this.lastFlushAt = Date.now();
+  }
+
+  /**
+   * Re-applies any leftover entries from a previous run. Idempotent —
+   * each entry is replayed by writing the current task state to its
+   * markdown target.
+   */
+  recover(): void {
+    if (this.buffer === null) return;
+    if (this.buffer.size() === 0) return;
+    this.flushAll();
   }
 
   /**
@@ -89,16 +173,41 @@ export class SyncService {
     return path.join(this.paths.projectRoot, this.paths.backlogDir, task.state, `${task.key}.md`);
   }
 
+  private flushOne(taskKey: string): void {
+    const task = this.taskRepository.findByKey(taskKey);
+    if (task === null) return;
+
+    const targetPath = this.pathForTask(task);
+    this.ensureDir(path.dirname(targetPath));
+    this.relocateIfStateChanged(task, targetPath);
+
+    const existing = this.markdownIo.read(targetPath);
+    this.markdownIo.write(targetPath, {
+      mnemaData: serialiseTask(task),
+      otherFrontmatter: existing.otherFrontmatter,
+      content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
+    });
+  }
+
+  private maybeAutoFlush(): void {
+    if (this.buffer === null) return;
+
+    if (this.buffer.size() >= this.flushPolicy.volume) {
+      this.flushAll();
+      return;
+    }
+
+    if (Date.now() - this.lastFlushAt >= this.flushPolicy.intervalMs) {
+      this.flushAll();
+    }
+  }
+
   private ensureDir(dir: string): void {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
   }
 
-  /**
-   * If the markdown for `task.key` exists in a different state folder,
-   * move it to the new one so the filesystem mirrors the task state.
-   */
   private relocateIfStateChanged(task: Task, targetPath: string): void {
     if (existsSync(targetPath)) return;
 
