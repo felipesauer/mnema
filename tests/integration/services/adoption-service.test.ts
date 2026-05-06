@@ -26,12 +26,19 @@ describe('AdoptionService', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it('installs skills with two template files', () => {
+  it('installs skills with the canonical template files', () => {
     const result = service.adopt('skills');
-    expect(result.created.length).toBe(2);
+    expect(result.created.length).toBeGreaterThanOrEqual(2);
     expect(result.skipped).toHaveLength(0);
-    expect(existsSync(path.join(projectRoot, 'skills', 'SKILL.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'skills', 'creating-tasks.md'))).toBe(true);
+    for (const expected of [
+      'SKILL.md',
+      'creating-tasks.md',
+      'transitioning-tasks.md',
+      'handling-blockers.md',
+      'recording-decisions.md',
+    ]) {
+      expect(existsSync(path.join(projectRoot, 'skills', expected))).toBe(true);
+    }
   });
 
   it('installs memory with INDEX, context and decisions/notes subfolders', () => {
