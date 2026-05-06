@@ -13,7 +13,8 @@ import pc from 'picocolors';
 
 import type { Config } from '../../config/config-schema.js';
 import { ConfigSchema } from '../../config/config-schema.js';
-import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
+import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
+import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { Err, Ok, type Result } from '../../services/result.js';
@@ -22,6 +23,7 @@ import { ProjectRepository } from '../../storage/sqlite/repositories/project-rep
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationsDir, workflowsDir } from '../../utils/asset-paths.js';
 import { VERSION } from '../../utils/version.js';
+import { buildAgentsMd } from '../templates/agents-md.js';
 
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
@@ -32,14 +34,34 @@ interface InitOptions {
   readonly description?: string;
   readonly workflow?: string;
   readonly force?: boolean;
+  readonly minimal?: boolean;
   readonly cwd?: string;
 }
 
 /**
- * Registers the `mnema init` command on the given Commander program.
+ * Outcome of {@link InitCommand.run}.
+ */
+export interface InitOutcome {
+  readonly configPath: string;
+  readonly mode: 'full' | 'minimal';
+  readonly conflicts: readonly string[];
+}
+
+/**
+ * Registers the `mnema init` command.
  *
- * The MVP implementation is silent-mode only: every required field is
- * passed via flags. The interactive wizard is scheduled for Phase 8.
+ * Two flavours:
+ * - `init` (default) creates the full layout: config, AGENTS.md, state
+ *   db with migrations, audit dir, workflow file, backlog state folders,
+ *   plus `sprints/`, `roadmap/`, `memory/`, `skills/`. Workflow-specific
+ *   state directories are derived from the workflow JSON, not hardcoded.
+ * - `init --minimal` creates only the essentials: `mnema.config.json`,
+ *   `AGENTS.md`, `.app/state.db`, `workflows/<workflow>.json`,
+ *   `.audit/current.jsonl` and `.gitignore`. Adoption commands fill the
+ *   rest in later.
+ *
+ * `init` is non-destructive by default: when conflicting paths exist it
+ * lists them and aborts with `INIT_CONFLICT`. Pass `--force` to ignore.
  */
 export class InitCommand {
   /**
@@ -55,15 +77,21 @@ export class InitCommand {
       .requiredOption('--key <key>', 'Project key (uppercase, 2-10 chars)')
       .option('--description <text>', 'Optional project description')
       .option('--workflow <name>', 'Workflow preset', 'default')
-      .option('--force', 'Overwrite an existing mnema.config.json', false)
+      .option('--force', 'Overwrite existing files when paths conflict', false)
+      .option('--minimal', 'Create only the essential files; use `mnema adopt` to grow', false)
       .option('--yes', 'Run silently without confirmations (default in MVP)', true)
       .action(async (options: InitOptions) => {
         const result = this.run(options);
         if (!result.ok) {
           process.exit(printError(result.error));
         }
-        const { configPath } = result.value;
-        process.stdout.write(`${pc.green('✓')} ${configPath}\n`);
+        const outcome = result.value;
+        process.stdout.write(`${pc.green('✓')} ${outcome.configPath}\n`);
+        if (outcome.mode === 'minimal') {
+          process.stdout.write(
+            `${pc.dim('  minimal layout — run `mnema adopt all` to add skills/memory/roadmap')}\n`,
+          );
+        }
       });
   }
 
@@ -76,7 +104,7 @@ export class InitCommand {
    * @param options - Resolved init options
    * @returns Path of the created config file or a structured error
    */
-  run(options: InitOptions): Result<{ configPath: string }, MnemaError> {
+  run(options: InitOptions): Result<InitOutcome, MnemaError> {
     const cwd = options.cwd ?? process.cwd();
 
     const validation = validateOptions(options);
@@ -88,35 +116,30 @@ export class InitCommand {
     }
 
     const config = buildConfig(options, validation.value);
+    const minimal = options.minimal === true;
+
+    const conflicts = detectConflicts(cwd, config, minimal);
+    if (conflicts.length > 0 && options.force !== true) {
+      return Err({ kind: ErrorCode.InitConflict, path: conflicts.join(', ') });
+    }
 
     writeJson(configPath, config);
     writeAgentsMd(cwd, config);
 
     const stateDir = path.join(cwd, config.paths.state);
     const auditDir = path.join(cwd, config.paths.audit);
-    const backlogDir = path.join(cwd, config.paths.backlog);
-    const sprintsDir = path.join(cwd, config.paths.sprints);
-    const roadmapDir = path.join(cwd, config.paths.roadmap);
-    const memoryDir = path.join(cwd, config.paths.memory);
-    const skillsDir = path.join(cwd, config.paths.skills);
     const workflowsDest = path.join(cwd, config.paths.workflows);
 
-    for (const dir of [
-      stateDir,
-      auditDir,
-      backlogDir,
-      sprintsDir,
-      roadmapDir,
-      memoryDir,
-      skillsDir,
-      workflowsDest,
-    ]) {
-      mkdirSync(dir, { recursive: true });
-    }
-    for (const state of config.workflow === 'default'
-      ? ['DRAFT', 'READY', 'IN_PROGRESS', 'BLOCKED', 'IN_REVIEW', 'DONE', 'CANCELED']
-      : []) {
-      mkdirSync(path.join(backlogDir, state), { recursive: true });
+    mkdirSync(stateDir, { recursive: true });
+    mkdirSync(auditDir, { recursive: true });
+    mkdirSync(workflowsDest, { recursive: true });
+
+    if (!minimal) {
+      mkdirSync(path.join(cwd, config.paths.backlog), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.sprints), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.roadmap), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.memory), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
     }
 
     appendGitignore(cwd, config.paths.state);
@@ -125,6 +148,10 @@ export class InitCommand {
     const workflowDestFile = path.join(workflowsDest, `${config.workflow}.json`);
     if (!existsSync(workflowDestFile)) {
       copyFileSync(workflowSrc, workflowDestFile);
+    }
+
+    if (!minimal) {
+      createBacklogStateDirs(cwd, config, workflowDestFile);
     }
 
     const dbPath = path.join(stateDir, 'state.db');
@@ -148,7 +175,7 @@ export class InitCommand {
       writeFileSync(auditFile, '', 'utf-8');
     }
 
-    return Ok({ configPath });
+    return Ok({ configPath, mode: minimal ? 'minimal' : 'full', conflicts });
   }
 }
 
@@ -202,6 +229,36 @@ function buildConfig(options: InitOptions, workflow: WorkflowName): Config {
   return ConfigSchema.parse(raw);
 }
 
+/**
+ * Inspects the target directory and returns the relative paths that
+ * already exist and would be touched by `init`.
+ *
+ * The minimal mode only checks paths that minimal mode actually uses;
+ * full mode checks every path, including content folders such as
+ * `backlog/`, `sprints/`, `memory/`, etc.
+ *
+ * @param cwd - Directory where the project will live
+ * @param config - Resolved configuration
+ * @param minimal - Whether the init is running in minimal mode
+ * @returns Sorted list of relative paths that are already present
+ */
+function detectConflicts(cwd: string, config: Config, minimal: boolean): string[] {
+  const paths = minimal
+    ? [config.paths.state, config.paths.audit, config.paths.workflows, 'AGENTS.md']
+    : [
+        config.paths.state,
+        config.paths.audit,
+        config.paths.workflows,
+        config.paths.backlog,
+        config.paths.sprints,
+        config.paths.roadmap,
+        config.paths.memory,
+        config.paths.skills,
+        'AGENTS.md',
+      ];
+  return paths.filter((p) => existsSync(path.join(cwd, p))).sort();
+}
+
 function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
@@ -209,20 +266,7 @@ function writeJson(filePath: string, data: unknown): void {
 function writeAgentsMd(cwd: string, config: Config): void {
   const file = path.join(cwd, 'AGENTS.md');
   if (existsSync(file)) return;
-
-  const body =
-    `# AGENTS.md\n\n` +
-    `Project: **${config.project.name}** (\`${config.project.key}\`)\n\n` +
-    `This Mnema project is managed by the \`@saurim/mnema\` MCP server.\n\n` +
-    `## Workflow\n\n` +
-    `Active workflow: \`${config.workflow}\`. See \`workflows/${config.workflow}.json\` ` +
-    `for the full state machine.\n\n` +
-    `## Operating principles\n\n` +
-    `1. Start a session with the \`context_bootstrap\` tool.\n` +
-    `2. Wrap mutations in \`agent_run_start\` / \`agent_run_end\`.\n` +
-    `3. Prefer transition tools (e.g. \`task_submit\`) over raw updates.\n`;
-
-  writeFileSync(file, body, 'utf-8');
+  writeFileSync(file, buildAgentsMd(config), 'utf-8');
 }
 
 function appendGitignore(cwd: string, statePath: string): void {
@@ -237,8 +281,19 @@ function appendGitignore(cwd: string, statePath: string): void {
   appendFileSync(file, `\n# mnema\n${entry}\n`, 'utf-8');
 }
 
-// Re-export for tests
-export const _internal = { validateOptions, buildConfig };
+/**
+ * Creates one folder per workflow state under `backlog/`, derived from
+ * the active workflow's `states` array. This keeps the backlog layout
+ * in lockstep with the workflow JSON so users editing the workflow get
+ * matching directories on next `mnema sync` (or manual init).
+ */
+function createBacklogStateDirs(cwd: string, config: Config, workflowFile: string): void {
+  const workflow = new WorkflowLoader().load(workflowFile);
+  const root = path.join(cwd, config.paths.backlog);
+  for (const state of workflow.states) {
+    mkdirSync(path.join(root, state), { recursive: true });
+  }
+}
 
-// Avoid TS unused-export warning when the helper is only used in tests.
-void ExitCode;
+// Re-export for tests
+export const _internal = { validateOptions, buildConfig, detectConflicts };

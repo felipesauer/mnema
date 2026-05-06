@@ -1,11 +1,13 @@
 import { Command } from 'commander';
 
 import { VERSION } from '@/utils/version.js';
+import { AdoptCommand } from './commands/adopt-command.js';
 import { AgentCommand } from './commands/agent-command.js';
 import { AttachCommand } from './commands/attach-command.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
 import { HistoryCommand } from './commands/history-command.js';
+import { ImportCommand } from './commands/import-command.js';
 import { InboxCommand } from './commands/inbox-command.js';
 import { InitCommand } from './commands/init-command.js';
 import { McpCommand } from './commands/mcp-command.js';
@@ -26,6 +28,8 @@ export function createCli(): Command {
   program.name('mnema').description('Cognitive persistence for AI agents').version(VERSION);
 
   new InitCommand().register(program);
+  new AdoptCommand().register(program);
+  new ImportCommand().register(program);
   new TaskCommand().register(program);
   new SprintCommand().register(program);
   new AttachCommand().register(program);

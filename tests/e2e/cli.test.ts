@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -331,5 +339,79 @@ describe('CLI end-to-end', () => {
     const list = runCli(['attach', 'list', 'WEBAPP-1'], projectRoot);
     expect(list.status).toBe(0);
     expect(list.stdout).toContain('sample.txt');
+  });
+
+  it('mnema init --minimal creates only the essentials', () => {
+    const result = runCli(
+      ['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'],
+      projectRoot,
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('minimal layout');
+
+    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.app', 'state.db'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, 'workflows', 'default.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
+
+    // The full layout's content folders are NOT created in minimal mode.
+    expect(existsSync(path.join(projectRoot, 'backlog'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, 'sprints'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, 'memory'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, 'skills'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, 'roadmap'))).toBe(false);
+  });
+
+  it('mnema init refuses to overwrite a conflicting backlog directory', () => {
+    mkdirSync(path.join(projectRoot, 'backlog'), { recursive: true });
+
+    const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('already exists and would be overwritten');
+    expect(result.stderr).toContain('backlog');
+  });
+
+  it('mnema adopt all is idempotent and adds skills/memory/roadmap', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'], projectRoot);
+
+    const first = runCli(['adopt', 'all'], projectRoot);
+    expect(first.status).toBe(0);
+    expect(existsSync(path.join(projectRoot, 'skills', 'SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, 'memory', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, 'roadmap', 'README.md'))).toBe(true);
+
+    const second = runCli(['adopt', 'all'], projectRoot);
+    expect(second.status).toBe(0);
+    expect(second.stdout).toContain('created=0');
+  });
+
+  it('mnema import markdown ingests headings as tasks', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    const todoPath = path.join(projectRoot, 'TODO.md');
+    writeFileSync(
+      todoPath,
+      [
+        '## DRAFT Implement OAuth login',
+        '',
+        'Add Google flow.',
+        '',
+        '- AC 1',
+        '- AC 2',
+        '',
+        '## DRAFT Refactor session middleware',
+        '',
+        'Reescrever a camada de sessão.',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const result = runCli(['import', 'markdown', '--from', 'TODO.md'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('tasks_created=2');
+
+    const list = runCli(['task', 'list'], projectRoot);
+    expect(list.stdout).toContain('Implement OAuth login');
+    expect(list.stdout).toContain('Refactor session middleware');
   });
 });
