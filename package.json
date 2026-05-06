@@ -2,6 +2,15 @@
   "name": "@saurim/mnema",
   "version": "0.1.0",
   "description": "Cognitive persistence for AI agents",
+  "keywords": [
+    "mcp",
+    "agents",
+    "claude-code",
+    "cursor",
+    "task-tracker",
+    "audit",
+    "memory"
+  ],
   "type": "module",
   "bin": {
     "mnema": "./dist/index.js"
@@ -11,13 +20,22 @@
     "workflows/",
     "templates/"
   ],
+  "homepage": "https://github.com/saurim/mnema#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saurim/mnema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/saurim/mnema/issues"
+  },
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "biome check src/ tests/",
-    "lint:fix": "biome check --write src/ tests/"
+    "bench": "tsx bench/cli-bench.ts",
+    "lint": "biome check src/ tests/ bench/",
+    "lint:fix": "biome check --write src/ tests/ bench/"
   },
   "engines": {
     "node": ">=20"

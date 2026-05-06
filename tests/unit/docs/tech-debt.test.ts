@@ -28,8 +28,10 @@ describe('docs/TECH_DEBT.md', () => {
       '## 4. Concurrency and resilience',
       '## 5. Identifier and metadata gaps',
       '## 6. Testing and verification gaps',
-      '## 7. Documentation and polish',
-      '## 8. Schema and migrations',
+      '## 7. Performance',
+      '## 8. Memory automation',
+      '## 9. Documentation and polish',
+      '## 10. Schema and migrations',
     ];
 
     for (const heading of requiredHeadings) {

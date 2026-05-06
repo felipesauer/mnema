@@ -414,4 +414,55 @@ describe('CLI end-to-end', () => {
     expect(list.stdout).toContain('Implement OAuth login');
     expect(list.stdout).toContain('Refactor session middleware');
   });
+
+  it('mnema skill lint passes on the canonical templates', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    const result = runCli(['skill', 'lint'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('lint clean');
+  });
+
+  it('mnema skill lint flags unknown tool references and missing example', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    writeFileSync(
+      path.join(projectRoot, 'skills', 'broken.md'),
+      [
+        '---',
+        'name: broken',
+        'version: 1.0.0',
+        'description: Bad references should be caught.',
+        'tools_used:',
+        '  - mystery_tool',
+        '---',
+        '',
+        '# Broken',
+        '',
+        'No example section.',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const result = runCli(['skill', 'lint'], projectRoot);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toContain('mystery_tool');
+    expect(result.stdout).toContain('warning:');
+  });
+
+  it('mnema memory consolidate regenerates the indices and is idempotent', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    const first = runCli(['memory', 'consolidate'], projectRoot);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toContain('memory:');
+    expect(first.stdout).toContain('decisions:');
+
+    const indexBody = readFileSync(path.join(projectRoot, 'memory', 'INDEX.md'), 'utf-8');
+    expect(indexBody).toContain('<!-- MNEMA: managed section');
+
+    const second = runCli(['memory', 'consolidate'], projectRoot);
+    expect(second.status).toBe(0);
+    const indexAfter = readFileSync(path.join(projectRoot, 'memory', 'INDEX.md'), 'utf-8');
+    expect(indexAfter).toBe(indexBody);
+  });
 });

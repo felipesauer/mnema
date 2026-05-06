@@ -11,7 +11,9 @@ import { ImportCommand } from './commands/import-command.js';
 import { InboxCommand } from './commands/inbox-command.js';
 import { InitCommand } from './commands/init-command.js';
 import { McpCommand } from './commands/mcp-command.js';
+import { MemoryCommand } from './commands/memory-command.js';
 import { SearchCommand } from './commands/search-command.js';
+import { SkillCommand } from './commands/skill-command.js';
 import { SprintCommand } from './commands/sprint-command.js';
 import { SyncCommand } from './commands/sync-command.js';
 import { TaskCommand } from './commands/task-command.js';
@@ -33,6 +35,8 @@ export function createCli(): Command {
   new TaskCommand().register(program);
   new SprintCommand().register(program);
   new AttachCommand().register(program);
+  new SkillCommand().register(program);
+  new MemoryCommand().register(program);
   new SearchCommand().register(program);
   new AuditCommand().register(program);
   new HistoryCommand().register(program);

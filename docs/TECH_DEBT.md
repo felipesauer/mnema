@@ -1,6 +1,6 @@
 # Tech debt
 
-> **Status:** v0.1.0 — backfilled from Phases 0-8 commits and code.
+> **Status:** v0.1.0 — phases 0-9 closed.
 > **Audience:** anyone (human or agent) deciding what to build next.
 
 This file is the canonical inventory of decisions deferred during
@@ -44,7 +44,9 @@ when Phase 5 closed. They are listed by required service.
 
 - 🟡 **`tasks_search` (FTS5 over the workflow project)** — `SearchService`
   exists since Phase 7, but the MCP surface still does not expose it.
-  Add an `SearchTool` next to the other `universal/` tools.
+  Add an `SearchTool` next to the other `universal/` tools, then add
+  `'tasks_search'` to `UNIVERSAL_TOOL_NAMES` in
+  [src/mcp/tool-registry.ts](../src/mcp/tool-registry.ts).
 - 🟡 **`decision_record`, `decision_show`, `decisions_list`** — wait on
   `DecisionService`. The DB schema and the FTS5 index already exist
   (migration 001).
@@ -68,18 +70,15 @@ their absence is observable.
 - 🟡 **`DecisionService`** — referenced from
   [src/services/inbox-service.ts:9](../src/services/inbox-service.ts),
   [src/services/attachment-service.ts:53](../src/services/attachment-service.ts),
-  [src/services/adoption-service.ts:176](../src/services/adoption-service.ts).
-  Inbox should list `DecisionStatus.Proposed` once available; attachment
-  should accept `kind: 'decision'`.
+  the `recording-decisions` skill template. Inbox should list
+  `DecisionStatus.Proposed` once available; attachment should accept
+  `kind: 'decision'`.
 - 🟡 **`NoteService`** — `note` is already a polymorphic parent in
   `attachments` and a `NoteKind` enum exists, but no service writes
   to the table. Block for `note_add` MCP tool and inbox extensions.
 - 🟡 **`EpicService`** — schema and entity exist; the `epic` workflow
   feature flag is honoured at the workflow level but no service
   manipulates `epics`.
-- 🟡 **Skill / memory services** — `skills/SKILL.md` and `memory/INDEX.md`
-  templates ship in Phase 8 adoption, but no service reads or writes
-  them. Phase 9 (Skills, memory consolidate, polish) is the home.
 
 ## 3. UX gaps
 
@@ -141,13 +140,39 @@ their absence is observable.
 - 🟡 **Sprint `--starts-at` / `--ends-at`** flags accept any string;
   nothing validates ISO8601. Same for `capacity` upper bound.
 - 🟢 **No coverage report** — `vitest run --coverage` was never wired
-  into the lint/test cycle. Phase 9 hygiene candidate.
+  into the lint/test cycle.
 
-## 7. Documentation and polish
+## 7. Performance
 
-- 🟡 **User-facing README.md** — root `README.md` is one-line stub since
-  Phase 0. EXECUTION_GUIDE Phase 9 calls for a real README before
-  v1.0.0.
+- 🟡 **All three CLI budgets exceeded** — `pnpm bench` reports
+  ~210ms / 230ms / 250ms for `--version`, `task list`, `task move`
+  (budgets 50/200/100ms; ARCHITECTURE.md §15). Spawn cost dominates
+  short commands. Mitigations to evaluate: lazy-load
+  `@modelcontextprotocol/sdk` and `better-sqlite3` only when needed,
+  ship a precompiled CJS bundle in `dist/` for shorter parse, drop
+  `tsc-alias` at runtime by switching to relative imports.
+- 🟢 **`pnpm bench` requires a manual `pnpm build` first** — the
+  benchmark spawns the compiled CLI but doesn't depend on the build
+  task. Either add `prebench: pnpm build` or compile via tsx in-process.
+- 🟢 **No bench coverage for MCP cold/warm task_create** —
+  ARCHITECTURE.md §15 lists 200ms cold / 20ms warm for the MCP path.
+  Bench only exercises the CLI today.
+
+## 8. Memory automation
+
+- 🟡 **`MemoryConsolidator` only refreshes indices** — DESIGN.md §11.7
+  / §14.3 describe a richer consolidation: notes that became relevant
+  promote to ADRs, obsolete decisions are marked superseded,
+  historical snapshots aggregate. Today we only regenerate
+  `INDEX.md`. The richer behaviour requires `DecisionService` and
+  `NoteService` (see §2 above).
+- 🟢 **Memory consolidator does not validate decision ADRs** —
+  `mnema skill lint` validates skills, but there is no equivalent
+  `mnema memory lint` for the classic ADR shape (status field, four
+  canonical sections). Worth adding when `DecisionService` lands.
+
+## 9. Documentation and polish
+
 - 🟡 **CHANGELOG.md** — never created. Each phase commit message has
   the change history; collapsing into a CHANGELOG is in the v1.0.0
   release checklist.
@@ -155,13 +180,10 @@ their absence is observable.
   kit. They have drifted (the implementation took several decisions
   the kit does not). Decide whether `docs/` is a frozen reference or
   the canonical doc set; if the latter, reconcile it.
-- 🟢 **`@types/uuid` was uninstalled because uuid 14 ships its own
-  types**, but the global `.npmrc` warning about pnpm-only keys is
-  still emitted by `npm view`. Cosmetic.
 - 🟢 **`.npmrc` has `auto-install-peers=true`** — pnpm ignores the
   `npm`-style key. Either drop it or migrate to the pnpm config file.
 
-## 8. Schema and migrations
+## 10. Schema and migrations
 
 - 🟢 **No `004_*.sql` slot reserved** — when the schema needs a change,
   we'll add migration 004. The naming is locked (`NNN_description.sql`)
@@ -176,12 +198,13 @@ their absence is observable.
 
 For convenience, here is the rough phase home of the items above:
 
-| Section / item | Original phase | Suggested home |
-|---|---|---|
-| MCP tools 9-19 | 5 | Phase 7+ as services land |
-| `DecisionService`, `NoteService`, `EpicService` | — | New services phase between 7 and 9 |
-| Interactive `init` wizard | 8 | Phase 9 polish or post-MVP |
-| `mnema destroy`, `mnema decision`, `mnema note` CLI | 7-8 | Same |
-| Cooperative buffer lock, kill-mid-flush test | 5 | Phase 9 hardening |
-| README.md, CHANGELOG.md | 9 | Phase 9 |
-| Coverage report, schema drift check | 9 | Phase 9 |
+| Section / item | Suggested home |
+|---|---|
+| MCP tools 9-19 | New phase: Decision/Note/Epic services + their MCP tools |
+| `DecisionService`, `NoteService`, `EpicService` | Same phase |
+| Interactive `init` wizard | UX polish phase or post-MVP |
+| `mnema destroy`, `mnema decision`, `mnema note` CLI | Same as the corresponding services |
+| Cooperative buffer lock, kill-mid-flush test | Hardening phase before v1.0.0 |
+| Performance budgets | Hardening phase — measure-first, optimise-second |
+| CHANGELOG.md | v1.0.0 release checklist |
+| Coverage report, schema drift check | v1.0.0 release checklist |
