@@ -70,7 +70,20 @@ export type MnemaError =
       readonly kind: ErrorCode.Conflict;
       readonly taskKey: string;
       readonly currentUpdatedAt: string;
-    };
+    }
+  | { readonly kind: ErrorCode.SprintNotFound; readonly sprintKey: string }
+  | {
+      readonly kind: ErrorCode.ActiveSprintExists;
+      readonly projectKey: string;
+      readonly activeSprintKey: string;
+    }
+  | {
+      readonly kind: ErrorCode.SprintInvalidState;
+      readonly sprintKey: string;
+      readonly fromState: string;
+      readonly toState: string;
+    }
+  | { readonly kind: ErrorCode.AttachmentSourceNotFound; readonly path: string };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}
