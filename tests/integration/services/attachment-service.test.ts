@@ -13,6 +13,7 @@ import { FileStore } from '@/storage/files/file-store.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { AttachmentRepository } from '@/storage/sqlite/repositories/attachment-repository.js';
+import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -36,10 +37,18 @@ describe('AttachmentService + FileStore', () => {
     const projects = new ProjectRepository(adapter);
     const tasks = new TaskRepository(adapter);
     const repository = new AttachmentRepository(adapter);
+    const decisionRepository = new DecisionRepository(adapter);
     const fileStore = new FileStore(attachmentsDir);
     const identity = new IdentityService(actors);
 
-    service = new AttachmentService(repository, tasks, fileStore, identity, audit);
+    service = new AttachmentService(
+      repository,
+      tasks,
+      decisionRepository,
+      fileStore,
+      identity,
+      audit,
+    );
 
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     const reporterId = actors.upsert('daniel', ActorKind.Human);

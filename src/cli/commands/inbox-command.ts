@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import pc from 'picocolors';
 
+import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
 import { withCliContext } from '../cli-context.js';
 
@@ -11,9 +12,8 @@ interface InboxOptions {
 /**
  * Registers `mnema inbox`, the human attention queue.
  *
- * Lists tasks waiting on review and tasks currently blocked. Decisions
- * pending review will join the inbox in Phase 7 once `DecisionService`
- * is implemented.
+ * Lists tasks waiting on review, tasks currently blocked, and decisions
+ * still in `proposed` status (waiting on accept/reject).
  */
 export class InboxCommand {
   /**
@@ -38,8 +38,12 @@ export class InboxCommand {
           const sections: string[] = [];
           sections.push(formatSection('Awaiting review', view.awaitingReview, pc.yellow('⚠')));
           sections.push(formatSection('Blocked', view.blocked, pc.red('⚠')));
+          sections.push(formatDecisionSection(view.pendingDecisions));
 
-          const empty = view.awaitingReview.length === 0 && view.blocked.length === 0;
+          const empty =
+            view.awaitingReview.length === 0 &&
+            view.blocked.length === 0 &&
+            view.pendingDecisions.length === 0;
           if (empty) {
             process.stdout.write(`${pc.dim('Inbox is empty — nothing waiting on you.')}\n`);
             return;
@@ -57,6 +61,18 @@ function formatSection(label: string, tasks: readonly Task[], badge: string): st
   for (const task of tasks) {
     const since = humanAge(task.updatedAt);
     lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.title.padEnd(40)} ${pc.dim(since)}`);
+  }
+  return lines.join('\n');
+}
+
+function formatDecisionSection(decisions: readonly Decision[]): string {
+  if (decisions.length === 0) return '';
+  const lines: string[] = [];
+  lines.push(`${pc.cyan('●')} ${pc.bold('Pending decisions')} (${decisions.length})`);
+  for (const decision of decisions) {
+    lines.push(
+      `  ${pc.bold(decision.key.padEnd(16))} ${decision.title.padEnd(40)} ${pc.dim(humanAge(decision.at))}`,
+    );
   }
   return lines.join('\n');
 }

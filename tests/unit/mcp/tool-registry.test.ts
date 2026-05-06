@@ -13,6 +13,14 @@ describe('listAvailableToolNames', () => {
     }
   });
 
+  it('exposes the decision tool family', () => {
+    const workflow = new WorkflowLoader().load(path.resolve('workflows', 'lean.json'));
+    const names = listAvailableToolNames(workflow);
+    expect(names.has('decision_record')).toBe(true);
+    expect(names.has('decision_show')).toBe(true);
+    expect(names.has('decisions_list')).toBe(true);
+  });
+
   it('adds one task_<action> per workflow transition', () => {
     const workflow = new WorkflowLoader().load(path.resolve('workflows', 'default.json'));
     const names = listAvailableToolNames(workflow);

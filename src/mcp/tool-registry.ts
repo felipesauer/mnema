@@ -22,6 +22,9 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'agent_plan_update_state',
   'agent_plans_list',
   'audit_query',
+  'decision_record',
+  'decision_show',
+  'decisions_list',
 ];
 
 /**

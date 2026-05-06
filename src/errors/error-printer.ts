@@ -156,6 +156,20 @@ export function formatError(error: MnemaError): string {
       lines.push(`Source file does not exist: ${error.path}`);
       lines.push(`${pc.dim('hint:')} Check the path is reachable from the project root`);
       break;
+
+    case ErrorCode.DecisionNotFound:
+      lines.push(`Decision ${error.decisionKey} not found`);
+      lines.push(`${pc.dim('hint:')} List decisions with \`mnema decision list\``);
+      break;
+
+    case ErrorCode.DecisionInvalidStatus:
+      lines.push(
+        `Decision ${error.decisionKey} cannot move from ${error.fromStatus} to ${error.toStatus}`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} Allowed transitions: proposed → accepted/rejected, any → superseded`,
+      );
+      break;
   }
 
   return lines.join('\n');

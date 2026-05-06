@@ -47,9 +47,6 @@ when Phase 5 closed. They are listed by required service.
   Add an `SearchTool` next to the other `universal/` tools, then add
   `'tasks_search'` to `UNIVERSAL_TOOL_NAMES` in
   [src/mcp/tool-registry.ts](../src/mcp/tool-registry.ts).
-- 🟡 **`decision_record`, `decision_show`, `decisions_list`** — wait on
-  `DecisionService`. The DB schema and the FTS5 index already exist
-  (migration 001).
 - 🟡 **`note_add`** — wait on `NoteService`. Schema in migration 001.
 - 🟡 **`sprint_show`, `sprints_list`, `sprint_add_task`** — `SprintService`
   exists (Phase 7). Wrap it with MCP tools — light work, the only
@@ -67,12 +64,6 @@ when Phase 5 closed. They are listed by required service.
 These are referenced from comments and templates already shipped, so
 their absence is observable.
 
-- 🟡 **`DecisionService`** — referenced from
-  [src/services/inbox-service.ts:9](../src/services/inbox-service.ts),
-  [src/services/attachment-service.ts:53](../src/services/attachment-service.ts),
-  the `recording-decisions` skill template. Inbox should list
-  `DecisionStatus.Proposed` once available; attachment should accept
-  `kind: 'decision'`.
 - 🟡 **`NoteService`** — `note` is already a polymorphic parent in
   `attachments` and a `NoteKind` enum exists, but no service writes
   to the table. Block for `note_add` MCP tool and inbox extensions.
@@ -87,9 +78,7 @@ their absence is observable.
   `@inquirer/prompts`. The dependency is already installed.
 - 🟡 **`mnema destroy`** — documented in DESIGN.md §7.4 ("uninstall
   with two confirmations"); not implemented.
-- 🟡 **`mnema decision record/show/list` CLI** — counterpart of the MCP
-  tools above. ADRs as a feature is in the kit but absent from the CLI.
-- 🟡 **`mnema note add` CLI** — same pattern.
+- 🟡 **`mnema note add` CLI** — counterpart of the MCP tool above.
 - 🟢 **`mnema task delete` / soft-delete CLI** — soft-delete column
   exists since Phase 2 but no command toggles it.
 

@@ -13,6 +13,7 @@ import { ActorRepository } from '../storage/sqlite/repositories/actor-repository
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
+import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -23,6 +24,7 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { DecisionService } from './decision-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { SearchService } from './search-service.js';
@@ -66,6 +68,7 @@ export interface ServiceContainer {
   readonly agentPlan: AgentPlanService;
   readonly inbox: InboxService;
   readonly sprint: SprintService;
+  readonly decision: DecisionService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly transitions: TransitionRepository;
@@ -110,6 +113,7 @@ export function createServiceContainer(
   const agentPlans = new AgentPlanRepository(adapter);
   const sprintRepository = new SprintRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
+  const decisionRepository = new DecisionRepository(adapter);
 
   const identity = new IdentityService(actors);
 
@@ -146,13 +150,15 @@ export function createServiceContainer(
     sync.flushAll();
   });
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
-  const inboxService = new InboxService(tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
   const sprintService = new SprintService(sprintRepository, tasks, projects, audit);
+  const decisionService = new DecisionService(decisionRepository, projects, identity, audit);
+  const inboxService = new InboxService(tasks, decisionService, config.project.key);
   const attachmentService = new AttachmentService(
     attachmentRepository,
     tasks,
+    decisionRepository,
     fileStore,
     identity,
     audit,
@@ -172,6 +178,7 @@ export function createServiceContainer(
     agentPlan: agentPlanService,
     inbox: inboxService,
     sprint: sprintService,
+    decision: decisionService,
     attachment: attachmentService,
     search: searchService,
     transitions,

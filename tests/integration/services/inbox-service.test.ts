@@ -3,9 +3,18 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { ActorKind } from '@/domain/enums/actor-kind.js';
+import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { TaskState } from '@/domain/enums/task-state.js';
+import { AuditService } from '@/services/audit-service.js';
+import { DecisionService } from '@/services/decision-service.js';
+import { IdentityService } from '@/services/identity-service.js';
 import { InboxService } from '@/services/inbox-service.js';
+import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
+import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repository.js';
+import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -16,21 +25,32 @@ describe('InboxService', () => {
   let adapter: SqliteAdapter;
   let inbox: InboxService;
   let tasks: TaskRepository;
+  let decisions: DecisionService;
+  let projectId: string;
+  let actorId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-inbox-'));
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
-    adapter
-      .getDatabase()
-      .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-      .run();
-    adapter
-      .getDatabase()
-      .prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')")
-      .run();
+
+    const projects = new ProjectRepository(adapter);
+    const project = projects.insert({ key: 'TEST', name: 'Test' });
+    projectId = project.id;
+
+    const actors = new ActorRepository(adapter);
+    const identity = new IdentityService(actors);
+    identity.ensureActor('daniel', ActorKind.Human);
+    const actor = actors.findByHandle('daniel');
+    if (actor === null) throw new Error('precondition: actor exists');
+    actorId = actor.id;
+
+    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const decisionRepo = new DecisionRepository(adapter);
+    decisions = new DecisionService(decisionRepo, projects, identity, audit);
+
     tasks = new TaskRepository(adapter);
-    inbox = new InboxService(tasks);
+    inbox = new InboxService(tasks, decisions, 'TEST');
   });
 
   afterEach(() => {
@@ -38,36 +58,40 @@ describe('InboxService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('returns empty queues when no tasks need attention', () => {
-    tasks.insert({ key: 'TEST-1', projectId: 'p1', title: 'A', reporterId: 'a1' });
+  function insertTask(key: string, state: TaskState): void {
+    tasks.insert({ key, projectId, title: key, reporterId: actorId, state });
+  }
+
+  it('returns empty queues when no items need attention', () => {
+    insertTask('TEST-1', TaskState.Draft);
     const view = inbox.view();
     expect(view.awaitingReview).toHaveLength(0);
     expect(view.blocked).toHaveLength(0);
+    expect(view.pendingDecisions).toHaveLength(0);
   });
 
   it('lists tasks in IN_REVIEW under awaitingReview', () => {
-    tasks.insert({
-      key: 'TEST-1',
-      projectId: 'p1',
-      title: 'In review',
-      reporterId: 'a1',
-      state: TaskState.InReview,
-    });
+    insertTask('TEST-1', TaskState.InReview);
     const view = inbox.view();
     expect(view.awaitingReview.map((t) => t.key)).toEqual(['TEST-1']);
-    expect(view.blocked).toHaveLength(0);
   });
 
   it('lists BLOCKED tasks under blocked', () => {
-    tasks.insert({
-      key: 'TEST-1',
-      projectId: 'p1',
-      title: 'Blocked',
-      reporterId: 'a1',
-      state: TaskState.Blocked,
-    });
+    insertTask('TEST-1', TaskState.Blocked);
     const view = inbox.view();
-    expect(view.awaitingReview).toHaveLength(0);
     expect(view.blocked.map((t) => t.key)).toEqual(['TEST-1']);
+  });
+
+  it('lists proposed decisions under pendingDecisions and excludes accepted ones', () => {
+    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+    });
+
+    const view = inbox.view();
+    expect(view.pendingDecisions.map((d) => d.key)).toEqual(['TEST-ADR-2']);
   });
 });

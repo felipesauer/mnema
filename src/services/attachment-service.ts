@@ -10,6 +10,7 @@ import type {
   AttachmentParentKind,
   AttachmentRepository,
 } from '../storage/sqlite/repositories/attachment-repository.js';
+import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -20,6 +21,18 @@ import { Err, Ok, type Result } from './result.js';
  */
 export interface AttachToTaskInput {
   readonly taskKey: string;
+  readonly sourcePath: string;
+  readonly mime?: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+}
+
+/**
+ * Input for {@link AttachmentService.attachToDecision}.
+ */
+export interface AttachToDecisionInput {
+  readonly decisionKey: string;
   readonly sourcePath: string;
   readonly mime?: string;
   readonly actor: string;
@@ -49,13 +62,14 @@ const DEFAULT_MIMES: Record<string, string> = {
  * {@link FileStore}, persist metadata via {@link AttachmentRepository},
  * audit the operation.
  *
- * Today only tasks may carry attachments through this service. Notes
- * and decisions will join when their respective Services land.
+ * Tasks and decisions may carry attachments through this service. Notes
+ * will join when {@link import('./note-service.js').NoteService} lands.
  */
 export class AttachmentService {
   constructor(
     private readonly attachments: AttachmentRepository,
     private readonly tasks: TaskRepository,
+    private readonly decisions: DecisionRepository,
     private readonly fileStore: FileStore,
     private readonly identity: IdentityService,
     private readonly audit: AuditService,
@@ -114,6 +128,55 @@ export class AttachmentService {
   }
 
   /**
+   * Stores a file on disk and attaches its metadata to a decision (ADR).
+   *
+   * @param input - Attachment parameters + identity tuple
+   * @returns The persisted attachment row or a structured error
+   */
+  attachToDecision(input: AttachToDecisionInput): Result<Attachment, MnemaError> {
+    if (!existsSync(input.sourcePath)) {
+      return Err({ kind: ErrorCode.AttachmentSourceNotFound, path: input.sourcePath });
+    }
+
+    const decision = this.decisions.findByKey(input.decisionKey);
+    if (decision === null) {
+      return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+    }
+
+    const stored = this.fileStore.store(input.sourcePath);
+    const filename = path.basename(input.sourcePath);
+    const mime = input.mime ?? mimeForExtension(stored.extension);
+    const uploadedBy = this.identity.ensureActor(input.actor, ActorKind.Human);
+
+    const record = this.attachments.insert({
+      parentKind: 'decision',
+      parentId: decision.id,
+      filename,
+      path: stored.relativePath,
+      mime,
+      size: stored.size,
+      hash: stored.hash,
+      uploadedBy,
+    });
+
+    this.audit.write({
+      kind: 'attachment_added',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: {
+        decision_key: decision.key,
+        filename,
+        size: stored.size,
+        hash: stored.hash,
+        deduplicated: stored.deduplicated,
+      },
+    });
+
+    return Ok(record);
+  }
+
+  /**
    * Lists attachments for a parent entity.
    *
    * @param kind - Parent kind (`task`, `note`, `decision`)
@@ -136,6 +199,20 @@ export class AttachmentService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey });
     }
     return Ok(this.attachments.findByParent('task', task.id));
+  }
+
+  /**
+   * Convenience: list attachments for a decision by its human key.
+   *
+   * @param decisionKey - Decision key (e.g. `WEBAPP-ADR-7`)
+   * @returns Active attachments, or an error if the decision is unknown
+   */
+  listForDecision(decisionKey: string): Result<readonly Attachment[], MnemaError> {
+    const decision = this.decisions.findByKey(decisionKey);
+    if (decision === null) {
+      return Err({ kind: ErrorCode.DecisionNotFound, decisionKey });
+    }
+    return Ok(this.attachments.findByParent('decision', decision.id));
   }
 }
 
