@@ -1,0 +1,210 @@
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+
+import { ErrorCode } from '../../errors/error-codes.js';
+import type { MnemaError } from '../../errors/mnema-error.js';
+import { Err, Ok, type Result } from '../result.js';
+import type { TaskService } from '../task-service.js';
+
+/**
+ * Parsed-task shape produced by {@link MarkdownImporter.parse} before
+ * anything is persisted. Lets tests inspect the heuristics without
+ * touching SQLite.
+ */
+export interface ParsedTask {
+  readonly title: string;
+  readonly description: string | null;
+  readonly acceptanceCriteria: readonly string[];
+  readonly state: string | null;
+  readonly source: string;
+}
+
+/**
+ * Outcome of {@link MarkdownImporter.import}.
+ */
+export interface MarkdownImportSummary {
+  /** Files that were scanned. */
+  readonly filesScanned: number;
+  /** Tasks created via TaskService. */
+  readonly tasksCreated: number;
+  /** Parsed tasks that hit a TaskService error and were skipped. */
+  readonly skipped: readonly { source: string; reason: string }[];
+}
+
+/**
+ * Imports tasks from one or more Markdown files following a small set
+ * of heuristics:
+ *
+ * - Each `##` (or higher-level) heading becomes a task. The heading
+ *   text is split into an optional STATE prefix and the rest of the
+ *   line; the prefix must match an existing task state to be honoured.
+ *   Examples that work: `## DRAFT Implement OAuth`, `### TODO Add CI`.
+ * - Bullet items (`- `, `* `, `+ `) directly under the heading become
+ *   acceptance criteria.
+ * - Other free-form text below the heading becomes the description
+ *   (paragraphs joined by blank lines, leading/trailing whitespace
+ *   stripped).
+ *
+ * Importers are **one-shot** — there is no continuous sync. Re-running
+ * the importer against the same source creates duplicate tasks; the
+ * caller is expected to wipe and re-import or to point the importer at
+ * a fresh source.
+ */
+export class MarkdownImporter {
+  constructor(
+    private readonly tasks: TaskService,
+    private readonly projectKey: string,
+    private readonly actor: string,
+  ) {}
+
+  /**
+   * Reads files, parses them, and creates one task per parsed entry.
+   *
+   * @param sourcePath - File path or directory; folders are walked
+   *   non-recursively unless `recursive` is true
+   * @param options - Toggle recursive walks
+   * @returns Summary or `INIT_CONFLICT` when source cannot be read
+   */
+  import(
+    sourcePath: string,
+    options: { readonly recursive?: boolean } = {},
+  ): Result<MarkdownImportSummary, MnemaError> {
+    if (!existsSync(sourcePath)) {
+      return Err({
+        kind: ErrorCode.AttachmentSourceNotFound,
+        path: sourcePath,
+      });
+    }
+    const files = collectFiles(sourcePath, options.recursive === true);
+
+    const skipped: { source: string; reason: string }[] = [];
+    let created = 0;
+    for (const file of files) {
+      const parsed = MarkdownImporter.parse(readFileSync(file, 'utf-8'), file);
+      for (const task of parsed) {
+        const result = this.tasks.create({
+          projectKey: this.projectKey,
+          title: task.title,
+          description: task.description ?? undefined,
+          acceptanceCriteria: task.acceptanceCriteria,
+          actor: this.actor,
+        });
+        if (!result.ok) {
+          skipped.push({ source: task.source, reason: String(result.error.kind) });
+          continue;
+        }
+        created += 1;
+      }
+    }
+
+    return Ok({ filesScanned: files.length, tasksCreated: created, skipped });
+  }
+
+  /**
+   * Parses a Markdown body into {@link ParsedTask} entries. Pure — no
+   * I/O, no service calls — exposed for tests.
+   *
+   * @param markdown - Raw markdown body
+   * @param source - Identifier used in `ParsedTask.source` (usually the
+   *   originating file path)
+   * @returns Array of parsed task descriptors
+   */
+  static parse(markdown: string, source = '<inline>'): ParsedTask[] {
+    const lines = markdown.split('\n');
+    const tasks: ParsedTask[] = [];
+
+    let current: {
+      title: string;
+      state: string | null;
+      acceptance: string[];
+      paragraphs: string[];
+    } | null = null;
+    let buffer: string[] = [];
+    const flushParagraph = (): void => {
+      if (current === null) return;
+      const text = buffer.join(' ').trim();
+      if (text.length > 0) current.paragraphs.push(text);
+      buffer = [];
+    };
+    const finishCurrent = (): void => {
+      if (current === null) return;
+      flushParagraph();
+      tasks.push({
+        title: current.title,
+        description: current.paragraphs.length > 0 ? current.paragraphs.join('\n\n') : null,
+        acceptanceCriteria: current.acceptance,
+        state: current.state,
+        source,
+      });
+      current = null;
+    };
+
+    for (const rawLine of lines) {
+      const headingMatch = rawLine.match(/^(#{2,6})\s+(.*)$/);
+      if (headingMatch !== null) {
+        finishCurrent();
+        const headingText = (headingMatch[2] ?? '').trim();
+        if (headingText.length === 0) continue;
+        current = {
+          title: stripStatePrefix(headingText).title,
+          state: stripStatePrefix(headingText).state,
+          acceptance: [],
+          paragraphs: [],
+        };
+        continue;
+      }
+
+      if (current === null) continue;
+
+      const bulletMatch = rawLine.match(/^\s*[-*+]\s+(.+)$/);
+      if (bulletMatch !== null) {
+        flushParagraph();
+        current.acceptance.push((bulletMatch[1] ?? '').trim());
+        continue;
+      }
+
+      if (rawLine.trim().length === 0) {
+        flushParagraph();
+        continue;
+      }
+
+      buffer.push(rawLine.trim());
+    }
+    finishCurrent();
+
+    return tasks;
+  }
+}
+
+function stripStatePrefix(headingText: string): {
+  readonly title: string;
+  readonly state: string | null;
+} {
+  const tokens = headingText.split(/\s+/);
+  const head = tokens[0] ?? '';
+  if (/^[A-Z][A-Z0-9_]+$/.test(head) && tokens.length > 1) {
+    return { state: head, title: tokens.slice(1).join(' ') };
+  }
+  return { state: null, title: headingText };
+}
+
+function collectFiles(sourcePath: string, recursive: boolean): string[] {
+  const stat = statSync(sourcePath);
+  if (stat.isFile()) {
+    return [sourcePath];
+  }
+  const entries: string[] = [];
+  for (const entry of readdirSync(sourcePath, { withFileTypes: true })) {
+    const full = path.join(sourcePath, entry.name);
+    if (entry.isDirectory()) {
+      if (recursive) {
+        entries.push(...collectFiles(full, true));
+      }
+      continue;
+    }
+    if (entry.name.endsWith('.md') || entry.name.endsWith('.markdown')) {
+      entries.push(full);
+    }
+  }
+  return entries.sort();
+}
