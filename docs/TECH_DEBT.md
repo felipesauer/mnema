@@ -52,8 +52,6 @@ when Phase 5 closed. They are listed by required service.
   reason it didn't ship in Phase 7 was MCP focus. See
   [src/cli/commands/sprint-command.ts](../src/cli/commands/sprint-command.ts)
   for the operations to surface.
-- 🟡 **`epic_show`, `epics_list`** — wait on `EpicService`. Schema in
-  migration 001.
 - 🟡 **`history_get`** — read-only convenience over the audit log,
   alternative framing of `audit_query`. Decide whether it adds value
   or whether `audit_query` already covers the use case.
@@ -62,10 +60,6 @@ when Phase 5 closed. They are listed by required service.
 
 These are referenced from comments and templates already shipped, so
 their absence is observable.
-
-- 🟡 **`EpicService`** — schema and entity exist; the `epic` workflow
-  feature flag is honoured at the workflow level but no service
-  manipulates `epics`.
 
 ## 3. UX gaps
 

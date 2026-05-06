@@ -7,6 +7,7 @@ import { AttachCommand } from './commands/attach-command.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DecisionCommand } from './commands/decision-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
+import { EpicCommand } from './commands/epic-command.js';
 import { HistoryCommand } from './commands/history-command.js';
 import { ImportCommand } from './commands/import-command.js';
 import { InboxCommand } from './commands/inbox-command.js';
@@ -39,6 +40,7 @@ export function createCli(): Command {
   new AttachCommand().register(program);
   new DecisionCommand().register(program);
   new NoteCommand().register(program);
+  new EpicCommand().register(program);
   new SkillCommand().register(program);
   new MemoryCommand().register(program);
   new SearchCommand().register(program);
