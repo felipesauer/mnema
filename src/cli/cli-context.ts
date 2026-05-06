@@ -1,0 +1,60 @@
+import path from 'node:path';
+import { ConfigLoader } from '../config/config-loader.js';
+import type { Config } from '../config/config-schema.js';
+import { ErrorCode } from '../errors/error-codes.js';
+import { printError } from '../errors/error-printer.js';
+import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
+import { migrationsDir } from '../utils/asset-paths.js';
+
+/**
+ * Composite return value of {@link openCliContext}: the loaded config,
+ * the resolved project root, and a fully-wired service container.
+ */
+export interface CliContext {
+  readonly config: Config;
+  readonly projectRoot: string;
+  readonly container: ServiceContainer;
+}
+
+/**
+ * Locates the nearest `mnema.config.json`, loads it, and builds a
+ * service container rooted in its directory.
+ *
+ * Exits the process with a structured `CONFIG_NOT_FOUND` error when no
+ * config can be reached from the cwd.
+ *
+ * @returns The opened CLI context — caller is responsible for calling
+ *   `context.container.close()` when done
+ */
+export function openCliContext(): CliContext {
+  const loader = new ConfigLoader();
+  const configFile = loader.findConfigFile();
+  if (configFile === null) {
+    process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
+  }
+
+  const config = loader.load();
+  const projectRoot = path.dirname(configFile);
+  const container = createServiceContainer(config, projectRoot, {
+    migrationsDir: migrationsDir(),
+  });
+
+  return { config, projectRoot, container };
+}
+
+/**
+ * Helper that opens a context, runs the handler, and guarantees the
+ * SQLite handle is released even if the handler throws.
+ *
+ * @param handler - Async callback receiving the open CLI context
+ */
+export async function withCliContext(
+  handler: (context: CliContext) => Promise<void> | void,
+): Promise<void> {
+  const context = openCliContext();
+  try {
+    await handler(context);
+  } finally {
+    context.container.close();
+  }
+}

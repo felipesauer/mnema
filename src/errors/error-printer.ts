@@ -99,6 +99,27 @@ export function formatError(error: MnemaError): string {
       lines.push(`Project already initialised: ${error.configPath}`);
       lines.push(`${pc.dim('hint:')} Run \`mnema doctor\` to verify the workspace`);
       break;
+
+    case ErrorCode.AgentRunNotFound:
+      lines.push(`Agent run ${error.runId} not found`);
+      lines.push(
+        `${pc.dim('hint:')} Verify the run id with \`mnema audit query --kind=run_started\``,
+      );
+      break;
+
+    case ErrorCode.AgentRunAlreadyEnded:
+      lines.push(`Agent run ${error.runId} is already in terminal state ${error.status}`);
+      lines.push(`${pc.dim('hint:')} Start a new run with agent_run_start`);
+      break;
+
+    case ErrorCode.DepthLimitExceeded:
+      lines.push(`${error.entity} depth ${error.attemptedDepth} exceeds limit ${error.limit}`);
+      lines.push(`${pc.dim('hint:')} Flatten the call hierarchy or split the work`);
+      break;
+
+    case ErrorCode.AgentPlanNotFound:
+      lines.push(`Agent plan ${error.planId} not found`);
+      break;
   }
 
   return lines.join('\n');

@@ -23,6 +23,11 @@ export enum ErrorCode {
 
   InitConflict = 'INIT_CONFLICT',
   AlreadyInitialized = 'ALREADY_INITIALIZED',
+
+  AgentRunNotFound = 'AGENT_RUN_NOT_FOUND',
+  AgentRunAlreadyEnded = 'AGENT_RUN_ALREADY_ENDED',
+  DepthLimitExceeded = 'DEPTH_LIMIT_EXCEEDED',
+  AgentPlanNotFound = 'AGENT_PLAN_NOT_FOUND',
 }
 
 /**

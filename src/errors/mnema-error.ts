@@ -51,7 +51,20 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.IdentityNotConfigured }
   | { readonly kind: ErrorCode.InitConflict; readonly path: string }
-  | { readonly kind: ErrorCode.AlreadyInitialized; readonly configPath: string };
+  | { readonly kind: ErrorCode.AlreadyInitialized; readonly configPath: string }
+  | { readonly kind: ErrorCode.AgentRunNotFound; readonly runId: string }
+  | {
+      readonly kind: ErrorCode.AgentRunAlreadyEnded;
+      readonly runId: string;
+      readonly status: string;
+    }
+  | {
+      readonly kind: ErrorCode.DepthLimitExceeded;
+      readonly entity: 'agent_run' | 'agent_plan';
+      readonly attemptedDepth: number;
+      readonly limit: number;
+    }
+  | { readonly kind: ErrorCode.AgentPlanNotFound; readonly planId: string };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

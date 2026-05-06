@@ -8,12 +8,18 @@ import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import { MigrationRunner } from '../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
+import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
+import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { AgentPlanService } from './agent-plan-service.js';
+import { AgentRunService } from './agent-run-service.js';
+import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { IdentityService } from './identity-service.js';
+import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
 
@@ -45,7 +51,11 @@ export interface ServiceContainer {
   readonly identity: IdentityService;
   readonly task: TaskService;
   readonly audit: AuditService;
+  readonly auditQuery: AuditQuery;
   readonly sync: SyncService;
+  readonly syncRebuild: SyncRebuild;
+  readonly agentRun: AgentRunService;
+  readonly agentPlan: AgentPlanService;
   readonly close: () => void;
 }
 
@@ -83,12 +93,15 @@ export function createServiceContainer(
   const projects = new ProjectRepository(adapter);
   const tasks = new TaskRepository(adapter);
   const transitions = new TransitionRepository(adapter);
+  const agentRuns = new AgentRunRepository(adapter);
+  const agentPlans = new AgentPlanRepository(adapter);
 
   const identity = new IdentityService(actors);
 
   const auditDir = path.join(projectRoot, config.paths.audit);
   const auditWriter = new AuditWriter(auditDir);
   const audit = new AuditService(auditWriter);
+  const auditQuery = new AuditQuery(auditDir);
 
   const sync = new SyncService(tasks, new MarkdownIo(), {
     projectRoot,
@@ -96,10 +109,18 @@ export function createServiceContainer(
   });
   sync.setMode(options.syncMode ?? SyncMode.Push);
 
+  const syncRebuild = new SyncRebuild(tasks, actors, projects, {
+    projectRoot,
+    backlogDir: config.paths.backlog,
+  });
+
   const taskService = new TaskService(tasks, transitions, projects, stateMachine, audit, sync, {
     ensureActor: (handle, kind) =>
       identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
   });
+
+  const agentRunService = new AgentRunService(agentRuns, actors, identity, audit);
+  const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
 
   return {
     adapter,
@@ -107,7 +128,11 @@ export function createServiceContainer(
     identity,
     task: taskService,
     audit,
+    auditQuery,
     sync,
+    syncRebuild,
+    agentRun: agentRunService,
+    agentPlan: agentPlanService,
     close: () => adapter.close(),
   };
 }
