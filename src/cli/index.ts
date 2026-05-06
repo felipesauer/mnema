@@ -13,6 +13,7 @@ import { InboxCommand } from './commands/inbox-command.js';
 import { InitCommand } from './commands/init-command.js';
 import { McpCommand } from './commands/mcp-command.js';
 import { MemoryCommand } from './commands/memory-command.js';
+import { NoteCommand } from './commands/note-command.js';
 import { SearchCommand } from './commands/search-command.js';
 import { SkillCommand } from './commands/skill-command.js';
 import { SprintCommand } from './commands/sprint-command.js';
@@ -37,6 +38,7 @@ export function createCli(): Command {
   new SprintCommand().register(program);
   new AttachCommand().register(program);
   new DecisionCommand().register(program);
+  new NoteCommand().register(program);
   new SkillCommand().register(program);
   new MemoryCommand().register(program);
   new SearchCommand().register(program);

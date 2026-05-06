@@ -25,6 +25,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'decision_record',
   'decision_show',
   'decisions_list',
+  'note_add',
 ];
 
 /**

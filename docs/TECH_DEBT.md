@@ -47,7 +47,6 @@ when Phase 5 closed. They are listed by required service.
   Add an `SearchTool` next to the other `universal/` tools, then add
   `'tasks_search'` to `UNIVERSAL_TOOL_NAMES` in
   [src/mcp/tool-registry.ts](../src/mcp/tool-registry.ts).
-- 🟡 **`note_add`** — wait on `NoteService`. Schema in migration 001.
 - 🟡 **`sprint_show`, `sprints_list`, `sprint_add_task`** — `SprintService`
   exists (Phase 7). Wrap it with MCP tools — light work, the only
   reason it didn't ship in Phase 7 was MCP focus. See
@@ -64,9 +63,6 @@ when Phase 5 closed. They are listed by required service.
 These are referenced from comments and templates already shipped, so
 their absence is observable.
 
-- 🟡 **`NoteService`** — `note` is already a polymorphic parent in
-  `attachments` and a `NoteKind` enum exists, but no service writes
-  to the table. Block for `note_add` MCP tool and inbox extensions.
 - 🟡 **`EpicService`** — schema and entity exist; the `epic` workflow
   feature flag is honoured at the workflow level but no service
   manipulates `epics`.
@@ -78,7 +74,6 @@ their absence is observable.
   `@inquirer/prompts`. The dependency is already installed.
 - 🟡 **`mnema destroy`** — documented in DESIGN.md §7.4 ("uninstall
   with two confirmations"); not implemented.
-- 🟡 **`mnema note add` CLI** — counterpart of the MCP tool above.
 - 🟢 **`mnema task delete` / soft-delete CLI** — soft-delete column
   exists since Phase 2 but no command toggles it.
 
