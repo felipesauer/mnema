@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "name": "kanban",
+  "description": "Kanban board with WIP-friendly states",
+  "states": ["BACKLOG", "READY", "IN_PROGRESS", "BLOCKED", "DONE"],
+  "initial": "BACKLOG",
+  "terminal": ["DONE"],
+  "features": {
+    "sprints": false,
+    "epics": true,
+    "review_workflow": false,
+    "blocked_state": true
+  },
+  "transitions": {
+    "BACKLOG": {
+      "promote": {
+        "to": "READY",
+        "description": "Promote a backlog item to the ready column",
+        "use_when": "Item is well-defined and prioritized",
+        "requires": {
+          "title": { "type": "string", "min": 3, "max": 200 }
+        }
+      }
+    },
+    "READY": {
+      "start": {
+        "to": "IN_PROGRESS",
+        "description": "Pull the card into in progress",
+        "use_when": "Capacity is available and work is starting",
+        "requires": {
+          "assignee_id": { "type": "string", "min": 1 }
+        }
+      }
+    },
+    "IN_PROGRESS": {
+      "block": {
+        "to": "BLOCKED",
+        "description": "Block a card in progress",
+        "use_when": "Waiting on external input or dependency",
+        "requires": {
+          "reason": { "type": "string", "min": 5 }
+        }
+      },
+      "complete": {
+        "to": "DONE",
+        "description": "Mark the card as done",
+        "use_when": "Work is finished and verified",
+        "requires": {}
+      }
+    },
+    "BLOCKED": {
+      "unblock": {
+        "to": "IN_PROGRESS",
+        "description": "Unblock the card and resume work",
+        "use_when": "Blocker has been resolved",
+        "requires": {
+          "note": { "type": "string", "min": 5 }
+        }
+      }
+    }
+  }
+}
