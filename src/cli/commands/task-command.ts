@@ -1,13 +1,10 @@
-import path from 'node:path';
 import type { Command } from 'commander';
-import { ConfigLoader } from '../../config/config-loader.js';
+
 import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
-import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { createServiceContainer, type ServiceContainer } from '../../services/service-container.js';
-import { migrationsDir } from '../../utils/asset-paths.js';
+import { withCliContext } from '../cli-context.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';
 
 interface CreateOptions {
@@ -30,7 +27,7 @@ interface ListOptions {
  * - `task create` — flag-driven creation in the workflow's initial state
  * - `task list` — lists tasks, optionally filtered by state
  * - `task show <key>` — prints a single task in detail
- * - `task move <key> <action> [--field=value...]` — invokes a workflow action
+ * - `task move <key> <action> [field=value...]` — invokes a workflow action
  */
 export class TaskCommand {
   /**
@@ -51,7 +48,7 @@ export class TaskCommand {
       .option('--priority <n>', 'Priority 1..5 (default 3)')
       .option('--assignee <handle>', 'Assignee handle')
       .action(async (options: CreateOptions) => {
-        await this.withContainer(async (container, config) => {
+        await withCliContext(({ container, config }) => {
           const result = container.task.create({
             projectKey: config.project.key,
             title: options.title,
@@ -62,7 +59,7 @@ export class TaskCommand {
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),
           });
-          return resultToTaskOutput(result);
+          renderTaskResult(result);
         });
       });
 
@@ -71,12 +68,11 @@ export class TaskCommand {
       .description('List tasks, optionally filtered by state')
       .option('--state <state>', 'Filter by state (e.g. DRAFT, READY)')
       .action(async (options: ListOptions) => {
-        await this.withContainer(async (container) => {
+        await withCliContext(({ container }) => {
           const filter =
             options.state !== undefined ? { state: options.state.toUpperCase() as TaskState } : {};
           const tasks = container.task.list(filter);
           process.stdout.write(`${formatTaskList(tasks)}\n`);
-          return null;
         });
       });
 
@@ -84,9 +80,8 @@ export class TaskCommand {
       .command('show <key>')
       .description('Show a single task')
       .action(async (key: string) => {
-        await this.withContainer(async (container) => {
-          const result = container.task.findByKey(key);
-          return resultToTaskOutput(result);
+        await withCliContext(({ container }) => {
+          renderTaskResult(container.task.findByKey(key));
         });
       });
 
@@ -94,7 +89,7 @@ export class TaskCommand {
       .command('move <key> <action> [fields...]')
       .description('Move a task via a workflow action. Pass payload as `field=value` pairs.')
       .action(async (key: string, action: string, fields: string[]) => {
-        await this.withContainer(async (container) => {
+        await withCliContext(({ container }) => {
           const payload = parseFieldArgs(fields);
           const result = container.task.transition({
             taskKey: key,
@@ -102,47 +97,19 @@ export class TaskCommand {
             payload,
             actor: container.identity.getDefaultActor(),
           });
-          return resultToTaskOutput(result);
+          renderTaskResult(result);
         });
       });
   }
-
-  private async withContainer(
-    handler: (
-      container: ServiceContainer,
-      config: ReturnType<ConfigLoader['load']>,
-    ) => Promise<{ task?: Task } | null>,
-  ): Promise<void> {
-    const loader = new ConfigLoader();
-    const configFile = loader.findConfigFile();
-    if (configFile === null) {
-      process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
-    }
-
-    const config = loader.load();
-    const projectRoot = path.dirname(configFile);
-    const container = createServiceContainer(config, projectRoot, {
-      migrationsDir: migrationsDir(),
-    });
-
-    try {
-      const out = await handler(container, config);
-      if (out !== null && out.task !== undefined) {
-        process.stdout.write(`${formatTaskBlock(out.task)}\n`);
-      }
-    } finally {
-      container.close();
-    }
-  }
 }
 
-function resultToTaskOutput(
+function renderTaskResult(
   result: { ok: true; value: Task } | { ok: false; error: MnemaError },
-): { task: Task } | null {
+): void {
   if (!result.ok) {
     process.exit(printError(result.error));
   }
-  return { task: result.value };
+  process.stdout.write(`${formatTaskBlock(result.value)}\n`);
 }
 
 /**

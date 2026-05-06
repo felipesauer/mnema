@@ -156,4 +156,32 @@ describe('CLI end-to-end', () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('mnema.config.json not found');
   });
+
+  it('mnema audit query lists events recorded during the session', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'First'], projectRoot);
+
+    const human = runCli(['audit', 'query', '--kind', 'task_created'], projectRoot);
+    expect(human.status).toBe(0);
+    expect(human.stdout).toContain('task_created');
+    expect(human.stdout).toContain('daniel');
+
+    const json = runCli(['audit', 'query', '--kind', 'task_created', '--json'], projectRoot);
+    expect(json.status).toBe(0);
+    const lines = json.stdout.trim().split('\n');
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+    const event = JSON.parse(lines[0] as string) as { kind: string; actor: string };
+    expect(event.kind).toBe('task_created');
+    expect(event.actor).toBe('daniel');
+  });
+
+  it('mnema sync rebuilds the cache idempotently', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'A'], projectRoot);
+
+    const first = runCli(['sync'], projectRoot);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toContain('sync complete');
+    expect(first.stdout).toContain('upserted=0');
+  });
 });

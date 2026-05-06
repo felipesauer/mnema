@@ -82,6 +82,8 @@ export class TaskService {
     }
 
     const reporterId = this.identity.ensureActor(input.actor, 'human');
+    const viaActorId =
+      input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
     const initialState = this.stateMachine.getWorkflow().initial as TaskState;
 
     const task = this.tasks.runInTransaction(() => {
@@ -108,7 +110,7 @@ export class TaskService {
         action: 'create',
         payload: { title: input.title },
         actorId: reporterId,
-        viaActorId: null,
+        viaActorId,
         agentRunId: input.runId ?? null,
       });
 

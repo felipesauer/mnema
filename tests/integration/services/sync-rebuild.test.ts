@@ -1,0 +1,150 @@
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { ConfigSchema } from '@/config/config-schema.js';
+import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
+
+const migrationsDir = path.resolve('src/storage/sqlite/migrations');
+const workflowsSrc = path.resolve('workflows');
+
+function setupProject(): { root: string; container: ServiceContainer } {
+  const root = mkdtempSync(path.join(tmpdir(), 'mnema-rebuild-'));
+  for (const dir of ['.app', '.audit', 'backlog', 'workflows']) {
+    mkdirSync(path.join(root, dir), { recursive: true });
+  }
+  copyFileSync(
+    path.join(workflowsSrc, 'default.json'),
+    path.join(root, 'workflows', 'default.json'),
+  );
+
+  const config = ConfigSchema.parse({
+    version: '1.0',
+    mnema_version: '^0.1.0',
+    project: { key: 'TEST', name: 'Test' },
+    workflow: 'default',
+  });
+  const container = createServiceContainer(config, root, { migrationsDir });
+
+  container.adapter
+    .getDatabase()
+    .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
+    .run();
+
+  return { root, container };
+}
+
+describe('SyncRebuild', () => {
+  let root: string;
+  let container: ServiceContainer;
+
+  beforeEach(() => {
+    const setup = setupProject();
+    root = setup.root;
+    container = setup.container;
+  });
+
+  afterEach(() => {
+    container.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('inserts tasks for markdowns that are not yet in the database', () => {
+    const draftDir = path.join(root, 'backlog', 'DRAFT');
+    mkdirSync(draftDir, { recursive: true });
+
+    const md = `---
+mnema:
+  key: TEST-1
+  state: DRAFT
+  title: Imported task
+  description: ''
+  acceptance_criteria: []
+  estimate: null
+  priority: 3
+  reporter: daniel
+  reopen_count: 0
+  metadata: {}
+---
+
+# Imported task
+`;
+    writeFileSync(path.join(draftDir, 'TEST-1.md'), md, 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.tasksScanned).toBe(1);
+    expect(summary.tasksUpserted).toBe(1);
+
+    const list = container.task.list();
+    expect(list.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(list[0]?.title).toBe('Imported task');
+  });
+
+  it('is idempotent — second run reports zero changes', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Existing',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+
+    const first = container.syncRebuild.run('TEST');
+    const second = container.syncRebuild.run('TEST');
+
+    expect(first.tasksUpserted).toBe(0);
+    expect(second.tasksUpserted).toBe(0);
+    expect(first.tasksScanned).toBe(second.tasksScanned);
+  });
+
+  it('updates state when the markdown lives in a different state folder', () => {
+    container.task.create({ projectKey: 'TEST', title: 'Move via fs', actor: 'daniel' });
+
+    const draftFile = path.join(root, 'backlog', 'DRAFT', 'TEST-1.md');
+    const readyDir = path.join(root, 'backlog', 'READY');
+    mkdirSync(readyDir, { recursive: true });
+
+    const original = readFileSync(draftFile, 'utf-8');
+    writeFileSync(path.join(readyDir, 'TEST-1.md'), original.replace('DRAFT', 'READY'), 'utf-8');
+    rmSync(draftFile, { force: true });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.tasksUpserted).toBe(1);
+
+    const reloaded = container.task.findByKey('TEST-1');
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.state).toBe('READY');
+  });
+
+  it('skips files whose mnema.key does not match the filename', () => {
+    const dir = path.join(root, 'backlog', 'DRAFT');
+    mkdirSync(dir, { recursive: true });
+
+    const md = `---
+mnema:
+  key: TEST-99
+  state: DRAFT
+  title: wrong filename
+---
+
+body
+`;
+    writeFileSync(path.join(dir, 'TEST-1.md'), md, 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.skipped.length).toBeGreaterThan(0);
+    expect(existsSync(path.join(root, '.app', 'state.db'))).toBe(true);
+
+    const list = container.task.list();
+    expect(list).toHaveLength(0);
+  });
+});
