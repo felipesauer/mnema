@@ -120,6 +120,18 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.AgentPlanNotFound:
       lines.push(`Agent plan ${error.planId} not found`);
       break;
+
+    case ErrorCode.NoActiveRun:
+      lines.push('No active agent run for this session');
+      lines.push(`${pc.dim('hint:')} Call agent_run_start before any mutation`);
+      break;
+
+    case ErrorCode.Conflict:
+      lines.push(
+        `Task ${error.taskKey} changed since you read it (current updated_at: ${error.currentUpdatedAt})`,
+      );
+      lines.push(`${pc.dim('hint:')} Re-read the task and retry with the new updated_at`);
+      break;
   }
 
   return lines.join('\n');

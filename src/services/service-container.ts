@@ -5,6 +5,7 @@ import { ActorKind } from '../domain/enums/actor-kind.js';
 import { StateMachine } from '../domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
+import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import { MigrationRunner } from '../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
@@ -103,9 +104,17 @@ export function createServiceContainer(
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
 
-  const sync = new SyncService(tasks, new MarkdownIo(), {
-    projectRoot,
-    backlogDir: config.paths.backlog,
+  const stateDir = path.join(projectRoot, config.paths.state);
+  const syncBuffer = new SyncBuffer(stateDir);
+  const sync = new SyncService(
+    tasks,
+    new MarkdownIo(),
+    { projectRoot, backlogDir: config.paths.backlog },
+    syncBuffer,
+  );
+  sync.setFlushPolicy({
+    volume: config.sync.agent_buffer_flush_count,
+    intervalMs: config.sync.agent_buffer_flush_seconds * 1000,
   });
   sync.setMode(options.syncMode ?? SyncMode.Push);
 
@@ -119,7 +128,9 @@ export function createServiceContainer(
       identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
   });
 
-  const agentRunService = new AgentRunService(agentRuns, actors, identity, audit);
+  const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {
+    sync.flushAll();
+  });
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
 
   return {

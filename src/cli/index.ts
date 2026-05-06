@@ -4,6 +4,7 @@ import { VERSION } from '@/utils/version.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
 import { InitCommand } from './commands/init-command.js';
+import { McpCommand } from './commands/mcp-command.js';
 import { SyncCommand } from './commands/sync-command.js';
 import { TaskCommand } from './commands/task-command.js';
 
@@ -21,6 +22,7 @@ export function createCli(): Command {
   new TaskCommand().register(program);
   new AuditCommand().register(program);
   new SyncCommand().register(program);
+  new McpCommand().register(program);
   new DoctorCommand().register(program);
 
   return program;

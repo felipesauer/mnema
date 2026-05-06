@@ -184,14 +184,22 @@ export class TaskService {
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
 
-    const outcome = this.tasks.runInTransaction((): Task | null => {
+    type TransitionOutcome =
+      | { readonly kind: 'ok'; readonly task: Task }
+      | { readonly kind: 'not_found' }
+      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
+
+    const outcome = this.tasks.runInTransaction((): TransitionOutcome => {
       const result = this.tasks.updateState(
         task.id,
         to as TaskState,
         input.expectedUpdatedAt ?? null,
       );
       if (!result.ok) {
-        return null;
+        if (result.reason.kind === 'CONFLICT') {
+          return { kind: 'conflict', currentUpdatedAt: result.reason.currentUpdatedAt };
+        }
+        return { kind: 'not_found' };
       }
 
       this.transitions.record({
@@ -205,13 +213,20 @@ export class TaskService {
         agentRunId: input.runId ?? null,
       });
 
-      return result.task;
+      return { kind: 'ok', task: result.task };
     });
 
-    if (outcome === null) {
+    if (outcome.kind === 'not_found') {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: task.key });
     }
-    const updated = outcome;
+    if (outcome.kind === 'conflict') {
+      return Err({
+        kind: ErrorCode.Conflict,
+        taskKey: task.key,
+        currentUpdatedAt: outcome.currentUpdatedAt,
+      });
+    }
+    const updated = outcome.task;
 
     this.audit.write({
       kind: 'task_transitioned',

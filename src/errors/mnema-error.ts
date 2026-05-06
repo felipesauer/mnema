@@ -64,7 +64,13 @@ export type MnemaError =
       readonly attemptedDepth: number;
       readonly limit: number;
     }
-  | { readonly kind: ErrorCode.AgentPlanNotFound; readonly planId: string };
+  | { readonly kind: ErrorCode.AgentPlanNotFound; readonly planId: string }
+  | { readonly kind: ErrorCode.NoActiveRun }
+  | {
+      readonly kind: ErrorCode.Conflict;
+      readonly taskKey: string;
+      readonly currentUpdatedAt: string;
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}
