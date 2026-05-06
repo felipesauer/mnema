@@ -6,21 +6,27 @@ import { StateMachine } from '../domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
+import { FileStore } from '../storage/files/file-store.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import { MigrationRunner } from '../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
+import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
+import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
+import { SearchService } from './search-service.js';
+import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
@@ -59,6 +65,9 @@ export interface ServiceContainer {
   readonly agentRun: AgentRunService;
   readonly agentPlan: AgentPlanService;
   readonly inbox: InboxService;
+  readonly sprint: SprintService;
+  readonly attachment: AttachmentService;
+  readonly search: SearchService;
   readonly transitions: TransitionRepository;
   readonly close: () => void;
 }
@@ -99,6 +108,8 @@ export function createServiceContainer(
   const transitions = new TransitionRepository(adapter);
   const agentRuns = new AgentRunRepository(adapter);
   const agentPlans = new AgentPlanRepository(adapter);
+  const sprintRepository = new SprintRepository(adapter);
+  const attachmentRepository = new AttachmentRepository(adapter);
 
   const identity = new IdentityService(actors);
 
@@ -137,6 +148,17 @@ export function createServiceContainer(
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
   const inboxService = new InboxService(tasks);
 
+  const fileStore = new FileStore(path.join(stateDir, 'attachments'));
+  const sprintService = new SprintService(sprintRepository, tasks, projects, audit);
+  const attachmentService = new AttachmentService(
+    attachmentRepository,
+    tasks,
+    fileStore,
+    identity,
+    audit,
+  );
+  const searchService = new SearchService(adapter);
+
   return {
     adapter,
     stateMachine,
@@ -149,6 +171,9 @@ export function createServiceContainer(
     agentRun: agentRunService,
     agentPlan: agentPlanService,
     inbox: inboxService,
+    sprint: sprintService,
+    attachment: attachmentService,
+    search: searchService,
     transitions,
     close: () => adapter.close(),
   };

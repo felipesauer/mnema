@@ -132,6 +132,30 @@ export function formatError(error: MnemaError): string {
       );
       lines.push(`${pc.dim('hint:')} Re-read the task and retry with the new updated_at`);
       break;
+
+    case ErrorCode.SprintNotFound:
+      lines.push(`Sprint ${error.sprintKey} not found`);
+      lines.push(`${pc.dim('hint:')} List sprints with \`mnema sprint list\``);
+      break;
+
+    case ErrorCode.ActiveSprintExists:
+      lines.push(
+        `Project ${error.projectKey} already has an active sprint (${error.activeSprintKey})`,
+      );
+      lines.push(`${pc.dim('hint:')} Close it first with \`mnema sprint close\``);
+      break;
+
+    case ErrorCode.SprintInvalidState:
+      lines.push(
+        `Sprint ${error.sprintKey} cannot move from ${error.fromState} to ${error.toState}`,
+      );
+      lines.push(`${pc.dim('hint:')} Allowed transitions: PLANNED → ACTIVE → CLOSED`);
+      break;
+
+    case ErrorCode.AttachmentSourceNotFound:
+      lines.push(`Source file does not exist: ${error.path}`);
+      lines.push(`${pc.dim('hint:')} Check the path is reachable from the project root`);
+      break;
   }
 
   return lines.join('\n');

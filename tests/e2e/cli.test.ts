@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -273,5 +273,63 @@ describe('CLI end-to-end', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Blocked');
     expect(result.stdout).toContain('WEBAPP-1');
+  });
+
+  it('mnema sprint plan/start/add/show flow works', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Implement OAuth login'], projectRoot);
+
+    const plan = runCli(
+      ['sprint', 'plan', '--name', 'Sprint 1', '--goal', 'ship auth'],
+      projectRoot,
+    );
+    expect(plan.status).toBe(0);
+    expect(plan.stdout).toContain('WEBAPP-SPRINT-1');
+    expect(plan.stdout).toContain('PLANNED');
+
+    const start = runCli(['sprint', 'start', 'WEBAPP-SPRINT-1'], projectRoot);
+    expect(start.status).toBe(0);
+    expect(start.stdout).toContain('ACTIVE');
+
+    const add = runCli(['sprint', 'add', 'WEBAPP-SPRINT-1', 'WEBAPP-1'], projectRoot);
+    expect(add.status).toBe(0);
+
+    const show = runCli(['sprint', 'show', 'WEBAPP-SPRINT-1'], projectRoot);
+    expect(show.status).toBe(0);
+    expect(show.stdout).toContain('Sprint 1');
+    expect(show.stdout).toContain('WEBAPP-1');
+  });
+
+  it('mnema search returns matching tasks across FTS5', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Implement OAuth login flow'], projectRoot);
+    runCli(['task', 'create', '--title', 'Improve dashboard latency'], projectRoot);
+
+    const result = runCli(['search', 'oauth'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('WEBAPP-1');
+    expect(result.stdout).not.toContain('WEBAPP-2');
+  });
+
+  it('mnema attach add stores a file and lists it back, deduplicated', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Task with file'], projectRoot);
+
+    const samplePath = path.join(projectRoot, 'sample.txt');
+    writeFileSync(samplePath, 'attachment content\n', 'utf-8');
+
+    const first = runCli(['attach', 'add', 'WEBAPP-1', 'sample.txt'], projectRoot);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toContain('sample.txt attached');
+
+    const second = runCli(['attach', 'add', 'WEBAPP-1', 'sample.txt'], projectRoot);
+    expect(second.status).toBe(0);
+
+    const stored = readdirSync(path.join(projectRoot, '.app', 'attachments'));
+    expect(stored).toHaveLength(1);
+
+    const list = runCli(['attach', 'list', 'WEBAPP-1'], projectRoot);
+    expect(list.status).toBe(0);
+    expect(list.stdout).toContain('sample.txt');
   });
 });

@@ -2,12 +2,15 @@ import { Command } from 'commander';
 
 import { VERSION } from '@/utils/version.js';
 import { AgentCommand } from './commands/agent-command.js';
+import { AttachCommand } from './commands/attach-command.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
 import { HistoryCommand } from './commands/history-command.js';
 import { InboxCommand } from './commands/inbox-command.js';
 import { InitCommand } from './commands/init-command.js';
 import { McpCommand } from './commands/mcp-command.js';
+import { SearchCommand } from './commands/search-command.js';
+import { SprintCommand } from './commands/sprint-command.js';
 import { SyncCommand } from './commands/sync-command.js';
 import { TaskCommand } from './commands/task-command.js';
 import { WatchCommand } from './commands/watch-command.js';
@@ -24,6 +27,9 @@ export function createCli(): Command {
 
   new InitCommand().register(program);
   new TaskCommand().register(program);
+  new SprintCommand().register(program);
+  new AttachCommand().register(program);
+  new SearchCommand().register(program);
   new AuditCommand().register(program);
   new HistoryCommand().register(program);
   new WatchCommand().register(program);

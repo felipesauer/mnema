@@ -31,6 +31,11 @@ export enum ErrorCode {
 
   NoActiveRun = 'NO_ACTIVE_RUN',
   Conflict = 'CONFLICT',
+
+  SprintNotFound = 'SPRINT_NOT_FOUND',
+  ActiveSprintExists = 'ACTIVE_SPRINT_EXISTS',
+  SprintInvalidState = 'SPRINT_INVALID_STATE',
+  AttachmentSourceNotFound = 'ATTACHMENT_SOURCE_NOT_FOUND',
 }
 
 /**
