@@ -38,23 +38,9 @@ Severity hints:
 
 ## 1. MCP tools not yet implemented
 
-The Phase 5 plan (EXECUTION_GUIDE.md §5.3) lists 19 universal tools.
-Phase 5 shipped 11; the rest depend on Services that did not exist
-when Phase 5 closed. They are listed by required service.
-
-- 🟡 **`tasks_search` (FTS5 over the workflow project)** — `SearchService`
-  exists since Phase 7, but the MCP surface still does not expose it.
-  Add an `SearchTool` next to the other `universal/` tools, then add
-  `'tasks_search'` to `UNIVERSAL_TOOL_NAMES` in
-  [src/mcp/tool-registry.ts](../src/mcp/tool-registry.ts).
-- 🟡 **`sprint_show`, `sprints_list`, `sprint_add_task`** — `SprintService`
-  exists (Phase 7). Wrap it with MCP tools — light work, the only
-  reason it didn't ship in Phase 7 was MCP focus. See
-  [src/cli/commands/sprint-command.ts](../src/cli/commands/sprint-command.ts)
-  for the operations to surface.
-- 🟡 **`history_get`** — read-only convenience over the audit log,
-  alternative framing of `audit_query`. Decide whether it adds value
-  or whether `audit_query` already covers the use case.
+All 19 universal tools from EXECUTION_GUIDE.md §5.3 are now wired.
+Add new entries here when the design grows (e.g. `attach_*`,
+`decision_supersede` if it gets surfaced as MCP rather than CLI).
 
 ## 2. Services not yet implemented
 

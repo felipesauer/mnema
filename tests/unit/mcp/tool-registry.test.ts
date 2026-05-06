@@ -34,6 +34,16 @@ describe('listAvailableToolNames', () => {
     expect(names.has('epics_list')).toBe(true);
   });
 
+  it('exposes search, sprint and history tools', () => {
+    const workflow = new WorkflowLoader().load(path.resolve('workflows', 'lean.json'));
+    const names = listAvailableToolNames(workflow);
+    expect(names.has('tasks_search')).toBe(true);
+    expect(names.has('sprint_show')).toBe(true);
+    expect(names.has('sprints_list')).toBe(true);
+    expect(names.has('sprint_add_task')).toBe(true);
+    expect(names.has('history_get')).toBe(true);
+  });
+
   it('adds one task_<action> per workflow transition', () => {
     const workflow = new WorkflowLoader().load(path.resolve('workflows', 'default.json'));
     const names = listAvailableToolNames(workflow);

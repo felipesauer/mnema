@@ -28,6 +28,11 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'note_add',
   'epic_show',
   'epics_list',
+  'tasks_search',
+  'sprint_show',
+  'sprints_list',
+  'sprint_add_task',
+  'history_get',
 ];
 
 /**
