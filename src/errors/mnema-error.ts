@@ -90,6 +90,13 @@ export type MnemaError =
       readonly decisionKey: string;
       readonly fromStatus: string;
       readonly toStatus: string;
+    }
+  | { readonly kind: ErrorCode.EpicNotFound; readonly epicKey: string }
+  | {
+      readonly kind: ErrorCode.EpicInvalidState;
+      readonly epicKey: string;
+      readonly fromState: string;
+      readonly toState: string;
     };
 
 /**

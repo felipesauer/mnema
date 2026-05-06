@@ -170,6 +170,16 @@ export function formatError(error: MnemaError): string {
         `${pc.dim('hint:')} Allowed transitions: proposed → accepted/rejected, any → superseded`,
       );
       break;
+
+    case ErrorCode.EpicNotFound:
+      lines.push(`Epic ${error.epicKey} not found`);
+      lines.push(`${pc.dim('hint:')} List epics with \`mnema epic list\``);
+      break;
+
+    case ErrorCode.EpicInvalidState:
+      lines.push(`Epic ${error.epicKey} cannot move from ${error.fromState} to ${error.toState}`);
+      lines.push(`${pc.dim('hint:')} Allowed transitions: OPEN → CLOSED`);
+      break;
   }
 
   return lines.join('\n');

@@ -38,6 +38,8 @@ export enum ErrorCode {
   AttachmentSourceNotFound = 'ATTACHMENT_SOURCE_NOT_FOUND',
   DecisionNotFound = 'DECISION_NOT_FOUND',
   DecisionInvalidStatus = 'DECISION_INVALID_STATUS',
+  EpicNotFound = 'EPIC_NOT_FOUND',
+  EpicInvalidState = 'EPIC_INVALID_STATE',
 }
 
 /**

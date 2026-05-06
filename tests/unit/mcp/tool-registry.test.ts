@@ -27,6 +27,13 @@ describe('listAvailableToolNames', () => {
     expect(names.has('note_add')).toBe(true);
   });
 
+  it('exposes the epic read-only tool family', () => {
+    const workflow = new WorkflowLoader().load(path.resolve('workflows', 'lean.json'));
+    const names = listAvailableToolNames(workflow);
+    expect(names.has('epic_show')).toBe(true);
+    expect(names.has('epics_list')).toBe(true);
+  });
+
   it('adds one task_<action> per workflow transition', () => {
     const workflow = new WorkflowLoader().load(path.resolve('workflows', 'default.json'));
     const names = listAvailableToolNames(workflow);
