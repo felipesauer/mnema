@@ -1,0 +1,46 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+
+import type { SearchService } from '../../../services/search-service.js';
+import { ok } from '../../mcp-tool-result.js';
+
+const ENTITY_VALUES = ['task', 'decision', 'note'] as const;
+
+/**
+ * Registers the `tasks_search` MCP tool — unified FTS5 search over
+ * tasks, decisions and notes.
+ *
+ * The tool wraps {@link SearchService}; query syntax matches FTS5
+ * (`title OR description`, prefix `oauth*`, etc.). Each entity returns
+ * up to `per_entity_limit` hits (default 25).
+ */
+export class SearchTool {
+  constructor(private readonly search: SearchService) {}
+
+  /**
+   * Attaches the tool to the server.
+   *
+   * @param server - MCP server instance to register against
+   */
+  register(server: McpServer): void {
+    server.registerTool(
+      'tasks_search',
+      {
+        description:
+          'Full-text search across tasks, decisions and notes. Diacritic-insensitive. FTS5 syntax: prefix wildcards, AND/OR/NOT operators.',
+        inputSchema: {
+          query: z.string().min(1).describe('FTS5 MATCH expression'),
+          entities: z.array(z.enum(ENTITY_VALUES)).optional(),
+          per_entity_limit: z.number().int().positive().max(100).optional(),
+        },
+      },
+      (input) => {
+        const hits = this.search.search(input.query, {
+          entities: input.entities,
+          perEntityLimit: input.per_entity_limit,
+        });
+        return ok({ hits });
+      },
+    );
+  }
+}

@@ -18,7 +18,10 @@ import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
+import { HistoryTool } from './tools/universal/history-tool.js';
 import { NoteTools } from './tools/universal/note-tools.js';
+import { SearchTool } from './tools/universal/search-tool.js';
+import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
@@ -120,6 +123,14 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
     new EpicTools(this.services.epic, this.config).register(this.sdk);
+    new SprintTools(
+      this.services.sprint,
+      this.services.identity,
+      this.config,
+      this.session,
+    ).register(this.sdk);
+    new SearchTool(this.services.search).register(this.sdk);
+    new HistoryTool(this.services.auditQuery).register(this.sdk);
     new TransitionToolsRegistrar(
       this.services.stateMachine.getWorkflow(),
       this.services.task,
