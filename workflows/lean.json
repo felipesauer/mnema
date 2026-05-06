@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "name": "lean",
+  "description": "Minimal workflow: TODO, DOING, DONE",
+  "states": ["TODO", "DOING", "DONE"],
+  "initial": "TODO",
+  "terminal": ["DONE"],
+  "features": {
+    "sprints": false,
+    "epics": false,
+    "review_workflow": false,
+    "blocked_state": false
+  },
+  "transitions": {
+    "TODO": {
+      "start": {
+        "to": "DOING",
+        "description": "Start working on this task",
+        "use_when": "About to begin implementation",
+        "requires": {}
+      }
+    },
+    "DOING": {
+      "complete": {
+        "to": "DONE",
+        "description": "Mark task as done",
+        "use_when": "Work is finished",
+        "requires": {}
+      }
+    }
+  }
+}

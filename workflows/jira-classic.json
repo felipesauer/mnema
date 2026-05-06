@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "name": "jira-classic",
+  "description": "Classic Jira-style workflow with reopen support",
+  "states": ["OPEN", "IN_PROGRESS", "RESOLVED", "REOPENED", "CLOSED"],
+  "initial": "OPEN",
+  "terminal": ["CLOSED"],
+  "features": {
+    "sprints": true,
+    "epics": true,
+    "review_workflow": false,
+    "blocked_state": false
+  },
+  "transitions": {
+    "OPEN": {
+      "start": {
+        "to": "IN_PROGRESS",
+        "description": "Begin work on the issue",
+        "use_when": "Assignee is starting the work",
+        "requires": {
+          "assignee_id": { "type": "string", "min": 1 }
+        }
+      },
+      "close": {
+        "to": "CLOSED",
+        "description": "Close the issue without resolving it",
+        "use_when": "Issue is invalid or duplicate",
+        "requires": {
+          "reason": { "type": "string", "min": 5 }
+        }
+      }
+    },
+    "IN_PROGRESS": {
+      "resolve": {
+        "to": "RESOLVED",
+        "description": "Mark the issue as resolved",
+        "use_when": "Implementation done and ready for verification",
+        "requires": {
+          "resolution": { "type": "string", "min": 3 }
+        }
+      },
+      "stop": {
+        "to": "OPEN",
+        "description": "Stop working on the issue",
+        "use_when": "Returning the issue to the queue",
+        "requires": {
+          "note": { "type": "string", "min": 5 }
+        }
+      }
+    },
+    "RESOLVED": {
+      "close": {
+        "to": "CLOSED",
+        "description": "Verify resolution and close",
+        "use_when": "Resolution is verified",
+        "requires": {}
+      },
+      "reopen": {
+        "to": "REOPENED",
+        "description": "Reopen the issue",
+        "use_when": "Resolution was insufficient",
+        "requires": {
+          "reason": { "type": "string", "min": 5 }
+        }
+      }
+    },
+    "REOPENED": {
+      "start": {
+        "to": "IN_PROGRESS",
+        "description": "Begin work again on the reopened issue",
+        "use_when": "Picking the issue back up",
+        "requires": {
+          "assignee_id": { "type": "string", "min": 1 }
+        }
+      }
+    },
+    "CLOSED": {
+      "reopen": {
+        "to": "REOPENED",
+        "description": "Reopen a closed issue",
+        "use_when": "Issue surfaced again or reconsideration needed",
+        "requires": {
+          "reason": { "type": "string", "min": 5 }
+        }
+      }
+    }
+  }
+}
