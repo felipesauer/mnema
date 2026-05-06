@@ -1,0 +1,40 @@
+{
+  "name": "@saurim/mnema",
+  "version": "0.1.0",
+  "description": "Cognitive persistence for AI agents",
+  "type": "module",
+  "bin": {
+    "mnema": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "workflows/",
+    "templates/"
+  ],
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src/ tests/",
+    "lint:fix": "biome check --write src/ tests/"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
+    "@types/node": "^25.6.0",
+    "@types/semver": "^7.7.1",
+    "tsc-alias": "^1.8.17",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "semver": "^7.7.4",
+    "zod": "^4.4.3"
+  }
+}
