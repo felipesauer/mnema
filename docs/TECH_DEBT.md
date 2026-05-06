@@ -124,16 +124,20 @@ their absence is observable.
 
 ## 8. Memory automation
 
-- 🟡 **`MemoryConsolidator` only refreshes indices** — DESIGN.md §11.7
-  / §14.3 describe a richer consolidation: notes that became relevant
-  promote to ADRs, obsolete decisions are marked superseded,
-  historical snapshots aggregate. Today we only regenerate
-  `INDEX.md`. The richer behaviour requires `DecisionService` and
-  `NoteService` (see §2 above).
-- 🟢 **Memory consolidator does not validate decision ADRs** —
-  `mnema skill lint` validates skills, but there is no equivalent
-  `mnema memory lint` for the classic ADR shape (status field, four
-  canonical sections). Worth adding when `DecisionService` lands.
+- 🟡 **Note → ADR promotion is a manual step** — DESIGN.md §11.7 / §14.3
+  describe a richer consolidation: notes that became relevant promote
+  to ADRs, obsolete decisions are marked superseded, historical
+  snapshots aggregate. The note-to-ADR step requires semantic judgment
+  the project explicitly does not embed; treat this as "agent-assisted,
+  human-confirmed" rather than fully automated. The supporting
+  primitives are now in place (DecisionService.transition with
+  Superseded, NoteService) — only the orchestration is missing.
+- 🟡 **`memory/decisions/` is decoupled from the SQLite `decisions`
+  table** — `decision_record` writes to SQLite; `mnema memory
+  consolidate` only reads markdown files. Either pick one source of
+  truth (and make the other a projection) or document that they answer
+  different questions. Decision deferred until a human curation flow
+  needs the bridge.
 
 ## 9. Documentation and polish
 
