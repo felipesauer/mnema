@@ -184,4 +184,94 @@ describe('CLI end-to-end', () => {
     expect(first.stdout).toContain('sync complete');
     expect(first.stdout).toContain('upserted=0');
   });
+
+  it('mnema history shows aggregated activity for the day', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'First task title'], projectRoot);
+    const move = runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        'title=First task title',
+        'description=submission attempt with enough text',
+        'acceptance_criteria=Works,Tested',
+        'estimate=3',
+      ],
+      projectRoot,
+    );
+    expect(move.status).toBe(0);
+
+    const result = runCli(['history', '--since', 'today'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('created WEBAPP-1');
+    expect(result.stdout).toContain('submit WEBAPP-1');
+    expect(result.stdout).toContain('DRAFT → READY');
+  });
+
+  it('mnema agent inspect renders a run with plans and mutations', async () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // Seed an agent_run + agent_plan + transition through the open SQLite.
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.app', 'state.db'));
+    try {
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'agent:cc', 'agent')").run();
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('h1', 'daniel', 'human')").run();
+      db.prepare(
+        `INSERT INTO agent_runs (id, agent_actor_id, invoked_by, goal, status,
+                                 started_at, ended_at, depth)
+         VALUES ('run-x', 'a1', 'h1', 'audit auth code', 'completed',
+                 '2026-05-01T10:00:00.000Z', '2026-05-01T10:01:30.000Z', 0)`,
+      ).run();
+      db.prepare(
+        `INSERT INTO agent_plans (id, agent_run_id, content, state, position,
+                                  archived_at)
+         VALUES ('p1', 'run-x', 'scan SQL injection', 'completed', 0,
+                 '2026-05-01T10:01:00.000Z')`,
+      ).run();
+    } finally {
+      db.close();
+    }
+
+    const result = runCli(['agent', 'inspect', 'run-x'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('audit auth code');
+    expect(result.stdout).toContain('completed');
+    expect(result.stdout).toContain('scan SQL injection');
+  });
+
+  it('mnema inbox lists tasks awaiting review and blocked tasks', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Block test task'], projectRoot);
+    const submit = runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        'title=Block test task',
+        'description=submission with enough text content',
+        'acceptance_criteria=Works,Tested',
+        'estimate=3',
+      ],
+      projectRoot,
+    );
+    expect(submit.status).toBe(0);
+
+    const start = runCli(['task', 'move', 'WEBAPP-1', 'start', 'assignee_id=daniel'], projectRoot);
+    expect(start.status).toBe(0);
+
+    const block = runCli(
+      ['task', 'move', 'WEBAPP-1', 'block', 'reason=missing credentials'],
+      projectRoot,
+    );
+    expect(block.status).toBe(0);
+
+    const result = runCli(['inbox'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Blocked');
+    expect(result.stdout).toContain('WEBAPP-1');
+  });
 });

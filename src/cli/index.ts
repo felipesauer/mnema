@@ -1,12 +1,16 @@
 import { Command } from 'commander';
 
 import { VERSION } from '@/utils/version.js';
+import { AgentCommand } from './commands/agent-command.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
+import { HistoryCommand } from './commands/history-command.js';
+import { InboxCommand } from './commands/inbox-command.js';
 import { InitCommand } from './commands/init-command.js';
 import { McpCommand } from './commands/mcp-command.js';
 import { SyncCommand } from './commands/sync-command.js';
 import { TaskCommand } from './commands/task-command.js';
+import { WatchCommand } from './commands/watch-command.js';
 
 /**
  * Creates the root Commander program with metadata and all top-level
@@ -21,6 +25,10 @@ export function createCli(): Command {
   new InitCommand().register(program);
   new TaskCommand().register(program);
   new AuditCommand().register(program);
+  new HistoryCommand().register(program);
+  new WatchCommand().register(program);
+  new InboxCommand().register(program);
+  new AgentCommand().register(program);
   new SyncCommand().register(program);
   new McpCommand().register(program);
   new DoctorCommand().register(program);

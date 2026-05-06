@@ -20,6 +20,7 @@ import { AgentRunService } from './agent-run-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { IdentityService } from './identity-service.js';
+import { InboxService } from './inbox-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
@@ -57,6 +58,8 @@ export interface ServiceContainer {
   readonly syncRebuild: SyncRebuild;
   readonly agentRun: AgentRunService;
   readonly agentPlan: AgentPlanService;
+  readonly inbox: InboxService;
+  readonly transitions: TransitionRepository;
   readonly close: () => void;
 }
 
@@ -132,6 +135,7 @@ export function createServiceContainer(
     sync.flushAll();
   });
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
+  const inboxService = new InboxService(tasks);
 
   return {
     adapter,
@@ -144,6 +148,8 @@ export function createServiceContainer(
     syncRebuild,
     agentRun: agentRunService,
     agentPlan: agentPlanService,
+    inbox: inboxService,
+    transitions,
     close: () => adapter.close(),
   };
 }

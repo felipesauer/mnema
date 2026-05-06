@@ -89,6 +89,20 @@ export class TransitionRepository {
   }
 
   /**
+   * Lists transitions caused by an agent run, in chronological order.
+   *
+   * @param runId - Agent run identifier
+   * @returns Array of transitions emitted while the run was active
+   */
+  findByRun(runId: string): Transition[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(`SELECT * FROM transitions WHERE agent_run_id = ? ORDER BY at`)
+      .all(runId) as TransitionRow[];
+    return rows.map(rowToTransition);
+  }
+
+  /**
    * Returns a transition by its internal id, or `null` if absent.
    *
    * @param id - Internal UUID of the transition
