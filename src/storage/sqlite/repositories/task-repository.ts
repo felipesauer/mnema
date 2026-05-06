@@ -45,6 +45,20 @@ export interface TaskInsertInput {
 }
 
 /**
+ * Reason an `updateState` call failed.
+ */
+export type UpdateStateFailure =
+  | { readonly kind: 'NOT_FOUND' }
+  | { readonly kind: 'CONFLICT'; readonly currentUpdatedAt: string };
+
+/**
+ * Outcome of a state update attempt.
+ */
+export type UpdateStateResult =
+  | { readonly ok: true; readonly task: Task }
+  | { readonly ok: false; readonly reason: UpdateStateFailure };
+
+/**
  * Persistence for {@link Task}. Read/write only — no business rules.
  */
 export class TaskRepository {
@@ -83,8 +97,39 @@ export class TaskRepository {
   }
 
   /**
-   * Inserts a new task. Returns the persisted entity (with defaults
-   * applied by the database).
+   * Lists every active (non-deleted) task ordered by key.
+   *
+   * @returns All active tasks
+   */
+  findAllActive(): Task[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM tasks
+          WHERE deleted_at IS NULL
+          ORDER BY key`,
+      )
+      .all() as TaskRow[];
+    return rows.map(rowToTask);
+  }
+
+  /**
+   * Returns the next sequential number to use for a task key in the
+   * given project.
+   *
+   * @param projectId - Internal project id
+   * @returns The next available sequence number (starts at 1)
+   */
+  nextSequence(projectId: string): number {
+    const row = this.adapter
+      .getDatabase()
+      .prepare(`SELECT COUNT(*) AS n FROM tasks WHERE project_id = ?`)
+      .get(projectId) as { n: number };
+    return row.n + 1;
+  }
+
+  /**
+   * Inserts a new task. Returns the persisted entity.
    *
    * @param input - Fields required to create a task
    * @returns The newly created task
@@ -128,6 +173,48 @@ export class TaskRepository {
   }
 
   /**
+   * Updates the state of a task, optionally enforcing optimistic
+   * concurrency via `expected_updated_at`.
+   *
+   * @param taskId - Internal id of the task
+   * @param newState - State to transition into
+   * @param expectedUpdatedAt - When provided, only updates the row if
+   *   the current `updated_at` matches; otherwise reports a conflict
+   * @returns Result describing success or the reason it failed
+   */
+  updateState(
+    taskId: string,
+    newState: TaskState,
+    expectedUpdatedAt: string | null = null,
+  ): UpdateStateResult {
+    const db = this.adapter.getDatabase();
+    const current = db
+      .prepare('SELECT updated_at FROM tasks WHERE id = ? AND deleted_at IS NULL')
+      .get(taskId) as { updated_at: string } | undefined;
+    if (current === undefined) {
+      return { ok: false, reason: { kind: 'NOT_FOUND' } };
+    }
+    if (expectedUpdatedAt !== null && current.updated_at !== expectedUpdatedAt) {
+      return {
+        ok: false,
+        reason: { kind: 'CONFLICT', currentUpdatedAt: current.updated_at },
+      };
+    }
+
+    db.prepare(
+      `UPDATE tasks
+          SET state = ?, updated_at = datetime('now', 'subsec')
+        WHERE id = ?`,
+    ).run(newState, taskId);
+
+    const reloaded = this.findById(taskId);
+    if (reloaded === null) {
+      throw new Error('task disappeared after updateState');
+    }
+    return { ok: true, task: reloaded };
+  }
+
+  /**
    * Counts the number of tasks visible (not soft-deleted).
    *
    * @returns Total number of active tasks
@@ -138,6 +225,33 @@ export class TaskRepository {
       .prepare('SELECT COUNT(*) AS n FROM tasks WHERE deleted_at IS NULL')
       .get() as { n: number };
     return row.n;
+  }
+
+  /**
+   * Runs the given function inside a SQLite transaction.
+   *
+   * Mirrors `Database.transaction()` from better-sqlite3 but exposes
+   * a typed signature that propagates the function's return value.
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransaction<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn)();
+  }
+
+  /**
+   * Returns a task by its internal id, or `null` if absent.
+   *
+   * @param id - Internal UUID of the task
+   * @returns The task or `null`
+   */
+  findById(id: string): Task | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT * FROM tasks WHERE id = ? AND deleted_at IS NULL')
+      .get(id) as TaskRow | undefined;
+    return row === undefined ? null : rowToTask(row);
   }
 }
 
