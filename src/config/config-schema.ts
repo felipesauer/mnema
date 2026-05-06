@@ -1,0 +1,54 @@
+import { z } from 'zod';
+
+/**
+ * Zod schema for `mnema.config.json`.
+ *
+ * Mirrors the configuration contract documented in DESIGN.md §4.1.
+ * All optional sections expose sensible defaults so a minimal config
+ * (project + version) is enough to bootstrap a project.
+ */
+export const ConfigSchema = z.object({
+  version: z.literal('1.0'),
+  mnema_version: z.string(),
+  project: z.object({
+    key: z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/),
+    name: z.string().min(1),
+    description: z.string().optional(),
+  }),
+  paths: z
+    .object({
+      state: z.string().default('.app'),
+      audit: z.string().default('.audit'),
+      backlog: z.string().default('backlog'),
+      sprints: z.string().default('sprints'),
+      roadmap: z.string().default('roadmap'),
+      memory: z.string().default('memory'),
+      skills: z.string().default('skills'),
+      workflows: z.string().default('workflows'),
+    })
+    .prefault({}),
+  workflow: z.string().default('default'),
+  mode: z.enum(['single', 'multi']).default('single'),
+  audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
+  audit_retention_months: z.number().int().positive().default(12),
+  enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('advisory'),
+  sync: z
+    .object({
+      mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),
+      agent_buffer_flush_seconds: z.number().int().positive().default(30),
+      agent_buffer_flush_count: z.number().int().positive().default(50),
+      agent_buffer_flush_on_plan_complete: z.boolean().default(true),
+    })
+    .prefault({}),
+  features: z
+    .object({
+      fts_search: z.boolean().default(true),
+      attachments: z.boolean().default(true),
+    })
+    .prefault({}),
+});
+
+/**
+ * Validated configuration object derived from the Zod schema.
+ */
+export type Config = z.infer<typeof ConfigSchema>;

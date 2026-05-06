@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest';
+
+import { VERSION } from '@/utils/version.js';
+import { checkVersion } from '@/utils/version-check.js';
+
+describe('checkVersion', () => {
+  it('returns ok=true when current version satisfies the range', () => {
+    const result = checkVersion(`^${VERSION}`);
+    expect(result.ok).toBe(true);
+    expect(result.message).toBeUndefined();
+  });
+
+  it('returns ok=false with message when major is incompatible', () => {
+    const result = checkVersion('^99.0.0');
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('Project requires mnema ^99.0.0');
+    expect(result.message).toContain(VERSION);
+  });
+
+  it('returns ok=false when patch range excludes current version', () => {
+    const result = checkVersion('0.0.1');
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('0.0.1');
+  });
+});
