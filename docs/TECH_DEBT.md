@@ -89,12 +89,6 @@ _(none — init wizard, destroy, task delete shipped in Phase B.)_
   hot path. Mitigations to evaluate when needed: defer the workflow
   JSON parse until after the gate runs, or open the DB in WAL mode at
   init so the first connection is cheaper.
-- 🟢 **`pnpm bench` requires a manual `pnpm build` first** — the
-  benchmark spawns the compiled CLI but doesn't depend on the build
-  task. Either add `prebench: pnpm build` or compile via tsx in-process.
-- 🟢 **No bench coverage for MCP cold/warm task_create** —
-  ARCHITECTURE.md §15 lists 200ms cold / 20ms warm for the MCP path.
-  Bench only exercises the CLI today.
 
 ## 8. Memory automation
 

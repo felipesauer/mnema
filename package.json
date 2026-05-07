@@ -33,7 +33,9 @@
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "prebench": "pnpm build",
     "bench": "tsx bench/cli-bench.ts",
+    "bench:mcp": "tsx bench/mcp-bench.ts",
     "lint": "biome check src/ tests/ bench/",
     "lint:fix": "biome check --write src/ tests/ bench/"
   },
