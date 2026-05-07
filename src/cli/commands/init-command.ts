@@ -8,6 +8,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
+import { confirm, input, select } from '@inquirer/prompts';
 import type { Command } from 'commander';
 import pc from 'picocolors';
 
@@ -29,12 +30,27 @@ const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as con
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
 
 interface InitOptions {
-  readonly name: string;
-  readonly key: string;
+  readonly name?: string;
+  readonly key?: string;
   readonly description?: string;
   readonly workflow?: string;
   readonly force?: boolean;
   readonly minimal?: boolean;
+  readonly yes?: boolean;
+  readonly cwd?: string;
+}
+
+/**
+ * Resolved options after the wizard (or pure flag mode) — every field
+ * required by {@link InitCommand.run} is populated.
+ */
+interface ResolvedInitOptions {
+  readonly name: string;
+  readonly key: string;
+  readonly description?: string;
+  readonly workflow: string;
+  readonly force: boolean;
+  readonly minimal: boolean;
   readonly cwd?: string;
 }
 
@@ -73,15 +89,20 @@ export class InitCommand {
     program
       .command('init')
       .description('Initialise a new Mnema project in the current directory')
-      .requiredOption('--name <name>', 'Human-readable project name')
-      .requiredOption('--key <key>', 'Project key (uppercase, 2-10 chars)')
+      .option('--name <name>', 'Human-readable project name')
+      .option('--key <key>', 'Project key (uppercase, 2-10 chars)')
       .option('--description <text>', 'Optional project description')
-      .option('--workflow <name>', 'Workflow preset', 'default')
+      .option('--workflow <name>', 'Workflow preset (default | lean | kanban | jira-classic)')
       .option('--force', 'Overwrite existing files when paths conflict', false)
       .option('--minimal', 'Create only the essential files; use `mnema adopt` to grow', false)
-      .option('--yes', 'Run silently without confirmations (default in MVP)', true)
+      .option('--yes', 'Skip the wizard; requires --name and --key', false)
       .action(async (options: InitOptions) => {
-        const result = this.run(options);
+        const resolved = await resolveOptions(options);
+        if (resolved === null) {
+          process.stdout.write(`${pc.dim('aborted')}\n`);
+          return;
+        }
+        const result = this.run(resolved);
         if (!result.ok) {
           process.exit(printError(result.error));
         }
@@ -101,10 +122,10 @@ export class InitCommand {
    * Exposed for tests so they can call the same code path the CLI uses
    * without spawning a subprocess.
    *
-   * @param options - Resolved init options
+   * @param options - Resolved init options (every required field set)
    * @returns Path of the created config file or a structured error
    */
-  run(options: InitOptions): Result<InitOutcome, MnemaError> {
+  run(options: ResolvedInitOptions): Result<InitOutcome, MnemaError> {
     const cwd = options.cwd ?? process.cwd();
 
     const validation = validateOptions(options);
@@ -179,7 +200,7 @@ export class InitCommand {
   }
 }
 
-function validateOptions(options: InitOptions): Result<WorkflowName, MnemaError> {
+function validateOptions(options: ResolvedInitOptions): Result<WorkflowName, MnemaError> {
   if (!/^[A-Z][A-Z0-9]{1,9}$/.test(options.key)) {
     return Err({
       kind: ErrorCode.ConfigInvalid,
@@ -215,7 +236,7 @@ function validateOptions(options: InitOptions): Result<WorkflowName, MnemaError>
   return Ok(wf as WorkflowName);
 }
 
-function buildConfig(options: InitOptions, workflow: WorkflowName): Config {
+function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Config {
   const raw = {
     version: '1.0' as const,
     mnema_version: `^${VERSION}`,
@@ -295,5 +316,122 @@ function createBacklogStateDirs(cwd: string, config: Config, workflowFile: strin
   }
 }
 
+/**
+ * Resolves init options into a fully populated set, falling back to a
+ * Q&A wizard when required fields are missing.
+ *
+ * Behaviour:
+ * - When `--yes` is set, skips the wizard. Caller must supply name and
+ *   key via flags; otherwise returns `null` (the action prints "aborted"
+ *   and exits cleanly).
+ * - When `--name` and `--key` are both present, runs in silent mode
+ *   (matches the pre-wizard behaviour for scripts and CI).
+ * - Otherwise prompts for the missing pieces. Re-uses any flag the user
+ *   already passed as the prompt default.
+ *
+ * @param options - Raw flag input from Commander
+ * @returns Resolved options or `null` when the wizard is aborted
+ */
+async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions | null> {
+  if (options.yes === true) {
+    if (options.name === undefined || options.key === undefined) {
+      process.stderr.write(`${pc.red('error:')} --yes requires --name and --key\n`);
+      process.exit(2);
+    }
+    return {
+      name: options.name,
+      key: options.key,
+      description: options.description,
+      workflow: options.workflow ?? 'default',
+      force: options.force === true,
+      minimal: options.minimal === true,
+      cwd: options.cwd,
+    };
+  }
+
+  // Silent path when both required flags are provided.
+  if (options.name !== undefined && options.key !== undefined) {
+    return {
+      name: options.name,
+      key: options.key,
+      description: options.description,
+      workflow: options.workflow ?? 'default',
+      force: options.force === true,
+      minimal: options.minimal === true,
+      cwd: options.cwd,
+    };
+  }
+
+  process.stdout.write(`${pc.bold('Mnema init')} — answer a few questions to bootstrap.\n\n`);
+
+  const name = await input({
+    message: 'Project name',
+    default: options.name,
+    validate: (value) => (value.trim().length === 0 ? 'must not be empty' : true),
+  });
+
+  const key = await input({
+    message: 'Project key (uppercase letters and digits, 2-10 chars)',
+    default: options.key ?? deriveKey(name),
+    validate: (value) =>
+      /^[A-Z][A-Z0-9]{1,9}$/.test(value)
+        ? true
+        : 'must match /^[A-Z][A-Z0-9]{1,9}$/ (e.g. WEBAPP, MYAPP1)',
+  });
+
+  const description =
+    options.description ??
+    (await input({
+      message: 'Description (optional, press enter to skip)',
+      default: '',
+    }));
+
+  const workflow = await select<WorkflowName>({
+    message: 'Workflow preset',
+    default: (options.workflow as WorkflowName | undefined) ?? 'default',
+    choices: [
+      { name: 'default — DRAFT/READY/IN_PROGRESS/IN_REVIEW/DONE/BLOCKED', value: 'default' },
+      { name: 'lean — DRAFT/IN_PROGRESS/DONE', value: 'lean' },
+      { name: 'kanban — TODO/DOING/DONE', value: 'kanban' },
+      { name: 'jira-classic — TO_DO/IN_PROGRESS/IN_REVIEW/DONE', value: 'jira-classic' },
+    ],
+  });
+
+  const minimal =
+    options.minimal === true
+      ? true
+      : await confirm({
+          message: 'Minimal layout? (skills/memory/roadmap added later via `mnema adopt`)',
+          default: false,
+        });
+
+  return {
+    name,
+    key,
+    description: description.trim().length > 0 ? description : undefined,
+    workflow,
+    force: options.force === true,
+    minimal,
+    cwd: options.cwd,
+  };
+}
+
+/**
+ * Derives a candidate project key from a free-text name. Picks the
+ * first 6 alphanumeric chars, uppercased; returns `undefined` when no
+ * valid prefix can be extracted (the wizard will then ask without a
+ * default).
+ */
+function deriveKey(name: string): string | undefined {
+  const cleaned = name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6);
+  if (!/^[A-Z][A-Z0-9]{1,9}$/.test(cleaned)) return undefined;
+  return cleaned;
+}
+
 // Re-export for tests
-export const _internal = { validateOptions, buildConfig, detectConflicts };
+export const _internal = { validateOptions, buildConfig, detectConflicts, deriveKey };
