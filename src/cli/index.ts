@@ -6,6 +6,7 @@ import { AgentCommand } from './commands/agent-command.js';
 import { AttachCommand } from './commands/attach-command.js';
 import { AuditCommand } from './commands/audit-command.js';
 import { DecisionCommand } from './commands/decision-command.js';
+import { DestroyCommand } from './commands/destroy-command.js';
 import { DoctorCommand } from './commands/doctor-command.js';
 import { EpicCommand } from './commands/epic-command.js';
 import { HistoryCommand } from './commands/history-command.js';
@@ -52,6 +53,7 @@ export function createCli(): Command {
   new SyncCommand().register(program);
   new McpCommand().register(program);
   new DoctorCommand().register(program);
+  new DestroyCommand().register(program);
 
   return program;
 }

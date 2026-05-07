@@ -52,8 +52,6 @@ their absence is observable.
 - 🟡 **Interactive `init` wizard** — Phase 8 explicitly kept `init`
   silent/flag-driven. DESIGN.md §6.1 prescribes a wizard with
   `@inquirer/prompts`. The dependency is already installed.
-- 🟡 **`mnema destroy`** — documented in DESIGN.md §7.4 ("uninstall
-  with two confirmations"); not implemented.
 
 ## 4. Concurrency and resilience
 
