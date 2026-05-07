@@ -44,22 +44,14 @@ Add new entries here when the design grows (e.g. `attach_*`,
 
 ## 2. Services not yet implemented
 
-These are referenced from comments and templates already shipped, so
-their absence is observable.
+_(none — Decision/Note/Epic services shipped in Phase A.)_
 
 ## 3. UX gaps
 
+_(none — init wizard, destroy, task delete shipped in Phase B.)_
 
 ## 4. Concurrency and resilience
 
-- 🟡 **Buffer recovery under crash** — `SyncBuffer.recover()` is unit
-  tested with `mkdtempSync` and idempotent flush. The "kill the
-  process mid-flush" scenario in EXECUTION_GUIDE.md §5 criteria has
-  not been exercised end-to-end.
-- 🟡 **Graceful shutdown SIGTERM in production conditions** — handler
-  is in place ([src/mcp/mcp-server.ts](../src/mcp/mcp-server.ts)),
-  unit tested by triggering manually. Real signal delivery from a
-  parent process (Claude Code spawn) was not exercised.
 - 🟢 **Optimistic concurrency outside `task transition`** — only the
   Task path enforces `expected_updated_at`. Sprints, decisions,
   agent_runs etc. do not. Probably fine while there is a single MCP
@@ -79,9 +71,9 @@ their absence is observable.
 
 ## 6. Testing and verification gaps
 
-- 🟡 **No MCP smoke against a real client** — Phase 5 criteria mention
-  "Cliente real (Claude Code) consegue conectar e operar". We test
-  via `InMemoryTransport`. Manual verification has not happened.
+- 🟡 **MCP smoke against a real client (manual)** — checklist now
+  documented in [docs/SMOKE.md](SMOKE.md), but the steps still need a
+  human to run before each `v*.0.0` tag.
 - 🟡 **`mnema audit query --since=24h`** is unit tested in
   `audit-query.test.ts` but not E2E against rotated months.
 - 🟢 **No coverage report** — `vitest run --coverage` was never wired
