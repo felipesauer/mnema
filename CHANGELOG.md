@@ -10,42 +10,14 @@ stable release.
 
 ## [Unreleased]
 
-### Added
-
-- `mnema doctor` now reports migration drift: it flags pending
-  migrations on disk that the database has not applied and orphan
-  versions in `schema_migrations` whose source files have disappeared.
-- `mnema migration generate <slug>` writes the next `NNN_<slug>.sql`
-  stub under the bundled migrations directory; the slug is normalised
-  to snake_case and the version is the highest existing one + 1.
-- `pnpm test:coverage` runs the suite under `@vitest/coverage-v8`
-  with text/html/lcov reporters; baseline at 60 % statements / 54 %
-  branches against the production code in `src/`.
-- `TaskService.create` accepts a `metadata` field; the GitHub Issues
-  importer uses it to persist `{ source: 'github', issue_number,
-  author, labels }` so the trail back to the original record survives.
-
-### Changed
-
-- The Markdown importer is now explicitly state-blind: a heading like
-  `## DRAFT Implement OAuth` becomes the literal title `"DRAFT
-  Implement OAuth"` in the workflow's initial state. Honouring the
-  prefix would have required running the gate against payload the
-  markdown does not carry; better-shaped imports happen via
-  `task move` after the fact.
-
-### Removed
-
-- `.npmrc` (the `auto-install-peers` and `only-built-dependencies`
-  keys were redundant: pnpm installs peers by default and the build
-  allow-list lives in `package.json#pnpm.onlyBuiltDependencies`).
-
 ## [0.1.0-alpha.1] — 2026-05-07
 
 First public alpha. The core surface is complete: tasks, sprints,
 decisions, notes, epics, attachments, full-text search, audit log,
-human and agent CLIs, an MCP server with all 19 universal tools, and
-end-to-end smoke coverage for the failure modes that matter.
+human and agent CLIs, an MCP server with all 19 universal tools,
+end-to-end smoke coverage for the failure modes that matter, and
+migration drift detection plus a stub generator for future schema
+changes.
 
 ### Added
 
@@ -87,8 +59,18 @@ end-to-end smoke coverage for the failure modes that matter.
   Issues.
 - **`mnema destroy`** with two confirmations (yes/no + key match) and
   per-tree opt-in preservation.
-- **`mnema doctor`** read-only diagnostics; `mnema watch` live tail;
-  `mnema inbox` review queue including pending decisions.
+- **`mnema doctor`** read-only diagnostics, including migration drift
+  (pending file or orphan version flagged separately); `mnema watch`
+  live tail; `mnema inbox` review queue including pending decisions.
+- **`mnema migration generate <slug>`** writes the next `NNN_<slug>.sql`
+  stub under the bundled migrations directory.
+- **`pnpm test:coverage`** runs the suite under `@vitest/coverage-v8`
+  with text/html/lcov reporters (baseline 60 % statements,
+  54 % branches over `src/`).
+- **Importer metadata**: `TaskService.create` accepts a `metadata`
+  bag; the GitHub Issues importer fills it with
+  `{ source, issue_number, author, labels }` so the trail back to
+  the original record is preserved.
 
 ### Changed
 
@@ -100,6 +82,17 @@ end-to-end smoke coverage for the failure modes that matter.
 - `SyncBuffer.truncate` and the new `drain()` helper now take a
   cooperative file lock (`proper-lockfile`) so two MCP servers
   flushing in parallel cannot lose entries.
+- The Markdown importer is now explicitly state-blind: a heading like
+  `## DRAFT Implement OAuth` becomes the literal title `DRAFT
+  Implement OAuth`. The previous "STATE Title" parser silently dropped
+  the prefix without running any transition; the new behaviour keeps
+  the title intact, leaving the workflow move as an explicit step.
+
+### Removed
+
+- `.npmrc` (the `auto-install-peers` and `only-built-dependencies`
+  keys were redundant: pnpm installs peers by default and the build
+  allow-list lives in `package.json#pnpm.onlyBuiltDependencies`).
 
 ### Performance
 
@@ -112,14 +105,19 @@ end-to-end smoke coverage for the failure modes that matter.
 
 ### Internal
 
-- 272 tests across 47 suites: unit, integration, in-memory MCP and
+- 279 tests across 48 suites: unit, integration, in-memory MCP and
   end-to-end (kill mid-flush via spawned process, SIGTERM on
   `mnema mcp serve`).
 - Lazy command registration in `cli/index.ts` plus dynamic imports of
   the MCP SDK and `@inquirer/prompts` reduced cold-CLI startup by
   ~80 %.
 - `prebench: pnpm build` ensures `pnpm bench` always exercises a
-  fresh dist.
+  fresh dist; `bench:mcp` covers in-process `task_create` cold/warm.
+- `npm pack` smoke verified: tarball installs into a clean tmpdir,
+  `mnema init --yes` provisions the layout, and `mnema doctor`
+  reports clean (config, version, workflow, paths, db, migrations
+  3/3) — `scripts/copy-migrations.mjs` is the build step that ships
+  the SQL files alongside the compiled JavaScript.
 
 [Unreleased]: https://github.com/saurim/mnema/compare/v0.1.0-alpha.1...HEAD
 [0.1.0-alpha.1]: https://github.com/saurim/mnema/releases/tag/v0.1.0-alpha.1

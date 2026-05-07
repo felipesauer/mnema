@@ -18,7 +18,8 @@
   "files": [
     "dist/",
     "workflows/",
-    "templates/"
+    "templates/",
+    "CHANGELOG.md"
   ],
   "homepage": "https://github.com/saurim/mnema#readme",
   "repository": {
@@ -29,7 +30,7 @@
     "url": "https://github.com/saurim/mnema/issues"
   },
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsc && tsc-alias && node scripts/copy-migrations.mjs",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
