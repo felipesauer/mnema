@@ -81,9 +81,6 @@ their absence is observable.
 
 ## 5. Identifier and metadata gaps
 
-- 🟢 **Reporter handle in CLI output** — `formatTaskBlock` shows the
-  internal UUID for `reporter` instead of the actor handle. Visible in
-  every `mnema task show`. Cheap fix: resolve via `ActorRepository`.
 - 🟢 **GitHub Issues importer ignores labels and author metadata** —
   parsed but not persisted. Comment in
   [src/services/importers/github-issues-importer.ts](../src/services/importers/github-issues-importer.ts).
