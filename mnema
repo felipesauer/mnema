@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Local dogfood entry point: always runs the freshly-built dist/.
+#
+# Usage:
+#   ./mnema --version
+#   ./mnema task create --title "..."
+#
+# Run `pnpm build` after changing source. The script does NOT auto-build
+# so that benchmarks / hot-loop testing stay fast.
+set -e
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node "$HERE/dist/index.js" "$@"
