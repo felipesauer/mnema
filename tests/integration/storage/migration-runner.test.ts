@@ -27,13 +27,13 @@ describe('MigrationRunner', () => {
   it('applies all migrations in order on an empty database', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
 
-    expect(applied.map((a) => a.version)).toEqual([1, 2, 3]);
+    expect(applied.map((a) => a.version)).toEqual([1, 2, 3, 4]);
 
     const versions = adapter
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2, 3]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4]);
   });
 
   it('is idempotent — running twice does not duplicate', () => {
@@ -47,7 +47,7 @@ describe('MigrationRunner', () => {
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2, 3]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4]);
   });
 
   it('creates expected tables and FTS virtual tables', () => {
