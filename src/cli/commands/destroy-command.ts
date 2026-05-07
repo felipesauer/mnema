@@ -10,6 +10,7 @@ import pc from 'picocolors';
 import { ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
+import { isPromptAbort } from '../prompt-helpers.js';
 
 interface DestroyOptions {
   readonly yes?: boolean;
@@ -49,7 +50,16 @@ export class DestroyCommand {
         const config = loader.load();
         const projectRoot = path.dirname(configFile);
 
-        const decision = await resolveDecision(options, config.project.key);
+        let decision: DestroyDecision | null;
+        try {
+          decision = await resolveDecision(options, config.project.key);
+        } catch (error) {
+          if (isPromptAbort(error)) {
+            process.stdout.write(`${pc.dim('aborted')}\n`);
+            return;
+          }
+          throw error;
+        }
         if (decision === null) {
           process.stdout.write(`${pc.dim('aborted')}\n`);
           return;

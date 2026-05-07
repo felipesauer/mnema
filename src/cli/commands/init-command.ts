@@ -27,6 +27,7 @@ import { ProjectRepository } from '../../storage/sqlite/repositories/project-rep
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationsDir, workflowsDir } from '../../utils/asset-paths.js';
 import { VERSION } from '../../utils/version.js';
+import { isPromptAbort } from '../prompt-helpers.js';
 import { buildAgentsMd } from '../templates/agents-md.js';
 
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
@@ -100,7 +101,16 @@ export class InitCommand {
       .option('--minimal', 'Create only the essential files; use `mnema adopt` to grow', false)
       .option('--yes', 'Skip the wizard; requires --name and --key', false)
       .action(async (options: InitOptions) => {
-        const resolved = await resolveOptions(options);
+        let resolved: ResolvedInitOptions | null;
+        try {
+          resolved = await resolveOptions(options);
+        } catch (error) {
+          if (isPromptAbort(error)) {
+            process.stdout.write(`${pc.dim('aborted')}\n`);
+            return;
+          }
+          throw error;
+        }
         if (resolved === null) {
           process.stdout.write(`${pc.dim('aborted')}\n`);
           return;
@@ -142,7 +152,7 @@ export class InitCommand {
     const config = buildConfig(options, validation.value);
     const minimal = options.minimal === true;
 
-    const conflicts = detectConflicts(cwd, config, minimal);
+    const conflicts = detectConflicts(cwd, config);
     if (conflicts.length > 0 && options.force !== true) {
       return Err({ kind: ErrorCode.InitConflict, path: conflicts.join(', ') });
     }
@@ -254,33 +264,36 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
 }
 
 /**
- * Inspects the target directory and returns the relative paths that
- * already exist and would be touched by `init`.
+ * Inspects the target directory and returns the **files** that already
+ * exist and would be overwritten by `init`.
  *
- * The minimal mode only checks paths that minimal mode actually uses;
- * full mode checks every path, including content folders such as
- * `backlog/`, `sprints/`, `memory/`, etc.
+ * Only specific files count as conflicts. Directories like
+ * `workflows/`, `backlog/` or `memory/` are allowed to pre-exist (the
+ * user might be running `init` in a Node project that already uses
+ * `workflows/` for something else, or recovering after a partial run);
+ * `init` only ever creates them with `mkdirSync(..., { recursive })`.
+ *
+ * The actual ownership claims are:
+ *
+ * - `mnema.config.json` — single source of truth
+ * - `AGENTS.md` — generated from a template
+ * - `<state>/state.db` — SQLite database
+ * - `<audit>/current.jsonl` — append-only event log
+ * - `<workflows>/<workflow>.json` — one specific file inside the
+ *   workflows directory
  *
  * @param cwd - Directory where the project will live
  * @param config - Resolved configuration
- * @param minimal - Whether the init is running in minimal mode
  * @returns Sorted list of relative paths that are already present
  */
-function detectConflicts(cwd: string, config: Config, minimal: boolean): string[] {
-  const paths = minimal
-    ? [config.paths.state, config.paths.audit, config.paths.workflows, 'AGENTS.md']
-    : [
-        config.paths.state,
-        config.paths.audit,
-        config.paths.workflows,
-        config.paths.backlog,
-        config.paths.sprints,
-        config.paths.roadmap,
-        config.paths.memory,
-        config.paths.skills,
-        'AGENTS.md',
-      ];
-  return paths.filter((p) => existsSync(path.join(cwd, p))).sort();
+function detectConflicts(cwd: string, config: Config): string[] {
+  const candidates = [
+    'AGENTS.md',
+    path.join(config.paths.state, 'state.db'),
+    path.join(config.paths.audit, 'current.jsonl'),
+    path.join(config.paths.workflows, `${config.workflow}.json`),
+  ];
+  return candidates.filter((p) => existsSync(path.join(cwd, p))).sort();
 }
 
 function writeJson(filePath: string, data: unknown): void {

@@ -362,13 +362,25 @@ describe('CLI end-to-end', () => {
     expect(existsSync(path.join(projectRoot, 'roadmap'))).toBe(false);
   });
 
-  it('mnema init refuses to overwrite a conflicting backlog directory', () => {
+  it('mnema init tolerates pre-existing content directories like backlog/', () => {
+    // Conflict detection only fires for *files* mnema would overwrite
+    // (AGENTS.md, state.db, current.jsonl, the chosen workflow JSON).
+    // Bare directories that the user might already maintain — backlog/,
+    // memory/, sprints/, etc. — should not abort the init.
     mkdirSync(path.join(projectRoot, 'backlog'), { recursive: true });
+
+    const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
+  });
+
+  it('mnema init refuses to overwrite an existing AGENTS.md without --force', () => {
+    writeFileSync(path.join(projectRoot, 'AGENTS.md'), '# pre-existing\n', 'utf-8');
 
     const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('already exists and would be overwritten');
-    expect(result.stderr).toContain('backlog');
+    expect(result.stderr).toContain('AGENTS.md');
   });
 
   it('mnema adopt all is idempotent and adds skills/memory/roadmap', () => {
