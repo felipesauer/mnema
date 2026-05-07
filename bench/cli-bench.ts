@@ -15,8 +15,7 @@ import path from 'node:path';
  *
  * Exits non-zero when any budget is exceeded so CI can flag
  * regressions, but the failure is informational only: the CLI is
- * still functionally correct. Document deviations in
- * `docs/TECH_DEBT.md` § Performance.
+ * still functionally correct.
  */
 
 interface Budget {

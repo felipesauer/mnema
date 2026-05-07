@@ -140,9 +140,10 @@ Throughout, you can `mnema watch` to see every mutation in real time.
 }
 ```
 
-Optional fields with their defaults are listed in
-[docs/DESIGN.md §4.1](docs/DESIGN.md). Custom paths, audit retention,
-sync flush thresholds and feature flags all live there.
+Optional fields cover custom paths, audit retention, sync flush
+thresholds and feature flags. Run `mnema doctor` after editing — it
+re-validates the file against the schema and reports anything that
+drifted.
 
 ## Workflows
 
@@ -155,15 +156,15 @@ gate into Zod at boot time and surfaces one MCP tool per transition.
 
 To switch presets, edit `workflow` in `mnema.config.json` and run
 `mnema doctor`. To author a new workflow, copy
-[workflows/default.json](workflows/default.json) and tweak — the
-schema is documented in
-[docs/ARCHITECTURE.md §13](docs/ARCHITECTURE.md).
+[workflows/default.json](workflows/default.json) and tweak.
 
 ## Status
 
-Mnema is **pre-release** (`0.1.0`). Phases 0–9 of the build kit are
-complete; secondary features (decisions, notes, full sprint MCP
-surface, advanced wizard) are tracked in [docs/TECH_DEBT.md](docs/TECH_DEBT.md).
+Mnema is **alpha** (`0.1.0-alpha.x`). The core surface is in place
+(tasks, sprints, decisions, notes, epics, attachments, FTS search,
+audit log, MCP tools), and the package is being shaken out before a
+stable `0.1.0` tag. See [CHANGELOG.md](CHANGELOG.md) for the per-phase
+history.
 
 ## License
 

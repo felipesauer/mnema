@@ -53,8 +53,8 @@ const MANAGED_FOOTER = '<!-- /MNEMA -->';
  * git pre-commit hook.
  *
  * Stratification, decision supersession, and notes-to-decisions
- * promotion are explicit non-goals of v1 — they require human judgment
- * and live in `docs/TECH_DEBT.md` § Memory automation.
+ * promotion are explicit non-goals of the alpha — they require human
+ * judgment that the consolidator deliberately does not encode.
  */
 export class MemoryConsolidator {
   constructor(private readonly memoryDir: string) {}
