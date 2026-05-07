@@ -374,13 +374,17 @@ describe('CLI end-to-end', () => {
     expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
   });
 
-  it('mnema init refuses to overwrite an existing AGENTS.md without --force', () => {
-    writeFileSync(path.join(projectRoot, 'AGENTS.md'), '# pre-existing\n', 'utf-8');
+  it('mnema init preserves a pre-existing AGENTS.md instead of overwriting it', () => {
+    // Init writes AGENTS.md only when missing — a user who has
+    // hand-tuned the file should be able to re-run init (e.g. after
+    // wiping .app/) without losing their edits. The single hard gate
+    // is mnema.config.json (covered by the AlreadyInitialized branch).
+    const original = '# my hand-written AGENTS\n';
+    writeFileSync(path.join(projectRoot, 'AGENTS.md'), original, 'utf-8');
 
     const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('already exists and would be overwritten');
-    expect(result.stderr).toContain('AGENTS.md');
+    expect(result.status).toBe(0);
+    expect(readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8')).toBe(original);
   });
 
   it('mnema adopt all is idempotent and adds skills/memory/roadmap', () => {

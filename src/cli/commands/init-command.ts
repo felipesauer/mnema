@@ -64,7 +64,6 @@ interface ResolvedInitOptions {
 export interface InitOutcome {
   readonly configPath: string;
   readonly mode: 'full' | 'minimal';
-  readonly conflicts: readonly string[];
 }
 
 /**
@@ -152,10 +151,12 @@ export class InitCommand {
     const config = buildConfig(options, validation.value);
     const minimal = options.minimal === true;
 
-    const conflicts = detectConflicts(cwd, config);
-    if (conflicts.length > 0 && options.force !== true) {
-      return Err({ kind: ErrorCode.InitConflict, path: conflicts.join(', ') });
-    }
+    // Note: there is no separate conflict-detection pass. Every write
+    // below is idempotent — `writeAgentsMd` no-ops when the file
+    // exists, the workflow JSON copy guards `existsSync`, and the
+    // markdown directories are created with `mkdirSync({ recursive
+    // true })`. The single ownership claim is `mnema.config.json`,
+    // already gated above with `AlreadyInitialized`.
 
     writeJson(configPath, config);
     writeAgentsMd(cwd, config);
@@ -209,7 +210,7 @@ export class InitCommand {
       writeFileSync(auditFile, '', 'utf-8');
     }
 
-    return Ok({ configPath, mode: minimal ? 'minimal' : 'full', conflicts });
+    return Ok({ configPath, mode: minimal ? 'minimal' : 'full' });
   }
 }
 
@@ -261,39 +262,6 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
     workflow,
   };
   return ConfigSchema.parse(raw);
-}
-
-/**
- * Inspects the target directory and returns the **files** that already
- * exist and would be overwritten by `init`.
- *
- * Only specific files count as conflicts. Directories like
- * `workflows/`, `backlog/` or `memory/` are allowed to pre-exist (the
- * user might be running `init` in a Node project that already uses
- * `workflows/` for something else, or recovering after a partial run);
- * `init` only ever creates them with `mkdirSync(..., { recursive })`.
- *
- * The actual ownership claims are:
- *
- * - `mnema.config.json` — single source of truth
- * - `AGENTS.md` — generated from a template
- * - `<state>/state.db` — SQLite database
- * - `<audit>/current.jsonl` — append-only event log
- * - `<workflows>/<workflow>.json` — one specific file inside the
- *   workflows directory
- *
- * @param cwd - Directory where the project will live
- * @param config - Resolved configuration
- * @returns Sorted list of relative paths that are already present
- */
-function detectConflicts(cwd: string, config: Config): string[] {
-  const candidates = [
-    'AGENTS.md',
-    path.join(config.paths.state, 'state.db'),
-    path.join(config.paths.audit, 'current.jsonl'),
-    path.join(config.paths.workflows, `${config.workflow}.json`),
-  ];
-  return candidates.filter((p) => existsSync(path.join(cwd, p))).sort();
 }
 
 function writeJson(filePath: string, data: unknown): void {
@@ -453,4 +421,4 @@ function deriveKey(name: string): string | undefined {
 }
 
 // Re-export for tests
-export const _internal = { validateOptions, buildConfig, detectConflicts, deriveKey };
+export const _internal = { validateOptions, buildConfig, deriveKey };
