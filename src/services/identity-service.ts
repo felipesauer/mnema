@@ -99,4 +99,17 @@ export class IdentityService {
   ensureActor(handle: string, kind: ActorKind): string {
     return this.actorRepository.upsert(handle, kind);
   }
+
+  /**
+   * Resolves an internal actor id to its handle. Returns `null` when the
+   * id is unknown — callers should fall back to a sensible placeholder
+   * rather than fail (the audit trail still has the raw id).
+   *
+   * @param id - Internal actor id
+   * @returns The actor's handle, or `null` if not found
+   */
+  resolveHandle(id: string): string | null {
+    const actor = this.actorRepository.findById(id);
+    return actor === null ? null : actor.handle;
+  }
 }

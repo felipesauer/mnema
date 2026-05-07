@@ -3,6 +3,13 @@ import pc from 'picocolors';
 import type { Task } from '../../domain/entities/task.js';
 
 /**
+ * Looks up an actor handle from its internal id. Returns `null` when
+ * unknown — the formatter falls back to a short prefix of the id so the
+ * line never breaks layout.
+ */
+export type ActorHandleLookup = (id: string) => string | null;
+
+/**
  * Renders a single task as a multi-line block for terminal output.
  *
  * Format:
@@ -15,15 +22,19 @@ import type { Task } from '../../domain/entities/task.js';
  * ```
  *
  * @param task - Task to render
+ * @param resolveHandle - Optional id → handle resolver. When omitted (or
+ *   when it returns `null`) the actor id is rendered truncated.
  * @returns Multi-line string ready for stdout
  */
-export function formatTaskBlock(task: Task): string {
+export function formatTaskBlock(task: Task, resolveHandle?: ActorHandleLookup): string {
   const head = `${pc.bold(task.key)}  ${pc.cyan(task.state)}  ${task.title}`;
   const lines: string[] = [head];
 
   const meta: string[] = [];
-  meta.push(`reporter: ${task.reporterId}`);
-  if (task.assigneeId !== null) meta.push(`assignee: ${task.assigneeId}`);
+  meta.push(`reporter: ${displayActor(task.reporterId, resolveHandle)}`);
+  if (task.assigneeId !== null) {
+    meta.push(`assignee: ${displayActor(task.assigneeId, resolveHandle)}`);
+  }
   if (task.estimate !== null) meta.push(`estimate: ${task.estimate}`);
   meta.push(`priority: ${task.priority}`);
   lines.push(`  ${pc.dim(meta.join(' · '))}`);
@@ -55,4 +66,10 @@ export function formatTaskList(tasks: readonly Task[]): string {
   return tasks
     .map((t) => `${pc.bold(t.key.padEnd(12))} ${pc.cyan(t.state.padEnd(13))} ${t.title}`)
     .join('\n');
+}
+
+function displayActor(id: string, resolveHandle: ActorHandleLookup | undefined): string {
+  if (resolveHandle === undefined) return id.slice(0, 8);
+  const handle = resolveHandle(id);
+  return handle ?? id.slice(0, 8);
 }

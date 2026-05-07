@@ -59,7 +59,7 @@ export class TaskCommand {
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),
           });
-          renderTaskResult(result);
+          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
         });
       });
 
@@ -81,7 +81,9 @@ export class TaskCommand {
       .description('Show a single task')
       .action(async (key: string) => {
         await withCliContext(({ container }) => {
-          renderTaskResult(container.task.findByKey(key));
+          renderTaskResult(container.task.findByKey(key), (id) =>
+            container.identity.resolveHandle(id),
+          );
         });
       });
 
@@ -97,7 +99,7 @@ export class TaskCommand {
             payload,
             actor: container.identity.getDefaultActor(),
           });
-          renderTaskResult(result);
+          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
         });
       });
   }
@@ -105,11 +107,12 @@ export class TaskCommand {
 
 function renderTaskResult(
   result: { ok: true; value: Task } | { ok: false; error: MnemaError },
+  resolveHandle: (id: string) => string | null,
 ): void {
   if (!result.ok) {
     process.exit(printError(result.error));
   }
-  process.stdout.write(`${formatTaskBlock(result.value)}\n`);
+  process.stdout.write(`${formatTaskBlock(result.value, resolveHandle)}\n`);
 }
 
 /**
