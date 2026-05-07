@@ -1,23 +1,36 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Walks parents of `here` looking for the package root (where the
- * `workflows/` directory lives). Works equally for source mode
- * (`src/utils`) and compiled mode (`dist/utils`).
+ * Walks parents of `here` looking for the package root, identified by
+ * a `package.json` whose `name` field is `@saurim/mnema`. Works
+ * equally in source mode (`src/utils`) and compiled mode
+ * (`dist/utils`), and stays correct when consumers delete or move
+ * `workflows/` — the previous heuristic relied on `workflows/` as a
+ * marker, which the dogfood-on-self setup could remove during
+ * `mnema destroy` and break the next CLI invocation.
  *
  * @returns Absolute path to the package root
  */
 function findPackageRoot(): string {
   let dir = here;
   while (true) {
-    if (existsSync(resolve(dir, 'workflows'))) return dir;
+    const manifest = resolve(dir, 'package.json');
+    if (existsSync(manifest)) {
+      try {
+        const parsed = JSON.parse(readFileSync(manifest, 'utf-8')) as { name?: string };
+        if (parsed.name === '@saurim/mnema') return dir;
+      } catch {
+        // Unreadable JSON — keep walking; the package.json belonged to
+        // somewhere else in the tree.
+      }
+    }
     const parent = dirname(dir);
     if (parent === dir) {
-      throw new Error('package root not found (workflows/ missing)');
+      throw new Error('package root not found (no @saurim/mnema package.json on the path)');
     }
     dir = parent;
   }
