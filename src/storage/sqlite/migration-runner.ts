@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import type { Database as DatabaseType } from 'better-sqlite3';
+
 import type { SqliteAdapter } from './sqlite-adapter.js';
 
 /**
@@ -44,11 +46,47 @@ export class MigrationRunner {
       if (applied.has(version)) continue;
 
       const sql = readFileSync(path.join(migrationsDir, file), 'utf-8');
-      database.exec(sql);
+      this.applyOne(database, sql);
       newlyApplied.push({ version, file });
     }
 
     return newlyApplied;
+  }
+
+  /**
+   * Applies one migration script. Schema-rewrite migrations that
+   * need to drop and recreate tables also need foreign-key
+   * enforcement temporarily disabled — the pragma cannot toggle
+   * inside a transaction, so they must opt in via a header comment:
+   *
+   * ```
+   * -- mnema:disable-foreign-keys
+   * BEGIN;
+   * ...
+   * COMMIT;
+   * ```
+   *
+   * Migrations without that opt-in keep the simple
+   * `database.exec(sql)` path, which is what every additive
+   * migration (CREATE TABLE / ALTER TABLE ADD COLUMN / CREATE
+   * INDEX) wants — and crucially, the path that the original 001
+   * relies on, since it sets PRAGMAs that cannot run inside a
+   * transaction.
+   */
+  private applyOne(database: DatabaseType, sql: string): void {
+    const disableForeignKeys = /^\s*--\s*mnema:disable-foreign-keys/m.test(sql);
+    if (!disableForeignKeys) {
+      database.exec(sql);
+      return;
+    }
+
+    const previousFk = database.pragma('foreign_keys', { simple: true }) as 0 | 1;
+    if (previousFk === 1) database.pragma('foreign_keys = OFF');
+    try {
+      database.exec(sql);
+    } finally {
+      if (previousFk === 1) database.pragma('foreign_keys = ON');
+    }
   }
 
   /**
