@@ -37,17 +37,17 @@ describe('AdoptionService', () => {
       'handling-blockers.md',
       'recording-decisions.md',
     ]) {
-      expect(existsSync(path.join(projectRoot, 'skills', expected))).toBe(true);
+      expect(existsSync(path.join(projectRoot, '.mnema/skills', expected))).toBe(true);
     }
   });
 
   it('installs memory with INDEX, context and decisions/notes subfolders', () => {
     const result = service.adopt('memory');
     expect(result.created.length).toBe(4);
-    expect(existsSync(path.join(projectRoot, 'memory', 'INDEX.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'memory', 'context.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'memory', 'decisions', 'INDEX.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'memory', 'notes', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'context.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'decisions', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'notes', 'INDEX.md'))).toBe(true);
   });
 
   it('is idempotent: a second adopt skips already-existing files', () => {
@@ -58,8 +58,8 @@ describe('AdoptionService', () => {
   });
 
   it('does not overwrite custom content', () => {
-    const file = path.join(projectRoot, 'skills', 'SKILL.md');
-    mkdirSync(path.join(projectRoot, 'skills'), { recursive: true });
+    const file = path.join(projectRoot, '.mnema/skills', 'SKILL.md');
+    mkdirSync(path.join(projectRoot, '.mnema/skills'), { recursive: true });
     writeFileSync(file, '# customised', 'utf-8');
 
     service.adopt('skills');
@@ -69,8 +69,8 @@ describe('AdoptionService', () => {
   it('adoptAll touches every component once', () => {
     const summary = service.adoptAll();
     expect(summary.results.map((r) => r.component)).toEqual(['skills', 'memory', 'roadmap']);
-    expect(existsSync(path.join(projectRoot, 'skills', 'SKILL.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'memory', 'INDEX.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'roadmap', 'README.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/roadmap', 'README.md'))).toBe(true);
   });
 });

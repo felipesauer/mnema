@@ -1,6 +1,5 @@
 node_modules/
 dist/
-.app/
 coverage/
 *.log
 *.tgz
@@ -10,12 +9,10 @@ coverage/
 docs/
 .plan/
 
-# Dogfood: running mnema against itself for testing
-mnema.config.json
+# Dogfood: running mnema against itself for testing.
+# Every Mnema-managed artefact lives under .mnema/ in the new layout,
+# so a single rule covers the database, audit log, backlog markdowns,
+# memory, sprints, etc. AGENTS.md is also touched (init appends a
+# managed block) — keep it private to the working copy.
+.mnema/
 AGENTS.md
-.audit/
-backlog/
-sprints/
-roadmap/
-memory/
-skills/

@@ -11,12 +11,12 @@ const workflowsSrc = path.resolve('workflows');
 
 function setupProject(): { root: string; container: ServiceContainer } {
   const root = mkdtempSync(path.join(tmpdir(), 'mnema-dual-id-'));
-  for (const dir of ['.app', '.audit', 'backlog', 'workflows']) {
+  for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(root, dir), { recursive: true });
   }
   copyFileSync(
     path.join(workflowsSrc, 'default.json'),
-    path.join(root, 'workflows', 'default.json'),
+    path.join(root, '.mnema/workflows', 'default.json'),
   );
 
   const config = ConfigSchema.parse({

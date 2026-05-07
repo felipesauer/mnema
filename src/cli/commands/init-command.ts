@@ -15,6 +15,7 @@ import pc from 'picocolors';
 // silent runs (`--yes` or all flags supplied) never pay the cost,
 // and `mnema --version` / `mnema task ...` never touch it at all.
 
+import { CONFIG_FILE_RELATIVE } from '../../config/config-loader.js';
 import type { Config } from '../../config/config-schema.js';
 import { ConfigSchema } from '../../config/config-schema.js';
 import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
@@ -143,7 +144,7 @@ export class InitCommand {
     const validation = validateOptions(options);
     if (!validation.ok) return validation;
 
-    const configPath = path.join(cwd, 'mnema.config.json');
+    const configPath = path.join(cwd, CONFIG_FILE_RELATIVE);
     if (existsSync(configPath) && options.force !== true) {
       return Err({ kind: ErrorCode.AlreadyInitialized, configPath });
     }
@@ -152,12 +153,13 @@ export class InitCommand {
     const minimal = options.minimal === true;
 
     // Note: there is no separate conflict-detection pass. Every write
-    // below is idempotent — `writeAgentsMd` no-ops when the file
-    // exists, the workflow JSON copy guards `existsSync`, and the
-    // markdown directories are created with `mkdirSync({ recursive
-    // true })`. The single ownership claim is `mnema.config.json`,
-    // already gated above with `AlreadyInitialized`.
+    // below is idempotent — the AGENTS.md merge preserves whatever
+    // content the user already had, the workflow JSON copy guards
+    // `existsSync`, and the markdown directories are created with
+    // `mkdirSync({ recursive: true })`. The single ownership claim is
+    // `.mnema/mnema.config.json`, gated above with AlreadyInitialized.
 
+    mkdirSync(path.dirname(configPath), { recursive: true });
     writeJson(configPath, config);
     writeAgentsMd(cwd, config);
 
@@ -275,10 +277,44 @@ function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
 
+/**
+ * Markers that bracket the Mnema-managed block in `AGENTS.md`.
+ *
+ * Same pattern as the memory consolidator: anything outside the
+ * markers is the user's content and is preserved verbatim. Re-running
+ * `init` updates only the managed section, so a project that already
+ * has an `AGENTS.md` (e.g. from another tool) keeps its instructions
+ * intact and just gains a `## Mnema` block at the bottom.
+ */
+const AGENTS_MD_BEGIN = '<!-- MNEMA:START -->';
+const AGENTS_MD_END = '<!-- MNEMA:END -->';
+
 function writeAgentsMd(cwd: string, config: Config): void {
   const file = path.join(cwd, 'AGENTS.md');
-  if (existsSync(file)) return;
-  writeFileSync(file, buildAgentsMd(config), 'utf-8');
+  const managed = `${AGENTS_MD_BEGIN}\n${buildAgentsMd(config)}\n${AGENTS_MD_END}\n`;
+
+  if (!existsSync(file)) {
+    writeFileSync(file, managed, 'utf-8');
+    return;
+  }
+
+  const previous = readFileSync(file, 'utf-8');
+  const start = previous.indexOf(AGENTS_MD_BEGIN);
+  const endIdx = previous.indexOf(AGENTS_MD_END);
+  if (start !== -1 && endIdx !== -1 && endIdx > start) {
+    // Replace the existing managed block in place; everything around
+    // it stays exactly as the user wrote it.
+    const before = previous.slice(0, start);
+    const after = previous.slice(endIdx + AGENTS_MD_END.length);
+    writeFileSync(file, `${before}${managed.trimEnd()}${after}`, 'utf-8');
+    return;
+  }
+
+  // No marker yet — append the managed block at the end, preserving
+  // a single blank line of separation when the file does not already
+  // end with two newlines.
+  const separator = previous.endsWith('\n\n') ? '' : previous.endsWith('\n') ? '\n' : '\n\n';
+  writeFileSync(file, `${previous}${separator}${managed}`, 'utf-8');
 }
 
 function appendGitignore(cwd: string, statePath: string): void {
@@ -290,7 +326,30 @@ function appendGitignore(cwd: string, statePath: string): void {
   }
   const current = readFileSync(file, 'utf-8');
   if (current.includes(entry)) return;
+  // If a broader ancestor (e.g. `.mnema/` for the new default
+  // layout `.mnema/state`) is already ignored, the more specific
+  // entry would be redundant — skip it.
+  if (covers(current, entry)) return;
   appendFileSync(file, `\n# mnema\n${entry}\n`, 'utf-8');
+}
+
+/**
+ * Returns true when `gitignore` already contains a line that ignores
+ * an ancestor of `entry`. The check is intentionally simple: it walks
+ * up the path one segment at a time and looks for a literal match —
+ * good enough for the defaults Mnema writes; users with custom
+ * negation rules can edit the file themselves.
+ */
+function covers(gitignoreBody: string, entry: string): boolean {
+  const segments = entry
+    .replace(/\/$/, '')
+    .split('/')
+    .filter((s) => s.length > 0);
+  for (let i = 1; i < segments.length; i += 1) {
+    const ancestor = `${segments.slice(0, i).join('/')}/`;
+    if (gitignoreBody.includes(ancestor)) return true;
+  }
+  return false;
 }
 
 /**

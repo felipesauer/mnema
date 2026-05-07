@@ -62,17 +62,17 @@ describe('CLI end-to-end', () => {
     );
 
     expect(status).toBe(0);
-    expect(stdout).toContain('mnema.config.json');
+    expect(stdout).toContain('.mnema/mnema.config.json');
 
-    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/mnema.config.json'))).toBe(true);
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.app', 'state.db'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.audit', 'current.jsonl'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'workflows', 'default.json'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'backlog', 'DRAFT'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/state', 'state.db'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/workflows', 'default.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog', 'DRAFT'))).toBe(true);
 
     const gitignore = readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
-    expect(gitignore).toContain('.app/');
+    expect(gitignore).toContain('.mnema/state/');
   });
 
   it('mnema init --force overwrites an existing config', () => {
@@ -131,12 +131,12 @@ describe('CLI end-to-end', () => {
     expect(move.status).toBe(0);
     expect(move.stdout).toContain('READY');
 
-    const draftFile = path.join(projectRoot, 'backlog', 'DRAFT', 'WEBAPP-1.md');
-    const readyFile = path.join(projectRoot, 'backlog', 'READY', 'WEBAPP-1.md');
+    const draftFile = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'WEBAPP-1.md');
+    const readyFile = path.join(projectRoot, '.mnema/backlog', 'READY', 'WEBAPP-1.md');
     expect(existsSync(draftFile)).toBe(false);
     expect(existsSync(readyFile)).toBe(true);
 
-    const audit = readFileSync(path.join(projectRoot, '.audit', 'current.jsonl'), 'utf-8');
+    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
     expect(audit).toContain('task_created');
     expect(audit).toContain('task_transitioned');
   });
@@ -223,7 +223,7 @@ describe('CLI end-to-end', () => {
 
     // Seed an agent_run + agent_plan + transition through the open SQLite.
     const Database = (await import('better-sqlite3')).default;
-    const db = new Database(path.join(projectRoot, '.app', 'state.db'));
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
     try {
       db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'agent:cc', 'agent')").run();
       db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('h1', 'daniel', 'human')").run();
@@ -333,7 +333,7 @@ describe('CLI end-to-end', () => {
     const second = runCli(['attach', 'add', 'WEBAPP-1', 'sample.txt'], projectRoot);
     expect(second.status).toBe(0);
 
-    const stored = readdirSync(path.join(projectRoot, '.app', 'attachments'));
+    const stored = readdirSync(path.join(projectRoot, '.mnema/state', 'attachments'));
     expect(stored).toHaveLength(1);
 
     const list = runCli(['attach', 'list', 'WEBAPP-1'], projectRoot);
@@ -349,17 +349,17 @@ describe('CLI end-to-end', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('minimal layout');
 
-    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.app', 'state.db'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'workflows', 'default.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/mnema.config.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/state', 'state.db'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/workflows', 'default.json'))).toBe(true);
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
 
     // The full layout's content folders are NOT created in minimal mode.
-    expect(existsSync(path.join(projectRoot, 'backlog'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'sprints'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'memory'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'skills'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'roadmap'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema/sprints'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema/skills'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema/roadmap'))).toBe(false);
   });
 
   it('mnema init tolerates pre-existing content directories like backlog/', () => {
@@ -367,24 +367,30 @@ describe('CLI end-to-end', () => {
     // (AGENTS.md, state.db, current.jsonl, the chosen workflow JSON).
     // Bare directories that the user might already maintain — backlog/,
     // memory/, sprints/, etc. — should not abort the init.
-    mkdirSync(path.join(projectRoot, 'backlog'), { recursive: true });
+    mkdirSync(path.join(projectRoot, '.mnema/backlog'), { recursive: true });
 
     const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     expect(result.status).toBe(0);
-    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/mnema.config.json'))).toBe(true);
   });
 
-  it('mnema init preserves a pre-existing AGENTS.md instead of overwriting it', () => {
-    // Init writes AGENTS.md only when missing — a user who has
-    // hand-tuned the file should be able to re-run init (e.g. after
-    // wiping .app/) without losing their edits. The single hard gate
-    // is mnema.config.json (covered by the AlreadyInitialized branch).
-    const original = '# my hand-written AGENTS\n';
+  it('mnema init appends a managed block to a pre-existing AGENTS.md', () => {
+    // A user who has hand-tuned the file should keep their edits;
+    // init bolts the Mnema-managed block on at the end (delimited by
+    // <!-- MNEMA:START --> ... <!-- MNEMA:END --> markers) so a
+    // subsequent destroy can strip it cleanly without touching the
+    // user's content.
+    const original = '# my hand-written AGENTS\n\nCustom instructions for Claude.\n';
     writeFileSync(path.join(projectRoot, 'AGENTS.md'), original, 'utf-8');
 
     const result = runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     expect(result.status).toBe(0);
-    expect(readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8')).toBe(original);
+
+    const merged = readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8');
+    expect(merged).toContain('# my hand-written AGENTS');
+    expect(merged).toContain('Custom instructions for Claude.');
+    expect(merged).toContain('<!-- MNEMA:START -->');
+    expect(merged).toContain('<!-- MNEMA:END -->');
   });
 
   it('mnema adopt all is idempotent and adds skills/memory/roadmap', () => {
@@ -392,9 +398,9 @@ describe('CLI end-to-end', () => {
 
     const first = runCli(['adopt', 'all'], projectRoot);
     expect(first.status).toBe(0);
-    expect(existsSync(path.join(projectRoot, 'skills', 'SKILL.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'memory', 'INDEX.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'roadmap', 'README.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/roadmap', 'README.md'))).toBe(true);
 
     const second = runCli(['adopt', 'all'], projectRoot);
     expect(second.status).toBe(0);
@@ -442,7 +448,7 @@ describe('CLI end-to-end', () => {
   it('mnema skill lint flags unknown tool references and missing example', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     writeFileSync(
-      path.join(projectRoot, 'skills', 'broken.md'),
+      path.join(projectRoot, '.mnema/skills', 'broken.md'),
       [
         '---',
         'name: broken',
@@ -473,12 +479,12 @@ describe('CLI end-to-end', () => {
     expect(first.stdout).toContain('memory:');
     expect(first.stdout).toContain('decisions:');
 
-    const indexBody = readFileSync(path.join(projectRoot, 'memory', 'INDEX.md'), 'utf-8');
+    const indexBody = readFileSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'), 'utf-8');
     expect(indexBody).toContain('<!-- MNEMA: managed section');
 
     const second = runCli(['memory', 'consolidate'], projectRoot);
     expect(second.status).toBe(0);
-    const indexAfter = readFileSync(path.join(projectRoot, 'memory', 'INDEX.md'), 'utf-8');
+    const indexAfter = readFileSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'), 'utf-8');
     expect(indexAfter).toBe(indexBody);
   });
 });

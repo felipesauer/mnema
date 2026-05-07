@@ -19,12 +19,12 @@ const workflowsSrc = path.resolve('workflows');
 
 function setupProject(): { root: string; container: ServiceContainer } {
   const root = mkdtempSync(path.join(tmpdir(), 'mnema-rebuild-'));
-  for (const dir of ['.app', '.audit', 'backlog', 'workflows']) {
+  for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(root, dir), { recursive: true });
   }
   copyFileSync(
     path.join(workflowsSrc, 'default.json'),
-    path.join(root, 'workflows', 'default.json'),
+    path.join(root, '.mnema/workflows', 'default.json'),
   );
 
   const config = ConfigSchema.parse({
@@ -59,7 +59,7 @@ describe('SyncRebuild', () => {
   });
 
   it('inserts tasks for markdowns that are not yet in the database', () => {
-    const draftDir = path.join(root, 'backlog', 'DRAFT');
+    const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(draftDir, { recursive: true });
 
     const md = `---
@@ -108,8 +108,8 @@ mnema:
   it('updates state when the markdown lives in a different state folder', () => {
     container.task.create({ projectKey: 'TEST', title: 'Move via fs', actor: 'daniel' });
 
-    const draftFile = path.join(root, 'backlog', 'DRAFT', 'TEST-1.md');
-    const readyDir = path.join(root, 'backlog', 'READY');
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+    const readyDir = path.join(root, '.mnema/backlog', 'READY');
     mkdirSync(readyDir, { recursive: true });
 
     const original = readFileSync(draftFile, 'utf-8');
@@ -126,7 +126,7 @@ mnema:
   });
 
   it('skips files whose mnema.key does not match the filename', () => {
-    const dir = path.join(root, 'backlog', 'DRAFT');
+    const dir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(dir, { recursive: true });
 
     const md = `---
@@ -142,7 +142,7 @@ body
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.skipped.length).toBeGreaterThan(0);
-    expect(existsSync(path.join(root, '.app', 'state.db'))).toBe(true);
+    expect(existsSync(path.join(root, '.mnema/state', 'state.db'))).toBe(true);
 
     const list = container.task.list();
     expect(list).toHaveLength(0);

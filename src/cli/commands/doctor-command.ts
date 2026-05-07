@@ -12,6 +12,7 @@ import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '../../utils/asset-paths.js';
 import { checkVersion } from '../../utils/version-check.js';
+import { resolveProjectRoot } from '../project-root.js';
 
 /**
  * One row in the doctor checklist, also returned by exported helpers
@@ -81,7 +82,7 @@ export class DoctorCommand {
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
 
-    const projectRoot = path.dirname(configFile);
+    const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
     try {
       new WorkflowLoader().load(workflowPath);

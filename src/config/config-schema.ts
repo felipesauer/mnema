@@ -17,14 +17,18 @@ export const ConfigSchema = z.object({
   }),
   paths: z
     .object({
-      state: z.string().default('.app'),
-      audit: z.string().default('.audit'),
-      backlog: z.string().default('backlog'),
-      sprints: z.string().default('sprints'),
-      roadmap: z.string().default('roadmap'),
-      memory: z.string().default('memory'),
-      skills: z.string().default('skills'),
-      workflows: z.string().default('workflows'),
+      // Every Mnema-managed artefact lives under `.mnema/` by default
+      // so `mnema init` does not pollute the project root with eight
+      // top-level entries. Users who want a different layout (e.g.
+      // visible `backlog/` for GitHub) override individual entries.
+      state: z.string().default('.mnema/state'),
+      audit: z.string().default('.mnema/audit'),
+      backlog: z.string().default('.mnema/backlog'),
+      sprints: z.string().default('.mnema/sprints'),
+      roadmap: z.string().default('.mnema/roadmap'),
+      memory: z.string().default('.mnema/memory'),
+      skills: z.string().default('.mnema/skills'),
+      workflows: z.string().default('.mnema/workflows'),
     })
     .prefault({}),
   workflow: z.string().default('default'),

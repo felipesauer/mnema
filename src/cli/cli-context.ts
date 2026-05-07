@@ -1,10 +1,10 @@
-import path from 'node:path';
 import { ConfigLoader } from '../config/config-loader.js';
 import type { Config } from '../config/config-schema.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
+import { resolveProjectRoot } from './project-root.js';
 
 /**
  * Composite return value of {@link openCliContext}: the loaded config,
@@ -34,7 +34,7 @@ export function openCliContext(): CliContext {
   }
 
   const config = loader.load();
-  const projectRoot = path.dirname(configFile);
+  const projectRoot = resolveProjectRoot(configFile);
   const container = createServiceContainer(config, projectRoot, {
     migrationsDir: migrationsDir(),
   });
