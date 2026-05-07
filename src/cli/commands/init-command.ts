@@ -181,8 +181,15 @@ export class InitCommand {
 
     const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
     const workflowDestFile = path.join(workflowsDest, `${config.workflow}.json`);
-    if (!existsSync(workflowDestFile)) {
-      copyFileSync(workflowSrc, workflowDestFile);
+    // Only copy when src and dest differ. The dogfood-on-self setup
+    // resolves workflowsDir() and paths.workflows to the same on-disk
+    // path; in that case the file is already in place (or genuinely
+    // missing) and `copyFileSync` would either no-op or fail with
+    // ENOENT against itself.
+    if (path.resolve(workflowSrc) !== path.resolve(workflowDestFile)) {
+      if (!existsSync(workflowDestFile)) {
+        copyFileSync(workflowSrc, workflowDestFile);
+      }
     }
 
     if (!minimal) {

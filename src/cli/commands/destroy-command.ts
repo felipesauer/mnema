@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
@@ -10,6 +10,7 @@ import pc from 'picocolors';
 import { ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
+import { workflowsDir } from '../../utils/asset-paths.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 
 interface DestroyOptions {
@@ -65,7 +66,11 @@ export class DestroyCommand {
           return;
         }
 
-        const removed = removeArtifacts(projectRoot, config.paths, decision);
+        const removed = removeArtifacts(
+          projectRoot,
+          { ...config.paths, workflow: config.workflow },
+          decision,
+        );
         for (const target of removed) {
           process.stdout.write(`${pc.dim('removed')} ${target}\n`);
         }
@@ -139,7 +144,12 @@ async function resolveDecision(
 
 /**
  * Paths affected by destroy. Mirrors the relevant subset of
- * {@link import('../../config/config-schema.js').Config.paths}.
+ * {@link import('../../config/config-schema.js').Config.paths} plus
+ * the active workflow name so destroy can target only the JSON file
+ * `init` actually wrote (rather than the whole `workflows/`
+ * directory, which the user might own for unrelated reasons —
+ * notably the Mnema repo dogfooding itself, where `workflows/`
+ * carries the bundled presets).
  */
 export interface DestroyPaths {
   readonly state: string;
@@ -150,6 +160,7 @@ export interface DestroyPaths {
   readonly roadmap: string;
   readonly memory: string;
   readonly skills: string;
+  readonly workflow: string;
 }
 
 /**
@@ -171,16 +182,27 @@ export function removeArtifacts(
 ): string[] {
   const removed: string[] = [];
 
-  const alwaysRemove = [
-    paths.state,
-    paths.workflows,
-    paths.skills,
-    'mnema.config.json',
-    'AGENTS.md',
-  ];
-  for (const rel of alwaysRemove) {
+  // Owned by Mnema unconditionally: the config file, the AGENTS.md
+  // template (init no-ops on a pre-existing one, but if we are here
+  // the project was Mnema-managed, so AGENTS.md is fair game), and
+  // the state directory (`.app/` by default — gitignored, holds the
+  // SQLite database and attachments).
+  for (const rel of ['mnema.config.json', 'AGENTS.md', paths.state]) {
     if (removeIfExists(projectRoot, rel)) removed.push(rel);
   }
+
+  // The bundled workflow JSON: only remove the file `init` actually
+  // wrote, not the whole directory. Use a byte-for-byte match against
+  // the package's bundled template — if the user customised the
+  // workflow, it stays. The directory is left in place either way;
+  // the user might keep custom workflows there.
+  const removedWorkflow = removeBundledWorkflow(projectRoot, paths.workflows, paths.workflow);
+  if (removedWorkflow !== null) removed.push(removedWorkflow);
+
+  // The skills directory: init creates it empty, so only delete it
+  // when still empty. Any skill the user wrote (or that `mnema adopt`
+  // dropped in) keeps the directory alive.
+  if (removeIfEmptyDir(projectRoot, paths.skills)) removed.push(paths.skills);
 
   if (!decision.keepAudit) {
     if (removeIfExists(projectRoot, paths.audit)) removed.push(paths.audit);
@@ -200,4 +222,46 @@ function removeIfExists(projectRoot: string, relative: string): boolean {
   if (!existsSync(target)) return false;
   rmSync(target, { recursive: true, force: true });
   return true;
+}
+
+function removeIfEmptyDir(projectRoot: string, relative: string): boolean {
+  const target = path.join(projectRoot, relative);
+  if (!existsSync(target)) return false;
+  const stat = statSync(target);
+  if (!stat.isDirectory()) return false;
+  if (readdirSync(target).length > 0) return false;
+  rmSync(target, { recursive: true, force: true });
+  return true;
+}
+
+/**
+ * Removes the workflow JSON only when it byte-matches the bundled
+ * template — i.e. the user has not customised it since `init`. Returns
+ * the relative path that was removed, or `null` when nothing was.
+ *
+ * Refuses to delete the file when its absolute path is the same as
+ * the bundled template's; that case happens when Mnema dogfoods on
+ * itself (the project root and the package root coincide), and the
+ * file in question IS the source-of-truth for every other consumer.
+ */
+function removeBundledWorkflow(
+  projectRoot: string,
+  workflowsRel: string,
+  workflowName: string,
+): string | null {
+  const filename = `${workflowName}.json`;
+  const target = path.join(projectRoot, workflowsRel, filename);
+  if (!existsSync(target)) return null;
+
+  const bundled = path.join(workflowsDir(), filename);
+  if (!existsSync(bundled)) return null;
+
+  if (path.resolve(target) === path.resolve(bundled)) return null;
+
+  const targetBytes = readFileSync(target);
+  const bundledBytes = readFileSync(bundled);
+  if (!targetBytes.equals(bundledBytes)) return null;
+
+  unlinkSync(target);
+  return path.join(workflowsRel, filename);
 }
