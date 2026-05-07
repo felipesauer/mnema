@@ -22,4 +22,15 @@ describe('checkVersion', () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain('0.0.1');
   });
+
+  it('accepts a stable range when the current build is a same-line alpha', () => {
+    // Defensive: covers the alpha → stable transition. While VERSION
+    // carries an `-alpha.N` suffix, `^0.1.0` should still match thanks
+    // to includePrerelease — otherwise every alpha user would see a
+    // version-mismatch error against projects pinned to a stable range.
+    if (!VERSION.includes('-alpha')) return;
+    const baseline = VERSION.replace(/-alpha.*$/, '');
+    const result = checkVersion(`^${baseline}`);
+    expect(result.ok).toBe(true);
+  });
 });
