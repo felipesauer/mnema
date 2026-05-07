@@ -175,7 +175,13 @@ export class SyncService {
 
   private flushOne(taskKey: string): void {
     const task = this.taskRepository.findByKey(taskKey);
-    if (task === null) return;
+    if (task === null) {
+      // Either the row is unknown or it was just soft-deleted. In both
+      // cases drop any markdown still sitting under the state folders so
+      // the on-disk layout matches the database.
+      this.removeMarkdownForKey(taskKey);
+      return;
+    }
 
     const targetPath = this.pathForTask(task);
     this.ensureDir(path.dirname(targetPath));
@@ -187,6 +193,18 @@ export class SyncService {
       otherFrontmatter: existing.otherFrontmatter,
       content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
     });
+  }
+
+  private removeMarkdownForKey(taskKey: string): void {
+    const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
+    if (!existsSync(root)) return;
+    for (const stateDir of readdirSync(root, { withFileTypes: true })) {
+      if (!stateDir.isDirectory()) continue;
+      const candidate = path.join(root, stateDir.name, `${taskKey}.md`);
+      if (existsSync(candidate)) {
+        unlinkSync(candidate);
+      }
+    }
   }
 
   private maybeAutoFlush(): void {

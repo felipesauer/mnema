@@ -54,8 +54,6 @@ their absence is observable.
   `@inquirer/prompts`. The dependency is already installed.
 - 🟡 **`mnema destroy`** — documented in DESIGN.md §7.4 ("uninstall
   with two confirmations"); not implemented.
-- 🟢 **`mnema task delete` / soft-delete CLI** — soft-delete column
-  exists since Phase 2 but no command toggles it.
 
 ## 4. Concurrency and resilience
 

@@ -179,4 +179,49 @@ describe('TaskService (integration)', () => {
       expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
     });
   });
+
+  describe('soft delete', () => {
+    it('soft-deletes a task, removing it from list() and the markdown', () => {
+      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      const md = path.join(projectRoot, 'backlog', 'DRAFT', 'TEST-1.md');
+      expect(existsSync(md)).toBe(true);
+
+      const deleted = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      expect(deleted.ok).toBe(true);
+      if (!deleted.ok) return;
+      expect(deleted.value.deletedAt).not.toBeNull();
+      expect(container.task.list()).toHaveLength(0);
+      expect(existsSync(md)).toBe(false);
+    });
+
+    it('restores a soft-deleted task and brings the markdown back', () => {
+      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+
+      const restored = container.task.restore({ taskKey: 'TEST-1', actor: 'daniel' });
+      expect(restored.ok).toBe(true);
+      if (!restored.ok) return;
+      expect(restored.value.deletedAt).toBeNull();
+      expect(container.task.list().map((t) => t.key)).toEqual(['TEST-1']);
+      const md = path.join(projectRoot, 'backlog', 'DRAFT', 'TEST-1.md');
+      expect(existsSync(md)).toBe(true);
+    });
+
+    it('softDelete on a deleted task returns TASK_NOT_FOUND', () => {
+      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+
+      const second = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      expect(second.ok).toBe(false);
+      if (second.ok) return;
+      expect(second.error.kind).toBe(ErrorCode.TaskNotFound);
+    });
+
+    it('restore on an unknown key returns TASK_NOT_FOUND', () => {
+      const result = container.task.restore({ taskKey: 'GHOST-1', actor: 'daniel' });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
+    });
+  });
 });
