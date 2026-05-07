@@ -228,6 +228,57 @@ export class TaskRepository {
   }
 
   /**
+   * Looks up a task by key including soft-deleted rows.
+   *
+   * Used by the restore path so a deleted task can still be located by
+   * its human key. Active reads keep using {@link findByKey}.
+   *
+   * @param key - Task key (e.g. `WEBAPP-42`)
+   * @returns The task (active or soft-deleted) or `null`
+   */
+  findByKeyIncludingDeleted(key: string): Task | null {
+    const row = this.adapter.getDatabase().prepare('SELECT * FROM tasks WHERE key = ?').get(key) as
+      | TaskRow
+      | undefined;
+    return row === undefined ? null : rowToTask(row);
+  }
+
+  /**
+   * Soft-deletes a task by stamping `deleted_at`. The row stays in
+   * SQLite so it can still be restored or audited.
+   *
+   * @param taskId - Internal task id
+   * @returns `true` when a row was updated, `false` when the id was
+   *   either unknown or already deleted
+   */
+  softDelete(taskId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `UPDATE tasks
+            SET deleted_at = datetime('now', 'subsec')
+          WHERE id = ? AND deleted_at IS NULL`,
+      )
+      .run(taskId);
+    return result.changes > 0;
+  }
+
+  /**
+   * Restores a previously soft-deleted task by clearing `deleted_at`.
+   *
+   * @param taskId - Internal task id
+   * @returns `true` when a row was updated, `false` when the id was
+   *   unknown or already active
+   */
+  restore(taskId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE tasks SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL')
+      .run(taskId);
+    return result.changes > 0;
+  }
+
+  /**
    * Runs the given function inside a SQLite transaction.
    *
    * Mirrors `Database.transaction()` from better-sqlite3 but exposes

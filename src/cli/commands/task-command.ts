@@ -20,6 +20,10 @@ interface ListOptions {
   readonly state?: string;
 }
 
+interface DeleteOptions {
+  readonly restore?: boolean;
+}
+
 /**
  * Registers the `mnema task` command group on the given Commander program.
  *
@@ -99,6 +103,26 @@ export class TaskCommand {
             payload,
             actor: container.identity.getDefaultActor(),
           });
+          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('delete <key>')
+      .description('Soft-delete a task. Pass --restore to bring it back.')
+      .option('--restore', 'Restore a previously deleted task', false)
+      .action(async (key: string, options: DeleteOptions) => {
+        await withCliContext(({ container }) => {
+          const result =
+            options.restore === true
+              ? container.task.restore({
+                  taskKey: key,
+                  actor: container.identity.getDefaultActor(),
+                })
+              : container.task.softDelete({
+                  taskKey: key,
+                  actor: container.identity.getDefaultActor(),
+                });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
         });
       });

@@ -272,4 +272,84 @@ export class TaskService {
     }
     return this.tasks.findAllActive();
   }
+
+  /**
+   * Soft-deletes a task by stamping `deleted_at`. The row stays in the
+   * database so it can be restored by {@link restore}; the markdown
+   * mirror is rebuilt on the next sync (the deleted task is omitted).
+   *
+   * @param input - Task key + identity tuple
+   * @returns The deleted task (post-stamp) or a structured error
+   */
+  softDelete(input: {
+    taskKey: string;
+    actor: string;
+    via?: string;
+    runId?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    const ok = this.tasks.softDelete(task.id);
+    if (!ok) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    this.audit.write({
+      kind: 'task_deleted',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: task.key, state: task.state },
+    });
+
+    this.sync.syncTask(task.key);
+
+    const updated = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    if (updated === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+    return Ok(updated);
+  }
+
+  /**
+   * Restores a previously soft-deleted task by clearing `deleted_at`.
+   *
+   * @param input - Task key + identity tuple
+   * @returns The restored task or a structured error
+   */
+  restore(input: {
+    taskKey: string;
+    actor: string;
+    via?: string;
+    runId?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    const ok = this.tasks.restore(task.id);
+    if (!ok) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    this.audit.write({
+      kind: 'task_restored',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: task.key, state: task.state },
+    });
+
+    this.sync.syncTask(task.key);
+
+    const restored = this.tasks.findByKey(input.taskKey);
+    if (restored === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+    return Ok(restored);
+  }
 }
