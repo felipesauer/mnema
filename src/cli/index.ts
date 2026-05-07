@@ -39,6 +39,7 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandLoader>> = {
   mcp: async () => new (await import('./commands/mcp-command.js')).McpCommand(),
   doctor: async () => new (await import('./commands/doctor-command.js')).DoctorCommand(),
   destroy: async () => new (await import('./commands/destroy-command.js')).DestroyCommand(),
+  migration: async () => new (await import('./commands/migration-command.js')).MigrationCommand(),
 };
 
 /**
