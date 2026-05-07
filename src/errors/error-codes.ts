@@ -35,6 +35,7 @@ export enum ErrorCode {
   SprintNotFound = 'SPRINT_NOT_FOUND',
   ActiveSprintExists = 'ACTIVE_SPRINT_EXISTS',
   SprintInvalidState = 'SPRINT_INVALID_STATE',
+  SprintInvalidPayload = 'SPRINT_INVALID_PAYLOAD',
   AttachmentSourceNotFound = 'ATTACHMENT_SOURCE_NOT_FOUND',
   DecisionNotFound = 'DECISION_NOT_FOUND',
   DecisionInvalidStatus = 'DECISION_INVALID_STATUS',

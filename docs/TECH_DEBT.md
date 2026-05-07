@@ -84,8 +84,6 @@ their absence is observable.
   via `InMemoryTransport`. Manual verification has not happened.
 - 🟡 **`mnema audit query --since=24h`** is unit tested in
   `audit-query.test.ts` but not E2E against rotated months.
-- 🟡 **Sprint `--starts-at` / `--ends-at`** flags accept any string;
-  nothing validates ISO8601. Same for `capacity` upper bound.
 - 🟢 **No coverage report** — `vitest run --coverage` was never wired
   into the lint/test cycle.
 

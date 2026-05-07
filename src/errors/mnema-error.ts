@@ -83,6 +83,10 @@ export type MnemaError =
       readonly fromState: string;
       readonly toState: string;
     }
+  | {
+      readonly kind: ErrorCode.SprintInvalidPayload;
+      readonly issues: ErrorIssue[];
+    }
   | { readonly kind: ErrorCode.AttachmentSourceNotFound; readonly path: string }
   | { readonly kind: ErrorCode.DecisionNotFound; readonly decisionKey: string }
   | {

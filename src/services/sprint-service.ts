@@ -2,12 +2,20 @@ import type { Sprint } from '../domain/entities/sprint.js';
 import type { Task } from '../domain/entities/task.js';
 import { SprintState } from '../domain/enums/sprint-state.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import type { MnemaError } from '../errors/mnema-error.js';
+import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import { isIso8601 } from '../utils/iso-date.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
+
+/**
+ * Upper bound for sprint capacity in story points; lifted from
+ * DESIGN.md §6.4 (no real team plans above 1k). The lower bound is 1
+ * — zero capacity is a CLOSED sprint, not a planned one.
+ */
+const MAX_SPRINT_CAPACITY = 1000;
 
 /**
  * Input for {@link SprintService.plan}.
@@ -76,6 +84,11 @@ export class SprintService {
    * @returns The created sprint or a structured error
    */
   plan(input: PlanSprintInput): Result<Sprint, MnemaError> {
+    const issues = validatePlanInput(input);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.SprintInvalidPayload, issues });
+    }
+
     const project = this.projects.findByKey(input.projectKey);
     if (project === null) {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
@@ -286,4 +299,36 @@ export class SprintService {
     if (project === null) return [];
     return this.sprints.findByProject(project.id);
   }
+}
+
+function validatePlanInput(input: PlanSprintInput): ErrorIssue[] {
+  const issues: ErrorIssue[] = [];
+
+  if (input.startsAt !== undefined && !isIso8601(input.startsAt)) {
+    issues.push({ path: ['startsAt'], message: 'must be a valid ISO8601 date' });
+  }
+  if (input.endsAt !== undefined && !isIso8601(input.endsAt)) {
+    issues.push({ path: ['endsAt'], message: 'must be a valid ISO8601 date' });
+  }
+  if (
+    input.startsAt !== undefined &&
+    input.endsAt !== undefined &&
+    isIso8601(input.startsAt) &&
+    isIso8601(input.endsAt) &&
+    new Date(input.endsAt).getTime() < new Date(input.startsAt).getTime()
+  ) {
+    issues.push({ path: ['endsAt'], message: 'must be on or after startsAt' });
+  }
+  if (input.capacity !== undefined) {
+    if (!Number.isFinite(input.capacity) || !Number.isInteger(input.capacity)) {
+      issues.push({ path: ['capacity'], message: 'must be a positive integer' });
+    } else if (input.capacity < 1 || input.capacity > MAX_SPRINT_CAPACITY) {
+      issues.push({
+        path: ['capacity'],
+        message: `must be between 1 and ${MAX_SPRINT_CAPACITY}`,
+      });
+    }
+  }
+
+  return issues;
 }
