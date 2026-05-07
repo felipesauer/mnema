@@ -52,6 +52,32 @@ export class MigrationRunner {
   }
 
   /**
+   * Lists every `NNN_*.sql` file in the directory, parsed and sorted
+   * by version. Used by drift-detection in `mnema doctor`.
+   *
+   * @param migrationsDir - Absolute path to the migrations directory
+   * @returns Migrations parsed from filenames, sorted by version
+   */
+  listAvailable(migrationsDir: string): readonly AppliedMigration[] {
+    return readdirSync(migrationsDir)
+      .filter((file) => file.endsWith('.sql'))
+      .sort()
+      .map((file) => ({ version: parseVersion(file), file }));
+  }
+
+  /**
+   * Returns the sorted list of versions recorded in
+   * `schema_migrations`. Empty when the table does not yet exist (the
+   * database has not been opened by `run` even once).
+   *
+   * @param adapter - SQLite adapter to query
+   * @returns Sorted list of applied version numbers
+   */
+  loadApplied(adapter: SqliteAdapter): readonly number[] {
+    return this.loadAppliedVersions(adapter);
+  }
+
+  /**
    * Reads the list of applied migration versions from the database.
    * Returns an empty array if `schema_migrations` does not yet exist.
    *

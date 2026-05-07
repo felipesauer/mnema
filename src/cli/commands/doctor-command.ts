@@ -8,10 +8,17 @@ import { ConfigLoader } from '../../config/config-loader.js';
 import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
+import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
+import { migrationsDir } from '../../utils/asset-paths.js';
 import { checkVersion } from '../../utils/version-check.js';
 
-interface DoctorCheck {
+/**
+ * One row in the doctor checklist, also returned by exported helpers
+ * such as {@link inspectMigrationDrift} so tests can assert on the
+ * structured form without rendering it.
+ */
+export interface DoctorCheck {
   readonly name: string;
   readonly ok: boolean;
   readonly detail: string;
@@ -103,8 +110,12 @@ export class DoctorCommand {
     if (existsSync(dbPath)) {
       try {
         const adapter = new SqliteAdapter(dbPath);
-        adapter.close();
-        checks.push({ name: 'database opens', ok: true, detail: dbPath });
+        try {
+          checks.push({ name: 'database opens', ok: true, detail: dbPath });
+          checks.push(...inspectMigrationDrift(adapter, migrationsDir()));
+        } finally {
+          adapter.close();
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'unknown';
         checks.push({ name: 'database opens', ok: false, detail: message });
@@ -116,6 +127,53 @@ export class DoctorCommand {
     printChecks(checks);
     return checks.every((c) => c.ok) ? ExitCode.Success : ExitCode.State;
   }
+}
+
+/**
+ * Compares migration files on disk to versions recorded in
+ * `schema_migrations`, surfacing two distinct drift modes:
+ *
+ * - **Pending**: a file exists that the database has not applied —
+ *   typically because the user upgraded the CLI without restarting
+ *   the MCP server / re-running anything that re-opens the DB. Fails
+ *   the check.
+ * - **Orphan**: a version recorded in the DB has no matching file —
+ *   would happen if someone deleted a migration from the source tree
+ *   after it was applied. Fails the check; downgrade is not safe.
+ *
+ * Exported for tests; the doctor flow calls it with the bundled
+ * `migrationsDir()`.
+ *
+ * @param adapter - SQLite adapter for the project database
+ * @param dir - Migrations directory to compare against
+ * @returns Drift checks in the order doctor renders them
+ */
+export function inspectMigrationDrift(adapter: SqliteAdapter, dir: string): DoctorCheck[] {
+  const runner = new MigrationRunner();
+  const onDisk = runner.listAvailable(dir);
+  const applied = new Set(runner.loadApplied(adapter));
+  const onDiskVersions = new Set(onDisk.map((m) => m.version));
+
+  const pending = onDisk.filter((m) => !applied.has(m.version));
+  const orphan = [...applied].filter((v) => !onDiskVersions.has(v));
+
+  const checks: DoctorCheck[] = [];
+  checks.push({
+    name: 'migrations applied',
+    ok: pending.length === 0,
+    detail:
+      pending.length === 0
+        ? `${applied.size} applied, ${onDisk.length} on disk`
+        : `pending: ${pending.map((m) => m.file).join(', ')}`,
+  });
+  if (orphan.length > 0) {
+    checks.push({
+      name: 'migrations consistent',
+      ok: false,
+      detail: `db has versions with no matching file: ${orphan.join(', ')}`,
+    });
+  }
+  return checks;
 }
 
 function printChecks(checks: readonly DoctorCheck[]): void {

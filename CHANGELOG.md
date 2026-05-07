@@ -10,6 +10,18 @@ stable release.
 
 ## [Unreleased]
 
+### Added
+
+- `mnema doctor` now reports migration drift: it flags pending
+  migrations on disk that the database has not applied and orphan
+  versions in `schema_migrations` whose source files have disappeared.
+- `mnema migration generate <slug>` writes the next `NNN_<slug>.sql`
+  stub under the bundled migrations directory; the slug is normalised
+  to snake_case and the version is the highest existing one + 1.
+- `pnpm test:coverage` runs the suite under `@vitest/coverage-v8`
+  with text/html/lcov reporters; baseline at 60 % statements / 54 %
+  branches against the production code in `src/`.
+
 ## [0.1.0-alpha.1] — 2026-05-07
 
 First public alpha. The core surface is complete: tasks, sprints,
