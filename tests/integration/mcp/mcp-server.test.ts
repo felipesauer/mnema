@@ -23,12 +23,12 @@ interface Harness {
 
 async function setupHarness(): Promise<Harness> {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-mcp-'));
-  for (const dir of ['.app', '.audit', 'backlog', 'workflows']) {
+  for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
   }
   copyFileSync(
     path.join(workflowsSrc, 'default.json'),
-    path.join(projectRoot, 'workflows', 'default.json'),
+    path.join(projectRoot, '.mnema/workflows', 'default.json'),
   );
 
   const config = ConfigSchema.parse({

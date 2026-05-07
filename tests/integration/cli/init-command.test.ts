@@ -36,7 +36,7 @@ describe('InitCommand.run (silent mode)', () => {
     expect((config.project as { key: string }).key).toBe('MYAPP');
     expect((config.project as { name: string }).name).toBe('My App');
     expect(config.workflow).toBe('default');
-    expect(existsSync(path.join(projectRoot, '.app', 'state.db'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
   });
 
   it('refuses to overwrite an existing config without --force', () => {

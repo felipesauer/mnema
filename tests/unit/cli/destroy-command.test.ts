@@ -1,23 +1,34 @@
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { type DestroyPaths, removeArtifacts } from '@/cli/commands/destroy-command.js';
+import { CONFIG_FILE_RELATIVE } from '@/config/config-loader.js';
 
 const PATHS: DestroyPaths = {
-  state: '.app',
-  audit: '.audit',
-  workflows: 'workflows',
-  backlog: 'backlog',
-  sprints: 'sprints',
-  roadmap: 'roadmap',
-  memory: 'memory',
-  skills: 'skills',
+  state: '.mnema/state',
+  audit: '.mnema/audit',
+  workflows: '.mnema/workflows',
+  backlog: '.mnema/backlog',
+  sprints: '.mnema/sprints',
+  roadmap: '.mnema/roadmap',
+  memory: '.mnema/memory',
+  skills: '.mnema/skills',
   workflow: 'default',
 };
 
 const bundledWorkflow = path.resolve('workflows/default.json');
+
+const AGENTS_MANAGED = `<!-- MNEMA:START -->\n# Mnema generated content\n<!-- MNEMA:END -->\n`;
 
 describe('removeArtifacts', () => {
   let projectRoot: string;
@@ -36,8 +47,10 @@ describe('removeArtifacts', () => {
     ]) {
       mkdirSync(path.join(projectRoot, dir), { recursive: true });
     }
-    writeFileSync(path.join(projectRoot, 'mnema.config.json'), '{}', 'utf-8');
-    writeFileSync(path.join(projectRoot, 'AGENTS.md'), '# x', 'utf-8');
+    const configFile = path.join(projectRoot, CONFIG_FILE_RELATIVE);
+    mkdirSync(path.dirname(configFile), { recursive: true });
+    writeFileSync(configFile, '{}', 'utf-8');
+    writeFileSync(path.join(projectRoot, 'AGENTS.md'), AGENTS_MANAGED, 'utf-8');
     // Workflow JSON is a byte-for-byte copy of the bundled template,
     // matching what `init` does on a fresh project.
     copyFileSync(bundledWorkflow, path.join(projectRoot, PATHS.workflows, 'default.json'));
@@ -54,27 +67,24 @@ describe('removeArtifacts', () => {
     });
     expect(removed).toEqual(
       expect.arrayContaining([
-        '.app',
-        'mnema.config.json',
+        CONFIG_FILE_RELATIVE,
+        PATHS.state,
+        path.join(PATHS.workflows, 'default.json'),
+        PATHS.skills,
         'AGENTS.md',
-        path.join('workflows', 'default.json'),
-        'skills',
       ]),
     );
-    expect(existsSync(path.join(projectRoot, '.app'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'mnema.config.json'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'backlog'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.audit'))).toBe(true);
-    // The workflows/ directory itself is preserved — only the bundled
-    // template that init wrote was deleted. The user's other custom
-    // workflows (or the dev tree's bundled presets) survive.
-    expect(existsSync(path.join(projectRoot, 'workflows'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, 'workflows', 'default.json'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.state))).toBe(false);
+    expect(existsSync(path.join(projectRoot, CONFIG_FILE_RELATIVE))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(true);
+    expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(true);
+    expect(existsSync(path.join(projectRoot, PATHS.workflows))).toBe(true);
+    expect(existsSync(path.join(projectRoot, PATHS.workflows, 'default.json'))).toBe(false);
+    // AGENTS.md had only the managed block, so it disappears entirely.
+    expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(false);
   });
 
   it('preserves a customised workflow JSON', () => {
-    // Overwrite default.json with hand-edited content so it no longer
-    // byte-matches the bundled template. Destroy must leave it alone.
     writeFileSync(
       path.join(projectRoot, PATHS.workflows, 'default.json'),
       '{"customised": true}\n',
@@ -84,8 +94,8 @@ describe('removeArtifacts', () => {
       keepMarkdown: true,
       keepAudit: true,
     });
-    expect(removed).not.toContain(path.join('workflows', 'default.json'));
-    expect(existsSync(path.join(projectRoot, 'workflows', 'default.json'))).toBe(true);
+    expect(removed).not.toContain(path.join(PATHS.workflows, 'default.json'));
+    expect(existsSync(path.join(projectRoot, PATHS.workflows, 'default.json'))).toBe(true);
   });
 
   it('preserves a non-empty skills directory', () => {
@@ -94,34 +104,46 @@ describe('removeArtifacts', () => {
       keepMarkdown: true,
       keepAudit: true,
     });
-    expect(removed).not.toContain('skills');
-    expect(existsSync(path.join(projectRoot, 'skills'))).toBe(true);
+    expect(removed).not.toContain(PATHS.skills);
+    expect(existsSync(path.join(projectRoot, PATHS.skills))).toBe(true);
+  });
+
+  it('strips only the managed block from a hand-edited AGENTS.md', () => {
+    const userPrefix = '# My project\n\nCustom instructions for the agent.\n\n';
+    writeFileSync(path.join(projectRoot, 'AGENTS.md'), `${userPrefix}${AGENTS_MANAGED}`, 'utf-8');
+
+    removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: true });
+
+    expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
+    const remaining = readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8');
+    expect(remaining).toContain('Custom instructions');
+    expect(remaining).not.toContain('MNEMA:START');
   });
 
   it('also removes markdown trees when keepMarkdown=false', () => {
     removeArtifacts(projectRoot, PATHS, { keepMarkdown: false, keepAudit: true });
-    expect(existsSync(path.join(projectRoot, 'backlog'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'sprints'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'roadmap'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'memory'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, '.audit'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.sprints))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.roadmap))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.memory))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(true);
   });
 
   it('also removes the audit log when keepAudit=false', () => {
     removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: false });
-    expect(existsSync(path.join(projectRoot, '.audit'))).toBe(false);
-    expect(existsSync(path.join(projectRoot, 'backlog'))).toBe(true);
+    expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(true);
   });
 
   it('skips paths that do not exist without raising', () => {
     rmSync(path.join(projectRoot, 'AGENTS.md'));
-    rmSync(path.join(projectRoot, 'workflows'), { recursive: true });
+    rmSync(path.join(projectRoot, PATHS.workflows), { recursive: true });
     const removed = removeArtifacts(projectRoot, PATHS, {
       keepMarkdown: true,
       keepAudit: true,
     });
     expect(removed).not.toContain('AGENTS.md');
-    expect(removed).not.toContain(path.join('workflows', 'default.json'));
-    expect(removed).toContain('mnema.config.json');
+    expect(removed).not.toContain(path.join(PATHS.workflows, 'default.json'));
+    expect(removed).toContain(CONFIG_FILE_RELATIVE);
   });
 });

@@ -1,4 +1,12 @@
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync } from 'node:fs';
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
@@ -7,10 +15,11 @@ import pc from 'picocolors';
 // `@inquirer/prompts` is loaded lazily inside `resolveDecision` —
 // `--yes` skips the cost, and unrelated CLI paths never touch it.
 
-import { ConfigLoader } from '../../config/config-loader.js';
+import { CONFIG_FILE_RELATIVE, ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { workflowsDir } from '../../utils/asset-paths.js';
+import { resolveProjectRoot } from '../project-root.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 
 interface DestroyOptions {
@@ -49,7 +58,7 @@ export class DestroyCommand {
           process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
         }
         const config = loader.load();
-        const projectRoot = path.dirname(configFile);
+        const projectRoot = resolveProjectRoot(configFile);
 
         let decision: DestroyDecision | null;
         try {
@@ -170,8 +179,14 @@ export interface DestroyPaths {
  * Exported for tests; the CLI command wraps it after collecting the
  * confirmation flow.
  *
- * @param projectRoot - Absolute path containing `mnema.config.json`
- * @param paths - Configured project paths
+ * The default layout puts every Mnema-managed artefact under
+ * `.mnema/`, so the common case is: drop the directory, then strip
+ * the Mnema-managed section from `AGENTS.md`. Custom layouts where
+ * `paths.*` point outside `.mnema/` are still honoured: each
+ * configured path is removed individually, gated by the keep flags.
+ *
+ * @param projectRoot - Absolute path containing `.mnema/mnema.config.json`
+ * @param paths - Configured project paths plus the active workflow name
  * @param decision - Whether to keep markdown trees and the audit log
  * @returns The relative paths that were removed, in execution order
  */
@@ -182,27 +197,19 @@ export function removeArtifacts(
 ): string[] {
   const removed: string[] = [];
 
-  // Owned by Mnema unconditionally: the config file, the AGENTS.md
-  // template (init no-ops on a pre-existing one, but if we are here
-  // the project was Mnema-managed, so AGENTS.md is fair game), and
-  // the state directory (`.app/` by default — gitignored, holds the
-  // SQLite database and attachments).
-  for (const rel of ['mnema.config.json', 'AGENTS.md', paths.state]) {
-    if (removeIfExists(projectRoot, rel)) removed.push(rel);
-  }
+  // Always remove: the config file, the SQLite state dir, and the
+  // skills dir if it still has only the bundled scaffolding (init
+  // creates it empty; `mnema adopt` adds files only on demand).
+  if (removeIfExists(projectRoot, CONFIG_FILE_RELATIVE)) removed.push(CONFIG_FILE_RELATIVE);
+  if (removeIfExists(projectRoot, paths.state)) removed.push(paths.state);
+  if (removeIfEmptyDir(projectRoot, paths.skills)) removed.push(paths.skills);
 
   // The bundled workflow JSON: only remove the file `init` actually
-  // wrote, not the whole directory. Use a byte-for-byte match against
-  // the package's bundled template — if the user customised the
-  // workflow, it stays. The directory is left in place either way;
-  // the user might keep custom workflows there.
+  // wrote, not the whole directory. Byte-match against the package's
+  // bundled template; if the user customised the workflow it stays.
+  // Directory remains so other custom workflows survive untouched.
   const removedWorkflow = removeBundledWorkflow(projectRoot, paths.workflows, paths.workflow);
   if (removedWorkflow !== null) removed.push(removedWorkflow);
-
-  // The skills directory: init creates it empty, so only delete it
-  // when still empty. Any skill the user wrote (or that `mnema adopt`
-  // dropped in) keeps the directory alive.
-  if (removeIfEmptyDir(projectRoot, paths.skills)) removed.push(paths.skills);
 
   if (!decision.keepAudit) {
     if (removeIfExists(projectRoot, paths.audit)) removed.push(paths.audit);
@@ -213,6 +220,17 @@ export function removeArtifacts(
       if (removeIfExists(projectRoot, rel)) removed.push(rel);
     }
   }
+
+  // After every directly-managed path is gone, fold an empty `.mnema/`
+  // shell so the project root looks pristine. The dir stays only when
+  // the user opted to keep something inside it (audit/markdown).
+  removeIfEmptyDir(projectRoot, '.mnema');
+
+  // Strip the AGENTS.md managed block. Whatever the user wrote outside
+  // the markers stays; if the file becomes empty after the strip, drop
+  // it entirely so a clean re-init starts from scratch.
+  const agentsRel = stripManagedAgentsBlock(projectRoot);
+  if (agentsRel !== null) removed.push(agentsRel);
 
   return removed;
 }
@@ -264,4 +282,38 @@ function removeBundledWorkflow(
 
   unlinkSync(target);
   return path.join(workflowsRel, filename);
+}
+
+const AGENTS_MD_BEGIN = '<!-- MNEMA:START -->';
+const AGENTS_MD_END = '<!-- MNEMA:END -->';
+
+/**
+ * Removes the Mnema-managed block from `AGENTS.md`. Returns
+ * `'AGENTS.md'` when the file was modified or deleted, `null`
+ * otherwise.
+ *
+ * - File missing → no-op.
+ * - File without the managed markers → left alone (the user owns it).
+ * - File with the markers → strip the block. If what remains is empty
+ *   or only whitespace, delete the file entirely; otherwise rewrite
+ *   it without the block.
+ */
+function stripManagedAgentsBlock(projectRoot: string): string | null {
+  const file = path.join(projectRoot, 'AGENTS.md');
+  if (!existsSync(file)) return null;
+  const previous = readFileSync(file, 'utf-8');
+  const start = previous.indexOf(AGENTS_MD_BEGIN);
+  const end = previous.indexOf(AGENTS_MD_END);
+  if (start === -1 || end === -1 || end < start) return null;
+
+  const before = previous.slice(0, start);
+  const after = previous.slice(end + AGENTS_MD_END.length);
+  const remaining = `${before}${after}`.trim();
+
+  if (remaining.length === 0) {
+    rmSync(file);
+  } else {
+    writeFileSync(file, `${remaining}\n`, 'utf-8');
+  }
+  return 'AGENTS.md';
 }

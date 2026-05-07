@@ -4,35 +4,42 @@ import path from 'node:path';
 import { type Config, ConfigSchema } from './config-schema.js';
 
 /**
- * Thrown when `mnema.config.json` is not found in the current directory
- * or any of its ancestors up to the filesystem root.
+ * Canonical location of the configuration file, relative to the
+ * project root.
+ */
+export const CONFIG_FILE_RELATIVE = '.mnema/mnema.config.json';
+
+/**
+ * Thrown when `.mnema/mnema.config.json` is not found in the current
+ * directory or any of its ancestors up to the filesystem root.
  */
 export class ConfigNotFoundError extends Error {
   constructor() {
-    super('mnema.config.json not found in current directory or any ancestor');
+    super(`${CONFIG_FILE_RELATIVE} not found in current directory or any ancestor`);
     this.name = 'ConfigNotFoundError';
   }
 }
 
 /**
- * Thrown when `mnema.config.json` exists but violates the schema.
+ * Thrown when the configuration file exists but violates the schema.
  * The `issues` field carries the raw Zod issues for diagnostics.
  */
 export class ConfigInvalidError extends Error {
   constructor(public readonly issues: unknown) {
-    super('mnema.config.json is invalid');
+    super(`${CONFIG_FILE_RELATIVE} is invalid`);
     this.name = 'ConfigInvalidError';
   }
 }
 
 /**
- * Loads and validates `mnema.config.json` by walking the directory tree
- * upward (mirroring how `git` discovers its repository root).
+ * Loads and validates the project configuration by walking the
+ * directory tree upward (mirroring how `git` discovers its repository
+ * root).
  */
 export class ConfigLoader {
   /**
-   * Searches for `mnema.config.json` starting from the given directory,
-   * walking up the parent chain until the filesystem root.
+   * Searches for `.mnema/mnema.config.json` starting from the given
+   * directory, walking up the parent chain until the filesystem root.
    *
    * @param startDir - Starting directory; defaults to `process.cwd()`
    * @returns Absolute path to the config file, or `null` if not found
@@ -42,7 +49,7 @@ export class ConfigLoader {
     const root = path.parse(dir).root;
 
     while (true) {
-      const candidate = path.join(dir, 'mnema.config.json');
+      const candidate = path.join(dir, CONFIG_FILE_RELATIVE);
       if (existsSync(candidate)) return candidate;
       if (dir === root) return null;
       dir = path.dirname(dir);
