@@ -8,9 +8,12 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
-import { confirm, input, select } from '@inquirer/prompts';
 import type { Command } from 'commander';
 import pc from 'picocolors';
+
+// `@inquirer/prompts` is loaded lazily inside `resolveOptions` —
+// silent runs (`--yes` or all flags supplied) never pay the cost,
+// and `mnema --version` / `mnema task ...` never touch it at all.
 
 import type { Config } from '../../config/config-schema.js';
 import { ConfigSchema } from '../../config/config-schema.js';
@@ -363,6 +366,9 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
   }
 
   process.stdout.write(`${pc.bold('Mnema init')} — answer a few questions to bootstrap.\n\n`);
+
+  // Lazy: silent paths above never touch @inquirer/prompts.
+  const { confirm, input, select } = await import('@inquirer/prompts');
 
   const name = await input({
     message: 'Project name',

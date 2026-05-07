@@ -81,13 +81,14 @@ _(none — init wizard, destroy, task delete shipped in Phase B.)_
 
 ## 7. Performance
 
-- 🟡 **All three CLI budgets exceeded** — `pnpm bench` reports
-  ~210ms / 230ms / 250ms for `--version`, `task list`, `task move`
-  (budgets 50/200/100ms; ARCHITECTURE.md §15). Spawn cost dominates
-  short commands. Mitigations to evaluate: lazy-load
-  `@modelcontextprotocol/sdk` and `better-sqlite3` only when needed,
-  ship a precompiled CJS bundle in `dist/` for shorter parse, drop
-  `tsc-alias` at runtime by switching to relative imports.
+- 🟢 **`task move` budget still ~67ms over** — Phase D landed lazy
+  command registration plus lazy MCP/Inquirer; `--version` (42ms) and
+  `task list` (180ms) now sit inside their budgets, but `task move`
+  is still ~167ms vs the 100ms target in ARCHITECTURE.md §15. The
+  remaining cost is the SQLite open + workflow gate validation on the
+  hot path. Mitigations to evaluate when needed: defer the workflow
+  JSON parse until after the gate runs, or open the DB in WAL mode at
+  init so the first connection is cheaper.
 - 🟢 **`pnpm bench` requires a manual `pnpm build` first** — the
   benchmark spawns the compiled CLI but doesn't depend on the build
   task. Either add `prebench: pnpm build` or compile via tsx in-process.

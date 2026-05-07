@@ -1,8 +1,11 @@
 import type { Command } from 'commander';
 
-import { MnemaMcpServer } from '../../mcp/mcp-server.js';
-import { logger } from '../../utils/logger.js';
 import { openCliContext } from '../cli-context.js';
+
+// `@modelcontextprotocol/sdk` is the heaviest import in the project
+// (~40-60ms cold). It is only needed by `mnema mcp serve`, so we
+// lazy-load both `MnemaMcpServer` and the logger inside the action —
+// every other CLI path now skips that cost entirely.
 
 const SUPPORTED_CLIENTS = ['claude-code', 'cursor', 'aider', 'generic'] as const;
 type SupportedClient = (typeof SUPPORTED_CLIENTS)[number];
@@ -36,6 +39,13 @@ export class McpCommand {
         'Override the agent handle (also taken from MCP client metadata)',
       )
       .action(async (options: ServeOptions) => {
+        // Lazy: pull in the MCP SDK + logger only when the user
+        // actually wants to start the server.
+        const [{ MnemaMcpServer }, { logger }] = await Promise.all([
+          import('../../mcp/mcp-server.js'),
+          import('../../utils/logger.js'),
+        ]);
+
         const context = openCliContext();
         const clientMetadata: Record<string, unknown> = {
           pid: process.pid,

@@ -1,9 +1,11 @@
 import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
-import { confirm, input } from '@inquirer/prompts';
 import type { Command } from 'commander';
 import pc from 'picocolors';
+
+// `@inquirer/prompts` is loaded lazily inside `resolveDecision` —
+// `--yes` skips the cost, and unrelated CLI paths never touch it.
 
 import { ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
@@ -88,6 +90,9 @@ async function resolveDecision(
       keepAudit: options.keepAudit === true,
     };
   }
+
+  // Lazy: --yes path above never touches @inquirer/prompts.
+  const { confirm, input } = await import('@inquirer/prompts');
 
   const proceed = await confirm({
     message: 'This will delete the SQLite database and project config. Continue?',
