@@ -3,8 +3,19 @@ dist/
 .app/
 coverage/
 *.log
+*.tgz
 .DS_Store
 
 # Local-only documentation and planning
 docs/
 .plan/
+
+# Dogfood: running mnema against itself for testing
+mnema.config.json
+AGENTS.md
+.audit/
+backlog/
+sprints/
+roadmap/
+memory/
+skills/
