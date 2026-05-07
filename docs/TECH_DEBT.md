@@ -52,13 +52,6 @@ their absence is observable.
 
 ## 4. Concurrency and resilience
 
-- 🟡 **Cooperative file lock on the sync buffer** — ARCHITECTURE.md §11.3
-  describes "lock cooperativo (file lock) durante append" between
-  multiple `mnema mcp serve` instances writing the same
-  `.app/buffer.jsonl`. We rely on POSIX `O_APPEND` atomicity for
-  shorter-than-PIPE_BUF writes; that is correct for line-by-line
-  appends but does not protect against the simultaneous truncate
-  (`flushAll`) of two servers. Audit when adding multi-server tests.
 - 🟡 **Buffer recovery under crash** — `SyncBuffer.recover()` is unit
   tested with `mkdtempSync` and idempotent flush. The "kill the
   process mid-flush" scenario in EXECUTION_GUIDE.md §5 criteria has
