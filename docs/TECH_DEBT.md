@@ -49,9 +49,6 @@ their absence is observable.
 
 ## 3. UX gaps
 
-- 🟡 **Interactive `init` wizard** — Phase 8 explicitly kept `init`
-  silent/flag-driven. DESIGN.md §6.1 prescribes a wizard with
-  `@inquirer/prompts`. The dependency is already installed.
 
 ## 4. Concurrency and resilience
 
