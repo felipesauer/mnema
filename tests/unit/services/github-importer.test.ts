@@ -65,6 +65,36 @@ describe('GithubIssuesImporter', () => {
     expect(created).toEqual([{ title: 'Implement OAuth' }]);
   });
 
+  it('persists labels, issue number and author in task metadata', async () => {
+    const calls: { metadata?: Record<string, unknown> }[] = [];
+    const tasks = {
+      create: (input: { metadata?: Record<string, unknown> }) => {
+        calls.push({ metadata: input.metadata });
+        return { ok: true as const, value: { key: 'X-1' } as never };
+      },
+    } as unknown as TaskService;
+
+    const issueWithAuthor = {
+      ...fakeIssue,
+      user: { login: 'octocat' },
+    };
+    const importer = new GithubIssuesImporter(
+      tasks,
+      'TEST',
+      'daniel',
+      makeFetch([issueWithAuthor]),
+    );
+    await importer.import('owner/repo');
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.metadata).toEqual({
+      source: 'github',
+      issue_number: 1,
+      author: 'octocat',
+      labels: ['enhancement', 'priority:high'],
+    });
+  });
+
   it('throws when GitHub returns a non-2xx status', async () => {
     const tasks = {
       create: () => ({ ok: true, value: {} as never }),

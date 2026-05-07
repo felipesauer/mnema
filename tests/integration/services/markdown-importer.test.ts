@@ -74,8 +74,8 @@ describe('MarkdownImporter (integration)', () => {
     expect(result.value.tasksCreated).toBe(2);
     expect(result.value.filesScanned).toBe(1);
     expect(container.task.list().map((t) => t.title)).toEqual([
-      'Implement OAuth',
-      'Refactor session middleware',
+      'DRAFT Implement OAuth',
+      'DRAFT Refactor session middleware',
     ]);
   });
 

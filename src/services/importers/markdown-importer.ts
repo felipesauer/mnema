@@ -15,7 +15,6 @@ export interface ParsedTask {
   readonly title: string;
   readonly description: string | null;
   readonly acceptanceCriteria: readonly string[];
-  readonly state: string | null;
   readonly source: string;
 }
 
@@ -35,10 +34,14 @@ export interface MarkdownImportSummary {
  * Imports tasks from one or more Markdown files following a small set
  * of heuristics:
  *
- * - Each `##` (or higher-level) heading becomes a task. The heading
- *   text is split into an optional STATE prefix and the rest of the
- *   line; the prefix must match an existing task state to be honoured.
- *   Examples that work: `## DRAFT Implement OAuth`, `### TODO Add CI`.
+ * - Each `##` (or higher-level) heading becomes a task. The full
+ *   heading text becomes the title — leading uppercase tokens like
+ *   `DRAFT` or `TODO` are kept as part of the title, not interpreted
+ *   as a workflow state. The importer is intentionally state-blind:
+ *   honouring a `## STATE Title` hint would require running the
+ *   workflow's gate validation against payload the markdown does not
+ *   carry, so all imported tasks land in the workflow's initial
+ *   state and can be transitioned afterwards if needed.
  * - Bullet items (`- `, `* `, `+ `) directly under the heading become
  *   acceptance criteria.
  * - Other free-form text below the heading becomes the description
@@ -115,7 +118,6 @@ export class MarkdownImporter {
 
     let current: {
       title: string;
-      state: string | null;
       acceptance: string[];
       paragraphs: string[];
     } | null = null;
@@ -133,7 +135,6 @@ export class MarkdownImporter {
         title: current.title,
         description: current.paragraphs.length > 0 ? current.paragraphs.join('\n\n') : null,
         acceptanceCriteria: current.acceptance,
-        state: current.state,
         source,
       });
       current = null;
@@ -146,8 +147,7 @@ export class MarkdownImporter {
         const headingText = (headingMatch[2] ?? '').trim();
         if (headingText.length === 0) continue;
         current = {
-          title: stripStatePrefix(headingText).title,
-          state: stripStatePrefix(headingText).state,
+          title: headingText,
           acceptance: [],
           paragraphs: [],
         };
@@ -174,18 +174,6 @@ export class MarkdownImporter {
 
     return tasks;
   }
-}
-
-function stripStatePrefix(headingText: string): {
-  readonly title: string;
-  readonly state: string | null;
-} {
-  const tokens = headingText.split(/\s+/);
-  const head = tokens[0] ?? '';
-  if (/^[A-Z][A-Z0-9_]+$/.test(head) && tokens.length > 1) {
-    return { state: head, title: tokens.slice(1).join(' ') };
-  }
-  return { state: null, title: headingText };
 }
 
 function collectFiles(sourcePath: string, recursive: boolean): string[] {
