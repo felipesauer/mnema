@@ -83,23 +83,28 @@ export class GithubIssuesImporter {
         continue;
       }
 
-      const labels = (issue.labels ?? []).map((l) => (typeof l === 'string' ? l : (l.name ?? '')));
+      const labels = (issue.labels ?? [])
+        .map((l) => (typeof l === 'string' ? l : (l.name ?? '')))
+        .filter((label): label is string => label.length > 0);
+      const author = issue.user?.login;
 
       const result = this.tasks.create({
         projectKey: this.projectKey,
         title: issue.title,
         description: issue.body ?? undefined,
         actor: this.actor,
+        metadata: {
+          source: 'github',
+          issue_number: issue.number,
+          ...(author !== undefined ? { author } : {}),
+          ...(labels.length > 0 ? { labels } : {}),
+        },
       });
       if (!result.ok) {
         skipped.push({ number: issue.number, reason: String(result.error.kind) });
         continue;
       }
       created += 1;
-      // Persist labels and the original number/author in task metadata
-      // so they survive across syncs. Done via raw SQL to keep the
-      // service surface small.
-      void labels;
     }
 
     return { issuesScanned: issues.length, tasksCreated: created, skipped };

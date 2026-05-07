@@ -21,6 +21,24 @@ stable release.
 - `pnpm test:coverage` runs the suite under `@vitest/coverage-v8`
   with text/html/lcov reporters; baseline at 60 % statements / 54 %
   branches against the production code in `src/`.
+- `TaskService.create` accepts a `metadata` field; the GitHub Issues
+  importer uses it to persist `{ source: 'github', issue_number,
+  author, labels }` so the trail back to the original record survives.
+
+### Changed
+
+- The Markdown importer is now explicitly state-blind: a heading like
+  `## DRAFT Implement OAuth` becomes the literal title `"DRAFT
+  Implement OAuth"` in the workflow's initial state. Honouring the
+  prefix would have required running the gate against payload the
+  markdown does not carry; better-shaped imports happen via
+  `task move` after the fact.
+
+### Removed
+
+- `.npmrc` (the `auto-install-peers` and `only-built-dependencies`
+  keys were redundant: pnpm installs peers by default and the build
+  allow-list lives in `package.json#pnpm.onlyBuiltDependencies`).
 
 ## [0.1.0-alpha.1] — 2026-05-07
 

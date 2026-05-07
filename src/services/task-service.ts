@@ -26,6 +26,13 @@ export interface CreateTaskInput {
   readonly estimate?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
+  /**
+   * Free-form metadata persisted alongside the task. Importers use it
+   * to carry source-specific data (`{ source: 'github', issue_number,
+   * author, labels }`) so the trail back to the original record is
+   * preserved without bloating the canonical fields.
+   */
+  readonly metadata?: Readonly<Record<string, unknown>>;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -101,6 +108,7 @@ export class TaskService {
         assigneeId: input.assigneeId ?? null,
         reporterId,
         state: initialState,
+        metadata: input.metadata,
       });
 
       this.transitions.record({
