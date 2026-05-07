@@ -146,4 +146,57 @@ describe('SprintService', () => {
     const active = sprints.active('TEST');
     expect(active?.sprint.key).toBe('TEST-SPRINT-1');
   });
+
+  describe('plan payload validation', () => {
+    it('rejects a non-ISO8601 startsAt', () => {
+      const result = sprints.plan({
+        projectKey: 'TEST',
+        name: 'A',
+        startsAt: 'tomorrow',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.SprintInvalidPayload);
+    });
+
+    it('rejects an endsAt before startsAt', () => {
+      const result = sprints.plan({
+        projectKey: 'TEST',
+        name: 'A',
+        startsAt: '2026-05-10',
+        endsAt: '2026-05-01',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.SprintInvalidPayload);
+    });
+
+    it('rejects a capacity outside [1, 1000]', () => {
+      for (const bad of [0, -3, 1500, 1.5]) {
+        const result = sprints.plan({
+          projectKey: 'TEST',
+          name: 'A',
+          capacity: bad,
+          actor: 'daniel',
+        });
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.error.kind).toBe(ErrorCode.SprintInvalidPayload);
+      }
+    });
+
+    it('accepts a valid payload with all bounds', () => {
+      const result = sprints.plan({
+        projectKey: 'TEST',
+        name: 'A',
+        startsAt: '2026-05-01',
+        endsAt: '2026-05-15T18:00:00Z',
+        capacity: 42,
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(true);
+    });
+  });
 });

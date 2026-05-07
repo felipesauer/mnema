@@ -152,6 +152,14 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Allowed transitions: PLANNED → ACTIVE → CLOSED`);
       break;
 
+    case ErrorCode.SprintInvalidPayload:
+      lines.push('Sprint payload is invalid');
+      for (const issue of error.issues) {
+        lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
+      }
+      lines.push(`${pc.dim('hint:')} Use ISO8601 dates and a positive integer capacity`);
+      break;
+
     case ErrorCode.AttachmentSourceNotFound:
       lines.push(`Source file does not exist: ${error.path}`);
       lines.push(`${pc.dim('hint:')} Check the path is reachable from the project root`);
