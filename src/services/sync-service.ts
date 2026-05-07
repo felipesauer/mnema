@@ -137,7 +137,9 @@ export class SyncService {
    */
   flushAll(): void {
     if (this.buffer === null) return;
-    const entries = this.buffer.readAll();
+    // drain() takes the cooperative lock so a parallel flush from
+    // another MCP server cannot replay the same entries.
+    const entries = this.buffer.drain();
     if (entries.length === 0) {
       this.lastFlushAt = Date.now();
       return;
@@ -148,7 +150,6 @@ export class SyncService {
       this.flushOne(entry.taskKey);
       seen.add(entry.taskKey);
     }
-    this.buffer.truncate();
     this.lastFlushAt = Date.now();
   }
 

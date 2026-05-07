@@ -8,6 +8,8 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
+import lockfile from 'proper-lockfile';
+
 /**
  * One line in the persistent sync buffer.
  *
@@ -26,22 +28,45 @@ export interface SyncBufferEntry {
 }
 
 /**
+ * Lock retry policy used when two MCP servers race for the buffer.
+ *
+ * `proper-lockfile.lockSync` does not accept a retries option (only
+ * the async `lock` does), so we drive the retry loop ourselves: ten
+ * attempts with 50ms backoff. The truncate critical section is
+ * microseconds, so this leaves the worst-case wait well under 1s.
+ */
+const LOCK_MAX_ATTEMPTS = 10;
+const LOCK_BACKOFF_MS = 50;
+
+/**
  * Persistent append-only buffer of pending markdown updates, stored at
  * `.app/buffer.jsonl` next to the SQLite database.
  *
- * Single-process safe by design (each MCP server has its own logical
- * session). Multiple servers writing concurrently rely on the OS guarantee
- * that POSIX `O_APPEND` writes shorter than `PIPE_BUF` are atomic — every
+ * Append is single-process safe by design (each MCP server has its own
+ * logical session); concurrent appends rely on the OS guarantee that
+ * POSIX `O_APPEND` writes shorter than `PIPE_BUF` are atomic — every
  * line is well under the kernel's 4 KiB threshold.
+ *
+ * The destructive `truncate` path is wrapped in a cooperative file
+ * lock via `proper-lockfile` so that two MCP servers flushing in
+ * parallel cannot lose entries by overlapping their write+rename.
  */
 export class SyncBuffer {
   private readonly bufferPath: string;
+  private readonly lockTarget: string;
 
   constructor(stateDir: string) {
     if (!existsSync(stateDir)) {
       mkdirSync(stateDir, { recursive: true });
     }
     this.bufferPath = path.join(stateDir, 'buffer.jsonl');
+    // proper-lockfile creates a `.lock` directory next to the target;
+    // we point it at a stable sibling so the lock survives buffer
+    // truncation.
+    this.lockTarget = path.join(stateDir, 'buffer.lock');
+    if (!existsSync(this.lockTarget)) {
+      writeFileSync(this.lockTarget, '', 'utf-8');
+    }
   }
 
   /**
@@ -76,6 +101,67 @@ export class SyncBuffer {
    * entries when one was corrupted by an aborted write.
    */
   readAll(): readonly SyncBufferEntry[] {
+    return this.readAllUnlocked();
+  }
+
+  /**
+   * Replaces the buffer file with an empty one atomically (write tmp,
+   * rename), guarded by a cooperative file lock so concurrent MCP
+   * servers cannot overlap their flush.
+   *
+   * The critical section is short — the lock is released as soon as
+   * the rename completes.
+   */
+  truncate(): void {
+    const release = this.acquireLock();
+    try {
+      const tmp = `${this.bufferPath}.tmp`;
+      writeFileSync(tmp, '', 'utf-8');
+      renameSync(tmp, this.bufferPath);
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Atomically reads every entry and truncates the buffer in a single
+   * critical section, returning the entries that were drained.
+   *
+   * Use this from {@link SyncService.flushAll} so a concurrent flush
+   * from another server cannot read the same entries before they're
+   * cleared.
+   *
+   * @returns Drained entries (may be empty)
+   */
+  drain(): readonly SyncBufferEntry[] {
+    const release = this.acquireLock();
+    try {
+      const entries = this.readAllUnlocked();
+      const tmp = `${this.bufferPath}.tmp`;
+      writeFileSync(tmp, '', 'utf-8');
+      renameSync(tmp, this.bufferPath);
+      return entries;
+    } finally {
+      release();
+    }
+  }
+
+  private acquireLock(): () => void {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < LOCK_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        return lockfile.lockSync(this.lockTarget);
+      } catch (err) {
+        lastErr = err;
+        sleepBriefly(LOCK_BACKOFF_MS);
+      }
+    }
+    throw lastErr ?? new Error('failed to acquire sync buffer lock');
+  }
+
+  // Sleep helper used by acquireLock retry loop is a free function below.
+
+  private readAllUnlocked(): readonly SyncBufferEntry[] {
     if (!existsSync(this.bufferPath)) return [];
     const raw = readFileSync(this.bufferPath, 'utf-8');
     if (raw.trim().length === 0) return [];
@@ -91,14 +177,17 @@ export class SyncBuffer {
     }
     return entries;
   }
+}
 
-  /**
-   * Replaces the buffer file with an empty one atomically (write tmp,
-   * rename). Should be called after every entry has been processed.
-   */
-  truncate(): void {
-    const tmp = `${this.bufferPath}.tmp`;
-    writeFileSync(tmp, '', 'utf-8');
-    renameSync(tmp, this.bufferPath);
+/**
+ * Synchronous busy-wait used between lock attempts. We deliberately
+ * stay synchronous: the SyncBuffer API is sync (better-sqlite3 also
+ * is), and the wait is bounded to single-digit milliseconds in
+ * practice.
+ */
+function sleepBriefly(ms: number): void {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    // tight loop — short by construction
   }
 }

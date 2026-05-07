@@ -78,4 +78,31 @@ describe('SyncBuffer', () => {
     expect(existsSync(buffer.getPath())).toBe(true);
     expect(readFileSync(buffer.getPath(), 'utf-8')).toBe('');
   });
+
+  it('drain() returns the entries and empties the file in one critical section', () => {
+    buffer.append(makeEntry('TST-1'));
+    buffer.append(makeEntry('TST-2'));
+
+    const drained = buffer.drain();
+    expect(drained.map((e) => e.taskKey)).toEqual(['TST-1', 'TST-2']);
+    expect(buffer.size()).toBe(0);
+  });
+
+  it('a second drain() while the lock is held by a parallel buffer waits, then sees an empty buffer', () => {
+    buffer.append(makeEntry('TST-1'));
+
+    // Two SyncBuffer instances on the same dir simulate two MCP
+    // servers sharing the project. Lock retries (50ms..200ms × 10)
+    // are plenty for back-to-back calls; what we need to verify is
+    // that the second caller sees an *empty* buffer, not the same
+    // entry twice.
+    const a = new SyncBuffer(dir);
+    const b = new SyncBuffer(dir);
+
+    const firstDrain = a.drain();
+    const secondDrain = b.drain();
+
+    expect(firstDrain.map((e) => e.taskKey)).toEqual(['TST-1']);
+    expect(secondDrain).toEqual([]);
+  });
 });
