@@ -1,5 +1,6 @@
 import type { Note, NoteKind } from '../../../domain/entities/note.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface NoteRow {
@@ -86,10 +87,10 @@ export class NoteRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO notes (id, task_id, actor_id, kind, content, metadata)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO notes (id, task_id, actor_id, kind, content, metadata, at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(id, input.taskId, input.actorId, input.kind, input.content, metadata);
+      .run(id, input.taskId, input.actorId, input.kind, input.content, metadata, isoNow());
 
     const created = this.findById(id);
     if (created === null) {

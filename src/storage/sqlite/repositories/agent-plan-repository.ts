@@ -1,6 +1,7 @@
 import type { AgentPlan } from '../../../domain/entities/agent-plan.js';
 import { AgentPlanState } from '../../../domain/enums/agent-plan-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface AgentPlanRow {
@@ -87,8 +88,8 @@ export class AgentPlanRepository {
       .prepare(
         `INSERT INTO agent_plans (
            id, agent_run_id, parent_plan_id, content,
-           state, position, depth, metadata
-         ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`,
+           state, position, depth, metadata, created_at
+         ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -98,6 +99,7 @@ export class AgentPlanRepository {
         input.position ?? 0,
         input.depth ?? 0,
         metadata,
+        isoNow(),
       );
 
     const created = this.findById(id);
@@ -126,9 +128,9 @@ export class AgentPlanRepository {
     if (state === AgentPlanState.InProgress) {
       db.prepare(
         `UPDATE agent_plans
-            SET state = ?, started_at = COALESCE(started_at, datetime('now', 'subsec'))
+            SET state = ?, started_at = COALESCE(started_at, ?)
           WHERE id = ?`,
-      ).run(state, planId);
+      ).run(state, isoNow(), planId);
     } else if (
       state === AgentPlanState.Completed ||
       state === AgentPlanState.Failed ||
@@ -137,9 +139,9 @@ export class AgentPlanRepository {
       db.prepare(
         `UPDATE agent_plans
             SET state = ?, result = ?,
-                completed_at = datetime('now', 'subsec')
+                completed_at = ?
           WHERE id = ?`,
-      ).run(state, result, planId);
+      ).run(state, result, isoNow(), planId);
     } else {
       db.prepare(`UPDATE agent_plans SET state = ?, result = ? WHERE id = ?`).run(
         state,

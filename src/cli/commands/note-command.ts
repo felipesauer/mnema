@@ -4,6 +4,7 @@ import pc from 'picocolors';
 import type { Note, NoteKind } from '../../domain/entities/note.js';
 import { printError } from '../../errors/error-printer.js';
 import { withCliContext } from '../cli-context.js';
+import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
 const VALID_KINDS: readonly NoteKind[] = [
   'comment',
@@ -23,6 +24,7 @@ interface AddOptions {
 
 interface ListOptions {
   readonly kind?: string;
+  readonly iso?: boolean;
 }
 
 /**
@@ -68,6 +70,7 @@ export class NoteCommand {
       .command('list <taskKey>')
       .description('List notes of a task')
       .option('--kind <kind>', 'Filter by note kind')
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (taskKey: string, options: ListOptions) => {
         await withCliContext(({ container }) => {
           const kind = options.kind === undefined ? undefined : parseKind(options.kind);
@@ -79,8 +82,9 @@ export class NoteCommand {
             process.stdout.write(`${pc.dim('(no notes)')}\n`);
             return;
           }
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           for (const note of result.value) {
-            process.stdout.write(`${formatNote(note)}\n`);
+            process.stdout.write(`${formatNote(note, mode)}\n`);
           }
         });
       });
@@ -95,8 +99,8 @@ function parseKind(raw: string): NoteKind {
   return raw as NoteKind;
 }
 
-function formatNote(note: Note): string {
-  const header = `${pc.dim(note.at)} ${pc.bold(note.kind.padEnd(20))}`;
+function formatNote(note: Note, mode: TimestampMode): string {
+  const header = `${pc.dim(formatTimestamp(note.at, mode))} ${pc.bold(note.kind.padEnd(20))}`;
   const indented = note.content
     .split('\n')
     .map((line) => `  ${line}`)

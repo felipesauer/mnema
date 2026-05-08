@@ -1,6 +1,7 @@
 import type { Task } from '../../../domain/entities/task.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface TaskRow {
@@ -139,14 +140,16 @@ export class TaskRepository {
     const acceptance = JSON.stringify(input.acceptanceCriteria ?? []);
     const metadata = JSON.stringify(input.metadata ?? {});
 
+    const now = isoNow();
     this.adapter
       .getDatabase()
       .prepare(
         `INSERT INTO tasks (
            id, key, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
-           estimate, priority, assignee_id, reporter_id, metadata
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           estimate, priority, assignee_id, reporter_id, metadata,
+           created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -163,6 +166,8 @@ export class TaskRepository {
         input.assigneeId ?? null,
         input.reporterId,
         metadata,
+        now,
+        now,
       );
 
     const created = this.findByKey(input.key);
@@ -203,9 +208,9 @@ export class TaskRepository {
 
     db.prepare(
       `UPDATE tasks
-          SET state = ?, updated_at = datetime('now', 'subsec')
+          SET state = ?, updated_at = ?
         WHERE id = ?`,
-    ).run(newState, taskId);
+    ).run(newState, isoNow(), taskId);
 
     const reloaded = this.findById(taskId);
     if (reloaded === null) {
@@ -256,10 +261,10 @@ export class TaskRepository {
       .getDatabase()
       .prepare(
         `UPDATE tasks
-            SET deleted_at = datetime('now', 'subsec')
+            SET deleted_at = ?
           WHERE id = ? AND deleted_at IS NULL`,
       )
-      .run(taskId);
+      .run(isoNow(), taskId);
     return result.changes > 0;
   }
 

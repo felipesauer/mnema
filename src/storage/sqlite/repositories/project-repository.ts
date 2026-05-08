@@ -1,5 +1,6 @@
 import type { Project } from '../../../domain/entities/project.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface ProjectRow {
@@ -49,10 +50,10 @@ export class ProjectRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO projects (id, key, name, description, config)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO projects (id, key, name, description, config, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(id, input.key, input.name, input.description ?? null, config);
+      .run(id, input.key, input.name, input.description ?? null, config, isoNow());
 
     const created = this.findByKey(input.key);
     if (created === null) {
