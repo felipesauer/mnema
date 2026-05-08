@@ -69,6 +69,58 @@ describe('formatEvent', () => {
     );
     expect(line).toMatch(/just now|\dm ago|\dh ago/);
   });
+
+  it('renders decision_recorded as a typed line', () => {
+    const line = noColor(
+      formatEvent(
+        sample('decision_recorded', {
+          key: 'X-ADR-1',
+          title: 'Use SQLite',
+          status: 'proposed',
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('recorded X-ADR-1');
+    expect(line).toContain('"Use SQLite"');
+    expect(line).toContain('[proposed]');
+    expect(line).not.toContain('decision_recorded');
+  });
+
+  it('renders decision_status_changed with from→to arrow', () => {
+    const line = noColor(
+      formatEvent(
+        sample('decision_status_changed', {
+          key: 'X-ADR-1',
+          from: 'proposed',
+          to: 'accepted',
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('decision X-ADR-1');
+    expect(line).toContain('proposed → accepted');
+    expect(line).not.toContain('decision_status_changed');
+  });
+
+  it('shows the supersedes target when a decision is superseded', () => {
+    const line = noColor(
+      formatEvent(
+        sample('decision_status_changed', {
+          key: 'X-ADR-1',
+          from: 'accepted',
+          to: 'superseded',
+          superseded_by: 'X-ADR-7',
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('accepted → superseded');
+    expect(line).toContain('→ X-ADR-7');
+  });
 });
 
 describe('formatHistory', () => {
