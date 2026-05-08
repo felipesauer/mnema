@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -88,6 +96,115 @@ describe('IdentityService', () => {
       const first = service.ensureActor('daniel', ActorKind.Human);
       const second = service.ensureActor('daniel', ActorKind.Human);
       expect(first).toBe(second);
+    });
+  });
+
+  describe('resolveDefaultActor', () => {
+    it('returns source=env when MNEMA_ACTOR is set', () => {
+      process.env.MNEMA_ACTOR = 'env-user';
+      const resolved = service.resolveDefaultActor();
+      expect(resolved.actor).toBe('env-user');
+      expect(resolved.source).toBe('env');
+    });
+
+    it('returns source=config when env is unset and identity.json has default_actor', () => {
+      const cfgDir = path.join(fakeHome, '.config', 'mnema');
+      mkdirSync(cfgDir, { recursive: true });
+      writeFileSync(
+        path.join(cfgDir, 'identity.json'),
+        JSON.stringify({ default_actor: 'config-user' }),
+      );
+
+      const resolved = service.resolveDefaultActor();
+      expect(resolved.actor).toBe('config-user');
+      expect(resolved.source).toBe('config');
+    });
+
+    it('returns source=none with null actor when nothing is configured', () => {
+      const resolved = service.resolveDefaultActor();
+      expect(resolved.actor).toBeNull();
+      expect(resolved.source).toBe('none');
+    });
+
+    it('always reports the configPath so callers can show it', () => {
+      const resolved = service.resolveDefaultActor();
+      expect(resolved.configPath).toContain('.config/mnema/identity.json');
+    });
+  });
+
+  describe('setDefaultActor', () => {
+    it('persists handle and display in identity.json with version 1.0', () => {
+      service.setDefaultActor('alice', 'Alice Smith');
+
+      const cfg = JSON.parse(
+        readFileSync(path.join(fakeHome, '.config', 'mnema', 'identity.json'), 'utf-8'),
+      );
+      expect(cfg.default_actor).toBe('alice');
+      expect(cfg.display).toBe('Alice Smith');
+      expect(cfg.version).toBe('1.0');
+    });
+
+    it('creates the parent directory when missing', () => {
+      const cfgDir = path.join(fakeHome, '.config', 'mnema');
+      expect(existsSync(cfgDir)).toBe(false);
+
+      service.setDefaultActor('alice');
+      expect(existsSync(cfgDir)).toBe(true);
+    });
+
+    it('writes the file with mode 0600', () => {
+      service.setDefaultActor('alice');
+      const stat = statSync(path.join(fakeHome, '.config', 'mnema', 'identity.json'));
+      // Mask off file-type bits; only permission bits should remain.
+      expect(stat.mode & 0o777).toBe(0o600);
+    });
+
+    it('preserves unrelated fields when updating an existing config', () => {
+      const cfgDir = path.join(fakeHome, '.config', 'mnema');
+      mkdirSync(cfgDir, { recursive: true });
+      writeFileSync(
+        path.join(cfgDir, 'identity.json'),
+        JSON.stringify({ default_actor: 'old', custom_field: 'keep-me' }),
+      );
+
+      service.setDefaultActor('new');
+
+      const cfg = JSON.parse(readFileSync(path.join(cfgDir, 'identity.json'), 'utf-8'));
+      expect(cfg.default_actor).toBe('new');
+      expect(cfg.custom_field).toBe('keep-me');
+    });
+
+    it('rejects empty handle, whitespace, and the agent: prefix', () => {
+      expect(() => service.setDefaultActor('')).toThrow();
+      expect(() => service.setDefaultActor('with space')).toThrow();
+      expect(() => service.setDefaultActor('agent:hacker')).toThrow();
+    });
+  });
+
+  describe('unsetDefaultActor', () => {
+    it('is a no-op when the file does not exist', () => {
+      expect(() => service.unsetDefaultActor()).not.toThrow();
+    });
+
+    it('removes the file when default_actor was the only meaningful field', () => {
+      service.setDefaultActor('alice');
+      service.unsetDefaultActor();
+      expect(existsSync(path.join(fakeHome, '.config', 'mnema', 'identity.json'))).toBe(false);
+    });
+
+    it('strips default_actor but keeps the file when other fields remain', () => {
+      const cfgDir = path.join(fakeHome, '.config', 'mnema');
+      mkdirSync(cfgDir, { recursive: true });
+      writeFileSync(
+        path.join(cfgDir, 'identity.json'),
+        JSON.stringify({ default_actor: 'alice', custom_field: 'survive' }),
+      );
+
+      service.unsetDefaultActor();
+
+      const cfg = JSON.parse(readFileSync(path.join(cfgDir, 'identity.json'), 'utf-8'));
+      expect(cfg.default_actor).toBeUndefined();
+      expect(cfg.custom_field).toBe('survive');
     });
   });
 });
