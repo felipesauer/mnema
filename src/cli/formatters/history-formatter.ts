@@ -89,6 +89,17 @@ function describe(event: AuditEvent): string {
       const colour = status === 'completed' ? pc.green : status === 'failed' ? pc.red : pc.yellow;
       return `${colour(`run ${status}`)}`;
     }
+    case 'decision_recorded':
+      return `recorded ${stringify(data.key)} ${pc.dim(`"${stringify(data.title)}"`)} ${pc.dim(`[${stringify(data.status)}]`)}`;
+    case 'decision_status_changed': {
+      const from = stringify(data.from);
+      const to = stringify(data.to);
+      const superseded =
+        data.superseded_by !== undefined && data.superseded_by !== null
+          ? pc.dim(` → ${stringify(data.superseded_by)}`)
+          : '';
+      return `decision ${stringify(data.key)} ${from} → ${pc.cyan(to)}${superseded}`;
+    }
     default:
       return `${event.kind} ${pc.dim(JSON.stringify(data))}`;
   }
