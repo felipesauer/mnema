@@ -121,6 +121,63 @@ describe('formatEvent', () => {
     expect(line).toContain('accepted → superseded');
     expect(line).toContain('→ X-ADR-7');
   });
+
+  it('renders note_added with the target task key and kind', () => {
+    const line = noColor(
+      formatEvent(
+        sample('note_added', {
+          task_key: 'X-1',
+          note_kind: 'comment',
+          content_size: 42,
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('note on X-1');
+    expect(line).toContain('[comment]');
+    expect(line).not.toContain('note_added');
+    expect(line).not.toContain('content_size');
+  });
+
+  it('renders attachment_added with filename, target and size', () => {
+    const line = noColor(
+      formatEvent(
+        sample('attachment_added', {
+          task_key: 'X-1',
+          filename: 'README.md',
+          size: 7099,
+          hash: '68bf90c4',
+          deduplicated: false,
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('attached README.md');
+    expect(line).toContain('to X-1');
+    expect(line).toContain('6.9KB');
+    expect(line).not.toContain('attachment_added');
+    expect(line).not.toContain('hash');
+    expect(line).not.toContain('(dedup)');
+  });
+
+  it('marks deduplicated attachments', () => {
+    const line = noColor(
+      formatEvent(
+        sample('attachment_added', {
+          task_key: 'X-1',
+          filename: 'README.md',
+          size: 7099,
+          hash: '68bf90c4',
+          deduplicated: true,
+        }),
+        'human',
+        'iso',
+      ),
+    );
+    expect(line).toContain('(dedup)');
+  });
 });
 
 describe('formatHistory', () => {
