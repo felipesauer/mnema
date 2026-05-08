@@ -229,4 +229,58 @@ describe('formatHistory', () => {
     const output = formatHistory(events, 'json');
     expect(output.split('\n')).toHaveLength(2);
   });
+
+  it('substitutes display names for actor and via via the resolver', () => {
+    const event = sample(
+      'task_transitioned',
+      { key: 'X-1', from: 'DRAFT', to: 'READY', action: 'submit' },
+      { actor: 'joaop', via: 'agent:claude-code' },
+    );
+    const display = (handle: string): string => {
+      if (handle === 'joaop') return 'João Pereira';
+      if (handle === 'agent:claude-code') return 'Claude Code';
+      return handle;
+    };
+
+    const line = noColor(formatEvent(event, 'human', 'iso', display));
+    expect(line).toContain('João Pereira via Claude Code');
+    expect(line).not.toContain('joaop ');
+    expect(line).not.toContain('agent:claude-code');
+  });
+
+  it('substitutes display names in the aggregated `created N tasks` line', () => {
+    const events: AuditEvent[] = [
+      sample(
+        'task_created',
+        { key: 'X-1', title: 'A' },
+        { actor: 'joaop', via: 'agent:claude-code', run: 'r1' },
+      ),
+      sample(
+        'task_created',
+        { key: 'X-2', title: 'B' },
+        {
+          actor: 'joaop',
+          via: 'agent:claude-code',
+          run: 'r1',
+          at: '2026-05-01T10:00:01.000Z',
+        },
+      ),
+    ];
+    const display = (handle: string): string =>
+      handle === 'joaop' ? 'João Pereira' : handle === 'agent:claude-code' ? 'Claude Code' : handle;
+
+    const output = noColor(formatHistory(events, 'human', 'iso', display));
+    expect(output).toContain('João Pereira via Claude Code');
+    expect(output).toContain('created 2 tasks');
+  });
+
+  it('falls back to the raw handle when no resolver is provided', () => {
+    const event = sample(
+      'task_transitioned',
+      { key: 'X-1', from: 'DRAFT', to: 'READY', action: 'submit' },
+      { actor: 'joaop', via: 'agent:claude-code' },
+    );
+    const line = noColor(formatEvent(event, 'human', 'iso'));
+    expect(line).toContain('joaop via agent:claude-code');
+  });
 });

@@ -48,15 +48,16 @@ export class WatchCommand {
       .option('--json', 'Render as JSONL (one event per line)', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: WatchOptions) => {
-        await withCliContext(async ({ config, projectRoot }) => {
+        await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, config.paths.audit);
           const format = pickFormat(options);
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
+          const display = (handle: string): string => container.identity.getDisplayFor(handle);
 
           const tail = new AuditTail(
             auditDir,
             (event) => {
-              process.stdout.write(`${formatEvent(event, format, mode)}\n`);
+              process.stdout.write(`${formatEvent(event, format, mode, display)}\n`);
             },
             {
               kind: options.kind,

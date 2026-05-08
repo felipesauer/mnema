@@ -65,11 +65,11 @@ export class AuditCommand {
           }
 
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
+          const display = (handle: string): string => container.identity.getDisplayFor(handle);
           for (const event of events) {
+            const actor = display(event.actor);
             const subject =
-              event.via !== undefined
-                ? `${event.actor} ${pc.dim('via')} ${event.via}`
-                : event.actor;
+              event.via !== undefined ? `${actor} ${pc.dim('via')} ${display(event.via)}` : actor;
             const data = JSON.stringify(event.data);
             process.stdout.write(
               `${pc.dim(formatTimestamp(event.at, mode))}  ${pc.cyan(event.kind)}  ${subject}  ${pc.dim(data)}\n`,

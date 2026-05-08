@@ -38,12 +38,29 @@ export interface ResolvedIdentity {
 }
 
 /**
+ * One known actor entry inside `actors` of the identity config.
+ */
+export interface KnownActor {
+  readonly kind: 'human' | 'agent';
+  readonly display?: string;
+}
+
+/**
  * Persisted shape of `~/.config/mnema/identity.json`.
+ *
+ * Schema notes:
+ * - `version: '1.0'` is the marker. Older files without the field are
+ *   still accepted and treated as 1.0.
+ * - `default_actor` and `display` are scalar fields kept for backward
+ *   compatibility — `display` here is the display of `default_actor`.
+ * - `actors` is the dictionary of every known actor (handle → entry).
+ *   Allows rendering `joaop` as `João Pereira` in history and run views.
  */
 interface IdentityConfigFile {
   readonly version?: string;
   readonly default_actor?: string;
   readonly display?: string;
+  readonly actors?: Record<string, KnownActor>;
 }
 
 /**
@@ -129,6 +146,10 @@ export class IdentityService {
    * file is chmod'd to 0600 — handles are not secrets, but the file is
    * personal config and should not be world-readable.
    *
+   * When `display` is given, also registers the handle in the `actors`
+   * dictionary as a known human, so subsequent renderings (history,
+   * agent inspect, task show) can substitute the display name.
+   *
    * @param handle - Actor handle to persist
    * @param display - Optional human-readable display name
    */
@@ -138,17 +159,106 @@ export class IdentityService {
     mkdirSync(path.dirname(configPath), { recursive: true });
 
     const existing = existsSync(configPath) ? readConfig(configPath) : {};
+    const actors = { ...(existing.actors ?? {}) };
+    if (display !== undefined) {
+      const previous = actors[handle];
+      actors[handle] = { kind: previous?.kind ?? 'human', display };
+    }
     const next: IdentityConfigFile = {
       version: '1.0',
       ...existing,
       default_actor: handle,
       ...(display === undefined ? {} : { display }),
+      ...(Object.keys(actors).length > 0 ? { actors } : {}),
     };
 
-    const tmp = `${configPath}.tmp`;
-    writeFileSync(tmp, `${JSON.stringify(next, null, 2)}\n`, 'utf-8');
-    chmodSync(tmp, 0o600);
-    renameSync(tmp, configPath);
+    writeAtomic(configPath, next);
+  }
+
+  /**
+   * Registers a known actor (human or agent) so its display name surfaces
+   * in CLI views. Idempotent: re-running with the same handle replaces the
+   * entry. Does not change `default_actor`.
+   *
+   * @param handle - Actor handle (may include the `agent:` prefix)
+   * @param entry - Kind and optional display name
+   */
+  addKnownActor(handle: string, entry: KnownActor): void {
+    if (handle.startsWith('agent:')) {
+      const bare = handle.slice('agent:'.length);
+      assertValidHandle(bare);
+    } else {
+      assertValidHandle(handle);
+    }
+    const configPath = this.configPath();
+    mkdirSync(path.dirname(configPath), { recursive: true });
+
+    const existing = existsSync(configPath) ? readConfig(configPath) : {};
+    const actors = { ...(existing.actors ?? {}) };
+    actors[handle] = entry;
+    const next: IdentityConfigFile = {
+      version: '1.0',
+      ...existing,
+      actors,
+    };
+    writeAtomic(configPath, next);
+  }
+
+  /**
+   * Removes a known actor entry. No-op when the handle was never added or
+   * the file does not exist. Does not affect `default_actor`.
+   *
+   * @param handle - Actor handle to remove
+   */
+  removeKnownActor(handle: string): void {
+    const configPath = this.configPath();
+    if (!existsSync(configPath)) return;
+
+    const existing = readConfig(configPath);
+    const actors = { ...(existing.actors ?? {}) };
+    if (!(handle in actors)) return;
+    delete actors[handle];
+
+    const next: IdentityConfigFile = {
+      ...existing,
+      ...(Object.keys(actors).length > 0 ? { actors } : { actors: undefined }),
+    };
+    if (Object.keys(actors).length === 0) {
+      // Drop the empty `actors` entirely from the JSON.
+      const cleaned: IdentityConfigFile = { ...next };
+      delete (cleaned as { actors?: unknown }).actors;
+      writeAtomic(configPath, cleaned);
+      return;
+    }
+    writeAtomic(configPath, next);
+  }
+
+  /**
+   * Returns every known actor recorded in the config, keyed by handle.
+   * Empty when the file does not exist or has no `actors` field.
+   *
+   * @returns Map of handle to known actor entry
+   */
+  listKnownActors(): Record<string, KnownActor> {
+    const configPath = this.configPath();
+    if (!existsSync(configPath)) return {};
+    const config = readConfig(configPath);
+    return config.actors ?? {};
+  }
+
+  /**
+   * Returns the display name for a handle when known, otherwise the
+   * handle itself. Used by formatters to render `Felipe Sauer` instead
+   * of `felipesauer`. Resolution checks the local config only — DB-side
+   * actor lookups stay in the repository, since this method is meant for
+   * synchronous render paths that do not have access to the database.
+   *
+   * @param handle - Actor handle to render
+   * @returns Display name, or the handle when not found
+   */
+  getDisplayFor(handle: string): string {
+    const known = this.listKnownActors();
+    return known[handle]?.display ?? handle;
   }
 
   /**
@@ -167,10 +277,7 @@ export class IdentityService {
       return;
     }
 
-    const tmp = `${configPath}.tmp`;
-    writeFileSync(tmp, `${JSON.stringify(rest, null, 2)}\n`, 'utf-8');
-    chmodSync(tmp, 0o600);
-    renameSync(tmp, configPath);
+    writeAtomic(configPath, rest);
   }
 
   private configPath(): string {
@@ -247,4 +354,16 @@ function readConfig(configPath: string): IdentityConfigFile {
   } catch {
     return {};
   }
+}
+
+/**
+ * Writes a JSON config file through a temporary path then renames it so
+ * a crash mid-write cannot leave the file half-serialised. The result
+ * is chmod'd to 0600 since this lives in a per-user config directory.
+ */
+function writeAtomic(configPath: string, content: IdentityConfigFile): void {
+  const tmp = `${configPath}.tmp`;
+  writeFileSync(tmp, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
+  chmodSync(tmp, 0o600);
+  renameSync(tmp, configPath);
 }

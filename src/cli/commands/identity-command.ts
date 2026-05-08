@@ -7,6 +7,11 @@ interface SetOptions {
   readonly display?: string;
 }
 
+interface AddOptions {
+  readonly display?: string;
+  readonly kind?: string;
+}
+
 /**
  * Registers `mnema identity`, the user-scoped command group for
  * managing the local default actor stored in
@@ -76,6 +81,75 @@ export class IdentityCommand {
         const service = makeIdentityService();
         service.unsetDefaultActor();
         process.stdout.write(`${pc.green('✓')} default actor cleared\n`);
+      });
+
+    group
+      .command('add <handle>')
+      .description('Register a known actor (handle + display name) for nicer rendering')
+      .option('--display <name>', 'Human-readable display name')
+      .option('--kind <kind>', 'Actor kind: human (default) or agent', 'human')
+      .action((handle: string, options: AddOptions) => {
+        const kind = options.kind ?? 'human';
+        if (kind !== 'human' && kind !== 'agent') {
+          process.stderr.write(
+            `${pc.red('error:')} --kind must be \`human\` or \`agent\` (got: \`${kind}\`)\n`,
+          );
+          process.exit(2);
+        }
+        const service = makeIdentityService();
+        try {
+          service.addKnownActor(handle, {
+            kind,
+            ...(options.display === undefined ? {} : { display: options.display }),
+          });
+        } catch (error) {
+          process.stderr.write(`${pc.red('error:')} ${(error as Error).message}\n`);
+          process.exit(2);
+        }
+        const labelDisplay = options.display !== undefined ? ` (${options.display})` : '';
+        process.stdout.write(
+          `${pc.green('✓')} known actor ${pc.bold(handle)}${labelDisplay} ${pc.dim(`[${kind}]`)} registered\n`,
+        );
+      });
+
+    group
+      .command('list')
+      .description('List the default actor and every known actor in identity.json')
+      .action(() => {
+        const service = makeIdentityService();
+        const resolved = service.resolveDefaultActor();
+        const known = service.listKnownActors();
+        const handles = Object.keys(known).sort();
+
+        if (resolved.actor === null && handles.length === 0) {
+          process.stdout.write(`${pc.dim('(no identity configured)')}\n`);
+          process.exit(0);
+        }
+
+        if (resolved.actor !== null) {
+          const sourceLabel =
+            resolved.source === 'env' ? 'MNEMA_ACTOR env var' : resolved.configPath;
+          process.stdout.write(
+            `${pc.bold('default:')} ${resolved.actor} ${pc.dim(`(from ${sourceLabel})`)}\n`,
+          );
+        }
+
+        if (handles.length > 0) {
+          process.stdout.write(`\n${pc.bold('known actors')} (${handles.length}):\n`);
+          for (const h of handles) {
+            const entry = known[h];
+            if (entry === undefined) continue;
+            const star = h === resolved.actor ? pc.cyan('*') : ' ';
+            const display = entry.display !== undefined ? ` ${pc.dim(`— ${entry.display}`)}` : '';
+            process.stdout.write(
+              `  ${star} ${h.padEnd(28)} ${pc.dim(`[${entry.kind}]`)}${display}\n`,
+            );
+          }
+        } else {
+          process.stdout.write(
+            `\n${pc.dim('hint:')} register actors with \`mnema identity add <handle> --display "Name"\`\n`,
+          );
+        }
       });
   }
 }
