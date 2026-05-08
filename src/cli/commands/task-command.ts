@@ -5,7 +5,7 @@ import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -61,7 +61,7 @@ export class TaskCommand {
       .option('--priority <n>', 'Priority 1..5 (default 3)')
       .option('--assignee <handle>', 'Assignee handle')
       .action(async (options: CreateOptions) => {
-        await withCliContext(({ container, config }) => {
+        await withMutatingCliContext(({ container, config }) => {
           const result = container.task.create({
             projectKey: config.project.key,
             title: options.title,
@@ -104,7 +104,7 @@ export class TaskCommand {
       .command('move <key> <action> [fields...]')
       .description('Move a task via a workflow action. Pass payload as `field=value` pairs.')
       .action(async (key: string, action: string, fields: string[]) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const payload = parseFieldArgs(fields);
           const result = container.task.transition({
             taskKey: key,
@@ -152,7 +152,7 @@ export class TaskCommand {
       .description('Soft-delete a task. Pass --restore to bring it back.')
       .option('--restore', 'Restore a previously deleted task', false)
       .action(async (key: string, options: DeleteOptions) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result =
             options.restore === true
               ? container.task.restore({

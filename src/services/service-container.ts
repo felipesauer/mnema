@@ -8,7 +8,7 @@ import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import { FileStore } from '../storage/files/file-store.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
-import { MigrationRunner } from '../storage/sqlite/migration-runner.js';
+import { type AppliedMigration, MigrationRunner } from '../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
@@ -59,6 +59,14 @@ export interface ServiceContainerOptions {
 
 /**
  * Bag of services and repositories wired together for a CLI session.
+ *
+ * `pendingMigrations` is non-empty when the database was already
+ * initialised but newer migrations exist on disk that have not been
+ * applied yet. Read-only commands keep working; mutating commands
+ * should refuse with a `SchemaOutOfDate` error and direct the user to
+ * `mnema migrate`. A virgin database (no `schema_migrations` table)
+ * is auto-migrated on first boot, so `pendingMigrations` is always
+ * empty in that case.
  */
 export interface ServiceContainer {
   readonly adapter: SqliteAdapter;
@@ -79,6 +87,7 @@ export interface ServiceContainer {
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly transitions: TransitionRepository;
+  readonly pendingMigrations: readonly AppliedMigration[];
   readonly close: () => void;
 }
 
@@ -109,7 +118,19 @@ export function createServiceContainer(
   trace.mark('SqliteAdapter opened');
 
   const migrationsDir = options.migrationsDir ?? path.resolve(MIGRATIONS_DIRNAME);
-  new MigrationRunner().run(adapter, migrationsDir);
+  // Auto-apply migrations only on a virgin database (first boot, no
+  // `schema_migrations` table yet). Once the database has been
+  // initialised, pending migrations are surfaced through
+  // `pendingMigrations` and applying them becomes an explicit step
+  // (`mnema migrate`). This keeps the cooperative guard meaningful for
+  // shared-team scenarios where one machine pulls a schema bump
+  // before others have noticed.
+  const runner = new MigrationRunner();
+  const isVirgin = runner.loadApplied(adapter).length === 0;
+  if (isVirgin) {
+    runner.run(adapter, migrationsDir);
+  }
+  const pendingMigrations = runner.detectDrift(adapter, migrationsDir);
   trace.mark('migrations checked');
 
   const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
@@ -204,6 +225,7 @@ export function createServiceContainer(
     attachment: attachmentService,
     search: searchService,
     transitions,
+    pendingMigrations,
     close: () => adapter.close(),
   };
 }

@@ -562,4 +562,42 @@ describe('CLI end-to-end', () => {
     const indexAfter = readFileSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'), 'utf-8');
     expect(indexAfter).toBe(indexBody);
   });
+
+  it('migration guard: read-only commands work but mutations abort when schema drifts', async () => {
+    runCli(['init', '--name', 'Drift', '--key', 'DRIFT'], projectRoot);
+
+    // Simulate drift: drop one applied migration row from schema_migrations,
+    // forcing the runner to see file/db disagreement on the next boot.
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      const versions = db
+        .prepare('SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1')
+        .all() as Array<{ version: number }>;
+      const latest = versions[0]?.version;
+      expect(latest).toBeDefined();
+      db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(latest);
+    } finally {
+      db.close();
+    }
+
+    // Read-only command still works under drift.
+    const list = runCli(['task', 'list'], projectRoot);
+    expect(list.status).toBe(0);
+
+    // Mutating command refuses with exit 3 (State) and a clear hint.
+    const create = runCli(['task', 'create', '--title', 'Should fail'], projectRoot);
+    expect(create.status).toBe(3);
+    expect(create.stderr).toContain('Schema is out of date');
+    expect(create.stderr).toContain('mnema migrate');
+
+    // Running migrate restores up-to-date status.
+    const migrate = runCli(['migrate'], projectRoot);
+    expect(migrate.status).toBe(0);
+    expect(migrate.stdout).toContain('applied');
+
+    // After migrate, mutations succeed again.
+    const create2 = runCli(['task', 'create', '--title', 'Now OK'], projectRoot);
+    expect(create2.status).toBe(0);
+  });
 });

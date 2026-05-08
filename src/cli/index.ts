@@ -74,6 +74,9 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   migration: {
     load: async () => new (await import('./commands/migration-command.js')).MigrationCommand(),
   },
+  migrate: {
+    load: async () => new (await import('./commands/migration-command.js')).MigrateCommand(),
+  },
 };
 
 /**

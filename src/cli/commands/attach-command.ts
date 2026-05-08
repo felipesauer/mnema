@@ -4,7 +4,7 @@ import type { Command } from 'commander';
 import pc from 'picocolors';
 import { printError } from '../../errors/error-printer.js';
 import type { Attachment } from '../../storage/sqlite/repositories/attachment-repository.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface AttachOptions {
   readonly mime?: string;
@@ -32,7 +32,7 @@ export class AttachCommand {
       .description('Add a file as attachment to a task (deduplicated by hash)')
       .option('--mime <type>', 'Override the inferred MIME type')
       .action(async (taskKey: string, filePath: string, options: AttachOptions) => {
-        await withCliContext(({ container, projectRoot }) => {
+        await withMutatingCliContext(({ container, projectRoot }) => {
           const absolute = path.isAbsolute(filePath)
             ? filePath
             : path.resolve(projectRoot, filePath);

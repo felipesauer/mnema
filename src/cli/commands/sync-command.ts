@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import pc from 'picocolors';
 
-import { withCliContext } from '../cli-context.js';
+import { withMutatingCliContext } from '../cli-context.js';
 
 /**
  * Registers `mnema sync`, which rebuilds the SQLite cache from the
@@ -18,7 +18,7 @@ export class SyncCommand {
       .command('sync')
       .description('Rebuild the SQLite cache from markdown files (idempotent)')
       .action(async () => {
-        await withCliContext(({ config, container }) => {
+        await withMutatingCliContext(({ config, container }) => {
           const summary = container.syncRebuild.run(config.project.key);
           process.stdout.write(
             `${pc.green('✓')} sync complete  scanned=${summary.tasksScanned}  upserted=${summary.tasksUpserted}\n`,

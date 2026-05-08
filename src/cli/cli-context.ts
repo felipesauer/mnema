@@ -65,3 +65,33 @@ export async function withCliContext(
     context.container.close();
   }
 }
+
+/**
+ * Variant of {@link withCliContext} that refuses to run when the
+ * database has pending migrations. Used by mutating commands so a
+ * developer who pulled a schema bump but forgot to run `mnema migrate`
+ * cannot silently corrupt the audit trail by writing under the old
+ * shape. Read-only commands keep using {@link withCliContext} — they
+ * are safe even when drift exists, and reading is how the user is
+ * expected to discover what is going on.
+ *
+ * @param handler - Async callback receiving the open CLI context
+ */
+export async function withMutatingCliContext(
+  handler: (context: CliContext) => Promise<void> | void,
+): Promise<void> {
+  const context = openCliContext();
+  try {
+    if (context.container.pendingMigrations.length > 0) {
+      const code = printError({
+        kind: ErrorCode.SchemaOutOfDate,
+        pending: context.container.pendingMigrations.map((m) => m.file),
+      });
+      context.container.close();
+      process.exit(code);
+    }
+    await handler(context);
+  } finally {
+    context.container.close();
+  }
+}

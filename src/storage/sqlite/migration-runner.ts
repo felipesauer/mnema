@@ -104,6 +104,23 @@ export class MigrationRunner {
   }
 
   /**
+   * Reports migrations that exist on disk but are not yet recorded in
+   * `schema_migrations`. Read-only — does not apply anything. Returns
+   * empty when the database has never been initialised (no
+   * `schema_migrations` table), since there is no drift to compare.
+   *
+   * @param adapter - SQLite adapter to inspect
+   * @param migrationsDir - Absolute path to the migrations directory
+   * @returns Sorted list of pending migrations (empty when in sync)
+   */
+  detectDrift(adapter: SqliteAdapter, migrationsDir: string): readonly AppliedMigration[] {
+    const applied = new Set(this.loadAppliedVersions(adapter));
+    if (applied.size === 0) return [];
+
+    return this.listAvailable(migrationsDir).filter(({ version }) => !applied.has(version));
+  }
+
+  /**
    * Returns the sorted list of versions recorded in
    * `schema_migrations`. Empty when the table does not yet exist (the
    * database has not been opened by `run` even once).
