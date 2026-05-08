@@ -4,6 +4,7 @@ import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
+import { perfTrace } from '../utils/perf-trace.js';
 import { resolveProjectRoot } from './project-root.js';
 
 /**
@@ -27,17 +28,23 @@ export interface CliContext {
  *   `context.container.close()` when done
  */
 export function openCliContext(): CliContext {
+  const trace = perfTrace('openCliContext');
   const loader = new ConfigLoader();
   const configFile = loader.findConfigFile();
   if (configFile === null) {
     process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
   }
+  trace.mark('config file located');
 
   const config = loader.load();
+  trace.mark('config parsed');
+
   const projectRoot = resolveProjectRoot(configFile);
   const container = createServiceContainer(config, projectRoot, {
     migrationsDir: migrationsDir(),
   });
+  trace.mark('container built');
+  trace.end();
 
   return { config, projectRoot, container };
 }

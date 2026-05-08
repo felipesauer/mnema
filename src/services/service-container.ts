@@ -21,6 +21,7 @@ import { SprintRepository } from '../storage/sqlite/repositories/sprint-reposito
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
@@ -102,14 +103,19 @@ export function createServiceContainer(
   projectRoot: string,
   options: ServiceContainerOptions = {},
 ): ServiceContainer {
+  const trace = perfTrace('createServiceContainer');
   const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
   const adapter = new SqliteAdapter(dbPath);
+  trace.mark('SqliteAdapter opened');
+
   const migrationsDir = options.migrationsDir ?? path.resolve(MIGRATIONS_DIRNAME);
   new MigrationRunner().run(adapter, migrationsDir);
+  trace.mark('migrations checked');
 
   const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
   const workflow = new WorkflowLoader().load(workflowPath);
   const stateMachine = new StateMachine(workflow);
+  trace.mark('workflow + state machine');
 
   const actors = new ActorRepository(adapter);
   const projects = new ProjectRepository(adapter);
@@ -122,6 +128,7 @@ export function createServiceContainer(
   const decisionRepository = new DecisionRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
+  trace.mark('repositories instantiated');
 
   const identity = new IdentityService(actors);
 
@@ -153,6 +160,7 @@ export function createServiceContainer(
     ensureActor: (handle, kind) =>
       identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
   });
+  trace.mark('services instantiated');
 
   const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {
     sync.flushAll();
@@ -174,6 +182,8 @@ export function createServiceContainer(
     audit,
   );
   const searchService = new SearchService(adapter);
+  trace.mark('all services wired');
+  trace.end();
 
   return {
     adapter,
