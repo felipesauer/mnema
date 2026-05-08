@@ -9,6 +9,16 @@ import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
 export type HistoryFormat = 'human' | 'table' | 'json';
 
 /**
+ * Resolves an actor handle to a display name. When omitted, formatters
+ * print the handle as-is. Implementations typically look up the handle
+ * in `~/.config/mnema/identity.json` (`actors` map) and fall back to the
+ * handle when unknown.
+ */
+export type DisplayResolver = (handle: string) => string;
+
+const IDENTITY: DisplayResolver = (handle) => handle;
+
+/**
  * Renders an audit event in the chosen format.
  *
  * Used both for static `mnema history` listings and the live tail
@@ -24,6 +34,7 @@ export function formatEvent(
   event: AuditEvent,
   format: HistoryFormat,
   mode: TimestampMode = 'relative',
+  displayResolver: DisplayResolver = IDENTITY,
 ): string {
   if (format === 'json') {
     return JSON.stringify(event);
@@ -32,12 +43,12 @@ export function formatEvent(
     return [
       formatTimestamp(event.at, mode),
       event.kind.padEnd(20),
-      event.actor.padEnd(16),
-      (event.via ?? '').padEnd(20),
+      displayResolver(event.actor).padEnd(16),
+      (event.via !== undefined ? displayResolver(event.via) : '').padEnd(20),
       summariseData(event),
     ].join('  ');
   }
-  return formatHuman(event, mode);
+  return formatHuman(event, mode, displayResolver);
 }
 
 /**
@@ -59,16 +70,22 @@ export function formatHistory(
   events: readonly AuditEvent[],
   format: HistoryFormat,
   mode: TimestampMode = 'relative',
+  displayResolver: DisplayResolver = IDENTITY,
 ): string {
   if (format !== 'human') {
-    return events.map((e) => formatEvent(e, format, mode)).join('\n');
+    return events.map((e) => formatEvent(e, format, mode, displayResolver)).join('\n');
   }
-  return aggregateHuman(events, mode);
+  return aggregateHuman(events, mode, displayResolver);
 }
 
-function formatHuman(event: AuditEvent, mode: TimestampMode): string {
+function formatHuman(
+  event: AuditEvent,
+  mode: TimestampMode,
+  displayResolver: DisplayResolver,
+): string {
   const time = formatTimestamp(event.at, mode);
-  const subject = event.via !== undefined ? `${event.actor} via ${event.via}` : event.actor;
+  const actor = displayResolver(event.actor);
+  const subject = event.via !== undefined ? `${actor} via ${displayResolver(event.via)}` : actor;
   const runHint = event.run !== undefined ? pc.dim(` [${event.run.slice(0, 8)}]`) : '';
   return `${pc.dim(time)}  ${subject}${runHint}  ${describe(event)}`;
 }
@@ -135,7 +152,11 @@ function summariseData(event: AuditEvent): string {
  * Builds the human-format aggregation: groups events by run and
  * collapses repeated kinds into compact summary lines.
  */
-function aggregateHuman(events: readonly AuditEvent[], mode: TimestampMode): string {
+function aggregateHuman(
+  events: readonly AuditEvent[],
+  mode: TimestampMode,
+  displayResolver: DisplayResolver,
+): string {
   const lines: string[] = [];
   let i = 0;
   while (i < events.length) {
@@ -158,17 +179,19 @@ function aggregateHuman(events: readonly AuditEvent[], mode: TimestampMode): str
           .map((g) => stringify((g.data as Record<string, unknown>).key))
           .join(', ');
         const time = formatTimestamp(first.at, mode);
-        const subject = first.via !== undefined ? `${first.actor} via ${first.via}` : first.actor;
+        const actor = displayResolver(first.actor);
+        const subject =
+          first.via !== undefined ? `${actor} via ${displayResolver(first.via)}` : actor;
         lines.push(
           `${pc.dim(time)}  ${subject}  created ${grouped.length} tasks ${pc.dim(`(${keys})`)}`,
         );
         continue;
       }
-      lines.push(formatHuman(grouped[0] as AuditEvent, mode));
+      lines.push(formatHuman(grouped[0] as AuditEvent, mode, displayResolver));
       continue;
     }
 
-    lines.push(formatHuman(event, mode));
+    lines.push(formatHuman(event, mode, displayResolver));
     i += 1;
   }
   return lines.join('\n');

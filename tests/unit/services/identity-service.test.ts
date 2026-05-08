@@ -207,4 +207,70 @@ describe('IdentityService', () => {
       expect(cfg.custom_field).toBe('survive');
     });
   });
+
+  describe('addKnownActor / listKnownActors / getDisplayFor', () => {
+    it('starts with an empty known-actors map', () => {
+      expect(service.listKnownActors()).toEqual({});
+    });
+
+    it('persists handle, kind and display in the actors map', () => {
+      service.addKnownActor('joaop', { kind: 'human', display: 'João Pereira' });
+      const known = service.listKnownActors();
+      expect(known.joaop).toEqual({ kind: 'human', display: 'João Pereira' });
+    });
+
+    it('accepts agent: prefixed handles for agent kind', () => {
+      service.addKnownActor('agent:claude-code', { kind: 'agent', display: 'Claude Code' });
+      const known = service.listKnownActors();
+      expect(known['agent:claude-code']).toEqual({
+        kind: 'agent',
+        display: 'Claude Code',
+      });
+    });
+
+    it('replaces an existing entry on re-add (idempotent)', () => {
+      service.addKnownActor('joaop', { kind: 'human', display: 'Old Name' });
+      service.addKnownActor('joaop', { kind: 'human', display: 'New Name' });
+      expect(service.listKnownActors().joaop?.display).toBe('New Name');
+    });
+
+    it('returns the handle when no display is registered', () => {
+      expect(service.getDisplayFor('unknown')).toBe('unknown');
+    });
+
+    it('returns the display when the handle is registered', () => {
+      service.addKnownActor('joaop', { kind: 'human', display: 'João Pereira' });
+      expect(service.getDisplayFor('joaop')).toBe('João Pereira');
+    });
+
+    it('returns the handle when the entry exists but has no display', () => {
+      service.addKnownActor('handle-only', { kind: 'human' });
+      expect(service.getDisplayFor('handle-only')).toBe('handle-only');
+    });
+
+    it('co-exists with default_actor in the same file', () => {
+      service.setDefaultActor('felipesauer', 'Felipe Sauer');
+      service.addKnownActor('joaop', { kind: 'human', display: 'João Pereira' });
+
+      const cfg = JSON.parse(
+        readFileSync(path.join(fakeHome, '.config', 'mnema', 'identity.json'), 'utf-8'),
+      );
+      expect(cfg.default_actor).toBe('felipesauer');
+      expect(cfg.actors.felipesauer.display).toBe('Felipe Sauer');
+      expect(cfg.actors.joaop.display).toBe('João Pereira');
+    });
+
+    it('removeKnownActor removes only the targeted entry', () => {
+      service.addKnownActor('a', { kind: 'human', display: 'A' });
+      service.addKnownActor('b', { kind: 'human', display: 'B' });
+      service.removeKnownActor('a');
+      const known = service.listKnownActors();
+      expect(known.a).toBeUndefined();
+      expect(known.b?.display).toBe('B');
+    });
+
+    it('removeKnownActor is a no-op when the file does not exist', () => {
+      expect(() => service.removeKnownActor('any')).not.toThrow();
+    });
+  });
 });

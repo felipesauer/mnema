@@ -59,7 +59,8 @@ export class HistoryCommand {
 
           const format = pickFormat(options);
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
-          process.stdout.write(`${formatHistory(events, format, mode)}\n`);
+          const display = (handle: string): string => container.identity.getDisplayFor(handle);
+          process.stdout.write(`${formatHistory(events, format, mode, display)}\n`);
         });
       });
   }
