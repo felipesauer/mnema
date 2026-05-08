@@ -40,7 +40,7 @@ export class TaskCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('task').description('Manage tasks');
+    const group = program.command('task').alias('tasks').description('Manage tasks');
 
     group
       .command('create')
