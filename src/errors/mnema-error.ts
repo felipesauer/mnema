@@ -102,6 +102,10 @@ export type MnemaError =
       readonly epicKey: string;
       readonly fromState: string;
       readonly toState: string;
+    }
+  | {
+      readonly kind: ErrorCode.SchemaOutOfDate;
+      readonly pending: readonly string[];
     };
 
 /**

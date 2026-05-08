@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -94,6 +94,45 @@ describe('MigrationRunner', () => {
     expect(() => db.prepare("DELETE FROM transitions WHERE id = 'tr1'").run()).toThrow(
       /cannot be deleted/,
     );
+  });
+
+  describe('detectDrift', () => {
+    it('returns empty when nothing has been applied yet (virgin DB)', () => {
+      const drift = new MigrationRunner().detectDrift(adapter, migrationsDir);
+      expect(drift).toEqual([]);
+    });
+
+    it('returns empty when applied set matches the directory', () => {
+      const runner = new MigrationRunner();
+      runner.run(adapter, migrationsDir);
+
+      expect(runner.detectDrift(adapter, migrationsDir)).toEqual([]);
+    });
+
+    it('reports migrations that exist on disk but are not yet applied', () => {
+      const runner = new MigrationRunner();
+      runner.run(adapter, migrationsDir);
+
+      // Build a temp migrations dir with the real ones plus a fake unmigrated one.
+      const tempDir = mkdtempSync(path.join(tmpdir(), 'mnema-mig-drift-'));
+      mkdirSync(tempDir, { recursive: true });
+      for (const file of readdirSync(migrationsDir)) {
+        copyFileSync(path.join(migrationsDir, file), path.join(tempDir, file));
+      }
+      writeFileSync(
+        path.join(tempDir, '099_test_drift.sql'),
+        "INSERT INTO schema_migrations (version, applied_at) VALUES (99, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));\n",
+        'utf-8',
+      );
+
+      try {
+        const drift = runner.detectDrift(adapter, tempDir);
+        expect(drift.map((m) => m.version)).toEqual([99]);
+        expect(drift[0]?.file).toBe('099_test_drift.sql');
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
   });
 
   it('archives agent plans automatically when an agent_run ends', () => {

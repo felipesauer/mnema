@@ -3,7 +3,7 @@ import pc from 'picocolors';
 
 import type { Note, NoteKind } from '../../domain/entities/note.js';
 import { printError } from '../../errors/error-printer.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
 const VALID_KINDS: readonly NoteKind[] = [
@@ -49,7 +49,7 @@ export class NoteCommand {
       .requiredOption('--content <text>', 'Note content')
       .option('--kind <kind>', `One of: ${VALID_KINDS.join(', ')}`, 'comment')
       .action(async (taskKey: string, options: AddOptions) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const kind = parseKind(options.kind ?? 'comment');
           const result = container.note.add({
             taskKey,

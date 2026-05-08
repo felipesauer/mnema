@@ -4,8 +4,13 @@ import path from 'node:path';
 import type { Command } from 'commander';
 import pc from 'picocolors';
 
+import { ConfigLoader } from '../../config/config-loader.js';
+import { ErrorCode } from '../../errors/error-codes.js';
+import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '../../utils/asset-paths.js';
+import { resolveProjectRoot } from '../project-root.js';
 
 /**
  * Registers `mnema migration`, helpers for the SQLite schema slot.
@@ -41,6 +46,67 @@ export class MigrationCommand {
           `${pc.dim(`  next time the database is opened, version ${result.version} runs and stamps schema_migrations.`)}\n`,
         );
       });
+
+    group
+      .command('apply')
+      .description('Apply every pending migration to the project database')
+      .action(() => {
+        runApply();
+      });
+  }
+}
+
+/**
+ * Top-level shortcut for `mnema migration apply`. Mutating commands
+ * surface a `SchemaOutOfDate` error pointing here when the database
+ * has fallen behind the migrations on disk.
+ *
+ * @param program - Root Commander program
+ */
+export class MigrateCommand {
+  /**
+   * Attaches the `migrate` subcommand to the root program.
+   *
+   * @param program - Root Commander program
+   */
+  register(program: Command): void {
+    program
+      .command('migrate')
+      .description('Apply every pending migration (alias of `migration apply`)')
+      .action(() => {
+        runApply();
+      });
+  }
+}
+
+/**
+ * Loads the active project config, opens its SQLite database, and
+ * applies every pending migration. Reports each one as it lands.
+ * Exits the process with a non-zero status when the config cannot be
+ * located.
+ */
+function runApply(): void {
+  const loader = new ConfigLoader();
+  const configFile = loader.findConfigFile();
+  if (configFile === null) {
+    process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
+  }
+  const config = loader.load();
+  const projectRoot = resolveProjectRoot(configFile);
+  const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
+  const adapter = new SqliteAdapter(dbPath);
+  try {
+    const applied = new MigrationRunner().run(adapter, migrationsDir());
+    if (applied.length === 0) {
+      process.stdout.write(`${pc.dim('schema already up to date')}\n`);
+      return;
+    }
+    process.stdout.write(`${pc.green('✓')} applied ${applied.length} migration(s):\n`);
+    for (const migration of applied) {
+      process.stdout.write(`  ${pc.dim('→')} ${migration.file}\n`);
+    }
+  } finally {
+    adapter.close();
   }
 }
 

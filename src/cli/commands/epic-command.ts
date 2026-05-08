@@ -5,7 +5,7 @@ import type { Epic } from '../../domain/entities/epic.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface CreateOptions {
   readonly title: string;
@@ -42,7 +42,7 @@ export class EpicCommand {
       .requiredOption('--title <title>', 'Epic title')
       .option('--description <text>', 'Epic description')
       .action(async (options: CreateOptions) => {
-        await withCliContext(({ container, config }) => {
+        await withMutatingCliContext(({ container, config }) => {
           const result = container.epic.create({
             projectKey: config.project.key,
             title: options.title,
@@ -86,7 +86,7 @@ export class EpicCommand {
       .command('close <key>')
       .description('Close an OPEN epic')
       .action(async (key: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.epic.close({
             epicKey: key,
             actor: container.identity.getDefaultActor(),
@@ -99,7 +99,7 @@ export class EpicCommand {
       .command('add <epicKey> <taskKey>')
       .description('Attach a task to an epic')
       .action(async (epicKey: string, taskKey: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.epic.addTask({
             epicKey,
             taskKey,
@@ -116,7 +116,7 @@ export class EpicCommand {
       .command('remove <epicKey> <taskKey>')
       .description('Remove a task from its epic')
       .action(async (epicKey: string, taskKey: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.epic.removeTask({
             epicKey,
             taskKey,

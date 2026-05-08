@@ -5,7 +5,7 @@ import type { Sprint } from '../../domain/entities/sprint.js';
 import type { Task } from '../../domain/entities/task.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface PlanOptions {
   readonly name: string;
@@ -45,7 +45,7 @@ export class SprintCommand {
       .option('--ends-at <iso>', 'Planned end date (ISO8601)')
       .option('--capacity <points>', 'Capacity in story points')
       .action(async (options: PlanOptions) => {
-        await withCliContext(({ container, config }) => {
+        await withMutatingCliContext(({ container, config }) => {
           const result = container.sprint.plan({
             projectKey: config.project.key,
             name: options.name,
@@ -63,7 +63,7 @@ export class SprintCommand {
       .command('start <key>')
       .description('Activate a planned sprint')
       .action(async (key: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.sprint.start({
             sprintKey: key,
             actor: container.identity.getDefaultActor(),
@@ -76,7 +76,7 @@ export class SprintCommand {
       .command('close <key>')
       .description('Close an active sprint')
       .action(async (key: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.sprint.close({
             sprintKey: key,
             actor: container.identity.getDefaultActor(),
@@ -117,7 +117,7 @@ export class SprintCommand {
       .command('add <sprintKey> <taskKey>')
       .description('Attach a task to a sprint')
       .action(async (sprintKey: string, taskKey: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.sprint.addTask({
             sprintKey,
             taskKey,
@@ -134,7 +134,7 @@ export class SprintCommand {
       .command('remove <sprintKey> <taskKey>')
       .description('Remove a task from its sprint')
       .action(async (sprintKey: string, taskKey: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.sprint.removeTask({
             sprintKey,
             taskKey,

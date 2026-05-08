@@ -195,6 +195,17 @@ export function formatError(error: MnemaError): string {
       lines.push(`Epic ${error.epicKey} cannot move from ${error.fromState} to ${error.toState}`);
       lines.push(`${pc.dim('hint:')} Allowed transitions: OPEN → CLOSED`);
       break;
+
+    case ErrorCode.SchemaOutOfDate: {
+      const count = error.pending.length;
+      const noun = count === 1 ? 'migration' : 'migrations';
+      lines.push(`Schema is out of date — ${count} ${noun} pending`);
+      for (const file of error.pending) {
+        lines.push(`  - ${file}`);
+      }
+      lines.push(`${pc.dim('hint:')} Run \`mnema migrate\` to apply pending migrations`);
+      break;
+    }
   }
 
   return lines.join('\n');
@@ -210,6 +221,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
   switch (error.kind) {
     case ErrorCode.VersionMismatch:
     case ErrorCode.AlreadyInitialized:
+    case ErrorCode.SchemaOutOfDate:
       return ExitCode.State;
     case ErrorCode.InitConflict:
       return ExitCode.Conflict;

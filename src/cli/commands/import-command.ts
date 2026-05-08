@@ -6,7 +6,7 @@ import pc from 'picocolors';
 import { printError } from '../../errors/error-printer.js';
 import { GithubIssuesImporter } from '../../services/importers/github-issues-importer.js';
 import { MarkdownImporter } from '../../services/importers/markdown-importer.js';
-import { withCliContext } from '../cli-context.js';
+import { withMutatingCliContext } from '../cli-context.js';
 
 interface MarkdownOptions {
   readonly from: string;
@@ -44,7 +44,7 @@ export class ImportCommand {
       .requiredOption('--from <path>', 'File or directory to parse')
       .option('--recursive', 'Walk directories recursively', false)
       .action(async (options: MarkdownOptions) => {
-        await withCliContext(({ container, config, projectRoot }) => {
+        await withMutatingCliContext(({ container, config, projectRoot }) => {
           const sourcePath = path.isAbsolute(options.from)
             ? options.from
             : path.resolve(projectRoot, options.from);
@@ -78,7 +78,7 @@ export class ImportCommand {
       .option('--state <state>', 'Issue state filter — open, closed or all (default all)')
       .action(async (options: GithubOptions) => {
         const token = options.token ?? process.env.GITHUB_TOKEN;
-        await withCliContext(async ({ container, config }) => {
+        await withMutatingCliContext(async ({ container, config }) => {
           const importer = new GithubIssuesImporter(
             container.task,
             config.project.key,

@@ -5,7 +5,7 @@ import type { Decision } from '../../domain/entities/decision.js';
 import { DecisionStatus } from '../../domain/enums/decision-status.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface RecordOptions {
   readonly title: string;
@@ -55,7 +55,7 @@ export class DecisionCommand {
       .option('--rationale <text>', 'Why this choice over alternatives')
       .option('--consequences <text>', 'What follows from this decision')
       .action(async (options: RecordOptions) => {
-        await withCliContext(({ container, config }) => {
+        await withMutatingCliContext(({ container, config }) => {
           const result = container.decision.record({
             projectKey: config.project.key,
             title: options.title,
@@ -102,7 +102,7 @@ export class DecisionCommand {
       .command('accept <key>')
       .description('Move a `proposed` ADR to `accepted`')
       .action(async (key: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
             decisionKey: key,
             status: DecisionStatus.Accepted,
@@ -116,7 +116,7 @@ export class DecisionCommand {
       .command('reject <key>')
       .description('Move a `proposed` ADR to `rejected`')
       .action(async (key: string) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
             decisionKey: key,
             status: DecisionStatus.Rejected,
@@ -131,7 +131,7 @@ export class DecisionCommand {
       .description('Mark an ADR as superseded by another')
       .requiredOption('--by <successor>', 'Key of the decision that replaces this one')
       .action(async (key: string, options: SupersedeOptions) => {
-        await withCliContext(({ container }) => {
+        await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
             decisionKey: key,
             status: DecisionStatus.Superseded,
