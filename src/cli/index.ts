@@ -56,6 +56,9 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   memory: { load: async () => new (await import('./commands/memory-command.js')).MemoryCommand() },
   search: { load: async () => new (await import('./commands/search-command.js')).SearchCommand() },
   audit: { load: async () => new (await import('./commands/audit-command.js')).AuditCommand() },
+  identity: {
+    load: async () => new (await import('./commands/identity-command.js')).IdentityCommand(),
+  },
   history: {
     load: async () => new (await import('./commands/history-command.js')).HistoryCommand(),
   },
