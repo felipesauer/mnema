@@ -21,7 +21,9 @@ interface Harness {
   readonly close: () => Promise<void>;
 }
 
-async function setupHarness(): Promise<Harness> {
+async function setupHarness(
+  options: { readonly clientMetadata?: Record<string, unknown> } = {},
+): Promise<Harness> {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-mcp-'));
   for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
@@ -43,9 +45,8 @@ async function setupHarness(): Promise<Harness> {
     .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
     .run();
 
-  const server = new MnemaMcpServer(config, projectRoot, container, {
-    agent_handle: 'test-agent',
-  });
+  const clientMetadata = options.clientMetadata ?? { agent_handle: 'test-agent' };
+  const server = new MnemaMcpServer(config, projectRoot, container, clientMetadata);
   server.registerTools();
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -157,6 +158,22 @@ describe('MnemaMcpServer (in-memory)', () => {
     expect((result as CallToolResult).isError).toBe(true);
     const payload = parsePayload(result as CallToolResult);
     expect(payload.error).toBe('NO_ACTIVE_RUN');
+  });
+
+  it('agent_run_start without an agent_handle returns AGENT_HANDLE_MISSING', async () => {
+    // Spin up a fresh harness with metadata that omits agent_handle —
+    // the failure mode users hit when the MCP client does not
+    // propagate it (Claude Code stdio without MNEMA_AGENT_HANDLE).
+    await harness.close();
+    harness = await setupHarness({ clientMetadata: { pid: process.pid } });
+
+    const result = await harness.client.callTool({
+      name: 'agent_run_start',
+      arguments: { goal: 'should fail' },
+    });
+    expect((result as CallToolResult).isError).toBe(true);
+    const payload = parsePayload(result as CallToolResult);
+    expect(payload.error).toBe('AGENT_HANDLE_MISSING');
   });
 
   it('transition tool reflects optimistic concurrency via expected_updated_at', async () => {
