@@ -100,9 +100,22 @@ function describe(event: AuditEvent): string {
           : '';
       return `decision ${stringify(data.key)} ${from} → ${pc.cyan(to)}${superseded}`;
     }
+    case 'note_added':
+      return `note on ${stringify(data.task_key)} ${pc.dim(`[${stringify(data.note_kind)}]`)}`;
+    case 'attachment_added': {
+      const dedup = data.deduplicated === true ? pc.dim(' (dedup)') : '';
+      return `attached ${stringify(data.filename)} to ${stringify(data.task_key)} ${pc.dim(`(${formatBytes(data.size)})`)}${dedup}`;
+    }
     default:
       return `${event.kind} ${pc.dim(JSON.stringify(data))}`;
   }
+}
+
+function formatBytes(value: unknown): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return '';
+  if (value < 1024) return `${value}B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)}KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 function stringify(value: unknown): string {
