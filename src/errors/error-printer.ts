@@ -90,6 +90,13 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Set MNEMA_ACTOR or create ~/.config/mnema/identity.json`);
       break;
 
+    case ErrorCode.AgentHandleMissing:
+      lines.push('No agent handle on the MCP session');
+      lines.push(
+        `${pc.dim('hint:')} Set MNEMA_AGENT_HANDLE in the env that spawns the server, or pass --agent-handle <name> to \`mnema mcp serve\``,
+      );
+      break;
+
     case ErrorCode.InitConflict:
       lines.push(`init aborted: ${error.path} already exists and would be overwritten`);
       lines.push(`${pc.dim('hint:')} Remove it or choose a dedicated paths-mode`);

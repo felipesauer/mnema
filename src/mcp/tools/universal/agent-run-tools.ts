@@ -50,7 +50,7 @@ export class AgentRunTools {
         const handle = this.session.getClientMetadata().agent_handle;
         if (handle === undefined || handle.length === 0) {
           return err({
-            kind: ErrorCode.IdentityNotConfigured,
+            kind: ErrorCode.AgentHandleMissing,
           });
         }
 

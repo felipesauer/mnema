@@ -36,7 +36,7 @@ export class McpCommand {
       .description('Start the Mnema MCP server on stdio')
       .option(
         '--agent-handle <handle>',
-        'Override the agent handle (also taken from MCP client metadata)',
+        'Identify the agent calling Mnema (overrides MNEMA_AGENT_HANDLE env)',
       )
       .action(async (options: ServeOptions) => {
         // Lazy: pull in the MCP SDK + logger only when the user
@@ -51,8 +51,18 @@ export class McpCommand {
           pid: process.pid,
           hostname: process.env.HOSTNAME ?? '',
         };
-        if (options.agentHandle !== undefined) {
-          clientMetadata.agent_handle = options.agentHandle;
+        // Resolution order for the agent handle, mirroring how
+        // MNEMA_ACTOR is resolved:
+        //   1. --agent-handle CLI flag (explicit override)
+        //   2. MNEMA_AGENT_HANDLE env var (set by the MCP client
+        //      registration — Claude Code, Cursor, etc. all support
+        //      passing env vars to spawned servers)
+        // Anything below is left unset; tools that need a handle
+        // (e.g. agent_run_start) report AgentHandleMissing with a
+        // hint pointing at both knobs.
+        const handle = options.agentHandle ?? process.env.MNEMA_AGENT_HANDLE;
+        if (handle !== undefined && handle.length > 0) {
+          clientMetadata.agent_handle = handle;
         }
         const server = new MnemaMcpServer(
           context.config,
@@ -91,10 +101,19 @@ export class McpCommand {
 }
 
 function buildInstructions(client: SupportedClient, binary: string, handle: string): string {
+  // The agent handle travels through the spawned process's environment.
+  // `metadata` was emitted by an earlier version of this function, but
+  // no real MCP client honoured it: Claude Code reads `command/args/env`
+  // verbatim and ignores the rest, so users who pasted the old snippet
+  // ended up with a server that worked for read-only tools and broke on
+  // every mutation. `env: { MNEMA_AGENT_HANDLE }` is the supported
+  // transport — it works in every client that lets the user define an
+  // MCP server (claude-code, cursor, aider, …).
+  const env = { MNEMA_AGENT_HANDLE: handle };
   const config = {
     command: binary,
     args: ['mcp', 'serve'],
-    metadata: { agent_handle: handle },
+    env,
   };
 
   // Placeholders like ${workspaceFolder} are MCP-client templating, not JS interpolation.
@@ -104,11 +123,16 @@ function buildInstructions(client: SupportedClient, binary: string, handle: stri
   switch (client) {
     case 'claude-code':
       return [
-        'Add to ~/.config/claude-code/mcp.json (or your platform-specific path):',
+        'Register with `claude mcp add` (preferred), or paste the JSON',
+        'below into ~/.claude.json under `mcpServers`:',
+        '',
+        `  claude mcp add mnema -s user -e MNEMA_AGENT_HANDLE=${handle} -- ${binary} mcp serve`,
         '',
         JSON.stringify({ mcpServers: { mnema: { ...config, cwd: claudeCodeCwd } } }, null, 2),
         '',
-        'Tip: keep `cwd` set to the workspace folder so Mnema can locate mnema.config.json.',
+        'Tip: keep `cwd` pointed at the workspace folder so Mnema can',
+        'locate `.mnema/mnema.config.json`. Add MNEMA_ACTOR to the env',
+        'block when an identity file is not in place on the host.',
         '',
       ].join('\n');
     case 'cursor':
@@ -120,8 +144,10 @@ function buildInstructions(client: SupportedClient, binary: string, handle: stri
       ].join('\n');
     case 'aider':
       return [
-        'Aider expects the MCP server to be started manually:',
+        'Aider expects the MCP server to be started manually. Either',
+        'export the env var or pass the flag:',
         '',
+        `  MNEMA_AGENT_HANDLE=${handle} ${binary} mcp serve`,
         `  ${binary} mcp serve --agent-handle ${handle}`,
         '',
         'Then point Aider at the spawned process via its MCP integration docs.',
@@ -129,7 +155,9 @@ function buildInstructions(client: SupportedClient, binary: string, handle: stri
       ].join('\n');
     case 'generic':
       return [
-        'Generic MCP client configuration:',
+        'Generic MCP client configuration. Pass `env` to the spawned',
+        'server, or invoke `mnema mcp serve --agent-handle <name>`',
+        'directly from your launcher:',
         '',
         JSON.stringify(config, null, 2),
         '',

@@ -20,6 +20,7 @@ export enum ErrorCode {
   WorkflowInvalid = 'WORKFLOW_INVALID',
 
   IdentityNotConfigured = 'IDENTITY_NOT_CONFIGURED',
+  AgentHandleMissing = 'AGENT_HANDLE_MISSING',
 
   InitConflict = 'INIT_CONFLICT',
   AlreadyInitialized = 'ALREADY_INITIALIZED',
