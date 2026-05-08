@@ -218,6 +218,46 @@ describe('CLI end-to-end', () => {
     expect(result.stdout).toContain('DRAFT → READY');
   });
 
+  it('mnema task history shows the audit trail of a single task', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Target task'], projectRoot);
+    runCli(['task', 'create', '--title', 'Other task'], projectRoot);
+    const move = runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        'title=Target task',
+        'description=submission attempt with enough text',
+        'acceptance_criteria=Works,Tested',
+        'estimate=3',
+      ],
+      projectRoot,
+    );
+    expect(move.status).toBe(0);
+
+    const human = runCli(['task', 'history', 'WEBAPP-1'], projectRoot);
+    expect(human.status).toBe(0);
+    expect(human.stdout).toContain('created WEBAPP-1');
+    expect(human.stdout).toContain('submit WEBAPP-1');
+    expect(human.stdout).not.toContain('WEBAPP-2');
+
+    const json = runCli(['task', 'history', 'WEBAPP-1', '--json'], projectRoot);
+    expect(json.status).toBe(0);
+    const lines = json.stdout.trim().split('\n');
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    for (const line of lines) {
+      const event = JSON.parse(line) as { data: { key?: string; task_key?: string } };
+      const key = event.data.key ?? event.data.task_key;
+      expect(key).toBe('WEBAPP-1');
+    }
+
+    const missing = runCli(['task', 'history', 'WEBAPP-999'], projectRoot);
+    expect(missing.status).not.toBe(0);
+    expect(missing.stderr).toContain('WEBAPP-999');
+  });
+
   it('mnema agent inspect renders a run with plans and mutations', async () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 

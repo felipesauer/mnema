@@ -17,6 +17,13 @@ export interface AuditQueryFilter {
   readonly via?: string;
   /** Match `event.run` exactly. */
   readonly run?: string;
+  /**
+   * Match a task key against either `event.data.key` (task_created,
+   * task_transitioned) or `event.data.task_key` (note_added,
+   * attachment_added). Decisions use `data.key` with a `MNEMA-ADR-`
+   * prefix and therefore do not collide with task keys.
+   */
+  readonly taskKey?: string;
   /** Lower bound for `event.at`. Either an ISO8601 string or a Date. */
   readonly since?: string | Date;
   /** Upper bound for `event.at`. Either an ISO8601 string or a Date. */
@@ -68,6 +75,7 @@ export class AuditQuery {
         if (filter.actor !== undefined && event.actor !== filter.actor) continue;
         if (filter.via !== undefined && event.via !== filter.via) continue;
         if (filter.run !== undefined && event.run !== filter.run) continue;
+        if (filter.taskKey !== undefined && !matchesTaskKey(event, filter.taskKey)) continue;
 
         if (sinceMs !== null || untilMs !== null) {
           const eventMs = Date.parse(event.at);
@@ -115,6 +123,11 @@ export function parseTimeBound(value: string | Date | undefined): number | null 
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) return null;
   return parsed;
+}
+
+function matchesTaskKey(event: AuditEvent, taskKey: string): boolean {
+  const data = event.data as Record<string, unknown>;
+  return data.key === taskKey || data.task_key === taskKey;
 }
 
 function unitToSeconds(unit: string): number {
