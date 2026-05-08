@@ -5,6 +5,7 @@ import { parseTimeBound } from '../../services/audit-query.js';
 import { AuditTail } from '../../services/audit-tail.js';
 import { withCliContext } from '../cli-context.js';
 import { formatEvent, type HistoryFormat } from '../formatters/history-formatter.js';
+import type { TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface WatchOptions {
   readonly kind?: string;
@@ -14,6 +15,7 @@ interface WatchOptions {
   readonly catchup?: string;
   readonly table?: boolean;
   readonly json?: boolean;
+  readonly iso?: boolean;
 }
 
 /**
@@ -44,15 +46,17 @@ export class WatchCommand {
       .option('--catchup <duration>', 'Replay matching events from N units ago first (e.g. 5m)')
       .option('--table', 'Render as an aligned table', false)
       .option('--json', 'Render as JSONL (one event per line)', false)
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: WatchOptions) => {
         await withCliContext(async ({ config, projectRoot }) => {
           const auditDir = path.join(projectRoot, config.paths.audit);
           const format = pickFormat(options);
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
 
           const tail = new AuditTail(
             auditDir,
             (event) => {
-              process.stdout.write(`${formatEvent(event, format)}\n`);
+              process.stdout.write(`${formatEvent(event, format, mode)}\n`);
             },
             {
               kind: options.kind,

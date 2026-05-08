@@ -8,6 +8,11 @@ import { AgentPlanState } from '../../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { printError } from '../../errors/error-printer.js';
 import { withCliContext } from '../cli-context.js';
+import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
+
+interface InspectOptions {
+  readonly iso?: boolean;
+}
 
 /**
  * Registers the `mnema agent` command group.
@@ -28,7 +33,8 @@ export class AgentCommand {
     group
       .command('inspect <runId>')
       .description('Show a detailed view of a single agent run')
-      .action(async (runId: string) => {
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
+      .action(async (runId: string, options: InspectOptions) => {
         await withCliContext(({ container }) => {
           const runResult = container.agentRun.findById(runId);
           if (!runResult.ok) {
@@ -37,8 +43,9 @@ export class AgentCommand {
           const run = runResult.value;
           const plans = container.agentPlan.list(run.id);
           const transitions = container.transitions.findByRun(run.id);
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
 
-          process.stdout.write(`${formatRunDetail(run, plans, transitions)}\n`);
+          process.stdout.write(`${formatRunDetail(run, plans, transitions, mode)}\n`);
         });
       });
   }
@@ -48,14 +55,15 @@ function formatRunDetail(
   run: AgentRun,
   plans: readonly AgentPlan[],
   transitions: readonly Transition[],
+  mode: TimestampMode,
 ): string {
   const lines: string[] = [];
   lines.push(`${pc.bold('Run:')} ${run.id}`);
   lines.push(`${pc.bold('Goal:')} ${run.goal}`);
   lines.push(`${pc.bold('Status:')} ${formatStatus(run.status)}`);
-  lines.push(`${pc.bold('Started:')} ${run.startedAt}`);
+  lines.push(`${pc.bold('Started:')} ${formatTimestamp(run.startedAt, mode)}`);
   lines.push(
-    `${pc.bold('Ended:')} ${run.endedAt ?? pc.dim('(still running)')}` +
+    `${pc.bold('Ended:')} ${run.endedAt !== null ? formatTimestamp(run.endedAt, mode) : pc.dim('(still running)')}` +
       (run.endedAt !== null ? ` (${formatDuration(run.startedAt, run.endedAt)})` : ''),
   );
   lines.push(`${pc.bold('Depth:')} ${run.depth}`);
@@ -84,7 +92,7 @@ function formatRunDetail(
           ? `${transition.fromState} → ${transition.toState}`
           : `→ ${transition.toState}`;
       lines.push(
-        `  ${pc.dim(transition.at.slice(11, 19))}  ${transition.action.padEnd(14)} ${pc.cyan(arrow)}`,
+        `  ${pc.dim(formatTimestamp(transition.at, mode))}  ${transition.action.padEnd(14)} ${pc.cyan(arrow)}`,
       );
     }
   }

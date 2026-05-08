@@ -42,7 +42,7 @@ describe('formatEvent', () => {
     expect(line).toContain('agent:cc');
   });
 
-  it('shows the time and a `via` clause in human mode', () => {
+  it('shows the timestamp and a `via` clause in human mode (iso)', () => {
     const line = noColor(
       formatEvent(
         sample(
@@ -51,12 +51,23 @@ describe('formatEvent', () => {
           { via: 'agent:cc' },
         ),
         'human',
+        'iso',
       ),
     );
-    expect(line).toContain('10:00:00');
+    expect(line).toContain('2026-05-01T10:00:00.000Z');
     expect(line).toContain('daniel via agent:cc');
     expect(line).toContain('submit');
     expect(line).toContain('DRAFT → READY');
+  });
+
+  it('uses relative timestamps by default in human mode', () => {
+    const line = noColor(
+      formatEvent(
+        sample('task_created', { key: 'X-1', title: 'A' }, { at: new Date().toISOString() }),
+        'human',
+      ),
+    );
+    expect(line).toMatch(/just now|\dm ago|\dh ago/);
   });
 });
 

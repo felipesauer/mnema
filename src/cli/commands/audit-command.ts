@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import pc from 'picocolors';
 
 import { withCliContext } from '../cli-context.js';
+import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface QueryOptions {
   readonly kind?: string;
@@ -12,6 +13,7 @@ interface QueryOptions {
   readonly until?: string;
   readonly limit?: string;
   readonly json?: boolean;
+  readonly iso?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export class AuditCommand {
       .option('--until <duration>', 'Upper bound — same syntax as --since')
       .option('--limit <n>', 'Limit the number of results')
       .option('--json', 'Print events as raw JSONL', false)
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: QueryOptions) => {
         await withCliContext(({ container }) => {
           const events = container.auditQuery.run({
@@ -61,6 +64,7 @@ export class AuditCommand {
             return;
           }
 
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           for (const event of events) {
             const subject =
               event.via !== undefined
@@ -68,7 +72,7 @@ export class AuditCommand {
                 : event.actor;
             const data = JSON.stringify(event.data);
             process.stdout.write(
-              `${pc.dim(event.at)}  ${pc.cyan(event.kind)}  ${subject}  ${pc.dim(data)}\n`,
+              `${pc.dim(formatTimestamp(event.at, mode))}  ${pc.cyan(event.kind)}  ${subject}  ${pc.dim(data)}\n`,
             );
           }
         });

@@ -4,9 +4,11 @@ import pc from 'picocolors';
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
 import { withCliContext } from '../cli-context.js';
+import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface InboxOptions {
   readonly json?: boolean;
+  readonly iso?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export class InboxCommand {
       .command('inbox')
       .description('Show tasks that need human attention (review, blocked)')
       .option('--json', 'Print the inbox as JSON', false)
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: InboxOptions) => {
         await withCliContext(({ container }) => {
           const view = container.inbox.view();
@@ -35,10 +38,13 @@ export class InboxCommand {
             return;
           }
 
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           const sections: string[] = [];
-          sections.push(formatSection('Awaiting review', view.awaitingReview, pc.yellow('⚠')));
-          sections.push(formatSection('Blocked', view.blocked, pc.red('⚠')));
-          sections.push(formatDecisionSection(view.pendingDecisions));
+          sections.push(
+            formatSection('Awaiting review', view.awaitingReview, pc.yellow('⚠'), mode),
+          );
+          sections.push(formatSection('Blocked', view.blocked, pc.red('⚠'), mode));
+          sections.push(formatDecisionSection(view.pendingDecisions, mode));
 
           const empty =
             view.awaitingReview.length === 0 &&
@@ -54,37 +60,30 @@ export class InboxCommand {
   }
 }
 
-function formatSection(label: string, tasks: readonly Task[], badge: string): string {
+function formatSection(
+  label: string,
+  tasks: readonly Task[],
+  badge: string,
+  mode: TimestampMode,
+): string {
   if (tasks.length === 0) return '';
   const lines: string[] = [];
   lines.push(`${badge} ${pc.bold(label)} (${tasks.length})`);
   for (const task of tasks) {
-    const since = humanAge(task.updatedAt);
+    const since = formatTimestamp(task.updatedAt, mode);
     lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.title.padEnd(40)} ${pc.dim(since)}`);
   }
   return lines.join('\n');
 }
 
-function formatDecisionSection(decisions: readonly Decision[]): string {
+function formatDecisionSection(decisions: readonly Decision[], mode: TimestampMode): string {
   if (decisions.length === 0) return '';
   const lines: string[] = [];
   lines.push(`${pc.cyan('●')} ${pc.bold('Pending decisions')} (${decisions.length})`);
   for (const decision of decisions) {
     lines.push(
-      `  ${pc.bold(decision.key.padEnd(16))} ${decision.title.padEnd(40)} ${pc.dim(humanAge(decision.at))}`,
+      `  ${pc.bold(decision.key.padEnd(16))} ${decision.title.padEnd(40)} ${pc.dim(formatTimestamp(decision.at, mode))}`,
     );
   }
   return lines.join('\n');
-}
-
-function humanAge(iso: string): string {
-  const ageMs = Date.now() - Date.parse(iso);
-  if (Number.isNaN(ageMs) || ageMs < 0) return iso;
-  const minutes = Math.floor(ageMs / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
