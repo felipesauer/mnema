@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, CommanderError } from 'commander';
 
 import { VERSION } from '@/utils/version.js';
 
@@ -125,7 +125,17 @@ function registerLazyCommand(program: Command, name: string, spec: CommandSpec):
       // Commander needs everything from `<name>` onward so it can
       // dispatch into the matching subcommand we just registered.
       const subargs = process.argv.slice(2);
-      await inner.parseAsync(subargs, { from: 'user' });
+      try {
+        await inner.parseAsync(subargs, { from: 'user' });
+      } catch (error) {
+        // exitOverride() turns expected exits (--help, --version, missing
+        // args) into thrown CommanderError instances. Honour their exit
+        // code without leaking the stack trace.
+        if (error instanceof CommanderError) {
+          process.exit(error.exitCode);
+        }
+        throw error;
+      }
     });
 
   // Plural aliases: typing `mnema tasks` resolves to the same loader as
