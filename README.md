@@ -11,21 +11,41 @@ agents — it stores everything they touch.
 
 ## Quickstart
 
-```bash
-# 1. Install (Node 20+ required)
-pnpm add -g @saurim/mnema      # or: npm i -g @saurim/mnema
+> **Status:** Mnema is in `0.1.0-alpha`, not yet published to npm. The
+> only supported install path right now is from source — see the
+> [Install](#install) section below. Public alpha on npm comes after
+> the dogfooding cycle stabilises (likely with `0.2.0-alpha`).
 
-# 2. Initialise a project
+```bash
+# 1. Initialise a project
 cd my-project
 mnema init --name "My App" --key "MYAPP"
 
-# 3. Wire your AI client to the MCP server
+# 2. Wire your AI client to the MCP server
 mnema mcp install-instructions claude-code
 # follow the printed snippet, restart your client
 
-# 4. Start working — everything goes through tools
+# 3. Start working — everything goes through tools
 #    (the agent calls task_create, task_submit, … you see the result)
 ```
+
+## Install
+
+Mnema is not on npm yet. Install from source:
+
+```bash
+git clone https://github.com/saurim/mnema.git
+cd mnema
+pnpm install
+pnpm build
+# Either symlink the entry point or use the bundled wrapper:
+ln -s "$PWD/mnema" /usr/local/bin/mnema   # optional, for global access
+mnema --version
+```
+
+Requires Node 20+. The bundled `./mnema` shell script in the repo
+forwards to `dist/index.js` — useful for dogfooding without a global
+install.
 
 When you want a quick look at what the agent has been doing:
 
@@ -162,9 +182,10 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 Mnema is **alpha** (`0.1.0-alpha.x`). The core surface is in place
 (tasks, sprints, decisions, notes, epics, attachments, FTS search,
-audit log, MCP tools), and the package is being shaken out before a
-stable `0.1.0` tag. See [CHANGELOG.md](CHANGELOG.md) for the per-phase
-history.
+audit log, MCP tools), and the package is being shaken out before
+public release. Currently install-from-source only — npm publish is
+planned for `0.2.0-alpha` once the dogfood cycle settles. See
+[CHANGELOG.md](CHANGELOG.md) for the per-phase history.
 
 ## License
 
