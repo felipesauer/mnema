@@ -3,10 +3,10 @@ import pc from 'picocolors';
 
 import type { AgentPlan } from '../../domain/entities/agent-plan.js';
 import type { AgentRun } from '../../domain/entities/agent-run.js';
-import type { Transition } from '../../domain/entities/transition.js';
 import { AgentPlanState } from '../../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { printError } from '../../errors/error-printer.js';
+import type { TransitionWithKey } from '../../storage/sqlite/repositories/transition-repository.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
@@ -54,7 +54,7 @@ export class AgentCommand {
 function formatRunDetail(
   run: AgentRun,
   plans: readonly AgentPlan[],
-  transitions: readonly Transition[],
+  transitions: readonly TransitionWithKey[],
   mode: TimestampMode,
 ): string {
   const lines: string[] = [];
@@ -92,7 +92,7 @@ function formatRunDetail(
           ? `${transition.fromState} → ${transition.toState}`
           : `→ ${transition.toState}`;
       lines.push(
-        `  ${pc.dim(formatTimestamp(transition.at, mode))}  ${transition.action.padEnd(14)} ${pc.cyan(arrow)}`,
+        `  ${pc.dim(formatTimestamp(transition.at, mode))}  ${transition.action.padEnd(14)} ${pc.bold(transition.taskKey.padEnd(12))} ${pc.cyan(arrow)}`,
       );
     }
   }

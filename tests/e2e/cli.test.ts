@@ -258,10 +258,12 @@ describe('CLI end-to-end', () => {
     expect(missing.stderr).toContain('WEBAPP-999');
   });
 
-  it('mnema agent inspect renders a run with plans and mutations', async () => {
+  it('mnema agent inspect renders a run with plans and per-task mutations', async () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
-    // Seed an agent_run + agent_plan + transition through the open SQLite.
+    // Seed an agent_run + agent_plan + two transitions touching two
+    // separate tasks, so we can verify that the mutation lines carry
+    // the human task key (regression for Bug 20 / MNEMA-9).
     const Database = (await import('better-sqlite3')).default;
     const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
     try {
@@ -279,6 +281,31 @@ describe('CLI end-to-end', () => {
          VALUES ('p1', 'run-x', 'scan SQL injection', 'completed', 0,
                  '2026-05-01T10:01:00.000Z')`,
       ).run();
+
+      // Two tasks touched by the same run (uses the project seeded by
+      // `init` above so the FK to projects is satisfied).
+      const projectId = (db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string }).id;
+      db.prepare(
+        `INSERT INTO tasks (id, key, project_id, title, reporter_id, state)
+         VALUES ('t-7', 'WEBAPP-7', ?, 'Login flow', 'h1', 'TODO')`,
+      ).run(projectId);
+      db.prepare(
+        `INSERT INTO tasks (id, key, project_id, title, reporter_id, state)
+         VALUES ('t-9', 'WEBAPP-9', ?, 'Token refresh', 'h1', 'DOING')`,
+      ).run(projectId);
+
+      db.prepare(
+        `INSERT INTO transitions (id, task_id, from_state, to_state, action,
+                                  payload, actor_id, agent_run_id, at)
+         VALUES ('tr1', 't-7', NULL, 'TODO', 'create', '{}', 'h1', 'run-x',
+                 '2026-05-01T10:00:30.000Z')`,
+      ).run();
+      db.prepare(
+        `INSERT INTO transitions (id, task_id, from_state, to_state, action,
+                                  payload, actor_id, agent_run_id, at)
+         VALUES ('tr2', 't-9', 'TODO', 'DOING', 'start', '{}', 'h1', 'run-x',
+                 '2026-05-01T10:00:45.000Z')`,
+      ).run();
     } finally {
       db.close();
     }
@@ -288,6 +315,14 @@ describe('CLI end-to-end', () => {
     expect(result.stdout).toContain('audit auth code');
     expect(result.stdout).toContain('completed');
     expect(result.stdout).toContain('scan SQL injection');
+    expect(result.stdout).toContain('Mutations (2)');
+    // Each mutation line must carry the human task key, so that runs
+    // touching multiple tasks are still readable.
+    expect(result.stdout).toContain('WEBAPP-7');
+    expect(result.stdout).toContain('WEBAPP-9');
+    // And the actions still appear next to their respective keys.
+    expect(result.stdout).toMatch(/create\s+WEBAPP-7/);
+    expect(result.stdout).toMatch(/start\s+WEBAPP-9/);
   });
 
   it('mnema inbox lists tasks awaiting review and blocked tasks', () => {

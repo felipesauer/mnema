@@ -3,6 +3,15 @@ import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
+/**
+ * A transition annotated with the human task key. Used when surfacing
+ * transitions in human-facing views (e.g. `mnema agent inspect`) so
+ * the reader does not have to map UUIDs back to keys themselves.
+ */
+export interface TransitionWithKey extends Transition {
+  readonly taskKey: string;
+}
+
 interface TransitionRow {
   readonly id: string;
   readonly task_id: string;
@@ -91,17 +100,26 @@ export class TransitionRepository {
   }
 
   /**
-   * Lists transitions caused by an agent run, in chronological order.
+   * Lists transitions caused by an agent run, in chronological order,
+   * each annotated with the human task key. The JOIN is done in SQL so
+   * a single round-trip materialises everything `agent inspect` needs
+   * to render the mutations table.
    *
    * @param runId - Agent run identifier
    * @returns Array of transitions emitted while the run was active
    */
-  findByRun(runId: string): Transition[] {
+  findByRun(runId: string): TransitionWithKey[] {
     const rows = this.adapter
       .getDatabase()
-      .prepare(`SELECT * FROM transitions WHERE agent_run_id = ? ORDER BY at`)
-      .all(runId) as TransitionRow[];
-    return rows.map(rowToTransition);
+      .prepare(
+        `SELECT t.*, k.key AS task_key
+           FROM transitions t
+           JOIN tasks k ON k.id = t.task_id
+          WHERE t.agent_run_id = ?
+          ORDER BY t.at`,
+      )
+      .all(runId) as Array<TransitionRow & { task_key: string }>;
+    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_key }));
   }
 
   /**
