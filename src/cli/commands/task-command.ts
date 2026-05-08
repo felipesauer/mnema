@@ -1,11 +1,14 @@
 import type { Command } from 'commander';
+import pc from 'picocolors';
 
 import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { withCliContext } from '../cli-context.js';
+import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';
+import type { TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface CreateOptions {
   readonly title: string;
@@ -22,6 +25,12 @@ interface ListOptions {
 
 interface DeleteOptions {
   readonly restore?: boolean;
+}
+
+interface HistoryOptions {
+  readonly json?: boolean;
+  readonly iso?: boolean;
+  readonly limit?: string;
 }
 
 /**
@@ -104,6 +113,36 @@ export class TaskCommand {
             actor: container.identity.getDefaultActor(),
           });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('history <key>')
+      .description('Show the chronological audit trail of a single task')
+      .option('--json', 'Render as JSONL (one event per line)', false)
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
+      .option('--limit <n>', 'Limit the number of events returned')
+      .action(async (key: string, options: HistoryOptions) => {
+        await withCliContext(({ container }) => {
+          const lookup = container.task.findByKey(key);
+          if (!lookup.ok) {
+            process.exit(printError(lookup.error));
+          }
+
+          const events = container.auditQuery.run({
+            taskKey: lookup.value.key,
+            limit: options.limit !== undefined ? Number(options.limit) : undefined,
+          });
+
+          const format: HistoryFormat = options.json === true ? 'json' : 'human';
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
+
+          if (events.length === 0) {
+            process.stdout.write(`${pc.dim('(no audit events for this task)')}\n`);
+            return;
+          }
+
+          process.stdout.write(`${formatHistory(events, format, mode)}\n`);
         });
       });
 

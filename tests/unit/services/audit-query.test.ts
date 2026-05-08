@@ -93,6 +93,83 @@ describe('AuditQuery', () => {
     const events = new AuditQuery(path.join(dir, 'nonexistent')).run();
     expect(events).toEqual([]);
   });
+
+  it('filters by taskKey across data.key and data.task_key, isolating other tasks', () => {
+    writeJsonl(path.join(dir, 'current.jsonl'), [
+      {
+        v: 1,
+        at: '2026-05-01T10:00:00Z',
+        kind: 'task_created',
+        actor: 'd',
+        data: { key: 'MNEMA-1', title: 'one' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T10:01:00Z',
+        kind: 'task_transitioned',
+        actor: 'd',
+        data: { key: 'MNEMA-1', from: 'TODO', to: 'DOING', action: 'start' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T10:02:00Z',
+        kind: 'note_added',
+        actor: 'd',
+        data: { task_key: 'MNEMA-1', note_kind: 'comment' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T10:03:00Z',
+        kind: 'attachment_added',
+        actor: 'd',
+        data: { task_key: 'MNEMA-1', filename: 'README.md' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T11:00:00Z',
+        kind: 'task_created',
+        actor: 'd',
+        data: { key: 'MNEMA-2', title: 'two' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T11:01:00Z',
+        kind: 'note_added',
+        actor: 'd',
+        data: { task_key: 'MNEMA-2', note_kind: 'comment' },
+      },
+    ]);
+
+    const events = new AuditQuery(dir).run({ taskKey: 'MNEMA-1' });
+    expect(events.map((e) => e.kind)).toEqual([
+      'task_created',
+      'task_transitioned',
+      'note_added',
+      'attachment_added',
+    ]);
+  });
+
+  it('does not collide task keys with decision keys (MNEMA-ADR-*)', () => {
+    writeJsonl(path.join(dir, 'current.jsonl'), [
+      {
+        v: 1,
+        at: '2026-05-01T10:00:00Z',
+        kind: 'task_created',
+        actor: 'd',
+        data: { key: 'MNEMA-1' },
+      },
+      {
+        v: 1,
+        at: '2026-05-01T10:01:00Z',
+        kind: 'decision_recorded',
+        actor: 'd',
+        data: { key: 'MNEMA-ADR-1', title: 'x', status: 'proposed' },
+      },
+    ]);
+
+    expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-1' })).toHaveLength(1);
+    expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-ADR-1' })).toHaveLength(1);
+  });
 });
 
 describe('parseTimeBound', () => {
