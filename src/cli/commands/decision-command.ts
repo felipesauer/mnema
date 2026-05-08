@@ -41,7 +41,10 @@ export class DecisionCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('decision').description('Manage Architecture Decision Records');
+    const group = program
+      .command('decision')
+      .alias('decisions')
+      .description('Manage Architecture Decision Records');
 
     group
       .command('record')

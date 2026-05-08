@@ -34,7 +34,7 @@ export class SprintCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('sprint').description('Manage sprints');
+    const group = program.command('sprint').alias('sprints').description('Manage sprints');
 
     group
       .command('plan')

@@ -39,7 +39,7 @@ export class NoteCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('note').description('Manage task notes');
+    const group = program.command('note').alias('notes').description('Manage task notes');
 
     group
       .command('add <taskKey>')

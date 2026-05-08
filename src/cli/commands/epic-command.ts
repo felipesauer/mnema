@@ -34,7 +34,7 @@ export class EpicCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('epic').description('Manage epics');
+    const group = program.command('epic').alias('epics').description('Manage epics');
 
     group
       .command('create')
