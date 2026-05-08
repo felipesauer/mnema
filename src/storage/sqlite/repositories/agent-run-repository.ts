@@ -1,6 +1,7 @@
 import type { AgentRun } from '../../../domain/entities/agent-run.js';
 import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface AgentRunRow {
@@ -71,8 +72,8 @@ export class AgentRunRepository {
       .prepare(
         `INSERT INTO agent_runs (
            id, agent_actor_id, parent_run_id, invoked_by,
-           goal, skills_loaded, status, metadata, client_metadata, depth
-         ) VALUES (?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`,
+           goal, skills_loaded, status, metadata, client_metadata, depth, started_at
+         ) VALUES (?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -84,6 +85,7 @@ export class AgentRunRepository {
         metadata,
         clientMetadata,
         input.depth ?? 0,
+        isoNow(),
       );
 
     const created = this.findById(id);
@@ -121,10 +123,10 @@ export class AgentRunRepository {
       .prepare(
         `UPDATE agent_runs
             SET status = ?, result = ?, error = ?,
-                ended_at = datetime('now', 'subsec')
+                ended_at = ?
           WHERE id = ?`,
       )
-      .run(status, result, errorMessage, runId);
+      .run(status, result, errorMessage, isoNow(), runId);
     return this.findById(runId);
   }
 }

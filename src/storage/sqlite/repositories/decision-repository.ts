@@ -1,6 +1,7 @@
 import type { Decision } from '../../../domain/entities/decision.js';
 import type { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface DecisionRow {
@@ -131,8 +132,8 @@ export class DecisionRepository {
       .prepare(
         `INSERT INTO decisions (
            id, key, project_id, title, context, decision, rationale,
-           consequences, status, authored_by, metadata
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?)`,
+           consequences, status, authored_by, metadata, at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?)`,
       )
       .run(
         id,
@@ -145,6 +146,7 @@ export class DecisionRepository {
         input.consequences ?? null,
         input.authoredBy,
         metadata,
+        isoNow(),
       );
 
     const created = this.findById(id);

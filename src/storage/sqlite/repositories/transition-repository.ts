@@ -1,5 +1,6 @@
 import type { Transition } from '../../../domain/entities/transition.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface TransitionRow {
@@ -52,8 +53,8 @@ export class TransitionRepository {
       .prepare(
         `INSERT INTO transitions (
            id, task_id, from_state, to_state, action,
-           payload, actor_id, via_actor_id, agent_run_id
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           payload, actor_id, via_actor_id, agent_run_id, at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -65,6 +66,7 @@ export class TransitionRepository {
         input.actorId,
         input.viaActorId ?? null,
         input.agentRunId ?? null,
+        isoNow(),
       );
 
     const found = this.findById(id);

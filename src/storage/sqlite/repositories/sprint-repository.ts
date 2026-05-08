@@ -3,6 +3,7 @@ import type { Task } from '../../../domain/entities/task.js';
 import { SprintState } from '../../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface SprintRow {
@@ -157,8 +158,8 @@ export class SprintRepository {
       .prepare(
         `INSERT INTO sprints (
            id, key, project_id, name, goal,
-           state, starts_at, ends_at, capacity, metadata
-         ) VALUES (?, ?, ?, ?, ?, 'PLANNED', ?, ?, ?, ?)`,
+           state, starts_at, ends_at, capacity, metadata, created_at
+         ) VALUES (?, ?, ?, ?, ?, 'PLANNED', ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -170,6 +171,7 @@ export class SprintRepository {
         input.endsAt ?? null,
         input.capacity ?? null,
         metadata,
+        isoNow(),
       );
 
     const created = this.findById(id);
@@ -188,12 +190,16 @@ export class SprintRepository {
    * @returns The updated sprint, or `null` when the id is unknown
    */
   updateState(sprintId: string, state: SprintState): Sprint | null {
-    const closedClause =
-      state === SprintState.Closed ? `, closed_at = datetime('now', 'subsec')` : '';
-    this.adapter
+    const isClosing = state === SprintState.Closed;
+    const closedClause = isClosing ? `, closed_at = ?` : '';
+    const stmt = this.adapter
       .getDatabase()
-      .prepare(`UPDATE sprints SET state = ?${closedClause} WHERE id = ?`)
-      .run(state, sprintId);
+      .prepare(`UPDATE sprints SET state = ?${closedClause} WHERE id = ?`);
+    if (isClosing) {
+      stmt.run(state, isoNow(), sprintId);
+    } else {
+      stmt.run(state, sprintId);
+    }
     return this.findById(sprintId);
   }
 

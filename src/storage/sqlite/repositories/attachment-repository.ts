@@ -1,4 +1,5 @@
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 /**
@@ -126,8 +127,8 @@ export class AttachmentRepository {
       .prepare(
         `INSERT INTO attachments (
            id, parent_kind, parent_id, filename, path,
-           mime, size, hash, uploaded_by, metadata
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           mime, size, hash, uploaded_by, metadata, at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -140,6 +141,7 @@ export class AttachmentRepository {
         input.hash,
         input.uploadedBy,
         metadata,
+        isoNow(),
       );
 
     const created = this.findById(id);

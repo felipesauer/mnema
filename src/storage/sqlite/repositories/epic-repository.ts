@@ -1,6 +1,7 @@
 import type { Epic } from '../../../domain/entities/epic.js';
 import { EpicState } from '../../../domain/enums/epic-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface EpicRow {
@@ -118,10 +119,18 @@ export class EpicRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO epics (id, key, project_id, title, description, state, metadata)
-         VALUES (?, ?, ?, ?, ?, 'OPEN', ?)`,
+        `INSERT INTO epics (id, key, project_id, title, description, state, metadata, created_at)
+         VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?)`,
       )
-      .run(id, input.key, input.projectId, input.title, input.description ?? null, metadata);
+      .run(
+        id,
+        input.key,
+        input.projectId,
+        input.title,
+        input.description ?? null,
+        metadata,
+        isoNow(),
+      );
 
     const created = this.findById(id);
     if (created === null) {
@@ -139,12 +148,16 @@ export class EpicRepository {
    * @returns The updated epic, or `null` when the id is unknown
    */
   updateState(epicId: string, state: EpicState): Epic | null {
-    const closedClause =
-      state === EpicState.Closed ? `, closed_at = datetime('now', 'subsec')` : '';
-    this.adapter
+    const isClosing = state === EpicState.Closed;
+    const closedClause = isClosing ? `, closed_at = ?` : '';
+    const stmt = this.adapter
       .getDatabase()
-      .prepare(`UPDATE epics SET state = ?${closedClause} WHERE id = ?`)
-      .run(state, epicId);
+      .prepare(`UPDATE epics SET state = ?${closedClause} WHERE id = ?`);
+    if (isClosing) {
+      stmt.run(state, isoNow(), epicId);
+    } else {
+      stmt.run(state, epicId);
+    }
     return this.findById(epicId);
   }
 

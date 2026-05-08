@@ -1,6 +1,7 @@
 import type { Actor } from '../../../domain/entities/actor.js';
 import type { ActorKind } from '../../../domain/enums/actor-kind.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface ActorRow {
@@ -63,10 +64,10 @@ export class ActorRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO actors (id, handle, kind, display, metadata)
-         VALUES (?, ?, ?, ?, '{}')`,
+        `INSERT INTO actors (id, handle, kind, display, metadata, created_at)
+         VALUES (?, ?, ?, ?, '{}', ?)`,
       )
-      .run(id, handle, kind, display);
+      .run(id, handle, kind, display, isoNow());
     return id;
   }
 }
