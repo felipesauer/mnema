@@ -1,6 +1,7 @@
 import pc from 'picocolors';
 
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
+import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
 
 /**
  * Output format for the audit log views.
@@ -16,22 +17,27 @@ export type HistoryFormat = 'human' | 'table' | 'json';
  *
  * @param event - Event to render
  * @param format - Desired output format
+ * @param mode - Timestamp display mode (default `relative`)
  * @returns A line ready to be written to stdout
  */
-export function formatEvent(event: AuditEvent, format: HistoryFormat): string {
+export function formatEvent(
+  event: AuditEvent,
+  format: HistoryFormat,
+  mode: TimestampMode = 'relative',
+): string {
   if (format === 'json') {
     return JSON.stringify(event);
   }
   if (format === 'table') {
     return [
-      event.at,
+      formatTimestamp(event.at, mode),
       event.kind.padEnd(20),
       event.actor.padEnd(16),
       (event.via ?? '').padEnd(20),
       summariseData(event),
     ].join('  ');
   }
-  return formatHuman(event);
+  return formatHuman(event, mode);
 }
 
 /**
@@ -46,17 +52,22 @@ export function formatEvent(event: AuditEvent, format: HistoryFormat): string {
  *
  * @param events - Events sorted chronologically (oldest first)
  * @param format - Output format
+ * @param mode - Timestamp display mode (default `relative`)
  * @returns Multi-line string suitable for stdout
  */
-export function formatHistory(events: readonly AuditEvent[], format: HistoryFormat): string {
+export function formatHistory(
+  events: readonly AuditEvent[],
+  format: HistoryFormat,
+  mode: TimestampMode = 'relative',
+): string {
   if (format !== 'human') {
-    return events.map((e) => formatEvent(e, format)).join('\n');
+    return events.map((e) => formatEvent(e, format, mode)).join('\n');
   }
-  return aggregateHuman(events);
+  return aggregateHuman(events, mode);
 }
 
-function formatHuman(event: AuditEvent): string {
-  const time = event.at.slice(11, 19);
+function formatHuman(event: AuditEvent, mode: TimestampMode): string {
+  const time = formatTimestamp(event.at, mode);
   const subject = event.via !== undefined ? `${event.actor} via ${event.via}` : event.actor;
   const runHint = event.run !== undefined ? pc.dim(` [${event.run.slice(0, 8)}]`) : '';
   return `${pc.dim(time)}  ${subject}${runHint}  ${describe(event)}`;
@@ -100,7 +111,7 @@ function summariseData(event: AuditEvent): string {
  * Builds the human-format aggregation: groups events by run and
  * collapses repeated kinds into compact summary lines.
  */
-function aggregateHuman(events: readonly AuditEvent[]): string {
+function aggregateHuman(events: readonly AuditEvent[], mode: TimestampMode): string {
   const lines: string[] = [];
   let i = 0;
   while (i < events.length) {
@@ -122,18 +133,18 @@ function aggregateHuman(events: readonly AuditEvent[]): string {
         const keys = grouped
           .map((g) => stringify((g.data as Record<string, unknown>).key))
           .join(', ');
-        const time = first.at.slice(11, 19);
+        const time = formatTimestamp(first.at, mode);
         const subject = first.via !== undefined ? `${first.actor} via ${first.via}` : first.actor;
         lines.push(
           `${pc.dim(time)}  ${subject}  created ${grouped.length} tasks ${pc.dim(`(${keys})`)}`,
         );
         continue;
       }
-      lines.push(formatHuman(grouped[0] as AuditEvent));
+      lines.push(formatHuman(grouped[0] as AuditEvent, mode));
       continue;
     }
 
-    lines.push(formatHuman(event));
+    lines.push(formatHuman(event, mode));
     i += 1;
   }
   return lines.join('\n');

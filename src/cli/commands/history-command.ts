@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 
 import { withCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
+import type { TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface HistoryOptions {
   readonly since?: string;
@@ -13,6 +14,7 @@ interface HistoryOptions {
   readonly limit?: string;
   readonly table?: boolean;
   readonly json?: boolean;
+  readonly iso?: boolean;
 }
 
 /**
@@ -41,6 +43,7 @@ export class HistoryCommand {
       .option('--limit <n>', 'Limit the number of results')
       .option('--table', 'Render as an aligned table', false)
       .option('--json', 'Render as JSONL (one event per line)', false)
+      .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: HistoryOptions) => {
         await withCliContext(({ container }) => {
           const since = normaliseSince(options.since);
@@ -55,7 +58,8 @@ export class HistoryCommand {
           });
 
           const format = pickFormat(options);
-          process.stdout.write(`${formatHistory(events, format)}\n`);
+          const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
+          process.stdout.write(`${formatHistory(events, format, mode)}\n`);
         });
       });
   }
