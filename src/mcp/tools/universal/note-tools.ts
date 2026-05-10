@@ -16,6 +16,8 @@ const NOTE_KINDS: readonly NoteKind[] = [
   'cancel_reason',
   'reopen_reason',
   'agent_observation',
+  'scope_change',
+  'acceptance_addendum',
 ];
 
 const noteKindValues = NOTE_KINDS as unknown as [NoteKind, ...NoteKind[]];

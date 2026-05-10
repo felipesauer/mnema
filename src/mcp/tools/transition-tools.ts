@@ -59,10 +59,15 @@ export class TransitionToolsRegistrar {
           ...transition.requires.shape,
         } as Record<string, z.ZodTypeAny>;
 
+        const requiredFieldNames = Object.keys(transition.requires.shape);
+        const fieldsHint =
+          requiredFieldNames.length === 0
+            ? '\n\nThis action has no required fields beyond `task_key`.'
+            : `\n\nRequired fields: ${requiredFieldNames.join(', ')}.`;
         server.registerTool(
           toolName,
           {
-            description: `${transition.description}\n\nUse when: ${transition.useWhen}`,
+            description: `${transition.description}\n\nUse when: ${transition.useWhen}${fieldsHint}`,
             inputSchema,
           },
           (input: Record<string, unknown>) => {

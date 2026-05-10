@@ -18,14 +18,20 @@
         "description": "Submit work as ready to be picked up",
         "use_when": "Task is fully defined with title, description, criteria, and estimate",
         "requires": {
-          "title": { "type": "string", "min": 3, "max": 200 },
-          "description": { "type": "string", "min": 10 },
+          "title": { "type": "string", "min": 3, "max": 200, "field_kind": "mutating" },
+          "description": { "type": "string", "min": 10, "field_kind": "mutating" },
           "acceptance_criteria": {
             "type": "array",
             "items": { "type": "string", "min": 1 },
-            "min": 1
+            "min": 1,
+            "field_kind": "mutating"
           },
-          "estimate": { "type": "number", "integer": true, "enum": [1, 2, 3, 5, 8, 13] }
+          "estimate": {
+            "type": "number",
+            "integer": true,
+            "enum": [1, 2, 3, 5, 8, 13],
+            "field_kind": "mutating"
+          }
         }
       },
       "cancel": {
@@ -33,7 +39,7 @@
         "description": "Cancel a draft task",
         "use_when": "Decided not to pursue this work",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -55,7 +61,7 @@
         "description": "Cancel a ready task",
         "use_when": "Task no longer relevant",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -65,7 +71,7 @@
         "description": "Mark task as blocked",
         "use_when": "External dependency or information missing",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       },
       "submit_review": {
@@ -76,7 +82,8 @@
           "pr_url": {
             "type": "string",
             "format": "url",
-            "description": "URL of the pull request opened for this task. Validated for URL format only — the server does not check that the PR exists."
+            "field_kind": "validating",
+            "description": "URL of the pull request opened for this task. Validated for URL format only — the server does not check that the PR exists. One-shot annotation; doesn't persist on the task."
           }
         }
       },
@@ -85,7 +92,7 @@
         "description": "Cancel in-progress task",
         "use_when": "Work proven unviable",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -95,7 +102,7 @@
         "description": "Unblock task and resume work",
         "use_when": "Blocker resolved",
         "requires": {
-          "note": { "type": "string", "min": 5 }
+          "note": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -105,7 +112,7 @@
         "description": "Approve task as complete",
         "use_when": "Review passed, work merged",
         "requires": {
-          "approval_note": { "type": "string", "min": 1 }
+          "approval_note": { "type": "string", "min": 1, "field_kind": "validating" }
         }
       },
       "request_changes": {
@@ -113,7 +120,7 @@
         "description": "Request changes on the review",
         "use_when": "Review found issues to fix",
         "requires": {
-          "feedback": { "type": "string", "min": 10 }
+          "feedback": { "type": "string", "min": 10, "field_kind": "validating" }
         }
       }
     },
@@ -123,7 +130,7 @@
         "description": "Reopen a completed task",
         "use_when": "Bug found or scope insufficient",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     }

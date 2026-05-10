@@ -79,6 +79,7 @@ export class WorkflowLoader {
           description: def.description,
           useWhen: def.use_when,
           requires: jsonRequiresToZod(def.requires),
+          requiresSpec: def.requires,
         };
       }
       transitions[from] = actionMap;

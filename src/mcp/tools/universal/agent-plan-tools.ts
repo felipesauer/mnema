@@ -34,9 +34,18 @@ export class AgentPlanTools {
       'agent_plan_create',
       {
         description:
-          'Create a plan step inside the active agent run. Plans are auto-archived when the run ends.',
+          'Create a plan step inside the active agent run. Plans are auto-archived when the run ends. ' +
+          'Pass `task_key` when the plan implements a specific task — the linkage shows up in `agent inspect` ' +
+          'so audit reconstruction can pair plans with their task transitions.',
         inputSchema: {
           content: z.string().min(1).describe('Description of the step'),
+          task_key: z
+            .string()
+            .optional()
+            .describe(
+              'Optional task key (e.g. WEBAPP-42) this plan implements. ' +
+                'Server resolves to a task FK; unknown keys return TASK_NOT_FOUND.',
+            ),
           parent_plan_id: z
             .string()
             .uuid()
@@ -45,7 +54,7 @@ export class AgentPlanTools {
           position: z.number().int().nonnegative().optional(),
         },
       },
-      ({ content, parent_plan_id: parentPlanId, position }) => {
+      ({ content, task_key: taskKey, parent_plan_id: parentPlanId, position }) => {
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -53,6 +62,7 @@ export class AgentPlanTools {
         const result = this.plans.create({
           runId: runId as string,
           content,
+          taskKey,
           parentPlanId,
           position,
         });
@@ -64,19 +74,46 @@ export class AgentPlanTools {
     server.registerTool(
       'agent_plan_update_state',
       {
-        description: 'Update the state of a plan step.',
+        description:
+          'Update the state of a plan step. Identify the plan either by `plan_id` (UUID) or by ' +
+          'the pair `(run_id, position)` — handy when the agent declared a linear plan upfront ' +
+          'and addresses steps by position rather than tracking UUIDs.',
         inputSchema: {
-          plan_id: z.string().describe('Plan identifier'),
+          plan_id: z
+            .string()
+            .optional()
+            .describe('Plan UUID. Mutually exclusive with run_id+position.'),
+          run_id: z
+            .string()
+            .optional()
+            .describe('Run id (defaults to active run when omitted alongside position).'),
+          position: z
+            .number()
+            .int()
+            .nonnegative()
+            .optional()
+            .describe('Plan position within the run. Use with run_id (or active run).'),
           state: z.enum(planStateValues),
           result: z.string().optional().describe('Free-form outcome text'),
         },
       },
-      ({ plan_id: planId, state, result: resultText }) => {
+      ({ plan_id: planId, run_id: runId, position, state, result: resultText }) => {
         const guard = requireActiveRun(this.session.getCurrentRunId());
         if (guard !== null) return guard;
 
+        if (planId === undefined && position === undefined) {
+          return err({
+            kind: 'AGENT_PLAN_NOT_FOUND' as never,
+            planId: '(none provided — pass plan_id or position)',
+          });
+        }
+
+        const effectiveRunId = runId ?? this.session.getCurrentRunId() ?? undefined;
+
         const updated = this.plans.updateState({
           planId,
+          runId: effectiveRunId,
+          position,
           state,
           result: resultText ?? null,
         });

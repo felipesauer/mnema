@@ -8,6 +8,7 @@ interface AgentPlanRow {
   readonly id: string;
   readonly agent_run_id: string;
   readonly parent_plan_id: string | null;
+  readonly task_id: string | null;
   readonly content: string;
   readonly state: string;
   readonly result: string | null;
@@ -27,6 +28,7 @@ export interface AgentPlanInsertInput {
   readonly agentRunId: string;
   readonly content: string;
   readonly parentPlanId?: string | null;
+  readonly taskId?: string | null;
   readonly position?: number;
   readonly depth?: number;
   readonly metadata?: Readonly<Record<string, unknown>>;
@@ -87,14 +89,15 @@ export class AgentPlanRepository {
       .getDatabase()
       .prepare(
         `INSERT INTO agent_plans (
-           id, agent_run_id, parent_plan_id, content,
+           id, agent_run_id, parent_plan_id, task_id, content,
            state, position, depth, metadata, created_at
-         ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
       )
       .run(
         id,
         input.agentRunId,
         input.parentPlanId ?? null,
+        input.taskId ?? null,
         input.content,
         input.position ?? 0,
         input.depth ?? 0,
@@ -159,6 +162,7 @@ function rowToPlan(row: AgentPlanRow): AgentPlan {
     id: row.id,
     agentRunId: row.agent_run_id,
     parentPlanId: row.parent_plan_id,
+    taskId: row.task_id,
     content: row.content,
     state: row.state as AgentPlanState,
     result: row.result,

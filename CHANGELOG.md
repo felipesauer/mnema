@@ -10,6 +10,110 @@ stable release.
 
 ## [Unreleased]
 
+## [0.2.0-alpha.0] — 2026-05-10
+
+Second public alpha. Driven by two end-to-end real-world tests with
+two simulated team members each (Maria via CLI, dev3 via MCP, dev4 via
+MCP + kanban workflow) plus the PO (felipesauer) running planning,
+review and audit. All findings recorded in `evaluations/` and resolved
+before the bump. The result: every transition flow has been exercised
+against a real codebase (a Todo CLI and a CV→PDF formatter), and every
+friction point those tests surfaced has either been fixed or
+documented as a deliberate trade-off.
+
+### Added
+
+- **`mnema identity`** — `set` / `whoami` / `unset` / `add` / `list`
+  for persistent default actor configuration and a known-actors map
+  used for display-name resolution in audit views.
+- **Multi-actor display**: `history`, `audit query`, `watch`, `task
+  history`, `agent inspect` substitute known actor handles with their
+  display name (e.g. `Felipe Sauer via Claude Code`).
+- **Migration guard**: mutations refuse to run when `schema_migrations`
+  on disk is behind the migration files. `mnema migrate` (alias of
+  `mnema migration apply`) brings the database forward.
+- **`task history <key>`**: per-task chronological view rolling up
+  transitions, notes and attachments.
+- **`task_actions(task_key)`** MCP tool: lists the workflow actions
+  available on a task right now, with required fields per action.
+- **`tasks_list` MCP filters**: `assignee_id` (handle or UUID), `sort`
+  (`key` / `updated_at` / `created_at` / `priority`), `limit`. The
+  default `key` sort is natural-numeric (`MNEMA-2` before `MNEMA-10`).
+- **`agent_plan_create` `task_key` field**: links a plan to the task
+  it implements. The link surfaces in `agent inspect` and is queryable.
+- **`agent_plan_update_state` by position**: agents that declare a
+  linear plan upfront can address steps by `(run_id, position)`
+  instead of tracking UUIDs in parallel.
+- **`note_kind`s `scope_change` and `acceptance_addendum`**: stronger
+  intent than `agent_observation` for mid-flight scope deviations.
+- **Workflow `field_kind`**: `requires` fields can declare `mutating`
+  (default — value persists onto the task row) or `validating` (value
+  is captured in `transitions.payload` for audit but never overwrites
+  the task). All annotation fields in the four shipping workflows
+  (`reason`, `pr_url`, `note`, `approval_note`, `feedback`,
+  `resolution`, and kanban's `promote.title`) are marked `validating`.
+- **`context_bootstrap.statistics.by_state`**: per-state count map so
+  agents can plan from a single bootstrap call.
+- **`context_bootstrap.agents_md_path`**: relative path companion to
+  the inline `agents_md` content, for clients with file access.
+- **Gate failure hints**: when `GATE_FAILED` mentions `assignee_id`,
+  `pr_url`, `estimate` or `acceptance_criteria`, the error response
+  appends a one-line field-format hint after the generic guidance.
+
+### Changed
+
+- **Transition payload now persists onto the task** (commit `168b47b`).
+  Validated payload fields that map to task columns (`title`,
+  `description`, `acceptance_criteria`, `estimate`, `priority`,
+  `assignee_id`) are written through `TaskRepository.updateFields`
+  after the state transition. The full original payload still goes
+  verbatim into `transitions.payload` for audit. The `field_kind`
+  flag (above) is how a workflow opts a field out of this behaviour.
+- **`task show` displays full task contents**: description,
+  acceptance criteria, estimate, assignee, sprint/epic refs and
+  `created`/`updated` timestamps appear by default.
+- **`mnema --help` lists every subcommand**: the lazy stub registry
+  now exposes 24 commands at the root help instead of `help` only.
+- **`CommandSpec.description`** is mandatory: top-level commands carry
+  a one-line description that the root help renders.
+- **CLI error exits**: structured errors return non-zero exit codes
+  via the call sites of `printError(...)`. (The 0.1.0 `exit=0`
+  perception in the Phase A evaluation was a tail-pipe artefact.)
+- **Tarball cleanup**: `scripts/copy-migrations.mjs` clears stale
+  `.sql` files from `dist/storage/sqlite/migrations/` before copying
+  so deleted-from-source migrations don't ride into `pnpm pack`.
+- **Transition tool descriptions**: actions with no `requires` fields
+  carry a `This action has no required fields beyond task_key` line.
+
+### Migrations
+
+- `006_extend_note_kinds.sql` — adds `scope_change` and
+  `acceptance_addendum` to the `notes.kind` CHECK.
+- `007_agent_plan_task_link.sql` — adds optional `task_id` FK on
+  `agent_plans`.
+
+### Documentation
+
+- `evaluations/2026-05-10-real-world-test.md` — Phase A + B
+  (Todo App, CLI vs MCP).
+- `evaluations/2026-05-10-phase-b-prime.md` — Phase B'
+  (cv-fmt, kanban workflow, MCP-only).
+
+### Known limitations
+
+- Tasks created before commit `168b47b` may have `description: null`
+  and `acceptance_criteria: []` even after submit. A backfill is
+  possible but forward-only is acceptable at alpha — re-submit the
+  task or treat those fields as legacy when consuming the row.
+- Field-level hints on `GATE_FAILED` cover the four most common
+  semantic fields (`assignee_id`, `pr_url`, `estimate`,
+  `acceptance_criteria`). Other gate fields show the generic message.
+- The CLI `parseFieldArgs` splits comma-bearing strings into arrays
+  to keep `acceptance_criteria=A,B` working as an array. Free-form
+  strings with commas (e.g. `description=foo, bar`) get split too.
+  Workaround: avoid commas in single-field CLI values; the MCP path
+  doesn't have this issue.
+
 ## [0.1.0-alpha.1] — 2026-05-07
 
 First public alpha. The core surface is complete: tasks, sprints,

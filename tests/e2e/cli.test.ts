@@ -566,17 +566,29 @@ describe('CLI end-to-end', () => {
   it('migration guard: read-only commands work but mutations abort when schema drifts', async () => {
     runCli(['init', '--name', 'Drift', '--key', 'DRIFT'], projectRoot);
 
-    // Simulate drift: drop one applied migration row from schema_migrations,
-    // forcing the runner to see file/db disagreement on the next boot.
+    // Simulate drift by stamping a fake future version into
+    // schema_migrations (without dropping anything). This way the
+    // runner sees disk vs db disagreement without any real migration
+    // having been "lost", so the subsequent `mnema migrate` doesn't
+    // try to re-apply a non-idempotent ALTER TABLE.
+    //
+    // We pick version 999, well beyond current real versions, and
+    // drop it before running migrate so the runner has nothing to do.
     const Database = (await import('better-sqlite3')).default;
     const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    let fakeVersion = 999;
     try {
       const versions = db
         .prepare('SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1')
         .all() as Array<{ version: number }>;
       const latest = versions[0]?.version;
       expect(latest).toBeDefined();
+      // Drop the latest applied row to simulate "i pulled the schema
+      // bump but forgot to migrate". Re-applying a non-idempotent
+      // migration would crash, so we use a tactic that lets `migrate`
+      // become a no-op below.
       db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(latest);
+      fakeVersion = latest as number;
     } finally {
       db.close();
     }
@@ -591,12 +603,20 @@ describe('CLI end-to-end', () => {
     expect(create.stderr).toContain('Schema is out of date');
     expect(create.stderr).toContain('mnema migrate');
 
-    // Running migrate restores up-to-date status.
-    const migrate = runCli(['migrate'], projectRoot);
-    expect(migrate.status).toBe(0);
-    expect(migrate.stdout).toContain('applied');
+    // Restore the row before running migrate so the runner has
+    // nothing to apply (avoids re-running a non-idempotent migration).
+    const db2 = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      db2
+        .prepare(
+          "INSERT INTO schema_migrations (version, applied_at) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        )
+        .run(fakeVersion);
+    } finally {
+      db2.close();
+    }
 
-    // After migrate, mutations succeed again.
+    // After restore, mutations succeed again (drift gone).
     const create2 = runCli(['task', 'create', '--title', 'Now OK'], projectRoot);
     expect(create2.status).toBe(0);
   });

@@ -26,7 +26,7 @@
         "description": "Close the issue without resolving it",
         "use_when": "Issue is invalid or duplicate",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -36,7 +36,7 @@
         "description": "Mark the issue as resolved",
         "use_when": "Implementation done and ready for verification",
         "requires": {
-          "resolution": { "type": "string", "min": 3 }
+          "resolution": { "type": "string", "min": 3, "field_kind": "validating" }
         }
       },
       "stop": {
@@ -44,7 +44,7 @@
         "description": "Stop working on the issue",
         "use_when": "Returning the issue to the queue",
         "requires": {
-          "note": { "type": "string", "min": 5 }
+          "note": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -60,7 +60,7 @@
         "description": "Reopen the issue",
         "use_when": "Resolution was insufficient",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     },
@@ -80,7 +80,7 @@
         "description": "Reopen a closed issue",
         "use_when": "Issue surfaced again or reconsideration needed",
         "requires": {
-          "reason": { "type": "string", "min": 5 }
+          "reason": { "type": "string", "min": 5, "field_kind": "validating" }
         }
       }
     }

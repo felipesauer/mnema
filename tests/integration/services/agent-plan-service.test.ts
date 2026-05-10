@@ -15,6 +15,7 @@ import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repository.js';
+import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -36,9 +37,10 @@ describe('AgentPlanService', () => {
     const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
     const runRepo = new AgentRunRepository(adapter);
     const planRepo = new AgentPlanRepository(adapter);
+    const taskRepo = new TaskRepository(adapter);
 
     runs = new AgentRunService(runRepo, actors, identity, audit);
-    plans = new AgentPlanService(planRepo, runRepo);
+    plans = new AgentPlanService(planRepo, runRepo, taskRepo);
 
     const start = runs.start({ goal: 'g', actor: 'daniel', agentHandle: 'cc' });
     if (!start.ok) throw new Error('precondition failed');
