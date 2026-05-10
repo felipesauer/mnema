@@ -20,6 +20,13 @@ type CommandLoader = () => Promise<{ register: (program: Command) => void }>;
 interface CommandSpec {
   readonly load: CommandLoader;
   readonly aliases?: readonly string[];
+  /**
+   * Short one-line description shown in `mnema --help`. Without it the
+   * command would be effectively invisible to first-time users — only
+   * the full, lazily-loaded help (`mnema <name> --help`) would reveal
+   * the subcommand tree.
+   */
+  readonly description: string;
 }
 
 /**
@@ -28,54 +35,106 @@ interface CommandSpec {
  * canonical CLI form remains singular (`mnema task list`).
  */
 const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
-  init: { load: async () => new (await import('./commands/init-command.js')).InitCommand() },
-  adopt: { load: async () => new (await import('./commands/adopt-command.js')).AdoptCommand() },
-  import: { load: async () => new (await import('./commands/import-command.js')).ImportCommand() },
+  init: {
+    load: async () => new (await import('./commands/init-command.js')).InitCommand(),
+    description: 'Initialise a new Mnema project in the current directory',
+  },
+  adopt: {
+    load: async () => new (await import('./commands/adopt-command.js')).AdoptCommand(),
+    description: 'Add an optional component (skills, memory, roadmap) to an existing project',
+  },
+  import: {
+    load: async () => new (await import('./commands/import-command.js')).ImportCommand(),
+    description: 'One-shot import from external sources (markdown, github-issues)',
+  },
   task: {
     load: async () => new (await import('./commands/task-command.js')).TaskCommand(),
     aliases: ['tasks'],
+    description: 'Manage tasks (create / list / show / move / history / delete)',
   },
   sprint: {
     load: async () => new (await import('./commands/sprint-command.js')).SprintCommand(),
     aliases: ['sprints'],
+    description: 'Manage sprints (plan / start / close / show / add / remove)',
   },
-  attach: { load: async () => new (await import('./commands/attach-command.js')).AttachCommand() },
+  attach: {
+    load: async () => new (await import('./commands/attach-command.js')).AttachCommand(),
+    description: 'Manage task attachments (add / list)',
+  },
   decision: {
     load: async () => new (await import('./commands/decision-command.js')).DecisionCommand(),
     aliases: ['decisions'],
+    description: 'Manage Architecture Decision Records (record / accept / reject / supersede)',
   },
   note: {
     load: async () => new (await import('./commands/note-command.js')).NoteCommand(),
     aliases: ['notes'],
+    description: 'Manage typed notes attached to tasks (add / list)',
   },
   epic: {
     load: async () => new (await import('./commands/epic-command.js')).EpicCommand(),
     aliases: ['epics'],
+    description: 'Manage epics (create / show / list / close / add / remove)',
   },
-  skill: { load: async () => new (await import('./commands/skill-command.js')).SkillCommand() },
-  memory: { load: async () => new (await import('./commands/memory-command.js')).MemoryCommand() },
-  search: { load: async () => new (await import('./commands/search-command.js')).SearchCommand() },
-  audit: { load: async () => new (await import('./commands/audit-command.js')).AuditCommand() },
+  skill: {
+    load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
+    description: 'Validate skill files (frontmatter, MCP refs, examples)',
+  },
+  memory: {
+    load: async () => new (await import('./commands/memory-command.js')).MemoryCommand(),
+    description: 'Curate human memory (consolidate INDEX.md, lint)',
+  },
+  search: {
+    load: async () => new (await import('./commands/search-command.js')).SearchCommand(),
+    description: 'Full-text search across tasks, decisions and notes (FTS5)',
+  },
+  audit: {
+    load: async () => new (await import('./commands/audit-command.js')).AuditCommand(),
+    description: 'Inspect the raw audit log (query with filters)',
+  },
   identity: {
     load: async () => new (await import('./commands/identity-command.js')).IdentityCommand(),
+    description: 'Manage your default actor handle (set / whoami / unset / add / list)',
   },
   history: {
     load: async () => new (await import('./commands/history-command.js')).HistoryCommand(),
+    description: 'Show past activity from the audit log (formatted for humans)',
   },
-  watch: { load: async () => new (await import('./commands/watch-command.js')).WatchCommand() },
-  inbox: { load: async () => new (await import('./commands/inbox-command.js')).InboxCommand() },
-  agent: { load: async () => new (await import('./commands/agent-command.js')).AgentCommand() },
-  sync: { load: async () => new (await import('./commands/sync-command.js')).SyncCommand() },
-  mcp: { load: async () => new (await import('./commands/mcp-command.js')).McpCommand() },
-  doctor: { load: async () => new (await import('./commands/doctor-command.js')).DoctorCommand() },
+  watch: {
+    load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),
+    description: 'Live tail of the audit log (Ctrl+C to stop)',
+  },
+  inbox: {
+    load: async () => new (await import('./commands/inbox-command.js')).InboxCommand(),
+    description: 'Show tasks that need human attention (review, blocked)',
+  },
+  agent: {
+    load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
+    description: 'Inspect agent activity (run inspect)',
+  },
+  sync: {
+    load: async () => new (await import('./commands/sync-command.js')).SyncCommand(),
+    description: 'Rebuild the SQLite cache from markdown files (idempotent)',
+  },
+  mcp: {
+    load: async () => new (await import('./commands/mcp-command.js')).McpCommand(),
+    description: 'MCP server commands (serve / install-instructions)',
+  },
+  doctor: {
+    load: async () => new (await import('./commands/doctor-command.js')).DoctorCommand(),
+    description: 'Run a read-only diagnostic check on the current project',
+  },
   destroy: {
     load: async () => new (await import('./commands/destroy-command.js')).DestroyCommand(),
+    description: 'Remove every Mnema artefact from the current directory (destructive)',
   },
   migration: {
     load: async () => new (await import('./commands/migration-command.js')).MigrationCommand(),
+    description: 'Manage SQLite migrations (generate / apply)',
   },
   migrate: {
     load: async () => new (await import('./commands/migration-command.js')).MigrateCommand(),
+    description: 'Apply every pending migration (alias of `migration apply`)',
   },
 };
 
@@ -114,8 +173,11 @@ export function createCli(): Command {
 function registerLazyCommand(program: Command, name: string, spec: CommandSpec): void {
   // The stub is a passthrough: any args after `mnema <name>` flow
   // straight into the eventual real command's parser via `parseAsync`.
+  // The stub is *visible* in `mnema --help` so first-time users
+  // discover what is available; the real subcommand tree only loads
+  // when the user actually invokes `mnema <name>`.
   const stub = program
-    .command(`${name} [args...]`, { hidden: true })
+    .command(`${name} [args...]`)
     .allowUnknownOption(true)
     .helpOption(false)
     .action(async () => {
@@ -151,7 +213,5 @@ function registerLazyCommand(program: Command, name: string, spec: CommandSpec):
     stub.aliases([...spec.aliases]);
   }
 
-  // Visible help: Commander hides the stub so `mnema --help` still
-  // renders the alphabetical command list.
-  stub.description(`(lazy) ${name} command — loaded on first use`);
+  stub.description(spec.description);
 }
