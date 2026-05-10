@@ -41,13 +41,20 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} List existing tasks with \`mnema task list\``);
       break;
 
-    case ErrorCode.GateFailed:
+    case ErrorCode.GateFailed: {
       lines.push(`Cannot ${error.action} ${error.taskKey}: gate validation failed`);
+      const fieldHints = new Set<string>();
       for (const issue of error.issues) {
         lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
+        const hint = fieldHintFor(formatPath(issue.path));
+        if (hint !== null) fieldHints.add(hint);
       }
       lines.push(`${pc.dim('hint:')} Add the missing fields and try again`);
+      for (const hint of fieldHints) {
+        lines.push(`${pc.dim('  ·')} ${hint}`);
+      }
       break;
+    }
 
     case ErrorCode.InvalidTransition: {
       lines.push(
@@ -257,4 +264,30 @@ export function toStructured(error: MnemaError): Record<string, unknown> {
 function formatPath(parts: readonly PropertyKey[]): string {
   if (parts.length === 0) return '<root>';
   return parts.map(String).join('.');
+}
+
+/**
+ * Returns a one-line guidance string for common gate fields. The
+ * workflow JSON expresses constraints as Zod-like schemas, but agents
+ * still hit ambiguity around fields whose semantics are richer than
+ * the schema can express (e.g. `assignee_id` accepts a handle *or* a
+ * UUID, but the schema only sees a string). Returning `null` means no
+ * extra guidance — the generic "missing fields" hint already covers it.
+ *
+ * @param fieldPath - Path produced by {@link formatPath}
+ * @returns Inline hint or `null`
+ */
+function fieldHintFor(fieldPath: string): string | null {
+  switch (fieldPath) {
+    case 'assignee_id':
+      return 'assignee_id accepts an actor handle (e.g. `maria`) or a UUID';
+    case 'pr_url':
+      return 'pr_url validates URL format only — fictional URLs are accepted';
+    case 'estimate':
+      return 'estimate must be one of the Fibonacci values declared in the workflow (e.g. 1,2,3,5,8,13)';
+    case 'acceptance_criteria':
+      return 'acceptance_criteria is a non-empty array of strings — pass at least one criterion';
+    default:
+      return null;
+  }
 }
