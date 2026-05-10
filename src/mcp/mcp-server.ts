@@ -110,9 +110,13 @@ export class MnemaMcpServer {
     new AgentRunTools(this.services.agentRun, this.services.identity, this.session).register(
       this.sdk,
     );
-    new TaskTools(this.services.task, this.services.identity, this.config, this.session).register(
-      this.sdk,
-    );
+    new TaskTools(
+      this.services.task,
+      this.services.identity,
+      this.config,
+      this.session,
+      this.services.stateMachine,
+    ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
     new DecisionTools(

@@ -1,15 +1,23 @@
 import type { z } from 'zod';
 
 import { Err, Ok, type Result } from '../../services/result.js';
+import type { FieldSpec } from './workflow-meta-schema.js';
 
 /**
  * A transition in a workflow, with its associated gate schema.
+ *
+ * `requires` is the compiled Zod schema used at validation time;
+ * `requiresSpec` retains the original JSON specs so downstream code
+ * (notably `task-service.transition` deciding which payload fields
+ * are mutating vs validating) can introspect per-field metadata like
+ * `field_kind`.
  */
 export interface Transition {
   readonly to: string;
   readonly description: string;
   readonly useWhen: string;
   readonly requires: z.ZodObject;
+  readonly requiresSpec: Readonly<Record<string, FieldSpec>>;
 }
 
 /**
@@ -50,6 +58,12 @@ export type GateError =
 export interface ValidatedTransition {
   readonly to: string;
   readonly data: unknown;
+  /**
+   * Original field specs from the workflow JSON, keyed by field name.
+   * Lets the caller inspect per-field metadata (e.g. `field_kind`)
+   * without having to re-resolve the workflow path.
+   */
+  readonly requiresSpec: Readonly<Record<string, FieldSpec>>;
 }
 
 /**
@@ -104,7 +118,11 @@ export class StateMachine {
       return Err({ kind: 'GATE_FAILED', issues: parsed.error.issues });
     }
 
-    return Ok({ to: transition.to, data: parsed.data });
+    return Ok({
+      to: transition.to,
+      data: parsed.data,
+      requiresSpec: transition.requiresSpec,
+    });
   }
 
   /**

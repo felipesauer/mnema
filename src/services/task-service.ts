@@ -2,6 +2,7 @@ import type { Task } from '../domain/entities/task.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
+import type { FieldSpec } from '../domain/state-machine/workflow-meta-schema.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
@@ -214,14 +215,15 @@ export class TaskService {
       }
 
       // Fold validated payload back onto the task itself so a later
-      // `task show` reflects what the user declared at the gate. Only
-      // fields that map to real columns are persisted; the original
-      // payload still goes verbatim into `transitions.payload` for
-      // audit. Annotation-only keys (reason, approval_note, pr_url,
-      // note, supersededBy, …) flow through but are silently ignored
-      // here because they are not in the whitelist.
-      const persisted = persistableFromPayload((data ?? {}) as Record<string, unknown>, (handle) =>
-        this.identity.ensureActor(handle, 'human'),
+      // `task show` reflects what the user declared at the gate. Two
+      // filters apply: (a) the field has to map to a first-class task
+      // column (whitelist below); (b) the workflow spec for the field
+      // must not declare `field_kind: 'validating'` — those are
+      // one-shot annotations that live in `transitions.payload` only.
+      const persisted = persistableFromPayload(
+        (data ?? {}) as Record<string, unknown>,
+        validation.value.requiresSpec,
+        (handle) => this.identity.ensureActor(handle, 'human'),
       );
       const finalTask =
         persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
@@ -399,33 +401,43 @@ export class TaskService {
  */
 function persistableFromPayload(
   payload: Record<string, unknown>,
+  requiresSpec: Readonly<Record<string, FieldSpec>>,
   resolveActor: (handle: string) => string,
 ): TaskFieldUpdates | null {
   const updates: TaskFieldUpdates = {};
   let touched = false;
+  const isMutating = (field: string): boolean => {
+    const spec = requiresSpec[field];
+    // Field absent from spec => safe default of mutating (back-compat).
+    return spec === undefined || (spec.field_kind ?? 'mutating') === 'mutating';
+  };
 
-  if (typeof payload.title === 'string') {
+  if (typeof payload.title === 'string' && isMutating('title')) {
     (updates as { title?: string }).title = payload.title;
     touched = true;
   }
-  if (typeof payload.description === 'string') {
+  if (typeof payload.description === 'string' && isMutating('description')) {
     (updates as { description?: string | null }).description = payload.description;
     touched = true;
   }
-  if (Array.isArray(payload.acceptance_criteria)) {
+  if (Array.isArray(payload.acceptance_criteria) && isMutating('acceptance_criteria')) {
     (updates as { acceptanceCriteria?: readonly string[] }).acceptanceCriteria =
       payload.acceptance_criteria.filter((v): v is string => typeof v === 'string');
     touched = true;
   }
-  if (typeof payload.estimate === 'number') {
+  if (typeof payload.estimate === 'number' && isMutating('estimate')) {
     (updates as { estimate?: number | null }).estimate = payload.estimate;
     touched = true;
   }
-  if (typeof payload.priority === 'number') {
+  if (typeof payload.priority === 'number' && isMutating('priority')) {
     (updates as { priority?: number }).priority = payload.priority;
     touched = true;
   }
-  if (typeof payload.assignee_id === 'string' && payload.assignee_id.length > 0) {
+  if (
+    typeof payload.assignee_id === 'string' &&
+    payload.assignee_id.length > 0 &&
+    isMutating('assignee_id')
+  ) {
     (updates as { assigneeId?: string | null }).assigneeId = resolveActor(payload.assignee_id);
     touched = true;
   }

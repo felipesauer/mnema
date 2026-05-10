@@ -186,7 +186,7 @@ export function createServiceContainer(
   const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {
     sync.flushAll();
   });
-  const agentPlanService = new AgentPlanService(agentPlans, agentRuns);
+  const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
   const sprintService = new SprintService(sprintRepository, tasks, projects, audit);

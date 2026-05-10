@@ -7,12 +7,32 @@ import { z } from 'zod';
 export const StringFormatEnum = z.enum(['url', 'email', 'uuid', 'iso8601', 'task_key']);
 
 /**
+ * Whether a gate field updates the underlying task or just gates the
+ * transition.
+ *
+ * - `mutating` (default): if the payload value is for a column that
+ *   maps to the task table (`title`, `description`, `assignee_id`, …),
+ *   it is persisted onto the task row at transition time. This is the
+ *   behaviour added in commit 168b47b for Bug 26.
+ * - `validating`: payload value is recorded in `transitions.payload`
+ *   for audit but never overwrites the task. Use for one-shot
+ *   justifications like `reason`, `approval_note`, `pr_url`, `note` —
+ *   they describe the transition itself, not a lasting attribute of
+ *   the task.
+ *
+ * Authors who don't set the flag get the historical (mutating)
+ *   behaviour. The validating mode is an opt-in.
+ */
+export type FieldKind = 'mutating' | 'validating';
+
+/**
  * Common attributes available on every field spec.
  */
 export interface FieldSpecCommon {
   readonly optional?: boolean;
   readonly default?: unknown;
   readonly description?: string;
+  readonly field_kind?: FieldKind;
 }
 
 export interface StringFieldSpec extends FieldSpecCommon {
@@ -63,6 +83,7 @@ const FieldSpecBase = z.object({
   optional: z.boolean().optional(),
   default: z.unknown().optional(),
   description: z.string().optional(),
+  field_kind: z.enum(['mutating', 'validating']).optional(),
 });
 
 const StringFieldSchema = FieldSpecBase.extend({

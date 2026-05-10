@@ -4,6 +4,7 @@ import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import type { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
+import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { Err, Ok, type Result } from './result.js';
 
 /**
@@ -13,20 +14,33 @@ export const AGENT_PLAN_DEPTH_LIMIT = 5;
 
 /**
  * Input for {@link AgentPlanService.create}.
+ *
+ * `taskKey` is optional — when supplied, the service resolves it to a
+ * `task_id` and stores it as a soft FK so audit views can link the
+ * plan to its task. Plans without a task link describe orchestration
+ * steps (research, design) that don't map 1:1 to a workflow task.
  */
 export interface CreatePlanInput {
   readonly runId: string;
   readonly content: string;
   readonly parentPlanId?: string;
+  readonly taskKey?: string;
   readonly position?: number;
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 /**
  * Input for {@link AgentPlanService.updateState}.
+ *
+ * Either `planId` (UUID) or the pair `{ runId, position }` works as
+ * the identifier. The position-based form is convenient for agents
+ * that declare a linear plan upfront and address steps by their
+ * position rather than tracking 8 UUIDs in parallel.
  */
 export interface UpdatePlanStateInput {
-  readonly planId: string;
+  readonly planId?: string;
+  readonly runId?: string;
+  readonly position?: number;
   readonly state: AgentPlanState;
   readonly result?: string | null;
 }
@@ -49,6 +63,7 @@ export class AgentPlanService {
   constructor(
     private readonly plans: AgentPlanRepository,
     private readonly runs: AgentRunRepository,
+    private readonly tasks: TaskRepository,
   ) {}
 
   /**
@@ -79,10 +94,20 @@ export class AgentPlanService {
       }
     }
 
+    let taskId: string | null = null;
+    if (input.taskKey !== undefined) {
+      const task = this.tasks.findByKey(input.taskKey);
+      if (task === null) {
+        return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+      }
+      taskId = task.id;
+    }
+
     const plan = this.plans.insert({
       agentRunId: input.runId,
       content: input.content,
       parentPlanId: input.parentPlanId ?? null,
+      taskId,
       position: input.position,
       depth,
       metadata: input.metadata,
@@ -98,11 +123,33 @@ export class AgentPlanService {
    * @returns The updated plan or a structured error
    */
   updateState(input: UpdatePlanStateInput): Result<AgentPlan, MnemaError> {
-    const updated = this.plans.updateState(input.planId, input.state, input.result ?? null);
+    const planId = this.resolvePlanId(input);
+    if (planId === null) {
+      return Err({
+        kind: ErrorCode.AgentPlanNotFound,
+        planId: input.planId ?? `(run=${input.runId},pos=${input.position})`,
+      });
+    }
+    const updated = this.plans.updateState(planId, input.state, input.result ?? null);
     if (updated === null) {
-      return Err({ kind: ErrorCode.AgentPlanNotFound, planId: input.planId });
+      return Err({ kind: ErrorCode.AgentPlanNotFound, planId });
     }
     return Ok(updated);
+  }
+
+  /**
+   * Resolves the identifier to a plan id. Accepts either an explicit
+   * `planId` or a `(runId, position)` pair. Position lookup matches the
+   * first non-archived plan in the run with that position; ambiguous
+   * positions resolve to the earliest-created plan.
+   */
+  private resolvePlanId(input: UpdatePlanStateInput): string | null {
+    if (input.planId !== undefined) return input.planId;
+    if (input.runId === undefined || input.position === undefined) return null;
+    const candidates = this.plans
+      .findByRun(input.runId, { activeOnly: true })
+      .filter((p) => p.position === input.position);
+    return candidates[0]?.id ?? null;
   }
 
   /**

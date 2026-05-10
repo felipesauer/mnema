@@ -15,6 +15,8 @@ const VALID_KINDS: readonly NoteKind[] = [
   'cancel_reason',
   'reopen_reason',
   'agent_observation',
+  'scope_change',
+  'acceptance_addendum',
 ];
 
 interface AddOptions {

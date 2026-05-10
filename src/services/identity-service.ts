@@ -322,6 +322,20 @@ export class IdentityService {
     const actor = this.actorRepository.findById(id);
     return actor === null ? null : actor.handle;
   }
+
+  /**
+   * Resolves a handle to its internal actor id without creating one.
+   * Returns `null` when the handle is unknown — used by read-only
+   * filters (e.g. `tasks_list?assignee_id=maria`) where creating a
+   * new actor on a typo would be silent corruption.
+   *
+   * @param handle - Actor handle
+   * @returns The actor's internal id, or `null` if not found
+   */
+  findActorIdByHandle(handle: string): string | null {
+    const actor = this.actorRepository.findByHandle(handle);
+    return actor === null ? null : actor.id;
+  }
 }
 
 const HANDLE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;
