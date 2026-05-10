@@ -1,6 +1,7 @@
 import pc from 'picocolors';
 
 import type { Task } from '../../domain/entities/task.js';
+import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
 
 /**
  * Looks up an actor handle from its internal id. Returns `null` when
@@ -8,6 +9,25 @@ import type { Task } from '../../domain/entities/task.js';
  * line never breaks layout.
  */
 export type ActorHandleLookup = (id: string) => string | null;
+
+/**
+ * Looks up a sprint or epic key from its internal id. Returns `null`
+ * when unknown — formatters render the truncated id in that case.
+ */
+export type EntityKeyLookup = (id: string) => string | null;
+
+/**
+ * Optional dependencies that decorate {@link formatTaskBlock} output
+ * with human-readable references (handles, sprint keys, epic keys) and
+ * timestamp formatting. Each is independent — pass only what is
+ * available and the formatter degrades gracefully.
+ */
+export interface FormatTaskDeps {
+  readonly resolveHandle?: ActorHandleLookup;
+  readonly resolveSprintKey?: EntityKeyLookup;
+  readonly resolveEpicKey?: EntityKeyLookup;
+  readonly timestampMode?: TimestampMode;
+}
 
 /**
  * Renders a single task as a multi-line block for terminal output.
@@ -26,7 +46,12 @@ export type ActorHandleLookup = (id: string) => string | null;
  *   when it returns `null`) the actor id is rendered truncated.
  * @returns Multi-line string ready for stdout
  */
-export function formatTaskBlock(task: Task, resolveHandle?: ActorHandleLookup): string {
+export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLookup = {}): string {
+  // Backwards-compatible: the previous signature took the handle
+  // resolver positionally. Detect that shape and adapt.
+  const opts: FormatTaskDeps = typeof deps === 'function' ? { resolveHandle: deps } : deps;
+  const { resolveHandle, resolveSprintKey, resolveEpicKey, timestampMode = 'relative' } = opts;
+
   const head = `${pc.bold(task.key)}  ${pc.cyan(task.state)}  ${task.title}`;
   const lines: string[] = [head];
 
@@ -39,6 +64,17 @@ export function formatTaskBlock(task: Task, resolveHandle?: ActorHandleLookup): 
   meta.push(`priority: ${task.priority}`);
   lines.push(`  ${pc.dim(meta.join(' · '))}`);
 
+  if (task.sprintId !== null || task.epicId !== null) {
+    const refs: string[] = [];
+    if (task.sprintId !== null) {
+      refs.push(`sprint: ${displayEntity(task.sprintId, resolveSprintKey)}`);
+    }
+    if (task.epicId !== null) {
+      refs.push(`epic: ${displayEntity(task.epicId, resolveEpicKey)}`);
+    }
+    if (refs.length > 0) lines.push(`  ${pc.dim(refs.join(' · '))}`);
+  }
+
   if (task.description !== null && task.description.length > 0) {
     lines.push(`  ${task.description}`);
   }
@@ -48,6 +84,13 @@ export function formatTaskBlock(task: Task, resolveHandle?: ActorHandleLookup): 
       lines.push(`    - ${ac}`);
     }
   }
+
+  const timestamps: string[] = [];
+  timestamps.push(`created: ${formatTimestamp(task.createdAt, timestampMode)}`);
+  if (task.updatedAt !== task.createdAt) {
+    timestamps.push(`updated: ${formatTimestamp(task.updatedAt, timestampMode)}`);
+  }
+  lines.push(`  ${pc.dim(timestamps.join(' · '))}`);
 
   return lines.join('\n');
 }
@@ -72,4 +115,10 @@ function displayActor(id: string, resolveHandle: ActorHandleLookup | undefined):
   if (resolveHandle === undefined) return id.slice(0, 8);
   const handle = resolveHandle(id);
   return handle ?? id.slice(0, 8);
+}
+
+function displayEntity(id: string, lookup: EntityKeyLookup | undefined): string {
+  if (lookup === undefined) return id.slice(0, 8);
+  const key = lookup(id);
+  return key ?? id.slice(0, 8);
 }

@@ -5,7 +5,10 @@ import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
-import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import type {
+  TaskFieldUpdates,
+  TaskRepository,
+} from '../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
@@ -210,6 +213,19 @@ export class TaskService {
         return { kind: 'not_found' };
       }
 
+      // Fold validated payload back onto the task itself so a later
+      // `task show` reflects what the user declared at the gate. Only
+      // fields that map to real columns are persisted; the original
+      // payload still goes verbatim into `transitions.payload` for
+      // audit. Annotation-only keys (reason, approval_note, pr_url,
+      // note, supersededBy, …) flow through but are silently ignored
+      // here because they are not in the whitelist.
+      const persisted = persistableFromPayload((data ?? {}) as Record<string, unknown>, (handle) =>
+        this.identity.ensureActor(handle, 'human'),
+      );
+      const finalTask =
+        persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
+
       this.transitions.record({
         taskId: task.id,
         fromState: task.state,
@@ -221,7 +237,7 @@ export class TaskService {
         agentRunId: input.runId ?? null,
       });
 
-      return { kind: 'ok', task: result.task };
+      return { kind: 'ok', task: finalTask };
     });
 
     if (outcome.kind === 'not_found') {
@@ -360,4 +376,59 @@ export class TaskService {
     }
     return Ok(restored);
   }
+}
+
+/**
+ * Picks the subset of a transition payload that maps to first-class
+ * task columns. Annotation-only payload bits (reason, approval_note,
+ * pr_url, note, supersededBy, …) are filtered out — they remain in
+ * `transitions.payload` for audit but never overwrite the task row.
+ *
+ * `assignee_id` carries a *handle* in the payload (the audit trail is
+ * human-readable), but the column is a foreign key to `actors.id`. The
+ * passed-in `resolveActor` translates handle → UUID, ensuring the actor
+ * exists.
+ *
+ * Returns `null` when nothing in the payload is persistable, so the
+ * caller can skip the UPDATE altogether and avoid a needless
+ * `updated_at` bump.
+ *
+ * @param payload - Validated transition payload
+ * @param resolveActor - Maps a human handle to the actor UUID (creating one if needed)
+ * @returns Subset suitable for {@link TaskRepository.updateFields} or null
+ */
+function persistableFromPayload(
+  payload: Record<string, unknown>,
+  resolveActor: (handle: string) => string,
+): TaskFieldUpdates | null {
+  const updates: TaskFieldUpdates = {};
+  let touched = false;
+
+  if (typeof payload.title === 'string') {
+    (updates as { title?: string }).title = payload.title;
+    touched = true;
+  }
+  if (typeof payload.description === 'string') {
+    (updates as { description?: string | null }).description = payload.description;
+    touched = true;
+  }
+  if (Array.isArray(payload.acceptance_criteria)) {
+    (updates as { acceptanceCriteria?: readonly string[] }).acceptanceCriteria =
+      payload.acceptance_criteria.filter((v): v is string => typeof v === 'string');
+    touched = true;
+  }
+  if (typeof payload.estimate === 'number') {
+    (updates as { estimate?: number | null }).estimate = payload.estimate;
+    touched = true;
+  }
+  if (typeof payload.priority === 'number') {
+    (updates as { priority?: number }).priority = payload.priority;
+    touched = true;
+  }
+  if (typeof payload.assignee_id === 'string' && payload.assignee_id.length > 0) {
+    (updates as { assigneeId?: string | null }).assigneeId = resolveActor(payload.assignee_id);
+    touched = true;
+  }
+
+  return touched ? updates : null;
 }

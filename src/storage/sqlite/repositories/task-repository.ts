@@ -46,6 +46,23 @@ export interface TaskInsertInput {
 }
 
 /**
+ * Fields {@link TaskRepository.updateFields} is allowed to overwrite.
+ *
+ * Whitelist by design: only attributes that map to first-class columns
+ * on the `tasks` table appear here. Annotation-only payload bits
+ * (`reason`, `approval_note`, `pr_url`, …) stay in `transitions.payload`
+ * and never touch the task record.
+ */
+export interface TaskFieldUpdates {
+  readonly title?: string;
+  readonly description?: string | null;
+  readonly acceptanceCriteria?: readonly string[];
+  readonly estimate?: number | null;
+  readonly priority?: number;
+  readonly assigneeId?: string | null;
+}
+
+/**
  * Reason an `updateState` call failed.
  */
 export type UpdateStateFailure =
@@ -217,6 +234,74 @@ export class TaskRepository {
       throw new Error('task disappeared after updateState');
     }
     return { ok: true, task: reloaded };
+  }
+
+  /**
+   * Applies a partial update to a task's persisted fields. Only the
+   * keys present in `fields` are touched; missing keys leave the
+   * existing column value alone. Always bumps `updated_at`.
+   *
+   * Used by {@link TaskService.transition} to fold the validated
+   * payload of a transition (e.g. `submit` carries title / description
+   * / acceptance_criteria / estimate) back onto the task itself, so a
+   * later `task show` reflects what the user actually declared. The
+   * full original payload still lives in `transitions.payload` for
+   * audit purposes.
+   *
+   * @param taskId - Internal id of the task
+   * @param fields - Subset of fields to overwrite
+   * @returns The reloaded task
+   */
+  updateFields(taskId: string, fields: TaskFieldUpdates): Task {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (fields.title !== undefined) {
+      sets.push('title = ?');
+      values.push(fields.title);
+    }
+    if (fields.description !== undefined) {
+      sets.push('description = ?');
+      values.push(fields.description);
+    }
+    if (fields.acceptanceCriteria !== undefined) {
+      sets.push('acceptance_criteria = ?');
+      values.push(JSON.stringify(fields.acceptanceCriteria));
+    }
+    if (fields.estimate !== undefined) {
+      sets.push('estimate = ?');
+      values.push(fields.estimate);
+    }
+    if (fields.priority !== undefined) {
+      sets.push('priority = ?');
+      values.push(fields.priority);
+    }
+    if (fields.assigneeId !== undefined) {
+      sets.push('assignee_id = ?');
+      values.push(fields.assigneeId);
+    }
+
+    if (sets.length === 0) {
+      const reloaded = this.findById(taskId);
+      if (reloaded === null) {
+        throw new Error(`updateFields: task ${taskId} not found`);
+      }
+      return reloaded;
+    }
+
+    sets.push('updated_at = ?');
+    values.push(isoNow());
+    values.push(taskId);
+
+    this.adapter
+      .getDatabase()
+      .prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`)
+      .run(...values);
+
+    const reloaded = this.findById(taskId);
+    if (reloaded === null) {
+      throw new Error(`updateFields: task ${taskId} disappeared after update`);
+    }
+    return reloaded;
   }
 
   /**
