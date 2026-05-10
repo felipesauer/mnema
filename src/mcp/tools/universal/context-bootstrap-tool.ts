@@ -47,7 +47,16 @@ export class ContextBootstrapTool {
 
   /** Builds the bootstrap payload. */
   private handle(): ReturnType<typeof ok> {
-    const blockers = this.taskService.list({ state: TaskState.Blocked });
+    const all = this.taskService.list();
+    const byState: Record<string, number> = {};
+    for (const state of this.workflow.states) {
+      byState[state] = 0;
+    }
+    for (const task of all) {
+      byState[task.state] = (byState[task.state] ?? 0) + 1;
+    }
+    const blockers = all.filter((t) => t.state === TaskState.Blocked);
+
     return ok({
       project: {
         key: this.config.project.key,
@@ -63,6 +72,7 @@ export class ContextBootstrapTool {
         available_actions_summary: this.summariseActions(),
       },
       agents_md: this.readTruncated('AGENTS.md', 8 * 1024),
+      agents_md_path: existsSync(path.join(this.projectRoot, 'AGENTS.md')) ? 'AGENTS.md' : null,
       memory_index: this.readTruncated(path.join(this.config.paths.memory, 'INDEX.md'), 4 * 1024),
       decisions_index: this.readTruncated(
         path.join(this.config.paths.memory, 'decisions', 'INDEX.md'),
@@ -74,9 +84,10 @@ export class ContextBootstrapTool {
         updated_at: task.updatedAt,
       })),
       statistics: {
-        total: this.taskService.list().length,
-        in_progress: this.taskService.list({ state: TaskState.InProgress }).length,
+        total: all.length,
+        in_progress: byState[TaskState.InProgress] ?? 0,
         blocked: blockers.length,
+        by_state: byState,
       },
     });
   }

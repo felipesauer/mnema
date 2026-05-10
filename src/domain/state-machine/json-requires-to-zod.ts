@@ -15,6 +15,7 @@ import type { FieldSpec } from './workflow-meta-schema.js';
 export function fieldSpecToZod(spec: FieldSpec): z.ZodType {
   let schema: z.ZodType = buildBase(spec);
 
+  if (spec.description !== undefined) schema = schema.describe(spec.description);
   if (spec.optional === true) schema = schema.optional();
   if (spec.default !== undefined) schema = schema.default(spec.default);
   return schema;
