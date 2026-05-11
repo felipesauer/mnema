@@ -78,11 +78,16 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
-    description: 'Validate skill files (frontmatter, MCP refs, examples)',
+    description: 'Manage skills (lint / list / show)',
   },
   memory: {
     load: async () => new (await import('./commands/memory-command.js')).MemoryCommand(),
-    description: 'Curate human memory (consolidate INDEX.md, lint)',
+    description: 'Curate memory (consolidate / lint / list / show)',
+  },
+  observation: {
+    load: async () => new (await import('./commands/observation-command.js')).ObservationCommand(),
+    aliases: ['observations'],
+    description: 'Read agent-recorded observations (list)',
   },
   search: {
     load: async () => new (await import('./commands/search-command.js')).SearchCommand(),

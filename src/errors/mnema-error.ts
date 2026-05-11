@@ -106,7 +106,9 @@ export type MnemaError =
   | {
       readonly kind: ErrorCode.SchemaOutOfDate;
       readonly pending: readonly string[];
-    };
+    }
+  | { readonly kind: ErrorCode.SkillNotFound; readonly slug: string }
+  | { readonly kind: ErrorCode.MemoryNotFound; readonly slug: string };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

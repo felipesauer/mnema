@@ -3,13 +3,18 @@ import path from 'node:path';
 import type { Command } from 'commander';
 import pc from 'picocolors';
 
-import { ExitCode } from '../../errors/error-codes.js';
+import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
+import { printError } from '../../errors/error-printer.js';
 import { listAvailableToolNames } from '../../mcp/tool-registry.js';
 import { SkillService } from '../../services/skill-service.js';
 import { withCliContext } from '../cli-context.js';
 
 interface LintOptions {
   readonly json?: boolean;
+}
+
+interface ShowOptions {
+  readonly version?: string;
 }
 
 /**
@@ -31,7 +36,7 @@ export class SkillCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('skill').description('Validate skill files');
+    const group = program.command('skill').description('Manage and validate skill files');
 
     group
       .command('lint')
@@ -52,6 +57,46 @@ export class SkillCommand {
           if (report.errorCount > 0) {
             process.exit(ExitCode.State);
           }
+        });
+      });
+
+    group
+      .command('list')
+      .description('List recorded skills (latest version per slug)')
+      .action(async () => {
+        await withCliContext(({ container }) => {
+          const skills = container.skill.list();
+          if (skills.length === 0) {
+            process.stdout.write(`${pc.dim('no skills recorded yet')}\n`);
+            return;
+          }
+          for (const s of skills) {
+            const last = s.lastUsedAt ?? pc.dim('never');
+            process.stdout.write(
+              `${pc.bold(s.slug)}  v${s.version}  ${pc.dim(`uses=${s.usageCount} last=${last}`)}\n  ${s.name}\n`,
+            );
+          }
+        });
+      });
+
+    group
+      .command('show <slug>')
+      .description('Show a recorded skill by slug')
+      .option('--version <n>', 'Specific version (default: latest)')
+      .action(async (slug: string, options: ShowOptions) => {
+        await withCliContext(({ container }) => {
+          const version = options.version !== undefined ? Number(options.version) : undefined;
+          if (version !== undefined && (!Number.isFinite(version) || version <= 0)) {
+            process.exit(printError({ kind: ErrorCode.SkillNotFound, slug }));
+          }
+          const result = container.skill.show(slug, version);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const skill = result.value;
+          process.stdout.write(
+            `${pc.bold(skill.slug)} v${skill.version} — ${skill.name}\n${pc.dim(skill.description)}\n\n${skill.content}\n`,
+          );
         });
       });
   }

@@ -18,6 +18,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'task_create',
   'tasks_list',
   'task_show',
+  'task_actions',
   'agent_plan_create',
   'agent_plan_update_state',
   'agent_plans_list',
@@ -33,6 +34,15 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'sprints_list',
   'sprint_add_task',
   'history_get',
+  'skill_record',
+  'skill_show',
+  'skill_use',
+  'skills_list',
+  'memory_record',
+  'memory_show',
+  'memories_list',
+  'observation_record',
+  'observations_list',
 ];
 
 /**
