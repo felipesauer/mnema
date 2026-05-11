@@ -141,11 +141,25 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new SearchTool(this.services.search).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
-    new SkillTools(this.services.skill, this.services.identity, this.session).register(this.sdk);
-    new MemoryTools(this.services.memory, this.services.identity, this.session).register(this.sdk);
-    new ObservationTools(this.services.observation, this.services.identity, this.session).register(
-      this.sdk,
-    );
+    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
+    new SkillTools(
+      this.services.skill,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
+    new MemoryTools(
+      this.services.memory,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
+    new ObservationTools(
+      this.services.observation,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new TransitionToolsRegistrar(
       this.services.stateMachine.getWorkflow(),
       this.services.task,

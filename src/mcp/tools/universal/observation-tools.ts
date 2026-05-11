@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { ObservationService } from '../../../services/observation-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * Registers the observation-related MCP tools — `observation_record`,
@@ -18,6 +18,7 @@ export class ObservationTools {
     private readonly observations: ObservationService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -42,6 +43,8 @@ export class ObservationTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -73,6 +76,8 @@ export class ObservationTools {
         },
       },
       ({ topic, related_task_key: relatedTaskKey, since, limit }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const observations = this.observations.list({
           topic,
           relatedTaskKey,

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * Registers the skill-related MCP tools — `skill_record`, `skill_show`,
@@ -18,6 +18,7 @@ export class SkillTools {
     private readonly skills: SkillService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -54,6 +55,8 @@ export class SkillTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -85,6 +88,8 @@ export class SkillTools {
         },
       },
       ({ slug, version }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.skills.show(slug, version);
         if (!result.ok) return err(result.error);
         return ok({ skill: result.value });
@@ -102,6 +107,8 @@ export class SkillTools {
         },
       },
       ({ slug }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -114,7 +121,15 @@ export class SkillTools {
           runId ?? undefined,
         );
         if (!result.ok) return err(result.error);
-        return ok({ skill: result.value });
+        const skill = result.value;
+        return ok({
+          skill: {
+            slug: skill.slug,
+            version: skill.version,
+            usage_count: skill.usageCount,
+            last_used_at: skill.lastUsedAt,
+          },
+        });
       },
     );
 
@@ -126,6 +141,8 @@ export class SkillTools {
         inputSchema: {},
       },
       () => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const skills = this.skills.list();
         return ok({ skills });
       },

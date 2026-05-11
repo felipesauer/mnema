@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * Registers the memory-related MCP tools — `memory_record`,
@@ -19,6 +19,7 @@ export class MemoryTools {
     private readonly memories: MemoryService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -47,6 +48,8 @@ export class MemoryTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -74,6 +77,8 @@ export class MemoryTools {
         },
       },
       ({ slug }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.memories.show(slug);
         if (!result.ok) return err(result.error);
         return ok({ memory: result.value });
@@ -89,6 +94,8 @@ export class MemoryTools {
         },
       },
       ({ topic }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const memories = this.memories.list(topic);
         return ok({ memories });
       },

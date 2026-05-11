@@ -1,9 +1,17 @@
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, unlinkSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { inspectMigrationDrift } from '@/cli/commands/doctor-command.js';
+import { inspectMigrationDrift, inspectMirrorDrift } from '@/cli/commands/doctor-command.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -73,5 +81,91 @@ describe('inspectMigrationDrift', () => {
     expect(consistency).toBeDefined();
     expect(consistency?.ok).toBe(false);
     expect(consistency?.detail).toContain('3');
+  });
+});
+
+describe('inspectMirrorDrift', () => {
+  // Run all real migrations so the `skills` / `memories` tables exist.
+  const realMigrationsDir = sourceMigrationsDir;
+  let work: string;
+  let skillsDir: string;
+  let memoryDir: string;
+  let adapter: SqliteAdapter;
+
+  beforeEach(() => {
+    work = mkdtempSync(path.join(tmpdir(), 'mnema-doctor-mirror-'));
+    skillsDir = path.join(work, 'skills');
+    memoryDir = path.join(work, 'memory');
+    mkdirSync(skillsDir, { recursive: true });
+    mkdirSync(memoryDir, { recursive: true });
+    adapter = new SqliteAdapter(path.join(work, 'state.db'));
+    new MigrationRunner().run(adapter, realMigrationsDir);
+    // Seed one actor for FK constraints.
+    adapter
+      .getDatabase()
+      .prepare(`INSERT INTO actors (id, handle, kind) VALUES ('a1', 'tester', 'human')`)
+      .run();
+  });
+
+  afterEach(() => {
+    adapter.close();
+    rmSync(work, { recursive: true, force: true });
+  });
+
+  it('F-7: reports green ok=true with severity=warning when everything mirrored', () => {
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+         VALUES ('s1', 'foo', 'Foo', 1, 'd', 'c', '[]', 'a1')`,
+      )
+      .run();
+    writeFileSync(path.join(skillsDir, 'foo.md'), '---\nname: Foo\n---\nc', 'utf-8');
+
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const skills = checks.find((c) => c.name === 'skills mirrored');
+    expect(skills?.ok).toBe(true);
+    expect(skills?.severity).toBe('warning');
+  });
+
+  it('F-7: reports ok=false with severity=warning when a mirror is missing', () => {
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+         VALUES ('s1', 'foo', 'Foo', 1, 'd', 'c', '[]', 'a1')`,
+      )
+      .run();
+    // No mirror file written — drift.
+
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const skills = checks.find((c) => c.name === 'skills mirrored');
+    expect(skills?.ok).toBe(false);
+    expect(skills?.severity).toBe('warning');
+    expect(skills?.detail).toContain('foo');
+  });
+
+  it('memories drift is reported with the same shape', () => {
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO memories (id, slug, title, content, topics, created_by)
+         VALUES ('m1', 'bar', 'Bar', 'c', '[]', 'a1')`,
+      )
+      .run();
+
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const mem = checks.find((c) => c.name === 'memories mirrored');
+    expect(mem?.ok).toBe(false);
+    expect(mem?.severity).toBe('warning');
+  });
+
+  // readdirSync used implicitly to confirm the suite compiles when the
+  // import is touched — harmless.
+  it('respects empty state without errors', () => {
+    expect(readdirSync(skillsDir)).toEqual([]);
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    expect(checks).toHaveLength(2);
+    expect(checks.every((c) => c.ok)).toBe(true);
   });
 });

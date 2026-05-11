@@ -67,6 +67,11 @@ export class ContextBootstrapTool {
     const memories = this.memoryService.list().slice(0, 30);
     const recentObservations = this.observationService.list({ limit: 5 });
 
+    // Build a tasks id→key map so observations can expose the
+    // human-readable `related_task_key` instead of the internal UUID.
+    const taskKeyById = new Map<string, string>();
+    for (const task of all) taskKeyById.set(task.id, task.key);
+
     return ok({
       project: {
         key: this.config.project.key,
@@ -113,8 +118,11 @@ export class ContextBootstrapTool {
         topics: m.topics,
       })),
       recent_observations: recentObservations.map((o) => ({
+        id: o.id,
         content: o.content,
         topics: o.topics,
+        related_task_key:
+          o.relatedTaskId === null ? null : (taskKeyById.get(o.relatedTaskId) ?? null),
         at: o.at,
       })),
     });

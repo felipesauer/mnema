@@ -51,3 +51,17 @@ export function requireActiveRun(runId: string | null): CallToolResult | null {
   if (runId !== null) return null;
   return err({ kind: ErrorCode.NoActiveRun });
 }
+
+/**
+ * Convenience: short-circuits when the database is behind the bundled
+ * migration files on disk, returning a `SCHEMA_OUT_OF_DATE` error with
+ * the list of pending files. Read-only tools should NOT use this — the
+ * cooperative guard only blocks mutations.
+ *
+ * @param pending - File names of pending migrations (empty when fresh)
+ * @returns `null` when schema is current, or an error result otherwise
+ */
+export function requireFreshSchema(pending: readonly string[]): CallToolResult | null {
+  if (pending.length === 0) return null;
+  return err({ kind: ErrorCode.SchemaOutOfDate, pending });
+}

@@ -77,6 +77,28 @@ describe('MemoryService', () => {
     expect(again.action).toBe('no_op');
   });
 
+  it('F-2: no_op does NOT advance updated_at', async () => {
+    const first = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    // Sleep enough that a different millisecond would be visible if the
+    // service still ran the UPDATE on no_op.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const again = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    expect(again.action).toBe('no_op');
+    expect(again.memory.updatedAt).toBe(first.memory.updatedAt);
+  });
+
+  it('F-8: no_op regenerates the mirror when the file went missing', () => {
+    const r = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const mirrorPath = path.join(memoryDir, 's.md');
+    expect(existsSync(mirrorPath)).toBe(true);
+    rmSync(mirrorPath);
+
+    const again = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    expect(again.action).toBe('no_op');
+    expect(again.memory.updatedAt).toBe(r.memory.updatedAt);
+    expect(existsSync(mirrorPath)).toBe(true);
+  });
+
   it('list filters by topic', () => {
     service.record({
       slug: 'a',

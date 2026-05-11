@@ -167,8 +167,18 @@ describe('skill/memory/observation MCP tools', () => {
       arguments: { slug: 's' },
     });
     const payload = parsePayload(used as CallToolResult);
-    const skill = payload.skill as { usageCount: number };
-    expect(skill.usageCount).toBe(1);
+    const skill = payload.skill as {
+      slug: string;
+      version: number;
+      usage_count: number;
+      last_used_at: string | null;
+      content?: unknown;
+    };
+    expect(skill.usage_count).toBe(1);
+    expect(skill.slug).toBe('s');
+    expect(skill.version).toBe(1);
+    // F-4: skill_use payload omits content (docstring says so).
+    expect(skill.content).toBeUndefined();
   });
 
   it('memory_record upserts under the same slug', async () => {
@@ -230,6 +240,39 @@ describe('skill/memory/observation MCP tools', () => {
     expect((payload.skills_inventory as unknown[]).length).toBe(1);
     expect((payload.memories_inventory as unknown[]).length).toBe(1);
     expect((payload.recent_observations as unknown[]).length).toBe(1);
+  });
+
+  it('F-5: bootstrap recent_observations includes id and related_task_key', async () => {
+    // Need a real task to link against.
+    const created = await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'A linkable task' },
+    });
+    const task = parsePayload(created as CallToolResult).task as { key: string };
+
+    await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'linked obs', related_task_key: task.key },
+    });
+    await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'orphan obs' },
+    });
+
+    const bootstrap = await harness.client.callTool({
+      name: 'context_bootstrap',
+      arguments: {},
+    });
+    const obs = parsePayload(bootstrap as CallToolResult).recent_observations as Array<{
+      id: string;
+      content: string;
+      related_task_key: string | null;
+    }>;
+    expect(obs.every((o) => typeof o.id === 'string' && o.id.length > 0)).toBe(true);
+    const linked = obs.find((o) => o.content === 'linked obs');
+    const orphan = obs.find((o) => o.content === 'orphan obs');
+    expect(linked?.related_task_key).toBe(task.key);
+    expect(orphan?.related_task_key).toBeNull();
   });
 
   it('skill_record without an active run returns NO_ACTIVE_RUN', async () => {
