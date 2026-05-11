@@ -97,8 +97,6 @@ loading the bodies.
   top-level command.
 - **`mnema doctor` mirror-drift warnings**: reports skills/memories
   rows whose `.md` file is missing. Warnings, not errors.
-- **`SKILLS-AND-MEMORY.md`**: the matrix (skill vs memory vs
-  observation vs decision) plus a worked agent flow.
 
 ### Changed
 
