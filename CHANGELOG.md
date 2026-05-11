@@ -10,6 +10,57 @@ stable release.
 
 ## [Unreleased]
 
+## [0.3.0-alpha.1] — 2026-05-11
+
+Friction sweep after Phase C real-world test (`evaluations/2026-05-11-phase-c.md`).
+A sub-agent (dev5) plus the PO exercised every new tool from
+0.3.0-alpha.0 against the Mnema repo itself and surfaced 8 friction
+points. This release fixes the 6 actionable ones (F-1, F-2, F-4, F-5,
+F-7, F-8); F-3 and F-6 are tracked as documentation follow-ups.
+
+### Fixed
+
+- **F-1 — Drift guard on new tools.** All 9 skill/memory/observation
+  MCP tools now check `pendingMigrations` first and respond with a
+  structured `SCHEMA_OUT_OF_DATE` error instead of leaking raw
+  `no such table` SQLite messages when the DB is behind disk.
+  Implemented via `requireFreshSchema(pending)` in `mcp-tool-result.ts`
+  and a new `pendingMigrations` constructor arg on the three
+  registrars. Discovered when upgrading the global binary from 0.1.0
+  to 0.3.0 without running `mnema migrate` first.
+- **F-2 — `no_op` no longer advances `updated_at`.** `MemoryService.record`
+  and `SkillService.record` now skip the SQL UPDATE entirely when the
+  service detects byte-equal content. The DB row, the mirror file and
+  the audit event all stay consistent: timestamps reflect actual
+  content changes, no_op is observable in audit but invisible to
+  consumers that filter on `updated_at`.
+- **F-4 — `skill_use` payload omits content.** The MCP handler now
+  projects the response to `{ slug, version, usage_count, last_used_at }`
+  matching the docstring promise. Saves tokens, fixes the inconsistency
+  with the description.
+- **F-5 — Bootstrap observations include `id` and `related_task_key`.**
+  `context_bootstrap.recent_observations` now exposes the canonical id
+  plus the human-readable task key (when linked), so agents can act on
+  the listed observations without a follow-up `observations_list` call.
+- **F-7 — Doctor severity.** `DoctorCheck` gains an optional
+  `severity: 'error' | 'warning'` field. The renderer shows `⚠` for
+  warnings (yellow) versus `✗` for errors (red), and the exit code
+  only fails on errors. Mirror-drift checks (`skills mirrored`,
+  `memories mirrored`) now flag missing files as `warning` so they
+  stand out without failing the diagnostic.
+- **F-8 — Mirror self-heals on no_op.** When `record` returns `no_op`
+  but the mirror file is missing on disk, the service rewrites the
+  file. This makes SQLite the source of truth: deleting a `.md` mirror
+  by hand is recoverable by re-asserting the same content. Pairs with
+  F-2 — the DB row stays untouched, only the mirror is restored.
+
+### Internal
+
+- 372 tests across 54 suites (was 357). Coverage added: `no_op` does
+  not advance `updated_at` (memory + skill), `no_op` self-heals
+  mirror, doctor mirror-drift warning shape, bootstrap observations
+  shape with task linkage, `requireFreshSchema` unit tests.
+
 ## [0.3.0-alpha.0] — 2026-05-11
 
 Third public alpha. Agents now record their own **skills**, **memories**
@@ -282,7 +333,8 @@ changes.
   3/3) — `scripts/copy-migrations.mjs` is the build step that ships
   the SQL files alongside the compiled JavaScript.
 
-[Unreleased]: https://github.com/saurim/mnema/compare/v0.3.0-alpha.0...HEAD
+[Unreleased]: https://github.com/saurim/mnema/compare/v0.3.0-alpha.1...HEAD
+[0.3.0-alpha.1]: https://github.com/saurim/mnema/releases/tag/v0.3.0-alpha.1
 [0.3.0-alpha.0]: https://github.com/saurim/mnema/releases/tag/v0.3.0-alpha.0
 [0.2.0-alpha.0]: https://github.com/saurim/mnema/releases/tag/v0.2.0-alpha.0
 [0.1.0-alpha.1]: https://github.com/saurim/mnema/releases/tag/v0.1.0-alpha.1

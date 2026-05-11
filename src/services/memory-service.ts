@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Memory } from '../domain/entities/memory.js';
@@ -60,27 +61,35 @@ export class MemoryService {
     const topics = input.topics ?? [];
     const existing = this.repo.findBySlug(input.slug);
 
-    let action: MemoryRecordResult['action'];
-    if (
+    const isNoOp =
       existing !== null &&
       existing.title === input.title &&
       existing.content === input.content &&
-      topicsArraysEqual(existing.topics, topics)
-    ) {
-      action = 'no_op';
+      topicsArraysEqual(existing.topics, topics);
+
+    const action: MemoryRecordResult['action'] = isNoOp
+      ? 'no_op'
+      : existing === null
+        ? 'created'
+        : 'updated';
+
+    let memory: Memory;
+    if (isNoOp) {
+      // Skip the SQL write entirely so `updated_at` does not advance.
+      // The mirror is rewritten only if the file went missing, so
+      // `mnema doctor` can self-heal without a content change.
+      memory = existing as Memory;
+      if (!mirrorExists(this.memoryDir, memory.slug)) {
+        this.writeMirror(memory);
+      }
     } else {
-      action = existing === null ? 'created' : 'updated';
-    }
-
-    const memory = this.repo.upsert({
-      slug: input.slug,
-      title: input.title,
-      content: input.content,
-      topics,
-      createdBy,
-    });
-
-    if (action !== 'no_op') {
+      memory = this.repo.upsert({
+        slug: input.slug,
+        title: input.title,
+        content: input.content,
+        topics,
+        createdBy,
+      });
       this.writeMirror(memory);
     }
 
@@ -155,6 +164,10 @@ export class MemoryService {
     ];
     writeFileAtomic(filePath, `${lines.join('\n') + memory.content}\n`);
   }
+}
+
+function mirrorExists(dir: string, slug: string): boolean {
+  return existsSync(path.join(dir, `${slug}.md`));
 }
 
 function topicsArraysEqual(a: readonly string[], b: readonly string[]): boolean {

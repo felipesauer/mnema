@@ -94,6 +94,50 @@ describe('SkillService (record/show/use)', () => {
     expect(again.skill.version).toBe(1);
   });
 
+  it('F-2: no_op does NOT advance updated_at', async () => {
+    const first = service.record({
+      slug: 's',
+      name: 'Skill',
+      description: 'd',
+      content: 'A',
+      actor: 'daniel',
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const again = service.record({
+      slug: 's',
+      name: 'Skill',
+      description: 'd',
+      content: 'A',
+      actor: 'daniel',
+    });
+    expect(again.action).toBe('no_op');
+    expect(again.skill.updatedAt).toBe(first.skill.updatedAt);
+  });
+
+  it('F-8: no_op regenerates the mirror when the file went missing', () => {
+    const first = service.record({
+      slug: 's',
+      name: 'Skill',
+      description: 'd',
+      content: 'A',
+      actor: 'daniel',
+    });
+    const mirror = path.join(skillsDir, 's.md');
+    expect(existsSync(mirror)).toBe(true);
+    rmSync(mirror);
+
+    const again = service.record({
+      slug: 's',
+      name: 'Skill',
+      description: 'd',
+      content: 'A',
+      actor: 'daniel',
+    });
+    expect(again.action).toBe('no_op');
+    expect(again.skill.updatedAt).toBe(first.skill.updatedAt);
+    expect(existsSync(mirror)).toBe(true);
+  });
+
   it('bumps version when mode=new_version', () => {
     service.record({
       slug: 's',

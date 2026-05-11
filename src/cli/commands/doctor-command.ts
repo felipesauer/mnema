@@ -19,10 +19,18 @@ import { resolveProjectRoot } from '../project-root.js';
  * such as {@link inspectMigrationDrift} so tests can assert on the
  * structured form without rendering it.
  */
+/**
+ * Severity bucket for a check. `error` fails the doctor exit code;
+ * `warning` keeps exit 0 but renders a yellow `⚠` so the line stands
+ * out in the checklist. Defaults to `error` when omitted.
+ */
+export type DoctorSeverity = 'error' | 'warning';
+
 export interface DoctorCheck {
   readonly name: string;
   readonly ok: boolean;
   readonly detail: string;
+  readonly severity?: DoctorSeverity;
 }
 
 /**
@@ -132,7 +140,9 @@ export class DoctorCommand {
     }
 
     printChecks(checks);
-    return checks.every((c) => c.ok) ? ExitCode.Success : ExitCode.State;
+    // Warnings keep exit 0; only errors fail the check.
+    const hasError = checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
+    return hasError ? ExitCode.State : ExitCode.Success;
   }
 }
 
@@ -213,7 +223,8 @@ export function inspectMirrorDrift(
   );
   checks.push({
     name: 'skills mirrored',
-    ok: true,
+    ok: skillDrift.length === 0,
+    severity: 'warning',
     detail:
       skillDrift.length === 0
         ? `${skillRows.length} mirrored`
@@ -228,7 +239,8 @@ export function inspectMirrorDrift(
   );
   checks.push({
     name: 'memories mirrored',
-    ok: true,
+    ok: memoryDrift.length === 0,
+    severity: 'warning',
     detail:
       memoryDrift.length === 0
         ? `${memoryRows.length} mirrored`
@@ -240,7 +252,11 @@ export function inspectMirrorDrift(
 
 function printChecks(checks: readonly DoctorCheck[]): void {
   for (const check of checks) {
-    const mark = check.ok ? pc.green('✓') : pc.red('✗');
+    const mark = check.ok
+      ? pc.green('✓')
+      : (check.severity ?? 'error') === 'warning'
+        ? pc.yellow('⚠')
+        : pc.red('✗');
     process.stdout.write(`${mark} ${check.name}  ${pc.dim(check.detail)}\n`);
   }
 }
