@@ -44,6 +44,9 @@ export enum ErrorCode {
   EpicInvalidState = 'EPIC_INVALID_STATE',
 
   SchemaOutOfDate = 'SCHEMA_OUT_OF_DATE',
+
+  SkillNotFound = 'SKILL_NOT_FOUND',
+  MemoryNotFound = 'MEMORY_NOT_FOUND',
 }
 
 /**

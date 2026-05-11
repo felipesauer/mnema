@@ -114,6 +114,12 @@ export class DoctorCommand {
         try {
           checks.push({ name: 'database opens', ok: true, detail: dbPath });
           checks.push(...inspectMigrationDrift(adapter, migrationsDir()));
+          checks.push(
+            ...inspectMirrorDrift(adapter, {
+              skillsDir: path.join(projectRoot, config.paths.skills),
+              memoryDir: path.join(projectRoot, config.paths.memory),
+            }),
+          );
         } finally {
           adapter.close();
         }
@@ -174,6 +180,61 @@ export function inspectMigrationDrift(adapter: SqliteAdapter, dir: string): Doct
       detail: `db has versions with no matching file: ${orphan.join(', ')}`,
     });
   }
+  return checks;
+}
+
+/**
+ * Reports whether each skill/memory row in SQLite has a matching `.md`
+ * mirror on disk. Failures are warnings, not errors — the database is
+ * the source of truth, the filesystem mirror is for human visibility.
+ *
+ * @param adapter - SQLite adapter for the project database
+ * @param dirs - Mirror directories (`paths.skills` and `paths.memory`)
+ * @returns Two checks, one per kind
+ */
+export function inspectMirrorDrift(
+  adapter: SqliteAdapter,
+  dirs: { readonly skillsDir: string; readonly memoryDir: string },
+): DoctorCheck[] {
+  const checks: DoctorCheck[] = [];
+
+  const skillRows = adapter
+    .getDatabase()
+    .prepare(
+      `SELECT s.slug FROM skills s
+       INNER JOIN (
+         SELECT slug, MAX(version) AS max_version
+         FROM skills GROUP BY slug
+       ) latest ON s.slug = latest.slug AND s.version = latest.max_version`,
+    )
+    .all() as Array<{ slug: string }>;
+  const skillDrift = skillRows.filter(
+    (r) => !existsSync(path.join(dirs.skillsDir, `${r.slug}.md`)),
+  );
+  checks.push({
+    name: 'skills mirrored',
+    ok: true,
+    detail:
+      skillDrift.length === 0
+        ? `${skillRows.length} mirrored`
+        : `${skillRows.length} rows, missing files: ${skillDrift.map((r) => r.slug).join(', ')}`,
+  });
+
+  const memoryRows = adapter.getDatabase().prepare('SELECT slug FROM memories').all() as Array<{
+    slug: string;
+  }>;
+  const memoryDrift = memoryRows.filter(
+    (r) => !existsSync(path.join(dirs.memoryDir, `${r.slug}.md`)),
+  );
+  checks.push({
+    name: 'memories mirrored',
+    ok: true,
+    detail:
+      memoryDrift.length === 0
+        ? `${memoryRows.length} mirrored`
+        : `${memoryRows.length} rows, missing files: ${memoryDrift.map((r) => r.slug).join(', ')}`,
+  });
+
   return checks;
 }
 

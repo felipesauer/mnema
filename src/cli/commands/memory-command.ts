@@ -4,12 +4,17 @@ import type { Command } from 'commander';
 import pc from 'picocolors';
 
 import { ExitCode } from '../../errors/error-codes.js';
+import { printError } from '../../errors/error-printer.js';
 import { MemoryConsolidator } from '../../services/memory-consolidator.js';
 import { MemoryLinter } from '../../services/memory-linter.js';
 import { withCliContext } from '../cli-context.js';
 
 interface LintOptions {
   readonly json?: boolean;
+}
+
+interface ListOptions {
+  readonly topic?: string;
 }
 
 /**
@@ -83,6 +88,41 @@ export class MemoryCommand {
           if (report.errorCount > 0) {
             process.exit(ExitCode.State);
           }
+        });
+      });
+
+    group
+      .command('list')
+      .description('List recorded memories')
+      .option('--topic <topic>', 'Filter by topic')
+      .action(async (options: ListOptions) => {
+        await withCliContext(({ container }) => {
+          const memories = container.memory.list(options.topic);
+          if (memories.length === 0) {
+            process.stdout.write(`${pc.dim('no memories recorded yet')}\n`);
+            return;
+          }
+          for (const m of memories) {
+            const topics = m.topics.length > 0 ? `[${m.topics.join(', ')}]` : '';
+            process.stdout.write(`${pc.bold(m.slug)}  ${m.title}  ${pc.dim(topics)}\n`);
+          }
+        });
+      });
+
+    group
+      .command('show <slug>')
+      .description('Show a recorded memory by slug')
+      .action(async (slug: string) => {
+        await withCliContext(({ container }) => {
+          const result = container.memory.show(slug);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const m = result.value;
+          const topics = m.topics.length > 0 ? `topics: [${m.topics.join(', ')}]` : '';
+          process.stdout.write(
+            `${pc.bold(m.slug)} — ${m.title}\n${pc.dim(topics)}\n\n${m.content}\n`,
+          );
         });
       });
   }

@@ -6,6 +6,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Config } from '../../../config/config-schema.js';
 import { TaskState } from '../../../domain/enums/task-state.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
+import type { MemoryService } from '../../../services/memory-service.js';
+import type { ObservationService } from '../../../services/observation-service.js';
+import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
@@ -27,6 +30,9 @@ export class ContextBootstrapTool {
     private readonly workflow: Workflow,
     private readonly projectRoot: string,
     private readonly taskService: TaskService,
+    private readonly skillService: SkillService,
+    private readonly memoryService: MemoryService,
+    private readonly observationService: ObservationService,
   ) {}
 
   /**
@@ -56,6 +62,10 @@ export class ContextBootstrapTool {
       byState[task.state] = (byState[task.state] ?? 0) + 1;
     }
     const blockers = all.filter((t) => t.state === TaskState.Blocked);
+
+    const skills = this.skillService.list().slice(0, 20);
+    const memories = this.memoryService.list().slice(0, 30);
+    const recentObservations = this.observationService.list({ limit: 5 });
 
     return ok({
       project: {
@@ -89,6 +99,24 @@ export class ContextBootstrapTool {
         blocked: blockers.length,
         by_state: byState,
       },
+      skills_inventory: skills.map((s) => ({
+        slug: s.slug,
+        name: s.name,
+        version: s.version,
+        description: s.description,
+        usage_count: s.usageCount,
+        last_used_at: s.lastUsedAt,
+      })),
+      memories_inventory: memories.map((m) => ({
+        slug: m.slug,
+        title: m.title,
+        topics: m.topics,
+      })),
+      recent_observations: recentObservations.map((o) => ({
+        content: o.content,
+        topics: o.topics,
+        at: o.at,
+      })),
     });
   }
 

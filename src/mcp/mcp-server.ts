@@ -19,8 +19,11 @@ import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.j
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
+import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
+import { ObservationTools } from './tools/universal/observation-tools.js';
 import { SearchTool } from './tools/universal/search-tool.js';
+import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 
@@ -105,6 +108,9 @@ export class MnemaMcpServer {
       this.services.stateMachine.getWorkflow(),
       this.projectRoot,
       this.services.task,
+      this.services.skill,
+      this.services.memory,
+      this.services.observation,
     ).register(this.sdk);
 
     new AgentRunTools(this.services.agentRun, this.services.identity, this.session).register(
@@ -135,6 +141,11 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new SearchTool(this.services.search).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
+    new SkillTools(this.services.skill, this.services.identity, this.session).register(this.sdk);
+    new MemoryTools(this.services.memory, this.services.identity, this.session).register(this.sdk);
+    new ObservationTools(this.services.observation, this.services.identity, this.session).register(
+      this.sdk,
+    );
     new TransitionToolsRegistrar(
       this.services.stateMachine.getWorkflow(),
       this.services.task,

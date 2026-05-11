@@ -4,6 +4,7 @@ import type { Config } from '../config/config-schema.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { StateMachine } from '../domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
+import { listAvailableToolNames } from '../mcp/tool-registry.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import { FileStore } from '../storage/files/file-store.js';
@@ -15,8 +16,11 @@ import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-rep
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
+import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
+import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
@@ -31,8 +35,11 @@ import { DecisionService } from './decision-service.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
+import { MemoryService } from './memory-service.js';
 import { NoteService } from './note-service.js';
+import { ObservationService } from './observation-service.js';
 import { SearchService } from './search-service.js';
+import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
@@ -86,6 +93,9 @@ export interface ServiceContainer {
   readonly epic: EpicService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
+  readonly skill: SkillService;
+  readonly memory: MemoryService;
+  readonly observation: ObservationService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
   readonly close: () => void;
@@ -149,6 +159,9 @@ export function createServiceContainer(
   const decisionRepository = new DecisionRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
+  const skillRepository = new SkillRepository(adapter);
+  const memoryRepository = new MemoryRepository(adapter);
+  const observationRepository = new ObservationRepository(adapter);
   trace.mark('repositories instantiated');
 
   const identity = new IdentityService(actors);
@@ -203,6 +216,12 @@ export function createServiceContainer(
     audit,
   );
   const searchService = new SearchService(adapter);
+  const skillsDir = path.join(projectRoot, config.paths.skills);
+  const memoryDir = path.join(projectRoot, config.paths.memory);
+  const knownTools = listAvailableToolNames(workflow);
+  const skillService = new SkillService(skillsDir, knownTools, skillRepository, identity, audit);
+  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit);
+  const observationService = new ObservationService(observationRepository, tasks, identity, audit);
   trace.mark('all services wired');
   trace.end();
 
@@ -224,6 +243,9 @@ export function createServiceContainer(
     epic: epicService,
     attachment: attachmentService,
     search: searchService,
+    skill: skillService,
+    memory: memoryService,
+    observation: observationService,
     transitions,
     pendingMigrations,
     close: () => adapter.close(),
