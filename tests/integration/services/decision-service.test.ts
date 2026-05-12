@@ -146,4 +146,41 @@ describe('DecisionService', () => {
     if (result.ok) return;
     expect(result.error.kind).toBe(ErrorCode.DecisionNotFound);
   });
+
+  it('Camada 3: transition succeeds when expectedUpdatedAt matches', () => {
+    const recorded = decisions.record({
+      projectKey: 'TEST',
+      title: 'A',
+      decision: 'a',
+      actor: 'daniel',
+    });
+    expect(recorded.ok).toBe(true);
+    if (!recorded.ok) return;
+    const result = decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+      expectedUpdatedAt: recorded.value.updatedAt,
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('Camada 3: transition returns Conflict when expectedUpdatedAt is stale', () => {
+    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+    });
+    const stale = decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Superseded,
+      supersededBy: 'TEST-ADR-1',
+      actor: 'daniel',
+      expectedUpdatedAt: '2020-01-01T00:00:00.000Z',
+    });
+    expect(stale.ok).toBe(false);
+    if (stale.ok) return;
+    expect(stale.error.kind).toBe(ErrorCode.Conflict);
+  });
 });

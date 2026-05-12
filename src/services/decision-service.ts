@@ -34,6 +34,13 @@ export interface TransitionDecisionInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /**
+   * Optional optimistic-concurrency token. When supplied, the
+   * transition only proceeds if the decision's current `updatedAt`
+   * matches; otherwise a `Conflict` error is returned with the
+   * latest server-side timestamp.
+   */
+  readonly expectedUpdatedAt?: string;
 }
 
 const VALID_TRANSITIONS: Readonly<Record<DecisionStatus, readonly DecisionStatus[]>> = {
@@ -141,10 +148,25 @@ export class DecisionService {
       supersededById = successor.id;
     }
 
-    const updated = this.decisions.updateStatus(decision.id, input.status, supersededById);
-    if (updated === null) {
-      return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+    const result = this.decisions.updateStatus(
+      decision.id,
+      input.status,
+      supersededById,
+      input.expectedUpdatedAt ?? null,
+    );
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+      }
+      // Reuse the generic Conflict error shape used by tasks — the
+      // `taskKey` field doubles as the conflicting entity key here.
+      return Err({
+        kind: ErrorCode.Conflict,
+        taskKey: decision.key,
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
     }
+    const updated = result.decision;
 
     this.audit.write({
       kind: 'decision_status_changed',

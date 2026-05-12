@@ -18,5 +18,6 @@ export interface Decision {
   readonly authoredBy: string;
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly at: string;
+  readonly updatedAt: string;
   readonly deletedAt: string | null;
 }

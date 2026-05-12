@@ -18,9 +18,22 @@ interface SprintRow {
   readonly capacity: number | null;
   readonly metadata: string;
   readonly created_at: string;
+  readonly updated_at: string;
   readonly closed_at: string | null;
   readonly deleted_at: string | null;
 }
+
+/**
+ * Result of {@link SprintRepository.updateState} — mirrors the shape
+ * used by tasks/decisions so callers can branch on `kind` consistently.
+ */
+export type UpdateSprintStateResult =
+  | { readonly ok: true; readonly sprint: Sprint }
+  | { readonly ok: false; readonly reason: { readonly kind: 'NOT_FOUND' } }
+  | {
+      readonly ok: false;
+      readonly reason: { readonly kind: 'CONFLICT'; readonly currentUpdatedAt: string };
+    };
 
 interface TaskRow {
   readonly id: string;
@@ -152,14 +165,15 @@ export class SprintRepository {
   insert(input: SprintInsertInput): Sprint {
     const id = generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
+    const now = isoNow();
 
     this.adapter
       .getDatabase()
       .prepare(
         `INSERT INTO sprints (
            id, key, project_id, name, goal,
-           state, starts_at, ends_at, capacity, metadata, created_at
-         ) VALUES (?, ?, ?, ?, ?, 'PLANNED', ?, ?, ?, ?, ?)`,
+           state, starts_at, ends_at, capacity, metadata, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, 'PLANNED', ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -171,7 +185,8 @@ export class SprintRepository {
         input.endsAt ?? null,
         input.capacity ?? null,
         metadata,
-        isoNow(),
+        now,
+        now,
       );
 
     const created = this.findById(id);
@@ -183,24 +198,55 @@ export class SprintRepository {
 
   /**
    * Transitions a sprint to a new state. Setting `CLOSED` stamps
-   * `closed_at` automatically.
+   * `closed_at` automatically. Supports optimistic concurrency via
+   * `expectedUpdatedAt` — when supplied, the update only proceeds if
+   * the current `updated_at` matches.
    *
    * @param sprintId - Internal sprint id
    * @param state - Target state
-   * @returns The updated sprint, or `null` when the id is unknown
+   * @param expectedUpdatedAt - Optional optimistic-concurrency token
+   * @returns Result describing success or the reason it failed
    */
-  updateState(sprintId: string, state: SprintState): Sprint | null {
-    const isClosing = state === SprintState.Closed;
-    const closedClause = isClosing ? `, closed_at = ?` : '';
-    const stmt = this.adapter
-      .getDatabase()
-      .prepare(`UPDATE sprints SET state = ?${closedClause} WHERE id = ?`);
-    if (isClosing) {
-      stmt.run(state, isoNow(), sprintId);
-    } else {
-      stmt.run(state, sprintId);
+  updateState(
+    sprintId: string,
+    state: SprintState,
+    expectedUpdatedAt: string | null = null,
+  ): UpdateSprintStateResult {
+    const db = this.adapter.getDatabase();
+    const current = db
+      .prepare('SELECT updated_at FROM sprints WHERE id = ? AND deleted_at IS NULL')
+      .get(sprintId) as { updated_at: string } | undefined;
+    if (current === undefined) {
+      return { ok: false, reason: { kind: 'NOT_FOUND' } };
     }
-    return this.findById(sprintId);
+    if (expectedUpdatedAt !== null && current.updated_at !== expectedUpdatedAt) {
+      return {
+        ok: false,
+        reason: { kind: 'CONFLICT', currentUpdatedAt: current.updated_at },
+      };
+    }
+
+    const now = isoNow();
+    const isClosing = state === SprintState.Closed;
+    if (isClosing) {
+      db.prepare(`UPDATE sprints SET state = ?, closed_at = ?, updated_at = ? WHERE id = ?`).run(
+        state,
+        now,
+        now,
+        sprintId,
+      );
+    } else {
+      db.prepare(`UPDATE sprints SET state = ?, updated_at = ? WHERE id = ?`).run(
+        state,
+        now,
+        sprintId,
+      );
+    }
+    const reloaded = this.findById(sprintId);
+    if (reloaded === null) {
+      throw new Error('sprint disappeared after updateState');
+    }
+    return { ok: true, sprint: reloaded };
   }
 
   /**
@@ -260,6 +306,7 @@ function rowToSprint(row: SprintRow): Sprint {
     capacity: row.capacity,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     closedAt: row.closed_at,
     deletedAt: row.deleted_at,
   };
