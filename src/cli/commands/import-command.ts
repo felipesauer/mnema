@@ -11,6 +11,7 @@ import { withMutatingCliContext } from '../cli-context.js';
 interface MarkdownOptions {
   readonly from: string;
   readonly recursive?: boolean;
+  readonly skipExisting?: boolean;
 }
 
 interface GithubOptions {
@@ -40,9 +41,17 @@ export class ImportCommand {
 
     group
       .command('markdown')
-      .description('Parse Markdown headings into tasks (one-shot)')
+      .description(
+        'Parse Markdown headings into tasks (one-shot). The importer is ' +
+          'state-blind: a heading like `## DRAFT Fix login` becomes a task ' +
+          'whose title is the literal `DRAFT Fix login`, since honouring ' +
+          'a state hint would require running the workflow gate against ' +
+          'payload the markdown does not carry. Re-running creates ' +
+          'duplicates unless you pass `--skip-existing`.',
+      )
       .requiredOption('--from <path>', 'File or directory to parse')
       .option('--recursive', 'Walk directories recursively', false)
+      .option('--skip-existing', 'Skip headings whose exact title is already an active task', false)
       .action(async (options: MarkdownOptions) => {
         await withMutatingCliContext(({ container, config, projectRoot }) => {
           const sourcePath = path.isAbsolute(options.from)
@@ -54,13 +63,16 @@ export class ImportCommand {
             config.project.key,
             container.identity.getDefaultActor(),
           );
-          const result = importer.import(sourcePath, { recursive: options.recursive === true });
+          const result = importer.import(sourcePath, {
+            recursive: options.recursive === true,
+            skipExisting: options.skipExisting === true,
+          });
           if (!result.ok) {
             process.exit(printError(result.error));
           }
           const summary = result.value;
           process.stdout.write(
-            `${pc.green('✓')} markdown import complete  files=${summary.filesScanned}  tasks_created=${summary.tasksCreated}\n`,
+            `${pc.green('✓')} markdown import complete  files=${summary.filesScanned}  tasks_created=${summary.tasksCreated}  skipped_existing=${summary.tasksSkippedExisting}\n`,
           );
           for (const skipped of summary.skipped) {
             process.stderr.write(

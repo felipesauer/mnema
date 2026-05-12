@@ -13,10 +13,13 @@ interface AttachOptions {
 /**
  * Registers `mnema attach`, the attachment ingestion command.
  *
- * Two subcommands today:
- * - `attach add <taskKey> <filePath>` — store the file (dedup) and
- *   attach it to a task
- * - `attach list <taskKey>` — show attachments of a task
+ * Subcommands:
+ * - `attach add <key> <filePath>` — store the file (dedup) and attach
+ *   it to a task or decision. The key shape is inferred: keys matching
+ *   `<PROJECT>-ADR-<N>` go to decisions, everything else to tasks.
+ * - `attach list <key>` — show attachments of a task or decision
+ *
+ * Notes will join once `NoteService` exposes an attach surface.
  */
 export class AttachCommand {
   /**
@@ -25,41 +28,56 @@ export class AttachCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('attach').description('Manage task attachments');
+    const group = program
+      .command('attach')
+      .description('Manage attachments on tasks and decisions');
 
     group
-      .command('add <taskKey> <filePath>')
-      .description('Add a file as attachment to a task (deduplicated by hash)')
+      .command('add <key> <filePath>')
+      .description(
+        'Add a file as attachment to a task or decision (deduplicated by hash). ' +
+          'Decision keys are recognised by the `-ADR-` segment (e.g. WEBAPP-ADR-3).',
+      )
       .option('--mime <type>', 'Override the inferred MIME type')
-      .action(async (taskKey: string, filePath: string, options: AttachOptions) => {
+      .action(async (key: string, filePath: string, options: AttachOptions) => {
         await withMutatingCliContext(({ container, projectRoot }) => {
           const absolute = path.isAbsolute(filePath)
             ? filePath
             : path.resolve(projectRoot, filePath);
 
-          const result = container.attachment.attachToTask({
-            taskKey,
-            sourcePath: absolute,
-            mime: options.mime,
-            actor: container.identity.getDefaultActor(),
-          });
+          const isDecision = isDecisionKey(key);
+          const result = isDecision
+            ? container.attachment.attachToDecision({
+                decisionKey: key,
+                sourcePath: absolute,
+                mime: options.mime,
+                actor: container.identity.getDefaultActor(),
+              })
+            : container.attachment.attachToTask({
+                taskKey: key,
+                sourcePath: absolute,
+                mime: options.mime,
+                actor: container.identity.getDefaultActor(),
+              });
           if (!result.ok) {
             process.exit(printError(result.error));
           }
           const attachment = result.value;
           process.stdout.write(
-            `${pc.green('✓')} ${pc.bold(attachment.filename)} attached to ${pc.bold(taskKey)} ` +
+            `${pc.green('✓')} ${pc.bold(attachment.filename)} attached to ${pc.bold(key)} ` +
               `${pc.dim(`(${attachment.size}B, ${attachment.hash.slice(0, 12)}…)`)}\n`,
           );
         });
       });
 
     group
-      .command('list <taskKey>')
-      .description("List a task's attachments")
-      .action(async (taskKey: string) => {
+      .command('list <key>')
+      .description("List a task or decision's attachments")
+      .action(async (key: string) => {
         await withCliContext(({ container }) => {
-          const result = container.attachment.listForTask(taskKey);
+          const result = isDecisionKey(key)
+            ? container.attachment.listForDecision(key)
+            : container.attachment.listForTask(key);
           if (!result.ok) {
             process.exit(printError(result.error));
           }
@@ -73,6 +91,10 @@ export class AttachCommand {
         });
       });
   }
+}
+
+function isDecisionKey(key: string): boolean {
+  return /-ADR-\d+$/i.test(key);
 }
 
 function formatRow(attachment: Attachment): string {

@@ -9,6 +9,7 @@ interface QueryOptions {
   readonly actor?: string;
   readonly via?: string;
   readonly run?: string;
+  readonly taskKey?: string;
   readonly since?: string;
   readonly until?: string;
   readonly limit?: string;
@@ -35,6 +36,10 @@ export class AuditCommand {
       .option('--actor <handle>', 'Filter by actor handle')
       .option('--via <handle>', 'Filter by agent (via) handle')
       .option('--run <runId>', 'Filter by agent run id')
+      .option(
+        '--task-key <key>',
+        'Filter by entity key — matches task, decision (MNEMA-ADR-N) or any event whose `data.key` / `data.task_key` matches',
+      )
       .option('--since <duration>', 'Lower bound — `30s`, `2h`, `7d` or ISO8601')
       .option('--until <duration>', 'Upper bound — same syntax as --since')
       .option('--limit <n>', 'Limit the number of results')
@@ -47,6 +52,7 @@ export class AuditCommand {
             actor: options.actor,
             via: options.via,
             run: options.run,
+            taskKey: options.taskKey,
             since: options.since,
             until: options.until,
             limit: options.limit !== undefined ? Number(options.limit) : undefined,

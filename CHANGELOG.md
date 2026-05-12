@@ -10,6 +10,35 @@ stable release.
 
 ## [Unreleased]
 
+### Added (medium-severity sweep)
+
+- **`mnema attach add | list` now accepts decision keys.** Keys matching
+  `<PROJECT>-ADR-<N>` route to `AttachmentService.attachToDecision` /
+  `listForDecision`; everything else stays on the task path. Closes
+  F-F7 — the service layer already supported decisions; only the CLI
+  was constrained to tasks.
+- **`mnema import markdown --skip-existing`.** Re-running the importer
+  is now idempotent on demand: parsed headings whose exact title is
+  already an active task in the project are counted in
+  `skipped_existing` instead of created. Default behaviour is
+  unchanged (re-running still duplicates) — the flag is opt-in so
+  long-running adoption flows can re-run safely. Closes F-F6.
+- **`mnema audit query --task-key <key>`.** Exposes the existing
+  `AuditQueryFilter.taskKey` filter at the CLI surface. Matches
+  against `data.key` (task / decision events) and `data.task_key`
+  (note / attachment events) — covers tasks and decisions without
+  a second flag. Closes F-E8.
+
+### Changed (medium-severity sweep)
+
+- **`mnema import markdown --help` documents the state-blind contract.**
+  Headings like `## DRAFT Fix login` are taken at face value (title:
+  `DRAFT Fix login`). Honouring the prefix would require running the
+  workflow gate against payload the markdown does not carry, so
+  imported tasks always land in the workflow's initial state. The
+  trade-off is now stated up front so agents don't expect the prefix
+  to be stripped. Closes F-F5.
+
 ### Fixed (workflow-as-data sweep)
 
 - **`mnema task list --state X` now validates `X` against the active

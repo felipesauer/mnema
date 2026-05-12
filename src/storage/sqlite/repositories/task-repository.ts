@@ -132,6 +132,27 @@ export class TaskRepository {
   }
 
   /**
+   * Returns active tasks whose title matches exactly (case-sensitive)
+   * in the given project. Used by importers to skip rows already
+   * present without bumping a unique constraint on `title`.
+   *
+   * @param projectId - Internal project id
+   * @param title - Exact title to match
+   * @returns Matching active tasks (usually 0 or 1)
+   */
+  findByTitle(projectId: string, title: string): Task[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM tasks
+          WHERE project_id = ? AND title = ? AND deleted_at IS NULL
+          ORDER BY key`,
+      )
+      .all(projectId, title) as TaskRow[];
+    return rows.map(rowToTask);
+  }
+
+  /**
    * Returns the next sequential number to use for a task key in the
    * given project.
    *
