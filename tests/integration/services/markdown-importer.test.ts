@@ -95,4 +95,24 @@ describe('MarkdownImporter (integration)', () => {
     const result = importer.import(path.join(root, 'missing.md'));
     expect(result.ok).toBe(false);
   });
+
+  it('skips headings already present when `skipExisting` is set', () => {
+    const sourcePath = path.join(root, 'TODO.md');
+    writeFileSync(
+      sourcePath,
+      ['## DRAFT Implement OAuth', '', 'Description.', '', '## Refactor middleware', ''].join('\n'),
+      'utf-8',
+    );
+    const importer = new MarkdownImporter(container.task, 'TEST', 'daniel');
+
+    const first = importer.import(sourcePath);
+    expect(first.ok && first.value.tasksCreated).toBe(2);
+
+    const second = importer.import(sourcePath, { skipExisting: true });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.tasksCreated).toBe(0);
+    expect(second.value.tasksSkippedExisting).toBe(2);
+    expect(container.task.list()).toHaveLength(2);
+  });
 });

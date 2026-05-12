@@ -26,6 +26,8 @@ export interface MarkdownImportSummary {
   readonly filesScanned: number;
   /** Tasks created via TaskService. */
   readonly tasksCreated: number;
+  /** Parsed tasks already present (same title) when `skipExisting` is set. */
+  readonly tasksSkippedExisting: number;
   /** Parsed tasks that hit a TaskService error and were skipped. */
   readonly skipped: readonly { source: string; reason: string }[];
 }
@@ -48,10 +50,16 @@ export interface MarkdownImportSummary {
  *   (paragraphs joined by blank lines, leading/trailing whitespace
  *   stripped).
  *
- * Importers are **one-shot** — there is no continuous sync. Re-running
- * the importer against the same source creates duplicate tasks; the
- * caller is expected to wipe and re-import or to point the importer at
- * a fresh source.
+ * Importers are **one-shot** by default — re-running against the same
+ * source creates duplicate tasks. Pass `skipExisting: true` to make a
+ * second invocation idempotent: parsed headings whose exact title is
+ * already an active task in the project are skipped (counted in
+ * `tasksSkippedExisting` instead of created).
+ *
+ * Title-match is the dedup key on purpose: an importer that hashed the
+ * full body would re-create a task every time the user touched the
+ * description. A title-collision strategy is the smallest unit a human
+ * can reason about without rebuilding mental state.
  */
 export class MarkdownImporter {
   constructor(
@@ -70,7 +78,7 @@ export class MarkdownImporter {
    */
   import(
     sourcePath: string,
-    options: { readonly recursive?: boolean } = {},
+    options: { readonly recursive?: boolean; readonly skipExisting?: boolean } = {},
   ): Result<MarkdownImportSummary, MnemaError> {
     if (!existsSync(sourcePath)) {
       return Err({
@@ -82,9 +90,17 @@ export class MarkdownImporter {
 
     const skipped: { source: string; reason: string }[] = [];
     let created = 0;
+    let skippedExisting = 0;
     for (const file of files) {
       const parsed = MarkdownImporter.parse(readFileSync(file, 'utf-8'), file);
       for (const task of parsed) {
+        if (options.skipExisting === true) {
+          const existing = this.tasks.findActiveByTitle(this.projectKey, task.title);
+          if (existing.length > 0) {
+            skippedExisting += 1;
+            continue;
+          }
+        }
         const result = this.tasks.create({
           projectKey: this.projectKey,
           title: task.title,
@@ -100,7 +116,12 @@ export class MarkdownImporter {
       }
     }
 
-    return Ok({ filesScanned: files.length, tasksCreated: created, skipped });
+    return Ok({
+      filesScanned: files.length,
+      tasksCreated: created,
+      tasksSkippedExisting: skippedExisting,
+      skipped,
+    });
   }
 
   /**

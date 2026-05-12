@@ -331,6 +331,22 @@ export class TaskService {
   }
 
   /**
+   * Looks up active tasks with an exact title match in the given
+   * project. Returns an empty array when the project is unknown rather
+   * than an error — used by importers that want to skip duplicates
+   * without short-circuiting the whole import on a misconfigured key.
+   *
+   * @param projectKey - Project key
+   * @param title - Exact title to match
+   * @returns Matching active tasks (usually 0 or 1)
+   */
+  findActiveByTitle(projectKey: string, title: string): Task[] {
+    const project = this.projects.findByKey(projectKey);
+    if (project === null) return [];
+    return this.tasks.findByTitle(project.id, title);
+  }
+
+  /**
    * Soft-deletes a task by stamping `deleted_at`. The row stays in the
    * database so it can be restored by {@link restore}; the markdown
    * mirror is rebuilt on the next sync (the deleted task is omitted).
