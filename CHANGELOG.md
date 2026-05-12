@@ -10,6 +10,20 @@ stable release.
 
 ## [Unreleased]
 
+### Changed (low-severity sweep)
+
+- **`mnema search` renders observations with a UUID prefix.**
+  Observations have no first-class key; previously the CLI showed an
+  abandoned-looking `observation '` followed by the snippet. The
+  renderer now falls back to the first 8 chars of the UUID + ellipsis
+  so the hit is actionable. Closes F-D3.
+- **`mnema doctor --help` documents that `--rebuild-mirrors` skips
+  the regular checks.** The flag is a recovery operation that runs
+  *instead of* the diagnostic checklist; run plain `mnema doctor`
+  first to see drift, then `--rebuild-mirrors` to act on it. The
+  asymmetry with the usual `--flag` "also do this" convention is now
+  stated up front. Closes F-D4.
+
 ### Added (medium-severity sweep)
 
 - **`mnema attach add | list` now accepts decision keys.** Keys matching
