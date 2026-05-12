@@ -237,6 +237,23 @@ export class TaskRepository {
   }
 
   /**
+   * Increments `reopen_count` on the given task by 1. Used by
+   * `TaskService.transition` when the action name signals a reopen
+   * (the workflow's `reopen` action by convention). Idempotent at the
+   * SQL level — every call adds 1.
+   *
+   * @param taskId - Internal task id
+   * @returns The reloaded task with the bumped counter
+   */
+  incrementReopenCount(taskId: string): Task | null {
+    this.adapter
+      .getDatabase()
+      .prepare('UPDATE tasks SET reopen_count = reopen_count + 1 WHERE id = ?')
+      .run(taskId);
+    return this.findById(taskId);
+  }
+
+  /**
    * Applies a partial update to a task's persisted fields. Only the
    * keys present in `fields` are touched; missing keys leave the
    * existing column value alone. Always bumps `updated_at`.

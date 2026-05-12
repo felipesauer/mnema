@@ -5,9 +5,11 @@ import path from 'node:path';
 /**
  * Result of storing a file in the {@link FileStore}.
  *
- * `relativePath` is rooted at the attachments directory and is what
- * the database persists; `absolutePath` is the materialised path on
- * disk (handy for tests and for downloads).
+ * `relativePath` is the filename inside the attachments directory
+ * (`{sha256}{.ext}`) and is what the database persists; `absolutePath`
+ * is the materialised path on disk (handy for tests and for downloads).
+ * Persisting only the filename lets a project move its `.mnema/`
+ * directory without breaking the attachment lookup.
  */
 export interface StoredFile {
   readonly hash: string;
@@ -49,7 +51,7 @@ export class FileStore {
     const extension = path.extname(sourcePath);
     const fileName = `${hash}${extension}`;
     const absolutePath = path.join(this.attachmentsDir, fileName);
-    const relativePath = path.posix.join('.app', 'attachments', fileName);
+    const relativePath = fileName;
 
     let deduplicated = false;
     if (existsSync(absolutePath)) {

@@ -143,4 +143,44 @@ describe('AttachmentService + FileStore', () => {
     const ghost = service.listForTask('GHOST');
     expect(ghost.ok).toBe(false);
   });
+
+  it('attaching the same content to the same task twice does not duplicate the row', () => {
+    const source = path.join(tempRoot, 'dup.txt');
+    writeFileSync(source, 'identical body\n', 'utf-8');
+    const first = service.attachToTask({
+      taskKey: 'TEST-1',
+      sourcePath: source,
+      actor: 'daniel',
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = service.attachToTask({
+      taskKey: 'TEST-1',
+      sourcePath: source,
+      actor: 'daniel',
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    // Same row id returned both times.
+    expect(second.value.id).toBe(first.value.id);
+
+    const list = service.listForTask('TEST-1');
+    if (!list.ok) return;
+    expect(list.value).toHaveLength(1);
+  });
+
+  it('persists the bare filename in `path` (not a baked-in prefix)', () => {
+    const source = path.join(tempRoot, 'paths.bin');
+    writeFileSync(source, 'paths\n', 'utf-8');
+    const result = service.attachToTask({
+      taskKey: 'TEST-1',
+      sourcePath: source,
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Just the `{hash}.bin` filename, no leading `.app/attachments/`.
+    expect(result.value.path).not.toContain('/');
+    expect(result.value.path).toMatch(/^[0-9a-f]{64}\.bin$/);
+  });
 });

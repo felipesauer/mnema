@@ -72,7 +72,9 @@ export class EpicService {
    * @returns The created epic or a structured error
    */
   create(input: CreateEpicInput): Result<Epic, MnemaError> {
-    // F-E5: enforce the workflow's `features.epics` flag.
+    // Workflows that declare `features.epics: false` (e.g. `lean`) do
+    // not have an epic concept — refuse rather than create a row no
+    // transition will reference.
     const workflow = this.stateMachine.getWorkflow();
     if (!workflow.features.epics) {
       return Err({

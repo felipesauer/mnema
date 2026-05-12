@@ -2,14 +2,12 @@
 -- Migration 007: agent_plans gain optional `task_id` FK linking a plan
 -- to the task it implements.
 --
--- Phase B' (cv-fmt + dev4 via MCP) showed that agents currently encode
--- the task key inside `agent_plans.content` ("CVF-1: implement schema")
--- because there is no structural link. That works but needs manual
--- parsing during audit reconstruction (`mnema agent inspect`).
---
--- Adding the column makes the linkage queryable and lets `agent inspect`
--- render the plan tree alongside the matching task transitions
--- automatically.
+-- Without this column agents encode the task key inside
+-- `agent_plans.content` ("CVF-1: implement schema") because there is
+-- no structural link. That works but needs manual parsing during
+-- audit reconstruction via `mnema agent inspect`. The FK makes the
+-- linkage queryable and lets `agent inspect` render the plan tree
+-- alongside the matching task transitions automatically.
 -- =============================================================================
 
 ALTER TABLE agent_plans ADD COLUMN task_id TEXT REFERENCES tasks(id);

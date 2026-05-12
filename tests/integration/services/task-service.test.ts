@@ -178,6 +178,54 @@ describe('TaskService (integration)', () => {
       if (result.ok) return;
       expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
     });
+
+    it('honours a transition declared from a terminal state (DONE → IN_PROGRESS)', () => {
+      // Drive a task through the default workflow to DONE so we can
+      // attempt the declared `reopen` transition out of a terminal.
+      container.task.create({ projectKey: 'TEST', title: 'Reopen me', actor: 'daniel' });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit',
+        payload: {
+          title: 'Reopen me',
+          description: 'will get reopened later',
+          acceptance_criteria: ['done'],
+          estimate: 1,
+        },
+        actor: 'daniel',
+      });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'start',
+        payload: { assignee_id: 'daniel' },
+        actor: 'daniel',
+      });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit_review',
+        payload: { pr_url: 'https://github.com/x/y/pull/1' },
+        actor: 'daniel',
+      });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'approve',
+        payload: { approval_note: 'ok' },
+        actor: 'daniel',
+      });
+      // Now at DONE (terminal). Default workflow declares
+      // `DONE.reopen → IN_PROGRESS`.
+      const reopened = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'reopen',
+        payload: { reason: 'regression in prod' },
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(true);
+      if (!reopened.ok) return;
+      expect(reopened.value.state).toBe('IN_PROGRESS');
+      // reopen_count counter bumps on every `reopen` action.
+      expect(reopened.value.reopenCount).toBe(1);
+    });
   });
 
   describe('soft delete', () => {

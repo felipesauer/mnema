@@ -94,11 +94,11 @@ export class SprintService {
    * @returns The created sprint or a structured error
    */
   plan(input: PlanSprintInput): Result<Sprint, MnemaError> {
-    // F-E5: enforce the workflow's `features.sprints` flag. Workflows
-    // like `kanban` declare `sprints: false` to signal that sprint
-    // semantics do not apply; planning one would create a queryable
-    // row that no transition references. Better to refuse with a
-    // structured error and direct the user to a sprint-aware workflow.
+    // Workflows like `kanban` declare `features.sprints: false` to
+    // signal that sprint semantics do not apply; planning one would
+    // create a queryable row that no transition references. Refuse
+    // with a structured error and direct the user to a sprint-aware
+    // workflow.
     const workflow = this.stateMachine.getWorkflow();
     if (!workflow.features.sprints) {
       return Err({

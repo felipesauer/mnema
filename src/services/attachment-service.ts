@@ -99,16 +99,23 @@ export class AttachmentService {
     const mime = input.mime ?? mimeForExtension(stored.extension);
     const uploadedBy = this.identity.ensureActor(input.actor, ActorKind.Human);
 
-    const record = this.attachments.insert({
-      parentKind: 'task',
-      parentId: task.id,
-      filename,
-      path: stored.relativePath,
-      mime,
-      size: stored.size,
-      hash: stored.hash,
-      uploadedBy,
-    });
+    // Dedup both ways: the FileStore already writes a single binary
+    // per hash; here we also collapse the metadata row when the same
+    // hash is re-attached to the same parent. The audit event still
+    // fires so the agent's intent is logged.
+    const existing = this.attachments.findByParentAndHash('task', task.id, stored.hash);
+    const record =
+      existing ??
+      this.attachments.insert({
+        parentKind: 'task',
+        parentId: task.id,
+        filename,
+        path: stored.relativePath,
+        mime,
+        size: stored.size,
+        hash: stored.hash,
+        uploadedBy,
+      });
 
     this.audit.write({
       kind: 'attachment_added',
@@ -120,7 +127,7 @@ export class AttachmentService {
         filename,
         size: stored.size,
         hash: stored.hash,
-        deduplicated: stored.deduplicated,
+        deduplicated: stored.deduplicated || existing !== null,
       },
     });
 
@@ -148,16 +155,19 @@ export class AttachmentService {
     const mime = input.mime ?? mimeForExtension(stored.extension);
     const uploadedBy = this.identity.ensureActor(input.actor, ActorKind.Human);
 
-    const record = this.attachments.insert({
-      parentKind: 'decision',
-      parentId: decision.id,
-      filename,
-      path: stored.relativePath,
-      mime,
-      size: stored.size,
-      hash: stored.hash,
-      uploadedBy,
-    });
+    const existing = this.attachments.findByParentAndHash('decision', decision.id, stored.hash);
+    const record =
+      existing ??
+      this.attachments.insert({
+        parentKind: 'decision',
+        parentId: decision.id,
+        filename,
+        path: stored.relativePath,
+        mime,
+        size: stored.size,
+        hash: stored.hash,
+        uploadedBy,
+      });
 
     this.audit.write({
       kind: 'attachment_added',
@@ -169,7 +179,7 @@ export class AttachmentService {
         filename,
         size: stored.size,
         hash: stored.hash,
-        deduplicated: stored.deduplicated,
+        deduplicated: stored.deduplicated || existing !== null,
       },
     });
 

@@ -10,6 +10,29 @@ stable release.
 
 ## [Unreleased]
 
+### Fixed (Phase F)
+
+- **Declared transitions out of terminal states are now honoured.**
+  `TaskService.transition` previously short-circuited any task in a
+  state listed under `workflow.terminal[]` with `TERMINAL_STATE`,
+  even when the workflow JSON declared an exit transition (e.g.
+  `default.json` and `jira-classic.json` both declare
+  `DONE.reopen → IN_PROGRESS` / `CLOSED.reopen → REOPENED`). The
+  guard now only fires when there is truly no outbound transition
+  from the state.
+- **`reopen_count` is incremented on every `reopen` action.**
+  The column existed but was never updated. The CLI `task show` now
+  renders `reopened: Nx` in the meta line when the counter is > 0.
+- **Attachment dedup is now full.** `AttachmentService.attachToTask`
+  and `attachToDecision` collapse the metadata row when the same
+  content hash is already attached to the same parent. The audit
+  event still fires (so intent is logged) with `deduplicated: true`.
+  Previously only the binary on disk was deduped; the row duplicated.
+- **`attachments.path` stores just the filename**, not the
+  hardcoded `.app/attachments/<filename>` prefix. Lets a project move
+  its `.mnema/` directory without breaking attachment lookups; the
+  consumer joins the bare filename with the configured state dir.
+
 ### Added (Phase E follow-ups)
 
 - **`features.sprints` and `features.epics` are now enforced.**
