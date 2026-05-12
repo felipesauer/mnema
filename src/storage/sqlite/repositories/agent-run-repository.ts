@@ -56,6 +56,22 @@ export class AgentRunRepository {
   }
 
   /**
+   * Returns direct children of the given run, ordered by start time.
+   * The DB enforces a CHECK constraint that bounds nesting depth, so
+   * recursive traversal is bounded.
+   *
+   * @param parentRunId - Parent run identifier
+   * @returns Direct children (one level only)
+   */
+  findChildren(parentRunId: string): AgentRun[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT * FROM agent_runs WHERE parent_run_id = ? ORDER BY started_at')
+      .all(parentRunId) as AgentRunRow[];
+    return rows.map(rowToAgentRun);
+  }
+
+  /**
    * Inserts a new agent run in `running` status.
    *
    * @param input - Fields required to start the run
