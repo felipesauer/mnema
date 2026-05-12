@@ -150,6 +150,21 @@ describe('CLI end-to-end', () => {
     expect(result.stderr).toContain('Cannot approve WEBAPP-1');
   });
 
+  it('mnema task list --state rejects a state foreign to the active workflow', () => {
+    // lean has TODO | DOING | DONE — `DRAFT` is the default workflow's
+    // initial state and must not silently return an empty list here.
+    runCli(['init', '--name', 'Lean App', '--key', 'LEAN', '--workflow', 'lean'], projectRoot);
+
+    const valid = runCli(['task', 'list', '--state', 'TODO'], projectRoot);
+    expect(valid.status).toBe(0);
+
+    const invalid = runCli(['task', 'list', '--state', 'DRAFT'], projectRoot);
+    expect(invalid.status).not.toBe(0);
+    expect(invalid.stderr).toContain('Unknown state');
+    expect(invalid.stderr).toContain('lean');
+    expect(invalid.stderr).toContain('TODO');
+  });
+
   it('mnema doctor reports a healthy project after init', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 

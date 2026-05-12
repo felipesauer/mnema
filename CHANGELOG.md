@@ -10,6 +10,18 @@ stable release.
 
 ## [Unreleased]
 
+### Fixed (workflow-as-data sweep)
+
+- **`mnema task list --state X` now validates `X` against the active
+  workflow.** Previously the CLI accepted any string and silently
+  returned zero hits when the value did not match a workflow state
+  (`mnema task list --state DRAFT` on a `lean` project — which uses
+  `TODO | DOING | DONE` — returned `(no tasks)` instead of an error).
+  The command now exits with the new `INVALID_WORKFLOW_STATE` error
+  listing the workflow name and the allowed states. MCP `tasks_list`
+  was already deriving its zod enum from `stateMachine.getWorkflow()`;
+  this closes the same gap on the CLI surface.
+
 ### Fixed (Phase F)
 
 - **Declared transitions out of terminal states are now honoured.**

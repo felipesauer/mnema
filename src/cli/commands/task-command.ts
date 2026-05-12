@@ -3,6 +3,7 @@ import pc from 'picocolors';
 
 import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
+import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
@@ -79,11 +80,26 @@ export class TaskCommand {
     group
       .command('list')
       .description('List tasks, optionally filtered by state')
-      .option('--state <state>', 'Filter by state (e.g. DRAFT, READY)')
+      .option('--state <state>', 'Filter by state from the active workflow')
       .action(async (options: ListOptions) => {
         await withCliContext(({ container }) => {
-          const filter =
-            options.state !== undefined ? { state: options.state.toUpperCase() as TaskState } : {};
+          let filter: { state?: TaskState } = {};
+          if (options.state !== undefined) {
+            const workflow = container.stateMachine.getWorkflow();
+            const allowed = workflow.states;
+            const given = options.state.toUpperCase();
+            if (!allowed.includes(given)) {
+              process.exit(
+                printError({
+                  kind: ErrorCode.InvalidWorkflowState,
+                  workflow: workflow.name,
+                  given: options.state,
+                  allowed,
+                }),
+              );
+            }
+            filter = { state: given as TaskState };
+          }
           const tasks = container.task.list(filter);
           process.stdout.write(`${formatTaskList(tasks)}\n`);
         });
