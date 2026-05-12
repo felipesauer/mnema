@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
@@ -57,31 +57,83 @@ export class DoctorCommand {
         '--rebuild-mirrors',
         'Recreate any missing `.md` files under paths.skills and paths.memory from the SQLite rows',
       )
-      .action(async (options: { readonly rebuildMirrors?: boolean }) => {
-        if (options.rebuildMirrors === true) {
-          const exit = await this.rebuildMirrors();
+      .option(
+        '--prune-orphans',
+        'When combined with --rebuild-mirrors, also delete `.md` files whose slug has no matching SQLite row',
+      )
+      .action(
+        async (options: { readonly rebuildMirrors?: boolean; readonly pruneOrphans?: boolean }) => {
+          if (options.rebuildMirrors === true) {
+            const exit = await this.rebuildMirrors(options.pruneOrphans === true);
+            process.exit(exit);
+          }
+          const exit = this.run();
           process.exit(exit);
-        }
-        const exit = this.run();
-        process.exit(exit);
-      });
+        },
+      );
   }
 
   /**
    * Rebuilds skill/memory `.md` mirror files for every SQLite row that
    * has no matching file on disk. Existing files are left alone — this
-   * is a one-way "heal drift" operation, not a reformat.
+   * is a one-way "heal drift" operation, not a reformat. When
+   * `pruneOrphans` is true, also deletes mirrors whose slug has no
+   * matching SQLite row (FS→DB drift).
    *
+   * @param pruneOrphans - Whether to delete orphan `.md` files
    * @returns Exit code (`0` on success, `3` if the context could not be
    *   opened)
    */
-  private async rebuildMirrors(): Promise<number> {
+  private async rebuildMirrors(pruneOrphans: boolean): Promise<number> {
     const { withCliContext } = await import('../cli-context.js');
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
     let exit = ExitCode.Success;
-    await withCliContext(({ container }) => {
+    await withCliContext(({ container, config, projectRoot }) => {
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
-      if (skills.length === 0 && memories.length === 0) {
+      let prunedSkills: string[] = [];
+      let prunedMemories: string[] = [];
+
+      if (pruneOrphans) {
+        const adapter = container.adapter;
+        const skillSlugs = new Set(
+          (
+            adapter
+              .getDatabase()
+              .prepare(
+                `SELECT s.slug FROM skills s INNER JOIN (
+                   SELECT slug, MAX(version) AS max_version FROM skills GROUP BY slug
+                 ) latest ON s.slug = latest.slug AND s.version = latest.max_version`,
+              )
+              .all() as Array<{ slug: string }>
+          ).map((r) => r.slug),
+        );
+        const memorySlugs = new Set(
+          (
+            adapter.getDatabase().prepare('SELECT slug FROM memories').all() as Array<{
+              slug: string;
+            }>
+          ).map((r) => r.slug),
+        );
+        prunedSkills = pruneOrphanMirrors(
+          pathMod.join(projectRoot, config.paths.skills),
+          skillSlugs,
+          fsMod,
+        );
+        prunedMemories = pruneOrphanMirrors(
+          pathMod.join(projectRoot, config.paths.memory),
+          memorySlugs,
+          fsMod,
+        );
+      }
+
+      if (
+        skills.length === 0 &&
+        memories.length === 0 &&
+        prunedSkills.length === 0 &&
+        prunedMemories.length === 0
+      ) {
         process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
         return;
       }
@@ -90,6 +142,16 @@ export class DoctorCommand {
       }
       if (memories.length > 0) {
         process.stdout.write(`↻ memories mirrored: ${memories.length} — ${memories.join(', ')}\n`);
+      }
+      if (prunedSkills.length > 0) {
+        process.stdout.write(
+          `✗ skills pruned: ${prunedSkills.length} — ${prunedSkills.join(', ')}\n`,
+        );
+      }
+      if (prunedMemories.length > 0) {
+        process.stdout.write(
+          `✗ memories pruned: ${prunedMemories.length} — ${prunedMemories.join(', ')}\n`,
+        );
       }
       exit = ExitCode.Success;
     });
@@ -255,36 +317,112 @@ export function inspectMirrorDrift(
        ) latest ON s.slug = latest.slug AND s.version = latest.max_version`,
     )
     .all() as Array<{ slug: string }>;
-  const skillDrift = skillRows.filter(
+  const skillSlugs = new Set(skillRows.map((r) => r.slug));
+  const skillMissing = skillRows.filter(
     (r) => !existsSync(path.join(dirs.skillsDir, `${r.slug}.md`)),
   );
+  const skillOrphans = listMirrorOrphans(dirs.skillsDir, skillSlugs);
   checks.push({
     name: 'skills mirrored',
-    ok: skillDrift.length === 0,
+    ok: skillMissing.length === 0 && skillOrphans.length === 0,
     severity: 'warning',
-    detail:
-      skillDrift.length === 0
-        ? `${skillRows.length} mirrored`
-        : `${skillRows.length} rows, missing files: ${skillDrift.map((r) => r.slug).join(', ')}`,
+    detail: mirrorDetail(
+      skillRows.length,
+      skillMissing.map((r) => r.slug),
+      skillOrphans,
+    ),
   });
 
   const memoryRows = adapter.getDatabase().prepare('SELECT slug FROM memories').all() as Array<{
     slug: string;
   }>;
-  const memoryDrift = memoryRows.filter(
+  const memorySlugs = new Set(memoryRows.map((r) => r.slug));
+  const memoryMissing = memoryRows.filter(
     (r) => !existsSync(path.join(dirs.memoryDir, `${r.slug}.md`)),
   );
+  const memoryOrphans = listMirrorOrphans(dirs.memoryDir, memorySlugs);
   checks.push({
     name: 'memories mirrored',
-    ok: memoryDrift.length === 0,
+    ok: memoryMissing.length === 0 && memoryOrphans.length === 0,
     severity: 'warning',
-    detail:
-      memoryDrift.length === 0
-        ? `${memoryRows.length} mirrored`
-        : `${memoryRows.length} rows, missing files: ${memoryDrift.map((r) => r.slug).join(', ')}`,
+    detail: mirrorDetail(
+      memoryRows.length,
+      memoryMissing.map((r) => r.slug),
+      memoryOrphans,
+    ),
   });
 
   return checks;
+}
+
+/**
+ * Lists `.md` files in `dir` whose stem is NOT one of the known slugs
+ * — these are orphans: the SQLite row was deleted or renamed but the
+ * mirror file lingers. Returns the slugs (filename minus `.md`).
+ *
+ * Files starting with `.` (like `.gitkeep`) and the catalogue
+ * `INDEX.md` are excluded so they do not show up as orphans.
+ *
+ * @param dir - Directory to scan (returns empty if it does not exist)
+ * @param knownSlugs - Authoritative set of slugs from SQLite
+ * @returns Orphan slug list, alphabetical
+ */
+function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
+  if (!existsSync(dir)) return [];
+  const orphans: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    if (entry.name.startsWith('.')) continue;
+    if (entry.name === 'INDEX.md') continue;
+    if (!entry.name.endsWith('.md')) continue;
+    const slug = entry.name.slice(0, -3);
+    if (!knownSlugs.has(slug)) orphans.push(slug);
+  }
+  return orphans.sort();
+}
+
+function mirrorDetail(
+  rowCount: number,
+  missing: readonly string[],
+  orphans: readonly string[],
+): string {
+  if (missing.length === 0 && orphans.length === 0) {
+    return `${rowCount} mirrored`;
+  }
+  const parts: string[] = [`${rowCount} rows`];
+  if (missing.length > 0) parts.push(`missing files: ${missing.join(', ')}`);
+  if (orphans.length > 0) parts.push(`orphan files: ${orphans.join(', ')}`);
+  return parts.join(', ');
+}
+
+/**
+ * Deletes `.md` files in `dir` whose slug has no matching SQLite row.
+ * Returns the list of slugs whose mirror was just removed.
+ *
+ * @param dir - Mirror directory to scan
+ * @param knownSlugs - Authoritative slug set from SQLite
+ * @param fs - `node:fs` namespace (injected for testability + lazy load)
+ * @returns Slug list (alphabetical) of the files that were deleted
+ */
+function pruneOrphanMirrors(
+  dir: string,
+  knownSlugs: ReadonlySet<string>,
+  fs: typeof import('node:fs'),
+): string[] {
+  if (!fs.existsSync(dir)) return [];
+  const removed: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    if (entry.name.startsWith('.')) continue;
+    if (entry.name === 'INDEX.md') continue;
+    if (!entry.name.endsWith('.md')) continue;
+    const slug = entry.name.slice(0, -3);
+    if (!knownSlugs.has(slug)) {
+      fs.rmSync(path.join(dir, entry.name));
+      removed.push(slug);
+    }
+  }
+  return removed.sort();
 }
 
 function printChecks(checks: readonly DoctorCheck[]): void {

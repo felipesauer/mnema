@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import pc from 'picocolors';
 
 import { ExitCode } from '../../errors/error-codes.js';
+import { printError } from '../../errors/error-printer.js';
 import type { SearchEntity, SearchHit } from '../../services/search-service.js';
 import { withCliContext } from '../cli-context.js';
 
@@ -56,10 +57,14 @@ export class SearchCommand {
           entities = options.entity.filter(isSearchEntity);
         }
         await withCliContext(({ container }) => {
-          const hits = container.search.search(query, {
+          const result = container.search.search(query, {
             entities,
             perEntityLimit: options.limit !== undefined ? Number(options.limit) : undefined,
           });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const hits = result.value;
 
           if (options.json === true) {
             process.stdout.write(`${JSON.stringify(hits, null, 2)}\n`);
