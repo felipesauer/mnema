@@ -52,10 +52,15 @@ export class DoctorCommand {
   register(program: Command): void {
     program
       .command('doctor')
-      .description('Run a read-only diagnostic check on the current project')
+      .description(
+        'Run a read-only diagnostic check on the current project. ' +
+          '`--rebuild-mirrors` is a recovery operation that runs *instead of* ' +
+          'the regular checks (run plain `mnema doctor` first to see drift, then ' +
+          '`--rebuild-mirrors` to act on it).',
+      )
       .option(
         '--rebuild-mirrors',
-        'Recreate any missing `.md` files under paths.skills and paths.memory from the SQLite rows',
+        'Recovery: recreate missing `.md` files under paths.skills and paths.memory from the SQLite rows. Skips the regular doctor checks.',
       )
       .option(
         '--prune-orphans',

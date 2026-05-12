@@ -88,10 +88,18 @@ function formatHit(hit: SearchHit): string {
   const head =
     hit.entity === 'note'
       ? `${pc.cyan('note')} (on ${pc.bold(hit.parentKey ?? '?')})`
-      : `${pc.cyan(hit.entity)} ${pc.bold(hit.key ?? '')}`;
+      : `${pc.cyan(hit.entity)} ${pc.bold(hitIdentifier(hit))}`;
   const title = hit.title !== null ? ` ${hit.title}` : '';
   const snippet = stripFtsMarks(hit.snippet);
   return `${head}${title}\n  ${pc.dim(snippet)}`;
+}
+
+function hitIdentifier(hit: SearchHit): string {
+  // Observations have no first-class key — surface a UUID prefix so the
+  // human reader can still act on the hit (e.g. grep the audit log)
+  // instead of seeing an abandoned-looking `observation '\n  snippet`.
+  if (hit.key !== null) return hit.key;
+  return `${hit.id.slice(0, 8)}…`;
 }
 
 function stripFtsMarks(snippet: string): string {
