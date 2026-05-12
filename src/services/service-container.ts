@@ -14,6 +14,7 @@ import { ActorRepository } from '../storage/sqlite/repositories/actor-repository
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
+import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
@@ -162,12 +163,13 @@ export function createServiceContainer(
   const skillRepository = new SkillRepository(adapter);
   const memoryRepository = new MemoryRepository(adapter);
   const observationRepository = new ObservationRepository(adapter);
+  const auditStateRepository = new AuditStateRepository(adapter);
   trace.mark('repositories instantiated');
 
   const identity = new IdentityService(actors);
 
   const auditDir = path.join(projectRoot, config.paths.audit);
-  const auditWriter = new AuditWriter(auditDir);
+  const auditWriter = new AuditWriter(auditDir, auditStateRepository);
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
 

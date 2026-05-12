@@ -278,7 +278,7 @@ describe('CLI end-to-end', () => {
 
     // Seed an agent_run + agent_plan + two transitions touching two
     // separate tasks, so we can verify that the mutation lines carry
-    // the human task key (regression for Bug 20 / MNEMA-9).
+    // the human task key (the renderer used to print internal task UUIDs).
     const Database = (await import('better-sqlite3')).default;
     const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
     try {

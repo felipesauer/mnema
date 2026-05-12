@@ -27,11 +27,11 @@ describe('mcp-tool-result', () => {
     expect(result?.isError).toBe(true);
   });
 
-  it('F-1: requireFreshSchema returns null when nothing pending', () => {
+  it('requireFreshSchema returns null when nothing pending', () => {
     expect(requireFreshSchema([])).toBeNull();
   });
 
-  it('F-1: requireFreshSchema returns SCHEMA_OUT_OF_DATE when pending', () => {
+  it('requireFreshSchema returns SCHEMA_OUT_OF_DATE when pending', () => {
     const result = requireFreshSchema(['008_skills_and_memories.sql']);
     expect(result?.isError).toBe(true);
     if (!result?.isError || result.content[0]?.type !== 'text') return;

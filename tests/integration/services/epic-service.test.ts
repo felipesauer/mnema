@@ -135,7 +135,7 @@ describe('EpicService', () => {
     expect(closed.map((e) => e.key)).toEqual(['TEST-EPIC-1']);
   });
 
-  it('F-E5: refuses to create an epic on a workflow with features.epics=false', () => {
+  it('refuses to create an epic on a workflow with features.epics=false', () => {
     const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-lean')));
     const leanMachine = new StateMachine(
       new WorkflowLoader().load(path.resolve('workflows/lean.json')),

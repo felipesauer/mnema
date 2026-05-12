@@ -228,7 +228,7 @@ export class SkillService {
     if (action !== 'no_op') {
       this.writeMirror(resulting);
     } else if (!this.mirrorExists(resulting)) {
-      // F-8: a no_op record (content byte-equal to the stored row) does
+      // a no_op record (content byte-equal to the stored row) does
       // not normally rewrite the mirror — but if the mirror file went
       // missing in the meantime, regenerate it so SQLite and the file
       // tree stay in sync without forcing a content change.

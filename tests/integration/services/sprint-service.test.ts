@@ -205,7 +205,7 @@ describe('SprintService', () => {
     });
   });
 
-  describe('Camada 3: optimistic concurrency on start/close', () => {
+  describe('optimistic concurrency on start/close', () => {
     it('start succeeds with the matching expectedUpdatedAt', () => {
       const planned = sprints.plan({
         projectKey: 'TEST',
@@ -241,7 +241,7 @@ describe('SprintService', () => {
     });
   });
 
-  describe('F-E5: features.sprints enforcement', () => {
+  describe('features.sprints enforcement', () => {
     it('refuses to plan a sprint on a workflow that declares features.sprints=false', () => {
       const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-kanban')));
       const kanbanMachine = new StateMachine(

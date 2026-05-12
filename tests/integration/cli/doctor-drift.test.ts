@@ -112,7 +112,7 @@ describe('inspectMirrorDrift', () => {
     rmSync(work, { recursive: true, force: true });
   });
 
-  it('F-7: reports green ok=true with severity=warning when everything mirrored', () => {
+  it('reports green ok=true with severity=warning when everything mirrored', () => {
     adapter
       .getDatabase()
       .prepare(
@@ -128,7 +128,7 @@ describe('inspectMirrorDrift', () => {
     expect(skills?.severity).toBe('warning');
   });
 
-  it('F-7: reports ok=false with severity=warning when a mirror is missing', () => {
+  it('reports ok=false with severity=warning when a mirror is missing', () => {
     adapter
       .getDatabase()
       .prepare(
@@ -169,7 +169,7 @@ describe('inspectMirrorDrift', () => {
     expect(checks.every((c) => c.ok)).toBe(true);
   });
 
-  it('F-E2: detects orphan mirror files (FS→DB drift)', () => {
+  it('detects orphan mirror files (FS→DB drift)', () => {
     // No SQLite row, but a stray `.md` lingers in the mirror dir.
     writeFileSync(path.join(skillsDir, 'ghost.md'), '---\nname: ghost\n---\nstray', 'utf-8');
 
@@ -180,7 +180,7 @@ describe('inspectMirrorDrift', () => {
     expect(skills?.detail).toContain('orphan files: ghost');
   });
 
-  it('F-E2: INDEX.md and dotfiles are not flagged as orphans', () => {
+  it('INDEX.md and dotfiles are not flagged as orphans', () => {
     writeFileSync(path.join(skillsDir, 'INDEX.md'), '# Skills index', 'utf-8');
     writeFileSync(path.join(skillsDir, '.gitkeep'), '', 'utf-8');
     const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });

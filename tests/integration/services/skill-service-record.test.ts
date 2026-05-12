@@ -94,7 +94,7 @@ describe('SkillService (record/show/use)', () => {
     expect(again.skill.version).toBe(1);
   });
 
-  it('F-2: no_op does NOT advance updated_at', async () => {
+  it('no_op does NOT advance updated_at', async () => {
     const first = service.record({
       slug: 's',
       name: 'Skill',
@@ -114,7 +114,7 @@ describe('SkillService (record/show/use)', () => {
     expect(again.skill.updatedAt).toBe(first.skill.updatedAt);
   });
 
-  it('F-8: no_op regenerates the mirror when the file went missing', () => {
+  it('no_op regenerates the mirror when the file went missing', () => {
     const first = service.record({
       slug: 's',
       name: 'Skill',

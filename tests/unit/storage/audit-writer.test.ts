@@ -58,7 +58,7 @@ describe('AuditWriter', () => {
     utimesSync(currentPath, fakeJanuary, fakeJanuary);
 
     const february = new Date('2026-02-10T12:00:00Z');
-    const rotating = new AuditWriter(dir, () => february);
+    const rotating = new AuditWriter(dir, null, () => february);
     rotating.write(makeEvent('second'));
 
     const files = readdirSync(dir).sort();
@@ -75,7 +75,7 @@ describe('AuditWriter', () => {
 
   it('does not rotate when the month matches', () => {
     const today = new Date();
-    const writer = new AuditWriter(dir, () => today);
+    const writer = new AuditWriter(dir, null, () => today);
     writer.write(makeEvent('only'));
 
     const files = readdirSync(dir).sort();
