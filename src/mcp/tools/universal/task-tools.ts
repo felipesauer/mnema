@@ -2,14 +2,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { Config } from '../../../config/config-schema.js';
-import { TaskState } from '../../../domain/enums/task-state.js';
 import type { StateMachine } from '../../../domain/state-machine/state-machine.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
-
-const taskStateValues = Object.values(TaskState) as [TaskState, ...TaskState[]];
 
 /**
  * Registers task-related MCP tools that **don't** depend on the active
@@ -74,12 +71,26 @@ export class TaskTools {
       },
     );
 
+    // Derive the state enum from the *active* workflow so projects on
+    // lean/kanban/jira-classic get the correct autocomplete values
+    // (and tight validation) instead of the default workflow's literals.
+    const workflowStates = this.stateMachine.getWorkflow().states;
+    const stateSchema =
+      workflowStates.length > 0
+        ? z
+            .enum(workflowStates as [string, ...string[]])
+            .optional()
+            .describe(
+              `Filter by task state. Valid values for this workflow: ${workflowStates.join(', ')}`,
+            )
+        : z.string().min(1).optional();
+
     server.registerTool(
       'tasks_list',
       {
         description: 'List tasks with optional filters (state, assignee handle/UUID) and ordering.',
         inputSchema: {
-          state: z.enum(taskStateValues).optional(),
+          state: stateSchema,
           assignee_id: z
             .string()
             .min(1)

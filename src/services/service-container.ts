@@ -206,7 +206,7 @@ export function createServiceContainer(
   const decisionService = new DecisionService(decisionRepository, projects, identity, audit);
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit);
-  const inboxService = new InboxService(tasks, decisionService, config.project.key);
+  const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
   const attachmentService = new AttachmentService(
     attachmentRepository,
     tasks,

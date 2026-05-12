@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import type { Config } from '../../../config/config-schema.js';
-import { TaskState } from '../../../domain/enums/task-state.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { ObservationService } from '../../../services/observation-service.js';
@@ -61,7 +60,24 @@ export class ContextBootstrapTool {
     for (const task of all) {
       byState[task.state] = (byState[task.state] ?? 0) + 1;
     }
-    const blockers = all.filter((t) => t.state === TaskState.Blocked);
+
+    // `blocked` is only meaningful when the workflow declares the
+    // `blockedState` feature. Workflows without it (e.g. `lean`)
+    // legitimately have no notion of blocked, so we report 0 there
+    // rather than counting an unrelated state.
+    const blockedStateName = this.workflow.features.blockedState ? 'BLOCKED' : null;
+    const blockers =
+      blockedStateName === null ? [] : all.filter((t) => t.state === blockedStateName);
+
+    // `in_progress` aims at "actively being worked on". Default/kanban/
+    // jira-classic call it IN_PROGRESS; lean calls it DOING. We pick
+    // the first match from a small alias list so the count is right
+    // across the shipping workflows without forcing every workflow to
+    // adopt the same literal.
+    const inProgressAliases = ['IN_PROGRESS', 'DOING'];
+    const inProgressStateName =
+      inProgressAliases.find((alias) => this.workflow.states.includes(alias)) ?? null;
+    const inProgressCount = inProgressStateName === null ? 0 : (byState[inProgressStateName] ?? 0);
 
     const skills = this.skillService.list().slice(0, 20);
     const memories = this.memoryService.list().slice(0, 30);
@@ -100,7 +116,7 @@ export class ContextBootstrapTool {
       })),
       statistics: {
         total: all.length,
-        in_progress: byState[TaskState.InProgress] ?? 0,
+        in_progress: inProgressCount,
         blocked: blockers.length,
         by_state: byState,
       },
