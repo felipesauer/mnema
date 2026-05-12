@@ -119,6 +119,12 @@ export type MnemaError =
       readonly kind: ErrorCode.FeatureNotAvailable;
       readonly feature: string;
       readonly workflow: string;
+    }
+  | {
+      readonly kind: ErrorCode.InvalidWorkflowState;
+      readonly workflow: string;
+      readonly given: string;
+      readonly allowed: readonly string[];
     };
 
 /**

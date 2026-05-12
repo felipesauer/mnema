@@ -250,6 +250,11 @@ export function formatError(error: MnemaError): string {
           `(e.g. \`default\` or \`jira-classic\`) when running \`mnema init\`.`,
       );
       break;
+
+    case ErrorCode.InvalidWorkflowState:
+      lines.push(`Unknown state \`${error.given}\` for workflow \`${error.workflow}\`.`);
+      lines.push(`${pc.dim('hint:')} Valid states: ${error.allowed.join(', ')}.`);
+      break;
   }
 
   return lines.join('\n');

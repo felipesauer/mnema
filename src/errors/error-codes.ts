@@ -52,6 +52,8 @@ export enum ErrorCode {
   StorageBusy = 'STORAGE_BUSY',
 
   FeatureNotAvailable = 'FEATURE_NOT_AVAILABLE',
+
+  InvalidWorkflowState = 'INVALID_WORKFLOW_STATE',
 }
 
 /**
