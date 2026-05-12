@@ -182,4 +182,15 @@ export class AgentRunService {
     }
     return Ok(run);
   }
+
+  /**
+   * Returns the direct children of a run. Empty array when there are
+   * none. Used by `mnema agent inspect` to render the run hierarchy.
+   *
+   * @param parentRunId - Parent run identifier
+   * @returns Children ordered by start time
+   */
+  findChildren(parentRunId: string): readonly AgentRun[] {
+    return this.runs.findChildren(parentRunId);
+  }
 }

@@ -43,9 +43,17 @@ export class AgentCommand {
           const run = runResult.value;
           const plans = container.agentPlan.list(run.id);
           const transitions = container.transitions.findByRun(run.id);
+          const children = container.agentRun.findChildren(run.id);
+          let parent: AgentRun | null = null;
+          if (run.parentRunId !== null) {
+            const parentResult = container.agentRun.findById(run.parentRunId);
+            if (parentResult.ok) parent = parentResult.value;
+          }
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
 
-          process.stdout.write(`${formatRunDetail(run, plans, transitions, mode)}\n`);
+          process.stdout.write(
+            `${formatRunDetail(run, plans, transitions, parent, children, mode)}\n`,
+          );
         });
       });
   }
@@ -55,6 +63,8 @@ function formatRunDetail(
   run: AgentRun,
   plans: readonly AgentPlan[],
   transitions: readonly TransitionWithKey[],
+  parent: AgentRun | null,
+  children: readonly AgentRun[],
   mode: TimestampMode,
 ): string {
   const lines: string[] = [];
@@ -67,8 +77,30 @@ function formatRunDetail(
       (run.endedAt !== null ? ` (${formatDuration(run.startedAt, run.endedAt)})` : ''),
   );
   lines.push(`${pc.bold('Depth:')} ${run.depth}`);
+  if (parent !== null) {
+    lines.push(`${pc.bold('Parent:')} ${parent.id} ${pc.dim(`(${parent.goal})`)}`);
+  }
   if (run.error !== null) {
     lines.push(`${pc.bold('Error:')} ${pc.red(run.error)}`);
+  }
+
+  lines.push('');
+  lines.push(`${pc.bold(`Children (${children.length}):`)}`);
+  if (children.length === 0) {
+    lines.push(`  ${pc.dim('(no nested runs)')}`);
+  } else {
+    for (const child of children) {
+      const ended =
+        child.endedAt !== null
+          ? `${formatTimestamp(child.endedAt, mode)} (${formatDuration(child.startedAt, child.endedAt)})`
+          : pc.dim('(still running)');
+      lines.push(
+        `  ${formatStatus(child.status).padEnd(10)} ${pc.bold(child.id)} ${pc.dim(`d=${child.depth}`)}  ${child.goal}`,
+      );
+      lines.push(
+        `    ${pc.dim(`started ${formatTimestamp(child.startedAt, mode)}, ended ${ended}`)}`,
+      );
+    }
   }
 
   lines.push('');

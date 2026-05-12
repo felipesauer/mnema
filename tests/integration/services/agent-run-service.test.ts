@@ -107,6 +107,32 @@ describe('AgentRunService', () => {
     expect(overflow.error.kind).toBe(ErrorCode.DepthLimitExceeded);
   });
 
+  it('findChildren returns direct children of a parent run, ordered by start', () => {
+    const parent = service.start({ goal: 'parent', actor: 'daniel', agentHandle: 'cc' });
+    if (!parent.ok) throw new Error('precondition failed');
+
+    const childA = service.start({
+      goal: 'child-a',
+      actor: 'daniel',
+      agentHandle: 'cc',
+      parentRunId: parent.value.id,
+    });
+    const childB = service.start({
+      goal: 'child-b',
+      actor: 'daniel',
+      agentHandle: 'cc',
+      parentRunId: parent.value.id,
+    });
+    if (!childA.ok || !childB.ok) throw new Error('precondition failed');
+
+    // Sibling run with a different parent must not appear.
+    const stranger = service.start({ goal: 'stranger', actor: 'daniel', agentHandle: 'cc' });
+    if (!stranger.ok) throw new Error('precondition failed');
+
+    const children = service.findChildren(parent.value.id);
+    expect(children.map((c) => c.goal)).toEqual(['child-a', 'child-b']);
+  });
+
   it('triggers the run-end hook on terminal status', () => {
     const calls: string[] = [];
     const actors = new ActorRepository(adapter);

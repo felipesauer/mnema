@@ -10,6 +10,16 @@ stable release.
 
 ## [Unreleased]
 
+### Added (agent hierarchy)
+
+- **`mnema agent inspect <runId>` now renders parent and child runs.**
+  When the run has a `parent_run_id`, a `Parent:` line shows the
+  parent id and goal. A new `Children (N):` block lists direct
+  children with their status, depth, goal, and start/end timestamps —
+  one level per inspection, since the DB CHECK on `depth` bounds the
+  hierarchy. New `AgentRunRepository.findChildren` +
+  `AgentRunService.findChildren` back the surface. Closes F-F8.
+
 ### Changed (low-severity sweep)
 
 - **`mnema search` renders observations with a UUID prefix.**
