@@ -352,6 +352,8 @@ export class SkillService {
       `tools_used: ${JSON.stringify(skill.toolsUsed)}`,
       `usage_count: ${skill.usageCount}`,
       skill.lastUsedAt !== null ? `last_used_at: ${skill.lastUsedAt}` : null,
+      `created_at: ${skill.createdAt}`,
+      `updated_at: ${skill.updatedAt}`,
       '---',
       '',
     ]

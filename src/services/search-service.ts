@@ -135,13 +135,19 @@ export class SearchService {
     // Restrict to the latest version per slug — older versions are
     // intentionally not surfaced in casual search (use `skill_show`
     // with explicit version when you need a specific historical row).
+    //
+    // Skills_fts columns: skill_id(0, UNINDEXED), slug(1, UNINDEXED),
+    // version(2, UNINDEXED), name(3), description(4), content(5).
+    // Prefer the content snippet; fall back to description, then name.
     const rows = this.adapter
       .getDatabase()
       .prepare(
         `SELECT s.id AS id,
                 s.slug AS slug,
                 s.name AS name,
-                snippet(skills_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
+                snippet(skills_fts, 5, '<mark>', '</mark>', '…', 32) AS content_snippet,
+                snippet(skills_fts, 4, '<mark>', '</mark>', '…', 32) AS description_snippet,
+                snippet(skills_fts, 3, '<mark>', '</mark>', '…', 32) AS name_snippet
            FROM skills_fts
            JOIN skills s ON s.id = skills_fts.skill_id
            JOIN (
@@ -155,26 +161,38 @@ export class SearchService {
       id: string;
       slug: string;
       name: string;
-      snippet: string;
+      content_snippet: string;
+      description_snippet: string;
+      name_snippet: string;
     }>;
     return rows.map((row) => ({
       entity: 'skill' as const,
       id: row.id,
       key: row.slug,
       title: row.name,
-      snippet: row.snippet,
+      snippet:
+        row.content_snippet.length > 0
+          ? row.content_snippet
+          : row.description_snippet.length > 0
+            ? row.description_snippet
+            : row.name_snippet,
       parentKey: null,
     }));
   }
 
   private searchMemories(query: string, limit: number): SearchHit[] {
+    // Prefer the snippet from the `content` column (col 3 of
+    // memories_fts) so search hits surface the body, not the slug. If
+    // the match was only in slug/title and content has no excerpt,
+    // SQLite returns an empty string — we fall back to the title.
     const rows = this.adapter
       .getDatabase()
       .prepare(
         `SELECT m.id AS id,
                 m.slug AS slug,
                 m.title AS title,
-                snippet(memories_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
+                snippet(memories_fts, 3, '<mark>', '</mark>', '…', 32) AS content_snippet,
+                snippet(memories_fts, 2, '<mark>', '</mark>', '…', 32) AS title_snippet
            FROM memories_fts
            JOIN memories m ON m.id = memories_fts.memory_id
           WHERE memories_fts MATCH ?
@@ -185,14 +203,15 @@ export class SearchService {
       id: string;
       slug: string;
       title: string;
-      snippet: string;
+      content_snippet: string;
+      title_snippet: string;
     }>;
     return rows.map((row) => ({
       entity: 'memory' as const,
       id: row.id,
       key: row.slug,
       title: row.title,
-      snippet: row.snippet,
+      snippet: row.content_snippet.length > 0 ? row.content_snippet : row.title_snippet,
       parentKey: null,
     }));
   }
