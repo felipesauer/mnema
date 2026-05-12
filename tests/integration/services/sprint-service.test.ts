@@ -199,4 +199,40 @@ describe('SprintService', () => {
       expect(result.ok).toBe(true);
     });
   });
+
+  describe('Camada 3: optimistic concurrency on start/close', () => {
+    it('start succeeds with the matching expectedUpdatedAt', () => {
+      const planned = sprints.plan({
+        projectKey: 'TEST',
+        name: 'C3 start',
+        actor: 'daniel',
+      });
+      expect(planned.ok).toBe(true);
+      if (!planned.ok) return;
+      const started = sprints.start({
+        sprintKey: planned.value.key,
+        actor: 'daniel',
+        expectedUpdatedAt: planned.value.updatedAt,
+      });
+      expect(started.ok).toBe(true);
+    });
+
+    it('start returns Conflict when expectedUpdatedAt is stale', () => {
+      const planned = sprints.plan({
+        projectKey: 'TEST',
+        name: 'C3 stale',
+        actor: 'daniel',
+      });
+      expect(planned.ok).toBe(true);
+      if (!planned.ok) return;
+      const stale = sprints.start({
+        sprintKey: planned.value.key,
+        actor: 'daniel',
+        expectedUpdatedAt: '2020-01-01T00:00:00.000Z',
+      });
+      expect(stale.ok).toBe(false);
+      if (stale.ok) return;
+      expect(stale.error.kind).toBe(ErrorCode.Conflict);
+    });
+  });
 });

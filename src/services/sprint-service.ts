@@ -40,6 +40,13 @@ export interface SprintTransitionInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /**
+   * Optional optimistic-concurrency token. When supplied, the
+   * transition only proceeds if the sprint's current `updatedAt`
+   * matches; otherwise a `Conflict` error is returned with the
+   * latest server-side timestamp.
+   */
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -148,10 +155,22 @@ export class SprintService {
       });
     }
 
-    const updated = this.sprints.updateState(sprint.id, SprintState.Active);
-    if (updated === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+    const result = this.sprints.updateState(
+      sprint.id,
+      SprintState.Active,
+      input.expectedUpdatedAt ?? null,
+    );
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        taskKey: sprint.key,
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
     }
+    const updated = result.sprint;
 
     this.audit.write({
       kind: 'sprint_started',
@@ -184,10 +203,22 @@ export class SprintService {
       });
     }
 
-    const updated = this.sprints.updateState(sprint.id, SprintState.Closed);
-    if (updated === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+    const result = this.sprints.updateState(
+      sprint.id,
+      SprintState.Closed,
+      input.expectedUpdatedAt ?? null,
+    );
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        taskKey: sprint.key,
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
     }
+    const updated = result.sprint;
 
     this.audit.write({
       kind: 'sprint_closed',

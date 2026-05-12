@@ -12,6 +12,19 @@ stable release.
 
 ### Added
 
+- **Optimistic concurrency for decisions and sprints.** Migration 010
+  adds `updated_at` to both tables (back-filled from `at` /
+  `created_at` for existing rows). `DecisionService.transition` and
+  `SprintService.start` / `close` now accept an optional
+  `expectedUpdatedAt` token and return a `Conflict` error
+  (`ErrorCode.Conflict`) with the latest server-side timestamp when
+  stale. Brings the two paths up to parity with `task transition`,
+  which already had the guard. Agent runs intentionally left alone —
+  single owner per run, no race in practice. Tracked from
+  `docs/TECH_DEBT.md` §3.
+
+### Added
+
 - **FTS5 search across skills, memories and observations.** Migration
   009 adds `skills_fts`, `memories_fts` and `observations_fts` virtual
   tables with insert/update/delete triggers. `tasks_search` (MCP tool)

@@ -18,8 +18,22 @@ interface DecisionRow {
   readonly authored_by: string;
   readonly metadata: string;
   readonly at: string;
+  readonly updated_at: string;
   readonly deleted_at: string | null;
 }
+
+/**
+ * Result of {@link DecisionRepository.updateStatus} — mirrors the
+ * `UpdateStateResult` shape used by `TaskRepository.updateState` so
+ * services can branch on `kind` consistently.
+ */
+export type UpdateDecisionStatusResult =
+  | { readonly ok: true; readonly decision: Decision }
+  | { readonly ok: false; readonly reason: { readonly kind: 'NOT_FOUND' } }
+  | {
+      readonly ok: false;
+      readonly reason: { readonly kind: 'CONFLICT'; readonly currentUpdatedAt: string };
+    };
 
 /**
  * Input for {@link DecisionRepository.insert}.
@@ -126,14 +140,15 @@ export class DecisionRepository {
   insert(input: DecisionInsertInput): Decision {
     const id = generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
+    const now = isoNow();
 
     this.adapter
       .getDatabase()
       .prepare(
         `INSERT INTO decisions (
            id, key, project_id, title, context, decision, rationale,
-           consequences, status, authored_by, metadata, at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?)`,
+           consequences, status, authored_by, metadata, at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -146,7 +161,8 @@ export class DecisionRepository {
         input.consequences ?? null,
         input.authoredBy,
         metadata,
-        isoNow(),
+        now,
+        now,
       );
 
     const created = this.findById(id);
@@ -158,23 +174,47 @@ export class DecisionRepository {
 
   /**
    * Updates a decision's status, optionally pointing at a successor when
-   * marking as `superseded`.
+   * marking as `superseded`. Supports optimistic concurrency via
+   * `expectedUpdatedAt` — when supplied, the update only proceeds if
+   * the current `updated_at` matches.
    *
    * @param decisionId - Internal decision id
    * @param status - Target status
    * @param supersededBy - Successor decision id (only with `superseded`)
-   * @returns The updated decision, or `null` when the id is unknown
+   * @param expectedUpdatedAt - Optional optimistic-concurrency token
+   * @returns Result describing success or the reason it failed
    */
   updateStatus(
     decisionId: string,
     status: DecisionStatus,
     supersededBy: string | null = null,
-  ): Decision | null {
-    this.adapter
-      .getDatabase()
-      .prepare('UPDATE decisions SET status = ?, superseded_by = ? WHERE id = ?')
-      .run(status, supersededBy, decisionId);
-    return this.findById(decisionId);
+    expectedUpdatedAt: string | null = null,
+  ): UpdateDecisionStatusResult {
+    const db = this.adapter.getDatabase();
+    const current = db
+      .prepare('SELECT updated_at FROM decisions WHERE id = ? AND deleted_at IS NULL')
+      .get(decisionId) as { updated_at: string } | undefined;
+    if (current === undefined) {
+      return { ok: false, reason: { kind: 'NOT_FOUND' } };
+    }
+    if (expectedUpdatedAt !== null && current.updated_at !== expectedUpdatedAt) {
+      return {
+        ok: false,
+        reason: { kind: 'CONFLICT', currentUpdatedAt: current.updated_at },
+      };
+    }
+
+    db.prepare(
+      `UPDATE decisions
+          SET status = ?, superseded_by = ?, updated_at = ?
+        WHERE id = ?`,
+    ).run(status, supersededBy, isoNow(), decisionId);
+
+    const reloaded = this.findById(decisionId);
+    if (reloaded === null) {
+      throw new Error('decision disappeared after updateStatus');
+    }
+    return { ok: true, decision: reloaded };
   }
 }
 
@@ -193,6 +233,7 @@ function rowToDecision(row: DecisionRow): Decision {
     authoredBy: row.authored_by,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     at: row.at,
+    updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
   };
 }

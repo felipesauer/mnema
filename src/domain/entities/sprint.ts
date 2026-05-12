@@ -16,6 +16,7 @@ export interface Sprint {
   readonly capacity: number | null;
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly createdAt: string;
+  readonly updatedAt: string;
   readonly closedAt: string | null;
   readonly deletedAt: string | null;
 }
