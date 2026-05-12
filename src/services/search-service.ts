@@ -1,4 +1,7 @@
+import { ErrorCode } from '../errors/error-codes.js';
+import type { MnemaError } from '../errors/mnema-error.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { Err, Ok, type Result } from './result.js';
 
 /**
  * Entity kinds searchable via the unified FTS5 index.
@@ -52,21 +55,37 @@ export class SearchService {
    * @param filter - Optional restriction to certain entities + limit
    * @returns Array of matching hits across the requested entities
    */
-  search(query: string, filter: SearchFilter = {}): SearchHit[] {
-    if (query.trim().length === 0) return [];
+  search(query: string, filter: SearchFilter = {}): Result<SearchHit[], MnemaError> {
+    if (query.trim().length === 0) return Ok([]);
     const allow = new Set<SearchEntity>(
       filter.entities ?? ['task', 'decision', 'note', 'skill', 'memory', 'observation'],
     );
     const limit = filter.perEntityLimit ?? 25;
 
-    const hits: SearchHit[] = [];
-    if (allow.has('task')) hits.push(...this.searchTasks(query, limit));
-    if (allow.has('decision')) hits.push(...this.searchDecisions(query, limit));
-    if (allow.has('note')) hits.push(...this.searchNotes(query, limit));
-    if (allow.has('skill')) hits.push(...this.searchSkills(query, limit));
-    if (allow.has('memory')) hits.push(...this.searchMemories(query, limit));
-    if (allow.has('observation')) hits.push(...this.searchObservations(query, limit));
-    return hits;
+    try {
+      const hits: SearchHit[] = [];
+      if (allow.has('task')) hits.push(...this.searchTasks(query, limit));
+      if (allow.has('decision')) hits.push(...this.searchDecisions(query, limit));
+      if (allow.has('note')) hits.push(...this.searchNotes(query, limit));
+      if (allow.has('skill')) hits.push(...this.searchSkills(query, limit));
+      if (allow.has('memory')) hits.push(...this.searchMemories(query, limit));
+      if (allow.has('observation')) hits.push(...this.searchObservations(query, limit));
+      return Ok(hits);
+    } catch (error) {
+      // FTS5 surfaces user-facing query errors (`fts5: syntax error
+      // near ";"`, unmatched quote, etc.) as plain `SqliteError`. We
+      // map those to a structured `SEARCH_INVALID_QUERY` so the CLI
+      // and MCP layers don't leak stack-traces of the SQLite library.
+      // Anything else (storage corruption, programmer error) re-throws.
+      const message = error instanceof Error ? error.message : String(error);
+      if (/fts5\b|MATCH/i.test(message)) {
+        return Err({ kind: ErrorCode.SearchInvalidQuery, query, detail: message });
+      }
+      if (/database is locked|SQLITE_BUSY/i.test(message)) {
+        return Err({ kind: ErrorCode.StorageBusy, detail: message });
+      }
+      throw error;
+    }
   }
 
   private searchTasks(query: string, limit: number): SearchHit[] {

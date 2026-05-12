@@ -213,6 +213,33 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Run \`mnema migrate\` to apply pending migrations`);
       break;
     }
+
+    case ErrorCode.SkillNotFound:
+      lines.push(`Skill not found: ${error.slug}`);
+      lines.push(`${pc.dim('hint:')} Run \`mnema skill list\` to see recorded skills`);
+      break;
+
+    case ErrorCode.MemoryNotFound:
+      lines.push(`Memory not found: ${error.slug}`);
+      lines.push(`${pc.dim('hint:')} Run \`mnema memory list\` to see recorded memories`);
+      break;
+
+    case ErrorCode.SearchInvalidQuery:
+      lines.push(`Invalid search query: ${error.query}`);
+      lines.push(`  ${error.detail}`);
+      lines.push(
+        `${pc.dim('hint:')} FTS5 reserves operators like AND/OR/NOT and characters like ", ', :, *. ` +
+          `Quote the term ("O'Brien") or remove the special character.`,
+      );
+      break;
+
+    case ErrorCode.StorageBusy:
+      lines.push(`Storage is busy: ${error.detail}`);
+      lines.push(
+        `${pc.dim('hint:')} Another mutation is in flight against the SQLite database. ` +
+          `Wait a moment and retry; if it persists, check for stuck \`mnema mcp serve\` processes.`,
+      );
+      break;
   }
 
   return lines.join('\n');

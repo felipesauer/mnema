@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { SearchService } from '../../../services/search-service.js';
-import { ok } from '../../mcp-tool-result.js';
+import { err, ok } from '../../mcp-tool-result.js';
 
 const ENTITY_VALUES = ['task', 'decision', 'note', 'skill', 'memory', 'observation'] as const;
 
@@ -37,11 +37,12 @@ export class SearchTool {
         },
       },
       (input) => {
-        const hits = this.search.search(input.query, {
+        const result = this.search.search(input.query, {
           entities: input.entities,
           perEntityLimit: input.per_entity_limit,
         });
-        return ok({ hits });
+        if (!result.ok) return err(result.error);
+        return ok({ hits: result.value });
       },
     );
   }

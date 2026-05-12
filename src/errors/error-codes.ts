@@ -47,6 +47,9 @@ export enum ErrorCode {
 
   SkillNotFound = 'SKILL_NOT_FOUND',
   MemoryNotFound = 'MEMORY_NOT_FOUND',
+
+  SearchInvalidQuery = 'SEARCH_INVALID_QUERY',
+  StorageBusy = 'STORAGE_BUSY',
 }
 
 /**

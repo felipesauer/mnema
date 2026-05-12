@@ -10,6 +10,26 @@ stable release.
 
 ## [Unreleased]
 
+### Fixed (Phase E)
+
+- **F-E1: FTS query errors no longer leak SQLite stack-traces.**
+  `SearchService.search` now returns `Result<SearchHit[], MnemaError>`
+  with two new error variants: `SEARCH_INVALID_QUERY` (FTS5 syntax
+  errors — unbalanced quotes, reserved characters used outside MATCH
+  syntax) and `STORAGE_BUSY` (concurrent mutation conflict). The CLI
+  renders both with a one-line hint instead of crashing. The MCP
+  `tasks_search` tool returns the structured error.
+- **F-E2: `mnema doctor` now detects orphan mirror files** (`.md`
+  files in `paths.skills` / `paths.memory` whose slug has no matching
+  SQLite row). New flag `--prune-orphans` (combined with
+  `--rebuild-mirrors`) deletes them. Without `--prune-orphans` the
+  orphans are reported but preserved (safe default — humans may be
+  editing files locally). Filters `INDEX.md` and dotfiles.
+- **F-E7: `mnema decision show --json`** parity with `task show` /
+  `sprint show`.
+- **Error printer fills in `SkillNotFound` / `MemoryNotFound`** which
+  were tracked as errors since 0.3.0-alpha.0 but had no rendering.
+
 ### Added
 
 - **Optimistic concurrency for decisions and sprints.** Migration 010

@@ -108,7 +108,13 @@ export type MnemaError =
       readonly pending: readonly string[];
     }
   | { readonly kind: ErrorCode.SkillNotFound; readonly slug: string }
-  | { readonly kind: ErrorCode.MemoryNotFound; readonly slug: string };
+  | { readonly kind: ErrorCode.MemoryNotFound; readonly slug: string }
+  | {
+      readonly kind: ErrorCode.SearchInvalidQuery;
+      readonly query: string;
+      readonly detail: string;
+    }
+  | { readonly kind: ErrorCode.StorageBusy; readonly detail: string };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

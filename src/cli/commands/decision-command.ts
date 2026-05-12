@@ -72,11 +72,16 @@ export class DecisionCommand {
     group
       .command('show <key>')
       .description('Show a single ADR')
-      .action(async (key: string) => {
+      .option('--json', 'Print raw entity as JSON', false)
+      .action(async (key: string, options: { readonly json?: boolean }) => {
         await withCliContext(({ container }) => {
           const result = container.decision.show(key);
           if (!result.ok) {
             process.exit(printError(result.error));
+          }
+          if (options.json === true) {
+            process.stdout.write(`${JSON.stringify(result.value, null, 2)}\n`);
+            return;
           }
           process.stdout.write(`${formatDecisionDetail(result.value)}\n`);
         });
