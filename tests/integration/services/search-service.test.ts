@@ -93,7 +93,7 @@ describe('SearchService', () => {
     expect(hitsOrThrow('   ')).toEqual([]);
   });
 
-  it('F-E1: invalid FTS query returns SearchInvalidQuery instead of throwing', () => {
+  it('invalid FTS query returns SearchInvalidQuery instead of throwing', () => {
     const result = search.search('sql; DROP');
     expect(result.ok).toBe(false);
     if (result.ok) return;

@@ -10,6 +10,35 @@ stable release.
 
 ## [Unreleased]
 
+### Added (audit-log integrity)
+
+- **Hash chain on every audit event (schema `v: 2`).** Each JSONL line
+  now carries `prev_hash` (`null` for the first event in a file) and
+  `hash` (SHA-256 of the line with `hash` omitted). `AuditWriter`
+  fills both in before `appendFileSync`. The chain spans monthly
+  rotations via the SQLite mirror.
+- **`audit_state` mirror in SQLite (migration 011).** A single-row
+  table with `event_count`, `last_event_at`, `chain_head_hash`
+  updated atomically with every `AuditWriter.write()`. Lets `doctor`
+  detect truncation, deletion, edit, forge, reorder, and replay
+  attacks against the on-disk JSONL.
+- **`mnema doctor` walks the chain on every run.** New
+  `inspectAuditIntegrity(adapter, auditDir)` returns up to four rows:
+  `audit event count`, `audit hash chain`, `audit lines parse`
+  (warning), and `audit integrity: legacy` (warning for projects that
+  predate this feature). Adversarial sweep verified the check fires
+  on 6 of 7 high-severity tampering vectors; full report in
+  `evaluations/2026-05-12-phase-g.md`.
+- **`AuditQuery.runStrict()`** returns events plus a malformed-line
+  diagnostic (count, per-file breakdown). `doctor` uses this; the
+  regular `run()` keeps the existing tolerant behaviour for normal
+  read paths.
+- **`AuditWriter` accepts `state: AuditStateRepository | null`.**
+  When `null` (legacy callers, standalone tests) the writer keeps
+  the v1 shape — no chain, no mirror update. When wired, v2 chain
+  activates. Backward-compatible by design: existing audit logs are
+  tagged as "legacy" until the first v2 event lands.
+
 ### Changed (hygiene sweep)
 
 - **`mnema destroy` now folds `.mnema/workflows/` when empty and

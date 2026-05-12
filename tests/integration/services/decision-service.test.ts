@@ -147,7 +147,7 @@ describe('DecisionService', () => {
     expect(result.error.kind).toBe(ErrorCode.DecisionNotFound);
   });
 
-  it('Camada 3: transition succeeds when expectedUpdatedAt matches', () => {
+  it('transition succeeds when expectedUpdatedAt matches', () => {
     const recorded = decisions.record({
       projectKey: 'TEST',
       title: 'A',
@@ -165,7 +165,7 @@ describe('DecisionService', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('Camada 3: transition returns Conflict when expectedUpdatedAt is stale', () => {
+  it('transition returns Conflict when expectedUpdatedAt is stale', () => {
     decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',

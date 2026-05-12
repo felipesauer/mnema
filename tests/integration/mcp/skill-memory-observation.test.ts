@@ -177,7 +177,7 @@ describe('skill/memory/observation MCP tools', () => {
     expect(skill.usage_count).toBe(1);
     expect(skill.slug).toBe('s');
     expect(skill.version).toBe(1);
-    // F-4: skill_use payload omits content (docstring says so).
+    // skill_use payload omits content (docstring says so).
     expect(skill.content).toBeUndefined();
   });
 
@@ -242,7 +242,7 @@ describe('skill/memory/observation MCP tools', () => {
     expect((payload.recent_observations as unknown[]).length).toBe(1);
   });
 
-  it('F-5: bootstrap recent_observations includes id and related_task_key', async () => {
+  it('bootstrap recent_observations includes id and related_task_key', async () => {
     // Need a real task to link against.
     const created = await harness.client.callTool({
       name: 'task_create',

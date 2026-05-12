@@ -49,16 +49,43 @@ export class AuditQuery {
   /**
    * Reads matching events from the audit directory.
    *
+   * Malformed lines that fail `JSON.parse` are silently skipped. Use
+   * {@link AuditQuery.runStrict} if you need to know whether the read
+   * had to drop anything — `doctor` does, to flag potential tampering
+   * (an attacker may write garbage as a smokescreen around a forged
+   * line, hoping the reader silently drops both).
+   *
    * @param filter - Filter parameters; an empty object returns everything
    * @returns Matching events ordered by `at`
    */
   run(filter: AuditQueryFilter = {}): AuditEvent[] {
-    if (!existsSync(this.auditDir)) return [];
+    return this.runStrict(filter).events;
+  }
+
+  /**
+   * Same as {@link AuditQuery.run} but additionally reports how many
+   * lines failed to parse and the per-file breakdown. Callers who
+   * surface integrity warnings (notably `mnema doctor`) use this
+   * variant.
+   *
+   * @param filter - Filter parameters; an empty object returns everything
+   * @returns Events plus a small diagnostic block
+   */
+  runStrict(filter: AuditQueryFilter = {}): {
+    readonly events: AuditEvent[];
+    readonly malformedLines: number;
+    readonly malformedByFile: ReadonlyMap<string, number>;
+  } {
+    if (!existsSync(this.auditDir)) {
+      return { events: [], malformedLines: 0, malformedByFile: new Map() };
+    }
 
     const sinceMs = parseTimeBound(filter.since);
     const untilMs = parseTimeBound(filter.until);
     const files = listAuditFiles(this.auditDir);
     const matches: AuditEvent[] = [];
+    const malformedByFile = new Map<string, number>();
+    let malformedLines = 0;
 
     for (const file of files) {
       const lines = readFileSync(file, 'utf-8').split('\n');
@@ -68,6 +95,8 @@ export class AuditQuery {
         try {
           event = JSON.parse(line) as AuditEvent;
         } catch {
+          malformedLines += 1;
+          malformedByFile.set(file, (malformedByFile.get(file) ?? 0) + 1);
           continue;
         }
 
@@ -91,10 +120,11 @@ export class AuditQuery {
     matches.sort((a, b) => a.at.localeCompare(b.at));
 
     const limit = filter.limit;
-    if (limit !== undefined && matches.length > limit) {
-      return matches.slice(matches.length - limit);
-    }
-    return matches;
+    const events =
+      limit !== undefined && matches.length > limit
+        ? matches.slice(matches.length - limit)
+        : matches;
+    return { events, malformedLines, malformedByFile };
   }
 }
 

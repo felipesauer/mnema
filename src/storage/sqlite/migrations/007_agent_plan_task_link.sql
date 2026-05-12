@@ -1,6 +1,6 @@
 -- =============================================================================
--- Migration 007: agent_plans gain optional `task_id` FK linking a plan
--- to the task it implements.
+-- Adds an optional `task_id` FK on `agent_plans` linking a plan to the
+-- task it implements.
 --
 -- Without this column agents encode the task key inside
 -- `agent_plans.content` ("CVF-1: implement schema") because there is
