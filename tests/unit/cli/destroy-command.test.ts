@@ -70,6 +70,7 @@ describe('removeArtifacts', () => {
         CONFIG_FILE_RELATIVE,
         PATHS.state,
         path.join(PATHS.workflows, 'default.json'),
+        PATHS.workflows,
         PATHS.skills,
         'AGENTS.md',
       ]),
@@ -78,8 +79,10 @@ describe('removeArtifacts', () => {
     expect(existsSync(path.join(projectRoot, CONFIG_FILE_RELATIVE))).toBe(false);
     expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(true);
     expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(true);
-    expect(existsSync(path.join(projectRoot, PATHS.workflows))).toBe(true);
+    // The bundled workflow JSON was removed; its containing dir was
+    // empty after that and is folded away too.
     expect(existsSync(path.join(projectRoot, PATHS.workflows, 'default.json'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.workflows))).toBe(false);
     // AGENTS.md had only the managed block, so it disappears entirely.
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(false);
   });
@@ -133,6 +136,31 @@ describe('removeArtifacts', () => {
     removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: false });
     expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(false);
     expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(true);
+  });
+
+  it('strips the managed `.gitignore` entry and leaves user lines intact', () => {
+    const userPrefix = 'node_modules/\ndist/\n';
+    const managed = `# mnema\n${PATHS.state}/\n`;
+    writeFileSync(path.join(projectRoot, '.gitignore'), `${userPrefix}\n${managed}`, 'utf-8');
+
+    const removed = removeArtifacts(projectRoot, PATHS, {
+      keepMarkdown: true,
+      keepAudit: true,
+    });
+    expect(removed).toContain('.gitignore');
+    const remaining = readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
+    expect(remaining).toContain('node_modules/');
+    expect(remaining).toContain('dist/');
+    expect(remaining).not.toContain('# mnema');
+    expect(remaining).not.toContain(`${PATHS.state}/`);
+  });
+
+  it('deletes `.gitignore` when only the managed entry remained', () => {
+    writeFileSync(path.join(projectRoot, '.gitignore'), `# mnema\n${PATHS.state}/\n`, 'utf-8');
+
+    removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: true });
+
+    expect(existsSync(path.join(projectRoot, '.gitignore'))).toBe(false);
   });
 
   it('skips paths that do not exist without raising', () => {

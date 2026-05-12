@@ -10,6 +10,25 @@ stable release.
 
 ## [Unreleased]
 
+### Changed (hygiene sweep)
+
+- **`mnema destroy` now folds `.mnema/workflows/` when empty and
+  strips the managed `.gitignore` entry.** The bundled workflow JSON
+  removal already worked, but the parent dir stayed behind as an
+  empty husk; the `# mnema\n<paths.state>/\n` tuple written by `init`
+  was never reversed. Both are now cleaned up. Conservative: a
+  custom-edited `.gitignore` or a non-bundled workflow leaves
+  everything alone. Closes F-F11.
+- **`mnema destroy --help` describes the actual confirmation flow.**
+  The previous "two confirmations required" line undersold what
+  happens: yes/no, two preservation prompts (markdown, audit), and a
+  key-typing match. `--yes` skips them all. Closes F-F9.
+- **`mnema task move --help` documents the forward-compat contract.**
+  Extra `field=value` pairs are tolerated on purpose — they ride
+  along to the audit log so CLI payloads stay forward-compatible
+  with MCP payloads that may carry annotation fields. The contract
+  was implicit; now it is stated. Closes F-E6.
+
 ### Added (agent hierarchy)
 
 - **`mnema agent inspect <runId>` now renders parent and child runs.**

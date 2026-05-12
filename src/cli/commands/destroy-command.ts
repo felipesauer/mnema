@@ -31,12 +31,15 @@ interface DestroyOptions {
 /**
  * Registers `mnema destroy`, the uninstall command.
  *
- * DESIGN.md §7.4 prescribes two confirmations: a yes/no prompt and a
- * key-typing prompt. Both can be skipped together with `--yes` for CI
- * scripts. By default, `mnema.config.json`, `.app/`, `AGENTS.md` and
- * `workflows/` are removed; markdown trees (`backlog/`, `sprints/`,
- * `roadmap/`, `memory/`) and the audit log (`.audit/`) are kept unless
- * the user explicitly opts in.
+ * The interactive flow asks the user to confirm twice — a yes/no
+ * prompt and a key-typing prompt that must match the project key —
+ * plus two narrower prompts that opt out of markdown / audit
+ * preservation. `--yes` skips every prompt and uses the default
+ * preservation set. By default, `mnema.config.json`, the SQLite state
+ * dir, the bundled workflow JSON and the `AGENTS.md` managed block
+ * are removed; markdown trees (`backlog/`, `sprints/`, `roadmap/`,
+ * `memory/`) and the audit log (`.audit/`) are kept unless the user
+ * explicitly opts in.
  */
 export class DestroyCommand {
   /**
@@ -47,8 +50,12 @@ export class DestroyCommand {
   register(program: Command): void {
     program
       .command('destroy')
-      .description('Remove the local Mnema project (two confirmations required)')
-      .option('--yes', 'Skip confirmations and use the default preservation set', false)
+      .description(
+        'Remove the local Mnema project. Interactive flow asks for ' +
+          'yes/no, two preservation prompts (markdown, audit), and a ' +
+          'key-typing match. `--yes` skips all prompts.',
+      )
+      .option('--yes', 'Skip every prompt and use the default preservation set', false)
       .option('--keep-markdown', 'Force-keep backlog/sprints/roadmap/memory', false)
       .option('--keep-audit', 'Force-keep .audit/', false)
       .action(async (options: DestroyOptions) => {
@@ -221,16 +228,27 @@ export function removeArtifacts(
     }
   }
 
-  // After every directly-managed path is gone, fold an empty `.mnema/`
-  // shell so the project root looks pristine. The dir stays only when
-  // the user opted to keep something inside it (audit/markdown).
-  removeIfEmptyDir(projectRoot, '.mnema');
+  // Fold the bundled workflow directory if `removeBundledWorkflow`
+  // emptied it. Custom workflow files (not byte-matching the bundled
+  // template) survive and the directory stays.
+  if (removeIfEmptyDir(projectRoot, paths.workflows)) removed.push(paths.workflows);
+
+  // Then fold the `.mnema/` shell when nothing inside it remains. The
+  // dir stays only when the user opted to keep something (audit /
+  // markdown) or has files Mnema didn't manage.
+  if (removeIfEmptyDir(projectRoot, '.mnema')) removed.push('.mnema');
 
   // Strip the AGENTS.md managed block. Whatever the user wrote outside
   // the markers stays; if the file becomes empty after the strip, drop
   // it entirely so a clean re-init starts from scratch.
   const agentsRel = stripManagedAgentsBlock(projectRoot);
   if (agentsRel !== null) removed.push(agentsRel);
+
+  // Strip the Mnema-managed `.gitignore` entry. Init writes
+  // `# mnema\n<paths.state>/\n`; we remove only that exact tuple, so
+  // any rule the user added on their own stays intact.
+  const gitignoreRel = stripGitignoreEntry(projectRoot, paths.state);
+  if (gitignoreRel !== null) removed.push(gitignoreRel);
 
   return removed;
 }
@@ -316,4 +334,33 @@ function stripManagedAgentsBlock(projectRoot: string): string | null {
     writeFileSync(file, `${remaining}\n`, 'utf-8');
   }
   return 'AGENTS.md';
+}
+
+/**
+ * Removes the `# mnema\n<paths.state>/\n` tuple that `init` writes
+ * into `.gitignore`. Conservative: it only touches the exact pair —
+ * a custom-edited gitignore, a different ignore rule, or a renamed
+ * state path leaves the file alone. Returns `.gitignore` when the
+ * file was modified or deleted, `null` otherwise.
+ */
+function stripGitignoreEntry(projectRoot: string, statePath: string): string | null {
+  const file = path.join(projectRoot, '.gitignore');
+  if (!existsSync(file)) return null;
+  const previous = readFileSync(file, 'utf-8');
+
+  const entry = `${statePath.replace(/\/$/, '')}/`;
+  const block = `# mnema\n${entry}\n`;
+  if (!previous.includes(block)) return null;
+
+  // Strip the block plus an optional leading blank-line separator
+  // (init prepends `\n# mnema\n...` when extending an existing file).
+  const next = previous.replace(`\n${block}`, '').replace(block, '');
+  const trimmed = next.trim();
+
+  if (trimmed.length === 0) {
+    rmSync(file);
+  } else {
+    writeFileSync(file, `${trimmed}\n`, 'utf-8');
+  }
+  return '.gitignore';
 }

@@ -118,7 +118,12 @@ export class TaskCommand {
 
     group
       .command('move <key> <action> [fields...]')
-      .description('Move a task via a workflow action. Pass payload as `field=value` pairs.')
+      .description(
+        'Move a task via a workflow action. Pass payload as `field=value` ' +
+          'pairs. Only fields the action gate requires are validated; ' +
+          'extra fields are tolerated (they ride along to the audit log) ' +
+          'to keep CLI payloads forward-compatible with MCP.',
+      )
       .action(async (key: string, action: string, fields: string[]) => {
         await withMutatingCliContext(({ container }) => {
           const payload = parseFieldArgs(fields);
