@@ -2,12 +2,11 @@
 -- Migration 006: extends `notes.kind` enum to include `scope_change`
 -- and `acceptance_addendum` for richer mid-flight task annotations.
 --
--- Phase B' (cv-fmt + dev4 via MCP) showed that agents reach for
--- `agent_observation` to log scope deviations. That kind is fine but
--- semantically blurs into "any side observation". Adding two specific
--- kinds gives the audit log clearer intent for a common annotation
--- pattern, without forcing agents to change behaviour (they can keep
--- using `agent_observation` for everything else).
+-- Agents tend to reach for `agent_observation` for scope deviations
+-- and new acceptance criteria. That kind is fine as a catch-all but
+-- semantically blurs into "any side observation". The two specific
+-- kinds give the audit log clearer intent for a common annotation
+-- pattern without forcing agents to migrate older notes.
 --
 -- SQLite cannot alter a CHECK constraint in place, so the table is
 -- rebuilt with the recipe used elsewhere in the codebase: drop FK

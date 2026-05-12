@@ -25,8 +25,11 @@ interface AttachmentRow {
 /**
  * Attachment metadata persisted in SQLite.
  *
- * The actual binary content lives under `.app/attachments/` with the
- * file name `{sha256}.{ext}` (see {@link FileStore}).
+ * The actual binary content lives under `<paths.state>/attachments/`
+ * with file name `{sha256}.{ext}` (see {@link FileStore}). The `path`
+ * column stores just the filename so a project move does not break
+ * lookups; the resolver in the consumer joins it with the configured
+ * state directory.
  */
 export interface Attachment {
   readonly id: string;
@@ -95,6 +98,32 @@ export class AttachmentRepository {
       )
       .all(kind, parentId) as AttachmentRow[];
     return rows.map(rowToAttachment);
+  }
+
+  /**
+   * Returns the existing attachment row, if any, that already links
+   * the given hash to the given parent — used by the service to avoid
+   * inserting a duplicate row when the same content is re-attached.
+   *
+   * @param kind - Parent kind
+   * @param parentId - Parent identifier
+   * @param hash - SHA-256 hash of the content
+   * @returns Existing attachment row or `null`
+   */
+  findByParentAndHash(
+    kind: AttachmentParentKind,
+    parentId: string,
+    hash: string,
+  ): Attachment | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM attachments
+          WHERE parent_kind = ? AND parent_id = ? AND hash = ? AND deleted_at IS NULL
+          LIMIT 1`,
+      )
+      .get(kind, parentId, hash) as AttachmentRow | undefined;
+    return row === undefined ? null : rowToAttachment(row);
   }
 
   /**

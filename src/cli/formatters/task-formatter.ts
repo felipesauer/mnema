@@ -62,6 +62,7 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
   }
   if (task.estimate !== null) meta.push(`estimate: ${task.estimate}`);
   meta.push(`priority: ${task.priority}`);
+  if (task.reopenCount > 0) meta.push(`reopened: ${task.reopenCount}x`);
   lines.push(`  ${pc.dim(meta.join(' · '))}`);
 
   if (task.sprintId !== null || task.epicId !== null) {

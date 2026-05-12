@@ -12,8 +12,7 @@ export const StringFormatEnum = z.enum(['url', 'email', 'uuid', 'iso8601', 'task
  *
  * - `mutating` (default): if the payload value is for a column that
  *   maps to the task table (`title`, `description`, `assignee_id`, …),
- *   it is persisted onto the task row at transition time. This is the
- *   behaviour added in commit 168b47b for Bug 26.
+ *   it is persisted onto the task row at transition time.
  * - `validating`: payload value is recorded in `transitions.payload`
  *   for audit but never overwrites the task. Use for one-shot
  *   justifications like `reason`, `approval_note`, `pr_url`, `note` —

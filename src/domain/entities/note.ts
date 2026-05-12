@@ -1,11 +1,11 @@
 /**
  * Allowed kinds of Note attached to a task.
  *
- * `scope_change` and `acceptance_addendum` were added after Phase B'
- * (cv-fmt + dev4 via MCP) showed agents reaching for `agent_observation`
- * to log scope deviations or new acceptance criteria mid-flight. Those
- * two kinds carry stronger intent for the audit reader; `agent_observation`
- * stays as the catch-all for anything that doesn't fit a specific kind.
+ * `scope_change` and `acceptance_addendum` carry stronger intent than
+ * `agent_observation` for the audit reader — use them when an agent
+ * logs a scope deviation or a new acceptance criterion mid-flight.
+ * `agent_observation` stays as the catch-all for anything that does
+ * not fit a specific kind.
  */
 export type NoteKind =
   | 'comment'

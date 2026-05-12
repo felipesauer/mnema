@@ -167,12 +167,19 @@ export class TaskService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
 
+    // A "terminal" state is one with no declared outbound transitions —
+    // any workflow that does declare them (e.g. jira-classic's
+    // `CLOSED.reopen`) should be honoured. Block only when the JSON
+    // truly leaves the state without exits.
     if (this.stateMachine.isTerminal(task.state)) {
-      return Err({
-        kind: ErrorCode.TerminalState,
-        taskKey: task.key,
-        state: task.state,
-      });
+      const exits = this.stateMachine.listActionsFrom(task.state);
+      if (exits.length === 0) {
+        return Err({
+          kind: ErrorCode.TerminalState,
+          taskKey: task.key,
+          state: task.state,
+        });
+      }
     }
 
     const validation = this.stateMachine.validateTransition(
@@ -236,8 +243,18 @@ export class TaskService {
           validation.value.requiresSpec,
           (handle) => this.identity.ensureActor(handle, 'human'),
         );
-        const finalTask =
+        let finalTask =
           persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
+
+        // The `reopen` action is the canonical signal across the
+        // shipping workflows (default, jira-classic) that work is
+        // being re-entered after reaching a terminal state — bump the
+        // counter on the task row so consumers can flag chronically
+        // reopened items.
+        if (input.action === 'reopen') {
+          const bumped = this.tasks.incrementReopenCount(task.id);
+          if (bumped !== null) finalTask = bumped;
+        }
 
         this.transitions.record({
           taskId: task.id,

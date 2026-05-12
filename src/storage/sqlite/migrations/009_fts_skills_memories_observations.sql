@@ -1,11 +1,11 @@
 -- =============================================================================
 -- Migration 009: FTS5 for skills, memories and observations.
 --
--- The three tables added in migration 008 are text-heavy and likely to
--- grow — Phase C surfaced "no full-text search" as a friction the
--- moment the agent starts recording. This migration adds a single FTS
--- table per kind, plus the standard insert/update/delete triggers
--- that keep them in lockstep with the source rows.
+-- The three tables added in migration 008 are text-heavy and likely
+-- to grow large enough that agents will reach for full-text queries.
+-- This migration adds a single FTS table per kind, plus the standard
+-- insert/update/delete triggers that keep them in lockstep with the
+-- source rows.
 -- =============================================================================
 
 -- FTS for skills: name + description + content
