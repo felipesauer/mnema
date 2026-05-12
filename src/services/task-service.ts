@@ -57,9 +57,14 @@ export interface TransitionInput {
 
 /**
  * Filter for {@link TaskService.list}.
+ *
+ * `state` accepts any workflow state string; consumers should validate
+ * against `stateMachine.getWorkflow().states` before calling, but the
+ * service will simply return zero rows for unknown states rather than
+ * throw — workflow-portability matters more than strict typing here.
  */
 export interface ListTasksFilter {
-  readonly state?: TaskState;
+  readonly state?: string;
 }
 
 /**

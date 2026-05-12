@@ -10,6 +10,32 @@ stable release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`tasks_list({ state })` derives its enum from the active workflow.**
+  Previously the MCP tool advertised `DRAFT | READY | IN_PROGRESS |
+  BLOCKED | IN_REVIEW | DONE | CANCELED` regardless of the workflow in
+  use, so projects on `lean` (`TODO | DOING | DONE`) could not filter
+  by state at all. The schema is now built from
+  `stateMachine.getWorkflow().states` at boot, with the valid values
+  listed in the description. Discovered during the Phase C inspection.
+- **`context_bootstrap` statistics respect workflow features.**
+  `blocked` is `0` when the workflow does not declare `blockedState`
+  (e.g. `lean`); `in_progress` resolves to whichever of `IN_PROGRESS` /
+  `DOING` the workflow actually uses. `by_state` already covered every
+  state, but the convenience counters had hardcoded literals.
+- **`InboxService` queues respect workflow features.** `awaitingReview`
+  is empty on workflows without `reviewWorkflow`; `blocked` is empty
+  on workflows without `blockedState`. Previously both queues silently
+  used the default-workflow state names regardless.
+
+### Changed
+
+- `TaskRepository.findByState` / `updateState` / `TaskInsertInput.state`
+  and `ListTasksFilter.state` accept any string (was the narrow
+  `TaskState` enum). Aligns the types with the "workflow as data"
+  premise — the SQLite column already stored arbitrary state names.
+
 ## [0.3.0-alpha.1] — 2026-05-11
 
 Friction sweep after Phase C real-world test (`evaluations/2026-05-11-phase-c.md`).

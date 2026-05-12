@@ -22,22 +22,26 @@ interface Harness {
 }
 
 async function setupHarness(
-  options: { readonly clientMetadata?: Record<string, unknown> } = {},
+  options: {
+    readonly clientMetadata?: Record<string, unknown>;
+    readonly workflow?: 'default' | 'lean' | 'kanban' | 'jira-classic';
+  } = {},
 ): Promise<Harness> {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-mcp-'));
   for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
   }
+  const workflowName = options.workflow ?? 'default';
   copyFileSync(
-    path.join(workflowsSrc, 'default.json'),
-    path.join(projectRoot, '.mnema/workflows', 'default.json'),
+    path.join(workflowsSrc, `${workflowName}.json`),
+    path.join(projectRoot, '.mnema/workflows', `${workflowName}.json`),
   );
 
   const config = ConfigSchema.parse({
     version: '1.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test Project' },
-    workflow: 'default',
+    workflow: workflowName,
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
   container.adapter
@@ -238,5 +242,59 @@ describe('MnemaMcpServer (in-memory)', () => {
     const endedPayload = parsePayload(ended as CallToolResult);
     expect(endedPayload.ok).toBe(true);
     expect(harness.server.getSession().getCurrentRunId()).toBeNull();
+  });
+});
+
+describe('MnemaMcpServer under workflow=lean (1.4 sweep)', () => {
+  let harness: Harness;
+
+  beforeEach(async () => {
+    process.env.MNEMA_ACTOR = 'daniel';
+    harness = await setupHarness({ workflow: 'lean' });
+  });
+
+  afterEach(async () => {
+    await harness.close();
+    delete process.env.MNEMA_ACTOR;
+  });
+
+  it('tasks_list accepts lean states (TODO/DOING/DONE) and rejects default-workflow states', async () => {
+    await harness.client.callTool({
+      name: 'agent_run_start',
+      arguments: { goal: 'state filter check' },
+    });
+
+    // TODO is the initial state in lean — should be valid.
+    const okResult = await harness.client.callTool({
+      name: 'tasks_list',
+      arguments: { state: 'TODO' },
+    });
+    expect((okResult as CallToolResult).isError).toBeFalsy();
+
+    // DRAFT is the default-workflow initial — should be rejected under lean.
+    const draftResult = await harness.client.callTool({
+      name: 'tasks_list',
+      arguments: { state: 'DRAFT' },
+    });
+    expect((draftResult as CallToolResult).isError).toBe(true);
+  });
+
+  it('context_bootstrap reports blocked=0 and in_progress derives from DOING under lean', async () => {
+    const bootstrap = await harness.client.callTool({
+      name: 'context_bootstrap',
+      arguments: {},
+    });
+    const payload = parsePayload(bootstrap as CallToolResult);
+    const stats = payload.statistics as {
+      blocked: number;
+      in_progress: number;
+      by_state: Record<string, number>;
+    };
+    // Lean has no BLOCKED state — blocked must be 0.
+    expect(stats.blocked).toBe(0);
+    // by_state must use the lean state names, not the default workflow's.
+    expect(Object.keys(stats.by_state).sort()).toEqual(['DOING', 'DONE', 'TODO']);
+    // in_progress matches the DOING count (initially 0 — no tasks yet).
+    expect(stats.in_progress).toBe(0);
   });
 });

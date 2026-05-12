@@ -36,7 +36,7 @@ export interface TaskInsertInput {
   readonly reporterId: string;
   readonly description?: string | null;
   readonly acceptanceCriteria?: readonly string[];
-  readonly state?: TaskState;
+  readonly state?: string;
   readonly estimate?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
@@ -102,7 +102,7 @@ export class TaskRepository {
    * @param state - State to filter by
    * @returns Array of matching tasks (possibly empty)
    */
-  findByState(state: TaskState): Task[] {
+  findByState(state: string): Task[] {
     const rows = this.adapter
       .getDatabase()
       .prepare(
@@ -206,7 +206,7 @@ export class TaskRepository {
    */
   updateState(
     taskId: string,
-    newState: TaskState,
+    newState: string,
     expectedUpdatedAt: string | null = null,
   ): UpdateStateResult {
     const db = this.adapter.getDatabase();

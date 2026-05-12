@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { TaskState } from '@/domain/enums/task-state.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { AuditService } from '@/services/audit-service.js';
 import { DecisionService } from '@/services/decision-service.js';
 import { IdentityService } from '@/services/identity-service.js';
@@ -50,7 +52,9 @@ describe('InboxService', () => {
     decisions = new DecisionService(decisionRepo, projects, identity, audit);
 
     tasks = new TaskRepository(adapter);
-    inbox = new InboxService(tasks, decisions, 'TEST');
+    const workflowPath = path.resolve('workflows/default.json');
+    const stateMachine = new StateMachine(new WorkflowLoader().load(workflowPath));
+    inbox = new InboxService(tasks, decisions, 'TEST', stateMachine);
   });
 
   afterEach(() => {
@@ -93,5 +97,19 @@ describe('InboxService', () => {
 
     const view = inbox.view();
     expect(view.pendingDecisions.map((d) => d.key)).toEqual(['TEST-ADR-2']);
+  });
+
+  it('1.4 sweep: under `lean` workflow (no review/blocked features) returns empty review/blocked queues', () => {
+    const leanMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/lean.json')),
+    );
+    const leanInbox = new InboxService(tasks, decisions, 'TEST', leanMachine);
+    // Even if a task somehow has IN_REVIEW state, the inbox under lean
+    // should not surface it — the concept does not exist for that workflow.
+    insertTask('TEST-1', TaskState.InReview);
+    insertTask('TEST-2', TaskState.Blocked);
+    const view = leanInbox.view();
+    expect(view.awaitingReview).toHaveLength(0);
+    expect(view.blocked).toHaveLength(0);
   });
 });
