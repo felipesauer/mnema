@@ -318,6 +318,26 @@ export class SkillService {
     return Ok(updated);
   }
 
+  /**
+   * Regenerates missing `.md` mirror files for the latest version of
+   * every recorded slug. Existing mirrors are left alone — this only
+   * heals drift, not reformats human-edited content. Returns the slugs
+   * whose mirror was just rewritten.
+   *
+   * @returns Slugs whose mirror file was created during this call
+   */
+  rebuildMirrors(): string[] {
+    const { repo } = this.requireRecordDeps();
+    const rebuilt: string[] = [];
+    for (const skill of repo.listLatest()) {
+      if (!this.mirrorExists(skill)) {
+        this.writeMirror(skill);
+        rebuilt.push(skill.slug);
+      }
+    }
+    return rebuilt;
+  }
+
   private mirrorExists(skill: Skill): boolean {
     return existsSync(path.join(this.skillsDir, `${skill.slug}.md`));
   }

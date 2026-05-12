@@ -138,4 +138,18 @@ describe('MemoryService', () => {
     expect(mirror).toContain('title: My title');
     expect(mirror).toContain('body');
   });
+
+  it('2.3: rebuildMirrors recreates missing mirrors and leaves present ones intact', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    const mirrorA = path.join(memoryDir, 'a.md');
+    const mirrorB = path.join(memoryDir, 'b.md');
+    rmSync(mirrorA);
+    const before = readFileSync(mirrorB, 'utf-8');
+
+    const rebuilt = service.rebuildMirrors();
+    expect(rebuilt).toEqual(['a']);
+    expect(existsSync(mirrorA)).toBe(true);
+    expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
 });

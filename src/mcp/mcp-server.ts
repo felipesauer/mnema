@@ -78,6 +78,19 @@ export class MnemaMcpServer {
     await this.sdk.connect(transport);
 
     this.installSignalHandlers();
+
+    // Surface migration drift loudly: tool calls will fail with
+    // `SCHEMA_OUT_OF_DATE` via `requireFreshSchema`, but a server boot
+    // log line makes the cause obvious before any client request.
+    if (this.services.pendingMigrations.length > 0) {
+      logger.warn(
+        {
+          project: this.config.project.key,
+          pending: this.services.pendingMigrations.map((m) => m.file),
+        },
+        'MCP server: database is behind disk migrations. Run `mnema migrate` to apply pending files. Tool calls that touch the new shape will fail with SCHEMA_OUT_OF_DATE.',
+      );
+    }
     logger.info({ project: this.config.project.key }, 'MCP server connected');
   }
 

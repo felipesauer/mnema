@@ -53,10 +53,47 @@ export class DoctorCommand {
     program
       .command('doctor')
       .description('Run a read-only diagnostic check on the current project')
-      .action(() => {
+      .option(
+        '--rebuild-mirrors',
+        'Recreate any missing `.md` files under paths.skills and paths.memory from the SQLite rows',
+      )
+      .action(async (options: { readonly rebuildMirrors?: boolean }) => {
+        if (options.rebuildMirrors === true) {
+          const exit = await this.rebuildMirrors();
+          process.exit(exit);
+        }
         const exit = this.run();
         process.exit(exit);
       });
+  }
+
+  /**
+   * Rebuilds skill/memory `.md` mirror files for every SQLite row that
+   * has no matching file on disk. Existing files are left alone — this
+   * is a one-way "heal drift" operation, not a reformat.
+   *
+   * @returns Exit code (`0` on success, `3` if the context could not be
+   *   opened)
+   */
+  private async rebuildMirrors(): Promise<number> {
+    const { withCliContext } = await import('../cli-context.js');
+    let exit = ExitCode.Success;
+    await withCliContext(({ container }) => {
+      const skills = container.skill.rebuildMirrors();
+      const memories = container.memory.rebuildMirrors();
+      if (skills.length === 0 && memories.length === 0) {
+        process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
+        return;
+      }
+      if (skills.length > 0) {
+        process.stdout.write(`↻ skills mirrored: ${skills.length} — ${skills.join(', ')}\n`);
+      }
+      if (memories.length > 0) {
+        process.stdout.write(`↻ memories mirrored: ${memories.length} — ${memories.join(', ')}\n`);
+      }
+      exit = ExitCode.Success;
+    });
+    return exit;
   }
 
   /**

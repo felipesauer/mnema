@@ -1,15 +1,21 @@
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 
 /**
+ * Entity kinds searchable via the unified FTS5 index.
+ */
+export type SearchEntity = 'task' | 'note' | 'decision' | 'skill' | 'memory' | 'observation';
+
+/**
  * One hit from a unified FTS5 search.
  *
- * `entity` is the kind of row matched (`task`, `note`, `decision`),
- * `id` is the internal UUID, and `key` is the human-readable identifier
- * when one exists (tasks and decisions have keys; notes do not — the
- * task they belong to is exposed via `parentKey` in that case).
+ * `entity` is the kind of row matched. `id` is the internal UUID.
+ * `key` is the human-readable identifier when one exists (tasks and
+ * decisions have keys; skills/memories use their slug; notes and
+ * observations have no first-class key — for notes, `parentKey` carries
+ * the task they belong to).
  */
 export interface SearchHit {
-  readonly entity: 'task' | 'note' | 'decision';
+  readonly entity: SearchEntity;
   readonly id: string;
   readonly key: string | null;
   readonly title: string | null;
@@ -22,7 +28,7 @@ export interface SearchHit {
  */
 export interface SearchFilter {
   /** Restrict matches to one or more entity kinds. */
-  readonly entities?: readonly ('task' | 'note' | 'decision')[];
+  readonly entities?: readonly SearchEntity[];
   /** Maximum number of hits to return per entity. */
   readonly perEntityLimit?: number;
 }
@@ -48,13 +54,18 @@ export class SearchService {
    */
   search(query: string, filter: SearchFilter = {}): SearchHit[] {
     if (query.trim().length === 0) return [];
-    const allow = new Set(filter.entities ?? ['task', 'decision', 'note']);
+    const allow = new Set<SearchEntity>(
+      filter.entities ?? ['task', 'decision', 'note', 'skill', 'memory', 'observation'],
+    );
     const limit = filter.perEntityLimit ?? 25;
 
     const hits: SearchHit[] = [];
     if (allow.has('task')) hits.push(...this.searchTasks(query, limit));
     if (allow.has('decision')) hits.push(...this.searchDecisions(query, limit));
     if (allow.has('note')) hits.push(...this.searchNotes(query, limit));
+    if (allow.has('skill')) hits.push(...this.searchSkills(query, limit));
+    if (allow.has('memory')) hits.push(...this.searchMemories(query, limit));
+    if (allow.has('observation')) hits.push(...this.searchObservations(query, limit));
     return hits;
   }
 
@@ -115,6 +126,98 @@ export class SearchService {
       id: row.id,
       key: row.key,
       title: row.title,
+      snippet: row.snippet,
+      parentKey: null,
+    }));
+  }
+
+  private searchSkills(query: string, limit: number): SearchHit[] {
+    // Restrict to the latest version per slug — older versions are
+    // intentionally not surfaced in casual search (use `skill_show`
+    // with explicit version when you need a specific historical row).
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT s.id AS id,
+                s.slug AS slug,
+                s.name AS name,
+                snippet(skills_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
+           FROM skills_fts
+           JOIN skills s ON s.id = skills_fts.skill_id
+           JOIN (
+             SELECT slug, MAX(version) AS max_version FROM skills GROUP BY slug
+           ) latest ON latest.slug = s.slug AND latest.max_version = s.version
+          WHERE skills_fts MATCH ?
+          ORDER BY rank
+          LIMIT ?`,
+      )
+      .all(query, limit) as Array<{
+      id: string;
+      slug: string;
+      name: string;
+      snippet: string;
+    }>;
+    return rows.map((row) => ({
+      entity: 'skill' as const,
+      id: row.id,
+      key: row.slug,
+      title: row.name,
+      snippet: row.snippet,
+      parentKey: null,
+    }));
+  }
+
+  private searchMemories(query: string, limit: number): SearchHit[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT m.id AS id,
+                m.slug AS slug,
+                m.title AS title,
+                snippet(memories_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
+           FROM memories_fts
+           JOIN memories m ON m.id = memories_fts.memory_id
+          WHERE memories_fts MATCH ?
+          ORDER BY rank
+          LIMIT ?`,
+      )
+      .all(query, limit) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      snippet: string;
+    }>;
+    return rows.map((row) => ({
+      entity: 'memory' as const,
+      id: row.id,
+      key: row.slug,
+      title: row.title,
+      snippet: row.snippet,
+      parentKey: null,
+    }));
+  }
+
+  private searchObservations(query: string, limit: number): SearchHit[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT o.id AS id,
+                snippet(observations_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
+           FROM observations_fts
+           JOIN observations o ON o.id = observations_fts.observation_id
+          WHERE observations_fts MATCH ?
+          ORDER BY rank
+          LIMIT ?`,
+      )
+      .all(query, limit) as Array<{
+      id: string;
+      snippet: string;
+    }>;
+    return rows.map((row) => ({
+      entity: 'observation' as const,
+      id: row.id,
+      key: null,
+      title: null,
       snippet: row.snippet,
       parentKey: null,
     }));

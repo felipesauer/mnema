@@ -222,4 +222,22 @@ describe('SkillService (record/show/use)', () => {
     const report = lintOnly.lint();
     expect(report.errorCount).toBe(0);
   });
+
+  it('2.3: rebuildMirrors recreates missing mirrors from SQLite without touching present ones', () => {
+    // Create 2 slugs, then delete one mirror by hand.
+    service.record({ slug: 'a', name: 'A', description: 'd', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', name: 'B', description: 'd', content: 'y', actor: 'daniel' });
+    const mirrorA = path.join(skillsDir, 'a.md');
+    const mirrorB = path.join(skillsDir, 'b.md');
+    expect(existsSync(mirrorA) && existsSync(mirrorB)).toBe(true);
+
+    rmSync(mirrorA);
+    const before = readFileSync(mirrorB, 'utf-8');
+    const rebuilt = service.rebuildMirrors();
+
+    expect(rebuilt).toEqual(['a']);
+    expect(existsSync(mirrorA)).toBe(true);
+    // Untouched mirror stays byte-identical.
+    expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
 });
