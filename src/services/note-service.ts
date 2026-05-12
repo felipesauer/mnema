@@ -4,6 +4,7 @@ import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
@@ -50,12 +51,16 @@ export class NoteService {
     }
 
     const actorId = this.identity.ensureActor(input.actor, ActorKind.Human);
-    const note = this.notes.insert({
-      taskId: task.id,
-      actorId,
-      kind: input.kind,
-      content: input.content,
-    });
+    const noteResult = tryMutation(() =>
+      this.notes.insert({
+        taskId: task.id,
+        actorId,
+        kind: input.kind,
+        content: input.content,
+      }),
+    );
+    if (!noteResult.ok) return noteResult;
+    const note = noteResult.value;
 
     this.audit.write({
       kind: 'note_added',

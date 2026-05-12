@@ -1,11 +1,13 @@
 import type { Sprint } from '../domain/entities/sprint.js';
 import type { Task } from '../domain/entities/task.js';
 import { SprintState } from '../domain/enums/sprint-state.js';
+import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import { isIso8601 } from '../utils/iso-date.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
@@ -82,6 +84,7 @@ export class SprintService {
     private readonly tasks: TaskRepository,
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
+    private readonly stateMachine: StateMachine,
   ) {}
 
   /**
@@ -91,6 +94,20 @@ export class SprintService {
    * @returns The created sprint or a structured error
    */
   plan(input: PlanSprintInput): Result<Sprint, MnemaError> {
+    // F-E5: enforce the workflow's `features.sprints` flag. Workflows
+    // like `kanban` declare `sprints: false` to signal that sprint
+    // semantics do not apply; planning one would create a queryable
+    // row that no transition references. Better to refuse with a
+    // structured error and direct the user to a sprint-aware workflow.
+    const workflow = this.stateMachine.getWorkflow();
+    if (!workflow.features.sprints) {
+      return Err({
+        kind: ErrorCode.FeatureNotAvailable,
+        feature: 'sprints',
+        workflow: workflow.name,
+      });
+    }
+
     const issues = validatePlanInput(input);
     if (issues.length > 0) {
       return Err({ kind: ErrorCode.SprintInvalidPayload, issues });
@@ -104,15 +121,19 @@ export class SprintService {
     const sequence = this.sprints.nextSequence(project.id);
     const key = `${project.key}-SPRINT-${sequence}`;
 
-    const sprint = this.sprints.insert({
-      key,
-      projectId: project.id,
-      name: input.name,
-      goal: input.goal ?? null,
-      startsAt: input.startsAt ?? null,
-      endsAt: input.endsAt ?? null,
-      capacity: input.capacity ?? null,
-    });
+    const sprintResult = tryMutation(() =>
+      this.sprints.insert({
+        key,
+        projectId: project.id,
+        name: input.name,
+        goal: input.goal ?? null,
+        startsAt: input.startsAt ?? null,
+        endsAt: input.endsAt ?? null,
+        capacity: input.capacity ?? null,
+      }),
+    );
+    if (!sprintResult.ok) return sprintResult;
+    const sprint = sprintResult.value;
 
     this.audit.write({
       kind: 'sprint_planned',

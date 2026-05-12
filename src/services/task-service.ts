@@ -11,6 +11,7 @@ import type {
   TaskRepository,
 } from '../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
+import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
 import type { SyncService } from './sync-service.js';
@@ -102,37 +103,41 @@ export class TaskService {
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
     const initialState = this.stateMachine.getWorkflow().initial as TaskState;
 
-    const task = this.tasks.runInTransaction(() => {
-      const sequence = this.tasks.nextSequence(project.id);
-      const key = generateTaskKey(project.key, sequence);
+    const writeResult = tryMutation(() =>
+      this.tasks.runInTransaction(() => {
+        const sequence = this.tasks.nextSequence(project.id);
+        const key = generateTaskKey(project.key, sequence);
 
-      const created = this.tasks.insert({
-        key,
-        projectId: project.id,
-        title: input.title,
-        description: input.description ?? null,
-        acceptanceCriteria: input.acceptanceCriteria ?? [],
-        estimate: input.estimate ?? null,
-        priority: input.priority ?? 3,
-        assigneeId: input.assigneeId ?? null,
-        reporterId,
-        state: initialState,
-        metadata: input.metadata,
-      });
+        const created = this.tasks.insert({
+          key,
+          projectId: project.id,
+          title: input.title,
+          description: input.description ?? null,
+          acceptanceCriteria: input.acceptanceCriteria ?? [],
+          estimate: input.estimate ?? null,
+          priority: input.priority ?? 3,
+          assigneeId: input.assigneeId ?? null,
+          reporterId,
+          state: initialState,
+          metadata: input.metadata,
+        });
 
-      this.transitions.record({
-        taskId: created.id,
-        fromState: null,
-        toState: initialState,
-        action: 'create',
-        payload: { title: input.title },
-        actorId: reporterId,
-        viaActorId,
-        agentRunId: input.runId ?? null,
-      });
+        this.transitions.record({
+          taskId: created.id,
+          fromState: null,
+          toState: initialState,
+          action: 'create',
+          payload: { title: input.title },
+          actorId: reporterId,
+          viaActorId,
+          agentRunId: input.runId ?? null,
+        });
 
-      return created;
-    });
+        return created;
+      }),
+    );
+    if (!writeResult.ok) return writeResult;
+    const task = writeResult.value;
 
     this.audit.write({
       kind: 'task_created',
@@ -206,46 +211,50 @@ export class TaskService {
       | { readonly kind: 'not_found' }
       | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
 
-    const outcome = this.tasks.runInTransaction((): TransitionOutcome => {
-      const result = this.tasks.updateState(
-        task.id,
-        to as TaskState,
-        input.expectedUpdatedAt ?? null,
-      );
-      if (!result.ok) {
-        if (result.reason.kind === 'CONFLICT') {
-          return { kind: 'conflict', currentUpdatedAt: result.reason.currentUpdatedAt };
+    const outcomeResult = tryMutation(() =>
+      this.tasks.runInTransaction((): TransitionOutcome => {
+        const result = this.tasks.updateState(
+          task.id,
+          to as TaskState,
+          input.expectedUpdatedAt ?? null,
+        );
+        if (!result.ok) {
+          if (result.reason.kind === 'CONFLICT') {
+            return { kind: 'conflict', currentUpdatedAt: result.reason.currentUpdatedAt };
+          }
+          return { kind: 'not_found' };
         }
-        return { kind: 'not_found' };
-      }
 
-      // Fold validated payload back onto the task itself so a later
-      // `task show` reflects what the user declared at the gate. Two
-      // filters apply: (a) the field has to map to a first-class task
-      // column (whitelist below); (b) the workflow spec for the field
-      // must not declare `field_kind: 'validating'` — those are
-      // one-shot annotations that live in `transitions.payload` only.
-      const persisted = persistableFromPayload(
-        (data ?? {}) as Record<string, unknown>,
-        validation.value.requiresSpec,
-        (handle) => this.identity.ensureActor(handle, 'human'),
-      );
-      const finalTask =
-        persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
+        // Fold validated payload back onto the task itself so a later
+        // `task show` reflects what the user declared at the gate. Two
+        // filters apply: (a) the field has to map to a first-class task
+        // column (whitelist below); (b) the workflow spec for the field
+        // must not declare `field_kind: 'validating'` — those are
+        // one-shot annotations that live in `transitions.payload` only.
+        const persisted = persistableFromPayload(
+          (data ?? {}) as Record<string, unknown>,
+          validation.value.requiresSpec,
+          (handle) => this.identity.ensureActor(handle, 'human'),
+        );
+        const finalTask =
+          persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
 
-      this.transitions.record({
-        taskId: task.id,
-        fromState: task.state,
-        toState: to,
-        action: input.action,
-        payload: (data ?? {}) as Record<string, unknown>,
-        actorId,
-        viaActorId,
-        agentRunId: input.runId ?? null,
-      });
+        this.transitions.record({
+          taskId: task.id,
+          fromState: task.state,
+          toState: to,
+          action: input.action,
+          payload: (data ?? {}) as Record<string, unknown>,
+          actorId,
+          viaActorId,
+          agentRunId: input.runId ?? null,
+        });
 
-      return { kind: 'ok', task: finalTask };
-    });
+        return { kind: 'ok', task: finalTask };
+      }),
+    );
+    if (!outcomeResult.ok) return outcomeResult;
+    const outcome = outcomeResult.value;
 
     if (outcome.kind === 'not_found') {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: task.key });

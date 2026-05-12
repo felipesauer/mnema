@@ -62,11 +62,16 @@ export class SprintCommand {
     group
       .command('start <key>')
       .description('Activate a planned sprint')
-      .action(async (key: string) => {
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the sprint's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
+      .action(async (key: string, options: { readonly expectedUpdatedAt?: string }) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.sprint.start({
             sprintKey: key,
             actor: container.identity.getDefaultActor(),
+            expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderSprint(result, 'started');
         });
@@ -75,11 +80,16 @@ export class SprintCommand {
     group
       .command('close <key>')
       .description('Close an active sprint')
-      .action(async (key: string) => {
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the sprint's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
+      .action(async (key: string, options: { readonly expectedUpdatedAt?: string }) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.sprint.close({
             sprintKey: key,
             actor: container.identity.getDefaultActor(),
+            expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderSprint(result, 'closed');
         });

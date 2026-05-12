@@ -1,6 +1,7 @@
 import type { Epic } from '../domain/entities/epic.js';
 import type { Task } from '../domain/entities/task.js';
 import { EpicState } from '../domain/enums/epic-state.js';
+import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
@@ -61,6 +62,7 @@ export class EpicService {
     private readonly tasks: TaskRepository,
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
+    private readonly stateMachine: StateMachine,
   ) {}
 
   /**
@@ -70,6 +72,16 @@ export class EpicService {
    * @returns The created epic or a structured error
    */
   create(input: CreateEpicInput): Result<Epic, MnemaError> {
+    // F-E5: enforce the workflow's `features.epics` flag.
+    const workflow = this.stateMachine.getWorkflow();
+    if (!workflow.features.epics) {
+      return Err({
+        kind: ErrorCode.FeatureNotAvailable,
+        feature: 'epics',
+        workflow: workflow.name,
+      });
+    }
+
     const project = this.projects.findByKey(input.projectKey);
     if (project === null) {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });

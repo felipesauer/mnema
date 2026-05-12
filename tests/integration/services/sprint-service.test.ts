@@ -4,6 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { SprintState } from '@/domain/enums/sprint-state.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { SprintService } from '@/services/sprint-service.js';
@@ -32,8 +34,11 @@ describe('SprintService', () => {
     const sprintRepo = new SprintRepository(adapter);
     tasks = new TaskRepository(adapter);
     projects = new ProjectRepository(adapter);
+    const stateMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/default.json')),
+    );
 
-    sprints = new SprintService(sprintRepo, tasks, projects, audit);
+    sprints = new SprintService(sprintRepo, tasks, projects, audit, stateMachine);
 
     projects.insert({ key: 'TEST', name: 'Test' });
     adapter
@@ -233,6 +238,33 @@ describe('SprintService', () => {
       expect(stale.ok).toBe(false);
       if (stale.ok) return;
       expect(stale.error.kind).toBe(ErrorCode.Conflict);
+    });
+  });
+
+  describe('F-E5: features.sprints enforcement', () => {
+    it('refuses to plan a sprint on a workflow that declares features.sprints=false', () => {
+      const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-kanban')));
+      const kanbanMachine = new StateMachine(
+        new WorkflowLoader().load(path.resolve('workflows/kanban.json')),
+      );
+      const sprintsKanban = new SprintService(
+        new SprintRepository(adapter),
+        tasks,
+        projects,
+        audit,
+        kanbanMachine,
+      );
+      const result = sprintsKanban.plan({
+        projectKey: 'TEST',
+        name: 'should-fail',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.FeatureNotAvailable);
+      if (result.error.kind !== ErrorCode.FeatureNotAvailable) return;
+      expect(result.error.feature).toBe('sprints');
+      expect(result.error.workflow).toBe('kanban');
     });
   });
 });

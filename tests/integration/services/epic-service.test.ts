@@ -4,6 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { EpicState } from '@/domain/enums/epic-state.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { EpicService } from '@/services/epic-service.js';
@@ -41,7 +43,10 @@ describe('EpicService', () => {
       .run(actorId);
 
     tasks = new TaskRepository(adapter);
-    epics = new EpicService(new EpicRepository(adapter), tasks, projects, audit);
+    const stateMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/default.json')),
+    );
+    epics = new EpicService(new EpicRepository(adapter), tasks, projects, audit, stateMachine);
   });
 
   afterEach(() => {
@@ -128,5 +133,31 @@ describe('EpicService', () => {
 
     const closed = epics.list('TEST', EpicState.Closed);
     expect(closed.map((e) => e.key)).toEqual(['TEST-EPIC-1']);
+  });
+
+  it('F-E5: refuses to create an epic on a workflow with features.epics=false', () => {
+    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-lean')));
+    const leanMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/lean.json')),
+    );
+    const projects = new ProjectRepository(adapter);
+    const epicsLean = new EpicService(
+      new EpicRepository(adapter),
+      tasks,
+      projects,
+      audit,
+      leanMachine,
+    );
+    const result = epicsLean.create({
+      projectKey: 'TEST',
+      title: 'should-fail',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.FeatureNotAvailable);
+    if (result.error.kind !== ErrorCode.FeatureNotAvailable) return;
+    expect(result.error.feature).toBe('epics');
+    expect(result.error.workflow).toBe('lean');
   });
 });
