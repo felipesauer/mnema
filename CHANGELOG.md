@@ -10,6 +10,29 @@ stable release.
 
 ## [Unreleased]
 
+### Added
+
+- **FTS5 search across skills, memories and observations.** Migration
+  009 adds `skills_fts`, `memories_fts` and `observations_fts` virtual
+  tables with insert/update/delete triggers. `tasks_search` (MCP tool)
+  and `SearchService` (CLI) now accept `skill | memory | observation`
+  as `entities` filter values; skill hits surface the latest version
+  per slug. Diacritic-insensitive `unicode61` tokenizer, same as the
+  pre-existing FTS tables.
+- **`mnema doctor --rebuild-mirrors`.** Recreates missing `.md`
+  files under `paths.skills` and `paths.memory` from the corresponding
+  SQLite rows. Existing mirror files are left alone — no reformat, no
+  overwrite. Reports the slugs it rebuilt. Pairs with the `no_op`
+  self-heal added in 0.3.0-alpha.1 (F-8): the inline path recovers a
+  missing mirror when the agent re-runs `*_record`; this flag covers
+  the case where no one ever re-records that slug.
+- **MCP server warns loudly on boot when migrations are pending.** A
+  pino `warn` line listing the pending files lands on stderr right
+  before "MCP server connected". Tool calls that touch the affected
+  shape will still fail with `SCHEMA_OUT_OF_DATE` (F-1 guard from
+  0.3.0-alpha.1), but the boot warning surfaces the cause before the
+  first client request.
+
 ### Fixed
 
 - **`tasks_list({ state })` derives its enum from the active workflow.**

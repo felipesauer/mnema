@@ -151,6 +151,26 @@ export class MemoryService {
     return removed;
   }
 
+  /**
+   * Regenerates missing `.md` mirror files from every SQLite row. The
+   * existing mirror files are left alone (no overwrite) — this only
+   * heals drift, it does not reformat content the human may have
+   * edited locally. Returns the list of slugs whose mirror was just
+   * rewritten.
+   *
+   * @returns Slugs whose mirror file was created during this call
+   */
+  rebuildMirrors(): string[] {
+    const rebuilt: string[] = [];
+    for (const memory of this.repo.listAll()) {
+      if (!mirrorExists(this.memoryDir, memory.slug)) {
+        this.writeMirror(memory);
+        rebuilt.push(memory.slug);
+      }
+    }
+    return rebuilt;
+  }
+
   private writeMirror(memory: Memory): void {
     const filePath = path.join(this.memoryDir, `${memory.slug}.md`);
     const lines = [

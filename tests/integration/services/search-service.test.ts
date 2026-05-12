@@ -85,4 +85,50 @@ describe('SearchService', () => {
   it('returns empty array for blank queries', () => {
     expect(search.search('   ')).toEqual([]);
   });
+
+  it('2.2: searches skills (latest version only) by content', () => {
+    const db = adapter.getDatabase();
+    db.prepare(
+      `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+       VALUES
+         ('s1', 'safe-migrate', 'Safe migrate v1', 1, 'd', 'how to roll a migration safely', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel')),
+         ('s2', 'safe-migrate', 'Safe migrate v2', 2, 'd', 'updated migration guide v2', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+
+    const hits = search.search('migration', { entities: ['skill'] });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.entity).toBe('skill');
+    expect(hits[0]?.key).toBe('safe-migrate');
+    // Latest version selected (description matches v2 content).
+    expect(hits[0]?.snippet.toLowerCase()).toContain('migration');
+  });
+
+  it('2.2: searches memories by title and content', () => {
+    const db = adapter.getDatabase();
+    db.prepare(
+      `INSERT INTO memories (id, slug, title, content, topics, created_by)
+       VALUES ('m1', 'pci', 'PCI compliance is mandatory', 'Client requires PCI-DSS', '[]',
+              (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    const hits = search.search('PCI', { entities: ['memory'] });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.entity).toBe('memory');
+    expect(hits[0]?.key).toBe('pci');
+  });
+
+  it('2.2: searches observations by content', () => {
+    const db = adapter.getDatabase();
+    db.prepare(
+      `INSERT INTO observations (id, content, topics, created_by)
+       VALUES ('o1', 'Build flaky on Friday afternoon', '[]',
+               (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    const hits = search.search('flaky', { entities: ['observation'] });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.entity).toBe('observation');
+    expect(hits[0]?.key).toBeNull();
+    expect(hits[0]?.snippet.toLowerCase()).toContain('flaky');
+  });
 });
