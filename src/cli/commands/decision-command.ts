@@ -21,6 +21,7 @@ interface ListOptions {
 
 interface SupersedeOptions {
   readonly by: string;
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -106,12 +107,17 @@ export class DecisionCommand {
     group
       .command('accept <key>')
       .description('Move a `proposed` ADR to `accepted`')
-      .action(async (key: string) => {
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the decision's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
+      .action(async (key: string, options: { readonly expectedUpdatedAt?: string }) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
             decisionKey: key,
             status: DecisionStatus.Accepted,
             actor: container.identity.getDefaultActor(),
+            expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderDecision(result, 'accepted');
         });
@@ -120,12 +126,17 @@ export class DecisionCommand {
     group
       .command('reject <key>')
       .description('Move a `proposed` ADR to `rejected`')
-      .action(async (key: string) => {
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the decision's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
+      .action(async (key: string, options: { readonly expectedUpdatedAt?: string }) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
             decisionKey: key,
             status: DecisionStatus.Rejected,
             actor: container.identity.getDefaultActor(),
+            expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderDecision(result, 'rejected');
         });
@@ -135,6 +146,10 @@ export class DecisionCommand {
       .command('supersede <key>')
       .description('Mark an ADR as superseded by another')
       .requiredOption('--by <successor>', 'Key of the decision that replaces this one')
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the decision's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
       .action(async (key: string, options: SupersedeOptions) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.decision.transition({
@@ -142,6 +157,7 @@ export class DecisionCommand {
             status: DecisionStatus.Superseded,
             supersededBy: options.by,
             actor: container.identity.getDefaultActor(),
+            expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderDecision(result, 'superseded');
         });

@@ -10,6 +10,31 @@ stable release.
 
 ## [Unreleased]
 
+### Added (Phase E follow-ups)
+
+- **`features.sprints` and `features.epics` are now enforced.**
+  `SprintService.plan` refuses with the new `FEATURE_NOT_AVAILABLE`
+  error when the active workflow declares `features.sprints: false`
+  (e.g. `kanban`, `lean`); `EpicService.create` does the same for
+  `features.epics`. Previously the flags were declarative metadata
+  that the services ignored.
+- **CLI `--expected-updated-at` flag on `decision accept | reject |
+  supersede` and `sprint start | close`.** Brings the CLI surface up
+  to parity with the service / MCP path delivered in Camada-3:
+  passing the token rejects the transition with `CONFLICT` when the
+  stored `updatedAt` differs. Useful for scripts that race or for
+  read-decide-write flows that need to detect concurrent edits.
+
+### Changed (Phase E follow-ups)
+
+- **Mutation services wrap `SqliteError` into structured errors.**
+  New `src/storage/sqlite/sqlite-error-map.ts` exposes a `tryMutation`
+  helper that maps `SQLITE_BUSY` / `database is locked` to
+  `ErrorCode.StorageBusy`. Applied to `TaskService.create` /
+  `transition`, `SprintService.plan`, `NoteService.add`. Wider
+  coverage to follow as the surface grows. Completes the F-E4
+  partial fix from 2026-05-12.
+
 ### Fixed (Phase E)
 
 - **F-E1: FTS query errors no longer leak SQLite stack-traces.**

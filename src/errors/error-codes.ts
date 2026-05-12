@@ -50,6 +50,8 @@ export enum ErrorCode {
 
   SearchInvalidQuery = 'SEARCH_INVALID_QUERY',
   StorageBusy = 'STORAGE_BUSY',
+
+  FeatureNotAvailable = 'FEATURE_NOT_AVAILABLE',
 }
 
 /**

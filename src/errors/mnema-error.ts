@@ -114,7 +114,12 @@ export type MnemaError =
       readonly query: string;
       readonly detail: string;
     }
-  | { readonly kind: ErrorCode.StorageBusy; readonly detail: string };
+  | { readonly kind: ErrorCode.StorageBusy; readonly detail: string }
+  | {
+      readonly kind: ErrorCode.FeatureNotAvailable;
+      readonly feature: string;
+      readonly workflow: string;
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

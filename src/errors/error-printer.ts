@@ -240,6 +240,16 @@ export function formatError(error: MnemaError): string {
           `Wait a moment and retry; if it persists, check for stuck \`mnema mcp serve\` processes.`,
       );
       break;
+
+    case ErrorCode.FeatureNotAvailable:
+      lines.push(
+        `Feature \`${error.feature}\` is not available in the \`${error.workflow}\` workflow`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} Pick a workflow that declares \`features.${error.feature}: true\` ` +
+          `(e.g. \`default\` or \`jira-classic\`) when running \`mnema init\`.`,
+      );
+      break;
   }
 
   return lines.join('\n');
