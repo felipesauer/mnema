@@ -5,12 +5,13 @@ import { Err, Ok, type Result } from '../../services/result.js';
 /**
  * Translates an unknown thrown value into a structured {@link MnemaError}
  * when the cause matches a SQLite operational condition we want to
- * surface cleanly (e.g. `SQLITE_BUSY` while another mutation holds the
- * write lock). Returns `null` for any other shape so callers can
+ * surface cleanly. Returns `null` for any other shape so callers can
  * rethrow / propagate naturally.
  *
  * Currently maps:
  * - `database is locked` / `SQLITE_BUSY` → {@link ErrorCode.StorageBusy}
+ * - `UNIQUE constraint failed: <table>.<column>` → entity-specific
+ *   variant (see {@link mapUniqueConstraint})
  *
  * FTS5 syntax errors are intentionally NOT handled here — those are
  * specific to the search path and live in `SearchService.search`.
@@ -22,6 +23,34 @@ export function mapSqliteError(error: unknown): MnemaError | null {
   const message = error instanceof Error ? error.message : String(error);
   if (/database is locked|SQLITE_BUSY/i.test(message)) {
     return { kind: ErrorCode.StorageBusy, detail: message };
+  }
+  const unique = mapUniqueConstraint(message);
+  if (unique !== null) return unique;
+  return null;
+}
+
+/**
+ * Recognises the `UNIQUE constraint failed: <table>.<column>` shape
+ * `better-sqlite3` throws and translates it into the entity-specific
+ * variant when we have one. Today the partial unique index on
+ * `sprints(project_id) WHERE state = 'ACTIVE'` fires when two
+ * concurrent `sprint start` calls race past the service-level
+ * `findActive` check — we surface that as the same
+ * `ACTIVE_SPRINT_EXISTS` variant the single-actor retry path uses.
+ *
+ * The active sprint's key is not in the error message; callers that
+ * need it can re-query. The `activeSprintKey` field is left empty so
+ * the error remains usable without forcing a synchronous lookup at
+ * mapping time.
+ */
+function mapUniqueConstraint(message: string): MnemaError | null {
+  if (!/UNIQUE constraint failed/i.test(message)) return null;
+  if (/idx_sprints_active|sprints\.project_id/i.test(message)) {
+    return {
+      kind: ErrorCode.ActiveSprintExists,
+      projectKey: '',
+      activeSprintKey: '',
+    };
   }
   return null;
 }

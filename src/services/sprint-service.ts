@@ -176,17 +176,41 @@ export class SprintService {
       });
     }
 
-    const result = this.sprints.updateState(
-      sprint.id,
-      SprintState.Active,
-      input.expectedUpdatedAt ?? null,
+    // Default token to the row we just read; closes the lost-write
+    // window when callers don't pass --expected-updated-at.
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : sprint.updatedAt;
+
+    // The `findActive` check above closes the common case, but two
+    // concurrent CLI invocations can race past it before either UPDATE
+    // fires. The partial unique index `idx_sprints_active` then
+    // refuses the second update with `SQLITE_CONSTRAINT_UNIQUE`. Wrap
+    // the call so the loser gets the same `ACTIVE_SPRINT_EXISTS` it
+    // would have got from `findActive`.
+    const wrapped = tryMutation(() =>
+      this.sprints.updateState(sprint.id, SprintState.Active, expectedUpdatedAt),
     );
+    if (!wrapped.ok) {
+      if (wrapped.error.kind === ErrorCode.ActiveSprintExists) {
+        // The race winner's key was not in the SqliteError message; look it up.
+        const winner = this.sprints.findActive(sprint.projectId);
+        const projectKey = sprint.key.split('-SPRINT-')[0] ?? sprint.projectId;
+        return Err({
+          kind: ErrorCode.ActiveSprintExists,
+          projectKey,
+          activeSprintKey: winner?.key ?? '(unknown)',
+        });
+      }
+      return Err(wrapped.error);
+    }
+    const result = wrapped.value;
     if (!result.ok) {
       if (result.reason.kind === 'NOT_FOUND') {
         return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
       }
       return Err({
         kind: ErrorCode.Conflict,
+        entity: 'sprint',
         taskKey: sprint.key,
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
@@ -224,17 +248,20 @@ export class SprintService {
       });
     }
 
-    const result = this.sprints.updateState(
-      sprint.id,
-      SprintState.Closed,
-      input.expectedUpdatedAt ?? null,
-    );
+    // Default token to the row we just read so two concurrent
+    // `sprint close` calls don't both audit "closed" against an
+    // already-closed sprint.
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : sprint.updatedAt;
+
+    const result = this.sprints.updateState(sprint.id, SprintState.Closed, expectedUpdatedAt);
     if (!result.ok) {
       if (result.reason.kind === 'NOT_FOUND') {
         return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
       }
       return Err({
         kind: ErrorCode.Conflict,
+        entity: 'sprint',
         taskKey: sprint.key,
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });

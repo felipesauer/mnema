@@ -105,17 +105,23 @@ export class AuditWriter {
       return;
     }
 
-    const previous = this.state.read();
-    const chained: AuditEvent = {
-      ...event,
-      v: 2,
-      prev_hash: previous.chainHeadHash,
-    };
-    const hash = hashEvent(chained);
-    const sealed: AuditEvent = { ...chained, hash };
-    const line = `${JSON.stringify(sealed)}\n`;
-    appendFileSync(this.currentFile, line, { flag: 'a' });
-    this.state.recordEvent(sealed.at, hash);
+    // The append + mirror update must be serialised against concurrent
+    // writers so the on-disk chain doesn't fork. `withChainAdvance`
+    // wraps the trio in `BEGIN IMMEDIATE`: only one writer holds the
+    // SQLite write lock at a time, so a second concurrent process is
+    // queued and reads the new head when its turn comes up.
+    this.state.withChainAdvance((currentHead) => {
+      const chained: AuditEvent = {
+        ...event,
+        v: 2,
+        prev_hash: currentHead,
+      };
+      const hash = hashEvent(chained);
+      const sealed: AuditEvent = { ...chained, hash };
+      const line = `${JSON.stringify(sealed)}\n`;
+      appendFileSync(this.currentFile, line, { flag: 'a' });
+      return { hash, at: sealed.at };
+    });
   }
 
   /**

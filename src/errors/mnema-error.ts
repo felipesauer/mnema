@@ -69,8 +69,15 @@ export type MnemaError =
   | { readonly kind: ErrorCode.NoActiveRun }
   | {
       readonly kind: ErrorCode.Conflict;
+      /**
+       * Key of the entity whose row changed concurrently. The field
+       * name is kept as `taskKey` for backward compatibility with the
+       * first conflict path; `entity` says which kind of artefact it
+       * actually is so the printer can phrase the message correctly.
+       */
       readonly taskKey: string;
       readonly currentUpdatedAt: string;
+      readonly entity?: 'task' | 'decision' | 'sprint';
     }
   | { readonly kind: ErrorCode.SprintNotFound; readonly sprintKey: string }
   | {

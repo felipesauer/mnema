@@ -148,20 +148,25 @@ export class DecisionService {
       supersededById = successor.id;
     }
 
+    // Default the optimistic-concurrency token to the row we just
+    // read so two concurrent `decision accept`/`decision reject`
+    // calls can't lose-write each other.
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : decision.updatedAt;
+
     const result = this.decisions.updateStatus(
       decision.id,
       input.status,
       supersededById,
-      input.expectedUpdatedAt ?? null,
+      expectedUpdatedAt,
     );
     if (!result.ok) {
       if (result.reason.kind === 'NOT_FOUND') {
         return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
       }
-      // Reuse the generic Conflict error shape used by tasks — the
-      // `taskKey` field doubles as the conflicting entity key here.
       return Err({
         kind: ErrorCode.Conflict,
+        entity: 'decision',
         taskKey: decision.key,
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
