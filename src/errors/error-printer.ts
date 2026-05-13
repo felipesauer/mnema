@@ -140,12 +140,17 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Call agent_run_start before any mutation`);
       break;
 
-    case ErrorCode.Conflict:
+    case ErrorCode.Conflict: {
+      const entityLabel =
+        error.entity === 'decision' ? 'Decision' : error.entity === 'sprint' ? 'Sprint' : 'Task';
       lines.push(
-        `Task ${error.taskKey} changed since you read it (current updated_at: ${error.currentUpdatedAt})`,
+        `${entityLabel} ${error.taskKey} changed since you read it (current updated_at: ${error.currentUpdatedAt})`,
       );
-      lines.push(`${pc.dim('hint:')} Re-read the task and retry with the new updated_at`);
+      lines.push(
+        `${pc.dim('hint:')} Re-read the ${entityLabel.toLowerCase()} and retry with the new updated_at`,
+      );
       break;
+    }
 
     case ErrorCode.SprintNotFound:
       lines.push(`Sprint ${error.sprintKey} not found`);

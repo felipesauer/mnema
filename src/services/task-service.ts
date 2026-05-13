@@ -218,13 +218,17 @@ export class TaskService {
       | { readonly kind: 'not_found' }
       | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
 
+    // Default the optimistic-concurrency token to whatever we just
+    // read so concurrent transitions can't lose-write each other.
+    // Callers that need to write blind can opt in by passing an
+    // explicit empty string (treated as "no token") — there is no
+    // CLI surface for that today, and the default is fail-closed.
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : task.updatedAt;
+
     const outcomeResult = tryMutation(() =>
       this.tasks.runInTransaction((): TransitionOutcome => {
-        const result = this.tasks.updateState(
-          task.id,
-          to as TaskState,
-          input.expectedUpdatedAt ?? null,
-        );
+        const result = this.tasks.updateState(task.id, to as TaskState, expectedUpdatedAt);
         if (!result.ok) {
           if (result.reason.kind === 'CONFLICT') {
             return { kind: 'conflict', currentUpdatedAt: result.reason.currentUpdatedAt };
@@ -279,6 +283,7 @@ export class TaskService {
     if (outcome.kind === 'conflict') {
       return Err({
         kind: ErrorCode.Conflict,
+        entity: 'task',
         taskKey: task.key,
         currentUpdatedAt: outcome.currentUpdatedAt,
       });

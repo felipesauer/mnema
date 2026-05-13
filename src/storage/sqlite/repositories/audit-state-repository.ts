@@ -28,17 +28,24 @@ interface AuditStateRow {
 }
 
 /**
- * Persistence for the single-row {@link AuditState} mirror. Reads are
- * cheap and frequent (every `AuditWriter.write()` reads + bumps the
- * counter), so the SELECT + UPDATE pair is intentionally not wrapped
- * in a transaction — the audit dir is single-writer in practice.
+ * Persistence for the single-row {@link AuditState} mirror.
+ *
+ * The mirror feeds the audit-log integrity check, so every advance
+ * must be serialised against concurrent writers — otherwise two
+ * processes can both read the same head, both append a JSONL line,
+ * and both update the mirror, leaving the on-disk chain forked.
+ * {@link AuditStateRepository.withChainAdvance} acquires a SQLite
+ * write lock (`BEGIN IMMEDIATE`) for the whole read → compute →
+ * append → record trio so only one writer at a time touches the
+ * chain.
  */
 export class AuditStateRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
-   * Reads the current state. Migration 011 seeded `id = 1`, so this
-   * always returns a row on a migrated project.
+   * Reads the current state outside of any transaction. Useful for
+   * the doctor walk; mutation paths must go through
+   * {@link AuditStateRepository.withChainAdvance} instead.
    *
    * @returns The audit-state row
    */
@@ -61,23 +68,46 @@ export class AuditStateRepository {
   }
 
   /**
-   * Atomically advances the mirror after a single event has been
-   * appended to the JSONL log.
+   * Serialises a chain advance against concurrent writers. The
+   * callback receives the current head and must return the new
+   * head plus the `at` timestamp of the event it appended. The
+   * append (typically `appendFileSync` on a JSONL file) happens
+   * inside the SQLite write transaction, so two concurrent CLI
+   * invocations are forced to interleave: one acquires the lock,
+   * appends, updates the head, commits; the second sees the new
+   * head and chains correctly.
    *
-   * @param eventAt - `at` ISO timestamp of the event that was written
-   * @param chainHeadHash - SHA-256 of the line as written to disk
+   * `BEGIN IMMEDIATE` is used (not `BEGIN`) so the lock is taken
+   * up front rather than on the first write inside the transaction
+   * — that avoids the read-then-immediate-write race that
+   * `BEGIN DEFERRED` exhibits.
+   *
+   * @param advance - Callback that performs the append and returns
+   *   the new chain-head hash + event `at` timestamp
    */
-  recordEvent(eventAt: string, chainHeadHash: string): void {
-    this.adapter
-      .getDatabase()
-      .prepare(
+  withChainAdvance(advance: (currentHead: string | null) => { hash: string; at: string }): void {
+    const db = this.adapter.getDatabase();
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const row = db.prepare('SELECT chain_head_hash FROM audit_state WHERE id = 1').get() as
+        | { chain_head_hash: string | null }
+        | undefined;
+      if (row === undefined) {
+        throw new Error('audit_state row is missing — migration 011 may not have been applied');
+      }
+      const { hash, at } = advance(row.chain_head_hash);
+      db.prepare(
         `UPDATE audit_state
             SET event_count = event_count + 1,
                 last_event_at = ?,
                 chain_head_hash = ?,
                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
           WHERE id = 1`,
-      )
-      .run(eventAt, chainHeadHash);
+      ).run(at, hash);
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
   }
 }

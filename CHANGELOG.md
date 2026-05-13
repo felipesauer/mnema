@@ -10,6 +10,40 @@ stable release.
 
 ## [Unreleased]
 
+### Added (multi-actor concurrency)
+
+- **Lost-write protection on every mutating transition.**
+  `TaskService.transition`, `DecisionService.transition`,
+  `SprintService.start` / `SprintService.close` now default
+  `expectedUpdatedAt` to the row they just read. Two concurrent
+  CLI invocations against the same entity can no longer both report
+  success — the second writer hits `UPDATE … WHERE updated_at = ?`
+  with zero rows affected and returns `CONFLICT` (or
+  `INVALID_TRANSITION` if the row already moved past the valid
+  source state). Callers that genuinely want to write blind can opt
+  in by passing an empty string for the token; there is no CLI
+  surface for that.
+
+- **`AuditStateRepository.withChainAdvance(callback)`** serialises
+  the audit-log hash chain advance against concurrent writers. The
+  `read head → appendFileSync → recordEvent` trio now runs inside
+  `BEGIN IMMEDIATE`, so concurrent CLI invocations queue cleanly on
+  the SQLite write lock and the on-disk chain stays linear under
+  fan-out. Previously, 16-way concurrent task creation could fork
+  the chain — caught by `doctor`, but with no in-band repair.
+
+- **`SQLITE_CONSTRAINT_UNIQUE` on `sprints(project_id) WHERE state =
+  'ACTIVE'` is now wrapped.** Two concurrent `mnema sprint start`
+  calls on different planned sprints used to leak a raw `SqliteError`
+  stack trace with exit 1; the loser now exits with structured
+  `ACTIVE_SPRINT_EXISTS` and the same message wording as the
+  single-actor path.
+
+- **`Conflict` error carries an `entity` field** (`'task' |
+  'decision' | 'sprint'`). The printer renders `Decision X changed
+  since you read it` / `Sprint X changed…` instead of the hardcoded
+  `Task` prefix that confused agents pattern-matching the wording.
+
 ### Added (audit-log integrity)
 
 - **Hash chain on every audit event (schema `v: 2`).** Each JSONL line
