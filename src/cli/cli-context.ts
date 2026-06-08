@@ -1,7 +1,12 @@
 import { ConfigLoader } from '../config/config-loader.js';
 import type { Config } from '../config/config-schema.js';
+import {
+  WorkflowInvalidError,
+  WorkflowNotFoundError,
+} from '../domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
+import { fromZodIssues } from '../errors/mnema-error.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
 import { perfTrace } from '../utils/perf-trace.js';
@@ -40,9 +45,29 @@ export function openCliContext(): CliContext {
   trace.mark('config parsed');
 
   const projectRoot = resolveProjectRoot(configFile);
-  const container = createServiceContainer(config, projectRoot, {
-    migrationsDir: migrationsDir(),
-  });
+  let container: ServiceContainer;
+  try {
+    container = createServiceContainer(config, projectRoot, {
+      migrationsDir: migrationsDir(),
+    });
+  } catch (error) {
+    // The workflow loader is the most common throw site during boot —
+    // route its structured errors through the standard printer instead
+    // of letting them surface as a raw Node stack trace.
+    if (error instanceof WorkflowInvalidError) {
+      process.exit(
+        printError({
+          kind: ErrorCode.WorkflowInvalid,
+          path: error.path,
+          issues: fromZodIssues(error.issues),
+        }),
+      );
+    }
+    if (error instanceof WorkflowNotFoundError) {
+      process.exit(printError({ kind: ErrorCode.WorkflowNotFound, path: error.path }));
+    }
+    throw error;
+  }
   trace.mark('container built');
   trace.end();
 

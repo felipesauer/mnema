@@ -85,20 +85,31 @@ export class TaskCommand {
         await withCliContext(({ container }) => {
           let filter: { state?: TaskState } = {};
           if (options.state !== undefined) {
+            const given = options.state;
             const workflow = container.stateMachine.getWorkflow();
             const allowed = workflow.states;
-            const given = options.state.toUpperCase();
-            if (!allowed.includes(given)) {
+            // States are case-sensitive by design (the workflow may
+            // declare `In Progress` or `состояние1` verbatim). Look up
+            // the input literally first; if that fails, fall back to a
+            // case-insensitive match so legacy `--state draft` keeps
+            // working on workflows that use uppercase names.
+            const exact = allowed.includes(given) ? given : null;
+            const ci =
+              exact === null
+                ? (allowed.find((s) => s.toLowerCase() === given.toLowerCase()) ?? null)
+                : null;
+            const resolved = exact ?? ci;
+            if (resolved === null) {
               process.exit(
                 printError({
                   kind: ErrorCode.InvalidWorkflowState,
                   workflow: workflow.name,
-                  given: options.state,
+                  given,
                   allowed,
                 }),
               );
             }
-            filter = { state: given as TaskState };
+            filter = { state: resolved as TaskState };
           }
           const tasks = container.task.list(filter);
           process.stdout.write(`${formatTaskList(tasks)}\n`);

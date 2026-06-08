@@ -6,7 +6,11 @@ import type { Command } from 'commander';
 import pc from 'picocolors';
 
 import { ConfigLoader } from '../../config/config-loader.js';
-import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
+import {
+  formatWorkflowIssues,
+  WorkflowInvalidError,
+  WorkflowLoader,
+} from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
@@ -197,12 +201,21 @@ export class DoctorCommand {
 
     const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
+    let loadedWorkflow: ReturnType<WorkflowLoader['load']> | null = null;
     try {
-      new WorkflowLoader().load(workflowPath);
+      loadedWorkflow = new WorkflowLoader().load(workflowPath);
       checks.push({ name: 'workflow loads', ok: true, detail: workflowPath });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown';
-      checks.push({ name: 'workflow loads', ok: false, detail: message });
+      if (error instanceof WorkflowInvalidError) {
+        // Surface each schema/parse issue on its own indented line so
+        // the user can find the offending field without re-running the
+        // tool with a different command.
+        const detail = formatWorkflowIssues(error.path, error.issues);
+        checks.push({ name: 'workflow loads', ok: false, detail });
+      } else {
+        const message = error instanceof Error ? error.message : 'unknown';
+        checks.push({ name: 'workflow loads', ok: false, detail: message });
+      }
     }
 
     const requiredDirs = [
@@ -236,6 +249,10 @@ export class DoctorCommand {
           checks.push(
             ...inspectAuditIntegrity(adapter, path.join(projectRoot, config.paths.audit)),
           );
+          if (loadedWorkflow !== null) {
+            checks.push(...inspectWorkflowShape(loadedWorkflow));
+            checks.push(...inspectTaskStateDrift(adapter, loadedWorkflow));
+          }
         } finally {
           adapter.close();
         }
@@ -594,6 +611,113 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   }
 
   return checks;
+}
+
+/**
+ * Reports static workflow-shape issues that are well-formed against
+ * the schema but likely authoring mistakes:
+ * - non-terminal states with no outbound transitions (tasks land
+ *   there and get stuck without recovery)
+ * - non-initial states with no inbound transitions (unreachable
+ *   from any path)
+ *
+ * Both surface as warnings, not errors, so they don't break workflows
+ * that intentionally use those shapes (e.g. a state populated only by
+ * external tooling). The doctor's exit code stays clean.
+ */
+export function inspectWorkflowShape(
+  workflow: import('../../domain/state-machine/state-machine.js').Workflow,
+): DoctorCheck[] {
+  const checks: DoctorCheck[] = [];
+
+  const deadEnds: string[] = [];
+  for (const state of workflow.states) {
+    if (workflow.terminal.includes(state)) continue;
+    const exits = workflow.transitions[state];
+    if (exits === undefined || Object.keys(exits).length === 0) {
+      deadEnds.push(state);
+    }
+  }
+  if (deadEnds.length > 0) {
+    checks.push({
+      name: 'workflow dead-end states',
+      ok: false,
+      severity: 'warning',
+      detail: `non-terminal states without outbound transitions: ${deadEnds.join(', ')}`,
+    });
+  } else {
+    checks.push({
+      name: 'workflow dead-end states',
+      ok: true,
+      detail: 'every non-terminal state has at least one outbound transition',
+    });
+  }
+
+  const inbound = new Set<string>();
+  for (const actions of Object.values(workflow.transitions)) {
+    for (const transition of Object.values(actions)) {
+      inbound.add(transition.to);
+    }
+  }
+  const unreachable: string[] = [];
+  for (const state of workflow.states) {
+    if (state === workflow.initial) continue;
+    if (!inbound.has(state)) unreachable.push(state);
+  }
+  if (unreachable.length > 0) {
+    checks.push({
+      name: 'workflow unreachable states',
+      ok: false,
+      severity: 'warning',
+      detail: `non-initial states with no inbound transitions: ${unreachable.join(', ')}`,
+    });
+  } else {
+    checks.push({
+      name: 'workflow unreachable states',
+      ok: true,
+      detail: 'every non-initial state has at least one inbound transition',
+    });
+  }
+
+  return checks;
+}
+
+/**
+ * Compares the distinct `state` values stored on active tasks against
+ * the workflow's declared states. A non-empty diff means a workflow
+ * edit dropped a state that still has live tasks — those tasks are
+ * stranded (no transition exists out of an unknown state). Reported
+ * as an error since it's data corruption from the workflow's
+ * perspective.
+ */
+export function inspectTaskStateDrift(
+  adapter: SqliteAdapter,
+  workflow: import('../../domain/state-machine/state-machine.js').Workflow,
+): DoctorCheck[] {
+  const rows = adapter
+    .getDatabase()
+    .prepare('SELECT DISTINCT state FROM tasks WHERE deleted_at IS NULL ORDER BY state')
+    .all() as Array<{ state: string }>;
+  const known = new Set(workflow.states);
+  const orphan = rows.map((r) => r.state).filter((s) => !known.has(s));
+
+  if (orphan.length === 0) {
+    return [
+      {
+        name: 'tasks states match workflow',
+        ok: true,
+        detail: `${rows.length} distinct state(s) on active tasks, all declared`,
+      },
+    ];
+  }
+  return [
+    {
+      name: 'tasks states match workflow',
+      ok: false,
+      severity: 'error',
+      detail: `tasks in states not declared by the workflow: ${orphan.join(', ')}`,
+    },
+  ];
 }
 
 function printChecks(checks: readonly DoctorCheck[]): void {

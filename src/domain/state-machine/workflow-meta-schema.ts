@@ -174,7 +174,64 @@ export const WorkflowMetaSchema = z
   .refine((w) => w.terminal.every((t) => w.states.includes(t)), {
     message: 'all terminal states must be in states[]',
     path: ['terminal'],
+  })
+  .superRefine((w, ctx) => {
+    // Every transition's `to` must resolve to a declared state.
+    // Without this, an author can move tasks into a phantom state
+    // from which no further action is reachable.
+    for (const [fromState, actions] of Object.entries(w.transitions)) {
+      if (!w.states.includes(fromState)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `transition from-state \`${fromState}\` is not in states[]`,
+          path: ['transitions', fromState],
+        });
+      }
+      for (const [action, transition] of Object.entries(actions)) {
+        if (!w.states.includes(transition.to)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `transition \`${fromState}.${action}\` points to unknown state \`${transition.to}\``,
+            path: ['transitions', fromState, action, 'to'],
+          });
+        }
+      }
+    }
+    // Walk every gate-field spec and check numeric bounds. Building an
+    // invalid regex (min > max) silently passed before and crashed at
+    // first `task move` with a raw Zod stack.
+    for (const [fromState, actions] of Object.entries(w.transitions)) {
+      for (const [action, transition] of Object.entries(actions)) {
+        for (const [field, spec] of Object.entries(transition.requires)) {
+          assertSpecBounds(spec, ctx, ['transitions', fromState, action, 'requires', field]);
+        }
+      }
+    }
   });
+
+function assertSpecBounds(
+  spec: FieldSpec,
+  ctx: z.RefinementCtx,
+  prefix: readonly (string | number)[],
+): void {
+  if (spec.type === 'string' || spec.type === 'number' || spec.type === 'array') {
+    if (spec.min !== undefined && spec.max !== undefined && spec.min > spec.max) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${spec.type} field: min (${spec.min}) must be <= max (${spec.max})`,
+        path: [...prefix, 'max'],
+      });
+    }
+  }
+  if (spec.type === 'array') {
+    assertSpecBounds(spec.items, ctx, [...prefix, 'items']);
+  }
+  if (spec.type === 'object') {
+    for (const [key, nested] of Object.entries(spec.properties)) {
+      assertSpecBounds(nested, ctx, [...prefix, 'properties', key]);
+    }
+  }
+}
 
 /**
  * Type of a fully-validated workflow JSON document.
