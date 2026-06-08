@@ -53,7 +53,24 @@ export class WorkflowLoader {
       throw new WorkflowNotFoundError(path);
     }
 
-    const json: unknown = JSON.parse(raw);
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch (error) {
+      // Reuse the WorkflowInvalidError shape so a syntactically broken
+      // workflow surfaces through the same error printer as a
+      // schema-invalid one. The single fake issue points at <root> and
+      // carries the parser's `line N column M` text.
+      const message = error instanceof Error ? error.message : 'invalid JSON';
+      throw new WorkflowInvalidError(path, [
+        {
+          code: 'custom',
+          path: [],
+          message: `JSON parse error: ${message}`,
+          input: raw,
+        } as z.core.$ZodIssue,
+      ]);
+    }
     const parsed = WorkflowMetaSchema.safeParse(json);
     if (!parsed.success) {
       throw new WorkflowInvalidError(path, parsed.error.issues);

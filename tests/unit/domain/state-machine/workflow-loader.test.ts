@@ -90,4 +90,98 @@ describe('WorkflowLoader (errors)', () => {
 
     expect(() => loader.load(file)).toThrow(WorkflowInvalidError);
   });
+
+  it('throws WorkflowInvalidError when a transition `to` is not in states', () => {
+    const file = path.join(tempRoot, 'phantom-to.json');
+    writeFileSync(
+      file,
+      JSON.stringify({
+        schema_version: '1.0',
+        name: 'phantom',
+        states: ['DRAFT', 'DONE'],
+        initial: 'DRAFT',
+        terminal: ['DONE'],
+        transitions: {
+          DRAFT: {
+            finish: {
+              to: 'PHANTOM',
+              description: 'leads nowhere',
+              use_when: 'should be rejected at load time',
+            },
+          },
+        },
+      }),
+    );
+
+    let caught: unknown;
+    try {
+      loader.load(file);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkflowInvalidError);
+    if (caught instanceof WorkflowInvalidError) {
+      const formatted = formatWorkflowIssues(file, caught.issues);
+      expect(formatted).toContain('PHANTOM');
+    }
+  });
+
+  it('throws WorkflowInvalidError when a string field has min > max', () => {
+    const file = path.join(tempRoot, 'min-gt-max.json');
+    writeFileSync(
+      file,
+      JSON.stringify({
+        schema_version: '1.0',
+        name: 'bad-bounds',
+        states: ['DRAFT', 'DONE'],
+        initial: 'DRAFT',
+        terminal: ['DONE'],
+        transitions: {
+          DRAFT: {
+            finish: {
+              to: 'DONE',
+              description: 'finishes the task',
+              use_when: 'when done',
+              requires: {
+                note: { type: 'string', min: 10, max: 5 },
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    let caught: unknown;
+    try {
+      loader.load(file);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkflowInvalidError);
+    if (caught instanceof WorkflowInvalidError) {
+      const formatted = formatWorkflowIssues(file, caught.issues);
+      expect(formatted).toContain('min');
+      expect(formatted).toContain('max');
+    }
+  });
+
+  it('throws WorkflowInvalidError with a JSON parse hint when the file is malformed', () => {
+    const file = path.join(tempRoot, 'broken.json');
+    writeFileSync(file, '{"schema_version": "1.0", "name": "x",}');
+
+    let caught: unknown;
+    try {
+      loader.load(file);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkflowInvalidError);
+    if (caught instanceof WorkflowInvalidError) {
+      const formatted = formatWorkflowIssues(file, caught.issues);
+      expect(formatted).toContain('JSON parse error');
+    }
+  });
 });

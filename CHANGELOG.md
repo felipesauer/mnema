@@ -10,6 +10,43 @@ stable release.
 
 ## [Unreleased]
 
+### Added (workflow-custom hardening)
+
+- **Workflow meta-schema rejects unknown `transition.to`.** A custom
+  workflow that points an action at a state not in `states[]` is now
+  refused at load time with a per-field issue. Previously the
+  transition silently succeeded and the task landed in a phantom
+  state with no outbound actions.
+- **Workflow meta-schema rejects `min > max` on field specs.**
+  String, number, and array bounds are validated up front (recursively
+  through `array.items` and `object.properties`); used to pass the
+  schema and crash gate compile time with a raw Zod stack trace.
+- **`WorkflowLoader` wraps JSON parse errors.** A trailing comma or
+  missing quote now surfaces as `WorkflowInvalidError` with a
+  `<root>: JSON parse error` issue instead of a Node `SyntaxError`
+  through the call stack.
+- **`openCliContext` routes workflow errors through the printer.**
+  Every CLI command (not just `doctor`) now produces a structured
+  error on a malformed workflow JSON, no stack traces.
+- **`mnema doctor` gained three new workflow checks.**
+  - `workflow dead-end states` (warning) — non-terminal states with no outbound transitions
+  - `workflow unreachable states` (warning) — non-initial states with no inbound transitions
+  - `tasks states match workflow` (error) — distinct `tasks.state` values not declared by the workflow (catches "edit dropped a state holding live tasks")
+- **`doctor` surfaces the workflow issue list.** The `workflow loads`
+  row now prints each Zod issue on its own indented line via
+  `formatWorkflowIssues`, instead of just the path.
+
+### Changed (workflow-custom hardening)
+
+- **`mnema task list --state X` matches case-insensitively when no
+  literal match exists.** The destructive `.toUpperCase()` was
+  rejecting valid states like `In Progress` even though the workflow
+  declared them verbatim. Literal-first / case-insensitive fallback
+  resolves to the canonical state name.
+- **`FEATURE_NOT_AVAILABLE` hint suggests presets that actually ship
+  the feature, excluding the active workflow.** Used to suggest
+  switching to a preset the user was already on.
+
 ### Added (multi-actor concurrency)
 
 - **Lost-write protection on every mutating transition.**

@@ -246,15 +246,28 @@ export function formatError(error: MnemaError): string {
       );
       break;
 
-    case ErrorCode.FeatureNotAvailable:
+    case ErrorCode.FeatureNotAvailable: {
       lines.push(
         `Feature \`${error.feature}\` is not available in the \`${error.workflow}\` workflow`,
       );
+      // Suggest only presets that actually ship the feature, and
+      // exclude the active workflow from the suggestion so the hint
+      // doesn't tell the user to switch back to where they already are.
+      const presetsWithFeature: Readonly<Record<string, readonly string[]>> = {
+        sprints: ['default', 'jira-classic'],
+        epics: ['default', 'jira-classic'],
+        review_workflow: ['default', 'jira-classic'],
+        blocked_state: ['default', 'kanban'],
+      };
+      const suggestions = (presetsWithFeature[error.feature] ?? []).filter(
+        (preset) => preset !== error.workflow,
+      );
+      const eg = suggestions.length > 0 ? ` (e.g. \`${suggestions.join('`, `')}\`)` : '';
       lines.push(
-        `${pc.dim('hint:')} Pick a workflow that declares \`features.${error.feature}: true\` ` +
-          `(e.g. \`default\` or \`jira-classic\`) when running \`mnema init\`.`,
+        `${pc.dim('hint:')} Pick a workflow that declares \`features.${error.feature}: true\`${eg} when running \`mnema init\`, or edit the active workflow JSON.`,
       );
       break;
+    }
 
     case ErrorCode.InvalidWorkflowState:
       lines.push(`Unknown state \`${error.given}\` for workflow \`${error.workflow}\`.`);
