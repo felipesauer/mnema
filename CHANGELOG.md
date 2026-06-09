@@ -10,6 +10,46 @@ stable release.
 
 ## [Unreleased]
 
+### Added (Sprint 3: publish gate + long-tail design ADRs)
+
+- **`scripts/publish-check.sh` + `pnpm publish:check`** runs 13
+  automated pre-publish checks (build / lint / test / coverage /
+  bench / MCP smoke / tarball construction / dev-files exclusion /
+  README+LICENSE+CHANGELOG presence / migration parity / workflow
+  parity / publishConfig=public / production resolver). Used by
+  the PO before `npm publish`; CI hooks for the future. All 13
+  green for v0.3.0-alpha.1.
+- **`docs/RELEASE.md` expanded** into a complete pre-publish
+  checklist with the manual smoke (init → task create → move →
+  doctor → destroy), the publish command itself, post-publish
+  verification, and the 24h-window rollback path.
+- **Five new design ADRs (MNEMA-ADR-7 through ADR-11)** freezing
+  the architecture of the long-tail features so implementation
+  has a target:
+  - **ADR-7** VS Code extension is read-only, `sql.js` + chokidar
+    direct, separate repo, no bundled CLI. Design doc in
+    `docs/VSCODE-EXTENSION-DESIGN.md`. ~1.5-2 weeks impl.
+  - **ADR-8** Web dashboard is localhost-only Fastify; reads
+    SQLite directly, mutations spawn a `mnema mcp serve`
+    subprocess over stdio. React SPA under `dist/dashboard/`.
+    Design in `docs/DASHBOARD-DESIGN.md`. ~2.5-3 weeks impl.
+  - **ADR-9** Multi-MCP server defers until ADR-6 ships; adds
+    `mcp_servers` table + heartbeats + FS-suitability probe
+    (refuses NFSv3/sshfs/cloud-sync) + crash-recovery JSONL
+    replay. Design in `docs/MULTI-MCP-DESIGN.md`. ~2 weeks
+    post-ADR-6.
+  - **ADR-10** GitHub two-way sync is poll-based (5 min,
+    `since=` cursor), state-only outbound, fires on terminal
+    transitions. New `github_sync_state` table +
+    `tasks.github_issue_id` column. Design in
+    `docs/GITHUB-SYNC-DESIGN.md`. ~2 weeks; blocks on F-F12
+    (`--api-base` for testing).
+  - **ADR-11** Plugin system is ABI-versioned (`minAbi`),
+    observe-only, fires post-audit-commit non-blocking,
+    `plugin_invoked` events join the chain. New `plugins` +
+    `plugin_runs` tables. Design in
+    `docs/PLUGIN-SYSTEM-DESIGN.md`. ~2 weeks. Independent.
+
 ### Added (Sprint 2: design + perf + coverage + Phase H prep)
 
 - **`mnema task move` accepts `-f/--field name=value` flags** alongside the
