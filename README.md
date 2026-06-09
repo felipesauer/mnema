@@ -80,7 +80,7 @@ mnema mcp install-instructions claude-code
 Mnema is not on npm yet. Install from source:
 
 ```bash
-git clone https://github.com/saurim/mnema.git
+git clone https://github.com/felipesauer/mnema.git
 cd mnema
 pnpm install
 pnpm build

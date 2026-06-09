@@ -26,13 +26,13 @@
     "templates/",
     "CHANGELOG.md"
   ],
-  "homepage": "https://github.com/saurim/mnema#readme",
+  "homepage": "https://github.com/felipesauer/mnema#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saurim/mnema.git"
+    "url": "git+https://github.com/felipesauer/mnema.git"
   },
   "bugs": {
-    "url": "https://github.com/saurim/mnema/issues"
+    "url": "https://github.com/felipesauer/mnema/issues"
   },
   "scripts": {
     "build": "tsc && tsc-alias && node scripts/copy-migrations.mjs",
