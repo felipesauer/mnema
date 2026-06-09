@@ -43,6 +43,10 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Coverage gate
+        if: matrix.node == '22'
+        run: pnpm test:coverage
+
   smoke:
     name: smoke (bench + tarball)
     runs-on: ubuntu-latest

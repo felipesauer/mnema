@@ -72,13 +72,28 @@ try {
     },
     {
       name: 'mnema task move',
-      // Cold-start floor: ~30ms Node + ~95ms dynamic-import chain
-      // (service-container pulls every repo + service + zod schemas) +
-      // ~15ms DB open + ~15ms SQL/audit. The original 100ms budget
-      // assumed the MCP daemon path; for the spawn-once CLI, ~200ms is
-      // the honest target until commands are bundled or the container
-      // is split. The --version and task list rows above sanity-check
-      // the floor under different load.
+      // Cold-start floor analysis (R12 investigation, 2026-06-09):
+      //   ~30ms  Node runtime spawn
+      //   ~95ms  dynamic-import chain (service-container statically
+      //          pulls 47 imports — every repo + service + zod schema)
+      //   ~15ms  better-sqlite3 native binding load + DB open with WAL
+      //   ~15ms  workflow JSON parse + zod refines + SQL + audit write
+      //   = ~155ms hard floor measured across 5 runs (range 153-165ms).
+      //
+      // The original 100ms target predated the service-container
+      // wiring growing to 22 services; the realistic spawn-once
+      // budget is 200ms, with the agent daemon path (`mnema mcp
+      // serve`) staying sub-10ms because imports + container are
+      // amortised across all tool calls. Reaching <120ms here would
+      // require either:
+      //   (a) bundling the CLI through esbuild/tsdown to elide
+      //       the dynamic-import waterfall, or
+      //   (b) splitting `createServiceContainer` so commands only
+      //       wire the services they actually use (and `task move`
+      //       does need most of them — task + transition + sync +
+      //       audit + identity + decision + memory).
+      // Neither is in scope for the current alpha cycle. Tracked in
+      // docs/TECH_DEBT.md §5.
       budgetMs: 200,
       run: ({ cliEntry: entry }) => benchTaskMove(entry, projectRoot),
     },

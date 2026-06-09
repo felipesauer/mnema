@@ -10,6 +10,52 @@ stable release.
 
 ## [Unreleased]
 
+### Added (Sprint 2: design + perf + coverage + Phase H prep)
+
+- **`mnema task move` accepts `-f/--field name=value` flags** alongside the
+  legacy positional `field=value` form. The flag form is the safe one when
+  values contain spaces — the shell hands Commander the full token after
+  `--field` intact, so `parseFieldArgs` sees the whole `name=value` string
+  instead of the first whitespace-delimited piece. New E2E test covers the
+  embedded-spaces case. Closes H-1 from the Phase H dogfooding journal.
+- **`docs/multi-project-design.md` + `MNEMA-ADR-6`** capture the v1
+  architecture decision for F-F10 (paths-multiplex via
+  `mnema.workspace.json`): each child keeps its own SQLite + audit chain;
+  workspace manifest at the monorepo root lists registered projects;
+  `--all` fan-out is an explicit opt-in. Three architectures evaluated
+  (1-DB / global-N-DBs / paths-multiplex) before the call. Implementation
+  remains out of scope until Sprint 4+; `ConfigSchema.mode` continues to
+  reject `'multi'`.
+- **Coverage gate at 75/65/85/78** wired through `vitest.config.ts`
+  thresholds and the new `Coverage gate` CI job (Node 22). Baseline
+  measured 78.22% statements / 67.34% branches / 87.79% functions /
+  80.47% lines after excluding CLI command modules (covered by E2E that v8
+  can't trace through subprocess) and instrumentation-only files
+  (`perf-trace`, `logger`). Closes R13.
+- **`tests/integration/cli/production-resolver.test.ts`** spawns the
+  compiled `dist/index.js` from a tmpdir to exercise the production
+  resolver path — closes the gap that allowed H-2 (cwd-relative
+  `bundledMigrationsDir`) to ship. Companion unit suite in
+  `tests/unit/utils/asset-paths.test.ts` pins the contract of
+  `migrationsDir()` and `workflowsDir()` so a refactor cannot quietly
+  regress the resolver. Closes H-2.
+- **`docs/PHASE-H-PLAN.md`** schedules the 2-week dogfooding cycle that
+  drives Sprint 3 design through Mnema itself — daily journal template,
+  exit criteria, standing instructions. Phase H replaces "do Sprint 3"
+  with "use Mnema to plan Sprint 3 and write down what hurts." Closes R14
+  (the plan; the execution runs over the next 14 calendar days).
+
+### Changed (Sprint 2)
+
+- **CLI cold-start floor documented honestly** in
+  `bench/cli-bench.ts:74` and `docs/TECH_DEBT.md` §5: ~155ms hard floor
+  on `task move` (30ms Node spawn + 95ms dynamic-import chain + 15ms
+  better-sqlite3 binding + 15ms SQL + audit). Sub-120ms would require
+  esbuild/tsdown bundling or splitting `createServiceContainer` so
+  commands only wire the services they use — both outside the alpha
+  cycle. Realistic budget locked at 200ms; the MCP daemon path stays
+  sub-10ms because import + container cost is amortised.
+
 ### Added (Sprint 1: roadmap polish)
 
 - **`.github/workflows/ci.yml`** — matrix CI (Node 20 + 22) with

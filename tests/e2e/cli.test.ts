@@ -141,6 +141,36 @@ describe('CLI end-to-end', () => {
     expect(audit).toContain('task_transitioned');
   });
 
+  it('mnema task move accepts `--field name=value` flags with embedded spaces (H-1)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'X'], projectRoot);
+
+    // The `--field` flag is the safe form: shell delivers the whole
+    // `name=value with spaces` token intact, so parseFieldArgs sees
+    // the full value. This is the fix for H-1 surfaced during the
+    // 2026-06-09 dogfooding sprint.
+    const move = runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        '--field',
+        'title=Implement OAuth with spaces in title',
+        '--field',
+        'description=A description that contains multiple words.',
+        '--field',
+        'acceptance_criteria=Crit one,Crit two',
+        '--field',
+        'estimate=3',
+      ],
+      projectRoot,
+    );
+    expect(move.status).toBe(0);
+    expect(move.stdout).toContain('READY');
+    expect(move.stdout).toContain('Implement OAuth with spaces in title');
+  });
+
   it('mnema task move on an invalid action returns a structured error', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     runCli(['task', 'create', '--title', 'X'], projectRoot);
