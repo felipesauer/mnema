@@ -205,7 +205,14 @@ export function createServiceContainer(
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
   const sprintService = new SprintService(sprintRepository, tasks, projects, audit, stateMachine);
-  const decisionService = new DecisionService(decisionRepository, projects, identity, audit);
+  const decisionService = new DecisionService(
+    decisionRepository,
+    projects,
+    identity,
+    audit,
+    noteRepository,
+    tasks,
+  );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);

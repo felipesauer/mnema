@@ -132,7 +132,8 @@ export type MnemaError =
       readonly workflow: string;
       readonly given: string;
       readonly allowed: readonly string[];
-    };
+    }
+  | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

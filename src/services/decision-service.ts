@@ -4,7 +4,9 @@ import { DecisionStatus } from '../domain/enums/decision-status.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
+import type { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
@@ -14,6 +16,27 @@ import { Err, Ok, type Result } from './result.js';
  */
 export interface RecordDecisionInput {
   readonly projectKey: string;
+  readonly title: string;
+  readonly decision: string;
+  readonly context?: string;
+  readonly rationale?: string;
+  readonly consequences?: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+}
+
+/**
+ * Input for {@link DecisionService.promoteFromNote}.
+ *
+ * `noteId` is the internal UUID returned by `note_add`. The full
+ * decision body (`title`, `decision`, optional context/rationale/
+ * consequences) still comes from the caller — promotion is a
+ * convenience that adds a linkage event to the audit log, not a
+ * format conversion of the note content.
+ */
+export interface PromoteNoteToDecisionInput {
+  readonly noteId: string;
   readonly title: string;
   readonly decision: string;
   readonly context?: string;
@@ -68,6 +91,8 @@ export class DecisionService {
     private readonly projects: ProjectRepository,
     private readonly identity: IdentityService,
     private readonly audit: AuditService,
+    private readonly notes: NoteRepository,
+    private readonly tasks: TaskRepository,
   ) {}
 
   /**
@@ -103,6 +128,63 @@ export class DecisionService {
       via: input.via,
       run: input.runId,
       data: { key: decision.key, title: decision.title, status: decision.status },
+    });
+
+    return Ok(decision);
+  }
+
+  /**
+   * Records a new decision and links it to an existing note via an
+   * extra audit event. The note itself stays put — promotion is a
+   * provenance marker, not a content transform: the caller still has
+   * to supply the full decision body (title, decision text, optional
+   * context/rationale/consequences). The note's parent task key is
+   * looked up and carried in the linkage event so a single
+   * `audit query --kind decision_promoted_from_note --task-key X`
+   * surfaces the trail.
+   *
+   * @param input - Note id + decision fields + identity tuple
+   * @returns The created decision or a structured error
+   */
+  promoteFromNote(input: PromoteNoteToDecisionInput): Result<Decision, MnemaError> {
+    const note = this.notes.findById(input.noteId);
+    if (note === null) {
+      return Err({ kind: ErrorCode.NoteNotFound, noteId: input.noteId });
+    }
+    const task = this.tasks.findById(note.taskId);
+    if (task === null) {
+      // Note's parent task was soft-deleted; surface a structured
+      // error so the caller knows the promotion can't be linked.
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: note.taskId });
+    }
+
+    // Resolve the project key from the task so the caller doesn't have
+    // to know it; matches how `decision_record` is shaped at the MCP
+    // boundary (project is implicit from the active workspace).
+    const recorded = this.record({
+      projectKey: task.key.split('-')[0] ?? '',
+      title: input.title,
+      decision: input.decision,
+      context: input.context,
+      rationale: input.rationale,
+      consequences: input.consequences,
+      actor: input.actor,
+      via: input.via,
+      runId: input.runId,
+    });
+    if (!recorded.ok) return recorded;
+    const decision = recorded.value;
+
+    this.audit.write({
+      kind: 'decision_promoted_from_note',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: {
+        decision_key: decision.key,
+        note_id: note.id,
+        task_key: task.key,
+      },
     });
 
     return Ok(decision);

@@ -32,7 +32,10 @@ export const ConfigSchema = z.object({
     })
     .prefault({}),
   workflow: z.string().default('default'),
-  mode: z.enum(['single', 'multi']).default('single'),
+  // `multi` is reserved for a future multi-project layout that has
+  // not been designed yet. The schema only accepts `single` so users
+  // don't quietly configure a value that does nothing.
+  mode: z.literal('single').default('single'),
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
   enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('advisory'),
