@@ -16,6 +16,7 @@ import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repository.js';
+import { NoteRepository } from '@/storage/sqlite/repositories/note-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -49,9 +50,10 @@ describe('InboxService', () => {
 
     const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
     const decisionRepo = new DecisionRepository(adapter);
-    decisions = new DecisionService(decisionRepo, projects, identity, audit);
-
     tasks = new TaskRepository(adapter);
+    const notes = new NoteRepository(adapter);
+    decisions = new DecisionService(decisionRepo, projects, identity, audit, notes, tasks);
+
     const workflowPath = path.resolve('workflows/default.json');
     const stateMachine = new StateMachine(new WorkflowLoader().load(workflowPath));
     inbox = new InboxService(tasks, decisions, 'TEST', stateMachine);

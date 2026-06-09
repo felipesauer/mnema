@@ -273,6 +273,13 @@ export function formatError(error: MnemaError): string {
       lines.push(`Unknown state \`${error.given}\` for workflow \`${error.workflow}\`.`);
       lines.push(`${pc.dim('hint:')} Valid states: ${error.allowed.join(', ')}.`);
       break;
+
+    case ErrorCode.NoteNotFound:
+      lines.push(`Note ${error.noteId} not found`);
+      lines.push(
+        `${pc.dim('hint:')} List notes with \`mnema note list <task_key>\` or query the audit log`,
+      );
+      break;
   }
 
   return lines.join('\n');

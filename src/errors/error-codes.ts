@@ -54,6 +54,8 @@ export enum ErrorCode {
   FeatureNotAvailable = 'FEATURE_NOT_AVAILABLE',
 
   InvalidWorkflowState = 'INVALID_WORKFLOW_STATE',
+
+  NoteNotFound = 'NOTE_NOT_FOUND',
 }
 
 /**

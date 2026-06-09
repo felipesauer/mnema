@@ -67,6 +67,44 @@ export class DecisionTools {
     );
 
     server.registerTool(
+      'decision_promote_from_note',
+      {
+        description:
+          'Record a new ADR and link it to an existing note via an audit event. ' +
+          'The note stays put; promotion is a provenance marker, so the caller still ' +
+          'supplies the full decision body. Requires an active agent run.',
+        inputSchema: {
+          note_id: z.string().describe('Internal UUID of the note (from `note_add` response)'),
+          title: z.string().min(3).max(200),
+          decision: z.string().min(1).describe('What was decided'),
+          context: z.string().optional().describe('Why this decision was needed'),
+          rationale: z.string().optional().describe('Why this choice over alternatives'),
+          consequences: z.string().optional().describe('What follows from this decision'),
+        },
+      },
+      (input) => {
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.promoteFromNote({
+          noteId: input.note_id,
+          title: input.title,
+          decision: input.decision,
+          context: input.context,
+          rationale: input.rationale,
+          consequences: input.consequences,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
+      },
+    );
+
+    server.registerTool(
       'decision_show',
       {
         description: 'Return a single decision (ADR) by its human-readable key.',
