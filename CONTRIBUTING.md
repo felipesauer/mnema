@@ -11,7 +11,7 @@ machine. This document covers what you need to be productive.
 Requirements: Node ≥ 20, pnpm ≥ 9, git.
 
 ```bash
-git clone https://github.com/saurim/mnema.git
+git clone https://github.com/felipesauer/mnema.git
 cd mnema
 pnpm install
 pnpm build       # tsc + tsc-alias + copy-migrations
@@ -142,7 +142,7 @@ template used by `evaluations/2026-06-09-smoke-1.md`.
 
 ## Reporting bugs
 
-Open an issue at <https://github.com/saurim/mnema/issues>. Include:
+Open an issue at <https://github.com/felipesauer/mnema/issues>. Include:
 
 1. `mnema --version` output.
 2. Steps to reproduce (ideally a tmpdir from `pnpm smoke:bootstrap`).

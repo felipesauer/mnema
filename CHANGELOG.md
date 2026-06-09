@@ -855,8 +855,8 @@ changes.
   3/3) — `scripts/copy-migrations.mjs` is the build step that ships
   the SQL files alongside the compiled JavaScript.
 
-[Unreleased]: https://github.com/saurim/mnema/compare/v0.3.0-alpha.1...HEAD
-[0.3.0-alpha.1]: https://github.com/saurim/mnema/releases/tag/v0.3.0-alpha.1
-[0.3.0-alpha.0]: https://github.com/saurim/mnema/releases/tag/v0.3.0-alpha.0
-[0.2.0-alpha.0]: https://github.com/saurim/mnema/releases/tag/v0.2.0-alpha.0
-[0.1.0-alpha.1]: https://github.com/saurim/mnema/releases/tag/v0.1.0-alpha.1
+[Unreleased]: https://github.com/felipesauer/mnema/compare/v0.3.0-alpha.1...HEAD
+[0.3.0-alpha.1]: https://github.com/felipesauer/mnema/releases/tag/v0.3.0-alpha.1
+[0.3.0-alpha.0]: https://github.com/felipesauer/mnema/releases/tag/v0.3.0-alpha.0
+[0.2.0-alpha.0]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-alpha.0
+[0.1.0-alpha.1]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-alpha.1
