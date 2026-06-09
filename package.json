@@ -1,15 +1,20 @@
 {
   "name": "@saurim/mnema",
   "version": "0.3.0-alpha.1",
-  "description": "Cognitive persistence for AI agents",
+  "description": "Cognitive persistence for AI agents — a local-first MCP server that gives Claude Code, Cursor, Aider and other AI agents typed tools to record work, maintain memory, and leave a tamper-evident audit trail.",
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "agents",
     "claude-code",
     "cursor",
+    "aider",
     "task-tracker",
-    "audit",
-    "memory"
+    "audit-log",
+    "memory",
+    "sqlite",
+    "local-first",
+    "workflow"
   ],
   "type": "module",
   "bin": {
@@ -40,12 +45,17 @@
     "bench:mcp": "tsx bench/mcp-bench.ts",
     "lint": "biome check src/ tests/ bench/",
     "lint:fix": "biome check --write src/ tests/ bench/",
-    "smoke:bootstrap": "bash scripts/smoke-bootstrap.sh"
+    "smoke:bootstrap": "bash scripts/smoke-bootstrap.sh",
+    "smoke:mcp": "tsx scripts/mcp-smoke.ts"
   },
   "engines": {
     "node": ">=20"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
     "@types/better-sqlite3": "^7.6.13",

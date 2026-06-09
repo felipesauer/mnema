@@ -1,5 +1,11 @@
 # Mnema
 
+[![version](https://img.shields.io/badge/version-0.3.0--alpha.1-orange)](./CHANGELOG.md)
+[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
+[![tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)](./tests)
+[![coverage](https://img.shields.io/badge/coverage-60%25-yellow)](./vitest.config.ts)
+
 > Cognitive persistence for AI agents.
 > *You drive, the AI executes, everything is recorded.*
 
@@ -9,12 +15,52 @@ contextual memory, and leave an auditable trail. Humans drive through
 the terminal and observe through the history. Mnema does not run
 agents — it stores everything they touch.
 
+## Table of contents
+
+- [Quickstart](#quickstart)
+- [What you get](#what-you-get)
+- [Install](#install)
+- [What it gives you](#what-it-gives-you)
+- [Project layout after `mnema init`](#project-layout-after-mnema-init)
+- [Common CLI commands](#common-cli-commands)
+- [How the MCP loop works](#how-the-mcp-loop-works)
+- [Configuration](#configuration)
+- [Workflows](#workflows)
+- [Status](#status)
+- [Further reading](#further-reading)
+- [License](#license)
+
+## What you get
+
+| Surface | What |
+|---|---|
+| **Tasks** | Create / move through workflow gates / soft delete / restore / history. Acceptance criteria + estimate + assignee. |
+| **Sprints** | Plan / start / close (one active per project) with goal, capacity, attach tasks. |
+| **Epics** | Group tasks under a single epic with state OPEN/CLOSED. |
+| **Decisions (ADRs)** | proposed → accepted/rejected → superseded chain with `decision_promote_from_note` shortcut. |
+| **Notes** | Typed (`agent_observation`, `review_feedback`, `block_reason`, …) attached to tasks. |
+| **Attachments** | Hash-deduplicated; routed to task or decision by key shape. |
+| **FTS5 search** | Across tasks, decisions, notes, skills, memories, observations; diacritic-insensitive. |
+| **Agent runs & plans** | Wrap every batch of mutations; max depth 5; parent/child inspect via CLI. |
+| **Audit log** | JSONL + SHA-256 hash chain (schema v2) mirrored to SQLite. `doctor` detects edits, truncation, replays, deletion. |
+| **Skills + memories + observations** | Agent-authoritative via `*_record` MCP tools; mirrored to `.md` files. |
+| **Workflows** | 4 shipping presets (`default`, `lean`, `kanban`, `jira-classic`); custom JSON validated by schema refines. |
+| **`doctor`** | 16 checks: config, version, workflow shape, paths, DB, migrations, mirrors, audit integrity, task state drift. |
+| **MCP tools** | 30+ universal tools + one per workflow action; `context_bootstrap` is the canonical session entry. |
+
 ## Quickstart
 
-> **Status:** Mnema is in `0.1.0-alpha`, not yet published to npm. The
-> only supported install path right now is from source — see the
-> [Install](#install) section below. Public alpha on npm comes after
-> the dogfooding cycle stabilises (likely with `0.2.0-alpha`).
+> **Status:** Mnema is in `0.3.0-alpha.1`, not yet published to npm.
+> The only supported install path right now is from source — see the
+> [Install](#install) section below. The alpha surface is feature-rich
+> (tasks, sprints, decisions, skills, memories, agent runs, hash-chained
+> audit log, 4 shipping workflows) but `npm publish` is gated on a
+> dogfooding cycle that's underway.
+
+<!-- Asciinema cast: render via `bash scripts/record-quickstart.sh`
+     then host on asciinema.org and replace the link below.
+     The cast is gitignored (docs/quickstart.cast). -->
+<!-- [![asciicast](https://asciinema.org/a/PLACEHOLDER.svg)](https://asciinema.org/a/PLACEHOLDER) -->
 
 ```bash
 # 1. Initialise a project
@@ -180,12 +226,41 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 ## Status
 
-Mnema is **alpha** (`0.1.0-alpha.x`). The core surface is in place
-(tasks, sprints, decisions, notes, epics, attachments, FTS search,
-audit log, MCP tools), and the package is being shaken out before
-public release. Currently install-from-source only — npm publish is
-planned for `0.2.0-alpha` once the dogfood cycle settles. See
-[CHANGELOG.md](CHANGELOG.md) for the per-phase history.
+Mnema is **alpha** (`0.3.0-alpha.1` as of 2026-06-09). The full
+surface is in place — tasks, sprints, decisions, notes, epics,
+attachments, FTS search, agent runs & plans, hash-chained audit
+log with `doctor` tamper-detection, 9 skill/memory/observation MCP
+tools, 4 shipping workflows (`default`, `lean`, `kanban`,
+`jira-classic`), workflow schema with cross-cutting refines, and
+optimistic-concurrency lost-write protection in every mutation. The
+package is being shaken out via adversarial sweeps (audit
+immutability, multi-actor concurrency, custom workflow validation)
+and an end-to-end 21-phase smoke suite before public release.
+
+Currently install-from-source only — `npm publish` follows the
+ongoing dogfooding cycle. **429 tests, 0 skipped, lint + build
+clean.** See [CHANGELOG.md](CHANGELOG.md) for the per-phase history
+and [docs/SMOKE.md](docs/SMOKE.md) for the manual validation script.
+
+## Further reading
+
+- **[CHANGELOG.md](CHANGELOG.md)** — per-version + per-phase
+  history, with rationale for every breaking change.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — dev setup, commit
+  conventions, smoke run, things to watch out for when touching
+  the schema, the audit log, or the workflow.
+- **[docs/SMOKE.md](docs/SMOKE.md)** — 21-phase manual validation
+  script run before every release tag (~45 min top-to-bottom).
+- **[docs/skills-and-memory.md](docs/skills-and-memory.md)** —
+  how agent-authoritative memory works and where the file-based
+  supplements fit in.
+- **[evaluations/](evaluations/)** — friction reports from real-world
+  tests and adversarial sweeps (audit immutability, multi-actor
+  concurrency, custom workflow validation). Each doc is a snapshot
+  of what broke, how it was diagnosed, and what shipped to fix it.
+- **AGENTS.md** (generated by `mnema init`) — the contract a fresh
+  AI agent reads on session start so it knows how to drive Mnema
+  responsibly.
 
 ## License
 
