@@ -130,25 +130,47 @@ export class TaskCommand {
     group
       .command('move <key> <action> [fields...]')
       .description(
-        'Move a task via a workflow action. Pass payload as `field=value` ' +
-          'pairs. Values with a comma are split into arrays (e.g. ' +
-          '`acceptance_criteria="One,Two,Three"`); single-item arrays need ' +
-          'either a trailing comma or the field repeated. Only fields the ' +
-          'action gate requires are validated; extra fields ride along to ' +
-          'the audit log so payloads stay forward-compatible with MCP.',
+        'Move a task via a workflow action. Pass payload either as ' +
+          '`field=value` positionals (shell-quoted) or as repeated ' +
+          '`--field name=value` flags — the latter handles values with ' +
+          'spaces cleanly, since the shell delivers the whole token ' +
+          'after `--field` intact. Values with a comma are split into ' +
+          'arrays (`--field acceptance_criteria="A,B,C"`); single-item ' +
+          'arrays need either a trailing comma or the field repeated. ' +
+          'Only fields the action gate requires are validated; extras ' +
+          'ride along to the audit log so payloads stay forward- ' +
+          'compatible with MCP.',
       )
-      .action(async (key: string, action: string, fields: string[]) => {
-        await withMutatingCliContext(({ container }) => {
-          const payload = parseFieldArgs(fields);
-          const result = container.task.transition({
-            taskKey: key,
-            action,
-            payload,
-            actor: container.identity.getDefaultActor(),
+      .option(
+        '-f, --field <pair...>',
+        'Field assignment in `name=value` form. Repeat for multiple ' +
+          'fields; whitespace inside `value` is preserved (unlike the ' +
+          'positional form, which the shell tokenises before we see it).',
+      )
+      .action(
+        async (
+          key: string,
+          action: string,
+          fields: string[],
+          options: { readonly field?: string[] },
+        ) => {
+          await withMutatingCliContext(({ container }) => {
+            // The flag form is the safe one — `--field "title=foo bar"`
+            // arrives as a single token. Merge it with the positional
+            // form (`field=value`) so callers can mix the two; the
+            // positional path is kept for backward compatibility with
+            // scripts written before the `--field` flag existed.
+            const payload = parseFieldArgs([...fields, ...(options.field ?? [])]);
+            const result = container.task.transition({
+              taskKey: key,
+              action,
+              payload,
+              actor: container.identity.getDefaultActor(),
+            });
+            renderTaskResult(result, (id) => container.identity.resolveHandle(id));
           });
-          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
-        });
-      });
+        },
+      );
 
     group
       .command('history <key>')
