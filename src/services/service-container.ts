@@ -128,7 +128,13 @@ export function createServiceContainer(
   const adapter = new SqliteAdapter(dbPath);
   trace.mark('SqliteAdapter opened');
 
-  const migrationsDir = options.migrationsDir ?? path.resolve(MIGRATIONS_DIRNAME);
+  // Migration sources: the bundled directory (where Mnema's shipped
+  // migrations live) plus the project's own `.mnema/migrations/` so
+  // any locally-generated migration rides alongside without
+  // contaminating the global install.
+  const bundledMigrationsDir = options.migrationsDir ?? path.resolve(MIGRATIONS_DIRNAME);
+  const projectMigrationsDirAbs = path.join(projectRoot, '.mnema/migrations');
+  const migrationSources: readonly string[] = [bundledMigrationsDir, projectMigrationsDirAbs];
   // Auto-apply migrations only on a virgin database (first boot, no
   // `schema_migrations` table yet). Once the database has been
   // initialised, pending migrations are surfaced through
@@ -139,9 +145,9 @@ export function createServiceContainer(
   const runner = new MigrationRunner();
   const isVirgin = runner.loadApplied(adapter).length === 0;
   if (isVirgin) {
-    runner.run(adapter, migrationsDir);
+    runner.run(adapter, migrationSources);
   }
-  const pendingMigrations = runner.detectDrift(adapter, migrationsDir);
+  const pendingMigrations = runner.detectDrift(adapter, migrationSources);
   trace.mark('migrations checked');
 
   const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);

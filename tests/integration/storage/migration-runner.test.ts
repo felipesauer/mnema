@@ -133,6 +133,41 @@ describe('MigrationRunner', () => {
         rmSync(tempDir, { recursive: true, force: true });
       }
     });
+
+    it('merges multiple directories: bundled + project-local', () => {
+      const runner = new MigrationRunner();
+      runner.run(adapter, migrationsDir);
+
+      // Simulate a project-local dir holding a custom migration that
+      // sits next to the bundled set. `detectDrift` must walk both
+      // directories and surface the project-local file as pending.
+      const projectDir = mkdtempSync(path.join(tmpdir(), 'mnema-mig-proj-'));
+      writeFileSync(
+        path.join(projectDir, '099_custom_local.sql'),
+        "INSERT INTO schema_migrations (version, applied_at) VALUES (99, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));\n",
+        'utf-8',
+      );
+
+      try {
+        const drift = runner.detectDrift(adapter, [migrationsDir, projectDir]);
+        expect(drift.map((m) => m.version)).toEqual([99]);
+        expect(drift[0]?.file).toBe('099_custom_local.sql');
+      } finally {
+        rmSync(projectDir, { recursive: true, force: true });
+      }
+    });
+
+    it('silently skips a missing directory in the array', () => {
+      const runner = new MigrationRunner();
+      runner.run(adapter, migrationsDir);
+
+      // Non-existent dir should not throw, just contribute zero files.
+      const drift = runner.detectDrift(adapter, [
+        migrationsDir,
+        '/tmp/this-path-does-not-exist-on-purpose',
+      ]);
+      expect(drift).toEqual([]);
+    });
   });
 
   it('archives agent plans automatically when an agent_run ends', () => {

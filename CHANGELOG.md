@@ -10,6 +10,28 @@ stable release.
 
 ## [Unreleased]
 
+### Fixed (smoke run 2026-06-09)
+
+- **`mnema migration generate` no longer writes into the globally
+  installed package.** Previously the generator dropped
+  `NNN_<slug>.sql` under
+  `node_modules/@saurim/mnema/dist/storage/sqlite/migrations/`,
+  which (a) contaminated every other Mnema project on the machine,
+  (b) was wiped on the next `npm i -g`, and (c) collided with the
+  next bundled migration on upstream releases. The generator now
+  writes to `<project_root>/.mnema/migrations/`. The runner walks
+  both directories at boot (`bundled` then `project-local`) so a
+  generated migration runs alongside the bundled set without
+  modifying the global install. New `migrationDirs(projectRoot)`
+  and `projectMigrationsDir(projectRoot)` helpers in
+  `src/utils/asset-paths.ts`; `MigrationRunner.run` / `listAvailable` /
+  `detectDrift` now accept `string | readonly string[]`.
+
+- **`mnema doctor --rebuild-mirrors` now recreates `memory/decisions/`
+  and `memory/notes/` subdirectories** if they were deleted. Same
+  pass also recreates `skills/` so `mnema memory consolidate`
+  doesn't report "not initialised" right after the recovery flow.
+
 ### Added (note → ADR promotion)
 
 - **`decision_promote_from_note` MCP tool.** Agents can now turn an

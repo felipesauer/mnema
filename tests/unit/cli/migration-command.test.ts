@@ -54,4 +54,43 @@ describe('generateMigration', () => {
     if (result.ok) return;
     expect(result.message).toContain('alphanumerics');
   });
+
+  it('writes to outDir but counts versions across all lookup dirs', () => {
+    // Simulate the bundled set living in one dir and the project-local
+    // dir being empty. Generator should pick version 4 (max bundled +
+    // 1) and drop the file in outDir.
+    const bundled = mkdtempSync(path.join(tmpdir(), 'mnema-mig-bundled-'));
+    writeFileSync(path.join(bundled, '001_initial.sql'), '');
+    writeFileSync(path.join(bundled, '002_fts.sql'), '');
+    writeFileSync(path.join(bundled, '003_identity.sql'), '');
+    try {
+      const result = generateMigration(dir, 'project_addition', [bundled, dir]);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.version).toBe(4);
+      // File lives under outDir, not under the bundled package dir.
+      expect(result.filePath.startsWith(dir)).toBe(true);
+      expect(existsSync(path.join(bundled, '004_project_addition.sql'))).toBe(false);
+    } finally {
+      rmSync(bundled, { recursive: true, force: true });
+    }
+  });
+
+  it('counts max version across lookup dirs, never overwrites', () => {
+    // Bundled has 001; project has 002. The next slot must be 003,
+    // so a slug `already_here` lands at `003_already_here.sql`, not
+    // colliding with the existing 002 in the project dir.
+    const bundled = mkdtempSync(path.join(tmpdir(), 'mnema-mig-bundled-'));
+    writeFileSync(path.join(bundled, '001_initial.sql'), '');
+    writeFileSync(path.join(dir, '002_already_here.sql'), '');
+    try {
+      const result = generateMigration(dir, 'something_else', [bundled, dir]);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.version).toBe(3);
+      expect(path.basename(result.filePath)).toBe('003_something_else.sql');
+    } finally {
+      rmSync(bundled, { recursive: true, force: true });
+    }
+  });
 });
