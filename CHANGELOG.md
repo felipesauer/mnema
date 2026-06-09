@@ -10,6 +10,66 @@ stable release.
 
 ## [Unreleased]
 
+### Added (Sprint 1: roadmap polish)
+
+- **`.github/workflows/ci.yml`** — matrix CI (Node 20 + 22) with
+  lint, build, vitest, the new MCP smoke, and the existing
+  `pnpm bench` gate. Status badge ready for the README once the
+  pipeline runs on GitHub.
+- **`scripts/mcp-smoke.ts`** + `pnpm smoke:mcp` — automated smoke
+  that spawns `mnema mcp serve` over stdio with a real MCP client
+  and exercises 8 tools (`context_bootstrap → agent_run_start →
+  task_create → task_show → decision_record → memory_record →
+  observation_record → agent_run_end`). Substitutes the manual
+  fases 10/15/17/21 of `docs/SMOKE.md` for CI; the SMOKE.md
+  script keeps its place for human-driven release runs.
+- **`scripts/record-quickstart.sh`** — drives the canonical 60s
+  asciinema demo (init → task create → task move → decision →
+  audit query → doctor). README has the placeholder embed ready
+  once the cast is uploaded.
+- **`CONTRIBUTING.md`** at repo root covering dev setup
+  (pnpm install → lint → build → test), commit conventions, smoke
+  run, and the small set of invariants a contributor must respect
+  before touching the schema, the audit log, or the workflow.
+- **README v0.3.0-alpha.1 polish:** 5 badges (version, license,
+  node, tests, coverage), TOC, "What you get" feature checklist
+  (12 surfaces with one-line summaries each), "Further reading"
+  section linking CHANGELOG, CONTRIBUTING, SMOKE, skills-and-memory,
+  evaluations and AGENTS.
+
+### Changed (Sprint 1: surface polish)
+
+- **`package.json`:** added `publishConfig: { access: "public" }`
+  so `npm publish` will work for the `@saurim` scope without an
+  extra flag. Description expanded; keywords grew from 7 to 12
+  (added `model-context-protocol`, `aider`, `audit-log`, `sqlite`,
+  `local-first`, `workflow`).
+- **`task move --help`** documents the `value,with,comma → array`
+  parsing contract so single-element `acceptance_criteria` no
+  longer surprises callers. (F-S2 closed.)
+- **`mnema decision show`** resolves the `superseded_by` UUID into
+  the human-readable key via the new `DecisionService.findById`.
+  No more raw UUIDs in the rendered detail block. (F-S3 closed.)
+- **`README` Status section** updated from `0.1.0-alpha` to
+  `0.3.0-alpha.1` with the current feature inventory and a pointer
+  at `docs/SMOKE.md`.
+
+### Fixed (Sprint 1: F-S5 root cause)
+
+- **`bundledMigrationsDir` in `createServiceContainer` was
+  cwd-relative.** `path.resolve('src/storage/sqlite/migrations')`
+  resolved against `process.cwd()`, so running the installed CLI
+  from any directory that is not the Mnema source tree pointed
+  the migration runner at a non-existent path. `detectDrift`
+  silently saw zero migrations on disk, which manifested as
+  intermittent "Schema is out of date" reports during the smoke
+  run (the F-S5 finding). The production path now resolves the
+  bundled directory via `migrationsDir()` from `asset-paths.ts`,
+  the same helper `mnema migration generate` already used. Tests
+  override `options.migrationsDir` explicitly so they were never
+  affected; a regression test for the installed-tarball path is
+  tracked for Sprint 2.
+
 ### Fixed (smoke run 2026-06-09)
 
 - **`mnema migration generate` no longer writes into the globally

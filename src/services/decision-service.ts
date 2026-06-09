@@ -286,6 +286,18 @@ export class DecisionService {
   }
 
   /**
+   * Returns a decision by its internal UUID, or `null` if absent.
+   * Used by the CLI renderer to resolve `supersededBy` (stored as a
+   * UUID FK) back to the human-readable key.
+   *
+   * @param id - Internal decision UUID
+   * @returns The decision or `null` when unknown
+   */
+  findById(id: string): Decision | null {
+    return this.decisions.findById(id);
+  }
+
+  /**
    * Lists decisions of a project ordered by record time.
    *
    * @param projectKey - Project key

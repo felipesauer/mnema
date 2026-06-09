@@ -84,7 +84,15 @@ export class DecisionCommand {
             process.stdout.write(`${JSON.stringify(result.value, null, 2)}\n`);
             return;
           }
-          process.stdout.write(`${formatDecisionDetail(result.value)}\n`);
+          // Resolve the successor's public key for the renderer so
+          // `Superseded by:` shows e.g. `MNEMA-ADR-2` instead of the
+          // internal UUID.
+          let supersededByKey: string | null = null;
+          if (result.value.supersededBy !== null) {
+            const successor = container.decision.findById(result.value.supersededBy);
+            supersededByKey = successor?.key ?? result.value.supersededBy;
+          }
+          process.stdout.write(`${formatDecisionDetail(result.value, supersededByKey)}\n`);
         });
       });
 
@@ -191,14 +199,14 @@ function formatDecisionRow(decision: Decision): string {
   return `${pc.bold(decision.key.padEnd(20))} ${decision.status.padEnd(11)} ${decision.title}`;
 }
 
-function formatDecisionDetail(decision: Decision): string {
+function formatDecisionDetail(decision: Decision, supersededByKey: string | null = null): string {
   const lines: string[] = [];
   lines.push(`${pc.bold('Decision:')} ${decision.key}`);
   lines.push(`${pc.bold('Title:')} ${decision.title}`);
   lines.push(`${pc.bold('Status:')} ${decision.status}`);
   lines.push(`${pc.bold('At:')} ${decision.at}`);
   if (decision.supersededBy !== null) {
-    lines.push(`${pc.bold('Superseded by:')} ${decision.supersededBy}`);
+    lines.push(`${pc.bold('Superseded by:')} ${supersededByKey ?? decision.supersededBy}`);
   }
   if (decision.context !== null) {
     lines.push('');

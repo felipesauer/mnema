@@ -26,6 +26,7 @@ import { SprintRepository } from '../storage/sqlite/repositories/sprint-reposito
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { migrationsDir as assetPathsMigrationsDir } from '../utils/asset-paths.js';
 import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
@@ -45,12 +46,6 @@ import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
-
-/**
- * Where the migration files live in the source tree (relative to repo
- * root). Build output bundles them next to the source under `dist/`.
- */
-const MIGRATIONS_DIRNAME = 'src/storage/sqlite/migrations';
 
 /**
  * Options accepted by {@link createServiceContainer}.
@@ -131,8 +126,13 @@ export function createServiceContainer(
   // Migration sources: the bundled directory (where Mnema's shipped
   // migrations live) plus the project's own `.mnema/migrations/` so
   // any locally-generated migration rides alongside without
-  // contaminating the global install.
-  const bundledMigrationsDir = options.migrationsDir ?? path.resolve(MIGRATIONS_DIRNAME);
+  // contaminating the global install. The bundled path is resolved
+  // via `assetPathsMigrationsDir()` so it works under both the
+  // source tree (dev) and the installed package (production); a
+  // cwd-relative resolve would point at a non-existent directory
+  // when run from a project tmpdir and silently make `detectDrift`
+  // believe there are no migrations on disk.
+  const bundledMigrationsDir = options.migrationsDir ?? assetPathsMigrationsDir();
   const projectMigrationsDirAbs = path.join(projectRoot, '.mnema/migrations');
   const migrationSources: readonly string[] = [bundledMigrationsDir, projectMigrationsDirAbs];
   // Auto-apply migrations only on a virgin database (first boot, no

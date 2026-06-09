@@ -131,9 +131,11 @@ export class TaskCommand {
       .command('move <key> <action> [fields...]')
       .description(
         'Move a task via a workflow action. Pass payload as `field=value` ' +
-          'pairs. Only fields the action gate requires are validated; ' +
-          'extra fields are tolerated (they ride along to the audit log) ' +
-          'to keep CLI payloads forward-compatible with MCP.',
+          'pairs. Values with a comma are split into arrays (e.g. ' +
+          '`acceptance_criteria="One,Two,Three"`); single-item arrays need ' +
+          'either a trailing comma or the field repeated. Only fields the ' +
+          'action gate requires are validated; extra fields ride along to ' +
+          'the audit log so payloads stay forward-compatible with MCP.',
       )
       .action(async (key: string, action: string, fields: string[]) => {
         await withMutatingCliContext(({ container }) => {
