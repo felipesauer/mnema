@@ -15,7 +15,7 @@ import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
-import { migrationsDir } from '../../utils/asset-paths.js';
+import { migrationDirs } from '../../utils/asset-paths.js';
 import { checkVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -100,6 +100,15 @@ export class DoctorCommand {
     const pathMod = await import('node:path');
     let exit = ExitCode.Success;
     await withCliContext(({ container, config, projectRoot }) => {
+      // Make sure the human-curated supplement directories exist
+      // before the SQLite-backed mirror rebuild runs. `mnema memory
+      // consolidate` later walks `decisions/` and `notes/` and
+      // reports "not initialised" when they are missing.
+      const memoryRoot = pathMod.join(projectRoot, config.paths.memory);
+      fsMod.mkdirSync(pathMod.join(memoryRoot, 'decisions'), { recursive: true });
+      fsMod.mkdirSync(pathMod.join(memoryRoot, 'notes'), { recursive: true });
+      fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.skills), { recursive: true });
+
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
       let prunedSkills: string[] = [];
@@ -239,7 +248,7 @@ export class DoctorCommand {
         const adapter = new SqliteAdapter(dbPath);
         try {
           checks.push({ name: 'database opens', ok: true, detail: dbPath });
-          checks.push(...inspectMigrationDrift(adapter, migrationsDir()));
+          checks.push(...inspectMigrationDrift(adapter, migrationDirs(projectRoot)));
           checks.push(
             ...inspectMirrorDrift(adapter, {
               skillsDir: path.join(projectRoot, config.paths.skills),
@@ -290,7 +299,10 @@ export class DoctorCommand {
  * @param dir - Migrations directory to compare against
  * @returns Drift checks in the order doctor renders them
  */
-export function inspectMigrationDrift(adapter: SqliteAdapter, dir: string): DoctorCheck[] {
+export function inspectMigrationDrift(
+  adapter: SqliteAdapter,
+  dir: string | readonly string[],
+): DoctorCheck[] {
   const runner = new MigrationRunner();
   const onDisk = runner.listAvailable(dir);
   const applied = new Set(runner.loadApplied(adapter));

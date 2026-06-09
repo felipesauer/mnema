@@ -26,7 +26,7 @@ import { Err, Ok, type Result } from '../../services/result.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
-import { migrationsDir, workflowsDir } from '../../utils/asset-paths.js';
+import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
 import { VERSION } from '../../utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 import { buildAgentsMd } from '../templates/agents-md.js';
@@ -201,7 +201,7 @@ export class InitCommand {
     const dbPath = path.join(stateDir, 'state.db');
     const adapter = new SqliteAdapter(dbPath);
     try {
-      new MigrationRunner().run(adapter, migrationsDir());
+      new MigrationRunner().run(adapter, migrationDirs(cwd));
       const projects = new ProjectRepository(adapter);
       if (projects.findByKey(config.project.key) === null) {
         projects.insert({

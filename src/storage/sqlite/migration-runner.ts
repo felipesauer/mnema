@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Database as DatabaseType } from 'better-sqlite3';
@@ -32,20 +32,20 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the directory containing .sql files
    * @returns List of migrations applied during this run, in order
    */
-  run(adapter: SqliteAdapter, migrationsDir: string): readonly AppliedMigration[] {
+  run(
+    adapter: SqliteAdapter,
+    migrationsDir: string | readonly string[],
+  ): readonly AppliedMigration[] {
     const database = adapter.getDatabase();
     const applied = new Set(this.loadAppliedVersions(adapter));
 
-    const files = readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
-      .sort();
-
+    const sources = collectMigrationFiles(migrationsDir);
     const newlyApplied: AppliedMigration[] = [];
-    for (const file of files) {
+    for (const { dir, file } of sources) {
       const version = parseVersion(file);
       if (applied.has(version)) continue;
 
-      const sql = readFileSync(path.join(migrationsDir, file), 'utf-8');
+      const sql = readFileSync(path.join(dir, file), 'utf-8');
       this.applyOne(database, sql);
       newlyApplied.push({ version, file });
     }
@@ -96,11 +96,11 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the migrations directory
    * @returns Migrations parsed from filenames, sorted by version
    */
-  listAvailable(migrationsDir: string): readonly AppliedMigration[] {
-    return readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
-      .sort()
-      .map((file) => ({ version: parseVersion(file), file }));
+  listAvailable(migrationsDir: string | readonly string[]): readonly AppliedMigration[] {
+    return collectMigrationFiles(migrationsDir).map(({ file }) => ({
+      version: parseVersion(file),
+      file,
+    }));
   }
 
   /**
@@ -113,7 +113,10 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the migrations directory
    * @returns Sorted list of pending migrations (empty when in sync)
    */
-  detectDrift(adapter: SqliteAdapter, migrationsDir: string): readonly AppliedMigration[] {
+  detectDrift(
+    adapter: SqliteAdapter,
+    migrationsDir: string | readonly string[],
+  ): readonly AppliedMigration[] {
     const applied = new Set(this.loadAppliedVersions(adapter));
     if (applied.size === 0) return [];
 
@@ -151,6 +154,42 @@ export class MigrationRunner {
       .all() as Array<{ version: number }>;
     return rows.map((row) => row.version);
   }
+}
+
+/**
+ * Lists every `NNN_*.sql` file under one or more directories, merged
+ * by ascending version. Used by the runner so a project's local
+ * migrations (under `.mnema/migrations/`) ride alongside the bundled
+ * set (under the package's `dist/storage/sqlite/migrations/`).
+ *
+ * - String input is treated as a single directory (legacy shape;
+ *   most tests still call it this way).
+ * - Array input is iterated in order; missing directories are
+ *   silently skipped so a project that has not generated any custom
+ *   migration is a no-op.
+ * - Files are de-duplicated by name: if both the bundled and the
+ *   project-local directory ship the same filename, the bundled one
+ *   wins. The `MigrationRunner` then skips already-applied versions
+ *   so duplicates never run twice.
+ */
+function collectMigrationFiles(
+  dirs: string | readonly string[],
+): readonly { dir: string; file: string }[] {
+  const list = typeof dirs === 'string' ? [dirs] : dirs;
+  const seen = new Set<string>();
+  const acc: { dir: string; file: string }[] = [];
+  for (const dir of list) {
+    if (!existsSync(dir)) continue;
+    for (const file of readdirSync(dir)) {
+      if (!file.endsWith('.sql')) continue;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      acc.push({ dir, file });
+    }
+  }
+  // Sort by filename (== version prefix) ascending.
+  acc.sort((a, b) => a.file.localeCompare(b.file));
+  return acc;
 }
 
 function parseVersion(filename: string): number {

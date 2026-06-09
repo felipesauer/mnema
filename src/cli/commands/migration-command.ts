@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
@@ -9,7 +9,7 @@ import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
-import { migrationsDir } from '../../utils/asset-paths.js';
+import { migrationDirs, projectMigrationsDir } from '../../utils/asset-paths.js';
 import { resolveProjectRoot } from '../project-root.js';
 
 /**
@@ -34,9 +34,24 @@ export class MigrationCommand {
 
     group
       .command('generate <slug>')
-      .description('Create the next NNN_<slug>.sql migration file')
+      .description(
+        'Create the next NNN_<slug>.sql migration file under the project ' +
+          '(`.mnema/migrations/`). The runner picks it up automatically on ' +
+          'the next database open.',
+      )
       .action((slug: string) => {
-        const result = generateMigration(migrationsDir(), slug);
+        const loader = new ConfigLoader();
+        const configFile = loader.findConfigFile();
+        if (configFile === null) {
+          process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
+        }
+        const projectRoot = resolveProjectRoot(configFile);
+        const outDir = projectMigrationsDir(projectRoot);
+        mkdirSync(outDir, { recursive: true });
+        // Pass *both* dirs to listAvailable so the next version slot
+        // is computed against the bundled + project-local merged set,
+        // not just the project's directory.
+        const result = generateMigration(outDir, slug, migrationDirs(projectRoot));
         if (!result.ok) {
           process.stderr.write(`${pc.red('error:')} ${result.message}\n`);
           process.exit(2);
@@ -96,7 +111,7 @@ function runApply(): void {
   const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
   const adapter = new SqliteAdapter(dbPath);
   try {
-    const applied = new MigrationRunner().run(adapter, migrationsDir());
+    const applied = new MigrationRunner().run(adapter, migrationDirs(projectRoot));
     if (applied.length === 0) {
       process.stdout.write(`${pc.dim('schema already up to date')}\n`);
       return;
@@ -126,27 +141,36 @@ export type GenerateMigrationResult =
     };
 
 /**
- * Writes the next `NNN_<slug>.sql` stub into `migrationsDir`.
+ * Writes the next `NNN_<slug>.sql` stub into `outDir`.
  *
- * The version is the highest version already on disk plus one; the
- * filename follows the established `NNN_snake_case.sql` convention.
- * Refuses to overwrite an existing file.
+ * The version is the highest already on disk **across all
+ * `versionLookupDirs`** plus one; the filename follows the
+ * established `NNN_snake_case.sql` convention. Refuses to overwrite
+ * an existing file.
  *
- * @param migrationsDir - Absolute path to the migrations directory
+ * @param outDir - Where to write the new file (typically
+ *   `<project_root>/.mnema/migrations`)
  * @param slug - Free-text label, normalised to snake_case
+ * @param versionLookupDirs - Dirs to scan to compute the next version
+ *   slot. Defaults to `[outDir]` when omitted, preserving the
+ *   single-dir behaviour the tests still exercise.
  * @returns Either the new file path + assigned version, or an error
  */
-export function generateMigration(migrationsDir: string, slug: string): GenerateMigrationResult {
+export function generateMigration(
+  outDir: string,
+  slug: string,
+  versionLookupDirs: readonly string[] = [outDir],
+): GenerateMigrationResult {
   const normalised = normaliseSlug(slug);
   if (normalised.length === 0) {
     return { ok: false, message: 'slug must contain alphanumerics' };
   }
 
-  const onDisk = new MigrationRunner().listAvailable(migrationsDir);
+  const onDisk = new MigrationRunner().listAvailable(versionLookupDirs);
   const nextVersion = (onDisk.at(-1)?.version ?? 0) + 1;
   const padded = String(nextVersion).padStart(3, '0');
   const fileName = `${padded}_${normalised}.sql`;
-  const filePath = path.join(migrationsDir, fileName);
+  const filePath = path.join(outDir, fileName);
 
   if (existsSync(filePath)) {
     return { ok: false, message: `${fileName} already exists` };
