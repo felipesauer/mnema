@@ -61,11 +61,8 @@ tests/
 └── e2e/                Full CLI via spawnSync
 
 workflows/              Bundled workflow JSON (default, lean, kanban, jira-classic)
-docs/                   Living docs (FROZEN: ARCHITECTURE/DESIGN/EXECUTION_GUIDE
-                        from Phase 0; CURRENT: SMOKE, TECH_DEBT, RELEASE,
-                        skills-and-memory)
-evaluations/            Per-phase eval docs (10 so far) — friction reports
-                        from real-world tests + adversarial sweeps
+evaluations/            Eval docs — friction reports from real-world
+                        tests + adversarial sweeps
 ```
 
 ## Commit and PR conventions
@@ -88,8 +85,7 @@ Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`,
 **Do not** reference internal phase identifiers (`Phase X`, `Camada N`,
 `F-XN`, `Bug N`) in code comments, JSDoc, or SQL migration headers.
 They belong in commit messages and CHANGELOG.md, where they age
-gracefully alongside their context. The memory
-`feedback_code_comments` captures the reasoning.
+gracefully alongside their context.
 
 ## Tests
 
@@ -110,23 +106,26 @@ by `evaluations/2026-05-12-phase-g*.md`.
 
 ## Smoke run before tagging
 
-Before any release tarball gets shipped, run the 21-phase manual
-suite documented in [docs/SMOKE.md](docs/SMOKE.md):
+Before any release tarball gets shipped, two gates run:
 
 ```bash
+pnpm publish:check           # 13 automated checks (build, lint, tests,
+                             # coverage, bench, MCP smoke, tarball shape)
 pnpm smoke:bootstrap         # wipes /tmp/mnema-smoke/, sets up a clean workdir
-# Then follow docs/SMOKE.md phase by phase. ~45 min total.
 ```
 
-Capture findings as `evaluations/<DATE>-smoke-N.md` following the
-template used by `evaluations/2026-06-09-smoke-1.md`.
+After the bootstrap, the maintainer walks a 21-phase manual smoke
+(init → tasks → sprints → decisions → MCP tools → doctor → destroy)
+in the clean workdir. Capture findings as
+`evaluations/<DATE>-smoke-N.md` following the template used by
+`evaluations/2026-06-09-smoke-1.md`.
 
 ## Things to watch out for
 
 - **Workflow as data.** Every behaviour driven by `workflows/*.json`.
   Hardcoding states in services breaks `lean`/`kanban`/`jira-classic`.
-  See [docs/AUDIT-2026-06-09.md](docs/AUDIT-2026-06-09.md) for the
-  defenses in place (refines, doctor checks).
+  Schema refines and `mnema doctor` checks defend this invariant —
+  extend both when adding workflow features.
 - **Audit log is tamper-evident.** Migration 011 added a SHA-256 hash
   chain. Don't write to `.mnema/audit/*.jsonl` directly; use
   `AuditWriter.write()` so the chain stays intact.

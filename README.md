@@ -1,10 +1,9 @@
 # Mnema
 
+[![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
 [![version](https://img.shields.io/badge/version-0.3.0--alpha.1-orange)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
-[![tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)](./tests)
-[![coverage](https://img.shields.io/badge/coverage-60%25-yellow)](./vitest.config.ts)
 
 > Cognitive persistence for AI agents.
 > *You drive, the AI executes, everything is recorded.*
@@ -50,16 +49,14 @@ agents — it stores everything they touch.
 
 ## Quickstart
 
-> **Status:** Mnema is in `0.3.0-alpha.1`, not yet published to npm.
-> The only supported install path right now is from source — see the
-> [Install](#install) section below. The alpha surface is feature-rich
-> (tasks, sprints, decisions, skills, memories, agent runs, hash-chained
-> audit log, 4 shipping workflows) but `npm publish` is gated on a
-> dogfooding cycle that's underway.
+> **Status:** Mnema is in alpha. Releases are published to npm under
+> the `alpha` dist-tag — see the [Install](#install) section below.
+> The alpha surface is feature-rich (tasks, sprints, decisions, skills,
+> memories, agent runs, hash-chained audit log, 4 shipping workflows)
+> and is being hardened through a dogfooding cycle before a stable tag.
 
 <!-- Asciinema cast: render via `bash scripts/record-quickstart.sh`
-     then host on asciinema.org and replace the link below.
-     The cast is gitignored (docs/quickstart.cast). -->
+     then host on asciinema.org and replace the link below. -->
 <!-- [![asciicast](https://asciinema.org/a/PLACEHOLDER.svg)](https://asciinema.org/a/PLACEHOLDER) -->
 
 ```bash
@@ -77,7 +74,27 @@ mnema mcp install-instructions claude-code
 
 ## Install
 
-Mnema is not on npm yet. Install from source:
+```bash
+npm install -g @saurim/mnema@alpha
+mnema --version
+```
+
+Requires Node 20+. While Mnema is in alpha, releases are published
+under the `alpha` dist-tag (plain `npm install -g @saurim/mnema`
+will not resolve until the first stable release).
+
+Notes on the native SQLite binding (`better-sqlite3`):
+
+- **npm / npx**: works out of the box — a prebuilt binary is
+  downloaded for common platforms, no compiler toolchain needed.
+- **pnpm**: pnpm blocks dependency build scripts by default, which
+  leaves the binding missing at runtime. Run
+  `pnpm approve-builds better-sqlite3` after installing (or add it
+  to `onlyBuiltDependencies` in your project).
+- Platforms without a prebuilt binary need a C++ toolchain
+  (`python3`, `make`, `g++`) for the fallback source build.
+
+To work from source instead:
 
 ```bash
 git clone https://github.com/felipesauer/mnema.git
@@ -89,9 +106,8 @@ ln -s "$PWD/mnema" /usr/local/bin/mnema   # optional, for global access
 mnema --version
 ```
 
-Requires Node 20+. The bundled `./mnema` shell script in the repo
-forwards to `dist/index.js` — useful for dogfooding without a global
-install.
+The bundled `./mnema` shell script in the repo forwards to
+`dist/index.js` — useful for dogfooding without a global install.
 
 When you want a quick look at what the agent has been doing:
 
@@ -112,8 +128,8 @@ mnema agent inspect <run_id>       # detail of a single agent run
   `default`, `lean`, `kanban`, `jira-classic`.
 - **Dual identity** on every mutation: human actor, agent intermediary
   and run id. Lets you see *who* did *what* through *which* agent.
-- **Append-only audit log** at `.audit/*.jsonl`. Goes to Git; rotates
-  monthly; queryable with `mnema history` / `mnema audit query`.
+- **Append-only audit log** at `.mnema/audit/*.jsonl`. Goes to Git;
+  rotates monthly; queryable with `mnema history` / `mnema audit query`.
 - **Markdown + SQLite**: the SQLite database is the cache, the
   per-task markdown files are the portable source of truth. They
   survive without Mnema — open them in any text editor.
@@ -129,22 +145,24 @@ mnema agent inspect <run_id>       # detail of a single agent run
 
 ```
 my-project/
-├── mnema.config.json     # versioned configuration
-├── AGENTS.md             # operating manual for agents (versioned)
-├── .app/                 # local state — gitignored
-│   ├── state.db          #   SQLite (FTS, tasks, runs, audit metadata)
-│   └── attachments/      #   hash-named binary attachments
-├── .audit/               # append-only event log (versioned by default)
-│   └── current.jsonl
-├── backlog/              # one folder per workflow state
-│   ├── DRAFT/MYAPP-1.md
-│   ├── READY/
-│   └── …
-├── sprints/              # sprint planning notes
-├── roadmap/              # quarterly / theme docs
-├── memory/               # human-curated context (decisions, notes)
-└── workflows/
-    └── default.json      # active state machine
+├── AGENTS.md                 # operating manual for agents (versioned)
+├── .gitignore                # pre-seeded ignores for local state
+└── .mnema/                   # everything Mnema owns
+    ├── mnema.config.json     # project configuration (versioned)
+    ├── audit/                # append-only event log (versioned by default)
+    │   └── current.jsonl
+    ├── state/                # local cache — gitignored
+    │   └── state.db          #   SQLite (FTS, tasks, runs, audit metadata)
+    ├── backlog/              # one folder per workflow state
+    │   ├── DRAFT/MYAPP-1.md
+    │   ├── READY/
+    │   └── …
+    ├── sprints/              # sprint planning notes
+    ├── roadmap/              # quarterly / theme docs
+    ├── memory/               # human-curated context (decisions, notes)
+    ├── skills/               # agent-recorded skills, mirrored to .md
+    └── workflows/
+        └── default.json      # active state machine
 ```
 
 ## Common CLI commands
@@ -195,12 +213,12 @@ Throughout, you can `mnema watch` to see every mutation in real time.
 
 ## Configuration
 
-`mnema.config.json` is the only configuration. Minimal fields:
+`.mnema/mnema.config.json` is the only configuration. Minimal fields:
 
 ```json
 {
   "version": "1.0",
-  "mnema_version": "^0.1.0",
+  "mnema_version": "^0.3.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }
@@ -237,10 +255,10 @@ package is being shaken out via adversarial sweeps (audit
 immutability, multi-actor concurrency, custom workflow validation)
 and an end-to-end 21-phase smoke suite before public release.
 
-Currently install-from-source only — `npm publish` follows the
-ongoing dogfooding cycle. **429 tests, 0 skipped, lint + build
-clean.** See [CHANGELOG.md](CHANGELOG.md) for the per-phase history
-and [docs/SMOKE.md](docs/SMOKE.md) for the manual validation script.
+**436 tests, 0 skipped, lint + build clean.** Every release passes a
+13-check publish gate ([scripts/publish-check.sh](scripts/publish-check.sh))
+plus a 21-phase manual smoke before tagging. See
+[CHANGELOG.md](CHANGELOG.md) for the per-version history.
 
 ## Further reading
 
@@ -249,11 +267,6 @@ and [docs/SMOKE.md](docs/SMOKE.md) for the manual validation script.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — dev setup, commit
   conventions, smoke run, things to watch out for when touching
   the schema, the audit log, or the workflow.
-- **[docs/SMOKE.md](docs/SMOKE.md)** — 21-phase manual validation
-  script run before every release tag (~45 min top-to-bottom).
-- **[docs/skills-and-memory.md](docs/skills-and-memory.md)** —
-  how agent-authoritative memory works and where the file-based
-  supplements fit in.
 - **[evaluations/](evaluations/)** — friction reports from real-world
   tests and adversarial sweeps (audit immutability, multi-actor
   concurrency, custom workflow validation). Each doc is a snapshot
