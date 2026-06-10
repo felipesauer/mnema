@@ -3,8 +3,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { ConfigLoader } from '../../config/config-loader.js';
 import {
   formatWorkflowIssues,
@@ -16,6 +14,7 @@ import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
+import { pc } from '../../utils/colors.js';
 import { checkVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 

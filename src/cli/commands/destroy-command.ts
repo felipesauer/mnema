@@ -10,7 +10,7 @@ import {
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
+import { pc } from '../../utils/colors.js';
 
 // `@inquirer/prompts` is loaded lazily inside `resolveDecision` —
 // `--yes` skips the cost, and unrelated CLI paths never touch it.

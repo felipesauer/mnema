@@ -1,11 +1,10 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';

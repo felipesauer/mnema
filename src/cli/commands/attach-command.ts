@@ -1,9 +1,9 @@
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
 import { printError } from '../../errors/error-printer.js';
 import type { Attachment } from '../../storage/sqlite/repositories/attachment-repository.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface AttachOptions {

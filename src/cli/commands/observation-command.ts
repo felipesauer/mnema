@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
+import { pc } from '../../utils/colors.js';
 
 import { withCliContext } from '../cli-context.js';
 

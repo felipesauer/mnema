@@ -1,7 +1,6 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { IdentityService } from '../../services/identity-service.js';
+import { pc } from '../../utils/colors.js';
 
 interface SetOptions {
   readonly display?: string;

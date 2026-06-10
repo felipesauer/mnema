@@ -1,6 +1,5 @@
-import pc from 'picocolors';
-
 import type { Task } from '../../domain/entities/task.js';
+import { pc } from '../../utils/colors.js';
 import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
 
 /**

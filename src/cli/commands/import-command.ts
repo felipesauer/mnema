@@ -1,11 +1,10 @@
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { printError } from '../../errors/error-printer.js';
 import { GithubIssuesImporter } from '../../services/importers/github-issues-importer.js';
 import { MarkdownImporter } from '../../services/importers/markdown-importer.js';
+import { pc } from '../../utils/colors.js';
 import { withMutatingCliContext } from '../cli-context.js';
 
 interface MarkdownOptions {
