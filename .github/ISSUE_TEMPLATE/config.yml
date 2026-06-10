@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question / discussion
+    url: https://github.com/felipesauer/mnema/discussions
+    about: For questions and ideas that are not a concrete bug or feature request.

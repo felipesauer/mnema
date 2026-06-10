@@ -9,6 +9,9 @@ coverage/
 docs/
 .plan/
 
+# Local AI-assistant state (permissions, plans)
+.claude/
+
 # Dogfood: running mnema against itself for testing.
 # Every Mnema-managed artefact lives under .mnema/ in the new layout,
 # so a single rule covers the database, audit log, backlog markdowns,
