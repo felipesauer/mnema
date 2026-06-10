@@ -218,7 +218,7 @@ Throughout, you can `mnema watch` to see every mutation in real time.
 ```json
 {
   "version": "1.0",
-  "mnema_version": "^0.3.0",
+  "mnema_version": "^0.4.0-alpha.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }
