@@ -1,10 +1,9 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import type { Sprint } from '../../domain/entities/sprint.js';
 import type { Task } from '../../domain/entities/task.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface PlanOptions {

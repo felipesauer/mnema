@@ -9,7 +9,7 @@ import {
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
+import { pc } from '../../utils/colors.js';
 
 // `@inquirer/prompts` is loaded lazily inside `resolveOptions` —
 // silent runs (`--yes` or all flags supplied) never pay the cost,

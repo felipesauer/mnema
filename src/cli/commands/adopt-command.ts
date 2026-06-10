@@ -1,13 +1,12 @@
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import {
   type AdoptableComponent,
   type AdoptionResult,
   AdoptionService,
 } from '../../services/adoption-service.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 
 const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = ['skills', 'memory', 'roadmap', 'all'];

@@ -1,9 +1,8 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { SearchEntity, SearchHit } from '../../services/search-service.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 
 interface SearchOptions {

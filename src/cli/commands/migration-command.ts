@@ -2,14 +2,13 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, projectMigrationsDir } from '../../utils/asset-paths.js';
+import { pc } from '../../utils/colors.js';
 import { resolveProjectRoot } from '../project-root.js';
 
 /**

@@ -1,8 +1,7 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import type { Note, NoteKind } from '../../domain/entities/note.js';
 import { printError } from '../../errors/error-printer.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 

@@ -1,8 +1,7 @@
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 

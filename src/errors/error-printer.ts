@@ -1,4 +1,4 @@
-import pc from 'picocolors';
+import { pc } from '../utils/colors.js';
 
 import { ErrorCode, ExitCode, type ExitCodeValue } from './error-codes.js';
 import type { MnemaError } from './mnema-error.js';
@@ -28,7 +28,9 @@ export function formatError(error: MnemaError): string {
       for (const issue of error.issues) {
         lines.push(`  ${formatPath(issue.path)}: ${issue.message}`);
       }
-      lines.push(`${pc.dim('hint:')} Check the schema at https://mnema.dev/docs/config`);
+      lines.push(
+        `${pc.dim('hint:')} Check the schema at https://github.com/felipesauer/mnema#configuration`,
+      );
       break;
 
     case ErrorCode.VersionMismatch:

@@ -1,12 +1,11 @@
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import pc from 'picocolors';
-
 import { ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { MemoryConsolidator } from '../../services/memory-consolidator.js';
 import { MemoryLinter } from '../../services/memory-linter.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 
 interface LintOptions {
