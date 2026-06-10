@@ -16,6 +16,7 @@
     "local-first",
     "workflow"
   ],
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
   "type": "module",
   "bin": {
     "mnema": "./dist/index.js"
@@ -36,6 +37,8 @@
   },
   "scripts": {
     "build": "tsc && tsc-alias && node scripts/copy-migrations.mjs",
+    "prepack": "pnpm build",
+    "prepublishOnly": "bash scripts/publish-check.sh",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
