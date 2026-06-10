@@ -10,6 +10,56 @@ stable release.
 
 ## [Unreleased]
 
+## [0.4.0-alpha.0] - 2026-06-09
+
+First version prepared for a public repository and an npm pre-release
+under the `alpha` dist-tag.
+
+### Fixed (Sprint 4: publish readiness)
+
+- **CLI colors no longer leak ANSI codes into piped output on CI.**
+  picocolors enables color whenever the `CI` env var is set, even
+  without a TTY; all 24 CLI modules now share `src/utils/colors.ts`,
+  which gates on a real terminal (`NO_COLOR` / `FORCE_COLOR` still
+  win). Fixes the 4 spawn-based test failures on GitHub Actions.
+- **`publish-check.sh` check 13 now actually runs from an isolated
+  directory** — it created the tmpdir but never entered it, so the
+  "production resolver works outside the source tree" claim was
+  untested. It now runs `--version`, `init` and `doctor` from the
+  tmpdir. Tarballs from check 7 go to a tmpdir instead of
+  accumulating in the repo root.
+- **Bench budgets scale ×2 under CI.** Budgets are calibrated on a
+  workstation (~155ms cold-start floor); shared runners measured
+  223-249ms on the same commands and flagged variance as regression.
+
+### Changed (Sprint 4: publish readiness)
+
+- **CI hardened for a public repo**: actions bumped to v6 (node24
+  runtime, ahead of GitHub's 2026-06-16 forced migration),
+  `permissions: contents: read`, pnpm version sourced from the new
+  `packageManager` field.
+- **README rewritten for the public repo** — documents the real
+  `.mnema/` layout `mnema init` produces, npm install via the
+  `alpha` dist-tag with `better-sqlite3` prebuilt-binary and pnpm
+  caveats, live CI badge instead of hardcoded test/coverage badges,
+  and no links into local-only `docs/`.
+- **Project identity normalized**: LICENSE copyright and the new
+  package.json `author` say Felipe Sauer; commit history rewritten
+  to the maintainer's GitHub noreply email; config-error hint URL
+  points at the GitHub README instead of an unregistered domain.
+- **Lockfile refresh** (`hono`, `qs`) clears the 5 moderate
+  `pnpm audit --prod` advisories (consumers were never affected —
+  fresh installs already resolved the patched versions).
+
+### Added (Sprint 4: publish readiness)
+
+- **Community files**: bug-report issue template, dependabot
+  (npm + actions, weekly), `SECURITY.md` with private-reporting
+  instructions.
+- **npm lifecycle hooks**: `prepack` rebuilds before every pack;
+  `prepublishOnly` runs the full 13-check publish gate, so a stale
+  `dist/` or a broken tarball can no longer reach the registry.
+
 ### Added (Sprint 3: publish gate + long-tail design ADRs)
 
 - **`scripts/publish-check.sh` + `pnpm publish:check`** runs 13
@@ -855,7 +905,8 @@ changes.
   3/3) — `scripts/copy-migrations.mjs` is the build step that ships
   the SQL files alongside the compiled JavaScript.
 
-[Unreleased]: https://github.com/felipesauer/mnema/compare/v0.3.0-alpha.1...HEAD
+[Unreleased]: https://github.com/felipesauer/mnema/compare/v0.4.0-alpha.0...HEAD
+[0.4.0-alpha.0]: https://github.com/felipesauer/mnema/releases/tag/v0.4.0-alpha.0
 [0.3.0-alpha.1]: https://github.com/felipesauer/mnema/releases/tag/v0.3.0-alpha.1
 [0.3.0-alpha.0]: https://github.com/felipesauer/mnema/releases/tag/v0.3.0-alpha.0
 [0.2.0-alpha.0]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-alpha.0

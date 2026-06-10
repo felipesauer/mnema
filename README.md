@@ -1,7 +1,7 @@
 # Mnema
 
 [![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-0.3.0--alpha.1-orange)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.4.0--alpha.0-orange)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
@@ -244,7 +244,7 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 ## Status
 
-Mnema is **alpha** (`0.3.0-alpha.1` as of 2026-06-09). The full
+Mnema is **alpha** (`0.4.0-alpha.0` as of 2026-06-09). The full
 surface is in place — tasks, sprints, decisions, notes, epics,
 attachments, FTS search, agent runs & plans, hash-chained audit
 log with `doctor` tamper-detection, 9 skill/memory/observation MCP

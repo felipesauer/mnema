@@ -16,7 +16,7 @@ cd mnema
 pnpm install
 pnpm build       # tsc + tsc-alias + copy-migrations
 pnpm lint        # biome check (zero warnings expected)
-pnpm test        # vitest run, ~30s, 429 tests
+pnpm test        # vitest run, ~30s, 436 tests
 ```
 
 Optional, but useful:
@@ -31,9 +31,9 @@ pnpm bench:mcp           # MCP server boot + tool call latency
 To exercise the binary you just built, point a global symlink at it:
 
 ```bash
-pnpm pack                                       # → saurim-mnema-0.3.0-alpha.1.tgz
+pnpm pack                                       # → saurim-mnema-<version>.tgz
 npm i -g ./saurim-mnema-*.tgz                   # → installs as `mnema` on PATH
-mnema --version                                 # confirm 0.3.0-alpha.1
+mnema --version                                 # confirm it matches package.json
 ```
 
 Or skip the pack step and run the dev entry directly:
