@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 #
-# Static publish-readiness gate. Runs the inspection steps from
-# docs/RELEASE.md without actually publishing. Exits non-zero on the
-# first failed check so CI / pre-publish hooks can bail.
+# Static publish-readiness gate. Runs the release inspection checks
+# without actually publishing. Exits non-zero on the first failed
+# check so CI / pre-publish hooks can bail.
 #
 # Usage:
 #   bash scripts/publish-check.sh
-#
-# Does NOT exercise the interactive `mnema init → task create → doctor`
-# smoke (that one stays manual — see docs/RELEASE.md "Publish-readiness
-# smoke (mandatory)").
 
 set -euo pipefail
 
@@ -45,9 +41,10 @@ pnpm smoke:mcp > /tmp/mnema-mcp-smoke.out 2>&1 || fail "pnpm smoke:mcp failed, s
 ok "8 MCP tools exercised cleanly"
 
 step "7. Tarball builds"
-pnpm pack > /dev/null 2>&1 || fail "pnpm pack failed"
+PACK_DIR="$(mktemp -d -t mnema-pack-XXXX)"
+pnpm pack --pack-destination "$PACK_DIR" > /dev/null 2>&1 || fail "pnpm pack failed"
 VERSION="$(node -p "require('./package.json').version")"
-TARBALL="saurim-mnema-${VERSION}.tgz"
+TARBALL="$PACK_DIR/saurim-mnema-${VERSION}.tgz"
 [ -f "$TARBALL" ] || fail "tarball $TARBALL not found"
 ok "tarball produced: $TARBALL"
 
@@ -89,11 +86,19 @@ ok "publishConfig.access = public"
 
 step "13. Production resolver works from outside the source tree"
 ISOLATED="$(mktemp -d -t mnema-publish-check-XXXX)"
-trap "rm -rf $ISOLATED" EXIT
-node dist/index.js --version > /dev/null 2>&1 || fail "compiled binary fails --version"
-ok "compiled CLI runs"
+trap 'rm -rf "$ISOLATED" "$PACK_DIR"' EXIT
+(
+  cd "$ISOLATED"
+  node "$REPO_ROOT/dist/index.js" --version > /dev/null 2>&1 \
+    || fail "compiled binary fails --version outside the repo"
+  node "$REPO_ROOT/dist/index.js" init --name "Publish Check" --key "PUBCHK" > /dev/null 2>&1 \
+    || fail "compiled binary fails init outside the repo (migration resolver broken?)"
+  MNEMA_ACTOR=publish-check node "$REPO_ROOT/dist/index.js" doctor > /dev/null 2>&1 \
+    || fail "compiled binary fails doctor on a fresh project outside the repo"
+)
+ok "compiled CLI runs init + doctor from an isolated directory"
 
 printf "\n\033[1;32mAll publish-readiness checks passed for v%s\033[0m\n" "$VERSION"
-printf "Next step: run the manual publish-smoke from docs/RELEASE.md\n"
-printf "          (init → task create → task move → doctor in a tmpdir)\n"
-printf "Then: npm publish $TARBALL\n"
+printf "Next step: run the manual publish smoke in a tmpdir\n"
+printf "          (init → task create → task move → doctor)\n"
+printf "Then: npm publish %s --tag alpha\n" "$TARBALL"
