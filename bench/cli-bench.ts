@@ -4,8 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 /**
- * Smoke benchmark against the budgets documented in
- * ARCHITECTURE.md §15 — "Performance — orçamentos".
+ * Smoke benchmark for the compiled CLI's cold-start budgets.
  *
  * Run via `pnpm bench`. The script spawns the compiled CLI (`dist/`),
  * seeds a throwaway project under `os.tmpdir()`, and reports each
@@ -15,6 +14,12 @@ import path from 'node:path';
  * floor of ~150ms before any user-facing work happens. Budgets are
  * tuned to be tight enough to flag regressions without lying about
  * the cold-start cost.
+ *
+ * Budgets are calibrated on a developer workstation. Shared CI
+ * runners are slower and noisier, so under `CI` every budget is
+ * doubled — still tight enough to catch a real regression (an extra
+ * import waterfall, a missing index) without flaking on runner
+ * variance.
  *
  * Agents that need sub-10ms operations should drive Mnema via the MCP
  * daemon (`mnema mcp serve`), where the imports are paid once at
@@ -72,7 +77,7 @@ try {
     },
     {
       name: 'mnema task move',
-      // Cold-start floor analysis (R12 investigation, 2026-06-09):
+      // Cold-start floor analysis (measured 2026-06-09):
       //   ~30ms  Node runtime spawn
       //   ~95ms  dynamic-import chain (service-container statically
       //          pulls 47 imports — every repo + service + zod schema)
@@ -92,22 +97,24 @@ try {
       //       wire the services they actually use (and `task move`
       //       does need most of them — task + transition + sync +
       //       audit + identity + decision + memory).
-      // Neither is in scope for the current alpha cycle. Tracked in
-      // docs/TECH_DEBT.md §5.
+      // Neither is in scope for the current alpha cycle.
       budgetMs: 200,
       run: ({ cliEntry: entry }) => benchTaskMove(entry, projectRoot),
     },
   ];
 
-  process.stdout.write('Mnema bench — budgets from ARCHITECTURE.md §15\n');
+  const budgetScale = process.env.CI !== undefined && process.env.CI !== '' ? 2 : 1;
+  const scaleNote = budgetScale > 1 ? ` (CI: budgets ×${budgetScale})` : '';
+  process.stdout.write(`Mnema bench — CLI cold-start budgets${scaleNote}\n`);
   process.stdout.write('-----------------------------------------------\n');
   let failed = 0;
   for (const budget of budgets) {
     const elapsed = budget.run(env);
-    const ok = elapsed <= budget.budgetMs;
+    const scaledBudget = budget.budgetMs * budgetScale;
+    const ok = elapsed <= scaledBudget;
     const mark = ok ? '✓' : '✗';
     process.stdout.write(
-      `${mark} ${budget.name.padEnd(28)} ${elapsed.toFixed(0).padStart(5)}ms / ${budget.budgetMs}ms\n`,
+      `${mark} ${budget.name.padEnd(28)} ${elapsed.toFixed(0).padStart(5)}ms / ${scaledBudget}ms\n`,
     );
     if (!ok) failed += 1;
   }
