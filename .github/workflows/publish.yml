@@ -1,15 +1,5 @@
 name: Publish to npm
 
-# Publishes the package when a GitHub Release is published. Pre-release
-# versions (-alpha.N / -beta.N / -rc.N) go under a matching dist-tag so
-# a plain `npm install @felipesauer/mnema` never resolves to a
-# pre-release. Stable versions go to `latest`.
-#
-# Requires the repo secret NPM_TOKEN: an npm automation token with
-# publish rights to the @felipesauer scope. id-token: write enables
-# npm provenance — a signed, verifiable link from the published
-# tarball back to this workflow run and commit.
-
 on:
   release:
     types: [published]
