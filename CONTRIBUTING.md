@@ -24,9 +24,14 @@ Optional, but useful:
 ```bash
 pnpm test:watch          # vitest UI
 pnpm test:coverage       # v8 coverage report → coverage/
-pnpm bench               # CLI benchmarks (warm/cold start, task move)
-pnpm bench:mcp           # MCP server boot + tool call latency
+pnpm bench               # CLI cold-start budgets (CI gate; runs on every push)
+pnpm bench:mcp           # in-process MCP latency (cold + warm tool calls)
 ```
+
+`pnpm bench` is a CI gate — keep it green. `pnpm bench:mcp` is **not**
+in CI; run it by hand before changes that touch the MCP server, the
+service container, or the tool registry, to catch a latency regression
+on the path agents actually use.
 
 To exercise the binary you just built, point a global symlink at it:
 
@@ -61,8 +66,6 @@ tests/
 └── e2e/                Full CLI via spawnSync
 
 workflows/              Bundled workflow JSON (default, lean, kanban, jira-classic)
-evaluations/            Eval docs — friction reports from real-world
-                        tests + adversarial sweeps
 ```
 
 ## Commit and PR conventions
@@ -99,10 +102,10 @@ Every code change should ship with tests:
   `tests/integration/storage/migration-runner.test.ts` if the
   migration count changes.
 
-Adversarial sweeps live in `evaluations/`. If you find a new vector
-the suite doesn't cover (multi-actor race, tamper attempt, custom
-workflow edge case), open a new eval doc following the template used
-by `evaluations/2026-05-12-phase-g*.md`.
+If you find a vector the suite doesn't cover (multi-actor race, tamper
+attempt, custom-workflow edge case), the most useful contribution is a
+**failing test** that reproduces it under `tests/`. Open an issue with
+the repro too, so it's tracked even before a fix lands.
 
 ## Smoke run before tagging
 
@@ -116,9 +119,7 @@ pnpm smoke:bootstrap         # wipes /tmp/mnema-smoke/, sets up a clean workdir
 
 After the bootstrap, the maintainer walks a 21-phase manual smoke
 (init → tasks → sprints → decisions → MCP tools → doctor → destroy)
-in the clean workdir. Capture findings as
-`evaluations/<DATE>-smoke-N.md` following the template used by
-`evaluations/2026-06-09-smoke-1.md`.
+in the clean workdir, and files anything that breaks as an issue.
 
 ## Things to watch out for
 

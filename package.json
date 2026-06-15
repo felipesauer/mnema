@@ -27,7 +27,6 @@
   "files": [
     "dist/",
     "workflows/",
-    "templates/",
     "CHANGELOG.md"
   ],
   "homepage": "https://github.com/felipesauer/mnema#readme",

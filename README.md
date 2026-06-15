@@ -25,83 +25,121 @@ accountable.
 
 ## Table of contents
 
+- [Why Mnema](#why-mnema)
 - [Quickstart](#quickstart)
-- [What you get](#what-you-get)
 - [Install](#install)
-- [What it gives you](#what-it-gives-you)
+- [What you get](#what-you-get)
+- [How the MCP loop works](#how-the-mcp-loop-works)
 - [Project layout after `mnema init`](#project-layout-after-mnema-init)
 - [Common CLI commands](#common-cli-commands)
-- [How the MCP loop works](#how-the-mcp-loop-works)
 - [Configuration](#configuration)
 - [Workflows](#workflows)
 - [Status](#status)
+- [Getting help](#getting-help)
 - [Further reading](#further-reading)
 - [License](#license)
 
-## What you get
+## Why Mnema
 
-| Surface | What |
+When an AI agent works in your repository, three questions usually go
+unanswered: *what exactly did it change, did it skip the steps it was
+supposed to follow, and can you trust the record after the fact?*
+Mnema answers all three.
+
+- **It makes agent work provable.** Every mutation appends to a
+  SHA-256 hash-chained audit log. Change one past entry and the chain
+  breaks — `mnema doctor` catches edits, truncation, replays, and
+  deletion. This is the part most agent tooling doesn't have.
+- **It keeps the human in the loop.** Agents move work through a
+  workflow whose gates reject invalid transitions (no submitting a
+  task with no acceptance criteria, no skipping review). You approve
+  through the terminal; the agent can't route around you.
+- **It records who did what.** Each event carries a dual identity —
+  the human who coordinated, the agent that executed, the run it
+  belonged to — so the history reads like a chain of custody.
+- **It stays yours.** Local-first, zero telemetry, no remote
+  services. SQLite + plain-text Markdown/JSONL in your repo; the
+  files outlive Mnema and open in any editor.
+
+| Instead of… | …you get |
 |---|---|
-| **Tasks** | Create / move through workflow gates / soft delete / restore / history. Acceptance criteria + estimate + assignee. |
-| **Sprints** | Plan / start / close (one active per project) with goal, capacity, attach tasks. |
-| **Epics** | Group tasks under a single epic with state OPEN/CLOSED. |
-| **Decisions (ADRs)** | proposed → accepted/rejected → superseded chain with `decision_promote_from_note` shortcut. |
-| **Notes** | Typed (`agent_observation`, `review_feedback`, `block_reason`, …) attached to tasks. |
-| **Attachments** | Hash-deduplicated; routed to task or decision by key shape. |
-| **FTS5 search** | Across tasks, decisions, notes, skills, memories, observations; diacritic-insensitive. |
-| **Agent runs & plans** | Wrap every batch of mutations; max depth 5; parent/child inspect via CLI. |
-| **Audit log** | JSONL + SHA-256 hash chain (schema v2) mirrored to SQLite. `doctor` detects edits, truncation, replays, deletion. |
-| **Skills + memories + observations** | Agent-authoritative via `*_record` MCP tools; mirrored to `.md` files. |
-| **Workflows** | 4 shipping presets (`default`, `lean`, `kanban`, `jira-classic`); custom JSON validated by schema refines. |
-| **`doctor`** | 16 checks: config, version, workflow shape, paths, DB, migrations, mirrors, audit integrity, task state drift. |
-| **MCP tools** | 30+ universal tools + one per workflow action; `context_bootstrap` is the canonical session entry. |
+| A task tracker with no cryptographic guarantee the log is intact | A tamper-evident hash chain with `doctor` verification |
+| A semantic memory layer (Mem0, Cognee) that recalls facts | A provable record of *actions taken*, not facts remembered |
+| A heavyweight Jira/web UI | An MCP server + CLI that lives next to your code |
+| Free-form agent prose you have to trust | Typed tools behind workflow gates that reject bad input |
 
 ## Quickstart
 
 > **Status:** Mnema is in alpha. Releases are published to npm under
-> the `alpha` dist-tag — see the [Install](#install) section below.
-> The alpha surface is feature-rich (tasks, sprints, decisions, skills,
-> memories, agent runs, hash-chained audit log, 4 shipping workflows)
-> and is being hardened through a dogfooding cycle before a stable tag.
-
-<!-- Asciinema cast: render via `bash scripts/record-quickstart.sh`
-     then host on asciinema.org and replace the link below. -->
-<!-- [![asciicast](https://asciinema.org/a/PLACEHOLDER.svg)](https://asciinema.org/a/PLACEHOLDER) -->
+> the `alpha` dist-tag (see [Install](#install)). The surface is
+> feature-rich and is being hardened through a dogfooding cycle before
+> a stable tag.
 
 ```bash
-# 1. Initialise a project
+# 1. Install and initialise a project
+npm install -g @felipesauer/mnema@alpha
 cd my-project
 mnema init --name "My App" --key "MYAPP"
 
 # 2. Wire your AI client to the MCP server
 mnema mcp install-instructions claude-code
-# follow the printed snippet, restart your client
-
-# 3. Start working — everything goes through tools
-#    (the agent calls task_create, task_submit, … you see the result)
 ```
+
+Step 2 prints the exact registration command and config for your
+client. For Claude Code it looks like this:
+
+```text
+Register with `claude mcp add` (preferred), or paste the JSON
+below into ~/.claude.json under `mcpServers`:
+
+  claude mcp add mnema -s user -e MNEMA_AGENT_HANDLE=claude-code -- mnema mcp serve
+```
+
+Run that `claude mcp add` line, restart your client, and confirm the
+project is healthy:
+
+```bash
+mnema doctor          # all checks green on a fresh project
+```
+
+From here your agent drives Mnema through MCP tools, and you watch
+and approve from the terminal — walked through end to end in
+[How the MCP loop works](#how-the-mcp-loop-works).
+
+<!-- TODO before public launch: record an asciinema cast of the loop
+     below (init → agent run → history → doctor) and embed it here —
+     a tamper-detection demo is the most persuasive thing this README
+     could show. -->
+
+## What you get
+
+| Surface | What it does |
+|---|---|
+| **Audit log** | Every action appends to a SHA-256 hash-chained JSONL log (mirrored to SQLite). `mnema doctor` detects edits, truncation, replays, and deletion. |
+| **Workflow gates** | A state machine per task; each transition declares required fields and Mnema rejects invalid moves. |
+| **Agent runs & plans** | Wrap every batch of mutations in a run (parent/child, max depth 5); inspect any run later via the CLI. |
+| **Dual identity** | Each event records the human actor, the agent that executed, and the run — a built-in chain of custody. |
+| **Tasks, sprints, epics** | Full work tracking: tasks with acceptance criteria/estimate/assignee, one active sprint per project, epics grouping tasks. |
+| **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, with a shortcut to promote a note into a decision. |
+| **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
+| **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
+| **Skills, memories, observations** | Human-curated knowledge the agent records via MCP tools, mirrored to plain `.md` files (not semantic recall — see the note above). |
+| **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
+| **MCP tools** | 30+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
 ## Install
 
-```bash
-npm install -g @felipesauer/mnema@alpha
-mnema --version
-```
+The Quickstart above covers the common path
+(`npm install -g @felipesauer/mnema@alpha`). A few platform notes:
 
-Requires Node 20+. While Mnema is in alpha, releases are published
-under the `alpha` dist-tag (plain `npm install -g @felipesauer/mnema`
-will not resolve until the first stable release).
-
-Notes on the native SQLite binding (`better-sqlite3`):
-
-- **npm / npx**: works out of the box — a prebuilt binary is
-  downloaded for common platforms, no compiler toolchain needed.
-- **pnpm**: pnpm blocks dependency build scripts by default, which
-  leaves the binding missing at runtime. Run
-  `pnpm approve-builds better-sqlite3` after installing (or add it
-  to `onlyBuiltDependencies` in your project).
-- Platforms without a prebuilt binary need a C++ toolchain
-  (`python3`, `make`, `g++`) for the fallback source build.
+- While Mnema is in alpha, releases live under the `alpha` dist-tag —
+  plain `npm install -g @felipesauer/mnema` won't resolve until the
+  first stable release.
+- The native SQLite binding (`better-sqlite3`) installs a **prebuilt
+  binary** with npm/npx — no compiler needed. With **pnpm**, run
+  `pnpm approve-builds better-sqlite3` afterwards (pnpm blocks build
+  scripts by default). Platforms without a prebuilt binary need a C++
+  toolchain (`python3`, `make`, `g++`).
 
 To work from source instead:
 
@@ -110,45 +148,19 @@ git clone https://github.com/felipesauer/mnema.git
 cd mnema
 pnpm install
 pnpm build
-# Either symlink the entry point or use the bundled wrapper:
 ln -s "$PWD/mnema" /usr/local/bin/mnema   # optional, for global access
 mnema --version
 ```
 
-The bundled `./mnema` shell script in the repo forwards to
-`dist/index.js` — useful for dogfooding without a global install.
+The bundled `./mnema` shell script forwards to `dist/index.js` —
+useful for dogfooding without a global install.
 
-When you want a quick look at what the agent has been doing:
+### Adopting an existing project
 
-```bash
-mnema history --since=today        # formatted activity log
-mnema watch                        # live tail
-mnema inbox                        # what's waiting on you
-mnema agent inspect <run_id>       # detail of a single agent run
-```
-
-## What it gives you
-
-- **Typed MCP tools** for tasks, agent runs, agent plans, decisions
-  and the audit log — agents call them directly, no free-form prose.
-- **Workflow as data**: state machines live in JSON
-  ([workflows/default.json](workflows/default.json)), with gate
-  validation per transition. Four presets ship out of the box —
-  `default`, `lean`, `kanban`, `jira-classic`.
-- **Dual identity** on every mutation: human actor, agent intermediary
-  and run id. Lets you see *who* did *what* through *which* agent.
-- **Append-only audit log** at `.mnema/audit/*.jsonl`. Goes to Git;
-  rotates monthly; queryable with `mnema history` / `mnema audit query`.
-- **Markdown + SQLite**: the SQLite database is the cache, the
-  per-task markdown files are the portable source of truth. They
-  survive without Mnema — open them in any text editor.
-- **FTS5 search** over tasks, decisions and notes, diacritic-insensitive.
-- **Adoption-friendly**: `mnema init --minimal` then
-  `mnema adopt all` lets you ease into existing projects;
-  `mnema import markdown` and `mnema import github-issues` ingest
-  legacy work.
-- **Zero telemetry**, zero remote dependencies. Everything stays in
-  your repo.
+You don't have to start clean. `mnema init --minimal` then
+`mnema adopt all` eases Mnema into a repo that already has work, and
+`mnema import markdown` / `mnema import github-issues` pull legacy
+items in.
 
 ## Project layout after `mnema init`
 
@@ -218,7 +230,26 @@ Run `mnema <command> --help` for full flags and examples.
 5. When done, `agent_run_end({ status: "completed" })` flushes the
    sync buffer and closes the run.
 
-Throughout, you can `mnema watch` to see every mutation in real time.
+### A concrete pass
+
+An agent asked to "add a rate limiter" might: start a run, create
+`MYAPP-12`, submit it through the gate (which forces acceptance
+criteria and an estimate), move it to `IN_PROGRESS`, do the work,
+then submit it for review. It cannot mark its own task `DONE` — the
+`default` workflow routes that through your approval. Meanwhile you
+watch and inspect from the terminal:
+
+```bash
+mnema watch                        # live tail of every mutation
+mnema inbox                        # what's waiting on your review
+mnema history --since=today        # formatted activity log
+mnema agent inspect <run_id>       # one run, with its plans + mutations
+mnema doctor                       # re-verify the audit chain anytime
+```
+
+Approve with `mnema task move MYAPP-12 approve`, and the whole
+sequence — who, which agent, which run, in what order — is sitting in
+the hash-chained audit log, verifiable forever.
 
 ## Configuration
 
@@ -273,21 +304,26 @@ smoke suite before public release.
 plus a 21-phase manual smoke before tagging. See
 [CHANGELOG.md](CHANGELOG.md) for the per-version history.
 
+## Getting help
+
+- **Bug or unexpected behaviour?** Open an issue — the bug-report
+  template asks for `mnema --version`, repro steps, and (if relevant)
+  a snippet of `.mnema/audit/current.jsonl`.
+- **Question or idea?** Use [GitHub Discussions](https://github.com/felipesauer/mnema/discussions).
+- **Security issue?** Report it privately — see [SECURITY.md](SECURITY.md).
+- **Want to contribute?** Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Further reading
 
-- **[CHANGELOG.md](CHANGELOG.md)** — per-version + per-phase
-  history, with rationale for every breaking change.
+- **[CHANGELOG.md](CHANGELOG.md)** — per-version history, with
+  rationale for every notable change.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — dev setup, commit
-  conventions, smoke run, things to watch out for when touching
+  conventions, smoke run, and what to watch out for when touching
   the schema, the audit log, or the workflow.
-- **[evaluations/](evaluations/)** — friction reports from real-world
-  tests and adversarial sweeps (audit immutability, multi-actor
-  concurrency, custom workflow validation). Each doc is a snapshot
-  of what broke, how it was diagnosed, and what shipped to fix it.
 - **AGENTS.md** (generated by `mnema init`) — the contract a fresh
   AI agent reads on session start so it knows how to drive Mnema
   responsibly.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) © Felipe Sauer
