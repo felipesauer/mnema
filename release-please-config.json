@@ -6,8 +6,10 @@
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "include-v-in-tag": true,
+  "include-component-in-tag": false,
   "packages": {
     ".": {
+      "component": "mnema",
       "changelog-path": "CHANGELOG.md"
     }
   }
