@@ -5,14 +5,23 @@
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
-> Cognitive persistence for AI agents.
-> *You drive, the AI executes, everything is recorded.*
+> A tamper-evident, local-first audit trail for AI-agent work.
+> *You drive, agents execute — and you can prove what happened.*
 
-Mnema is a local-first MCP server that gives any external AI agent
-(Claude Code, Cursor, Aider, …) typed tools to record work, maintain
-contextual memory, and leave an auditable trail. Humans drive through
-the terminal and observe through the history. Mnema does not run
-agents — it stores everything they touch.
+Mnema is a local-first MCP server that gives external AI agents
+(Claude Code, Cursor, Aider, …) typed tools to do work behind
+workflow gates, while every action lands in a SHA-256 hash-chained
+audit log that records **who** coordinated, **which** agent executed,
+and in **which** run. Humans drive through the terminal and verify
+through the history. Mnema does not run agents — it makes their work
+accountable.
+
+> **Not a semantic-memory layer.** Mnema does not do embeddings or
+> similarity recall — if you want an agent to *remember facts* across
+> sessions, reach for Mem0 or Cognee. Mnema answers a different
+> question: *what did the agents do, who authorized it, and can you
+> prove the record wasn't altered?* It pairs cleanly with a memory
+> layer; it doesn't replace one.
 
 ## Table of contents
 
@@ -244,16 +253,20 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 ## Status
 
-Mnema is **alpha** (`0.4.0-alpha.0` as of 2026-06-09). The full
-surface is in place — tasks, sprints, decisions, notes, epics,
-attachments, FTS search, agent runs & plans, hash-chained audit
-log with `doctor` tamper-detection, 9 skill/memory/observation MCP
-tools, 4 shipping workflows (`default`, `lean`, `kanban`,
-`jira-classic`), workflow schema with cross-cutting refines, and
-optimistic-concurrency lost-write protection in every mutation. The
-package is being shaken out via adversarial sweeps (audit
-immutability, multi-actor concurrency, custom workflow validation)
-and an end-to-end 21-phase smoke suite before public release.
+Mnema is **alpha** (`0.4.0-alpha.0` as of 2026-06-09). The
+accountability core is the differentiator and it is in place: a
+SHA-256 hash-chained audit log with `doctor` tamper-detection
+(edits, truncation, replays, deletion), dual-identity capture
+(human actor + agent + run) on every event, workflow gates that
+reject invalid transitions, and optimistic-concurrency lost-write
+protection in every mutation. Around it the full surface is built —
+tasks, sprints, decisions, notes, epics, attachments, FTS search,
+agent runs & plans, 9 skill/memory/observation MCP tools, 4 shipping
+workflows (`default`, `lean`, `kanban`, `jira-classic`), and a
+workflow schema with cross-cutting refines. The package is being
+shaken out via adversarial sweeps (audit immutability, multi-actor
+concurrency, custom workflow validation) and an end-to-end 21-phase
+smoke suite before public release.
 
 **436 tests, 0 skipped, lint + build clean.** Every release passes a
 13-check publish gate ([scripts/publish-check.sh](scripts/publish-check.sh))
