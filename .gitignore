@@ -8,9 +8,14 @@ coverage/
 # Local-only documentation and planning
 docs/
 .plan/
+evaluations/
 
 # Local AI-assistant state (permissions, plans)
 .claude/
+
+# Dev-only demo recorder (not part of build, CI, or release)
+scripts/record-quickstart.sh
+docs/quickstart.cast
 
 # Dogfood: running mnema against itself for testing.
 # Every Mnema-managed artefact lives under .mnema/ in the new layout,
