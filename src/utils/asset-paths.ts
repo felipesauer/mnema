@@ -6,7 +6,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Walks parents of `here` looking for the package root, identified by
- * a `package.json` whose `name` field is `@saurim/mnema`. Works
+ * a `package.json` whose `name` field is `@felipesauer/mnema`. Works
  * equally in source mode (`src/utils`) and compiled mode
  * (`dist/utils`), and stays correct when consumers delete or move
  * `workflows/` — the previous heuristic relied on `workflows/` as a
@@ -22,7 +22,7 @@ function findPackageRoot(): string {
     if (existsSync(manifest)) {
       try {
         const parsed = JSON.parse(readFileSync(manifest, 'utf-8')) as { name?: string };
-        if (parsed.name === '@saurim/mnema') return dir;
+        if (parsed.name === '@felipesauer/mnema') return dir;
       } catch {
         // Unreadable JSON — keep walking; the package.json belonged to
         // somewhere else in the tree.
@@ -30,7 +30,7 @@ function findPackageRoot(): string {
     }
     const parent = dirname(dir);
     if (parent === dir) {
-      throw new Error('package root not found (no @saurim/mnema package.json on the path)');
+      throw new Error('package root not found (no @felipesauer/mnema package.json on the path)');
     }
     dir = parent;
   }

@@ -84,12 +84,12 @@ mnema mcp install-instructions claude-code
 ## Install
 
 ```bash
-npm install -g @saurim/mnema@alpha
+npm install -g @felipesauer/mnema@alpha
 mnema --version
 ```
 
 Requires Node 20+. While Mnema is in alpha, releases are published
-under the `alpha` dist-tag (plain `npm install -g @saurim/mnema`
+under the `alpha` dist-tag (plain `npm install -g @felipesauer/mnema`
 will not resolve until the first stable release).
 
 Notes on the native SQLite binding (`better-sqlite3`):

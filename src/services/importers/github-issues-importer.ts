@@ -49,7 +49,7 @@ export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
  * Importers are **one-shot**: a second invocation duplicates tasks.
  */
 export class GithubIssuesImporter {
-  private static readonly USER_AGENT = '@saurim/mnema importer';
+  private static readonly USER_AGENT = '@felipesauer/mnema importer';
 
   constructor(
     private readonly tasks: TaskService,

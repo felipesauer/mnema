@@ -25,7 +25,7 @@ export function checkVersion(required: string): VersionCheckResult {
   if (!semver.satisfies(VERSION, required, { includePrerelease: true })) {
     return {
       ok: false,
-      message: `Project requires mnema ${required}, you have ${VERSION}. Update with: npm i -g @saurim/mnema`,
+      message: `Project requires mnema ${required}, you have ${VERSION}. Update with: npm i -g @felipesauer/mnema`,
     };
   }
   return { ok: true };

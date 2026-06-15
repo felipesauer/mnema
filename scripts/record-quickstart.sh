@@ -25,7 +25,7 @@ if ! command -v asciinema >/dev/null 2>&1; then
   exit 1
 fi
 if ! command -v mnema >/dev/null 2>&1; then
-  echo "error: mnema not on PATH. Run \`pnpm pack && npm i -g ./saurim-mnema-*.tgz\`" >&2
+  echo "error: mnema not on PATH. Run \`pnpm pack && npm i -g ./felipesauer-mnema-*.tgz\`" >&2
   exit 1
 fi
 

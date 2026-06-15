@@ -44,7 +44,7 @@ step "7. Tarball builds"
 PACK_DIR="$(mktemp -d -t mnema-pack-XXXX)"
 pnpm pack --pack-destination "$PACK_DIR" > /dev/null 2>&1 || fail "pnpm pack failed"
 VERSION="$(node -p "require('./package.json').version")"
-TARBALL="$PACK_DIR/saurim-mnema-${VERSION}.tgz"
+TARBALL="$PACK_DIR/felipesauer-mnema-${VERSION}.tgz"
 [ -f "$TARBALL" ] || fail "tarball $TARBALL not found"
 ok "tarball produced: $TARBALL"
 
@@ -80,7 +80,7 @@ ok "4 workflows bundled (default, lean, kanban, jira-classic)"
 step "12. package.json publishConfig is public"
 ACCESS="$(node -p "require('./package.json').publishConfig?.access ?? 'missing'")"
 if [ "$ACCESS" != "public" ]; then
-  fail "publishConfig.access is '$ACCESS', expected 'public' (scope @saurim needs it)"
+  fail "publishConfig.access is '$ACCESS', expected 'public' (scope @felipesauer needs it)"
 fi
 ok "publishConfig.access = public"
 

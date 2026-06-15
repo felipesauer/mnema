@@ -31,8 +31,8 @@ pnpm bench:mcp           # MCP server boot + tool call latency
 To exercise the binary you just built, point a global symlink at it:
 
 ```bash
-pnpm pack                                       # → saurim-mnema-<version>.tgz
-npm i -g ./saurim-mnema-*.tgz                   # → installs as `mnema` on PATH
+pnpm pack                                       # → felipesauer-mnema-<version>.tgz
+npm i -g ./felipesauer-mnema-*.tgz              # → installs as `mnema` on PATH
 mnema --version                                 # confirm it matches package.json
 ```
 

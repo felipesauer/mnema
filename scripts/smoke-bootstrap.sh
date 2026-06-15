@@ -7,7 +7,7 @@
 # Usage:
 #   bash scripts/smoke-bootstrap.sh
 #
-# Prerequisites: `pnpm build` and `npm i -g ./saurim-mnema-*.tgz`
+# Prerequisites: `pnpm build` and `npm i -g ./felipesauer-mnema-*.tgz`
 # (or `npm link`) so `mnema --version` resolves the build under test.
 
 set -euo pipefail
@@ -26,7 +26,7 @@ echo "  cd $SMOKE_DIR"
 if command -v mnema >/dev/null 2>&1; then
   echo "  mnema --version → $(mnema --version)"
 else
-  echo "  ⚠ \`mnema\` is not on PATH — run \`pnpm build && pnpm pack && npm i -g ./saurim-mnema-*.tgz\` first"
+  echo "  ⚠ \`mnema\` is not on PATH — run \`pnpm build && pnpm pack && npm i -g ./felipesauer-mnema-*.tgz\` first"
 fi
 echo ""
 echo "Open docs/SMOKE.md and follow Phase 1 onwards."
