@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@felipesauer/mnema/alpha?label=npm%20alpha&color=orange)](https://www.npmjs.com/package/@felipesauer/mnema)
-[![license](https://img.shields.io/npm/l/@felipesauer/mnema?color=blue)](./LICENSE)
-[![node](https://img.shields.io/node/v/@felipesauer/mnema?label=node)](./package.json)
+[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
 > A tamper-evident, local-first audit trail for AI-agent work.
 > *You drive, agents execute — and you can prove what happened.*
@@ -70,10 +70,9 @@ Mnema answers all three.
 
 ## Quickstart
 
-> **Status:** Mnema is in alpha. Releases are published to npm under
-> the `alpha` dist-tag (see [Install](#install)). The surface is
-> feature-rich and is being hardened through a dogfooding cycle before
-> a stable tag.
+> **Status:** Mnema is published on npm as an alpha (see
+> [Install](#install)). The surface is feature-rich and is still being
+> hardened toward a stable `1.0`.
 
 ```bash
 # 1. Install and initialise a project
@@ -132,9 +131,9 @@ and approve from the terminal — walked through end to end in
 The Quickstart above covers the common path
 (`npm install -g @felipesauer/mnema@alpha`). A few platform notes:
 
-- While Mnema is in alpha, releases live under the `alpha` dist-tag —
-  plain `npm install -g @felipesauer/mnema` won't resolve until the
-  first stable release.
+- Alpha releases live under the `alpha` dist-tag, so install with
+  `@alpha` to be explicit about what you're getting. (Until the first
+  stable `1.x` ships, `latest` also points at the current alpha.)
 - The native SQLite binding (`better-sqlite3`) installs a **prebuilt
   binary** with npm/npx — no compiler needed. With **pnpm**, run
   `pnpm approve-builds better-sqlite3` afterwards (pnpm blocks build
@@ -284,7 +283,7 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 ## Status
 
-Mnema is **alpha** (`0.4.0-alpha.0` as of 2026-06-09). The
+Mnema is **alpha** and published on npm. The
 accountability core is the differentiator and it is in place: a
 SHA-256 hash-chained audit log with `doctor` tamper-detection
 (edits, truncation, replays, deletion), dual-identity capture
@@ -294,10 +293,10 @@ protection in every mutation. Around it the full surface is built —
 tasks, sprints, decisions, notes, epics, attachments, FTS search,
 agent runs & plans, 9 skill/memory/observation MCP tools, 4 shipping
 workflows (`default`, `lean`, `kanban`, `jira-classic`), and a
-workflow schema with cross-cutting refines. The package is being
+workflow schema with cross-cutting refines. The package keeps being
 shaken out via adversarial sweeps (audit immutability, multi-actor
 concurrency, custom workflow validation) and an end-to-end 21-phase
-smoke suite before public release.
+smoke suite on the way to a stable `1.0`.
 
 **436 tests, 0 skipped, lint + build clean.** Every release passes a
 13-check publish gate ([scripts/publish-check.sh](scripts/publish-check.sh))
