@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@felipesauer/mnema/alpha?label=npm%20alpha&color=orange)](https://www.npmjs.com/package/@felipesauer/mnema)
-[![license](https://img.shields.io/npm/l/@felipesauer/mnema?color=blue)](./LICENSE)
-[![node](https://img.shields.io/node/v/@felipesauer/mnema?label=node)](./package.json)
+[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
 > A tamper-evident, local-first audit trail for AI-agent work.
 > *You drive, agents execute — and you can prove what happened.*
