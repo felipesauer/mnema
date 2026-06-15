@@ -1,0 +1,75 @@
+name: Publish to npm
+
+# Publishes the package when a GitHub Release is published. Pre-release
+# versions (-alpha.N / -beta.N / -rc.N) go under a matching dist-tag so
+# a plain `npm install @felipesauer/mnema` never resolves to a
+# pre-release. Stable versions go to `latest`.
+#
+# Requires the repo secret NPM_TOKEN: an npm automation token with
+# publish rights to the @felipesauer scope. id-token: write enables
+# npm provenance — a signed, verifiable link from the published
+# tarball back to this workflow run and commit.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: publish (${{ github.event.release.tag_name }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package.json version
+        run: |
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          TAG="${{ github.event.release.tag_name }}"
+          if [ "$PKG_VERSION" != "$TAG" ]; then
+            echo "::error::release tag $TAG does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+          echo "version $PKG_VERSION matches the release tag"
+
+      - name: Publish-readiness gate
+        # Runs build + lint + test + coverage + bench + MCP smoke +
+        # tarball checks, and leaves a fresh dist/ behind.
+        run: pnpm publish:check
+
+      - name: Resolve dist-tag from version
+        id: disttag
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          case "$VERSION" in
+            *-alpha.*) TAG=alpha ;;
+            *-beta.*)  TAG=beta ;;
+            *-rc.*)    TAG=rc ;;
+            *)         TAG=latest ;;
+          esac
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "publishing $VERSION under dist-tag '$TAG'"
+
+      - name: Publish
+        # --ignore-scripts skips the prepack/prepublishOnly hooks: the
+        # gate step above already built dist/ and ran the full check on
+        # this exact tree, so re-running them here would only duplicate
+        # work. --provenance signs the tarball against this run.
+        run: pnpm publish --no-git-checks --ignore-scripts --tag ${{ steps.disttag.outputs.tag }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
