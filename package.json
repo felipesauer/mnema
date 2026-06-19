@@ -1,6 +1,6 @@
 {
   "name": "@felipesauer/mnema",
-  "version": "0.4.1-alpha.0",
+  "version": "0.4.2-alpha.0",
   "description": "A tamper-evident, local-first audit trail for AI-agent work — an MCP server giving Claude Code, Cursor and other agents typed tools behind workflow gates, with every action recorded in a SHA-256 hash-chained log.",
   "keywords": [
     "mcp",
