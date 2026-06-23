@@ -49,6 +49,7 @@ import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
+import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
 
 /**
@@ -97,6 +98,7 @@ export interface ServiceContainer {
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
+  readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly observation: ObservationService;
   readonly transitions: TransitionRepository;
@@ -265,6 +267,16 @@ export function createServiceContainer(
   const knownTools = listAvailableToolNames(workflow);
   const skillService = new SkillService(skillsDir, knownTools, skillRepository, identity, audit);
   const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit);
+  const wikilinkLintService = new WikilinkLintService(
+    skillsDir,
+    memoryDir,
+    config.project.key,
+    skillRepository,
+    memoryRepository,
+    decisionRepository,
+    tasks,
+    projects,
+  );
   const observationService = new ObservationService(observationRepository, tasks, identity, audit);
   trace.mark('all services wired');
   trace.end();
@@ -291,6 +303,7 @@ export function createServiceContainer(
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
+    wikilinkLint: wikilinkLintService,
     memory: memoryService,
     observation: observationService,
     transitions,

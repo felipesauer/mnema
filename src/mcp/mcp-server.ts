@@ -28,6 +28,7 @@ import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
+import { WikilinkTools } from './tools/universal/wikilink-tools.js';
 import { WorkGraphLintTools } from './tools/universal/work-graph-lint-tools.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
@@ -169,6 +170,7 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
     ).register(this.sdk);
+    new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
     new MemoryTools(
       this.services.memory,
       this.services.identity,

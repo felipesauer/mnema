@@ -98,6 +98,43 @@ export class SkillCommand {
           );
         });
       });
+
+    group
+      .command('links')
+      .description('Validate [[wikilinks]] in skill and memory bodies against known targets')
+      .action(async () => {
+        await withCliContext(({ container }) => {
+          const report = container.wikilinkLint.lint();
+          if (report.diagnostics.length === 0) {
+            process.stdout.write(
+              `${pc.green('✓')} ${report.filesScanned} file(s): no broken wikilinks\n`,
+            );
+            return;
+          }
+          for (const diag of report.diagnostics) {
+            const badge = diag.severity === 'error' ? pc.red('error:') : pc.yellow('warning:');
+            process.stdout.write(`${badge} ${pc.dim(diag.file)}\n  ${diag.message}\n`);
+          }
+          process.stdout.write(
+            `${pc.dim('---')} scanned=${report.filesScanned} errors=${report.errorCount} warnings=${report.warningCount}\n`,
+          );
+          process.exit(report.errorCount > 0 ? ExitCode.State : ExitCode.Success);
+        });
+      });
+
+    group
+      .command('refs <slug>')
+      .description('List skill/memory files that link to <slug> via a [[wikilink]]')
+      .action(async (slug: string) => {
+        await withCliContext(({ container }) => {
+          const files = container.wikilinkLint.referencesTo(slug);
+          if (files.length === 0) {
+            process.stdout.write(`${pc.dim(`no files reference [[${slug}]]`)}\n`);
+            return;
+          }
+          process.stdout.write(`${files.map((f) => `  ${f}`).join('\n')}\n`);
+        });
+      });
   }
 }
 
