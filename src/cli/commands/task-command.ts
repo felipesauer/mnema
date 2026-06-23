@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import type { Task } from '../../domain/entities/task.js';
+import type { EvidenceKind } from '../../domain/entities/task-evidence.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
@@ -32,6 +33,13 @@ interface HistoryOptions {
   readonly json?: boolean;
   readonly iso?: boolean;
   readonly limit?: string;
+}
+
+interface EvidenceOptions {
+  readonly criterion?: string;
+  readonly kind?: string;
+  readonly ref?: string;
+  readonly note?: string;
 }
 
 /**
@@ -226,6 +234,50 @@ export class TaskCommand {
                   actor: container.identity.getDefaultActor(),
                 });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('evidence <key>')
+      .description(
+        'List a task acceptance criteria with their evidence, or attach evidence with --ref',
+      )
+      .option('--criterion <i>', '0-based criterion index (required to attach)')
+      .option('--kind <kind>', 'test | route | commit | doc | url | other', 'other')
+      .option('--ref <ref>', 'The path / route / commit / url to attach as evidence')
+      .option('--note <text>', 'Optional note for the evidence')
+      .action(async (key: string, options: EvidenceOptions) => {
+        if (options.ref !== undefined) {
+          await withMutatingCliContext(({ container }) => {
+            const result = container.taskEvidence.attach({
+              taskKey: key,
+              criterionIndex: options.criterion !== undefined ? Number(options.criterion) : -1,
+              kind: options.kind as EvidenceKind | undefined,
+              ref: options.ref ?? '',
+              note: options.note ?? null,
+              actor: container.identity.getDefaultActor(),
+            });
+            if (!result.ok) {
+              process.exit(printError(result.error));
+            }
+            process.stdout.write(
+              `${pc.green('✓')} evidence attached to ${key} criterion ${result.value.criterionIndex} ${pc.dim(`(${result.value.kind})`)}\n`,
+            );
+          });
+          return;
+        }
+        await withCliContext(({ container }) => {
+          const result = container.taskEvidence.forTask(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          for (const c of result.value) {
+            const mark = c.evidence.length > 0 ? pc.green('✓') : pc.yellow('○');
+            process.stdout.write(`${mark} [${c.index}] ${c.criterion}\n`);
+            for (const e of c.evidence) {
+              process.stdout.write(`    ${pc.dim(`${e.kind}:`)} ${e.ref}\n`);
+            }
+          }
         });
       });
   }

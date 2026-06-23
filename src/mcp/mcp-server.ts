@@ -18,6 +18,7 @@ import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
+import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
@@ -145,6 +146,9 @@ export class MnemaMcpServer {
       this.session,
     ).register(this.sdk);
     new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
+    new EvidenceTools(this.services.taskEvidence, this.services.identity, this.session).register(
+      this.sdk,
+    );
     new EpicTools(this.services.epic, this.config).register(this.sdk);
     new SprintTools(
       this.services.sprint,

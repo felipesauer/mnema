@@ -56,6 +56,9 @@ export enum ErrorCode {
   InvalidWorkflowState = 'INVALID_WORKFLOW_STATE',
 
   NoteNotFound = 'NOTE_NOT_FOUND',
+
+  EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
+  EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
 }
 
 /**

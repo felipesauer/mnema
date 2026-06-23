@@ -23,6 +23,7 @@ import { ObservationRepository } from '../storage/sqlite/repositories/observatio
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
+import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -45,6 +46,7 @@ import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
+import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
 
 /**
@@ -86,6 +88,7 @@ export interface ServiceContainer {
   readonly sprint: SprintService;
   readonly decision: DecisionService;
   readonly note: NoteService;
+  readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -164,6 +167,7 @@ export function createServiceContainer(
   const sprintRepository = new SprintRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
+  const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
   const skillRepository = new SkillRepository(adapter);
@@ -220,6 +224,7 @@ export function createServiceContainer(
     tasks,
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
+  const taskEvidenceService = new TaskEvidenceService(taskEvidenceRepository, tasks, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
   const attachmentService = new AttachmentService(
@@ -255,6 +260,7 @@ export function createServiceContainer(
     sprint: sprintService,
     decision: decisionService,
     note: noteService,
+    taskEvidence: taskEvidenceService,
     epic: epicService,
     attachment: attachmentService,
     search: searchService,

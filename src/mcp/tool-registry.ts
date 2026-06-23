@@ -28,6 +28,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'decision_show',
   'decisions_list',
   'note_add',
+  'task_attach_evidence',
+  'task_evidence',
   'epic_show',
   'epics_list',
   'tasks_search',

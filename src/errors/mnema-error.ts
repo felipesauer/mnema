@@ -133,7 +133,19 @@ export type MnemaError =
       readonly given: string;
       readonly allowed: readonly string[];
     }
-  | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string };
+  | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string }
+  | {
+      readonly kind: ErrorCode.EvidenceCriterionOutOfRange;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly criteriaCount: number;
+    }
+  | {
+      readonly kind: ErrorCode.EvidenceDuplicate;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly ref: string;
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

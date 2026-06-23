@@ -282,6 +282,19 @@ export function formatError(error: MnemaError): string {
         `${pc.dim('hint:')} List notes with \`mnema note list <task_key>\` or query the audit log`,
       );
       break;
+    case ErrorCode.EvidenceCriterionOutOfRange:
+      lines.push(
+        `${error.taskKey} has ${error.criteriaCount} acceptance criteria; index ${error.index} is out of range`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} criterion_index is 0-based; check \`mnema task show ${error.taskKey}\``,
+      );
+      break;
+    case ErrorCode.EvidenceDuplicate:
+      lines.push(
+        `${error.taskKey} criterion ${error.index} already has that evidence (${error.ref})`,
+      );
+      break;
   }
 
   return lines.join('\n');
@@ -300,6 +313,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.SchemaOutOfDate:
       return ExitCode.State;
     case ErrorCode.InitConflict:
+    case ErrorCode.EvidenceDuplicate:
       return ExitCode.Conflict;
     default:
       return ExitCode.Usage;
