@@ -124,7 +124,7 @@ and approve from the terminal — walked through end to end in
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
 | **Skills, memories, observations** | Human-curated knowledge the agent records via MCP tools, mirrored to plain `.md` files (not semantic recall — see the note above). |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
-| **MCP tools** | 30+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
+| **MCP tools** | 40+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. Includes traceability tools — task dependencies & readiness, epic/sprint coverage, work-graph lint, acceptance evidence, wikilink validation, sprint metrics, ADR impact. |
 
 ## Install
 
@@ -191,8 +191,17 @@ my-project/
 |---|---|
 | `mnema init` | Create the full layout (use `--minimal` for adoption) |
 | `mnema adopt <component>` | Add `skills/`, `memory/` or `roadmap/` later |
-| `mnema task create / list / show / move` | Manage tasks |
+| `mnema task create / list / show / move` | Manage tasks (`create` takes `--context-budget`) |
+| `mnema task depends <key> <blocksKey>` | Declare a task↔task dependency |
+| `mnema task ready [--sprint <key>]` | List tasks whose blockers are all done |
+| `mnema task evidence <key> [--criterion --kind --ref]` | List or attach evidence for acceptance criteria |
 | `mnema sprint plan / start / close / show / add` | Manage sprints |
+| `mnema sprint metric <key> --name --target` | Add a measurable metric (baseline/unit/due optional) |
+| `mnema sprint coverage <key>` / `mnema epic coverage <key>` | Report % of tasks in a terminal state |
+| `mnema epic show <key>` | Epic with its tasks and derived lifecycle (empty/in-progress/developed/closed) |
+| `mnema lint sprint <key>` / `mnema lint epic <key>` | Integrity checks (incomplete tasks, subagent-bypass, broken deps) |
+| `mnema decision record / show / list / accept / supersede` | Manage ADRs (`record` takes `--impact`) |
+| `mnema decision impacting <ref>` | Which ADRs affect a given artefact |
 | `mnema search <query>` | Full-text search across the project |
 | `mnema attach add <task> <file>` | Attach a binary, deduped by SHA-256 |
 | `mnema history --since=today` | Compact human activity view |
@@ -202,7 +211,7 @@ my-project/
 | `mnema audit query [filters]` | Raw audit log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
 | `mnema doctor` | Read-only diagnostic check |
-| `mnema skill lint` | Validate `skills/` files (frontmatter, MCP tool refs, examples) |
+| `mnema skill lint / links / refs` | Validate skills, check wikilinks, find references |
 | `mnema memory consolidate` | Regenerate the `INDEX.md` files under `memory/` |
 | `mnema import markdown --from PATH` | One-shot import from `## STATE Title` headings |
 | `mnema import github-issues --repo OWNER/REPO` | One-shot import from GitHub Issues |
@@ -291,9 +300,11 @@ SHA-256 hash-chained audit log with `doctor` tamper-detection
 reject invalid transitions, and optimistic-concurrency lost-write
 protection in every mutation. Around it the full surface is built —
 tasks, sprints, decisions, notes, epics, attachments, FTS search,
-agent runs & plans, 9 skill/memory/observation MCP tools, 4 shipping
-workflows (`default`, `lean`, `kanban`, `jira-classic`), and a
-workflow schema with cross-cutting refines. The package keeps being
+agent runs & plans, skill/memory/observation tools, a traceability
+layer (task dependencies, epic/sprint coverage, work-graph lint,
+acceptance evidence, wikilink validation, sprint metrics, ADR impact),
+4 shipping workflows (`default`, `lean`, `kanban`, `jira-classic`),
+and a workflow schema with cross-cutting refines. The package keeps being
 shaken out via adversarial sweeps (audit immutability, multi-actor
 concurrency, custom workflow validation) and an end-to-end 21-phase
 smoke suite on the way to a stable `1.0`.
