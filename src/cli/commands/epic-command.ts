@@ -5,6 +5,7 @@ import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { formatCoverage } from '../formatters/coverage-formatter.js';
 
 interface CreateOptions {
   readonly title: string;
@@ -125,6 +126,19 @@ export class EpicCommand {
             process.exit(printError(result.error));
           }
           process.stdout.write(`${pc.green('✓')} ${taskKey} removed from epic\n`);
+        });
+      });
+
+    group
+      .command('coverage <key>')
+      .description('Report how many of the epic tasks are in a terminal state')
+      .action(async (key: string) => {
+        await withCliContext(({ container }) => {
+          const result = container.coverage.forEpic(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(`${formatCoverage(`Epic ${key}`, result.value)}\n`);
         });
       });
   }

@@ -33,6 +33,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'task_dependencies',
   'epic_show',
   'epics_list',
+  'epic_coverage',
+  'sprint_coverage',
   'tasks_search',
   'sprint_show',
   'sprints_list',
