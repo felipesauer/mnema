@@ -28,6 +28,7 @@ import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
+import { WorkGraphLintTools } from './tools/universal/work-graph-lint-tools.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
 
@@ -152,6 +153,7 @@ export class MnemaMcpServer {
     );
     new EpicTools(this.services.epic, this.config).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
+    new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
       this.services.sprint,
       this.services.identity,

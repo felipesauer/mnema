@@ -35,6 +35,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'epics_list',
   'epic_coverage',
   'sprint_coverage',
+  'sprint_lint',
+  'epic_lint',
   'tasks_search',
   'sprint_show',
   'sprints_list',
