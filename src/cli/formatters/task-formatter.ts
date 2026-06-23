@@ -60,6 +60,7 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
     meta.push(`assignee: ${displayActor(task.assigneeId, resolveHandle)}`);
   }
   if (task.estimate !== null) meta.push(`estimate: ${task.estimate}`);
+  if (task.contextBudget !== null) meta.push(`context_budget: ${task.contextBudget}`);
   meta.push(`priority: ${task.priority}`);
   if (task.reopenCount > 0) meta.push(`reopened: ${task.reopenCount}x`);
   lines.push(`  ${pc.dim(meta.join(' · '))}`);

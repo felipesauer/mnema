@@ -44,6 +44,12 @@ export class TaskTools {
           description: z.string().optional(),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
           estimate: z.number().optional(),
+          context_budget: z
+            .number()
+            .int()
+            .min(0)
+            .optional()
+            .describe('Estimated context cost in tokens (distinct from estimate / story points)'),
           priority: z.number().int().min(1).max(5).optional(),
           assignee: z.string().optional(),
         },
@@ -60,6 +66,7 @@ export class TaskTools {
           description: input.description,
           acceptanceCriteria: input.acceptance_criteria ?? [],
           estimate: input.estimate ?? null,
+          contextBudget: input.context_budget ?? null,
           priority: input.priority ?? 3,
           assigneeId: input.assignee ?? null,
           actor: this.identity.getDefaultActor(),

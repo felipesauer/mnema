@@ -15,6 +15,7 @@ interface CreateOptions {
   readonly description?: string;
   readonly acceptance?: string[];
   readonly estimate?: string;
+  readonly contextBudget?: string;
   readonly priority?: string;
   readonly assignee?: string;
 }
@@ -58,6 +59,10 @@ export class TaskCommand {
       .option('--description <text>', 'Optional description')
       .option('--acceptance <criterion...>', 'Acceptance criterion (repeat for multiple)')
       .option('--estimate <points>', 'Estimate in story points')
+      .option(
+        '--context-budget <tokens>',
+        'Estimated context cost in tokens (distinct from estimate)',
+      )
       .option('--priority <n>', 'Priority 1..5 (default 3)')
       .option('--assignee <handle>', 'Assignee handle')
       .action(async (options: CreateOptions) => {
@@ -68,6 +73,8 @@ export class TaskCommand {
             description: options.description,
             acceptanceCriteria: options.acceptance ?? [],
             estimate: options.estimate !== undefined ? Number(options.estimate) : null,
+            contextBudget:
+              options.contextBudget !== undefined ? Number(options.contextBudget) : null,
             priority: options.priority !== undefined ? Number(options.priority) : 3,
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),

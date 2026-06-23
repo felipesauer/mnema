@@ -46,6 +46,7 @@ interface TaskRow {
   readonly acceptance_criteria: string;
   readonly state: string;
   readonly estimate: number | null;
+  readonly context_budget: number | null;
   readonly priority: number;
   readonly assignee_id: string | null;
   readonly reporter_id: string;
@@ -324,6 +325,7 @@ function rowToTask(row: TaskRow): Task {
     acceptanceCriteria: JSON.parse(row.acceptance_criteria) as string[],
     state: row.state as TaskState,
     estimate: row.estimate,
+    contextBudget: row.context_budget,
     priority: row.priority,
     assigneeId: row.assignee_id,
     reporterId: row.reporter_id,
