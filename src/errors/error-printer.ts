@@ -295,6 +295,9 @@ export function formatError(error: MnemaError): string {
         `${error.taskKey} criterion ${error.index} already has that evidence (${error.ref})`,
       );
       break;
+    case ErrorCode.SprintMetricDuplicate:
+      lines.push(`Sprint ${error.sprintKey} already has a metric named "${error.name}"`);
+      break;
   }
 
   return lines.join('\n');
@@ -314,6 +317,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
       return ExitCode.State;
     case ErrorCode.InitConflict:
     case ErrorCode.EvidenceDuplicate:
+    case ErrorCode.SprintMetricDuplicate:
       return ExitCode.Conflict;
     default:
       return ExitCode.Usage;

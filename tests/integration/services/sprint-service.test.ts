@@ -12,6 +12,7 @@ import { SprintService } from '@/services/sprint-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
+import { SprintMetricRepository } from '@/storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -38,7 +39,14 @@ describe('SprintService', () => {
       new WorkflowLoader().load(path.resolve('workflows/default.json')),
     );
 
-    sprints = new SprintService(sprintRepo, tasks, projects, audit, stateMachine);
+    sprints = new SprintService(
+      sprintRepo,
+      tasks,
+      projects,
+      audit,
+      stateMachine,
+      new SprintMetricRepository(adapter),
+    );
 
     projects.insert({ key: 'TEST', name: 'Test' });
     adapter
@@ -253,6 +261,7 @@ describe('SprintService', () => {
         projects,
         audit,
         kanbanMachine,
+        new SprintMetricRepository(adapter),
       );
       const result = sprintsKanban.plan({
         projectKey: 'TEST',

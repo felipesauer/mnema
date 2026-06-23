@@ -59,6 +59,8 @@ export enum ErrorCode {
 
   EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
   EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
+
+  SprintMetricDuplicate = 'SPRINT_METRIC_DUPLICATE',
 }
 
 /**

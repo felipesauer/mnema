@@ -145,6 +145,11 @@ export type MnemaError =
       readonly taskKey: string;
       readonly index: number;
       readonly ref: string;
+    }
+  | {
+      readonly kind: ErrorCode.SprintMetricDuplicate;
+      readonly sprintKey: string;
+      readonly name: string;
     };
 
 /**

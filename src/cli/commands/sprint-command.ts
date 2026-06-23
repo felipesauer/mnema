@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import type { Sprint } from '../../domain/entities/sprint.js';
+import type { SprintMetric } from '../../domain/entities/sprint-metric.js';
 import type { Task } from '../../domain/entities/task.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -12,6 +13,14 @@ interface PlanOptions {
   readonly startsAt?: string;
   readonly endsAt?: string;
   readonly capacity?: string;
+}
+
+interface MetricOptions {
+  readonly name: string;
+  readonly target: string;
+  readonly baseline?: string;
+  readonly unit?: string;
+  readonly due?: string;
 }
 
 /**
@@ -104,7 +113,7 @@ export class SprintCommand {
             process.stdout.write(`${pc.dim(`Sprint ${key} not found`)}\n`);
             return;
           }
-          process.stdout.write(`${formatSprintView(view.sprint, view.tasks)}\n`);
+          process.stdout.write(`${formatSprintView(view.sprint, view.tasks, view.metrics)}\n`);
         });
       });
 
@@ -155,6 +164,36 @@ export class SprintCommand {
           process.stdout.write(`${pc.green('✓')} ${taskKey} removed from sprint\n`);
         });
       });
+
+    group
+      .command('metric <key>')
+      .description(
+        'Add a measurable metric to a sprint (name + target, optional baseline/unit/due)',
+      )
+      .requiredOption('--name <name>', 'Metric name, e.g. "p95 latency"')
+      .requiredOption('--target <n>', 'Target value to reach')
+      .option('--baseline <n>', 'Starting value')
+      .option('--unit <unit>', 'Unit, e.g. ms, %, count')
+      .option('--due <iso>', 'Due date (ISO8601)')
+      .action(async (key: string, options: MetricOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.sprint.addMetric({
+            sprintKey: key,
+            name: options.name,
+            target: Number(options.target),
+            baseline: options.baseline !== undefined ? Number(options.baseline) : null,
+            unit: options.unit ?? null,
+            dueDate: options.due ?? null,
+            actor: container.identity.getDefaultActor(),
+          });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(
+            `${pc.green('✓')} metric "${result.value.name}" added to ${key} ${pc.dim(`(target ${result.value.target}${result.value.unit !== null ? ` ${result.value.unit}` : ''})`)}\n`,
+          );
+        });
+      });
   }
 }
 
@@ -174,7 +213,11 @@ function formatSprintRow(sprint: Sprint): string {
   return `${pc.bold(sprint.key.padEnd(22))} ${sprint.state.padEnd(8)} ${sprint.name}`;
 }
 
-function formatSprintView(sprint: Sprint, tasks: readonly Task[]): string {
+function formatSprintView(
+  sprint: Sprint,
+  tasks: readonly Task[],
+  metrics: readonly SprintMetric[],
+): string {
   const lines: string[] = [];
   lines.push(`${pc.bold('Sprint:')} ${sprint.key}`);
   lines.push(`${pc.bold('Name:')} ${sprint.name}`);
@@ -190,6 +233,16 @@ function formatSprintView(sprint: Sprint, tasks: readonly Task[]): string {
   } else {
     for (const task of tasks) {
       lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.state.padEnd(13)} ${task.title}`);
+    }
+  }
+  if (metrics.length > 0) {
+    lines.push('');
+    lines.push(`${pc.bold(`Metrics (${metrics.length}):`)}`);
+    for (const m of metrics) {
+      const unit = m.unit !== null ? ` ${m.unit}` : '';
+      const baseline = m.baseline !== null ? `${m.baseline}${unit} → ` : '';
+      const due = m.dueDate !== null ? pc.dim(` by ${m.dueDate}`) : '';
+      lines.push(`  ${pc.bold(m.name)}: ${baseline}${m.target}${unit}${due}`);
     }
   }
   return lines.join('\n');

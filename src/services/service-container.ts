@@ -22,6 +22,7 @@ import { NoteRepository } from '../storage/sqlite/repositories/note-repository.j
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
+import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -165,6 +166,7 @@ export function createServiceContainer(
   const agentRuns = new AgentRunRepository(adapter);
   const agentPlans = new AgentPlanRepository(adapter);
   const sprintRepository = new SprintRepository(adapter);
+  const sprintMetricRepository = new SprintMetricRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
   const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
@@ -214,7 +216,14 @@ export function createServiceContainer(
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
-  const sprintService = new SprintService(sprintRepository, tasks, projects, audit, stateMachine);
+  const sprintService = new SprintService(
+    sprintRepository,
+    tasks,
+    projects,
+    audit,
+    stateMachine,
+    sprintMetricRepository,
+  );
   const decisionService = new DecisionService(
     decisionRepository,
     projects,
