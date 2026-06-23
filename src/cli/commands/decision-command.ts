@@ -12,6 +12,7 @@ interface RecordOptions {
   readonly context?: string;
   readonly rationale?: string;
   readonly consequences?: string;
+  readonly impact?: string[];
 }
 
 interface ListOptions {
@@ -54,6 +55,7 @@ export class DecisionCommand {
       .option('--context <text>', 'Why this decision was needed')
       .option('--rationale <text>', 'Why this choice over alternatives')
       .option('--consequences <text>', 'What follows from this decision')
+      .option('--impact <ref...>', 'Artefact path/key this ADR affects (repeat for multiple)')
       .action(async (options: RecordOptions) => {
         await withMutatingCliContext(({ container, config }) => {
           const result = container.decision.record({
@@ -63,6 +65,7 @@ export class DecisionCommand {
             context: options.context,
             rationale: options.rationale,
             consequences: options.consequences,
+            impacts: options.impact ?? [],
             actor: container.identity.getDefaultActor(),
           });
           renderDecision(result, 'recorded');
@@ -167,6 +170,20 @@ export class DecisionCommand {
             expectedUpdatedAt: options.expectedUpdatedAt,
           });
           renderDecision(result, 'superseded');
+        });
+      });
+
+    group
+      .command('impacting <ref>')
+      .description('List ADRs whose impact list contains the given artefact path/key')
+      .action(async (ref: string) => {
+        await withCliContext(({ container, config }) => {
+          const decisions = container.decision.impacting(config.project.key, ref);
+          if (decisions.length === 0) {
+            process.stdout.write(`${pc.dim(`no decision impacts ${ref}`)}\n`);
+            return;
+          }
+          process.stdout.write(`${decisions.map(formatDecisionRow).join('\n')}\n`);
         });
       });
   }

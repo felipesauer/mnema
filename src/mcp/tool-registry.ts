@@ -27,6 +27,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'decision_promote_from_note',
   'decision_show',
   'decisions_list',
+  'decisions_impacting',
+  'decision_supersede',
   'note_add',
   'task_attach_evidence',
   'task_evidence',
