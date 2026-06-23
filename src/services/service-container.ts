@@ -16,6 +16,7 @@ import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-rep
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
 import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
+import { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
@@ -34,6 +35,7 @@ import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { DecisionService } from './decision-service.js';
+import { DependencyService } from './dependency-service.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
@@ -85,6 +87,7 @@ export interface ServiceContainer {
   readonly inbox: InboxService;
   readonly sprint: SprintService;
   readonly decision: DecisionService;
+  readonly dependency: DependencyService;
   readonly note: NoteService;
   readonly epic: EpicService;
   readonly attachment: AttachmentService;
@@ -164,6 +167,7 @@ export function createServiceContainer(
   const sprintRepository = new SprintRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
+  const dependencyRepository = new DependencyRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
   const skillRepository = new SkillRepository(adapter);
@@ -219,6 +223,13 @@ export function createServiceContainer(
     noteRepository,
     tasks,
   );
+  const dependencyService = new DependencyService(
+    dependencyRepository,
+    tasks,
+    sprintRepository,
+    stateMachine,
+    audit,
+  );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
@@ -254,6 +265,7 @@ export function createServiceContainer(
     inbox: inboxService,
     sprint: sprintService,
     decision: decisionService,
+    dependency: dependencyService,
     note: noteService,
     epic: epicService,
     attachment: attachmentService,

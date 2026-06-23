@@ -282,6 +282,22 @@ export function formatError(error: MnemaError): string {
         `${pc.dim('hint:')} List notes with \`mnema note list <task_key>\` or query the audit log`,
       );
       break;
+    case ErrorCode.DependencyCycle:
+      lines.push(
+        `Cannot make ${error.taskKey} depend on ${error.blocksTaskKey}: would create a cycle`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} ${error.blocksTaskKey} already depends on ${error.taskKey} (directly or transitively)`,
+      );
+      break;
+    case ErrorCode.DependencyDuplicate:
+      lines.push(
+        `${error.taskKey} already depends on ${error.blocksTaskKey} (kind: ${error.dependencyKind})`,
+      );
+      break;
+    case ErrorCode.DependencySelf:
+      lines.push(`${error.taskKey} cannot depend on itself`);
+      break;
   }
 
   return lines.join('\n');
@@ -300,7 +316,11 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.SchemaOutOfDate:
       return ExitCode.State;
     case ErrorCode.InitConflict:
+    case ErrorCode.DependencyDuplicate:
       return ExitCode.Conflict;
+    case ErrorCode.DependencyCycle:
+    case ErrorCode.DependencySelf:
+      return ExitCode.State;
     default:
       return ExitCode.Usage;
   }

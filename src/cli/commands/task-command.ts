@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import type { DependencyKind } from '../../domain/entities/dependency.js';
 import type { Task } from '../../domain/entities/task.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { ErrorCode } from '../../errors/error-codes.js';
@@ -31,6 +32,14 @@ interface HistoryOptions {
   readonly json?: boolean;
   readonly iso?: boolean;
   readonly limit?: string;
+}
+
+interface DependsOptions {
+  readonly kind?: string;
+}
+
+interface ReadyOptions {
+  readonly sprint?: string;
 }
 
 /**
@@ -219,6 +228,41 @@ export class TaskCommand {
                   actor: container.identity.getDefaultActor(),
                 });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('depends <key> <blocksKey>')
+      .description('Declare that <key> is blocked by <blocksKey> (or another relationship kind)')
+      .option('--kind <kind>', 'blocks | relates_to | duplicates | parent_of', 'blocks')
+      .action(async (key: string, blocksKey: string, options: DependsOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.dependency.link({
+            taskKey: key,
+            blocksTaskKey: blocksKey,
+            kind: options.kind as DependencyKind | undefined,
+            actor: container.identity.getDefaultActor(),
+          });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(
+            `${pc.green('✓')} ${key} ${pc.dim(`depends on (${result.value.kind})`)} ${blocksKey}\n`,
+          );
+        });
+      });
+
+    group
+      .command('ready')
+      .description('List tasks ready to pick up (pickable state, all blockers terminal)')
+      .option('--sprint <key>', 'Scope to a single sprint')
+      .action(async (options: ReadyOptions) => {
+        await withCliContext(({ container }) => {
+          const result = container.dependency.ready(options.sprint);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(`${formatTaskList(result.value)}\n`);
         });
       });
   }
