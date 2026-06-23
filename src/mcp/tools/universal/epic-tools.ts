@@ -37,7 +37,11 @@ export class EpicTools {
       ({ epic_key: epicKey }) => {
         const result = this.epics.show(epicKey);
         if (!result.ok) return err(result.error);
-        return ok({ epic: result.value.epic, task_keys: result.value.taskKeys });
+        return ok({
+          epic: result.value.epic,
+          task_keys: result.value.taskKeys,
+          lifecycle: result.value.lifecycle,
+        });
       },
     );
 
