@@ -76,6 +76,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     aliases: ['epics'],
     description: 'Manage epics (create / show / list / close / add / remove)',
   },
+  lint: {
+    load: async () => new (await import('./commands/lint-command.js')).LintCommand(),
+    description: 'Integrity checks over the work graph (lint sprint / lint epic)',
+  },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',

@@ -46,6 +46,7 @@ import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskService } from './task-service.js';
+import { WorkGraphLintService } from './work-graph-lint-service.js';
 
 /**
  * Options accepted by {@link createServiceContainer}.
@@ -87,6 +88,7 @@ export interface ServiceContainer {
   readonly decision: DecisionService;
   readonly note: NoteService;
   readonly epic: EpicService;
+  readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
@@ -221,6 +223,14 @@ export function createServiceContainer(
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
+  const workGraphLintService = new WorkGraphLintService(
+    sprintRepository,
+    epicRepository,
+    tasks,
+    stateMachine,
+    auditQuery,
+    adapter,
+  );
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
   const attachmentService = new AttachmentService(
     attachmentRepository,
@@ -256,6 +266,7 @@ export function createServiceContainer(
     decision: decisionService,
     note: noteService,
     epic: epicService,
+    workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
