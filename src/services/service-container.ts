@@ -33,6 +33,7 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
@@ -87,6 +88,7 @@ export interface ServiceContainer {
   readonly decision: DecisionService;
   readonly note: NoteService;
   readonly epic: EpicService;
+  readonly coverage: CoverageService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
@@ -221,6 +223,12 @@ export function createServiceContainer(
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
+  const coverageService = new CoverageService(
+    epicRepository,
+    sprintRepository,
+    tasks,
+    stateMachine,
+  );
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
   const attachmentService = new AttachmentService(
     attachmentRepository,
@@ -256,6 +264,7 @@ export function createServiceContainer(
     decision: decisionService,
     note: noteService,
     epic: epicService,
+    coverage: coverageService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,

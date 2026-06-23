@@ -115,6 +115,24 @@ export class TaskRepository {
   }
 
   /**
+   * Lists every active task assigned to an epic, ordered by key.
+   *
+   * @param epicId - Internal epic id
+   * @returns Array of matching tasks (possibly empty)
+   */
+  findByEpic(epicId: string): Task[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM tasks
+          WHERE epic_id = ? AND deleted_at IS NULL
+          ORDER BY key`,
+      )
+      .all(epicId) as TaskRow[];
+    return rows.map(rowToTask);
+  }
+
+  /**
    * Lists every active (non-deleted) task ordered by key.
    *
    * @returns All active tasks

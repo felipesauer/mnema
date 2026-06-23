@@ -5,6 +5,7 @@ import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { formatCoverage } from '../formatters/coverage-formatter.js';
 
 interface PlanOptions {
   readonly name: string;
@@ -153,6 +154,19 @@ export class SprintCommand {
             process.exit(printError(result.error));
           }
           process.stdout.write(`${pc.green('✓')} ${taskKey} removed from sprint\n`);
+        });
+      });
+
+    group
+      .command('coverage <key>')
+      .description('Report how many of the sprint tasks are in a terminal state')
+      .action(async (key: string) => {
+        await withCliContext(({ container }) => {
+          const result = container.coverage.forSprint(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(`${formatCoverage(`Sprint ${key}`, result.value)}\n`);
         });
       });
   }
