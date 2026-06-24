@@ -1,9 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import matter from 'gray-matter';
-
 import { extractWikilinks } from '../domain/wikilink.js';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
@@ -131,7 +130,7 @@ export class WikilinkLintService {
       if (entry.name === 'INDEX.md') continue;
       const filePath = path.join(dir, entry.name);
       try {
-        const body = matter(readFileSync(filePath, 'utf-8')).content;
+        const body = parseFrontmatter(readFileSync(filePath, 'utf-8')).content;
         out.push({ file: filePath, body });
       } catch {
         // Unreadable/garbled file — skip; the skill/memory lint surfaces it.
