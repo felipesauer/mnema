@@ -46,14 +46,25 @@ jobs:
         id: disttag
         run: |
           VERSION="$(node -p "require('./package.json').version")"
+          # The dist-tag the release is published under.
           case "$VERSION" in
             *-alpha.*) TAG=alpha ;;
             *-beta.*)  TAG=beta ;;
             *-rc.*)    TAG=rc ;;
             *)         TAG=latest ;;
           esac
+          # Before a stable 1.x, `latest` should track the newest prerelease
+          # so `npm install <pkg>` (no tag) gets the current alpha — the repo
+          # has no stable line yet. Once a 1.0.0 ships, `latest` becomes the
+          # stable channel and prereleases stop touching it.
+          MAJOR="${VERSION%%.*}"
+          ALSO_LATEST=false
+          if [ "$TAG" != "latest" ] && [ "$MAJOR" = "0" ]; then
+            ALSO_LATEST=true
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "publishing $VERSION under dist-tag '$TAG'"
+          echo "also_latest=$ALSO_LATEST" >> "$GITHUB_OUTPUT"
+          echo "publishing $VERSION under dist-tag '$TAG' (also latest: $ALSO_LATEST)"
 
       - name: Publish
         # --ignore-scripts skips the prepack/prepublishOnly hooks: the
@@ -61,5 +72,15 @@ jobs:
         # this exact tree, so re-running them here would only duplicate
         # work. --provenance signs the tarball against this run.
         run: pnpm publish --no-git-checks --ignore-scripts --tag ${{ steps.disttag.outputs.tag }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Point `latest` at the newest pre-1.0 prerelease
+        # Pre-1.0 only: keep `latest` on the current alpha so a bare
+        # `npm install` isn't pinned to a stale old version.
+        if: steps.disttag.outputs.also_latest == 'true'
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          npm dist-tag add "@felipesauer/mnema@$VERSION" latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
