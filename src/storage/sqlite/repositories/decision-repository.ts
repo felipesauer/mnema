@@ -1,8 +1,14 @@
 import type { Decision } from '../../../domain/entities/decision.js';
 import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { stripInvocationMarkup } from '../../../domain/invocation-markup.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
+
+/** Strips leaked tool-invocation markup from a nullable text column on read. */
+function cleanNullable(value: string | null): string | null {
+  return value === null ? null : stripInvocationMarkup(value);
+}
 
 interface DecisionRow {
   readonly id: string;
@@ -252,11 +258,11 @@ function rowToDecision(row: DecisionRow): Decision {
     id: row.id,
     key: row.key,
     projectId: row.project_id,
-    title: row.title,
-    context: row.context,
-    decision: row.decision,
-    rationale: row.rationale,
-    consequences: row.consequences,
+    title: stripInvocationMarkup(row.title),
+    context: cleanNullable(row.context),
+    decision: stripInvocationMarkup(row.decision),
+    rationale: cleanNullable(row.rationale),
+    consequences: cleanNullable(row.consequences),
     status: row.status as DecisionStatus,
     supersededBy: row.superseded_by,
     authoredBy: row.authored_by,
