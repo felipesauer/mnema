@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { DecisionStatus } from '@/domain/enums/decision-status.js';
+import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { DecisionService } from '@/services/decision-service.js';
 import { IdentityService } from '@/services/identity-service.js';
@@ -103,5 +105,73 @@ describe('DecisionService impacts', () => {
   it('impacting() returns empty when nothing matches', () => {
     decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
     expect(decisions.impacting('TEST', 'nope.ts')).toEqual([]);
+  });
+
+  it('impacting() excludes rejected and superseded ADRs', () => {
+    // accepted → should appear
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'Live',
+      decision: 'a',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+    });
+    // rejected → should NOT appear
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'Dead',
+      decision: 'b',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-2',
+      status: DecisionStatus.Rejected,
+      actor: 'daniel',
+    });
+    // superseded → should NOT appear (ADR-3 superseded by ADR-1)
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'Old',
+      decision: 'c',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-3',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+    });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-3',
+      status: DecisionStatus.Superseded,
+      supersededBy: 'TEST-ADR-1',
+      actor: 'daniel',
+    });
+
+    const hits = decisions.impacting('TEST', 'src/x.ts');
+    expect(hits.map((d) => d.title)).toEqual(['Live']);
+  });
+
+  it('rejects a decision superseding itself', () => {
+    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Accepted,
+      actor: 'daniel',
+    });
+    const res = decisions.transition({
+      decisionKey: 'TEST-ADR-1',
+      status: DecisionStatus.Superseded,
+      supersededBy: 'TEST-ADR-1',
+      actor: 'daniel',
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
   });
 });

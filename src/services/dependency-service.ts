@@ -183,6 +183,12 @@ export class DependencyService {
       if (current === undefined || seen.has(current)) continue;
       seen.add(current);
       if (current === targetId) return true;
+      // Skip soft-deleted intermediate nodes so the cycle walk stays
+      // consistent with the readiness walk (blockersAllTerminal also drops a
+      // deleted blocker). A path that only reaches `targetId` *through* a
+      // deleted node is not a live cycle and must not block the edge.
+      // `startId` itself is exempt — it is the edge being created.
+      if (current !== startId && this.tasks.findById(current) === null) continue;
       for (const dep of this.dependencies.findByTask(current)) {
         if (dep.kind === 'blocks') stack.push(dep.blocksTaskId);
       }

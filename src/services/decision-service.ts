@@ -230,6 +230,16 @@ export class DecisionService {
       if (successor === null) {
         return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.supersededBy });
       }
+      // A decision cannot supersede itself — that produces a self-referential
+      // supersededBy pointer (and a node that is its own replacement).
+      if (successor.id === decision.id) {
+        return Err({
+          kind: ErrorCode.DecisionInvalidStatus,
+          decisionKey: decision.key,
+          fromStatus: decision.status,
+          toStatus: input.status,
+        });
+      }
       supersededById = successor.id;
     }
 

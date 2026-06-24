@@ -10,7 +10,11 @@ export interface Wikilink {
   readonly raw: string;
 }
 
-const WIKILINK_RE = /\[\[([^\]\n#]+)(?:#([^\]\n]+))?\]\]/g;
+// `[` is excluded from the slug/anchor classes so an extra leading bracket
+// (`[[[slug]]]`) cannot be swallowed into the slug — the engine instead matches
+// the inner `[[slug]]`. The anchor content is `*` (not `+`) so a bare trailing
+// `#` (`[[slug#]]`) still matches and yields the slug with a null anchor.
+const WIKILINK_RE = /\[\[([^[\]\n#]+)(?:#([^[\]\n]*))?\]\]/g;
 
 /**
  * Extracts every `[[slug]]` / `[[slug#anchor]]` wikilink from a markdown

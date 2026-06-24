@@ -47,4 +47,29 @@ describe('extractWikilinks', () => {
     const links = extractWikilinks('superseded by [[MNEMA-ADR-14]]');
     expect(links[0]?.slug).toBe('MNEMA-ADR-14');
   });
+
+  it('captures the slug when the anchor is empty (trailing #)', () => {
+    const links = extractWikilinks('see [[other-skill#]] here');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toEqual({ slug: 'other-skill', anchor: null, raw: '[[other-skill#]]' });
+  });
+
+  it('still parses later links on a line that has a trailing-# link', () => {
+    const links = extractWikilinks('[[a#]] and [[b]]');
+    expect(links.map((l) => l.slug)).toEqual(['a', 'b']);
+  });
+
+  it('extracts the clean inner slug from extra leading brackets', () => {
+    const links = extractWikilinks('see [[[other-skill]]] for context');
+    expect(links).toHaveLength(1);
+    expect(links[0]?.slug).toBe('other-skill');
+    expect(links[0]?.slug).not.toContain('[');
+    expect(links[0]?.raw).toBe('[[other-skill]]');
+  });
+
+  it('handles quadruple brackets without corrupting the slug', () => {
+    const links = extractWikilinks('[[[[slug]]]]');
+    expect(links[0]?.slug).toBe('slug');
+    expect(links[0]?.slug).not.toContain('[');
+  });
 });

@@ -121,6 +121,12 @@ export class MnemaMcpServer {
    * handlers without stdio.
    */
   registerTools(): void {
+    // Computed once, up front: the list of unapplied migration files. Every
+    // tool that touches a Sprint-5 column/table is constructed with this so a
+    // drifted (upgraded-but-unmigrated) DB returns a structured
+    // SCHEMA_OUT_OF_DATE result instead of a raw SqliteError.
+    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
+
     new ContextBootstrapTool(
       this.config,
       this.services.stateMachine.getWorkflow(),
@@ -140,6 +146,7 @@ export class MnemaMcpServer {
       this.config,
       this.session,
       this.services.stateMachine,
+      pendingFiles,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
@@ -148,14 +155,18 @@ export class MnemaMcpServer {
       this.services.identity,
       this.config,
       this.session,
+      pendingFiles,
     ).register(this.sdk);
     new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
     new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
       this.sdk,
     );
-    new EvidenceTools(this.services.taskEvidence, this.services.identity, this.session).register(
-      this.sdk,
-    );
+    new EvidenceTools(
+      this.services.taskEvidence,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new EpicTools(this.services.epic, this.config).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
@@ -164,10 +175,10 @@ export class MnemaMcpServer {
       this.services.identity,
       this.config,
       this.session,
+      pendingFiles,
     ).register(this.sdk);
     new SearchTool(this.services.search).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
-    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
     new SkillTools(
       this.services.skill,
       this.services.identity,

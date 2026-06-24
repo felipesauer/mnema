@@ -114,9 +114,10 @@ describe('TaskEvidenceService', () => {
     const result = svc.forTask('TEST-1');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value).toHaveLength(2);
-    expect(result.value[0]?.evidence).toHaveLength(1);
-    expect(result.value[1]?.evidence).toHaveLength(0);
+    expect(result.value.criteria).toHaveLength(2);
+    expect(result.value.criteria[0]?.evidence).toHaveLength(1);
+    expect(result.value.criteria[1]?.evidence).toHaveLength(0);
+    expect(result.value.orphaned).toHaveLength(0);
   });
 
   it('defaults kind to other', () => {
@@ -125,5 +126,30 @@ describe('TaskEvidenceService', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.kind).toBe('other');
+  });
+
+  it('surfaces evidence as orphaned (not dropped) when criteria shrink below its index', () => {
+    makeTask('TEST-1', ['login works', 'logout works']);
+    svc.attach({
+      taskKey: 'TEST-1',
+      criterionIndex: 1,
+      kind: 'test',
+      ref: 'tests/logout.test.ts',
+      actor: 'daniel',
+    });
+
+    // The criteria array is rewritten to a single item (what a `submit`
+    // transition does), leaving the index-1 evidence row dangling.
+    const taskId = tasks.findByKey('TEST-1')?.id;
+    tasks.updateFields(taskId as string, { acceptanceCriteria: ['login works'] });
+
+    const result = svc.forTask('TEST-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.criteria).toHaveLength(1);
+    // The evidence is NOT silently lost — it shows up as an orphan.
+    expect(result.value.orphaned).toHaveLength(1);
+    expect(result.value.orphaned[0]?.ref).toBe('tests/logout.test.ts');
+    expect(result.value.orphaned[0]?.criterionIndex).toBe(1);
   });
 });

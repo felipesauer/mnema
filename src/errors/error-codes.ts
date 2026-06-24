@@ -65,6 +65,8 @@ export enum ErrorCode {
   EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
 
   SprintMetricDuplicate = 'SPRINT_METRIC_DUPLICATE',
+
+  ValidationFailed = 'VALIDATION_FAILED',
 }
 
 /**

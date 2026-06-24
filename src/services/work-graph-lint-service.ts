@@ -173,9 +173,16 @@ export class WorkGraphLintService {
    * tracked agent run.
    */
   private isSubagentBypass(taskKey: string): boolean {
-    const events = this.auditQuery.run({ taskKey });
-    if (events.length === 0) return false; // no trail at all — not our signal
-    return events.every((e) => e.run === undefined || e.run === null);
+    // Only state transitions are evidence of work being done. A note,
+    // attachment, dependency edge, or the creation event can carry a `run`
+    // id without any *transition* having gone through a tracked run — those
+    // must not mask a genuinely bypassed transition, so filter to transitions
+    // before testing run-presence.
+    const transitions = this.auditQuery
+      .run({ taskKey })
+      .filter((e) => e.kind === 'task_transitioned');
+    if (transitions.length === 0) return false; // no transition trail — not our signal
+    return transitions.every((e) => e.run === undefined || e.run === null);
   }
 
   /**
@@ -191,10 +198,15 @@ export class WorkGraphLintService {
     const rows = this.adapter
       .getDatabase()
       .prepare(
+        // Only `blocks` edges are integrity-bearing: a dangling
+        // relates_to/duplicates/parent_of edge to a soft-deleted task is
+        // informational, not a broken-graph error. (blockersAllTerminal /
+        // reachesViaBlocks both filter to 'blocks' too.)
         `SELECT t.key AS task_key, d.blocks_task_id AS blocks_task_id
            FROM dependencies d
            JOIN tasks t ON t.id = d.task_id
           WHERE d.task_id IN (${placeholders})
+            AND d.kind = 'blocks'
             AND NOT EXISTS (
               SELECT 1 FROM tasks b
                WHERE b.id = d.blocks_task_id AND b.deleted_at IS NULL

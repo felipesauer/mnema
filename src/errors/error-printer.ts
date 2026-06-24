@@ -314,6 +314,13 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.SprintMetricDuplicate:
       lines.push(`Sprint ${error.sprintKey} already has a metric named "${error.name}"`);
       break;
+
+    case ErrorCode.ValidationFailed:
+      lines.push('Invalid input');
+      for (const issue of error.issues) {
+        lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
+      }
+      break;
   }
 
   return lines.join('\n');
@@ -327,21 +334,81 @@ export function formatError(error: MnemaError): string {
  */
 export function exitCodeFor(error: MnemaError): ExitCodeValue {
   switch (error.kind) {
-    case ErrorCode.VersionMismatch:
-    case ErrorCode.AlreadyInitialized:
-    case ErrorCode.SchemaOutOfDate:
-      return ExitCode.State;
+    // Conflict (4): retryable — the caller raced a concurrent change or hit a
+    // contended resource. A wrapper script keys its retry loop off this code,
+    // so it must be distinct from Usage. (errors-catalog.md: E_CONFLICT, E_DB_LOCKED.)
+    case ErrorCode.Conflict:
     case ErrorCode.InitConflict:
+    case ErrorCode.ActiveSprintExists:
     case ErrorCode.DependencyDuplicate:
     case ErrorCode.EvidenceDuplicate:
     case ErrorCode.SprintMetricDuplicate:
+    case ErrorCode.StorageBusy:
       return ExitCode.Conflict;
+
+    // State (3): the artefact exists but is in the wrong state for the action;
+    // resolvable by changing state (migrate, upgrade, pick a valid transition).
+    case ErrorCode.VersionMismatch:
+    case ErrorCode.AlreadyInitialized:
+    case ErrorCode.SchemaOutOfDate:
+    case ErrorCode.TerminalState:
+    case ErrorCode.InvalidTransition:
+    case ErrorCode.SprintInvalidState:
+    case ErrorCode.DecisionInvalidStatus:
+    case ErrorCode.EpicInvalidState:
+    case ErrorCode.InvalidWorkflowState:
+    case ErrorCode.AgentRunAlreadyEnded:
     case ErrorCode.DependencyCycle:
     case ErrorCode.DependencySelf:
       return ExitCode.State;
-    default:
+
+    // Internal (5): a bug or an unrecoverable runtime fault.
+    case ErrorCode.DepthLimitExceeded:
+      return ExitCode.Internal;
+
+    // Usage (2): bad invocation or a not-found / validation failure the caller
+    // can fix by changing arguments. The remaining catalogued codes.
+    case ErrorCode.ConfigNotFound:
+    case ErrorCode.ConfigInvalid:
+    case ErrorCode.TaskNotFound:
+    case ErrorCode.GateFailed:
+    case ErrorCode.TaskKeyExists:
+    case ErrorCode.ProjectNotFound:
+    case ErrorCode.WorkflowNotFound:
+    case ErrorCode.WorkflowInvalid:
+    case ErrorCode.IdentityNotConfigured:
+    case ErrorCode.AgentHandleMissing:
+    case ErrorCode.AgentRunNotFound:
+    case ErrorCode.AgentPlanNotFound:
+    case ErrorCode.NoActiveRun:
+    case ErrorCode.SprintNotFound:
+    case ErrorCode.SprintInvalidPayload:
+    case ErrorCode.AttachmentSourceNotFound:
+    case ErrorCode.DecisionNotFound:
+    case ErrorCode.EpicNotFound:
+    case ErrorCode.SkillNotFound:
+    case ErrorCode.MemoryNotFound:
+    case ErrorCode.SearchInvalidQuery:
+    case ErrorCode.FeatureNotAvailable:
+    case ErrorCode.NoteNotFound:
+    case ErrorCode.EvidenceCriterionOutOfRange:
+    case ErrorCode.ValidationFailed:
       return ExitCode.Usage;
+
+    default:
+      return assertNever(error);
   }
+}
+
+/**
+ * Compile-time exhaustiveness guard. If a new {@link MnemaError} variant is
+ * added without a matching `exitCodeFor` case, this stops compiling — turning a
+ * silent fall-through to {@link ExitCode.Usage} into a type error. At runtime it
+ * still degrades to {@link ExitCode.Generic} rather than throwing.
+ */
+function assertNever(error: never): ExitCodeValue {
+  void error;
+  return ExitCode.Generic;
 }
 
 /**

@@ -148,4 +148,34 @@ describe('CoverageService', () => {
     if (result.ok) return;
     expect(result.error.kind).toBe(ErrorCode.SprintNotFound);
   });
+
+  it('never reports 100% while a task is still open (no round-up)', () => {
+    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
+    // 199 done + 1 open → 99.5% which Math.round would push to 100.
+    for (let i = 1; i <= 199; i++) {
+      epics.addTask(epic.id, makeTask(`TEST-${i}`, 'DONE'));
+    }
+    epics.addTask(epic.id, makeTask('TEST-200', 'IN_PROGRESS'));
+
+    const result = coverage.forEpic('TEST-EPIC-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.total).toBe(200);
+    expect(result.value.terminal).toBe(199);
+    expect(result.value.open).toEqual(['TEST-200']);
+    expect(result.value.percent).toBeLessThan(100);
+    expect(result.value.percent).toBe(99);
+  });
+
+  it('reports exactly 100% only when every task is terminal', () => {
+    const epic = epics.insert({ key: 'TEST-EPIC-2', projectId, title: 'E2' });
+    epics.addTask(epic.id, makeTask('TEST-1', 'DONE'));
+    epics.addTask(epic.id, makeTask('TEST-2', 'DONE'));
+
+    const result = coverage.forEpic('TEST-EPIC-2');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.percent).toBe(100);
+    expect(result.value.open).toEqual([]);
+  });
 });

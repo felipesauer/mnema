@@ -92,7 +92,16 @@ export class CoverageService {
     }
 
     const total = tasks.length;
-    const percent = total === 0 ? 0 : Math.round((terminal / total) * 100);
+    // Reserve 100% for the genuinely-complete case. Plain rounding reports
+    // 100% at 199/200 (Math.round(99.5)), contradicting the non-empty `open`
+    // list it ships alongside. Clamp intermediate values to 99 so the headline
+    // can never claim done while work remains.
+    const percent =
+      total === 0
+        ? 0
+        : terminal === total
+          ? 100
+          : Math.min(99, Math.round((terminal / total) * 100));
 
     return { total, terminal, byState, blocked, percent, open };
   }

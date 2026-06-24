@@ -3,6 +3,7 @@ import type { SprintMetric } from '../domain/entities/sprint-metric.js';
 import type { Task } from '../domain/entities/task.js';
 import { SprintState } from '../domain/enums/sprint-state.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
+import { checkOptionalFiniteNumber, checkRequiredFiniteNumber } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
@@ -388,6 +389,12 @@ export class SprintService {
     if (sprint === null) {
       return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
     }
+    const issues: ErrorIssue[] = [];
+    checkRequiredFiniteNumber(input.target, 'target', issues);
+    checkOptionalFiniteNumber(input.baseline ?? null, 'baseline', issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
     if (this.metrics.exists(sprint.id, input.name)) {
       return Err({
         kind: ErrorCode.SprintMetricDuplicate,
@@ -395,14 +402,30 @@ export class SprintService {
         name: input.name,
       });
     }
-    const created = this.metrics.insert({
-      sprintId: sprint.id,
-      name: input.name,
-      baseline: input.baseline ?? null,
-      target: input.target,
-      unit: input.unit ?? null,
-      dueDate: input.dueDate ?? null,
-    });
+    // Wrap the insert: a concurrent writer can pass the exists() check above
+    // and lose the UNIQUE(sprint_id, name) race — map that to the structured
+    // duplicate rather than letting a raw SqliteError escape.
+    const createdResult = tryMutation(() =>
+      this.metrics.insert({
+        sprintId: sprint.id,
+        name: input.name,
+        baseline: input.baseline ?? null,
+        target: input.target,
+        unit: input.unit ?? null,
+        dueDate: input.dueDate ?? null,
+      }),
+    );
+    if (!createdResult.ok) {
+      if (createdResult.error.kind === ErrorCode.SprintMetricDuplicate) {
+        return Err({
+          kind: ErrorCode.SprintMetricDuplicate,
+          sprintKey: input.sprintKey,
+          name: input.name,
+        });
+      }
+      return createdResult;
+    }
+    const created = createdResult.value;
     this.audit.write({
       kind: 'sprint_metric_added',
       actor: input.actor,

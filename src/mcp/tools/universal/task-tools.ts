@@ -6,7 +6,7 @@ import type { StateMachine } from '../../../domain/state-machine/state-machine.j
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * Registers task-related MCP tools that **don't** depend on the active
@@ -26,6 +26,7 @@ export class TaskTools {
     private readonly config: Config,
     private readonly session: McpSessionContext,
     private readonly stateMachine: StateMachine,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -55,6 +56,8 @@ export class TaskTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -116,6 +119,8 @@ export class TaskTools {
         },
       },
       ({ state, assignee_id: assigneeId, sort, limit }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         let tasks = this.tasks.list(state !== undefined ? { state } : {});
 
         if (assigneeId !== undefined) {
@@ -150,6 +155,8 @@ export class TaskTools {
         },
       },
       ({ task_key: taskKey }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.tasks.findByKey(taskKey);
         if (!result.ok) return err(result.error);
         return ok({ task: result.value });

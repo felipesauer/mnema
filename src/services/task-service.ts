@@ -3,8 +3,9 @@ import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../domain/state-machine/workflow-meta-schema.js';
+import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import { fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
+import { type ErrorIssue, fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type {
   TaskFieldUpdates,
@@ -98,6 +99,14 @@ export class TaskService {
     const project = this.projects.findByKey(input.projectKey);
     if (project === null) {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
+    }
+
+    const issues: ErrorIssue[] = [];
+    checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
+    checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
+    checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
 
     const reporterId = this.identity.ensureActor(input.actor, 'human');
@@ -480,11 +489,27 @@ function persistableFromPayload(
       payload.acceptance_criteria.filter((v): v is string => typeof v === 'string');
     touched = true;
   }
-  if (typeof payload.estimate === 'number' && isMutating('estimate')) {
+  // `typeof NaN === 'number'`, so a non-finite/out-of-range value from the
+  // payload would otherwise reach the column and trip a NOT NULL / CHECK
+  // constraint. Only fold through values that satisfy the same invariant the
+  // create path enforces; anything else is dropped (a `requires` field would
+  // already have been rejected by the workflow gate before reaching here).
+  if (
+    typeof payload.estimate === 'number' &&
+    Number.isInteger(payload.estimate) &&
+    payload.estimate >= 0 &&
+    isMutating('estimate')
+  ) {
     (updates as { estimate?: number | null }).estimate = payload.estimate;
     touched = true;
   }
-  if (typeof payload.priority === 'number' && isMutating('priority')) {
+  if (
+    typeof payload.priority === 'number' &&
+    Number.isInteger(payload.priority) &&
+    payload.priority >= 1 &&
+    payload.priority <= 5 &&
+    isMutating('priority')
+  ) {
     (updates as { priority?: number }).priority = payload.priority;
     touched = true;
   }

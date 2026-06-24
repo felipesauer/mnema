@@ -206,4 +206,29 @@ describe('DependencyService', () => {
     expect(result.value.dependsOn).toHaveLength(1); // TEST-1 depends on TEST-2
     expect(result.value.blocks).toHaveLength(1); // TEST-3 depends on TEST-1
   });
+
+  describe('soft-deleted blockers are handled symmetrically', () => {
+    it('does not raise a false cycle when the only path runs through a soft-deleted node', () => {
+      makeTask('TEST-1');
+      const b = makeTask('TEST-2');
+      makeTask('TEST-3');
+      deps.link({ taskKey: 'TEST-1', blocksTaskKey: 'TEST-2', actor: 'daniel' }); // 1 → 2
+      deps.link({ taskKey: 'TEST-2', blocksTaskKey: 'TEST-3', actor: 'daniel' }); // 2 → 3
+      tasks.softDelete(b); // remove the bridge node
+
+      // 3 → 1 would close a cycle only *through* deleted 2; with 2 gone there
+      // is no live cycle, so the edge must be allowed.
+      const res = deps.link({ taskKey: 'TEST-3', blocksTaskKey: 'TEST-1', actor: 'daniel' });
+      expect(res.ok).toBe(true);
+    });
+
+    it('still rejects a genuine live cycle (no deleted node on the path)', () => {
+      makeTask('TEST-1');
+      makeTask('TEST-2');
+      deps.link({ taskKey: 'TEST-1', blocksTaskKey: 'TEST-2', actor: 'daniel' }); // 1 → 2
+      const res = deps.link({ taskKey: 'TEST-2', blocksTaskKey: 'TEST-1', actor: 'daniel' }); // 2 → 1
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.kind).toBe(ErrorCode.DependencyCycle);
+    });
+  });
 });

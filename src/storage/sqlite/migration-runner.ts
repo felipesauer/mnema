@@ -40,6 +40,22 @@ export class MigrationRunner {
     const applied = new Set(this.loadAppliedVersions(adapter));
 
     const sources = collectMigrationFiles(migrationsDir);
+
+    // Two distinct filenames sharing a version prefix (e.g. 016_alice.sql and
+    // 016_bob.sql — what sibling branches produce when each claims the next
+    // slot) would otherwise be applied in turn; the second trips a
+    // schema_migrations PRIMARY KEY violation mid-run, aborting init. Detect it
+    // up front with a clear diagnostic rather than letting one silently win.
+    const seenVersions = new Map<number, string>();
+    for (const { file } of sources) {
+      const version = parseVersion(file);
+      const prior = seenVersions.get(version);
+      if (prior !== undefined && prior !== file) {
+        throw new Error(`duplicate migration version ${version}: ${prior} vs ${file}`);
+      }
+      seenVersions.set(version, file);
+    }
+
     const newlyApplied: AppliedMigration[] = [];
     for (const { dir, file } of sources) {
       const version = parseVersion(file);
@@ -48,6 +64,7 @@ export class MigrationRunner {
       const sql = readFileSync(path.join(dir, file), 'utf-8');
       this.applyOne(database, sql);
       newlyApplied.push({ version, file });
+      applied.add(version);
     }
 
     return newlyApplied;

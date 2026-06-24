@@ -1,4 +1,9 @@
-import type { EvidenceKind, TaskEvidence } from '../domain/entities/task-evidence.js';
+import {
+  EVIDENCE_KINDS,
+  type EvidenceKind,
+  isEvidenceKind,
+  type TaskEvidence,
+} from '../domain/entities/task-evidence.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
@@ -30,6 +35,17 @@ export interface CriterionEvidence {
 }
 
 /**
+ * A task's criteria paired with their evidence, plus any rows whose
+ * `criterionIndex` no longer points at a live criterion (the criteria array
+ * was shrunk/reordered after the evidence was attached). Surfacing orphans
+ * instead of silently dropping them keeps the dangling rows visible.
+ */
+export interface TaskEvidenceView {
+  readonly criteria: readonly CriterionEvidence[];
+  readonly orphaned: readonly TaskEvidence[];
+}
+
+/**
  * Manages evidence linking a task's acceptance criteria to concrete
  * artefacts. Additive over the existing `acceptanceCriteria` string[] —
  * never touches the criteria themselves or the workflow gate. See
@@ -49,13 +65,32 @@ export class TaskEvidenceService {
    * @returns The created evidence or a structured error
    */
   attach(input: AttachEvidenceInput): Result<TaskEvidence, MnemaError> {
-    const kind: EvidenceKind = input.kind ?? 'other';
+    const rawKind: string = input.kind ?? 'other';
+    if (!isEvidenceKind(rawKind)) {
+      return Err({
+        kind: ErrorCode.ValidationFailed,
+        issues: [
+          {
+            path: ['kind'],
+            message: `must be one of ${EVIDENCE_KINDS.join(', ')} (got "${rawKind}")`,
+          },
+        ],
+      });
+    }
+    const kind: EvidenceKind = rawKind;
     const task = this.tasks.findByKey(input.taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
 
-    if (input.criterionIndex < 0 || input.criterionIndex >= task.acceptanceCriteria.length) {
+    // `Number.isInteger` rejects NaN (from a CLI `Number('abc')`) and floats
+    // (0.5), both of which would otherwise pass the `< 0 || >= length` range
+    // test and reach an INTEGER column as NULL/REAL — an invisible orphan row.
+    if (
+      !Number.isInteger(input.criterionIndex) ||
+      input.criterionIndex < 0 ||
+      input.criterionIndex >= task.acceptanceCriteria.length
+    ) {
       return Err({
         kind: ErrorCode.EvidenceCriterionOutOfRange,
         taskKey: input.taskKey,
@@ -105,17 +140,22 @@ export class TaskEvidenceService {
    * @param taskKey - Task identifier
    * @returns Criterion/evidence pairs or a structured error
    */
-  forTask(taskKey: string): Result<CriterionEvidence[], MnemaError> {
+  forTask(taskKey: string): Result<TaskEvidenceView, MnemaError> {
     const task = this.tasks.findByKey(taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey });
     }
     const rows = this.evidence.findByTask(task.id);
-    const pairs = task.acceptanceCriteria.map((criterion, index) => ({
+    const criteria = task.acceptanceCriteria.map((criterion, index) => ({
       index,
       criterion,
       evidence: rows.filter((r) => r.criterionIndex === index),
     }));
-    return Ok(pairs);
+    // Rows whose index falls outside the current criteria array — the criteria
+    // were rewritten after the evidence was attached. Surface them rather than
+    // dropping them silently, so the dangling state is observable.
+    const max = task.acceptanceCriteria.length;
+    const orphaned = rows.filter((r) => r.criterionIndex < 0 || r.criterionIndex >= max);
+    return Ok({ criteria, orphaned });
   }
 }

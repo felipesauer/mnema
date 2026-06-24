@@ -15,6 +15,7 @@ import { SprintMetricRepository } from '@/storage/sqlite/repositories/sprint-met
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { mapSqliteError } from '@/storage/sqlite/sqlite-error-map.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -127,5 +128,25 @@ describe('SprintService metrics', () => {
     if (!result.ok) return;
     expect(result.value).toHaveLength(1);
     expect(result.value[0]?.name).toBe('a');
+  });
+
+  it('maps a UNIQUE(sprint_id, name) race to a structured duplicate', () => {
+    makeSprint('TEST-SPRINT-1');
+    const sprintId = sprintRepo.findByKey('TEST-SPRINT-1')?.id;
+    expect(sprintId).toBeDefined();
+    const metricRepo = new SprintMetricRepository(adapter);
+    metricRepo.insert({ sprintId: sprintId as string, name: 'coverage', target: 1 });
+
+    // A second writer that passed the service-level exists() check would lose
+    // this race at the DB. mapSqliteError must translate the raw UNIQUE
+    // violation into SprintMetricDuplicate rather than letting it escape.
+    let mapped: ErrorCode | 'threw-unmapped' | 'no-throw' = 'no-throw';
+    try {
+      metricRepo.insert({ sprintId: sprintId as string, name: 'coverage', target: 2 });
+    } catch (error) {
+      const m = mapSqliteError(error);
+      mapped = m === null ? 'threw-unmapped' : m.kind;
+    }
+    expect(mapped).toBe(ErrorCode.SprintMetricDuplicate);
   });
 });

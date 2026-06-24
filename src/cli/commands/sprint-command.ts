@@ -7,19 +7,20 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatCoverage } from '../formatters/coverage-formatter.js';
+import { parseFiniteNumber, parseNonNegativeInt } from '../option-parsers.js';
 
 interface PlanOptions {
   readonly name: string;
   readonly goal?: string;
   readonly startsAt?: string;
   readonly endsAt?: string;
-  readonly capacity?: string;
+  readonly capacity?: number;
 }
 
 interface MetricOptions {
   readonly name: string;
-  readonly target: string;
-  readonly baseline?: string;
+  readonly target: number;
+  readonly baseline?: number;
   readonly unit?: string;
   readonly due?: string;
 }
@@ -52,7 +53,7 @@ export class SprintCommand {
       .option('--goal <text>', 'Sprint goal')
       .option('--starts-at <iso>', 'Planned start date (ISO8601)')
       .option('--ends-at <iso>', 'Planned end date (ISO8601)')
-      .option('--capacity <points>', 'Capacity in story points')
+      .option('--capacity <points>', 'Capacity in story points', parseNonNegativeInt)
       .action(async (options: PlanOptions) => {
         await withMutatingCliContext(({ container, config }) => {
           const result = container.sprint.plan({
@@ -61,7 +62,7 @@ export class SprintCommand {
             goal: options.goal,
             startsAt: options.startsAt,
             endsAt: options.endsAt,
-            capacity: options.capacity !== undefined ? Number(options.capacity) : undefined,
+            capacity: options.capacity,
             actor: container.identity.getDefaultActor(),
           });
           renderSprint(result, 'planned');
@@ -185,8 +186,8 @@ export class SprintCommand {
         'Add a measurable metric to a sprint (name + target, optional baseline/unit/due)',
       )
       .requiredOption('--name <name>', 'Metric name, e.g. "p95 latency"')
-      .requiredOption('--target <n>', 'Target value to reach')
-      .option('--baseline <n>', 'Starting value')
+      .requiredOption('--target <n>', 'Target value to reach', parseFiniteNumber)
+      .option('--baseline <n>', 'Starting value', parseFiniteNumber)
       .option('--unit <unit>', 'Unit, e.g. ms, %, count')
       .option('--due <iso>', 'Due date (ISO8601)')
       .action(async (key: string, options: MetricOptions) => {
@@ -194,8 +195,8 @@ export class SprintCommand {
           const result = container.sprint.addMetric({
             sprintKey: key,
             name: options.name,
-            target: Number(options.target),
-            baseline: options.baseline !== undefined ? Number(options.baseline) : null,
+            target: options.target,
+            baseline: options.baseline ?? null,
             unit: options.unit ?? null,
             dueDate: options.due ?? null,
             actor: container.identity.getDefaultActor(),

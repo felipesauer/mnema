@@ -178,10 +178,14 @@ describe('DecisionService', () => {
       status: DecisionStatus.Accepted,
       actor: 'daniel',
     });
+    // A distinct successor — a decision cannot supersede itself, so this must
+    // be a different ADR for the stale-token Conflict to be the failure mode
+    // under test (not the self-supersede guard).
+    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
     const stale = decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Superseded,
-      supersededBy: 'TEST-ADR-1',
+      supersededBy: 'TEST-ADR-2',
       actor: 'daniel',
       expectedUpdatedAt: '2020-01-01T00:00:00.000Z',
     });

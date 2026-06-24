@@ -1,5 +1,5 @@
 import type { Decision } from '../../../domain/entities/decision.js';
-import type { DecisionStatus } from '../../../domain/enums/decision-status.js';
+import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
@@ -231,7 +231,19 @@ export class DecisionRepository {
    * @returns Matching decisions ordered by recording time (desc)
    */
   findImpacting(projectId: string, ref: string): Decision[] {
-    return this.findByProject(projectId).filter((d) => d.impacts.includes(ref));
+    // "Which decision touched X?" should surface decisions that actually
+    // govern the artefact. Rejected ADRs never governed anything; superseded
+    // ADRs have been replaced — exclude both. Proposed/accepted are kept.
+    // Order newest-first, per this method's documented contract (findByProject
+    // returns ascending, so re-sort here without disturbing its other callers).
+    return this.findByProject(projectId)
+      .filter(
+        (d) =>
+          d.impacts.includes(ref) &&
+          d.status !== DecisionStatus.Rejected &&
+          d.status !== DecisionStatus.Superseded,
+      )
+      .sort((a, b) => b.at.localeCompare(a.at));
   }
 }
 
@@ -248,7 +260,11 @@ function rowToDecision(row: DecisionRow): Decision {
     status: row.status as DecisionStatus,
     supersededBy: row.superseded_by,
     authoredBy: row.authored_by,
-    impacts: JSON.parse(row.impacts) as string[],
+    // Drift-tolerant: on a DB stopped before migration 015 the `impacts`
+    // column does not exist, so SELECT * yields `undefined` here. A read that
+    // worked before an additive migration must not throw — degrade to the
+    // column's documented DEFAULT '[]' instead of JSON.parse(undefined).
+    impacts: row.impacts == null ? [] : (JSON.parse(row.impacts) as string[]),
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     at: row.at,
     updatedAt: row.updated_at,

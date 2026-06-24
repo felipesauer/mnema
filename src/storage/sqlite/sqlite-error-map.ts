@@ -52,6 +52,12 @@ function mapUniqueConstraint(message: string): MnemaError | null {
       activeSprintKey: '',
     };
   }
+  // UNIQUE(sprint_id, name) on sprint_metrics — a concurrent writer that
+  // passed the service-level exists() check. Key/name are not in the message;
+  // the caller refills them from its input (same pattern as ActiveSprintExists).
+  if (/sprint_metrics\.(sprint_id|name)/i.test(message)) {
+    return { kind: ErrorCode.SprintMetricDuplicate, sprintKey: '', name: '' };
+  }
   return null;
 }
 

@@ -6,6 +6,7 @@ import type { IdentityService } from '../../services/identity-service.js';
 import type { TaskService } from '../../services/task-service.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
 import { err, ok, requireActiveRun } from '../mcp-tool-result.js';
+import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
 
 /**
  * Generates one MCP tool per workflow action.
@@ -43,12 +44,24 @@ export class TransitionToolsRegistrar {
   register(server: McpServer): readonly string[] {
     const seen = new Set<string>();
     const registered: string[] = [];
+    // A workflow may name a transition action that collides with a universal
+    // tool (e.g. an action literally named `create` → `task_create`).
+    // Registering it would throw "Tool task_create is already registered" and
+    // crash boot. Skip-and-warn instead so a malformed workflow degrades
+    // gracefully rather than taking the server down.
+    const reserved = new Set(UNIVERSAL_TOOL_NAMES);
 
     for (const actions of Object.values(this.workflow.transitions)) {
       for (const [action, transition] of Object.entries(actions)) {
         const toolName = `task_${action}`;
         if (seen.has(toolName)) continue;
         seen.add(toolName);
+        if (reserved.has(toolName)) {
+          process.stderr.write(
+            `[mnema] skipping workflow action "${action}": the tool name "${toolName}" is reserved by a universal tool\n`,
+          );
+          continue;
+        }
 
         const inputSchema = {
           task_key: z.string().describe('Task key (e.g. WEBAPP-42)'),

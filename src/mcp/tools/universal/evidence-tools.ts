@@ -5,7 +5,7 @@ import type { EvidenceKind } from '../../../domain/entities/task-evidence.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskEvidenceService } from '../../../services/task-evidence-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 const evidenceKindValues = [
   'test',
@@ -28,6 +28,7 @@ export class EvidenceTools {
     private readonly evidence: TaskEvidenceService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -57,6 +58,8 @@ export class EvidenceTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -87,9 +90,11 @@ export class EvidenceTools {
         },
       },
       ({ task_key: taskKey }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.evidence.forTask(taskKey);
         if (!result.ok) return err(result.error);
-        return ok({ criteria: result.value });
+        return ok({ criteria: result.value.criteria, orphaned: result.value.orphaned });
       },
     );
   }

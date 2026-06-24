@@ -204,4 +204,23 @@ describe('MigrationRunner', () => {
       expect(p.archived_at).not.toBeNull();
     }
   });
+
+  it('rejects two distinct files that share a version prefix with a clear diagnostic', () => {
+    // Sibling branches each claim the next slot → two `016_*.sql` files.
+    const extra = mkdtempSync(path.join(tmpdir(), 'mnema-mig-dup-'));
+    writeFileSync(
+      path.join(extra, '016_alice.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (16);',
+    );
+    writeFileSync(
+      path.join(extra, '016_bob.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (16);',
+    );
+
+    expect(() => new MigrationRunner().run(adapter, [migrationsDir, extra])).toThrow(
+      /duplicate migration version 16/,
+    );
+
+    rmSync(extra, { recursive: true, force: true });
+  });
 });

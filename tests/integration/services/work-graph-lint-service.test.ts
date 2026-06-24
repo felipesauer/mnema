@@ -173,4 +173,55 @@ describe('WorkGraphLintService', () => {
     expect(e.ok).toBe(false);
     if (!e.ok) expect(e.error.kind).toBe(ErrorCode.EpicNotFound);
   });
+
+  it('flags subagent-bypass even when a run-carrying non-transition event is present', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    makeTask('TEST-1', 'DONE', sprint.id);
+    // The DONE transition was NOT run-tracked → a genuine bypass.
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+    });
+    // …but a note WAS written under a run. This must not mask the bypass.
+    audit.write({
+      kind: 'note_added',
+      actor: 'daniel',
+      run: generateUuid(),
+      data: { task_key: 'TEST-1', note_kind: 'comment', content_size: 3 },
+    });
+
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(true);
+  });
+
+  it('does not report an informational (relates_to) edge to a deleted task as broken', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const a = makeTask('TEST-1', 'DONE', sprint.id);
+    const b = makeTask('TEST-2', 'DONE', sprint.id);
+    // run-tracked transitions so the only candidate diagnostic is the edge
+    for (const key of ['TEST-1', 'TEST-2']) {
+      audit.write({
+        kind: 'task_transitioned',
+        actor: 'daniel',
+        run: generateUuid(),
+        data: { key, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      });
+    }
+    adapter
+      .getDatabase()
+      .prepare(
+        "INSERT INTO dependencies (id, task_id, blocks_task_id, kind, created_at) VALUES (?, ?, ?, 'relates_to', '2026-06-23T00:00:00.000Z')",
+      )
+      .run(generateUuid(), a, b);
+    tasks.softDelete(b);
+
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'broken-dependency')).toBe(false);
+    expect(result.value.errorCount).toBe(0);
+  });
 });

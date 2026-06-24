@@ -6,7 +6,7 @@ import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import type { DecisionService } from '../../../services/decision-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 const decisionStatusValues = Object.values(DecisionStatus) as [DecisionStatus, ...DecisionStatus[]];
 
@@ -23,6 +23,7 @@ export class DecisionTools {
     private readonly identity: IdentityService,
     private readonly config: Config,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -49,6 +50,8 @@ export class DecisionTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -88,6 +91,8 @@ export class DecisionTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -118,6 +123,8 @@ export class DecisionTools {
         },
       },
       ({ decision_key: decisionKey }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.decisions.show(decisionKey);
         if (!result.ok) return err(result.error);
         return ok({ decision: result.value });
@@ -133,6 +140,8 @@ export class DecisionTools {
         },
       },
       ({ status }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const decisions = this.decisions.list(this.config.project.key, status);
         return ok({ decisions });
       },
@@ -148,6 +157,8 @@ export class DecisionTools {
         },
       },
       ({ ref }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const decisions = this.decisions.impacting(this.config.project.key, ref);
         return ok({ decisions });
       },
@@ -164,6 +175,8 @@ export class DecisionTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
