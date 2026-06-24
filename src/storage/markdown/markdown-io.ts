@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 
-import matter from 'gray-matter';
+import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
 
 /**
  * Result of parsing a Mnema-managed markdown file.
@@ -60,9 +60,9 @@ export class MarkdownIo {
     }
 
     const raw = readFileSync(filePath, 'utf-8');
-    let parsed: matter.GrayMatterFile<string>;
+    let parsed: ReturnType<typeof parseFrontmatter>;
     try {
-      parsed = matter(raw);
+      parsed = parseFrontmatter(raw);
     } catch (error) {
       throw new MarkdownInvalidFrontmatterError(filePath, error);
     }
@@ -89,7 +89,7 @@ export class MarkdownIo {
       mnema: parsed.mnemaData,
     };
 
-    const output = matter.stringify(parsed.content, fullFrontmatter);
+    const output = stringifyFrontmatter(parsed.content, fullFrontmatter);
 
     const tmpPath = `${filePath}.tmp`;
     writeFileSync(tmpPath, output, 'utf-8');

@@ -93,11 +93,15 @@ export class ObservationRepository {
     }
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
-    const limit = filters.limit !== undefined ? `LIMIT ${filters.limit}` : '';
+    let limitClause = '';
+    if (filters.limit !== undefined) {
+      limitClause = 'LIMIT ?';
+      params.push(filters.limit);
+    }
 
     const rows = this.adapter
       .getDatabase()
-      .prepare(`SELECT * FROM observations ${whereClause} ORDER BY at DESC ${limit}`)
+      .prepare(`SELECT * FROM observations ${whereClause} ORDER BY at DESC ${limitClause}`)
       .all(...params) as ObservationRow[];
 
     const observations = rows.map(rowToObservation);

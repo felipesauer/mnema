@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import matter from 'gray-matter';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 
 /**
  * One entry rendered in a regenerated `INDEX.md`.
@@ -164,9 +164,9 @@ function mergePreservingFreeSections(previous: string, heading: string, managed:
 
 function extractEntry(filePath: string): IndexEntry {
   const raw = readFileSync(filePath, 'utf-8');
-  let parsed: matter.GrayMatterFile<string>;
+  let parsed: ReturnType<typeof parseFrontmatter>;
   try {
-    parsed = matter(raw);
+    parsed = parseFrontmatter(raw);
   } catch {
     return {
       file: path.basename(filePath),

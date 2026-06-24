@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-import matter from 'gray-matter';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 
 /**
  * Severity of one diagnostic emitted by {@link MemoryLinter}.
@@ -88,9 +88,9 @@ function lintDecisionFile(filePath: string, memoryRoot: string): MemoryDiagnosti
   const relative = path.relative(memoryRoot, filePath);
   const raw = readFileSync(filePath, 'utf-8');
 
-  let parsed: matter.GrayMatterFile<string>;
+  let parsed: ReturnType<typeof parseFrontmatter>;
   try {
-    parsed = matter(raw);
+    parsed = parseFrontmatter(raw);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'invalid YAML frontmatter';
     return [{ file: relative, severity: 'error', message: `frontmatter parse failed: ${message}` }];

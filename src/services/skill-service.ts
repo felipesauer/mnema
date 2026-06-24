@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import matter from 'gray-matter';
 import { z } from 'zod';
 
 import type { Skill } from '../domain/entities/skill.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
@@ -372,9 +372,9 @@ export class SkillService {
       return [{ file: filePath, severity: 'error', message: `cannot read: ${message}` }];
     }
 
-    let parsed: matter.GrayMatterFile<string>;
+    let parsed: ReturnType<typeof parseFrontmatter>;
     try {
-      parsed = matter(raw);
+      parsed = parseFrontmatter(raw);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'unknown parse error';
       return [{ file: filePath, severity: 'error', message: `malformed frontmatter: ${message}` }];
