@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { ErrorCode } from '@/errors/error-codes.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 /**
@@ -34,6 +35,16 @@ const CUSTOM_WORKFLOW = {
         use_when: 'Work complete; the score is audit-only, not a task field',
         requires: {
           priority: { type: 'number', field_kind: 'validating' },
+        },
+      },
+      // `force` declares priority as MUTATING with no bound — the gate accepts
+      // 8, but it WOULD fold onto the 1..5 column, so the guard must reject.
+      force: {
+        to: 'DONE',
+        description: 'Force-close, folding the given priority onto the task',
+        use_when: 'Administrative close that overwrites the task priority',
+        requires: {
+          priority: { type: 'number', field_kind: 'mutating' },
         },
       },
     },
@@ -91,5 +102,21 @@ describe('transition fold-validation respects field_kind', () => {
     expect(moved.value.state).toBe('DONE');
     // The column was NOT touched — it keeps the create-time default (3).
     expect(moved.value.priority).toBe(3);
+  });
+
+  it('rejects a MUTATING priority that exceeds the column bound (it would fold)', () => {
+    const created = container.task.create({ projectKey: 'TEST', title: 'probe', actor: 'daniel' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const moved = container.task.transition({
+      taskKey: created.value.key,
+      action: 'force',
+      payload: { priority: 8 }, // gate accepts it, but it folds onto the 1..5 column
+      actor: 'daniel',
+    });
+    expect(moved.ok).toBe(false);
+    if (moved.ok) return;
+    expect(moved.error.kind).toBe(ErrorCode.ValidationFailed);
   });
 });

@@ -20,13 +20,22 @@
  */
 
 // A STRONG token unambiguously signals an invocation leak on its own:
-//   - <invoke …> / </invoke> and <function_calls> / </function_calls>; the
-//     closing `>` is optional so a trailer truncated mid-tag (`…<invoke`) is
-//     still caught. `invoke`/`function_calls` are not English words a body
-//     would write immediately after a `<`.
+//   - <invoke …>  — the OPEN form's closing `>` is optional, so a trailer
+//     truncated mid-tag (`…<invoke name="x"`, the real spill shape) is still
+//     caught. The `>?` is confined to this form: a genuine spill only ever
+//     truncates the open tag it is mid-emitting.
+//   - </invoke> and <function_calls> / </function_calls> — these REQUIRE a
+//     closing `>`. There is no real-leak scenario producing a bracket-less
+//     `</invoke`/`<function_calls` followed by continuing prose, so demanding
+//     the `>` avoids flagging prose that merely names the tag.
 //   - <parameter … name=…> — the opening form requires a `name=` attribute, so
 //     a lone `<parameter>` in prose is not flagged.
-const STRONG_TOKEN = String.raw`<\/?(?:[\w.-]+:)?(?:invoke|function_calls)\b[^>]*>?|<(?:[\w.-]+:)?parameter\b[^>]*\bname\s*=`;
+// Closing tags carry no attributes, so they match only `</invoke\s*>` /
+// `</function_calls\s*>` — no `[^>]*` that could stretch across prose to reach
+// a distant `>` (e.g. a later `<b>`). The open `<invoke` keeps an optional `>`
+// to catch a mid-emission truncation, but its attribute run forbids `>` AND
+// newlines so it cannot swallow following prose.
+const STRONG_TOKEN = String.raw`<(?:[\w.-]+:)?invoke\b[^>\n]*>?|<\/(?:[\w.-]+:)?invoke\s*>|<(?:[\w.-]+:)?function_calls\b[^>\n]*>|<\/(?:[\w.-]+:)?function_calls\s*>|<(?:[\w.-]+:)?parameter\b[^>\n]*\bname\s*=`;
 
 // A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
 // `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it

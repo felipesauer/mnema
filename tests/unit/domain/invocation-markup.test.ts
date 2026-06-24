@@ -54,6 +54,23 @@ describe('hasInvocationMarkup', () => {
     const truncated = `kept text <${'invoke'} name="x"`;
     expect(hasInvocationMarkup(truncated)).toBe(true);
   });
+
+  it('does NOT flag a bracket-less close tag or function_calls opener named in prose', () => {
+    // A close tag carries no attributes and a genuine spill never produces a
+    // bracket-less close followed by prose, so these must not match.
+    expect(
+      hasInvocationMarkup(`the guard fires on a half-written </${'invoke'} that lost its bracket`),
+    ).toBe(false);
+    expect(hasInvocationMarkup(`bare <${'function_calls'} openers without a closing bracket`)).toBe(
+      false,
+    );
+  });
+
+  it('does NOT let a close-tag token stretch to a distant > later in the body', () => {
+    // Regression: a greedy [^>]* once reached the `>` of a later <b> tag.
+    const prose = `fires on </${'invoke'} without a bracket. Later we show <b>bold</b> markup.`;
+    expect(hasInvocationMarkup(prose)).toBe(false);
+  });
 });
 
 describe('stripInvocationMarkup', () => {
@@ -83,6 +100,11 @@ describe('stripInvocationMarkup', () => {
   it('does NOT truncate prose mentioning a standalone parameter-close tag', () => {
     const pClose = `</${'parameter'}>`;
     const prose = `We strip a malformed ${pClose} tag from the value.`;
+    expect(stripInvocationMarkup(prose)).toBe(prose);
+  });
+
+  it('does NOT truncate prose with a bracket-less close tag followed by real content', () => {
+    const prose = `fires on </${'invoke'} without a bracket. Later we show <b>bold</b> markup.`;
     expect(stripInvocationMarkup(prose)).toBe(prose);
   });
 });
