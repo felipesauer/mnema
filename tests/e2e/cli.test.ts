@@ -38,7 +38,11 @@ beforeAll(() => {
   }
 });
 
-describe('CLI end-to-end', () => {
+// Each test spawns several `node dist/index.js` subprocesses; under the full
+// suite the cold-start cost of those spawns can exceed Vitest's 5s default and
+// flake. The CLI itself runs in ~0.15s — this timeout covers the spawn
+// overhead, not slow logic.
+describe('CLI end-to-end', { timeout: 30_000 }, () => {
   let projectRoot: string;
 
   beforeEach(() => {

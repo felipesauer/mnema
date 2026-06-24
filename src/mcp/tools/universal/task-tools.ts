@@ -44,7 +44,12 @@ export class TaskTools {
           title: z.string().min(3).max(200),
           description: z.string().optional(),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
-          estimate: z.number().optional(),
+          estimate: z
+            .number()
+            .int()
+            .min(0)
+            .optional()
+            .describe('Estimate in story points (non-negative integer)'),
           context_budget: z
             .number()
             .int()
