@@ -44,6 +44,16 @@ describe('hasInvocationMarkup', () => {
     expect(hasInvocationMarkup('close </title> before any inline script')).toBe(false);
     expect(hasInvocationMarkup('See `arr.map((x) => x.id)` for the pattern.')).toBe(false);
   });
+
+  it('does NOT flag a standalone parameter-close tag mentioned in prose', () => {
+    const pClose = `</${'parameter'}>`;
+    expect(hasInvocationMarkup(`We strip a malformed ${pClose} tag from the value.`)).toBe(false);
+  });
+
+  it('still detects a trailer truncated mid open-tag (no closing >)', () => {
+    const truncated = `kept text <${'invoke'} name="x"`;
+    expect(hasInvocationMarkup(truncated)).toBe(true);
+  });
 });
 
 describe('stripInvocationMarkup', () => {
@@ -68,5 +78,11 @@ describe('stripInvocationMarkup', () => {
     expect(stripInvocationMarkup(prose)).toBe(prose);
     const title = 'Use </title> in the HTML head, then add the body.';
     expect(stripInvocationMarkup(title)).toBe(title);
+  });
+
+  it('does NOT truncate prose mentioning a standalone parameter-close tag', () => {
+    const pClose = `</${'parameter'}>`;
+    const prose = `We strip a malformed ${pClose} tag from the value.`;
+    expect(stripInvocationMarkup(prose)).toBe(prose);
   });
 });

@@ -147,9 +147,13 @@ describe('drift-guard policy: reads pass, mutations block (MNEMA-ADR contract)',
     });
   }
 
-  // Mutating tools MUST be blocked by drift (SCHEMA_OUT_OF_DATE).
+  // Mutating tools MUST be blocked by drift (SCHEMA_OUT_OF_DATE). Covers every
+  // mutation in the four focus files, including the two decision-transition
+  // mutations a prior version of this test omitted.
   const mutations: Array<[string, Record<string, unknown>]> = [
     ['decision_record', { title: 'New', decision: 'x' }],
+    ['decision_promote_from_note', { note_id: 'n1', title: 'Promoted', decision: 'x' }],
+    ['decision_supersede', { decision_key: 'TEST-ADR-1', superseded_by: 'TEST-ADR-2' }],
     ['task_create', { title: 'New task' }],
     ['task_attach_evidence', { task_key: 'TEST-1', criterion_index: 0, ref: 'r' }],
     ['sprint_add_task', { sprint_key: 'TEST-SPRINT-1', task_key: 'TEST-1' }],

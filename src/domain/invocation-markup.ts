@@ -19,17 +19,22 @@
  * real spill shape: `…body</decision>\n<parameter name="context">…`).
  */
 
-// One invocation token (optionally namespace-prefixed):
-//   - <invoke …> / </invoke> and <function_calls> / </function_calls>
-//   - </parameter> (the closing tag of a leaked parameter — unambiguous)
-//   - <parameter … name=…> — the opening form requires a `name=` attribute so a
-//     lone `<parameter>` in prose is not flagged.
-const INVOCATION_TOKEN = String.raw`<\/?(?:[\w.-]+:)?(?:invoke|function_calls)\b[^>]*>|<\/(?:[\w.-]+:)?parameter\b[^>]*>|<(?:[\w.-]+:)?parameter\b[^>]*\bname\s*=`;
+// A STRONG token unambiguously signals an invocation leak on its own:
+//   - <invoke …> / </invoke> and <function_calls> / </function_calls>; the
+//     closing `>` is optional so a trailer truncated mid-tag (`…<invoke`) is
+//     still caught. `invoke`/`function_calls` are not English words a body
+//     would write immediately after a `<`.
+//   - <parameter … name=…> — the opening form requires a `name=` attribute, so
+//     a lone `<parameter>` in prose is not flagged.
+const STRONG_TOKEN = String.raw`<\/?(?:[\w.-]+:)?(?:invoke|function_calls)\b[^>]*>?|<(?:[\w.-]+:)?parameter\b[^>]*\bname\s*=`;
 
-// A leaked trailer: an invocation token, optionally introduced by a stray
-// field-closing tag (the value's own `</decision>` etc.) plus whitespace.
-const FIELD_CLOSE = String.raw`<\/(?:[\w.-]+:)?(?:decision|context|rationale|consequences|title)>`;
-const LEAK_RE = new RegExp(`(?:${FIELD_CLOSE}\\s*)?(?:${INVOCATION_TOKEN})`, 'i');
+// A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
+// `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it
+// only counts as a leak when it directly precedes (optional whitespace) a
+// strong token. That preserves the ADR-28/29 shapes while letting prose that
+// merely mentions `</title>` or `</parameter>` pass.
+const WEAK_INTRODUCER = String.raw`<\/(?:[\w.-]+:)?(?:decision|context|rationale|consequences|title|parameter)>`;
+const LEAK_RE = new RegExp(`(?:${WEAK_INTRODUCER}\\s*)?(?:${STRONG_TOKEN})`, 'i');
 
 /**
  * True when `text` contains a tool-invocation markup leak.

@@ -222,20 +222,22 @@ export class TaskService {
 
     const { to, data } = validation.value;
 
-    // A custom workflow may declare `estimate`/`priority` as mutating gate
-    // fields with looser bounds than the first-class columns allow (estimate ≥
+    // A custom workflow may declare `estimate`/`priority` as a MUTATING gate
+    // field with looser bounds than the first-class column allows (estimate ≥
     // 0 integer; priority 1..5). The gate would accept e.g. priority=8, then
     // the column fold would silently drop it — Ok returned, audit says 8, the
     // task row unchanged. Validate against the column invariant here so the
-    // transition fails closed and stays symmetric with create(), rather than
-    // recording an intent that can never persist.
+    // transition fails closed, symmetric with create(). This applies ONLY to
+    // mutating fields: a `validating` field is recorded in the audit payload
+    // and never folded to a column, so its value must not be column-validated.
     if (data !== null && typeof data === 'object') {
       const payload = data as Record<string, unknown>;
+      const spec = validation.value.requiresSpec;
       const foldIssues: ErrorIssue[] = [];
-      if (typeof payload.estimate === 'number') {
+      if (typeof payload.estimate === 'number' && isMutatingField(spec, 'estimate')) {
         checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
       }
-      if (typeof payload.priority === 'number') {
+      if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
         checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
       }
       if (foldIssues.length > 0) {
@@ -467,6 +469,21 @@ export class TaskService {
 }
 
 /**
+ * Whether a gate field folds onto its first-class task column. A field
+ * declared `field_kind: 'validating'` is a one-shot annotation that lives only
+ * in `transitions.payload`; anything else (or absent from the spec) folds.
+ * Shared by the transition fold-validation guard and {@link persistableFromPayload}
+ * so the two cannot drift.
+ */
+function isMutatingField(
+  requiresSpec: Readonly<Record<string, FieldSpec>>,
+  field: string,
+): boolean {
+  const spec = requiresSpec[field];
+  return spec === undefined || (spec.field_kind ?? 'mutating') === 'mutating';
+}
+
+/**
  * Picks the subset of a transition payload that maps to first-class
  * task columns. Annotation-only payload bits (reason, approval_note,
  * pr_url, note, supersededBy, …) are filtered out — they remain in
@@ -492,11 +509,7 @@ function persistableFromPayload(
 ): TaskFieldUpdates | null {
   const updates: TaskFieldUpdates = {};
   let touched = false;
-  const isMutating = (field: string): boolean => {
-    const spec = requiresSpec[field];
-    // Field absent from spec => safe default of mutating (back-compat).
-    return spec === undefined || (spec.field_kind ?? 'mutating') === 'mutating';
-  };
+  const isMutating = (field: string): boolean => isMutatingField(requiresSpec, field);
 
   if (typeof payload.title === 'string' && isMutating('title')) {
     (updates as { title?: string }).title = payload.title;
