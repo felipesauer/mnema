@@ -7,6 +7,7 @@ interface TaskEvidenceRow {
   readonly id: string;
   readonly task_id: string;
   readonly criterion_index: number;
+  readonly criterion_text: string | null;
   readonly kind: string;
   readonly ref: string;
   readonly note: string | null;
@@ -19,6 +20,8 @@ interface TaskEvidenceRow {
 export interface TaskEvidenceInsertInput {
   readonly taskId: string;
   readonly criterionIndex: number;
+  /** The criterion's text at attach time; enables identity-based reconciliation. */
+  readonly criterionText?: string | null;
   readonly kind: EvidenceKind;
   readonly ref: string;
   readonly note?: string | null;
@@ -94,13 +97,15 @@ export class TaskEvidenceRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO task_evidence (id, task_id, criterion_index, kind, ref, note, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO task_evidence
+           (id, task_id, criterion_index, criterion_text, kind, ref, note, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
         input.taskId,
         input.criterionIndex,
+        input.criterionText ?? null,
         input.kind,
         input.ref,
         input.note ?? null,
@@ -120,6 +125,9 @@ function rowToEvidence(row: TaskEvidenceRow): TaskEvidence {
     id: row.id,
     taskId: row.task_id,
     criterionIndex: row.criterion_index,
+    // Drift-tolerant: the column is absent on a DB stopped before migration
+    // 016, so SELECT * yields `undefined` → normalise to null.
+    criterionText: row.criterion_text ?? null,
     kind: row.kind as EvidenceKind,
     ref: row.ref,
     note: row.note,

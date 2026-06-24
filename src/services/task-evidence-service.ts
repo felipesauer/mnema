@@ -111,6 +111,9 @@ export class TaskEvidenceService {
     const created = this.evidence.insert({
       taskId: task.id,
       criterionIndex: input.criterionIndex,
+      // Record the criterion's text so a later reorder can be reconciled by
+      // identity rather than position.
+      criterionText: task.acceptanceCriteria[input.criterionIndex] ?? null,
       kind,
       ref: input.ref,
       note: input.note ?? null,
@@ -146,16 +149,55 @@ export class TaskEvidenceService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey });
     }
     const rows = this.evidence.findByTask(task.id);
-    const criteria = task.acceptanceCriteria.map((criterion, index) => ({
-      index,
+    const criteria = task.acceptanceCriteria.map((criterion) => ({
       criterion,
-      evidence: rows.filter((r) => r.criterionIndex === index),
+      evidence: [] as TaskEvidence[],
     }));
-    // Rows whose index falls outside the current criteria array — the criteria
-    // were rewritten after the evidence was attached. Surface them rather than
-    // dropping them silently, so the dangling state is observable.
-    const max = task.acceptanceCriteria.length;
-    const orphaned = rows.filter((r) => r.criterionIndex < 0 || r.criterionIndex >= max);
-    return Ok({ criteria, orphaned });
+    const orphaned: TaskEvidence[] = [];
+
+    for (const row of rows) {
+      const targetIndex = this.resolveCriterionIndex(row, task.acceptanceCriteria);
+      if (targetIndex === null) {
+        // The criterion this evidence was attached to no longer exists (the
+        // array was shrunk, or its text was edited). A true orphan.
+        orphaned.push(row);
+      } else {
+        criteria[targetIndex]?.evidence.push(row);
+      }
+    }
+
+    return Ok({
+      criteria: criteria.map((c, index) => ({
+        index,
+        criterion: c.criterion,
+        evidence: c.evidence,
+      })),
+      orphaned,
+    });
+  }
+
+  /**
+   * Resolves the CURRENT index a piece of evidence belongs to, reconciling by
+   * criterion identity so a reorder follows the criterion rather than the slot.
+   *
+   * - With a recorded `criterionText` (migration 016+): match by text. Prefer
+   *   the original index when its text still agrees (handles duplicate texts
+   *   stably); otherwise the first criterion whose text matches. No match → the
+   *   criterion was removed/edited → `null` (orphan).
+   * - Without `criterionText` (legacy rows): fall back to positional matching,
+   *   orphaning anything out of range.
+   */
+  private resolveCriterionIndex(row: TaskEvidence, criteria: readonly string[]): number | null {
+    if (row.criterionText !== null) {
+      if (criteria[row.criterionIndex] === row.criterionText) {
+        return row.criterionIndex; // unchanged or stably matched
+      }
+      const found = criteria.indexOf(row.criterionText);
+      return found === -1 ? null : found; // followed the reorder, or orphan
+    }
+    // Legacy row: positional.
+    return row.criterionIndex >= 0 && row.criterionIndex < criteria.length
+      ? row.criterionIndex
+      : null;
   }
 }

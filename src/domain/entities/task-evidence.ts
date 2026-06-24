@@ -21,8 +21,14 @@ export function isEvidenceKind(value: string): value is EvidenceKind {
 export interface TaskEvidence {
   readonly id: string;
   readonly taskId: string;
-  /** 0-based index into the task's acceptanceCriteria array. */
+  /** 0-based index into the task's acceptanceCriteria array, at attach time. */
   readonly criterionIndex: number;
+  /**
+   * The criterion's text at attach time. Lets a read reconcile by identity
+   * when the criteria array is reordered. `null` for rows written before
+   * migration 016 — those fall back to positional matching.
+   */
+  readonly criterionText: string | null;
   readonly kind: EvidenceKind;
   /** The concrete reference — a path, route, sha, or url. */
   readonly ref: string;
