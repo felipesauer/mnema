@@ -178,10 +178,14 @@ describe('DecisionService', () => {
       status: DecisionStatus.Accepted,
       actor: 'daniel',
     });
+    // A distinct successor — a decision cannot supersede itself, so this must
+    // be a different ADR for the stale-token Conflict to be the failure mode
+    // under test (not the self-supersede guard).
+    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
     const stale = decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Superseded,
-      supersededBy: 'TEST-ADR-1',
+      supersededBy: 'TEST-ADR-2',
       actor: 'daniel',
       expectedUpdatedAt: '2020-01-01T00:00:00.000Z',
     });
@@ -240,6 +244,76 @@ describe('DecisionService', () => {
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.error.kind).toBe(ErrorCode.NoteNotFound);
+    });
+  });
+
+  describe('tool-invocation markup', () => {
+    it('rejects a recorded decision body containing invocation markup', () => {
+      const result = decisions.record({
+        projectKey: 'TEST',
+        title: 'Bad',
+        decision: 'real text</decision>\n<parameter name="rationale">leak</parameter>',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    });
+
+    it('rejects markup leaking into rationale/consequences too', () => {
+      const result = decisions.record({
+        projectKey: 'TEST',
+        title: 'Bad',
+        decision: 'clean',
+        rationale: 'why</parameter>\n</invoke>',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    });
+
+    it('still accepts a clean decision', () => {
+      const result = decisions.record({
+        projectKey: 'TEST',
+        title: 'Good',
+        decision: 'a clean decision with Result<T, E> and latency < 50ms',
+        rationale: 'sound',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(true);
+    });
+
+    it('displays a legacy dirty row clean on read without mutating storage', () => {
+      // Record clean, then corrupt the stored bytes directly to simulate a row
+      // written before this guard existed.
+      const created = decisions.record({
+        projectKey: 'TEST',
+        title: 'Legacy',
+        decision: 'real decision text.',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const key = created.value.key;
+      const dirty =
+        'real decision text.</decision>\n<parameter name="context">leaked context</parameter>\n</invoke>\n';
+      adapter
+        .getDatabase()
+        .prepare('UPDATE decisions SET decision = ? WHERE key = ?')
+        .run(dirty, key);
+
+      const shown = decisions.show(key);
+      expect(shown.ok).toBe(true);
+      if (!shown.ok) return;
+      // Read-side sanitisation strips the trailer for display…
+      expect(shown.value.decision).toBe('real decision text.');
+      // …but the stored bytes are untouched (the audit chain stays valid).
+      const stored = adapter
+        .getDatabase()
+        .prepare('SELECT decision FROM decisions WHERE key = ?')
+        .get(key) as { decision: string };
+      expect(stored.decision).toBe(dirty);
     });
   });
 });

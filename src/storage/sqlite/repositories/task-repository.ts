@@ -15,6 +15,7 @@ interface TaskRow {
   readonly acceptance_criteria: string;
   readonly state: string;
   readonly estimate: number | null;
+  readonly context_budget: number | null;
   readonly priority: number;
   readonly assignee_id: string | null;
   readonly reporter_id: string;
@@ -38,6 +39,7 @@ export interface TaskInsertInput {
   readonly acceptanceCriteria?: readonly string[];
   readonly state?: string;
   readonly estimate?: number | null;
+  readonly contextBudget?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly epicId?: string | null;
@@ -115,6 +117,24 @@ export class TaskRepository {
   }
 
   /**
+   * Lists every active task assigned to an epic, ordered by key.
+   *
+   * @param epicId - Internal epic id
+   * @returns Array of matching tasks (possibly empty)
+   */
+  findByEpic(epicId: string): Task[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM tasks
+          WHERE epic_id = ? AND deleted_at IS NULL
+          ORDER BY key`,
+      )
+      .all(epicId) as TaskRow[];
+    return rows.map(rowToTask);
+  }
+
+  /**
    * Lists every active (non-deleted) task ordered by key.
    *
    * @returns All active tasks
@@ -185,9 +205,9 @@ export class TaskRepository {
         `INSERT INTO tasks (
            id, key, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
-           estimate, priority, assignee_id, reporter_id, metadata,
+           estimate, context_budget, priority, assignee_id, reporter_id, metadata,
            created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -200,6 +220,7 @@ export class TaskRepository {
         acceptance,
         input.state ?? 'DRAFT',
         input.estimate ?? null,
+        input.contextBudget ?? null,
         input.priority ?? 3,
         input.assigneeId ?? null,
         input.reporterId,
@@ -446,6 +467,7 @@ function rowToTask(row: TaskRow): Task {
     acceptanceCriteria: JSON.parse(row.acceptance_criteria) as string[],
     state: row.state as TaskState,
     estimate: row.estimate,
+    contextBudget: row.context_budget,
     priority: row.priority,
     assigneeId: row.assignee_id,
     reporterId: row.reporter_id,

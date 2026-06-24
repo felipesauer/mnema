@@ -6,7 +6,7 @@ import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import type { DecisionService } from '../../../services/decision-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 const decisionStatusValues = Object.values(DecisionStatus) as [DecisionStatus, ...DecisionStatus[]];
 
@@ -23,6 +23,7 @@ export class DecisionTools {
     private readonly identity: IdentityService,
     private readonly config: Config,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -42,9 +43,15 @@ export class DecisionTools {
           context: z.string().optional().describe('Why this decision was needed'),
           rationale: z.string().optional().describe('Why this choice over alternatives'),
           consequences: z.string().optional().describe('What follows from this decision'),
+          impacts: z
+            .array(z.string().min(1))
+            .optional()
+            .describe('Paths/keys of artefacts this decision affects (reverse-queryable)'),
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -57,6 +64,7 @@ export class DecisionTools {
           context: input.context,
           rationale: input.rationale,
           consequences: input.consequences,
+          impacts: input.impacts,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
@@ -83,6 +91,8 @@ export class DecisionTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -130,6 +140,52 @@ export class DecisionTools {
       ({ status }) => {
         const decisions = this.decisions.list(this.config.project.key, status);
         return ok({ decisions });
+      },
+    );
+
+    server.registerTool(
+      'decisions_impacting',
+      {
+        description:
+          'List the decisions (ADRs) whose impact list contains a given artefact path or key — "which decision touched this?". Read-only.',
+        inputSchema: {
+          ref: z.string().min(1).describe('Artefact path or key, e.g. src/foo.ts or WEBAPP-42'),
+        },
+      },
+      ({ ref }) => {
+        const decisions = this.decisions.impacting(this.config.project.key, ref);
+        return ok({ decisions });
+      },
+    );
+
+    server.registerTool(
+      'decision_supersede',
+      {
+        description:
+          'Supersede an accepted ADR with a successor ADR (marks the old one `superseded` and points it at the successor). Requires an active agent run.',
+        inputSchema: {
+          decision_key: z.string().describe('The ADR being superseded, e.g. WEBAPP-ADR-7'),
+          superseded_by: z.string().describe('The successor ADR key'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.transition({
+          decisionKey: input.decision_key,
+          status: DecisionStatus.Superseded,
+          supersededBy: input.superseded_by,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
       },
     );
   }

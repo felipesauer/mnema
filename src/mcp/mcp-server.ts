@@ -16,8 +16,11 @@ import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
 import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
+import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
+import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
+import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
@@ -26,6 +29,8 @@ import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
+import { WikilinkTools } from './tools/universal/wikilink-tools.js';
+import { WorkGraphLintTools } from './tools/universal/work-graph-lint-tools.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
 
@@ -116,6 +121,12 @@ export class MnemaMcpServer {
    * handlers without stdio.
    */
   registerTools(): void {
+    // Computed once, up front: the list of unapplied migration files. Every
+    // tool that touches a Sprint-5 column/table is constructed with this so a
+    // drifted (upgraded-but-unmigrated) DB returns a structured
+    // SCHEMA_OUT_OF_DATE result instead of a raw SqliteError.
+    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
+
     new ContextBootstrapTool(
       this.config,
       this.services.stateMachine.getWorkflow(),
@@ -135,6 +146,7 @@ export class MnemaMcpServer {
       this.config,
       this.session,
       this.services.stateMachine,
+      pendingFiles,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
@@ -143,24 +155,37 @@ export class MnemaMcpServer {
       this.services.identity,
       this.config,
       this.session,
+      pendingFiles,
     ).register(this.sdk);
     new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
+    new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
+      this.sdk,
+    );
+    new EvidenceTools(
+      this.services.taskEvidence,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new EpicTools(this.services.epic, this.config).register(this.sdk);
+    new CoverageTools(this.services.coverage).register(this.sdk);
+    new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
       this.services.sprint,
       this.services.identity,
       this.config,
       this.session,
+      pendingFiles,
     ).register(this.sdk);
     new SearchTool(this.services.search).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
-    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
     new SkillTools(
       this.services.skill,
       this.services.identity,
       this.session,
       pendingFiles,
     ).register(this.sdk);
+    new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
     new MemoryTools(
       this.services.memory,
       this.services.identity,

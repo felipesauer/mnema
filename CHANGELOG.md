@@ -65,7 +65,7 @@ under the `alpha` dist-tag.
   `.mnema/` layout `mnema init` produces, npm install via the
   `alpha` dist-tag with `better-sqlite3` prebuilt-binary and pnpm
   caveats, live CI badge instead of hardcoded test/coverage badges,
-  and no links into local-only `docs/`.
+  and no links into local-only documentation.
 - **Project identity normalized**: LICENSE copyright and the new
   package.json `author` say Felipe Sauer; commit history rewritten
   to the maintainer's GitHub noreply email; config-error hint URL
@@ -92,7 +92,7 @@ under the `alpha` dist-tag.
   parity / publishConfig=public / production resolver). Used by
   the PO before `npm publish`; CI hooks for the future. All 13
   green for v0.3.0-alpha.1.
-- **`docs/RELEASE.md` expanded** into a complete pre-publish
+- **Release runbook expanded** into a complete pre-publish
   checklist with the manual smoke (init → task create → move →
   doctor → destroy), the publish command itself, post-publish
   verification, and the 24h-window rollback path.
@@ -100,28 +100,24 @@ under the `alpha` dist-tag.
   the architecture of the long-tail features so implementation
   has a target:
   - **ADR-7** VS Code extension is read-only, `sql.js` + chokidar
-    direct, separate repo, no bundled CLI. Design doc in
-    `docs/VSCODE-EXTENSION-DESIGN.md`. ~1.5-2 weeks impl.
+    direct, separate repo, no bundled CLI. ~1.5-2 weeks impl.
   - **ADR-8** Web dashboard is localhost-only Fastify; reads
     SQLite directly, mutations spawn a `mnema mcp serve`
     subprocess over stdio. React SPA under `dist/dashboard/`.
-    Design in `docs/DASHBOARD-DESIGN.md`. ~2.5-3 weeks impl.
+    ~2.5-3 weeks impl.
   - **ADR-9** Multi-MCP server defers until ADR-6 ships; adds
     `mcp_servers` table + heartbeats + FS-suitability probe
     (refuses NFSv3/sshfs/cloud-sync) + crash-recovery JSONL
-    replay. Design in `docs/MULTI-MCP-DESIGN.md`. ~2 weeks
-    post-ADR-6.
+    replay. ~2 weeks post-ADR-6.
   - **ADR-10** GitHub two-way sync is poll-based (5 min,
     `since=` cursor), state-only outbound, fires on terminal
     transitions. New `github_sync_state` table +
-    `tasks.github_issue_id` column. Design in
-    `docs/GITHUB-SYNC-DESIGN.md`. ~2 weeks; blocks on F-F12
+    `tasks.github_issue_id` column. ~2 weeks; blocks on F-F12
     (`--api-base` for testing).
   - **ADR-11** Plugin system is ABI-versioned (`minAbi`),
     observe-only, fires post-audit-commit non-blocking,
     `plugin_invoked` events join the chain. New `plugins` +
-    `plugin_runs` tables. Design in
-    `docs/PLUGIN-SYSTEM-DESIGN.md`. ~2 weeks. Independent.
+    `plugin_runs` tables. ~2 weeks. Independent.
 
 ### Added (Sprint 2: design + perf + coverage + Phase H prep)
 
@@ -131,7 +127,7 @@ under the `alpha` dist-tag.
   `--field` intact, so `parseFieldArgs` sees the whole `name=value` string
   instead of the first whitespace-delimited piece. New E2E test covers the
   embedded-spaces case. Closes H-1 from the Phase H dogfooding journal.
-- **`docs/multi-project-design.md` + `MNEMA-ADR-6`** capture the v1
+- **Multi-project design notes + `MNEMA-ADR-6`** capture the v1
   architecture decision for F-F10 (paths-multiplex via
   `mnema.workspace.json`): each child keeps its own SQLite + audit chain;
   workspace manifest at the monorepo root lists registered projects;
@@ -152,7 +148,7 @@ under the `alpha` dist-tag.
   `tests/unit/utils/asset-paths.test.ts` pins the contract of
   `migrationsDir()` and `workflowsDir()` so a refactor cannot quietly
   regress the resolver. Closes H-2.
-- **`docs/PHASE-H-PLAN.md`** schedules the 2-week dogfooding cycle that
+- **Phase H plan** schedules the 2-week dogfooding cycle that
   drives Sprint 3 design through Mnema itself — daily journal template,
   exit criteria, standing instructions. Phase H replaces "do Sprint 3"
   with "use Mnema to plan Sprint 3 and write down what hurts." Closes R14
@@ -161,7 +157,7 @@ under the `alpha` dist-tag.
 ### Changed (Sprint 2)
 
 - **CLI cold-start floor documented honestly** in
-  `bench/cli-bench.ts:74` and `docs/TECH_DEBT.md` §5: ~155ms hard floor
+  `bench/cli-bench.ts:74` and tracked internally: ~155ms hard floor
   on `task move` (30ms Node spawn + 95ms dynamic-import chain + 15ms
   better-sqlite3 binding + 15ms SQL + audit). Sub-120ms would require
   esbuild/tsdown bundling or splitting `createServiceContainer` so
@@ -180,7 +176,7 @@ under the `alpha` dist-tag.
   and exercises 8 tools (`context_bootstrap → agent_run_start →
   task_create → task_show → decision_record → memory_record →
   observation_record → agent_run_end`). Substitutes the manual
-  fases 10/15/17/21 of `docs/SMOKE.md` for CI; the SMOKE.md
+  phases 10/15/17/21 of the smoke suite for CI; the manual smoke
   script keeps its place for human-driven release runs.
 - **`scripts/record-quickstart.sh`** — drives the canonical 60s
   asciinema demo (init → task create → task move → decision →
@@ -193,8 +189,7 @@ under the `alpha` dist-tag.
 - **README v0.3.0-alpha.1 polish:** 5 badges (version, license,
   node, tests, coverage), TOC, "What you get" feature checklist
   (12 surfaces with one-line summaries each), "Further reading"
-  section linking CHANGELOG, CONTRIBUTING, SMOKE, skills-and-memory,
-  evaluations and AGENTS.
+  section linking CHANGELOG and CONTRIBUTING.
 
 ### Changed (Sprint 1: surface polish)
 
@@ -211,7 +206,7 @@ under the `alpha` dist-tag.
   No more raw UUIDs in the rendered detail block. (F-S3 closed.)
 - **`README` Status section** updated from `0.1.0-alpha` to
   `0.3.0-alpha.1` with the current feature inventory and a pointer
-  at `docs/SMOKE.md`.
+  at the manual smoke suite.
 
 ### Fixed (Sprint 1: F-S5 root cause)
 
@@ -271,10 +266,10 @@ under the `alpha` dist-tag.
   (source of truth, write via `memory_record` /
   `observation_record`); `memory_index` + `decisions_index` are
   optional human-curated supplements regenerated by `mnema memory
-  consolidate`. The JSDoc on the tool, the AGENTS.md template, and
-  `docs/skills-and-memory.md` all spell out which surface the agent
-  may write to and which is read-only.
-- **`docs/SMOKE.md` rewritten as a 21-phase manual suite** covering
+  consolidate`. The JSDoc on the tool, the agent operating-manual
+  template, and the skills-and-memory guide all spell out which
+  surface the agent may write to and which is read-only.
+- **The manual smoke suite rewritten as a 21-phase end-to-end run** covering
   every CLI surface and MCP tool end-to-end, with copy-paste
   commands, expected output, and at least one edge case per phase.
   `scripts/smoke-bootstrap.sh` (`pnpm smoke:bootstrap`) resets
@@ -291,7 +286,7 @@ under the `alpha` dist-tag.
   every code path. The schema is now `z.literal('single')`; the
   `workspace_config` table keeps its `mode` row for forward
   compatibility but is not consumed anywhere. Multi-project is a
-  design call pending; see `docs/TECH_DEBT.md` §10.
+  design call pending; tracked internally.
 
 ### Added (workflow-custom hardening)
 
@@ -381,8 +376,7 @@ under the `alpha` dist-tag.
   `audit event count`, `audit hash chain`, `audit lines parse`
   (warning), and `audit integrity: legacy` (warning for projects that
   predate this feature). Adversarial sweep verified the check fires
-  on 6 of 7 high-severity tampering vectors; full report in
-  `evaluations/2026-05-12-phase-g.md`.
+  on 6 of 7 high-severity tampering vectors.
 - **`AuditQuery.runStrict()`** returns events plus a malformed-line
   diagnostic (count, per-file breakdown). `doctor` uses this; the
   regular `run()` keeps the existing tolerant behaviour for normal
@@ -555,8 +549,7 @@ under the `alpha` dist-tag.
   (`ErrorCode.Conflict`) with the latest server-side timestamp when
   stale. Brings the two paths up to parity with `task transition`,
   which already had the guard. Agent runs intentionally left alone —
-  single owner per run, no race in practice. Tracked from
-  `docs/TECH_DEBT.md` §3.
+  single owner per run, no race in practice. Tracked internally.
 
 ### Added
 
@@ -609,7 +602,7 @@ under the `alpha` dist-tag.
 
 ## [0.3.0-alpha.1] — 2026-05-11
 
-Friction sweep after Phase C real-world test (`evaluations/2026-05-11-phase-c.md`).
+Friction sweep after the Phase C real-world test.
 A sub-agent (dev5) plus the PO exercised every new tool from
 0.3.0-alpha.0 against the Mnema repo itself and surfaced 8 friction
 points. This release fixes the 6 actionable ones (F-1, F-2, F-4, F-5,
@@ -720,7 +713,7 @@ loading the bodies.
 Second public alpha. Driven by two end-to-end real-world tests with
 two simulated team members each (Maria via CLI, dev3 via MCP, dev4 via
 MCP + kanban workflow) plus the PO (felipesauer) running planning,
-review and audit. All findings recorded in `evaluations/` and resolved
+review and audit. All findings recorded and resolved
 before the bump. The result: every transition flow has been exercised
 against a real codebase (a Todo CLI and a CV→PDF formatter), and every
 friction point those tests surfaced has either been fixed or
@@ -799,10 +792,8 @@ documented as a deliberate trade-off.
 
 ### Documentation
 
-- `evaluations/2026-05-10-real-world-test.md` — Phase A + B
-  (Todo App, CLI vs MCP).
-- `evaluations/2026-05-10-phase-b-prime.md` — Phase B'
-  (cv-fmt, kanban workflow, MCP-only).
+- Phase A + B evaluation recorded (Todo App, CLI vs MCP).
+- Phase B' evaluation recorded (cv-fmt, kanban workflow, MCP-only).
 
 ### Known limitations
 

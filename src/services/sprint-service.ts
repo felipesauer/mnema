@@ -1,10 +1,13 @@
 import type { Sprint } from '../domain/entities/sprint.js';
+import type { SprintMetric } from '../domain/entities/sprint-metric.js';
 import type { Task } from '../domain/entities/task.js';
 import { SprintState } from '../domain/enums/sprint-state.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
+import { checkOptionalFiniteNumber, checkRequiredFiniteNumber } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import type { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
@@ -68,6 +71,22 @@ export interface SprintTaskInput {
 export interface SprintView {
   readonly sprint: Sprint;
   readonly tasks: readonly Task[];
+  readonly metrics: readonly SprintMetric[];
+}
+
+/**
+ * Input for {@link SprintService.addMetric}.
+ */
+export interface AddSprintMetricInput {
+  readonly sprintKey: string;
+  readonly name: string;
+  readonly baseline?: number | null;
+  readonly target: number;
+  readonly unit?: string | null;
+  readonly dueDate?: string | null;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
 }
 
 /**
@@ -85,6 +104,7 @@ export class SprintService {
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
     private readonly stateMachine: StateMachine,
+    private readonly metrics: SprintMetricRepository,
   ) {}
 
   /**
@@ -350,7 +370,84 @@ export class SprintService {
   show(sprintKey: string): SprintView | null {
     const sprint = this.sprints.findByKey(sprintKey);
     if (sprint === null) return null;
-    return { sprint, tasks: this.sprints.listTasks(sprint.id) };
+    return {
+      sprint,
+      tasks: this.sprints.listTasks(sprint.id),
+      metrics: this.metrics.findBySprint(sprint.id),
+    };
+  }
+
+  /**
+   * Adds a measurable metric to a sprint. CLI-only mutation, in line
+   * with the rest of the sprint lifecycle (MNEMA-ADR-25).
+   *
+   * @param input - Sprint key + metric fields + identity tuple
+   * @returns The created metric or a structured error
+   */
+  addMetric(input: AddSprintMetricInput): Result<SprintMetric, MnemaError> {
+    const sprint = this.sprints.findByKey(input.sprintKey);
+    if (sprint === null) {
+      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+    }
+    const issues: ErrorIssue[] = [];
+    checkRequiredFiniteNumber(input.target, 'target', issues);
+    checkOptionalFiniteNumber(input.baseline ?? null, 'baseline', issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
+    if (this.metrics.exists(sprint.id, input.name)) {
+      return Err({
+        kind: ErrorCode.SprintMetricDuplicate,
+        sprintKey: input.sprintKey,
+        name: input.name,
+      });
+    }
+    // Wrap the insert: a concurrent writer can pass the exists() check above
+    // and lose the UNIQUE(sprint_id, name) race — map that to the structured
+    // duplicate rather than letting a raw SqliteError escape.
+    const createdResult = tryMutation(() =>
+      this.metrics.insert({
+        sprintId: sprint.id,
+        name: input.name,
+        baseline: input.baseline ?? null,
+        target: input.target,
+        unit: input.unit ?? null,
+        dueDate: input.dueDate ?? null,
+      }),
+    );
+    if (!createdResult.ok) {
+      if (createdResult.error.kind === ErrorCode.SprintMetricDuplicate) {
+        return Err({
+          kind: ErrorCode.SprintMetricDuplicate,
+          sprintKey: input.sprintKey,
+          name: input.name,
+        });
+      }
+      return createdResult;
+    }
+    const created = createdResult.value;
+    this.audit.write({
+      kind: 'sprint_metric_added',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { sprint_key: sprint.key, name: input.name, target: input.target },
+    });
+    return Ok(created);
+  }
+
+  /**
+   * Lists a sprint's metrics.
+   *
+   * @param sprintKey - Sprint identifier
+   * @returns Metrics or a structured error when the sprint is unknown
+   */
+  metricsFor(sprintKey: string): Result<SprintMetric[], MnemaError> {
+    const sprint = this.sprints.findByKey(sprintKey);
+    if (sprint === null) {
+      return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
+    }
+    return Ok(this.metrics.findBySprint(sprint.id));
   }
 
   /**
@@ -364,7 +461,11 @@ export class SprintService {
     if (project === null) return null;
     const sprint = this.sprints.findActive(project.id);
     if (sprint === null) return null;
-    return { sprint, tasks: this.sprints.listTasks(sprint.id) };
+    return {
+      sprint,
+      tasks: this.sprints.listTasks(sprint.id),
+      metrics: this.metrics.findBySprint(sprint.id),
+    };
   }
 
   /**

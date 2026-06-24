@@ -3,8 +3,9 @@ import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../domain/state-machine/workflow-meta-schema.js';
+import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import { fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
+import { type ErrorIssue, fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type {
   TaskFieldUpdates,
@@ -29,6 +30,8 @@ export interface CreateTaskInput {
   readonly description?: string;
   readonly acceptanceCriteria?: readonly string[];
   readonly estimate?: number | null;
+  /** Estimated context cost in tokens; distinct from `estimate` (story points). */
+  readonly contextBudget?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
   /**
@@ -98,6 +101,14 @@ export class TaskService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
+    const issues: ErrorIssue[] = [];
+    checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
+    checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
+    checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
+
     const reporterId = this.identity.ensureActor(input.actor, 'human');
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
@@ -115,6 +126,7 @@ export class TaskService {
           description: input.description ?? null,
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           estimate: input.estimate ?? null,
+          contextBudget: input.contextBudget ?? null,
           priority: input.priority ?? 3,
           assigneeId: input.assigneeId ?? null,
           reporterId,
@@ -209,6 +221,30 @@ export class TaskService {
     }
 
     const { to, data } = validation.value;
+
+    // A custom workflow may declare `estimate`/`priority` as a MUTATING gate
+    // field with looser bounds than the first-class column allows (estimate ≥
+    // 0 integer; priority 1..5). The gate would accept e.g. priority=8, then
+    // the column fold would silently drop it — Ok returned, audit says 8, the
+    // task row unchanged. Validate against the column invariant here so the
+    // transition fails closed, symmetric with create(). This applies ONLY to
+    // mutating fields: a `validating` field is recorded in the audit payload
+    // and never folded to a column, so its value must not be column-validated.
+    if (data !== null && typeof data === 'object') {
+      const payload = data as Record<string, unknown>;
+      const spec = validation.value.requiresSpec;
+      const foldIssues: ErrorIssue[] = [];
+      if (typeof payload.estimate === 'number' && isMutatingField(spec, 'estimate')) {
+        checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
+      }
+      if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
+        checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
+      }
+      if (foldIssues.length > 0) {
+        return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
+      }
+    }
+
     const actorId = this.identity.ensureActor(input.actor, 'human');
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
@@ -433,6 +469,21 @@ export class TaskService {
 }
 
 /**
+ * Whether a gate field folds onto its first-class task column. A field
+ * declared `field_kind: 'validating'` is a one-shot annotation that lives only
+ * in `transitions.payload`; anything else (or absent from the spec) folds.
+ * Shared by the transition fold-validation guard and {@link persistableFromPayload}
+ * so the two cannot drift.
+ */
+function isMutatingField(
+  requiresSpec: Readonly<Record<string, FieldSpec>>,
+  field: string,
+): boolean {
+  const spec = requiresSpec[field];
+  return spec === undefined || (spec.field_kind ?? 'mutating') === 'mutating';
+}
+
+/**
  * Picks the subset of a transition payload that maps to first-class
  * task columns. Annotation-only payload bits (reason, approval_note,
  * pr_url, note, supersededBy, …) are filtered out — they remain in
@@ -458,11 +509,7 @@ function persistableFromPayload(
 ): TaskFieldUpdates | null {
   const updates: TaskFieldUpdates = {};
   let touched = false;
-  const isMutating = (field: string): boolean => {
-    const spec = requiresSpec[field];
-    // Field absent from spec => safe default of mutating (back-compat).
-    return spec === undefined || (spec.field_kind ?? 'mutating') === 'mutating';
-  };
+  const isMutating = (field: string): boolean => isMutatingField(requiresSpec, field);
 
   if (typeof payload.title === 'string' && isMutating('title')) {
     (updates as { title?: string }).title = payload.title;
@@ -477,11 +524,27 @@ function persistableFromPayload(
       payload.acceptance_criteria.filter((v): v is string => typeof v === 'string');
     touched = true;
   }
-  if (typeof payload.estimate === 'number' && isMutating('estimate')) {
+  // `typeof NaN === 'number'`, so a non-finite/out-of-range value from the
+  // payload would otherwise reach the column and trip a NOT NULL / CHECK
+  // constraint. Only fold through values that satisfy the same invariant the
+  // create path enforces; anything else is dropped (a `requires` field would
+  // already have been rejected by the workflow gate before reaching here).
+  if (
+    typeof payload.estimate === 'number' &&
+    Number.isInteger(payload.estimate) &&
+    payload.estimate >= 0 &&
+    isMutating('estimate')
+  ) {
     (updates as { estimate?: number | null }).estimate = payload.estimate;
     touched = true;
   }
-  if (typeof payload.priority === 'number' && isMutating('priority')) {
+  if (
+    typeof payload.priority === 'number' &&
+    Number.isInteger(payload.priority) &&
+    payload.priority >= 1 &&
+    payload.priority <= 5 &&
+    isMutating('priority')
+  ) {
     (updates as { priority?: number }).priority = payload.priority;
     touched = true;
   }

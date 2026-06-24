@@ -133,7 +133,46 @@ export type MnemaError =
       readonly given: string;
       readonly allowed: readonly string[];
     }
-  | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string };
+  | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string }
+  | {
+      readonly kind: ErrorCode.DependencyCycle;
+      readonly taskKey: string;
+      readonly blocksTaskKey: string;
+    }
+  | {
+      readonly kind: ErrorCode.DependencyDuplicate;
+      readonly taskKey: string;
+      readonly blocksTaskKey: string;
+      readonly dependencyKind: string;
+    }
+  | { readonly kind: ErrorCode.DependencySelf; readonly taskKey: string }
+  | {
+      readonly kind: ErrorCode.EvidenceCriterionOutOfRange;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly criteriaCount: number;
+    }
+  | {
+      readonly kind: ErrorCode.EvidenceDuplicate;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly ref: string;
+    }
+  | {
+      readonly kind: ErrorCode.SprintMetricDuplicate;
+      readonly sprintKey: string;
+      readonly name: string;
+    }
+  | {
+      /**
+       * A field value failed a domain invariant before any storage write —
+       * e.g. a non-integer/negative `context_budget` or a non-finite metric
+       * `target`. Carries the same {@link ErrorIssue} shape as Zod-sourced
+       * failures so producers (CLI, MCP, importers) reject identically.
+       */
+      readonly kind: ErrorCode.ValidationFailed;
+      readonly issues: ErrorIssue[];
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

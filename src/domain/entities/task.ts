@@ -19,6 +19,8 @@ export interface Task {
   readonly acceptanceCriteria: readonly string[];
   readonly state: TaskState;
   readonly estimate: number | null;
+  /** Estimated context cost in tokens; null when unsized. Distinct from `estimate` (story points). */
+  readonly contextBudget: number | null;
   readonly priority: number;
   readonly assigneeId: string | null;
   readonly reporterId: string;

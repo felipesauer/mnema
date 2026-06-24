@@ -1,8 +1,14 @@
 import type { Decision } from '../../../domain/entities/decision.js';
-import type { DecisionStatus } from '../../../domain/enums/decision-status.js';
+import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import { stripInvocationMarkup } from '../../../domain/invocation-markup.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
+
+/** Strips leaked tool-invocation markup from a nullable text column on read. */
+function cleanNullable(value: string | null): string | null {
+  return value === null ? null : stripInvocationMarkup(value);
+}
 
 interface DecisionRow {
   readonly id: string;
@@ -16,6 +22,7 @@ interface DecisionRow {
   readonly status: string;
   readonly superseded_by: string | null;
   readonly authored_by: string;
+  readonly impacts: string;
   readonly metadata: string;
   readonly at: string;
   readonly updated_at: string;
@@ -47,6 +54,7 @@ export interface DecisionInsertInput {
   readonly rationale?: string | null;
   readonly consequences?: string | null;
   readonly authoredBy: string;
+  readonly impacts?: readonly string[];
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
@@ -140,6 +148,7 @@ export class DecisionRepository {
   insert(input: DecisionInsertInput): Decision {
     const id = generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
+    const impacts = JSON.stringify(input.impacts ?? []);
     const now = isoNow();
 
     this.adapter
@@ -147,8 +156,8 @@ export class DecisionRepository {
       .prepare(
         `INSERT INTO decisions (
            id, key, project_id, title, context, decision, rationale,
-           consequences, status, authored_by, metadata, at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?)`,
+           consequences, status, authored_by, impacts, metadata, at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -160,6 +169,7 @@ export class DecisionRepository {
         input.rationale ?? null,
         input.consequences ?? null,
         input.authoredBy,
+        impacts,
         metadata,
         now,
         now,
@@ -216,6 +226,31 @@ export class DecisionRepository {
     }
     return { ok: true, decision: reloaded };
   }
+
+  /**
+   * Returns the active decisions of a project whose `impacts` list
+   * contains the given path/key — the reverse "which decision touched
+   * this artefact?" query. Filtered in memory (ADR volume is small).
+   *
+   * @param projectId - Internal project id
+   * @param ref - Artefact path or key to match
+   * @returns Matching decisions ordered by recording time (desc)
+   */
+  findImpacting(projectId: string, ref: string): Decision[] {
+    // "Which decision touched X?" should surface decisions that actually
+    // govern the artefact. Rejected ADRs never governed anything; superseded
+    // ADRs have been replaced — exclude both. Proposed/accepted are kept.
+    // Order newest-first, per this method's documented contract (findByProject
+    // returns ascending, so re-sort here without disturbing its other callers).
+    return this.findByProject(projectId)
+      .filter(
+        (d) =>
+          d.impacts.includes(ref) &&
+          d.status !== DecisionStatus.Rejected &&
+          d.status !== DecisionStatus.Superseded,
+      )
+      .sort((a, b) => b.at.localeCompare(a.at));
+  }
 }
 
 function rowToDecision(row: DecisionRow): Decision {
@@ -223,14 +258,19 @@ function rowToDecision(row: DecisionRow): Decision {
     id: row.id,
     key: row.key,
     projectId: row.project_id,
-    title: row.title,
-    context: row.context,
-    decision: row.decision,
-    rationale: row.rationale,
-    consequences: row.consequences,
+    title: stripInvocationMarkup(row.title),
+    context: cleanNullable(row.context),
+    decision: stripInvocationMarkup(row.decision),
+    rationale: cleanNullable(row.rationale),
+    consequences: cleanNullable(row.consequences),
     status: row.status as DecisionStatus,
     supersededBy: row.superseded_by,
     authoredBy: row.authored_by,
+    // Drift-tolerant: on a DB stopped before migration 015 the `impacts`
+    // column does not exist, so SELECT * yields `undefined` here. A read that
+    // worked before an additive migration must not throw — degrade to the
+    // column's documented DEFAULT '[]' instead of JSON.parse(undefined).
+    impacts: row.impacts == null ? [] : (JSON.parse(row.impacts) as string[]),
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     at: row.at,
     updatedAt: row.updated_at,

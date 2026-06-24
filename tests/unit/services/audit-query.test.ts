@@ -170,6 +170,41 @@ describe('AuditQuery', () => {
     expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-1' })).toHaveLength(1);
     expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-ADR-1' })).toHaveLength(1);
   });
+
+  describe('limit guard', () => {
+    beforeEach(() => {
+      writeJsonl(path.join(dir, 'current.jsonl'), [
+        { v: 1, at: '2026-05-01T10:00:00Z', kind: 'a', actor: 'd', data: {} },
+        { v: 1, at: '2026-05-01T10:01:00Z', kind: 'b', actor: 'd', data: {} },
+        { v: 1, at: '2026-05-01T10:02:00Z', kind: 'c', actor: 'd', data: {} },
+      ]);
+    });
+
+    it('ignores a zero limit (non-positive) and returns all events', () => {
+      const events = new AuditQuery(dir).run({ limit: 0 });
+      expect(events.map((e) => e.kind)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('ignores a negative limit instead of producing an empty slice', () => {
+      const events = new AuditQuery(dir).run({ limit: -2 });
+      expect(events.map((e) => e.kind)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('ignores a non-integer limit instead of truncating', () => {
+      const events = new AuditQuery(dir).run({ limit: 1.5 });
+      expect(events.map((e) => e.kind)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('ignores a NaN limit and returns all events', () => {
+      const events = new AuditQuery(dir).run({ limit: Number('abc') });
+      expect(events.map((e) => e.kind)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('applies a positive integer limit to the most recent events', () => {
+      const events = new AuditQuery(dir).run({ limit: 2 });
+      expect(events.map((e) => e.kind)).toEqual(['b', 'c']);
+    });
+  });
 });
 
 describe('parseTimeBound', () => {

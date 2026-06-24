@@ -1,5 +1,6 @@
 import type { Epic } from '../domain/entities/epic.js';
 import type { Task } from '../domain/entities/task.js';
+import type { EpicLifecycle } from '../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../domain/enums/epic-state.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
@@ -49,6 +50,8 @@ export interface EpicTaskInput {
 export interface EpicView {
   readonly epic: Epic;
   readonly taskKeys: readonly string[];
+  /** Derived progress label — see {@link EpicLifecycle} (MNEMA-ADR-24). */
+  readonly lifecycle: EpicLifecycle;
 }
 
 /**
@@ -216,7 +219,23 @@ export class EpicService {
     if (epic === null) {
       return Err({ kind: ErrorCode.EpicNotFound, epicKey });
     }
-    return Ok({ epic, taskKeys: this.epics.listTaskKeys(epic.id) });
+    const taskKeys = this.epics.listTaskKeys(epic.id);
+    return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskKeys) });
+  }
+
+  /**
+   * Derives the epic's lifecycle label from its state and the states of
+   * its tasks. Never stored — always computed (MNEMA-ADR-24).
+   */
+  private deriveLifecycle(epic: Epic, taskKeys: readonly string[]): EpicLifecycle {
+    if (epic.state === EpicState.Closed) return 'closed';
+    if (taskKeys.length === 0) return 'empty';
+    const tasks = taskKeys
+      .map((key) => this.tasks.findByKey(key))
+      .filter((t): t is Task => t !== null);
+    const allTerminal =
+      tasks.length > 0 && tasks.every((t) => this.stateMachine.isTerminal(t.state));
+    return allTerminal ? 'developed' : 'in-progress';
   }
 
   /**

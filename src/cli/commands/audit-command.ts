@@ -3,6 +3,7 @@ import { pc } from '../../utils/colors.js';
 
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
+import { parsePositiveInt } from '../option-parsers.js';
 
 interface QueryOptions {
   readonly kind?: string;
@@ -12,7 +13,7 @@ interface QueryOptions {
   readonly taskKey?: string;
   readonly since?: string;
   readonly until?: string;
-  readonly limit?: string;
+  readonly limit?: number;
   readonly json?: boolean;
   readonly iso?: boolean;
 }
@@ -42,7 +43,7 @@ export class AuditCommand {
       )
       .option('--since <duration>', 'Lower bound — `30s`, `2h`, `7d` or ISO8601')
       .option('--until <duration>', 'Upper bound — same syntax as --since')
-      .option('--limit <n>', 'Limit the number of results')
+      .option('--limit <n>', 'Limit the number of results', parsePositiveInt)
       .option('--json', 'Print events as raw JSONL', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: QueryOptions) => {
@@ -55,7 +56,7 @@ export class AuditCommand {
             taskKey: options.taskKey,
             since: options.since,
             until: options.until,
-            limit: options.limit !== undefined ? Number(options.limit) : undefined,
+            limit: options.limit,
           });
 
           if (options.json === true) {

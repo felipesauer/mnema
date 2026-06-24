@@ -27,13 +27,17 @@ describe('MigrationRunner', () => {
   it('applies all migrations in order on an empty database', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
 
-    expect(applied.map((a) => a.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(applied.map((a) => a.version)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    ]);
 
     const versions = adapter
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(versions.map((v) => v.version)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    ]);
   });
 
   it('is idempotent — running twice does not duplicate', () => {
@@ -47,7 +51,9 @@ describe('MigrationRunner', () => {
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(versions.map((v) => v.version)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    ]);
   });
 
   it('creates expected tables and FTS virtual tables', () => {
@@ -197,5 +203,43 @@ describe('MigrationRunner', () => {
     for (const p of plans) {
       expect(p.archived_at).not.toBeNull();
     }
+  });
+
+  it('rejects two distinct UNAPPLIED files that share a version prefix', () => {
+    // Sibling branches each claim the next free slot → two `017_*.sql` files
+    // (above the bundled max, so they are genuinely unapplied collisions).
+    const extra = mkdtempSync(path.join(tmpdir(), 'mnema-mig-dup-'));
+    writeFileSync(
+      path.join(extra, '017_alice.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (17);',
+    );
+    writeFileSync(
+      path.join(extra, '017_bob.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (17);',
+    );
+
+    expect(() => new MigrationRunner().run(adapter, [migrationsDir, extra])).toThrow(
+      /duplicate migration version 17/,
+    );
+
+    rmSync(extra, { recursive: true, force: true });
+  });
+
+  it('no-ops (does not throw) when the duplicated version is already applied', () => {
+    // First bring the DB fully up to date with the bundled set.
+    new MigrationRunner().run(adapter, migrationsDir);
+
+    // A stray project-local file collides with the bundled 016, but version 16
+    // is already applied — both are no-ops, so migrate must stay idempotent.
+    const extra = mkdtempSync(path.join(tmpdir(), 'mnema-mig-applied-'));
+    writeFileSync(
+      path.join(extra, '016_stray_local.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (16);',
+    );
+
+    const second = new MigrationRunner().run(adapter, [migrationsDir, extra]);
+    expect(second).toEqual([]);
+
+    rmSync(extra, { recursive: true, force: true });
   });
 });

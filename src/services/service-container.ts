@@ -16,13 +16,16 @@ import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-rep
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
 import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
+import { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
+import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
+import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -33,7 +36,9 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
+import { DependencyService } from './dependency-service.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
@@ -45,7 +50,10 @@ import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
+import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
+import { WikilinkLintService } from './wikilink-lint-service.js';
+import { WorkGraphLintService } from './work-graph-lint-service.js';
 
 /**
  * Options accepted by {@link createServiceContainer}.
@@ -85,11 +93,16 @@ export interface ServiceContainer {
   readonly inbox: InboxService;
   readonly sprint: SprintService;
   readonly decision: DecisionService;
+  readonly dependency: DependencyService;
   readonly note: NoteService;
+  readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
+  readonly coverage: CoverageService;
+  readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
+  readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly observation: ObservationService;
   readonly transitions: TransitionRepository;
@@ -162,8 +175,11 @@ export function createServiceContainer(
   const agentRuns = new AgentRunRepository(adapter);
   const agentPlans = new AgentPlanRepository(adapter);
   const sprintRepository = new SprintRepository(adapter);
+  const sprintMetricRepository = new SprintMetricRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
+  const dependencyRepository = new DependencyRepository(adapter);
+  const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
   const skillRepository = new SkillRepository(adapter);
@@ -210,7 +226,14 @@ export function createServiceContainer(
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
-  const sprintService = new SprintService(sprintRepository, tasks, projects, audit, stateMachine);
+  const sprintService = new SprintService(
+    sprintRepository,
+    tasks,
+    projects,
+    audit,
+    stateMachine,
+    sprintMetricRepository,
+  );
   const decisionService = new DecisionService(
     decisionRepository,
     projects,
@@ -219,8 +242,30 @@ export function createServiceContainer(
     noteRepository,
     tasks,
   );
+  const dependencyService = new DependencyService(
+    dependencyRepository,
+    tasks,
+    sprintRepository,
+    stateMachine,
+    audit,
+  );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
+  const taskEvidenceService = new TaskEvidenceService(taskEvidenceRepository, tasks, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
+  const coverageService = new CoverageService(
+    epicRepository,
+    sprintRepository,
+    tasks,
+    stateMachine,
+  );
+  const workGraphLintService = new WorkGraphLintService(
+    sprintRepository,
+    epicRepository,
+    tasks,
+    stateMachine,
+    auditQuery,
+    adapter,
+  );
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
   const attachmentService = new AttachmentService(
     attachmentRepository,
@@ -236,6 +281,16 @@ export function createServiceContainer(
   const knownTools = listAvailableToolNames(workflow);
   const skillService = new SkillService(skillsDir, knownTools, skillRepository, identity, audit);
   const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit);
+  const wikilinkLintService = new WikilinkLintService(
+    skillsDir,
+    memoryDir,
+    config.project.key,
+    skillRepository,
+    memoryRepository,
+    decisionRepository,
+    tasks,
+    projects,
+  );
   const observationService = new ObservationService(observationRepository, tasks, identity, audit);
   trace.mark('all services wired');
   trace.end();
@@ -254,11 +309,16 @@ export function createServiceContainer(
     inbox: inboxService,
     sprint: sprintService,
     decision: decisionService,
+    dependency: dependencyService,
     note: noteService,
+    taskEvidence: taskEvidenceService,
     epic: epicService,
+    coverage: coverageService,
+    workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
+    wikilinkLint: wikilinkLintService,
     memory: memoryService,
     observation: observationService,
     transitions,

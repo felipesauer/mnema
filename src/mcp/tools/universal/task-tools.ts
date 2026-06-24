@@ -6,7 +6,7 @@ import type { StateMachine } from '../../../domain/state-machine/state-machine.j
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * Registers task-related MCP tools that **don't** depend on the active
@@ -26,6 +26,7 @@ export class TaskTools {
     private readonly config: Config,
     private readonly session: McpSessionContext,
     private readonly stateMachine: StateMachine,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -43,12 +44,25 @@ export class TaskTools {
           title: z.string().min(3).max(200),
           description: z.string().optional(),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
-          estimate: z.number().optional(),
+          estimate: z
+            .number()
+            .int()
+            .min(0)
+            .optional()
+            .describe('Estimate in story points (non-negative integer)'),
+          context_budget: z
+            .number()
+            .int()
+            .min(0)
+            .optional()
+            .describe('Estimated context cost in tokens (distinct from estimate / story points)'),
           priority: z.number().int().min(1).max(5).optional(),
           assignee: z.string().optional(),
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -60,6 +74,7 @@ export class TaskTools {
           description: input.description,
           acceptanceCriteria: input.acceptance_criteria ?? [],
           estimate: input.estimate ?? null,
+          contextBudget: input.context_budget ?? null,
           priority: input.priority ?? 3,
           assigneeId: input.assignee ?? null,
           actor: this.identity.getDefaultActor(),

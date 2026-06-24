@@ -1,10 +1,12 @@
 import type { Command } from 'commander';
 import type { Epic } from '../../domain/entities/epic.js';
+import type { EpicLifecycle } from '../../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { formatCoverage } from '../formatters/coverage-formatter.js';
 
 interface CreateOptions {
   readonly title: string;
@@ -61,7 +63,9 @@ export class EpicCommand {
           if (!result.ok) {
             process.exit(printError(result.error));
           }
-          process.stdout.write(`${formatEpicView(result.value.epic, result.value.taskKeys)}\n`);
+          process.stdout.write(
+            `${formatEpicView(result.value.epic, result.value.taskKeys, result.value.lifecycle)}\n`,
+          );
         });
       });
 
@@ -127,6 +131,19 @@ export class EpicCommand {
           process.stdout.write(`${pc.green('✓')} ${taskKey} removed from epic\n`);
         });
       });
+
+    group
+      .command('coverage <key>')
+      .description('Report how many of the epic tasks are in a terminal state')
+      .action(async (key: string) => {
+        await withCliContext(({ container }) => {
+          const result = container.coverage.forEpic(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(`${formatCoverage(`Epic ${key}`, result.value)}\n`);
+        });
+      });
   }
 }
 
@@ -156,11 +173,11 @@ function formatEpicRow(epic: Epic): string {
   return `${pc.bold(epic.key.padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
 }
 
-function formatEpicView(epic: Epic, taskKeys: readonly string[]): string {
+function formatEpicView(epic: Epic, taskKeys: readonly string[], lifecycle: EpicLifecycle): string {
   const lines: string[] = [];
   lines.push(`${pc.bold('Epic:')} ${epic.key}`);
   lines.push(`${pc.bold('Title:')} ${epic.title}`);
-  lines.push(`${pc.bold('State:')} ${epic.state}`);
+  lines.push(`${pc.bold('State:')} ${epic.state} ${pc.dim(`(${lifecycle})`)}`);
   if (epic.description !== null) {
     lines.push('');
     lines.push(epic.description);

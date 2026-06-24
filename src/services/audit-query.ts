@@ -119,9 +119,13 @@ export class AuditQuery {
 
     matches.sort((a, b) => a.at.localeCompare(b.at));
 
+    // Apply the limit only when it is a positive integer. A non-positive or
+    // non-finite limit (NaN from a bad caller, a negative value) must not slice
+    // — `length > -2` is always true and would slice past the array end,
+    // returning the wrong window. Treat such values as "no limit".
     const limit = filter.limit;
     const events =
-      limit !== undefined && matches.length > limit
+      limit !== undefined && Number.isInteger(limit) && limit > 0 && matches.length > limit
         ? matches.slice(matches.length - limit)
         : matches;
     return { events, malformedLines, malformedByFile };

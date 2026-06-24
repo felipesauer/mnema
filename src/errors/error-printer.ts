@@ -282,6 +282,45 @@ export function formatError(error: MnemaError): string {
         `${pc.dim('hint:')} List notes with \`mnema note list <task_key>\` or query the audit log`,
       );
       break;
+    case ErrorCode.DependencyCycle:
+      lines.push(
+        `Cannot make ${error.taskKey} depend on ${error.blocksTaskKey}: would create a cycle`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} ${error.blocksTaskKey} already depends on ${error.taskKey} (directly or transitively)`,
+      );
+      break;
+    case ErrorCode.DependencyDuplicate:
+      lines.push(
+        `${error.taskKey} already depends on ${error.blocksTaskKey} (kind: ${error.dependencyKind})`,
+      );
+      break;
+    case ErrorCode.DependencySelf:
+      lines.push(`${error.taskKey} cannot depend on itself`);
+      break;
+    case ErrorCode.EvidenceCriterionOutOfRange:
+      lines.push(
+        `${error.taskKey} has ${error.criteriaCount} acceptance criteria; index ${error.index} is out of range`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} criterion_index is 0-based; check \`mnema task show ${error.taskKey}\``,
+      );
+      break;
+    case ErrorCode.EvidenceDuplicate:
+      lines.push(
+        `${error.taskKey} criterion ${error.index} already has that evidence (${error.ref})`,
+      );
+      break;
+    case ErrorCode.SprintMetricDuplicate:
+      lines.push(`Sprint ${error.sprintKey} already has a metric named "${error.name}"`);
+      break;
+
+    case ErrorCode.ValidationFailed:
+      lines.push('Invalid input');
+      for (const issue of error.issues) {
+        lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
+      }
+      break;
   }
 
   return lines.join('\n');
@@ -295,15 +334,84 @@ export function formatError(error: MnemaError): string {
  */
 export function exitCodeFor(error: MnemaError): ExitCodeValue {
   switch (error.kind) {
+    // Conflict (4): retryable — the caller raced a concurrent change or hit a
+    // contended resource. A wrapper script keys its retry loop off this code,
+    // so it must be distinct from Usage. (errors-catalog.md: E_CONFLICT, E_DB_LOCKED.)
+    // Only genuine races belong here. Deterministic "already exists" duplicates
+    // (DependencyDuplicate/EvidenceDuplicate/SprintMetricDuplicate) are NOT
+    // retryable — they live under Usage with TaskKeyExists.
+    case ErrorCode.Conflict:
+    case ErrorCode.InitConflict:
+    case ErrorCode.ActiveSprintExists:
+    case ErrorCode.StorageBusy:
+      return ExitCode.Conflict;
+
+    // State (3): the artefact exists but is in the wrong state for the action;
+    // resolvable by changing state (migrate, upgrade, pick a valid transition).
     case ErrorCode.VersionMismatch:
     case ErrorCode.AlreadyInitialized:
     case ErrorCode.SchemaOutOfDate:
+    case ErrorCode.TerminalState:
+    case ErrorCode.InvalidTransition:
+    case ErrorCode.SprintInvalidState:
+    case ErrorCode.DecisionInvalidStatus:
+    case ErrorCode.EpicInvalidState:
+    case ErrorCode.InvalidWorkflowState:
+    case ErrorCode.AgentRunAlreadyEnded:
+    case ErrorCode.DependencyCycle:
+    case ErrorCode.DependencySelf:
       return ExitCode.State;
-    case ErrorCode.InitConflict:
-      return ExitCode.Conflict;
-    default:
+
+    // Internal (5): a bug or an unrecoverable runtime fault.
+    case ErrorCode.DepthLimitExceeded:
+      return ExitCode.Internal;
+
+    // Usage (2): bad invocation or a not-found / validation failure the caller
+    // can fix by changing arguments. The remaining catalogued codes.
+    case ErrorCode.ConfigNotFound:
+    case ErrorCode.ConfigInvalid:
+    case ErrorCode.TaskNotFound:
+    case ErrorCode.GateFailed:
+    case ErrorCode.TaskKeyExists:
+    case ErrorCode.DependencyDuplicate:
+    case ErrorCode.EvidenceDuplicate:
+    case ErrorCode.SprintMetricDuplicate:
+    case ErrorCode.ProjectNotFound:
+    case ErrorCode.WorkflowNotFound:
+    case ErrorCode.WorkflowInvalid:
+    case ErrorCode.IdentityNotConfigured:
+    case ErrorCode.AgentHandleMissing:
+    case ErrorCode.AgentRunNotFound:
+    case ErrorCode.AgentPlanNotFound:
+    case ErrorCode.NoActiveRun:
+    case ErrorCode.SprintNotFound:
+    case ErrorCode.SprintInvalidPayload:
+    case ErrorCode.AttachmentSourceNotFound:
+    case ErrorCode.DecisionNotFound:
+    case ErrorCode.EpicNotFound:
+    case ErrorCode.SkillNotFound:
+    case ErrorCode.MemoryNotFound:
+    case ErrorCode.SearchInvalidQuery:
+    case ErrorCode.FeatureNotAvailable:
+    case ErrorCode.NoteNotFound:
+    case ErrorCode.EvidenceCriterionOutOfRange:
+    case ErrorCode.ValidationFailed:
       return ExitCode.Usage;
+
+    default:
+      return assertNever(error);
   }
+}
+
+/**
+ * Compile-time exhaustiveness guard. If a new {@link MnemaError} variant is
+ * added without a matching `exitCodeFor` case, this stops compiling — turning a
+ * silent fall-through to {@link ExitCode.Usage} into a type error. At runtime it
+ * still degrades to {@link ExitCode.Generic} rather than throwing.
+ */
+function assertNever(error: never): ExitCodeValue {
+  void error;
+  return ExitCode.Generic;
 }
 
 /**

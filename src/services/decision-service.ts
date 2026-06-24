@@ -1,8 +1,9 @@
 import type { Decision } from '../domain/entities/decision.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { DecisionStatus } from '../domain/enums/decision-status.js';
+import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import type { MnemaError } from '../errors/mnema-error.js';
+import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
@@ -21,6 +22,8 @@ export interface RecordDecisionInput {
   readonly context?: string;
   readonly rationale?: string;
   readonly consequences?: string;
+  /** Paths/keys of artefacts this decision affects. */
+  readonly impacts?: readonly string[];
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -107,6 +110,28 @@ export class DecisionService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
+    // Reject tool-invocation markup leaking into any text field — a malformed
+    // MCP call can spill `<parameter name=...>` / `</invoke>` into a value,
+    // which would persist a garbage trailer and leave sibling fields empty.
+    const markupIssues: ErrorIssue[] = [];
+    for (const [field, value] of [
+      ['title', input.title],
+      ['decision', input.decision],
+      ['context', input.context],
+      ['rationale', input.rationale],
+      ['consequences', input.consequences],
+    ] as const) {
+      if (value !== undefined && value !== null && hasInvocationMarkup(value)) {
+        markupIssues.push({
+          path: [field],
+          message: 'contains tool-invocation markup; pass each field as its own argument',
+        });
+      }
+    }
+    if (markupIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: markupIssues });
+    }
+
     const sequence = this.decisions.nextSequence(project.id);
     const key = `${project.key}-ADR-${sequence}`;
     const authoredBy = this.identity.ensureActor(input.actor, ActorKind.Human);
@@ -119,6 +144,7 @@ export class DecisionService {
       context: input.context ?? null,
       rationale: input.rationale ?? null,
       consequences: input.consequences ?? null,
+      impacts: input.impacts ?? [],
       authoredBy,
     });
 
@@ -227,6 +253,16 @@ export class DecisionService {
       if (successor === null) {
         return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.supersededBy });
       }
+      // A decision cannot supersede itself — that produces a self-referential
+      // supersededBy pointer (and a node that is its own replacement).
+      if (successor.id === decision.id) {
+        return Err({
+          kind: ErrorCode.DecisionInvalidStatus,
+          decisionKey: decision.key,
+          fromStatus: decision.status,
+          toStatus: input.status,
+        });
+      }
       supersededById = successor.id;
     }
 
@@ -308,6 +344,20 @@ export class DecisionService {
     const project = this.projects.findByKey(projectKey);
     if (project === null) return [];
     return this.decisions.findByProject(project.id, status);
+  }
+
+  /**
+   * Returns the decisions of a project whose `impacts` list contains the
+   * given artefact path/key — "which decision touched this?".
+   *
+   * @param projectKey - Project key
+   * @param ref - Artefact path or key to match
+   * @returns Matching decisions (empty when the project is unknown)
+   */
+  impacting(projectKey: string, ref: string): readonly Decision[] {
+    const project = this.projects.findByKey(projectKey);
+    if (project === null) return [];
+    return this.decisions.findImpacting(project.id, ref);
   }
 
   /**

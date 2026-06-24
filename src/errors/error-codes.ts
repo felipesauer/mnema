@@ -56,6 +56,17 @@ export enum ErrorCode {
   InvalidWorkflowState = 'INVALID_WORKFLOW_STATE',
 
   NoteNotFound = 'NOTE_NOT_FOUND',
+
+  DependencyCycle = 'DEPENDENCY_CYCLE',
+  DependencyDuplicate = 'DEPENDENCY_DUPLICATE',
+  DependencySelf = 'DEPENDENCY_SELF',
+
+  EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
+  EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
+
+  SprintMetricDuplicate = 'SPRINT_METRIC_DUPLICATE',
+
+  ValidationFailed = 'VALIDATION_FAILED',
 }
 
 /**

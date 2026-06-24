@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import { withCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
+import { parsePositiveInt } from '../option-parsers.js';
 
 interface HistoryOptions {
   readonly since?: string;
@@ -11,7 +12,7 @@ interface HistoryOptions {
   readonly via?: string;
   readonly run?: string;
   readonly kind?: string;
-  readonly limit?: string;
+  readonly limit?: number;
   readonly table?: boolean;
   readonly json?: boolean;
   readonly iso?: boolean;
@@ -40,7 +41,7 @@ export class HistoryCommand {
       .option('--via <handle>', 'Filter by agent (via) handle')
       .option('--run <runId>', 'Filter by agent run id')
       .option('--kind <kind>', 'Filter by event kind (e.g. task_transitioned)')
-      .option('--limit <n>', 'Limit the number of results')
+      .option('--limit <n>', 'Limit the number of results', parsePositiveInt)
       .option('--table', 'Render as an aligned table', false)
       .option('--json', 'Render as JSONL (one event per line)', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
@@ -54,7 +55,7 @@ export class HistoryCommand {
             run: options.run,
             since,
             until: options.until,
-            limit: options.limit !== undefined ? Number(options.limit) : undefined,
+            limit: options.limit,
           });
 
           const format = pickFormat(options);

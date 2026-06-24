@@ -1,5 +1,7 @@
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
+import type { DependencyKind } from '../../domain/entities/dependency.js';
 import type { Task } from '../../domain/entities/task.js';
+import { EVIDENCE_KINDS, type EvidenceKind } from '../../domain/entities/task-evidence.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
@@ -9,13 +11,18 @@ import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
+import { parseIntInRange, parseNonNegativeInt, parsePositiveInt } from '../option-parsers.js';
 
 interface CreateOptions {
   readonly title: string;
   readonly description?: string;
   readonly acceptance?: string[];
-  readonly estimate?: string;
-  readonly priority?: string;
+  // estimate/contextBudget/priority are pre-parsed to numbers by the option
+  // argParsers (parseNonNegativeInt / parseIntInRange), so bad input is
+  // rejected at parse time and never reaches the action as a string.
+  readonly estimate?: number;
+  readonly contextBudget?: number;
+  readonly priority?: number;
   readonly assignee?: string;
 }
 
@@ -30,7 +37,22 @@ interface DeleteOptions {
 interface HistoryOptions {
   readonly json?: boolean;
   readonly iso?: boolean;
-  readonly limit?: string;
+  readonly limit?: number;
+}
+
+interface DependsOptions {
+  readonly kind?: string;
+}
+
+interface ReadyOptions {
+  readonly sprint?: string;
+}
+
+interface EvidenceOptions {
+  readonly criterion?: number;
+  readonly kind?: string;
+  readonly ref?: string;
+  readonly note?: string;
 }
 
 /**
@@ -57,8 +79,13 @@ export class TaskCommand {
       .requiredOption('--title <text>', 'Task title')
       .option('--description <text>', 'Optional description')
       .option('--acceptance <criterion...>', 'Acceptance criterion (repeat for multiple)')
-      .option('--estimate <points>', 'Estimate in story points')
-      .option('--priority <n>', 'Priority 1..5 (default 3)')
+      .option('--estimate <points>', 'Estimate in story points', parseNonNegativeInt)
+      .option(
+        '--context-budget <tokens>',
+        'Estimated context cost in tokens (distinct from estimate)',
+        parseNonNegativeInt,
+      )
+      .option('--priority <n>', 'Priority 1..5 (default 3)', parseIntInRange(1, 5))
       .option('--assignee <handle>', 'Assignee handle')
       .action(async (options: CreateOptions) => {
         await withMutatingCliContext(({ container, config }) => {
@@ -67,8 +94,9 @@ export class TaskCommand {
             title: options.title,
             description: options.description,
             acceptanceCriteria: options.acceptance ?? [],
-            estimate: options.estimate !== undefined ? Number(options.estimate) : null,
-            priority: options.priority !== undefined ? Number(options.priority) : 3,
+            estimate: options.estimate ?? null,
+            contextBudget: options.contextBudget ?? null,
+            priority: options.priority ?? 3,
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),
           });
@@ -176,7 +204,7 @@ export class TaskCommand {
       .description('Show the chronological audit trail of a single task')
       .option('--json', 'Render as JSONL (one event per line)', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
-      .option('--limit <n>', 'Limit the number of events returned')
+      .option('--limit <n>', 'Limit the number of events returned', parsePositiveInt)
       .action(async (key: string, options: HistoryOptions) => {
         await withCliContext(({ container }) => {
           const lookup = container.task.findByKey(key);
@@ -186,7 +214,7 @@ export class TaskCommand {
 
           const events = container.auditQuery.run({
             taskKey: lookup.value.key,
-            limit: options.limit !== undefined ? Number(options.limit) : undefined,
+            limit: options.limit,
           });
 
           const format: HistoryFormat = options.json === true ? 'json' : 'human';
@@ -219,6 +247,100 @@ export class TaskCommand {
                   actor: container.identity.getDefaultActor(),
                 });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('depends <key> <blocksKey>')
+      .description('Declare that <key> is blocked by <blocksKey> (or another relationship kind)')
+      .option('--kind <kind>', 'blocks | relates_to | duplicates | parent_of', 'blocks')
+      .action(async (key: string, blocksKey: string, options: DependsOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.dependency.link({
+            taskKey: key,
+            blocksTaskKey: blocksKey,
+            kind: options.kind as DependencyKind | undefined,
+            actor: container.identity.getDefaultActor(),
+          });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(
+            `${pc.green('✓')} ${key} ${pc.dim(`depends on (${result.value.kind})`)} ${blocksKey}\n`,
+          );
+        });
+      });
+
+    group
+      .command('ready')
+      .description('List tasks ready to pick up (pickable state, all blockers terminal)')
+      .option('--sprint <key>', 'Scope to a single sprint')
+      .action(async (options: ReadyOptions) => {
+        await withCliContext(({ container }) => {
+          const result = container.dependency.ready(options.sprint);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(`${formatTaskList(result.value)}\n`);
+        });
+      });
+
+    group
+      .command('evidence <key>')
+      .description(
+        'List a task acceptance criteria with their evidence, or attach evidence with --ref',
+      )
+      .option(
+        '--criterion <i>',
+        '0-based criterion index (required to attach)',
+        parseNonNegativeInt,
+      )
+      .addOption(
+        new Option('--kind <kind>', 'Evidence kind').choices([...EVIDENCE_KINDS]).default('other'),
+      )
+      .option('--ref <ref>', 'The path / route / commit / url to attach as evidence')
+      .option('--note <text>', 'Optional note for the evidence')
+      .action(async (key: string, options: EvidenceOptions) => {
+        if (options.ref !== undefined) {
+          await withMutatingCliContext(({ container }) => {
+            const result = container.taskEvidence.attach({
+              taskKey: key,
+              criterionIndex: options.criterion ?? -1,
+              kind: options.kind as EvidenceKind | undefined,
+              ref: options.ref ?? '',
+              note: options.note ?? null,
+              actor: container.identity.getDefaultActor(),
+            });
+            if (!result.ok) {
+              process.exit(printError(result.error));
+            }
+            process.stdout.write(
+              `${pc.green('✓')} evidence attached to ${key} criterion ${result.value.criterionIndex} ${pc.dim(`(${result.value.kind})`)}\n`,
+            );
+          });
+          return;
+        }
+        await withCliContext(({ container }) => {
+          const result = container.taskEvidence.forTask(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+            return;
+          }
+          for (const c of result.value.criteria) {
+            const mark = c.evidence.length > 0 ? pc.green('✓') : pc.yellow('○');
+            process.stdout.write(`${mark} [${c.index}] ${c.criterion}\n`);
+            for (const e of c.evidence) {
+              process.stdout.write(`    ${pc.dim(`${e.kind}:`)} ${e.ref}\n`);
+            }
+          }
+          if (result.value.orphaned.length > 0) {
+            process.stdout.write(
+              `${pc.yellow('!')} ${result.value.orphaned.length} orphaned evidence row(s) ${pc.dim('(criteria changed after attach)')}\n`,
+            );
+            for (const e of result.value.orphaned) {
+              process.stdout.write(`    ${pc.dim(`[${e.criterionIndex}] ${e.kind}:`)} ${e.ref}\n`);
+            }
+          }
         });
       });
   }
