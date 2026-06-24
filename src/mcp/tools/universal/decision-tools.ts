@@ -123,8 +123,6 @@ export class DecisionTools {
         },
       },
       ({ decision_key: decisionKey }) => {
-        const drift = requireFreshSchema(this.pendingMigrations);
-        if (drift !== null) return drift;
         const result = this.decisions.show(decisionKey);
         if (!result.ok) return err(result.error);
         return ok({ decision: result.value });
@@ -140,8 +138,6 @@ export class DecisionTools {
         },
       },
       ({ status }) => {
-        const drift = requireFreshSchema(this.pendingMigrations);
-        if (drift !== null) return drift;
         const decisions = this.decisions.list(this.config.project.key, status);
         return ok({ decisions });
       },
@@ -157,8 +153,6 @@ export class DecisionTools {
         },
       },
       ({ ref }) => {
-        const drift = requireFreshSchema(this.pendingMigrations);
-        if (drift !== null) return drift;
         const decisions = this.decisions.impacting(this.config.project.key, ref);
         return ok({ decisions });
       },

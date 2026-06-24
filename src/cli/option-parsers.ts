@@ -58,5 +58,12 @@ function toIntOrThrow(raw: string): number {
   if (!/^[+-]?\d+$/.test(trimmed)) {
     throw new InvalidArgumentError(`must be an integer (got ${raw})`);
   }
-  return Number(trimmed);
+  const n = Number(trimmed);
+  // The regex matches arbitrarily long digit strings, but Number() silently
+  // loses precision beyond 2^53 (e.g. '999…9' → 1e23). Reject those so the
+  // stored value always equals what the user typed.
+  if (!Number.isSafeInteger(n)) {
+    throw new InvalidArgumentError(`is too large (got ${raw})`);
+  }
+  return n;
 }

@@ -140,7 +140,7 @@ export class WorkGraphLintService {
     }
 
     for (const task of tasks) {
-      if (this.stateMachine.isTerminal(task.state) && this.isSubagentBypass(task.key)) {
+      if (this.stateMachine.isTerminal(task.state) && this.isSubagentBypass(task.key, task.state)) {
         diagnostics.push({
           scope,
           severity: 'warning',
@@ -168,21 +168,33 @@ export class WorkGraphLintService {
   }
 
   /**
-   * A task is a subagent-bypass candidate when none of its audit events
-   * carry a `run` id — meaning every transition happened outside a
-   * tracked agent run.
+   * A task reached a terminal state via a "bypassed" transition when the
+   * transition that ARRIVED at that terminal state carried no `run` id.
+   *
+   * Keying on the terminal arrival (not `every` transition) matters: an
+   * earlier run-tracked transition (e.g. `start`) must not excuse a later
+   * run-less terminal transition (e.g. `approve`). Only state transitions
+   * count — a note/attachment/creation event can carry a `run` id without any
+   * transition having gone through a tracked run.
    */
-  private isSubagentBypass(taskKey: string): boolean {
-    // Only state transitions are evidence of work being done. A note,
-    // attachment, dependency edge, or the creation event can carry a `run`
-    // id without any *transition* having gone through a tracked run — those
-    // must not mask a genuinely bypassed transition, so filter to transitions
-    // before testing run-presence.
+  private isSubagentBypass(taskKey: string, terminalState: string): boolean {
     const transitions = this.auditQuery
       .run({ taskKey })
       .filter((e) => e.kind === 'task_transitioned');
     if (transitions.length === 0) return false; // no transition trail — not our signal
-    return transitions.every((e) => e.run === undefined || e.run === null);
+
+    // The transitions that arrive at the current terminal state. auditQuery
+    // returns events chronologically, so the last is the effective arrival.
+    const arrivals = transitions.filter(
+      (e) => (e.data as Record<string, unknown> | undefined)?.to === terminalState,
+    );
+    if (arrivals.length === 0) {
+      // No explicit arrival event recorded — fall back to the conservative
+      // "entire trail is run-less" signal so a fully-untracked task is caught.
+      return transitions.every((e) => e.run === undefined || e.run === null);
+    }
+    const lastArrival = arrivals[arrivals.length - 1];
+    return lastArrival === undefined || lastArrival.run === undefined || lastArrival.run === null;
   }
 
   /**

@@ -2,40 +2,51 @@
  * Guards against tool-invocation markup leaking into free-text fields.
  *
  * When an agent records an ADR (or any text field) via an MCP tool, a
- * malformed tool call can spill the invocation's own XML — `<parameter
- * name="...">`, `</invoke>`, or a stray closing tag for the field it was
- * filling (`</decision>`) — into the VALUE of a parameter. The persisted text
- * then ends with a garbage trailer and the sibling fields it was meant to fill
- * arrive empty.
+ * malformed tool call can spill the invocation's own XML into the VALUE of a
+ * parameter. The persisted text then ends with a garbage trailer and the
+ * sibling fields it was meant to fill arrive empty.
  *
- * These markers do not occur in ordinary ADR prose, so we can both reject them
- * on write and strip them on read of already-persisted rows (the audit chain is
- * immutable, so legacy rows are cleaned at display time, never in storage).
+ * The reliable signatures of such a leak are the invocation tokens themselves —
+ * `<invoke …>` / `</invoke>`, `<function_calls>` / `</function_calls>`, and
+ * `<parameter name="…">` — optionally namespace-prefixed (e.g.
+ * `<parameter …>`). These never occur in ordinary prose: a `<parameter>`
+ * carries a `name=` attribute, and `invoke`/`function_calls` are not English
+ * words an ADR would close with a tag.
+ *
+ * A bare field-closing tag like `</decision>` is deliberately NOT treated as a
+ * leak on its own — an ADR may legitimately discuss `</title>` or quote an XML
+ * snippet. It only counts when it directly precedes an invocation token (the
+ * real spill shape: `…body</decision>\n<parameter name="context">…`).
  */
 
-// Markers that only appear when tool-invocation XML has leaked in:
-//   <invoke ...>            </invoke>
-//   <parameter name="...">  </parameter>
-//   a stray field-closing tag for a known ADR text field, e.g. </decision>.
-// Case-insensitive; matches an opening or closing form of each.
-const INVOCATION_MARKUP_RE =
-  /<\/?(?:invoke|parameter)\b|<\/(?:decision|context|rationale|consequences|title)>/i;
+// One invocation token (optionally namespace-prefixed):
+//   - <invoke …> / </invoke> and <function_calls> / </function_calls>
+//   - </parameter> (the closing tag of a leaked parameter — unambiguous)
+//   - <parameter … name=…> — the opening form requires a `name=` attribute so a
+//     lone `<parameter>` in prose is not flagged.
+const INVOCATION_TOKEN = String.raw`<\/?(?:[\w.-]+:)?(?:invoke|function_calls)\b[^>]*>|<\/(?:[\w.-]+:)?parameter\b[^>]*>|<(?:[\w.-]+:)?parameter\b[^>]*\bname\s*=`;
+
+// A leaked trailer: an invocation token, optionally introduced by a stray
+// field-closing tag (the value's own `</decision>` etc.) plus whitespace.
+const FIELD_CLOSE = String.raw`<\/(?:[\w.-]+:)?(?:decision|context|rationale|consequences|title)>`;
+const LEAK_RE = new RegExp(`(?:${FIELD_CLOSE}\\s*)?(?:${INVOCATION_TOKEN})`, 'i');
 
 /**
- * True when `text` contains tool-invocation markup.
+ * True when `text` contains a tool-invocation markup leak.
  */
 export function hasInvocationMarkup(text: string): boolean {
-  return INVOCATION_MARKUP_RE.test(text);
+  return LEAK_RE.test(text);
 }
 
 /**
- * Returns `text` truncated at the first tool-invocation marker, trimmed of
- * trailing whitespace. A clean body is returned unchanged. Use this to display
- * legacy rows whose stored bytes still carry a leaked trailer — it never
- * mutates storage, only the rendered value.
+ * Returns `text` truncated at the start of a leaked invocation trailer, trimmed
+ * of trailing whitespace. A clean body — including one that merely mentions a
+ * field tag in prose — is returned unchanged, so legitimate content is never
+ * cut. Use this to display legacy rows whose stored bytes still carry a leaked
+ * trailer; it never mutates storage, only the rendered value.
  */
 export function stripInvocationMarkup(text: string): string {
-  const match = INVOCATION_MARKUP_RE.exec(text);
+  const match = LEAK_RE.exec(text);
   if (match === null) return text;
   return text.slice(0, match.index).trimEnd();
 }

@@ -37,8 +37,7 @@ export class SprintTools {
         },
       },
       ({ sprint_key: sprintKey }) => {
-        const drift = requireFreshSchema(this.pendingMigrations);
-        if (drift !== null) return drift;
+        // Read-only: drift-tolerant by policy (see requireFreshSchema docstring).
         const view = this.sprints.show(sprintKey);
         if (view === null) {
           return ok({ sprint: null, tasks: [], metrics: [] });
@@ -69,6 +68,9 @@ export class SprintTools {
         },
       },
       ({ sprint_key: sprintKey, task_key: taskKey }) => {
+        // Mutation: block on schema drift, consistent with every other write.
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;

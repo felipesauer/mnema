@@ -337,12 +337,12 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     // Conflict (4): retryable — the caller raced a concurrent change or hit a
     // contended resource. A wrapper script keys its retry loop off this code,
     // so it must be distinct from Usage. (errors-catalog.md: E_CONFLICT, E_DB_LOCKED.)
+    // Only genuine races belong here. Deterministic "already exists" duplicates
+    // (DependencyDuplicate/EvidenceDuplicate/SprintMetricDuplicate) are NOT
+    // retryable — they live under Usage with TaskKeyExists.
     case ErrorCode.Conflict:
     case ErrorCode.InitConflict:
     case ErrorCode.ActiveSprintExists:
-    case ErrorCode.DependencyDuplicate:
-    case ErrorCode.EvidenceDuplicate:
-    case ErrorCode.SprintMetricDuplicate:
     case ErrorCode.StorageBusy:
       return ExitCode.Conflict;
 
@@ -373,6 +373,9 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.TaskNotFound:
     case ErrorCode.GateFailed:
     case ErrorCode.TaskKeyExists:
+    case ErrorCode.DependencyDuplicate:
+    case ErrorCode.EvidenceDuplicate:
+    case ErrorCode.SprintMetricDuplicate:
     case ErrorCode.ProjectNotFound:
     case ErrorCode.WorkflowNotFound:
     case ErrorCode.WorkflowInvalid:

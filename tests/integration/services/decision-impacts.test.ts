@@ -174,4 +174,41 @@ describe('DecisionService impacts', () => {
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
   });
+
+  it('impacting() returns hits newest-first', () => {
+    const db = adapter.getDatabase();
+    const setAt = (key: string, at: string) =>
+      db.prepare('UPDATE decisions SET at = ? WHERE key = ?').run(at, key);
+
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'A',
+      decision: 'a',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'B',
+      decision: 'b',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    decisions.record({
+      projectKey: 'TEST',
+      title: 'C',
+      decision: 'c',
+      impacts: ['src/x.ts'],
+      actor: 'daniel',
+    });
+    // Force strictly-increasing recording times — isoNow() is millisecond
+    // resolution, so three synchronous inserts can otherwise collide.
+    setAt('TEST-ADR-1', '2026-01-01T00:00:00.000Z');
+    setAt('TEST-ADR-2', '2026-01-02T00:00:00.000Z');
+    setAt('TEST-ADR-3', '2026-01-03T00:00:00.000Z');
+
+    // Assert raw order WITHOUT sorting — the newest-first contract is the point.
+    const hits = decisions.impacting('TEST', 'src/x.ts');
+    expect(hits.map((d) => d.key)).toEqual(['TEST-ADR-3', 'TEST-ADR-2', 'TEST-ADR-1']);
+  });
 });

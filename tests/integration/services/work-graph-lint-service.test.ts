@@ -224,4 +224,50 @@ describe('WorkGraphLintService', () => {
     expect(result.value.diagnostics.some((d) => d.rule === 'broken-dependency')).toBe(false);
     expect(result.value.errorCount).toBe(0);
   });
+
+  it('flags a run-less terminal arrival even when an earlier transition was run-tracked', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    makeTask('TEST-1', 'DONE', sprint.id);
+    // start WAS tracked under a run…
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      run: generateUuid(),
+      data: { key: 'TEST-1', from: 'READY', to: 'IN_PROGRESS', action: 'start' },
+    });
+    // …but the transition that ARRIVED at the terminal state was not.
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+    });
+
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(true);
+  });
+
+  it('does NOT flag when the terminal arrival itself was run-tracked', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    makeTask('TEST-1', 'DONE', sprint.id);
+    // an earlier run-less transition…
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      data: { key: 'TEST-1', from: 'READY', to: 'IN_PROGRESS', action: 'start' },
+    });
+    // …but the terminal arrival WAS tracked → not a bypass.
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      run: generateUuid(),
+      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+    });
+
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
+  });
 });

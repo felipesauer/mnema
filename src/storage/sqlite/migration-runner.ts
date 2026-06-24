@@ -49,6 +49,12 @@ export class MigrationRunner {
     const seenVersions = new Map<number, string>();
     for (const { file } of sources) {
       const version = parseVersion(file);
+      // Only an UNAPPLIED collision is a real hazard (two sibling files racing
+      // for the next slot mid-init). A version already in schema_migrations is
+      // a no-op for both files — e.g. a stray project-local `016_*.sql` left
+      // over after the bundled set advanced past 16 — so it must not brick an
+      // otherwise up-to-date `mnema migrate`.
+      if (applied.has(version)) continue;
       const prior = seenVersions.get(version);
       if (prior !== undefined && prior !== file) {
         throw new Error(`duplicate migration version ${version}: ${prior} vs ${file}`);

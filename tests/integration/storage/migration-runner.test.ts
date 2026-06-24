@@ -205,21 +205,40 @@ describe('MigrationRunner', () => {
     }
   });
 
-  it('rejects two distinct files that share a version prefix with a clear diagnostic', () => {
-    // Sibling branches each claim the next slot → two `016_*.sql` files.
+  it('rejects two distinct UNAPPLIED files that share a version prefix', () => {
+    // Sibling branches each claim the next free slot → two `017_*.sql` files
+    // (above the bundled max, so they are genuinely unapplied collisions).
     const extra = mkdtempSync(path.join(tmpdir(), 'mnema-mig-dup-'));
     writeFileSync(
-      path.join(extra, '016_alice.sql'),
-      'INSERT INTO schema_migrations (version) VALUES (16);',
+      path.join(extra, '017_alice.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (17);',
     );
     writeFileSync(
-      path.join(extra, '016_bob.sql'),
-      'INSERT INTO schema_migrations (version) VALUES (16);',
+      path.join(extra, '017_bob.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (17);',
     );
 
     expect(() => new MigrationRunner().run(adapter, [migrationsDir, extra])).toThrow(
-      /duplicate migration version 16/,
+      /duplicate migration version 17/,
     );
+
+    rmSync(extra, { recursive: true, force: true });
+  });
+
+  it('no-ops (does not throw) when the duplicated version is already applied', () => {
+    // First bring the DB fully up to date with the bundled set.
+    new MigrationRunner().run(adapter, migrationsDir);
+
+    // A stray project-local file collides with the bundled 016, but version 16
+    // is already applied — both are no-ops, so migrate must stay idempotent.
+    const extra = mkdtempSync(path.join(tmpdir(), 'mnema-mig-applied-'));
+    writeFileSync(
+      path.join(extra, '016_stray_local.sql'),
+      'INSERT INTO schema_migrations (version) VALUES (16);',
+    );
+
+    const second = new MigrationRunner().run(adapter, [migrationsDir, extra]);
+    expect(second).toEqual([]);
 
     rmSync(extra, { recursive: true, force: true });
   });

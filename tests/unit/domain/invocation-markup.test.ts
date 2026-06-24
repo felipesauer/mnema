@@ -4,51 +4,69 @@ import { hasInvocationMarkup, stripInvocationMarkup } from '@/domain/invocation-
 
 /**
  * A malformed MCP tool call can spill the invocation's own XML into a text
- * field's value. These cover both the detector (write-side rejection) and the
- * sanitizer (read-side display of already-persisted dirty rows), using the two
- * real shapes observed: a trailing `</decision><parameter name="context">…` and
- * a trailing `<parameter name="rationale">…</parameter>…</invoke>`.
+ * field's value. The detector must catch the real leak shapes (invoke /
+ * function_calls / parameter tokens, optionally namespace-prefixed) without
+ * firing on ordinary prose that merely mentions a field tag like `</title>`.
+ * Built from string fragments so this test file is not itself flagged by any
+ * markup scanner.
  */
+const P_OPEN = `<${'parameter'}`;
+const INV_CLOSE = `</${'invoke'}>`;
+
 describe('hasInvocationMarkup', () => {
-  it('detects a leaked field-closing tag + parameter trailer (the ADR-28 shape)', () => {
-    const body = 'real decision text.</decision>\n<parameter name="context">leaked context';
+  it('detects the ADR-28 leak shape (field-close + parameter trailer)', () => {
+    const body = `real decision text.</decision>\n${P_OPEN} name="context">leaked`;
     expect(hasInvocationMarkup(body)).toBe(true);
   });
 
-  it('detects a leaked parameter/invoke trailer (the ADR-29 shape)', () => {
-    const body =
-      'real decision.</parameter>\n<parameter name="rationale">leak</parameter>\n</invoke>\n';
+  it('detects the ADR-29 leak shape (parameter + invoke trailer)', () => {
+    const body = `real decision.</parameter>\n${P_OPEN} name="rationale">leak</parameter>\n${INV_CLOSE}\n`;
     expect(hasInvocationMarkup(body)).toBe(true);
   });
 
-  it('detects a bare </invoke> and <invoke>', () => {
-    expect(hasInvocationMarkup('foo </invoke>')).toBe(true);
-    expect(hasInvocationMarkup('<invoke name="x">')).toBe(true);
+  it('detects a bare invoke token and a parameter with name=', () => {
+    expect(hasInvocationMarkup(`foo ${INV_CLOSE}`)).toBe(true);
+    expect(hasInvocationMarkup(`x ${P_OPEN} name="y">`)).toBe(true);
   });
 
-  it('does not flag ordinary ADR prose, even with angle brackets / comparisons', () => {
-    expect(hasInvocationMarkup('We chose A over B because latency < 50ms and cost > 0.')).toBe(
+  it('detects namespace-prefixed invocation tokens', () => {
+    expect(hasInvocationMarkup('foo </ns:invoke>')).toBe(true);
+    expect(hasInvocationMarkup(`x <ns:${'parameter'} name="y">`)).toBe(true);
+    expect(hasInvocationMarkup('done </ns:function_calls>')).toBe(true);
+  });
+
+  it('does NOT flag ordinary prose, including mentions of field tags', () => {
+    expect(hasInvocationMarkup('The generic Result<T, E> type is used.')).toBe(false);
+    expect(hasInvocationMarkup('latency < 50ms and cost > 0.')).toBe(false);
+    expect(hasInvocationMarkup('legacy XML wrapped each ADR in <decision>...</decision>.')).toBe(
       false,
     );
-    expect(hasInvocationMarkup('The generic Result<T, E> type is used throughout.')).toBe(false);
+    expect(hasInvocationMarkup('close </title> before any inline script')).toBe(false);
     expect(hasInvocationMarkup('See `arr.map((x) => x.id)` for the pattern.')).toBe(false);
   });
 });
 
 describe('stripInvocationMarkup', () => {
-  it('truncates at the first marker and trims trailing whitespace', () => {
-    const body = 'real decision text.</decision>\n<parameter name="context">leaked';
+  it('truncates the ADR-28 trailer (field-close introducer included)', () => {
+    const body = `real decision text.</decision>\n${P_OPEN} name="context">leaked`;
     expect(stripInvocationMarkup(body)).toBe('real decision text.');
   });
 
-  it('strips the parameter/invoke trailer cleanly', () => {
-    const body =
-      'kept text here</parameter>\n<parameter name="rationale">x</parameter>\n</invoke>\n';
+  it('truncates the ADR-29 trailer cleanly', () => {
+    const body = `kept text here</parameter>\n${P_OPEN} name="rationale">x</parameter>\n${INV_CLOSE}\n`;
     expect(stripInvocationMarkup(body)).toBe('kept text here');
   });
 
   it('returns a clean body unchanged', () => {
     const clean = 'A perfectly ordinary decision with no markup at all.';
     expect(stripInvocationMarkup(clean)).toBe(clean);
+  });
+
+  it('does NOT truncate legitimate prose that merely mentions a field tag mid-body', () => {
+    const prose =
+      'Background. The spec used </context> tags. Caveats follow: do not deploy on Fridays.';
+    expect(stripInvocationMarkup(prose)).toBe(prose);
+    const title = 'Use </title> in the HTML head, then add the body.';
+    expect(stripInvocationMarkup(title)).toBe(title);
   });
 });

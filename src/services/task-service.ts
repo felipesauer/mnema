@@ -221,6 +221,28 @@ export class TaskService {
     }
 
     const { to, data } = validation.value;
+
+    // A custom workflow may declare `estimate`/`priority` as mutating gate
+    // fields with looser bounds than the first-class columns allow (estimate ≥
+    // 0 integer; priority 1..5). The gate would accept e.g. priority=8, then
+    // the column fold would silently drop it — Ok returned, audit says 8, the
+    // task row unchanged. Validate against the column invariant here so the
+    // transition fails closed and stays symmetric with create(), rather than
+    // recording an intent that can never persist.
+    if (data !== null && typeof data === 'object') {
+      const payload = data as Record<string, unknown>;
+      const foldIssues: ErrorIssue[] = [];
+      if (typeof payload.estimate === 'number') {
+        checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
+      }
+      if (typeof payload.priority === 'number') {
+        checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
+      }
+      if (foldIssues.length > 0) {
+        return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
+      }
+    }
+
     const actorId = this.identity.ensureActor(input.actor, 'human');
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;

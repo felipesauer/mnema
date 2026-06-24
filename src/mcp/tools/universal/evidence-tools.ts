@@ -90,8 +90,6 @@ export class EvidenceTools {
         },
       },
       ({ task_key: taskKey }) => {
-        const drift = requireFreshSchema(this.pendingMigrations);
-        if (drift !== null) return drift;
         const result = this.evidence.forTask(taskKey);
         if (!result.ok) return err(result.error);
         return ok({ criteria: result.value.criteria, orphaned: result.value.orphaned });

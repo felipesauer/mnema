@@ -30,13 +30,38 @@ describe('exitCodeFor', () => {
     expect(exitCodeFor(error)).toBe(4);
   });
 
-  it('keeps duplicate-style conflicts on exit 4', () => {
-    const dup: MnemaError = {
+  it('maps deterministic "already exists" duplicates to exit 2 (Usage), not retryable 4', () => {
+    // These can never succeed on retry — re-running with the same input
+    // reproduces the duplicate. They belong with TaskKeyExists at Usage(2).
+    const metric: MnemaError = {
       kind: ErrorCode.SprintMetricDuplicate,
       sprintKey: 'WEBAPP-SPRINT-1',
       name: 'p95',
     };
-    expect(exitCodeFor(dup)).toBe(ExitCode.Conflict);
+    const dep: MnemaError = {
+      kind: ErrorCode.DependencyDuplicate,
+      taskKey: 'A-1',
+      blocksTaskKey: 'A-2',
+      dependencyKind: 'blocks',
+    };
+    const evidence: MnemaError = {
+      kind: ErrorCode.EvidenceDuplicate,
+      taskKey: 'A-1',
+      index: 0,
+      ref: 'tests/a.test.ts',
+    };
+    expect(exitCodeFor(metric)).toBe(ExitCode.Usage);
+    expect(exitCodeFor(dep)).toBe(ExitCode.Usage);
+    expect(exitCodeFor(evidence)).toBe(ExitCode.Usage);
+  });
+
+  it('keeps genuine races (ActiveSprintExists) on retryable exit 4', () => {
+    const race: MnemaError = {
+      kind: ErrorCode.ActiveSprintExists,
+      projectKey: 'WEBAPP',
+      activeSprintKey: 'WEBAPP-SPRINT-1',
+    };
+    expect(exitCodeFor(race)).toBe(ExitCode.Conflict);
   });
 
   it('maps wrong-state errors to exit 3 (State)', () => {

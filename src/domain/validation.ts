@@ -22,8 +22,11 @@ export function checkOptionalNonNegativeInt(
   issues: ErrorIssue[],
 ): void {
   if (value === null || value === undefined) return;
-  if (!Number.isInteger(value)) {
-    issues.push({ path: [field], message: `must be an integer (got ${describe(value)})` });
+  if (!Number.isSafeInteger(value)) {
+    const reason = Number.isInteger(value)
+      ? 'is too large (exceeds the safe-integer range)'
+      : 'must be an integer';
+    issues.push({ path: [field], message: `${reason} (got ${describe(value)})` });
     return;
   }
   if (value < 0) {
@@ -43,8 +46,11 @@ export function checkOptionalIntInRange(
   issues: ErrorIssue[],
 ): void {
   if (value === null || value === undefined) return;
-  if (!Number.isInteger(value)) {
-    issues.push({ path: [field], message: `must be an integer (got ${describe(value)})` });
+  if (!Number.isSafeInteger(value)) {
+    const reason = Number.isInteger(value)
+      ? 'is too large (exceeds the safe-integer range)'
+      : 'must be an integer';
+    issues.push({ path: [field], message: `${reason} (got ${describe(value)})` });
     return;
   }
   if (value < min || value > max) {
