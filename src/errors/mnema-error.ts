@@ -145,7 +145,24 @@ export type MnemaError =
       readonly blocksTaskKey: string;
       readonly dependencyKind: string;
     }
-  | { readonly kind: ErrorCode.DependencySelf; readonly taskKey: string };
+  | { readonly kind: ErrorCode.DependencySelf; readonly taskKey: string }
+  | {
+      readonly kind: ErrorCode.EvidenceCriterionOutOfRange;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly criteriaCount: number;
+    }
+  | {
+      readonly kind: ErrorCode.EvidenceDuplicate;
+      readonly taskKey: string;
+      readonly index: number;
+      readonly ref: string;
+    }
+  | {
+      readonly kind: ErrorCode.SprintMetricDuplicate;
+      readonly sprintKey: string;
+      readonly name: string;
+    };
 
 /**
  * Adapts an array of Zod issues to the project-internal {@link ErrorIssue}

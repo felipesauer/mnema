@@ -16,6 +16,8 @@ export interface Decision {
   readonly status: DecisionStatus;
   readonly supersededBy: string | null;
   readonly authoredBy: string;
+  /** Paths/keys of artefacts this decision affects (reverse-queryable). */
+  readonly impacts: readonly string[];
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly at: string;
   readonly updatedAt: string;

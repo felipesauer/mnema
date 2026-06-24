@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import type { Epic } from '../../domain/entities/epic.js';
+import type { EpicLifecycle } from '../../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -62,7 +63,9 @@ export class EpicCommand {
           if (!result.ok) {
             process.exit(printError(result.error));
           }
-          process.stdout.write(`${formatEpicView(result.value.epic, result.value.taskKeys)}\n`);
+          process.stdout.write(
+            `${formatEpicView(result.value.epic, result.value.taskKeys, result.value.lifecycle)}\n`,
+          );
         });
       });
 
@@ -170,11 +173,11 @@ function formatEpicRow(epic: Epic): string {
   return `${pc.bold(epic.key.padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
 }
 
-function formatEpicView(epic: Epic, taskKeys: readonly string[]): string {
+function formatEpicView(epic: Epic, taskKeys: readonly string[], lifecycle: EpicLifecycle): string {
   const lines: string[] = [];
   lines.push(`${pc.bold('Epic:')} ${epic.key}`);
   lines.push(`${pc.bold('Title:')} ${epic.title}`);
-  lines.push(`${pc.bold('State:')} ${epic.state}`);
+  lines.push(`${pc.bold('State:')} ${epic.state} ${pc.dim(`(${lifecycle})`)}`);
   if (epic.description !== null) {
     lines.push('');
     lines.push(epic.description);

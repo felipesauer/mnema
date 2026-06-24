@@ -38,9 +38,9 @@ export class SprintTools {
       ({ sprint_key: sprintKey }) => {
         const view = this.sprints.show(sprintKey);
         if (view === null) {
-          return ok({ sprint: null, tasks: [] });
+          return ok({ sprint: null, tasks: [], metrics: [] });
         }
-        return ok({ sprint: view.sprint, tasks: view.tasks });
+        return ok({ sprint: view.sprint, tasks: view.tasks, metrics: view.metrics });
       },
     );
 

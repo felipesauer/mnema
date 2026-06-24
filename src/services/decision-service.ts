@@ -21,6 +21,8 @@ export interface RecordDecisionInput {
   readonly context?: string;
   readonly rationale?: string;
   readonly consequences?: string;
+  /** Paths/keys of artefacts this decision affects. */
+  readonly impacts?: readonly string[];
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -119,6 +121,7 @@ export class DecisionService {
       context: input.context ?? null,
       rationale: input.rationale ?? null,
       consequences: input.consequences ?? null,
+      impacts: input.impacts ?? [],
       authoredBy,
     });
 
@@ -308,6 +311,20 @@ export class DecisionService {
     const project = this.projects.findByKey(projectKey);
     if (project === null) return [];
     return this.decisions.findByProject(project.id, status);
+  }
+
+  /**
+   * Returns the decisions of a project whose `impacts` list contains the
+   * given artefact path/key — "which decision touched this?".
+   *
+   * @param projectKey - Project key
+   * @param ref - Artefact path or key to match
+   * @returns Matching decisions (empty when the project is unknown)
+   */
+  impacting(projectKey: string, ref: string): readonly Decision[] {
+    const project = this.projects.findByKey(projectKey);
+    if (project === null) return [];
+    return this.decisions.findImpacting(project.id, ref);
   }
 
   /**

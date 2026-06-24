@@ -60,6 +60,11 @@ export enum ErrorCode {
   DependencyCycle = 'DEPENDENCY_CYCLE',
   DependencyDuplicate = 'DEPENDENCY_DUPLICATE',
   DependencySelf = 'DEPENDENCY_SELF',
+
+  EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
+  EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
+
+  SprintMetricDuplicate = 'SPRINT_METRIC_DUPLICATE',
 }
 
 /**

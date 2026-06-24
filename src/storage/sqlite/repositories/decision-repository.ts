@@ -16,6 +16,7 @@ interface DecisionRow {
   readonly status: string;
   readonly superseded_by: string | null;
   readonly authored_by: string;
+  readonly impacts: string;
   readonly metadata: string;
   readonly at: string;
   readonly updated_at: string;
@@ -47,6 +48,7 @@ export interface DecisionInsertInput {
   readonly rationale?: string | null;
   readonly consequences?: string | null;
   readonly authoredBy: string;
+  readonly impacts?: readonly string[];
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
@@ -140,6 +142,7 @@ export class DecisionRepository {
   insert(input: DecisionInsertInput): Decision {
     const id = generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
+    const impacts = JSON.stringify(input.impacts ?? []);
     const now = isoNow();
 
     this.adapter
@@ -147,8 +150,8 @@ export class DecisionRepository {
       .prepare(
         `INSERT INTO decisions (
            id, key, project_id, title, context, decision, rationale,
-           consequences, status, authored_by, metadata, at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?)`,
+           consequences, status, authored_by, impacts, metadata, at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -160,6 +163,7 @@ export class DecisionRepository {
         input.rationale ?? null,
         input.consequences ?? null,
         input.authoredBy,
+        impacts,
         metadata,
         now,
         now,
@@ -216,6 +220,19 @@ export class DecisionRepository {
     }
     return { ok: true, decision: reloaded };
   }
+
+  /**
+   * Returns the active decisions of a project whose `impacts` list
+   * contains the given path/key — the reverse "which decision touched
+   * this artefact?" query. Filtered in memory (ADR volume is small).
+   *
+   * @param projectId - Internal project id
+   * @param ref - Artefact path or key to match
+   * @returns Matching decisions ordered by recording time (desc)
+   */
+  findImpacting(projectId: string, ref: string): Decision[] {
+    return this.findByProject(projectId).filter((d) => d.impacts.includes(ref));
+  }
 }
 
 function rowToDecision(row: DecisionRow): Decision {
@@ -231,6 +248,7 @@ function rowToDecision(row: DecisionRow): Decision {
     status: row.status as DecisionStatus,
     supersededBy: row.superseded_by,
     authoredBy: row.authored_by,
+    impacts: JSON.parse(row.impacts) as string[],
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     at: row.at,
     updatedAt: row.updated_at,

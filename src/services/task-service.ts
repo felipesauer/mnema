@@ -29,6 +29,8 @@ export interface CreateTaskInput {
   readonly description?: string;
   readonly acceptanceCriteria?: readonly string[];
   readonly estimate?: number | null;
+  /** Estimated context cost in tokens; distinct from `estimate` (story points). */
+  readonly contextBudget?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
   /**
@@ -115,6 +117,7 @@ export class TaskService {
           description: input.description ?? null,
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           estimate: input.estimate ?? null,
+          contextBudget: input.contextBudget ?? null,
           priority: input.priority ?? 3,
           assigneeId: input.assigneeId ?? null,
           reporterId,

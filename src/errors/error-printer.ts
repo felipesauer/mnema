@@ -298,6 +298,22 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.DependencySelf:
       lines.push(`${error.taskKey} cannot depend on itself`);
       break;
+    case ErrorCode.EvidenceCriterionOutOfRange:
+      lines.push(
+        `${error.taskKey} has ${error.criteriaCount} acceptance criteria; index ${error.index} is out of range`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} criterion_index is 0-based; check \`mnema task show ${error.taskKey}\``,
+      );
+      break;
+    case ErrorCode.EvidenceDuplicate:
+      lines.push(
+        `${error.taskKey} criterion ${error.index} already has that evidence (${error.ref})`,
+      );
+      break;
+    case ErrorCode.SprintMetricDuplicate:
+      lines.push(`Sprint ${error.sprintKey} already has a metric named "${error.name}"`);
+      break;
   }
 
   return lines.join('\n');
@@ -317,6 +333,8 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
       return ExitCode.State;
     case ErrorCode.InitConflict:
     case ErrorCode.DependencyDuplicate:
+    case ErrorCode.EvidenceDuplicate:
+    case ErrorCode.SprintMetricDuplicate:
       return ExitCode.Conflict;
     case ErrorCode.DependencyCycle:
     case ErrorCode.DependencySelf:

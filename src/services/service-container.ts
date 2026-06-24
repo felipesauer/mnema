@@ -23,7 +23,9 @@ import { NoteRepository } from '../storage/sqlite/repositories/note-repository.j
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
+import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
+import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -48,6 +50,7 @@ import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
+import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
 import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
@@ -92,6 +95,7 @@ export interface ServiceContainer {
   readonly decision: DecisionService;
   readonly dependency: DependencyService;
   readonly note: NoteService;
+  readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
   readonly workGraphLint: WorkGraphLintService;
@@ -171,9 +175,11 @@ export function createServiceContainer(
   const agentRuns = new AgentRunRepository(adapter);
   const agentPlans = new AgentPlanRepository(adapter);
   const sprintRepository = new SprintRepository(adapter);
+  const sprintMetricRepository = new SprintMetricRepository(adapter);
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
   const dependencyRepository = new DependencyRepository(adapter);
+  const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
   const skillRepository = new SkillRepository(adapter);
@@ -220,7 +226,14 @@ export function createServiceContainer(
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
-  const sprintService = new SprintService(sprintRepository, tasks, projects, audit, stateMachine);
+  const sprintService = new SprintService(
+    sprintRepository,
+    tasks,
+    projects,
+    audit,
+    stateMachine,
+    sprintMetricRepository,
+  );
   const decisionService = new DecisionService(
     decisionRepository,
     projects,
@@ -237,6 +250,7 @@ export function createServiceContainer(
     audit,
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
+  const taskEvidenceService = new TaskEvidenceService(taskEvidenceRepository, tasks, audit);
   const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
   const coverageService = new CoverageService(
     epicRepository,
@@ -297,6 +311,7 @@ export function createServiceContainer(
     decision: decisionService,
     dependency: dependencyService,
     note: noteService,
+    taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
     workGraphLint: workGraphLintService,
