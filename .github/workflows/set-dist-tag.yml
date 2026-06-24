@@ -1,0 +1,47 @@
+name: Set npm dist-tag
+
+# Manual maintenance: point an npm dist-tag at an already-published version.
+# Useful to correct `latest` out-of-band (e.g. it lagged behind the current
+# alpha) without re-publishing. Uses the same NPM_TOKEN the publish workflow
+# uses, which has write access to the package.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Published version to point the tag at (e.g. 0.5.0-alpha.0)'
+        required: true
+      tag:
+        description: 'dist-tag to move (e.g. latest)'
+        required: true
+        default: 'latest'
+
+permissions:
+  contents: read
+
+jobs:
+  set-tag:
+    name: set ${{ github.event.inputs.tag }} -> ${{ github.event.inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify the version is published before moving the tag
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! npm view "@felipesauer/mnema@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::@felipesauer/mnema@$VERSION is not published — refusing to move a dist-tag to a non-existent version"
+            exit 1
+          fi
+          echo "@felipesauer/mnema@$VERSION is published; proceeding"
+
+      - name: Move the dist-tag
+        run: npm dist-tag add "@felipesauer/mnema@${{ github.event.inputs.version }}" "${{ github.event.inputs.tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Show resulting dist-tags
+        run: npm dist-tag ls @felipesauer/mnema
