@@ -31,11 +31,14 @@
 //   - <parameter … name=…> — the opening form requires a `name=` attribute, so
 //     a lone `<parameter>` in prose is not flagged.
 // Closing tags carry no attributes, so they match only `</invoke\s*>` /
-// `</function_calls\s*>` — no `[^>]*` that could stretch across prose to reach
-// a distant `>` (e.g. a later `<b>`). The open `<invoke` keeps an optional `>`
-// to catch a mid-emission truncation, but its attribute run forbids `>` AND
-// newlines so it cannot swallow following prose.
-const STRONG_TOKEN = String.raw`<(?:[\w.-]+:)?invoke\b[^>\n]*>?|<\/(?:[\w.-]+:)?invoke\s*>|<(?:[\w.-]+:)?function_calls\b[^>\n]*>|<\/(?:[\w.-]+:)?function_calls\s*>|<(?:[\w.-]+:)?parameter\b[^>\n]*\bname\s*=`;
+// `</function_calls\s*>` — no attribute run that could stretch across prose to
+// reach a distant `>` (e.g. a later `<b>`). The open forms keep an attribute
+// run, but it forbids `<`, `>` AND newlines: excluding `<` both bounds the run
+// to a single tag and keeps matching LINEAR — a greedy `[^>]*` made the
+// `parameter … name=` token backtrack O(n²) over a long run of `<parameter`
+// near-misses (a ~280KB body took seconds). With `<` excluded, each candidate
+// tag fails in O(1) locally.
+const STRONG_TOKEN = String.raw`<(?:[\w.-]+:)?invoke\b[^<>\n]*>?|<\/(?:[\w.-]+:)?invoke\s*>|<(?:[\w.-]+:)?function_calls\b[^<>\n]*>|<\/(?:[\w.-]+:)?function_calls\s*>|<(?:[\w.-]+:)?parameter\b[^<>\n]*\bname\s*=`;
 
 // A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
 // `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it

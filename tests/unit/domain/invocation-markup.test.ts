@@ -108,3 +108,16 @@ describe('stripInvocationMarkup', () => {
     expect(stripInvocationMarkup(prose)).toBe(prose);
   });
 });
+
+describe('detector runs in linear time (no catastrophic backtracking)', () => {
+  it('handles a large body of `<parameter` near-misses quickly', () => {
+    // A greedy `[^>]*` before `name=` once backtracked O(n²): ~280KB took
+    // seconds. Excluding `<` from the attribute run keeps it linear.
+    const evil = `<${'parameter'} nam`.repeat(40000) + 'x';
+    const start = process.hrtime.bigint();
+    const flagged = hasInvocationMarkup(evil);
+    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    expect(flagged).toBe(false); // no real leak — none of these complete a name=
+    expect(ms).toBeLessThan(500); // was ~14000ms before the fix
+  });
+});
