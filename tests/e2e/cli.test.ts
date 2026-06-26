@@ -266,7 +266,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(second.stdout).toContain('already up to date');
   });
 
-  it('mnema upgrade applies a pending migration before inspecting the rest', () => {
+  it('mnema upgrade applies a pending migration before inspecting the rest', async () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
     // A project-local migration the runner will see as pending. The
@@ -294,6 +294,23 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toContain('applied 1 migration');
     expect(result.stdout).toContain('set mnema_version');
     expect(result.stderr).not.toContain('no such table');
+
+    // Prove the migration actually hit the schema (phase 1), not just the
+    // stdout — the table the pending migration creates now exists.
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      const row = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='upgrade_probe'")
+        .get() as { name: string } | undefined;
+      expect(row?.name).toBe('upgrade_probe');
+    } finally {
+      db.close();
+    }
+
+    // And phase 2 ran against the now-current schema: the version was bumped.
+    const finalConfig = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
+    expect(finalConfig.mnema_version).not.toBe('^0.0.1-alpha.0');
   });
 
   it('mnema history shows aggregated activity for the day', () => {

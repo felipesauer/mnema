@@ -19,7 +19,7 @@ import {
 import { inspectMirrorDrift } from './doctor-command.js';
 
 /** A single thing `upgrade` would change, with a one-line description and the action to run it. */
-interface UpgradeStep {
+export interface UpgradeStep {
   readonly label: string;
   readonly run: () => string;
 }
@@ -172,7 +172,7 @@ export class UpgradeCommand {
  * @param skipPrompt - When true, applies without asking (`--yes`)
  * @returns `'applied'`, or `'aborted'` when the user declined
  */
-async function runPhase(
+export async function runPhase(
   title: string,
   steps: readonly UpgradeStep[],
   skipPrompt: boolean,
