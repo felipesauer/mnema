@@ -307,6 +307,17 @@ thresholds and feature flags. Run `mnema doctor` after editing — it
 re-validates the file against the schema and reports anything that
 drifted.
 
+One optional field worth calling out is `enforcement_mode`, which decides
+what a failed workflow gate means:
+
+| Mode | A failed gate… |
+|---|---|
+| `strict` *(default)* | blocks an agent; a human may override, and the override is audited |
+| `blocking` | blocks everyone, no override |
+| `advisory` | only warns — anyone may proceed, and the skipped gate is audited |
+
+`mnema doctor` prints the active mode so its effect is never a surprise.
+
 ## Workflows
 
 Workflows are JSON files in `workflows/`. The default ships with
