@@ -167,7 +167,13 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
     ).register(this.sdk);
-    new EpicTools(this.services.epic, this.config).register(this.sdk);
+    new EpicTools(
+      this.services.epic,
+      this.config,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(

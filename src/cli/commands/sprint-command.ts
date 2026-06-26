@@ -151,6 +151,32 @@ export class SprintCommand {
       });
 
     group
+      .command('add-tasks <sprintKey> <taskKeys...>')
+      .description('Attach several tasks to a sprint (best-effort; reports per-task failures)')
+      .action(async (sprintKey: string, taskKeys: string[]) => {
+        await withMutatingCliContext(({ container }) => {
+          let added = 0;
+          let failed = 0;
+          for (const taskKey of taskKeys) {
+            const result = container.sprint.addTask({
+              sprintKey,
+              taskKey,
+              actor: container.identity.getDefaultActor(),
+            });
+            if (result.ok) {
+              added += 1;
+              process.stdout.write(`${pc.green('✓')} ${taskKey} attached to ${sprintKey}\n`);
+            } else {
+              failed += 1;
+              process.stderr.write(`${pc.yellow('!')} ${taskKey}: ${result.error.kind}\n`);
+            }
+          }
+          process.stdout.write(`${pc.dim(`${added} attached, ${failed} failed`)}\n`);
+          if (failed > 0) process.exitCode = 1;
+        });
+      });
+
+    group
       .command('remove <sprintKey> <taskKey>')
       .description('Remove a task from its sprint')
       .action(async (sprintKey: string, taskKey: string) => {

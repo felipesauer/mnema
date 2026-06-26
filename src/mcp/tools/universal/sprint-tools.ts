@@ -87,5 +87,81 @@ export class SprintTools {
         return ok({ task: result.value });
       },
     );
+
+    server.registerTool(
+      'sprint_create',
+      {
+        description: 'Plan a new sprint in PLANNED state. Requires an active agent run.',
+        inputSchema: {
+          name: z.string().min(1),
+          goal: z.string().optional(),
+          starts_at: z.string().optional().describe('ISO-8601 start date'),
+          ends_at: z.string().optional().describe('ISO-8601 end date'),
+          capacity: z.number().int().positive().optional().describe('Capacity in story points'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.plan({
+          projectKey: this.config.project.key,
+          name: input.name,
+          goal: input.goal,
+          startsAt: input.starts_at,
+          endsAt: input.ends_at,
+          capacity: input.capacity,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ sprint: result.value });
+      },
+    );
+
+    server.registerTool(
+      'sprint_add_tasks',
+      {
+        description:
+          'Attach several existing tasks to a sprint in one call (best-effort): ' +
+          'each is attempted and the result lists what was added and what failed, ' +
+          'with its input index. Requires an active agent run.',
+        inputSchema: {
+          sprint_key: z.string(),
+          task_keys: z.array(z.string()).min(1).max(200).describe('Task keys to attach, in order'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const via = handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined;
+
+        const added: unknown[] = [];
+        const failed: { index: number; task_key: string; error: unknown }[] = [];
+        input.task_keys.forEach((taskKey, index) => {
+          const result = this.sprints.addTask({
+            sprintKey: input.sprint_key,
+            taskKey,
+            actor: this.identity.getDefaultActor(),
+            via,
+            runId: runId ?? undefined,
+          });
+          if (result.ok) added.push(result.value);
+          else failed.push({ index, task_key: taskKey, error: result.error });
+        });
+
+        return ok({ added, failed, added_count: added.length, failed_count: failed.length });
+      },
+    );
   }
 }

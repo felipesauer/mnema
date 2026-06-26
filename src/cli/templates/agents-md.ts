@@ -50,6 +50,18 @@ export function buildAgentsMd(config: Config): string {
       'are rejected with `NO_ACTIVE_RUN`.',
   );
   lines.push('');
+  lines.push('## Planning surface');
+  lines.push('');
+  lines.push(
+    'Roadmap structure is available through the MCP tools, so an agent never ' +
+      'has to drop to the CLI mid-run: `epic_create` / `epic_add_task`, ' +
+      '`sprint_create` / `sprint_add_task`, and the decision tools all flow ' +
+      'through the active run. Bootstrapping a large plan? Prefer the batch ' +
+      'tools — `task_create_many`, `sprint_add_tasks`, `task_depends_many` — ' +
+      'which attempt every item and report per-item failures instead of ' +
+      'failing the whole call.',
+  );
+  lines.push('');
   lines.push('## Memory & decisions');
   lines.push('');
   lines.push(
