@@ -282,6 +282,7 @@ mnema watch                        # live tail of every mutation
 mnema inbox                        # what's waiting on your review
 mnema history --since=today        # formatted activity log
 mnema agent inspect <run_id>       # one run, with its plans + mutations
+mnema agent resume <run_id>        # reattach to an interrupted run
 mnema doctor                       # re-verify the audit chain anytime
 ```
 

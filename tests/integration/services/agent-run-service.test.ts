@@ -11,7 +11,9 @@ import { IdentityService } from '@/services/identity-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
+import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repository.js';
+import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -20,6 +22,8 @@ describe('AgentRunService', () => {
   let tempRoot: string;
   let adapter: SqliteAdapter;
   let runs: AgentRunRepository;
+  let plans: AgentPlanRepository;
+  let transitions: TransitionRepository;
   let service: AgentRunService;
 
   beforeEach(() => {
@@ -29,10 +33,12 @@ describe('AgentRunService', () => {
 
     const actors = new ActorRepository(adapter);
     runs = new AgentRunRepository(adapter);
+    plans = new AgentPlanRepository(adapter);
+    transitions = new TransitionRepository(adapter);
     const identity = new IdentityService(actors);
     const auditDir = path.join(tempRoot, '.audit');
     const audit = new AuditService(new AuditWriter(auditDir));
-    service = new AgentRunService(runs, actors, identity, audit);
+    service = new AgentRunService(runs, actors, identity, audit, plans, transitions);
   });
 
   afterEach(() => {
@@ -137,8 +143,14 @@ describe('AgentRunService', () => {
     const calls: string[] = [];
     const actors = new ActorRepository(adapter);
     const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
-    const hooked = new AgentRunService(runs, actors, new IdentityService(actors), audit, (run) =>
-      calls.push(run.id),
+    const hooked = new AgentRunService(
+      runs,
+      actors,
+      new IdentityService(actors),
+      audit,
+      plans,
+      transitions,
+      (run) => calls.push(run.id),
     );
 
     const start = hooked.start({ goal: 'g', actor: 'daniel', agentHandle: 'cc' });
@@ -146,5 +158,90 @@ describe('AgentRunService', () => {
     hooked.end({ runId: start.value.id, status: AgentRunStatus.Completed });
 
     expect(calls).toEqual([start.value.id]);
+  });
+
+  describe('resume', () => {
+    it('reopens an aborted run back to running with the same id', () => {
+      const start = service.start({ goal: 'interrupted work', actor: 'ana', agentHandle: 'cc' });
+      if (!start.ok) throw new Error('precondition failed');
+      service.end({ runId: start.value.id, status: AgentRunStatus.Aborted });
+
+      const resumed = service.resume({ runId: start.value.id, actor: 'ana' });
+      if (!resumed.ok) throw new Error('expected resume to succeed');
+      expect(resumed.value.id).toBe(start.value.id);
+      expect(resumed.value.status).toBe(AgentRunStatus.Running);
+      expect(resumed.value.endedAt).toBeNull();
+      expect(resumed.value.error).toBeNull();
+    });
+
+    it('reopens a failed run', () => {
+      const start = service.start({ goal: 'failed work', actor: 'ana', agentHandle: 'cc' });
+      if (!start.ok) throw new Error('precondition failed');
+      service.end({ runId: start.value.id, status: AgentRunStatus.Failed, errorMessage: 'boom' });
+
+      const resumed = service.resume({ runId: start.value.id, actor: 'ana' });
+      if (!resumed.ok) throw new Error('expected resume to succeed');
+      expect(resumed.value.status).toBe(AgentRunStatus.Running);
+      expect(resumed.value.error).toBeNull();
+    });
+
+    it('rejects resuming a completed run', () => {
+      const start = service.start({ goal: 'done work', actor: 'ana', agentHandle: 'cc' });
+      if (!start.ok) throw new Error('precondition failed');
+      service.end({ runId: start.value.id, status: AgentRunStatus.Completed });
+
+      const resumed = service.resume({ runId: start.value.id, actor: 'ana' });
+      expect(resumed.ok).toBe(false);
+      if (!resumed.ok) {
+        expect(resumed.error.kind).toBe(ErrorCode.AgentRunNotResumable);
+      }
+    });
+
+    it('is a safe no-op when the run is still running', () => {
+      const start = service.start({ goal: 'live work', actor: 'ana', agentHandle: 'cc' });
+      if (!start.ok) throw new Error('precondition failed');
+
+      const resumed = service.resume({ runId: start.value.id, actor: 'ana' });
+      if (!resumed.ok) throw new Error('expected resume to succeed');
+      expect(resumed.value.id).toBe(start.value.id);
+      expect(resumed.value.status).toBe(AgentRunStatus.Running);
+    });
+
+    it('errors on an unknown run id', () => {
+      const resumed = service.resume({ runId: 'does-not-exist', actor: 'ana' });
+      expect(resumed.ok).toBe(false);
+      if (!resumed.ok) {
+        expect(resumed.error.kind).toBe(ErrorCode.AgentRunNotFound);
+      }
+    });
+  });
+
+  describe('summarize', () => {
+    it('reports counts and lists open child runs', () => {
+      const parent = service.start({ goal: 'parent', actor: 'ana', agentHandle: 'cc' });
+      if (!parent.ok) throw new Error('precondition failed');
+      const child = service.start({
+        goal: 'open child',
+        actor: 'ana',
+        agentHandle: 'cc',
+        parentRunId: parent.value.id,
+      });
+      if (!child.ok) throw new Error('precondition failed');
+
+      const summary = service.summarize(parent.value.id);
+      if (!summary.ok) throw new Error('expected summary to succeed');
+      expect(summary.value.mutationCount).toBe(0);
+      expect(summary.value.openItems).toHaveLength(1);
+      expect(summary.value.openItems[0]).toMatchObject({
+        kind: 'child_run',
+        id: child.value.id,
+        status: AgentRunStatus.Running,
+      });
+    });
+
+    it('errors on an unknown run id', () => {
+      const summary = service.summarize('nope');
+      expect(summary.ok).toBe(false);
+    });
   });
 });

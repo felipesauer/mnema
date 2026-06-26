@@ -445,6 +445,56 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toMatch(/start\s+WEBAPP-9/);
   });
 
+  it('mnema agent resume reopens an aborted run and lists open items', async () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'agent:cc', 'agent')").run();
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('h1', 'daniel', 'human')").run();
+      db.prepare(
+        `INSERT INTO agent_runs (id, agent_actor_id, invoked_by, goal, status,
+                                 error, started_at, ended_at, depth)
+         VALUES ('run-i', 'a1', 'h1', 'interrupted audit', 'aborted',
+                 'session dropped', '2026-05-01T10:00:00.000Z',
+                 '2026-05-01T10:00:30.000Z', 0)`,
+      ).run();
+      // An unfinished plan step — should surface as an open item.
+      db.prepare(
+        `INSERT INTO agent_plans (id, agent_run_id, content, state, position)
+         VALUES ('p1', 'run-i', 'finish the auth sweep', 'in_progress', 0)`,
+      ).run();
+    } finally {
+      db.close();
+    }
+
+    const result = runCli(['agent', 'resume', 'run-i'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Resumed run');
+    expect(result.stdout).toContain('running');
+    expect(result.stdout).toContain('Open items (1)');
+    expect(result.stdout).toContain('finish the auth sweep');
+
+    // A completed run cannot be resumed.
+    const db2 = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      db2
+        .prepare(
+          `INSERT INTO agent_runs (id, agent_actor_id, invoked_by, goal, status,
+                                   started_at, ended_at, depth)
+           VALUES ('run-done', 'a1', 'h1', 'done', 'completed',
+                   '2026-05-01T09:00:00.000Z', '2026-05-01T09:05:00.000Z', 0)`,
+        )
+        .run();
+    } finally {
+      db2.close();
+    }
+    const rejected = runCli(['agent', 'resume', 'run-done'], projectRoot);
+    expect(rejected.status).not.toBe(0);
+    expect(rejected.stderr).toContain('cannot be resumed');
+  });
+
   it('mnema inbox lists tasks awaiting review and blocked tasks', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     runCli(['task', 'create', '--title', 'Block test task'], projectRoot);

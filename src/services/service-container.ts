@@ -275,9 +275,17 @@ export function createServiceContainer(
   );
   trace.mark('services instantiated');
 
-  const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {
-    sync.flushAll();
-  });
+  const agentRunService = new AgentRunService(
+    agentRuns,
+    actors,
+    identity,
+    audit,
+    agentPlans,
+    transitions,
+    () => {
+      sync.flushAll();
+    },
+  );
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
