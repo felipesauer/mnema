@@ -21,6 +21,7 @@ export enum ErrorCode {
 
   IdentityNotConfigured = 'IDENTITY_NOT_CONFIGURED',
   AgentHandleMissing = 'AGENT_HANDLE_MISSING',
+  UnknownAssignee = 'UNKNOWN_ASSIGNEE',
 
   InitConflict = 'INIT_CONFLICT',
   AlreadyInitialized = 'ALREADY_INITIALIZED',

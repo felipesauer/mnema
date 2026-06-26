@@ -52,7 +52,7 @@
           "assignee_id": {
             "type": "string",
             "min": 1,
-            "description": "Actor identifier — accepts a handle (e.g. 'maria') or a UUID. The server resolves handles to actor records, creating one if needed."
+            "description": "Actor identifier — accepts a known handle (e.g. 'maria') or a UUID. An unknown handle is rejected with UNKNOWN_ASSIGNEE."
           }
         }
       },

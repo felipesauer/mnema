@@ -9,6 +9,20 @@ import type { McpSessionContext } from '../../mcp-session-context.js';
 import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
+ * One task's fields for `task_create_many`. Mirrors the `task_create`
+ * single-item schema so a batch validates each entry the same way.
+ */
+const taskItemSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().optional(),
+  acceptance_criteria: z.array(z.string().min(1)).optional(),
+  estimate: z.number().int().min(0).optional(),
+  context_budget: z.number().int().min(0).optional(),
+  priority: z.number().int().min(1).max(5).optional(),
+  assignee: z.string().optional(),
+});
+
+/**
  * Registers task-related MCP tools that **don't** depend on the active
  * workflow shape:
  *
@@ -42,7 +56,13 @@ export class TaskTools {
           'Create a new task in the workflow initial state. Requires an active agent run.',
         inputSchema: {
           title: z.string().min(3).max(200),
-          description: z.string().optional(),
+          description: z
+            .string()
+            .optional()
+            .describe(
+              'Free-form at creation (a draft may be terse); the workflow gate ' +
+                'enforces any minimum length when the task is submitted for readiness',
+            ),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
           estimate: z
             .number()
@@ -57,7 +77,10 @@ export class TaskTools {
             .optional()
             .describe('Estimated context cost in tokens (distinct from estimate / story points)'),
           priority: z.number().int().min(1).max(5).optional(),
-          assignee: z.string().optional(),
+          assignee: z
+            .string()
+            .optional()
+            .describe('Assignee — a known actor handle (e.g. `maria`) or a UUID'),
         },
       },
       (input) => {
@@ -83,6 +106,87 @@ export class TaskTools {
         });
         if (!result.ok) return err(result.error);
         return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
+      'task_assign',
+      {
+        description:
+          'Assign a task to an actor (or clear its assignee). Resolves a ' +
+          'handle to the actor; an unknown handle returns UNKNOWN_ASSIGNEE. ' +
+          'Requires an active agent run.',
+        inputSchema: {
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+          assignee: z
+            .string()
+            .nullable()
+            .describe('Actor handle (e.g. `maria`) or UUID; pass null to clear the assignee'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.tasks.assign({
+          taskKey: input.task_key,
+          assignee: input.assignee,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
+      'task_create_many',
+      {
+        description:
+          'Create several tasks in one call (best-effort): every task is ' +
+          'attempted, and the result lists what was created and what failed, ' +
+          'each with its input index. Cuts the round-trips when an agent ' +
+          'bootstraps a backlog. Requires an active agent run.',
+        inputSchema: {
+          tasks: z.array(taskItemSchema).min(1).max(200).describe('Tasks to create, in order'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const via = handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined;
+
+        const created: unknown[] = [];
+        const failed: { index: number; error: unknown }[] = [];
+        input.tasks.forEach((item, index) => {
+          const result = this.tasks.create({
+            projectKey: this.config.project.key,
+            title: item.title,
+            description: item.description,
+            acceptanceCriteria: item.acceptance_criteria ?? [],
+            estimate: item.estimate ?? null,
+            contextBudget: item.context_budget ?? null,
+            priority: item.priority ?? 3,
+            assigneeId: item.assignee ?? null,
+            actor: this.identity.getDefaultActor(),
+            via,
+            runId: runId ?? undefined,
+          });
+          if (result.ok) created.push(result.value);
+          else failed.push({ index, error: result.error });
+        });
+
+        return ok({ created, failed, created_count: created.length, failed_count: failed.length });
       },
     );
 

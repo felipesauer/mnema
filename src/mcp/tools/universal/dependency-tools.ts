@@ -71,6 +71,54 @@ export class DependencyTools {
     );
 
     server.registerTool(
+      'task_depends_many',
+      {
+        description:
+          'Declare several dependencies in one call (best-effort): each edge is ' +
+          'attempted and the result lists what was linked and what failed, with ' +
+          'its input index. Requires an active agent run.',
+        inputSchema: {
+          links: z
+            .array(
+              z.object({
+                task_key: z.string().describe('The dependent task'),
+                blocks_task_key: z.string().describe('The task it depends on / is blocked by'),
+                kind: z.enum(dependencyKindValues).optional().describe('Defaults to "blocks"'),
+              }),
+            )
+            .min(1)
+            .max(200)
+            .describe('Dependency edges, in order'),
+        },
+      },
+      (input) => {
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const via = handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined;
+
+        const linked: unknown[] = [];
+        const failed: { index: number; error: unknown }[] = [];
+        input.links.forEach((link, index) => {
+          const result = this.dependencies.link({
+            taskKey: link.task_key,
+            blocksTaskKey: link.blocks_task_key,
+            kind: link.kind,
+            actor: this.identity.getDefaultActor(),
+            via,
+            runId: runId ?? undefined,
+          });
+          if (result.ok) linked.push(result.value);
+          else failed.push({ index, error: result.error });
+        });
+
+        return ok({ linked, failed, linked_count: linked.length, failed_count: failed.length });
+      },
+    );
+
+    server.registerTool(
       'tasks_ready',
       {
         description:

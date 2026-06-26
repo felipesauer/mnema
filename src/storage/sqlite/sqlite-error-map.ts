@@ -26,6 +26,22 @@ export function mapSqliteError(error: unknown): MnemaError | null {
   }
   const unique = mapUniqueConstraint(message);
   if (unique !== null) return unique;
+  // A foreign-key violation almost always means a caller passed an id that
+  // doesn't exist (an unresolved assignee/epic/sprint handle, say).
+  // Services resolve those references up front, so reaching here is a
+  // last-resort guard: turn the raw `FOREIGN KEY constraint failed` into a
+  // structured validation error rather than leaking a SQLite stack trace.
+  if (/FOREIGN KEY constraint failed/i.test(message)) {
+    return {
+      kind: ErrorCode.ValidationFailed,
+      issues: [
+        {
+          path: [],
+          message: 'references an entity that does not exist (unresolved id or handle)',
+        },
+      ],
+    };
+  }
   return null;
 }
 

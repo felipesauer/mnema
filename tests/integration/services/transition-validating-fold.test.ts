@@ -75,10 +75,6 @@ describe('transition fold-validation respects field_kind', () => {
       JSON.stringify(CUSTOM_WORKFLOW),
     );
     container = createServiceContainer(makeConfig(), projectRoot, { migrationsDir });
-    container.adapter
-      .getDatabase()
-      .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-      .run();
   });
 
   afterEach(() => {

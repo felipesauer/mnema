@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
+import { listAvailableToolNames } from '@/mcp/tool-registry.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -44,10 +45,6 @@ async function setupHarness(
     workflow: workflowName,
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
-  container.adapter
-    .getDatabase()
-    .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-    .run();
 
   const clientMetadata = options.clientMetadata ?? { agent_handle: 'test-agent' };
   const server = new MnemaMcpServer(config, projectRoot, container, clientMetadata);
@@ -110,10 +107,36 @@ describe('MnemaMcpServer (in-memory)', () => {
     expect(names).toContain('agent_plans_list');
     expect(names).toContain('audit_query');
 
+    // Newer surface added for batch + roadmap + assignment parity.
+    expect(names).toContain('task_create_many');
+    expect(names).toContain('task_assign');
+    expect(names).toContain('epic_create');
+    expect(names).toContain('epic_add_task');
+    expect(names).toContain('sprint_create');
+    expect(names).toContain('sprint_add_tasks');
+    expect(names).toContain('task_depends_many');
+    expect(names).toContain('decision_accept');
+    expect(names).toContain('decision_reject');
+
     // Transition tools generated from default workflow
     expect(names).toContain('task_submit');
     expect(names).toContain('task_start');
     expect(names).toContain('task_approve');
+  });
+
+  it('registers exactly the tools the registry advertises (no orphans, none missing)', async () => {
+    const list = await harness.client.listTools();
+    const registered = new Set(list.tools.map((t) => t.name));
+    // The registry's canonical set, plus the `task_<action>` tools the
+    // active workflow generates, must match what the server exposes
+    // one-for-one — a name listed but not wired (or wired but not listed)
+    // is a silent bug this guards against.
+    const expected = listAvailableToolNames(harness.container.stateMachine.getWorkflow());
+
+    const missing = [...expected].filter((n) => !registered.has(n));
+    const orphan = [...registered].filter((n) => !expected.has(n));
+    expect(missing, `listed in registry but not registered: ${missing.join(', ')}`).toEqual([]);
+    expect(orphan, `registered but absent from registry: ${orphan.join(', ')}`).toEqual([]);
   });
 
   it('context_bootstrap returns project + workflow + statistics', async () => {

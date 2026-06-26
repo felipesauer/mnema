@@ -188,5 +188,61 @@ export class DecisionTools {
         return ok({ decision: result.value });
       },
     );
+
+    server.registerTool(
+      'decision_accept',
+      {
+        description: 'Accept a `proposed` ADR (marks it `accepted`). Requires an active agent run.',
+        inputSchema: {
+          decision_key: z.string().describe('The ADR being accepted, e.g. WEBAPP-ADR-7'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.transition({
+          decisionKey: input.decision_key,
+          status: DecisionStatus.Accepted,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
+      },
+    );
+
+    server.registerTool(
+      'decision_reject',
+      {
+        description: 'Reject a `proposed` ADR (marks it `rejected`). Requires an active agent run.',
+        inputSchema: {
+          decision_key: z.string().describe('The ADR being rejected, e.g. WEBAPP-ADR-7'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.transition({
+          decisionKey: input.decision_key,
+          status: DecisionStatus.Rejected,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
+      },
+    );
   }
 }

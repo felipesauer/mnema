@@ -10,6 +10,8 @@ import type { ProjectRepository } from '../storage/sqlite/repositories/project-r
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
+import type { RoadmapMirror } from './roadmap-mirror.js';
+import type { SyncService } from './sync-service.js';
 
 /**
  * Input for {@link EpicService.create}.
@@ -66,6 +68,11 @@ export class EpicService {
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
     private readonly stateMachine: StateMachine,
+    // Optional so unit tests can drive the service without a filesystem.
+    // The container always wires both: `mirror` versions the epic itself,
+    // `sync` rewrites a task's markdown when its epic link changes.
+    private readonly mirror: RoadmapMirror | null = null,
+    private readonly sync: SyncService | null = null,
   ) {}
 
   /**
@@ -110,6 +117,8 @@ export class EpicService {
       data: { key: epic.key, title: epic.title },
     });
 
+    this.mirror?.writeEpic(epic);
+
     return Ok(epic);
   }
 
@@ -145,6 +154,8 @@ export class EpicService {
       data: { key: updated.key },
     });
 
+    this.mirror?.writeEpic(updated);
+
     return Ok(updated);
   }
 
@@ -173,6 +184,9 @@ export class EpicService {
       data: { epic_key: epic.key, task_key: task.key },
     });
 
+    // The epic link lives in the task's markdown, so rewrite it.
+    this.sync?.syncTask(task.key, { action: 'epic_task_added', runId: input.runId });
+
     const updated = this.tasks.findByKey(input.taskKey);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
@@ -200,6 +214,9 @@ export class EpicService {
       run: input.runId,
       data: { epic_key: input.epicKey, task_key: task.key },
     });
+
+    // The epic link lives in the task's markdown, so rewrite it.
+    this.sync?.syncTask(task.key, { action: 'epic_task_removed', runId: input.runId });
 
     const updated = this.tasks.findByKey(input.taskKey);
     if (updated === null) {

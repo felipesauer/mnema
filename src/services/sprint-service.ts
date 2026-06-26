@@ -14,6 +14,8 @@ import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import { isIso8601 } from '../utils/iso-date.js';
 import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
+import type { RoadmapMirror } from './roadmap-mirror.js';
+import type { SyncService } from './sync-service.js';
 
 /**
  * Upper bound for sprint capacity in story points; lifted from
@@ -105,6 +107,11 @@ export class SprintService {
     private readonly audit: AuditService,
     private readonly stateMachine: StateMachine,
     private readonly metrics: SprintMetricRepository,
+    // Optional so unit tests can drive the service without a filesystem.
+    // `mirror` versions the sprint; `sync` rewrites a task's markdown when
+    // its sprint link changes.
+    private readonly mirror: RoadmapMirror | null = null,
+    private readonly sync: SyncService | null = null,
   ) {}
 
   /**
@@ -162,6 +169,8 @@ export class SprintService {
       run: input.runId,
       data: { key: sprint.key, name: sprint.name, goal: sprint.goal },
     });
+
+    this.mirror?.writeSprint(sprint);
 
     return Ok(sprint);
   }
@@ -245,6 +254,8 @@ export class SprintService {
       data: { key: updated.key },
     });
 
+    this.mirror?.writeSprint(updated);
+
     return Ok(updated);
   }
 
@@ -296,6 +307,8 @@ export class SprintService {
       data: { key: updated.key },
     });
 
+    this.mirror?.writeSprint(updated);
+
     return Ok(updated);
   }
 
@@ -325,6 +338,9 @@ export class SprintService {
       data: { sprint_key: sprint.key, task_key: task.key },
     });
 
+    // The sprint link lives in the task's markdown, so rewrite it.
+    this.sync?.syncTask(task.key, { action: 'sprint_task_added', runId: input.runId });
+
     const updated = this.tasks.findByKey(input.taskKey);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
@@ -353,6 +369,9 @@ export class SprintService {
       run: input.runId,
       data: { sprint_key: input.sprintKey, task_key: task.key },
     });
+
+    // The sprint link lives in the task's markdown, so rewrite it.
+    this.sync?.syncTask(task.key, { action: 'sprint_task_removed', runId: input.runId });
 
     const updated = this.tasks.findByKey(input.taskKey);
     if (updated === null) {

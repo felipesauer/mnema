@@ -252,6 +252,8 @@ export class DoctorCommand {
             ...inspectMirrorDrift(adapter, {
               skillsDir: path.join(projectRoot, config.paths.skills),
               memoryDir: path.join(projectRoot, config.paths.memory),
+              roadmapDir: path.join(projectRoot, config.paths.roadmap),
+              sprintsDir: path.join(projectRoot, config.paths.sprints),
             }),
           );
           checks.push(
@@ -340,7 +342,12 @@ export function inspectMigrationDrift(
  */
 export function inspectMirrorDrift(
   adapter: SqliteAdapter,
-  dirs: { readonly skillsDir: string; readonly memoryDir: string },
+  dirs: {
+    readonly skillsDir: string;
+    readonly memoryDir: string;
+    readonly roadmapDir: string;
+    readonly sprintsDir: string;
+  },
 ): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
 
@@ -387,6 +394,62 @@ export function inspectMirrorDrift(
       memoryMissing.map((r) => r.slug),
       memoryOrphans,
     ),
+  });
+
+  // Roadmap mirrors are keyed by their human key, not a slug. Epics and
+  // decisions share `roadmap/`, so the orphan check for that directory
+  // uses the union of both key sets — otherwise each kind would flag the
+  // other's files as orphans.
+  const epicKeys = (
+    adapter.getDatabase().prepare('SELECT key FROM epics WHERE deleted_at IS NULL').all() as Array<{
+      key: string;
+    }>
+  ).map((r) => r.key);
+  const decisionKeys = (
+    adapter
+      .getDatabase()
+      .prepare('SELECT key FROM decisions WHERE deleted_at IS NULL')
+      .all() as Array<{ key: string }>
+  ).map((r) => r.key);
+  const sprintKeys = (
+    adapter
+      .getDatabase()
+      .prepare('SELECT key FROM sprints WHERE deleted_at IS NULL')
+      .all() as Array<{ key: string }>
+  ).map((r) => r.key);
+
+  const roadmapKnown = new Set([...epicKeys, ...decisionKeys]);
+  const roadmapOrphans = listMirrorOrphans(dirs.roadmapDir, roadmapKnown);
+
+  const epicMissing = epicKeys.filter((k) => !existsSync(path.join(dirs.roadmapDir, `${k}.md`)));
+  checks.push({
+    name: 'epics mirrored',
+    // Orphans live in roadmap/ shared with decisions — only fail on
+    // genuine orphans (keys in neither set), reported once below.
+    ok: epicMissing.length === 0,
+    severity: 'warning',
+    detail: mirrorDetail(epicKeys.length, epicMissing, []),
+  });
+
+  const decisionMissing = decisionKeys.filter(
+    (k) => !existsSync(path.join(dirs.roadmapDir, `${k}.md`)),
+  );
+  checks.push({
+    name: 'decisions mirrored',
+    ok: decisionMissing.length === 0 && roadmapOrphans.length === 0,
+    severity: 'warning',
+    detail: mirrorDetail(decisionKeys.length, decisionMissing, roadmapOrphans),
+  });
+
+  const sprintMissing = sprintKeys.filter(
+    (k) => !existsSync(path.join(dirs.sprintsDir, `${k}.md`)),
+  );
+  const sprintOrphans = listMirrorOrphans(dirs.sprintsDir, new Set(sprintKeys));
+  checks.push({
+    name: 'sprints mirrored',
+    ok: sprintMissing.length === 0 && sprintOrphans.length === 0,
+    severity: 'warning',
+    detail: mirrorDetail(sprintKeys.length, sprintMissing, sprintOrphans),
   });
 
   return checks;

@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+
 import Database, { type Database as DatabaseType } from 'better-sqlite3';
 
 /**
@@ -19,6 +22,15 @@ export class SqliteAdapter {
    * @param databasePath - Absolute path to the SQLite file (or ':memory:')
    */
   constructor(databasePath: string) {
+    // `better-sqlite3` throws a raw `Cannot open database because the
+    // directory does not exist` when the parent folder is missing. That
+    // happens on a fresh clone: the state directory is git-ignored, so a
+    // contributor who runs `mnema sync`/`doctor` before `mnema init` hits
+    // the bare error. Create the parent up front so any entry point that
+    // opens the database — not just `init` — works on a clean checkout.
+    if (databasePath !== ':memory:') {
+      mkdirSync(path.dirname(databasePath), { recursive: true });
+    }
     this.database = new Database(databasePath);
     this.database.pragma('journal_mode = WAL');
     this.database.pragma('synchronous = NORMAL');

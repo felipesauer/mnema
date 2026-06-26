@@ -45,6 +45,7 @@ import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
+import { RoadmapMirror } from './roadmap-mirror.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
@@ -188,6 +189,19 @@ export function createServiceContainer(
   const auditStateRepository = new AuditStateRepository(adapter);
   trace.mark('repositories instantiated');
 
+  // Seed the project row from the (version-controlled) config when the
+  // database has none. `mnema.config.json` travels with the repository
+  // but `state.db` is git-ignored, so on a fresh clone the database is
+  // recreated empty by the migrations above and the `projects` table is
+  // bare. Without this, `mnema sync` would find no project and rebuild
+  // nothing from the committed backlog. Idempotent: existing rows are
+  // left untouched, so it is a no-op once initialised. Skipped while
+  // migrations are pending — mutating commands refuse to run under a
+  // stale schema anyway, and read-only commands never need the write.
+  if (pendingMigrations.length === 0) {
+    ensureProject(projects, config);
+  }
+
   const identity = new IdentityService(actors);
 
   const auditDir = path.join(projectRoot, config.paths.audit);
@@ -197,11 +211,23 @@ export function createServiceContainer(
 
   const stateDir = path.join(projectRoot, config.paths.state);
   const syncBuffer = new SyncBuffer(stateDir);
+  const roadmapMirror = new RoadmapMirror({
+    projectRoot,
+    roadmapDir: config.paths.roadmap,
+    sprintsDir: config.paths.sprints,
+  });
   const sync = new SyncService(
     tasks,
     new MarkdownIo(),
     { projectRoot, backlogDir: config.paths.backlog },
     syncBuffer,
+    // Resolve a task's epic/sprint UUIDs to their stable human keys for
+    // the markdown frontmatter; those keys survive a clone, the ids do not.
+    (task) => ({
+      epicKey: task.epicId !== null ? (epicRepository.findById(task.epicId)?.key ?? null) : null,
+      sprintKey:
+        task.sprintId !== null ? (sprintRepository.findById(task.sprintId)?.key ?? null) : null,
+    }),
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
@@ -209,14 +235,25 @@ export function createServiceContainer(
   });
   sync.setMode(options.syncMode ?? SyncMode.Push);
 
-  const syncRebuild = new SyncRebuild(tasks, actors, projects, {
-    projectRoot,
-    backlogDir: config.paths.backlog,
-  });
+  const syncRebuild = new SyncRebuild(
+    tasks,
+    actors,
+    projects,
+    epicRepository,
+    sprintRepository,
+    decisionRepository,
+    {
+      projectRoot,
+      backlogDir: config.paths.backlog,
+      roadmapDir: config.paths.roadmap,
+      sprintsDir: config.paths.sprints,
+    },
+  );
 
   const taskService = new TaskService(tasks, transitions, projects, stateMachine, audit, sync, {
     ensureActor: (handle, kind) =>
       identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
+    findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
   });
   trace.mark('services instantiated');
 
@@ -233,6 +270,8 @@ export function createServiceContainer(
     audit,
     stateMachine,
     sprintMetricRepository,
+    roadmapMirror,
+    sync,
   );
   const decisionService = new DecisionService(
     decisionRepository,
@@ -241,6 +280,7 @@ export function createServiceContainer(
     audit,
     noteRepository,
     tasks,
+    roadmapMirror,
   );
   const dependencyService = new DependencyService(
     dependencyRepository,
@@ -251,7 +291,15 @@ export function createServiceContainer(
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const taskEvidenceService = new TaskEvidenceService(taskEvidenceRepository, tasks, audit);
-  const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
+  const epicService = new EpicService(
+    epicRepository,
+    tasks,
+    projects,
+    audit,
+    stateMachine,
+    roadmapMirror,
+    sync,
+  );
   const coverageService = new CoverageService(
     epicRepository,
     sprintRepository,
@@ -325,4 +373,22 @@ export function createServiceContainer(
     pendingMigrations,
     close: () => adapter.close(),
   };
+}
+
+/**
+ * Inserts the configured project into an empty database. No-op when a
+ * row for the key already exists, so it is safe to call on every boot.
+ * Mirrors the seed `mnema init` performs, keeping the config the single
+ * source of truth for project identity on a fresh clone.
+ *
+ * @param projects - Project repository bound to the open database
+ * @param config - Validated project configuration
+ */
+function ensureProject(projects: ProjectRepository, config: Config): void {
+  if (projects.findByKey(config.project.key) !== null) return;
+  projects.insert({
+    key: config.project.key,
+    name: config.project.name,
+    description: config.project.description ?? null,
+  });
 }

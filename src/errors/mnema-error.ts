@@ -51,6 +51,7 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.IdentityNotConfigured }
   | { readonly kind: ErrorCode.AgentHandleMissing }
+  | { readonly kind: ErrorCode.UnknownAssignee; readonly handle: string }
   | { readonly kind: ErrorCode.InitConflict; readonly path: string }
   | { readonly kind: ErrorCode.AlreadyInitialized; readonly configPath: string }
   | { readonly kind: ErrorCode.AgentRunNotFound; readonly runId: string }

@@ -21,7 +21,12 @@ export class SyncCommand {
         await withMutatingCliContext(({ config, container }) => {
           const summary = container.syncRebuild.run(config.project.key);
           process.stdout.write(
-            `${pc.green('✓')} sync complete  scanned=${summary.tasksScanned}  upserted=${summary.tasksUpserted}\n`,
+            `${pc.green('✓')} sync complete  ` +
+              `tasks=${summary.tasksScanned}/${summary.tasksUpserted}  ` +
+              `epics=${summary.epics.scanned}/${summary.epics.upserted}  ` +
+              `sprints=${summary.sprints.scanned}/${summary.sprints.upserted}  ` +
+              `decisions=${summary.decisions.scanned}/${summary.decisions.upserted}  ` +
+              `${pc.dim('(scanned/upserted)')}\n`,
           );
           for (const skipped of summary.skipped) {
             process.stderr.write(`${pc.yellow('!')} skipped ${skipped.file}: ${skipped.reason}\n`);

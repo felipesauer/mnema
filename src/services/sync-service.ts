@@ -29,6 +29,17 @@ export interface SyncPaths {
 }
 
 /**
+ * Resolves a task's epic/sprint links to their human keys for the
+ * markdown frontmatter. The database stores internal UUIDs, but those are
+ * regenerated on a fresh clone — the stable, version-controlled reference
+ * is the key (e.g. `WEBAPP-EPIC-3`). Returns `null` for an unset link.
+ */
+export type TaskLinkResolver = (task: Task) => {
+  readonly epicKey: string | null;
+  readonly sprintKey: string | null;
+};
+
+/**
  * Auto-flush thresholds. The MCP server overrides these from
  * `mnema.config.json`.
  */
@@ -63,6 +74,9 @@ export class SyncService {
     private readonly markdownIo: MarkdownIo,
     private readonly paths: SyncPaths,
     private readonly buffer: SyncBuffer | null = null,
+    // Optional so existing callers/tests keep working without epic/sprint
+    // wiring; when absent the links are simply written as null.
+    private readonly resolveLinks: TaskLinkResolver | null = null,
   ) {}
 
   /**
@@ -189,8 +203,9 @@ export class SyncService {
     this.relocateIfStateChanged(task, targetPath);
 
     const existing = this.markdownIo.read(targetPath);
+    const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
     this.markdownIo.write(targetPath, {
-      mnemaData: serialiseTask(task),
+      mnemaData: serialiseTask(task, links),
       otherFrontmatter: existing.otherFrontmatter,
       content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
     });
@@ -245,7 +260,10 @@ export class SyncService {
   }
 }
 
-function serialiseTask(task: Task): Record<string, unknown> {
+function serialiseTask(
+  task: Task,
+  links: { readonly epicKey: string | null; readonly sprintKey: string | null },
+): Record<string, unknown> {
   return {
     key: task.key,
     state: task.state,
@@ -256,6 +274,8 @@ function serialiseTask(task: Task): Record<string, unknown> {
     priority: task.priority,
     assignee: task.assigneeId,
     reporter: task.reporterId,
+    epic_key: links.epicKey,
+    sprint_key: links.sprintKey,
     reopen_count: task.reopenCount,
     metadata: { ...task.metadata },
     updated_at: task.updatedAt,

@@ -39,12 +39,6 @@ describe('TaskService (integration)', () => {
     );
 
     container = createServiceContainer(makeConfig(), projectRoot, { migrationsDir });
-
-    // Seed a project row so TaskService.create has somewhere to attach.
-    container.adapter
-      .getDatabase()
-      .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-      .run();
   });
 
   afterEach(() => {

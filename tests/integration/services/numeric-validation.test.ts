@@ -42,10 +42,6 @@ describe('service-level numeric validation', () => {
       path.join(projectRoot, '.mnema/workflows', 'default.json'),
     );
     container = createServiceContainer(makeConfig(), projectRoot, { migrationsDir });
-    container.adapter
-      .getDatabase()
-      .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-      .run();
   });
 
   afterEach(() => {
