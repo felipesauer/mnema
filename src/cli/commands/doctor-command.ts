@@ -64,7 +64,7 @@ export class DoctorCommand {
       )
       .option(
         '--rebuild-mirrors',
-        'Recovery: recreate missing `.md` files under paths.skills and paths.memory from the SQLite rows. Skips the regular doctor checks.',
+        'Recovery: recreate missing `.md` files for skills, memories, epics, sprints and decisions from the SQLite rows. Skips the regular doctor checks.',
       )
       .option(
         '--prune-orphans',
@@ -83,13 +83,16 @@ export class DoctorCommand {
   }
 
   /**
-   * Rebuilds skill/memory `.md` mirror files for every SQLite row that
-   * has no matching file on disk. Existing files are left alone — this
-   * is a one-way "heal drift" operation, not a reformat. When
-   * `pruneOrphans` is true, also deletes mirrors whose slug has no
-   * matching SQLite row (FS→DB drift).
+   * Rebuilds `.md` mirror files for every SQLite row that has no matching
+   * file on disk — skills, memories, epics, sprints and decisions.
+   * Existing files are left alone: this is a one-way "heal drift"
+   * operation, not a reformat. When `pruneOrphans` is true, also deletes
+   * skill/memory mirrors whose slug has no matching SQLite row (FS→DB
+   * drift). Pruning is intentionally limited to skills/memories — epics
+   * and decisions share `roadmap/`, so an orphan sweep there needs the
+   * union of both key sets and is left out of this recovery path.
    *
-   * @param pruneOrphans - Whether to delete orphan `.md` files
+   * @param pruneOrphans - Whether to delete orphan skill/memory `.md` files
    * @returns Exit code (`0` on success, `3` if the context could not be
    *   opened)
    */
@@ -110,6 +113,9 @@ export class DoctorCommand {
 
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
+      const epics = container.epic.rebuildMirrors(config.project.key);
+      const sprints = container.sprint.rebuildMirrors(config.project.key);
+      const decisions = container.decision.rebuildMirrors(config.project.key);
       let prunedSkills: string[] = [];
       let prunedMemories: string[] = [];
 
@@ -149,6 +155,9 @@ export class DoctorCommand {
       if (
         skills.length === 0 &&
         memories.length === 0 &&
+        epics.length === 0 &&
+        sprints.length === 0 &&
+        decisions.length === 0 &&
         prunedSkills.length === 0 &&
         prunedMemories.length === 0
       ) {
@@ -160,6 +169,17 @@ export class DoctorCommand {
       }
       if (memories.length > 0) {
         process.stdout.write(`↻ memories mirrored: ${memories.length} — ${memories.join(', ')}\n`);
+      }
+      if (epics.length > 0) {
+        process.stdout.write(`↻ epics mirrored: ${epics.length} — ${epics.join(', ')}\n`);
+      }
+      if (sprints.length > 0) {
+        process.stdout.write(`↻ sprints mirrored: ${sprints.length} — ${sprints.join(', ')}\n`);
+      }
+      if (decisions.length > 0) {
+        process.stdout.write(
+          `↻ decisions mirrored: ${decisions.length} — ${decisions.join(', ')}\n`,
+        );
       }
       if (prunedSkills.length > 0) {
         process.stdout.write(
@@ -275,6 +295,7 @@ export class DoctorCommand {
     }
 
     printChecks(checks);
+    printMirrorHints(checks);
     // Warnings keep exit 0; only errors fail the check.
     const hasError = checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
     return hasError ? ExitCode.State : ExitCode.Success;
@@ -802,5 +823,41 @@ function printChecks(checks: readonly DoctorCheck[]): void {
         ? pc.yellow('⚠')
         : pc.red('✗');
     process.stdout.write(`${mark} ${check.name}  ${pc.dim(check.detail)}\n`);
+  }
+}
+
+/**
+ * Derives the actionable hints to show for failing mirror checks, so a
+ * user does not have to know the recovery command exists. A "missing
+ * files" drift (rows in SQLite with no `.md`) is healed by
+ * `--rebuild-mirrors`; an "orphan files" drift (`.md` with no row) is the
+ * inverse and only resolved by deletion, so its hint is phrased
+ * conditionally — an orphan may well be content worth importing rather
+ * than discarding. Exported (pure) so the wording is testable without
+ * capturing terminal output.
+ *
+ * @param checks - The full doctor checklist
+ * @returns Zero, one, or two hint lines (without colour codes)
+ */
+export function mirrorHints(checks: readonly DoctorCheck[]): string[] {
+  const mirrorChecks = checks.filter((c) => !c.ok && c.name.endsWith('mirrored'));
+  const hints: string[] = [];
+  if (mirrorChecks.some((c) => c.detail.includes('missing files'))) {
+    hints.push(
+      'some rows have no markdown file — run `mnema doctor --rebuild-mirrors` to recreate them',
+    );
+  }
+  if (mirrorChecks.some((c) => c.detail.includes('orphan files'))) {
+    hints.push(
+      'some markdown files have no row — register them, or, if obsolete, run `mnema doctor --rebuild-mirrors --prune-orphans` to delete them',
+    );
+  }
+  return hints;
+}
+
+/** Prints the hints from {@link mirrorHints} under the checklist. */
+function printMirrorHints(checks: readonly DoctorCheck[]): void {
+  for (const hint of mirrorHints(checks)) {
+    process.stdout.write(`${pc.dim('hint:')} ${hint}\n`);
   }
 }

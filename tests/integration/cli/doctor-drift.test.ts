@@ -11,7 +11,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { inspectMigrationDrift, inspectMirrorDrift } from '@/cli/commands/doctor-command.js';
+import {
+  type DoctorCheck,
+  inspectMigrationDrift,
+  inspectMirrorDrift,
+  mirrorHints,
+} from '@/cli/commands/doctor-command.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -193,5 +198,54 @@ describe('inspectMirrorDrift', () => {
     const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(true);
+  });
+});
+
+describe('mirrorHints', () => {
+  const ok = (name: string): DoctorCheck => ({ name, ok: true, detail: '5 mirrored' });
+  const missing = (name: string): DoctorCheck => ({
+    name,
+    ok: false,
+    detail: '5 rows, missing files: A, B',
+    severity: 'warning',
+  });
+  const orphan = (name: string): DoctorCheck => ({
+    name,
+    ok: false,
+    detail: '5 rows, orphan files: ghost',
+    severity: 'warning',
+  });
+
+  it('returns no hints when every mirror check is clean', () => {
+    expect(mirrorHints([ok('epics mirrored'), ok('skills mirrored')])).toEqual([]);
+  });
+
+  it('suggests --rebuild-mirrors when rows are missing files', () => {
+    const hints = mirrorHints([missing('decisions mirrored')]);
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toContain('--rebuild-mirrors');
+    expect(hints[0]).not.toContain('--prune-orphans');
+  });
+
+  it('suggests --prune-orphans (conditionally) when files have no row', () => {
+    const hints = mirrorHints([orphan('skills mirrored')]);
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toContain('--prune-orphans');
+    expect(hints[0]).toContain('register them');
+  });
+
+  it('emits both hints when both drifts are present', () => {
+    const hints = mirrorHints([missing('epics mirrored'), orphan('memories mirrored')]);
+    expect(hints).toHaveLength(2);
+  });
+
+  it('ignores non-mirror checks and passing checks', () => {
+    const auditFail: DoctorCheck = {
+      name: 'audit event count',
+      ok: false,
+      detail: 'disk has 1 events',
+      severity: 'error',
+    };
+    expect(mirrorHints([auditFail, ok('epics mirrored')])).toEqual([]);
   });
 });

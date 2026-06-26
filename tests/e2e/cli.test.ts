@@ -244,6 +244,28 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(first.stdout).toContain('tasks=1/0');
   });
 
+  it('mnema upgrade brings an out-of-date project current, then is idempotent', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // Simulate a project initialised by an older Mnema: roll mnema_version
+    // back so `upgrade` has something concrete to do.
+    const configPath = path.join(projectRoot, '.mnema', 'mnema.config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
+    const stale = { ...config, mnema_version: '^0.0.1-alpha.0' };
+    writeFileSync(configPath, `${JSON.stringify(stale, null, 2)}\n`, 'utf-8');
+
+    const first = runCli(['upgrade', '--yes'], projectRoot);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toContain('set mnema_version');
+    const after = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
+    expect(after.mnema_version).not.toBe('^0.0.1-alpha.0');
+
+    // Running again has nothing left to do.
+    const second = runCli(['upgrade', '--yes'], projectRoot);
+    expect(second.status).toBe(0);
+    expect(second.stdout).toContain('already up to date');
+  });
+
   it('mnema history shows aggregated activity for the day', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     runCli(['task', 'create', '--title', 'First task title'], projectRoot);
