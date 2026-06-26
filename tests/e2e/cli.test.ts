@@ -199,6 +199,46 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(invalid.stderr).toContain('TODO');
   });
 
+  it('mnema domain-event hook fires on task done, records hook_ran, and is non-fatal on failure', () => {
+    runCli(['init', '--name', 'Lean App', '--key', 'LEAN', '--workflow', 'lean'], projectRoot);
+
+    // Wire a hook that captures the event JSON on stdin to a file, plus
+    // a second command that fails — proving a failing hook is audited
+    // but never breaks the transition that triggered it.
+    const configPath = path.join(projectRoot, '.mnema/mnema.config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const capturePath = path.join(projectRoot, 'hook-out.json');
+    config.hooks = { on_task_done: [`cat > '${capturePath}'`, 'exit 7'] };
+    writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    runCli(['task', 'create', '--title', 'Ship it'], projectRoot);
+    runCli(['task', 'move', 'LEAN-1', 'start'], projectRoot);
+    const done = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot);
+
+    // The transition itself succeeds despite the failing second hook.
+    expect(done.status).toBe(0);
+    expect(done.stdout).toContain('DONE');
+
+    // The first hook received the triggering event as JSON on stdin.
+    expect(existsSync(capturePath)).toBe(true);
+    const payload = JSON.parse(readFileSync(capturePath, 'utf-8'));
+    expect(payload.kind).toBe('task_transitioned');
+    expect(payload.data.to).toBe('DONE');
+
+    // Both firings are in the audit trail: one completed, one failed (exit 7).
+    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    const hookLines = audit
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+      .filter((e) => e.kind === 'hook_ran');
+    expect(hookLines).toHaveLength(2);
+    expect(hookLines.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
+      true,
+    );
+    expect(hookLines.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(true);
+  });
+
   it('mnema doctor reports a healthy project after init', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 

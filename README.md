@@ -307,6 +307,31 @@ thresholds and feature flags. Run `mnema doctor` after editing — it
 re-validates the file against the schema and reports anything that
 drifted.
 
+### Domain-event hooks
+
+A `hooks` block runs a shell command when a **domain** event fires — a
+task reaching a done state, a decision accepted, a sprint or epic
+closed — not on generic tool calls. The command receives the triggering
+audit event as JSON on stdin:
+
+```json
+{
+  "hooks": {
+    "on_task_done": ["./scripts/notify.sh"],
+    "on_decision_accepted": ["jq '.data.key' >> decisions.log"]
+  }
+}
+```
+
+Supported events: `on_task_done`, `on_task_transitioned`,
+`on_decision_accepted`, `on_sprint_closed`, `on_epic_closed`.
+
+Hooks run **after** the triggering event is durably written, and each
+firing records its own `hook_ran` audit event (with the exit code) — a
+hook is part of the trail, never a phantom side effect. A failing or
+hung command (30s timeout) is captured and audited; it never rolls back
+the state that triggered it.
+
 ## Workflows
 
 Workflows are JSON files in `workflows/`. The default ships with

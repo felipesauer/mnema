@@ -227,6 +227,19 @@ export class DoctorCommand {
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
 
+    // Domain-event hooks are informational: always ok, but surface how
+    // many commands are wired so a misconfigured hook block is visible.
+    const hookEntries = Object.entries(config.hooks).filter(([, commands]) => commands.length > 0);
+    const hookCount = hookEntries.reduce((sum, [, commands]) => sum + commands.length, 0);
+    checks.push({
+      name: 'domain-event hooks',
+      ok: true,
+      detail:
+        hookCount === 0
+          ? 'none configured'
+          : `${hookCount} command(s) on ${hookEntries.map(([event]) => event).join(', ')}`,
+    });
+
     const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
     let loadedWorkflow: ReturnType<WorkflowLoader['load']> | null = null;

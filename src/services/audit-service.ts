@@ -13,6 +13,13 @@ export interface AuditEventInput {
 }
 
 /**
+ * Observer invoked after an event has been durably written. Used to
+ * fire domain-event hooks post-commit. Must never throw — the audit
+ * write has already succeeded by the time it runs.
+ */
+export type AuditWriteObserver = (event: AuditEvent) => void;
+
+/**
  * Orchestrates writes to the audit log.
  *
  * Responsibilities:
@@ -24,12 +31,27 @@ export interface AuditEventInput {
  */
 export class AuditService {
   private readonly now: () => Date;
+  private observer: AuditWriteObserver | null = null;
+  /** Guards against an observer's own audit writes re-entering it. */
+  private dispatching = false;
 
   constructor(
     private readonly writer: AuditWriter,
     now: () => Date = () => new Date(),
   ) {
     this.now = now;
+  }
+
+  /**
+   * Registers a single post-write observer (the domain-event
+   * dispatcher). Wired after construction because the dispatcher itself
+   * needs an {@link AuditService} to record hook firings, so the two
+   * cannot be built in one pass.
+   *
+   * @param observer - Callback invoked after each durable write
+   */
+  setWriteObserver(observer: AuditWriteObserver): void {
+    this.observer = observer;
   }
 
   /**
@@ -48,5 +70,21 @@ export class AuditService {
       data: input.data,
     };
     this.writer.write(event);
+
+    // Fire the observer only after the write succeeded, and never
+    // re-enter it for the audit events it produces itself (e.g.
+    // `hook_ran`). A throwing observer must not corrupt the caller's
+    // already-committed state.
+    if (this.observer !== null && !this.dispatching) {
+      this.dispatching = true;
+      try {
+        this.observer(event);
+      } catch {
+        // A hook dispatcher swallows its own failures; this is a
+        // last-resort guard so an unexpected throw can never propagate.
+      } finally {
+        this.dispatching = false;
+      }
+    }
   }
 }

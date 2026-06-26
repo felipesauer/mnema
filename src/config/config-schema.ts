@@ -53,6 +53,21 @@ export const ConfigSchema = z.object({
       attachments: z.boolean().default(true),
     })
     .prefault({}),
+  // Hooks run a shell command when a curated domain event fires (a task
+  // reaching done, a decision accepted, …). Each key is a domain-event
+  // name; the value is the list of commands to run, in order. The
+  // command receives the audit event as JSON on stdin and each firing
+  // writes its own `hook_ran` audit event — a hook is part of the
+  // trail, never a phantom side effect. Defaults to no hooks.
+  hooks: z
+    .object({
+      on_task_done: z.array(z.string().min(1)).default([]),
+      on_task_transitioned: z.array(z.string().min(1)).default([]),
+      on_decision_accepted: z.array(z.string().min(1)).default([]),
+      on_sprint_closed: z.array(z.string().min(1)).default([]),
+      on_epic_closed: z.array(z.string().min(1)).default([]),
+    })
+    .prefault({}),
 });
 
 /**
