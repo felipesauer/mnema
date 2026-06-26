@@ -263,10 +263,17 @@ export class TaskService {
       }
     }
 
+    // Let a gate validate the task's resulting state, not just the delta:
+    // a first-class field already persisted satisfies a `requires` rule
+    // without being resent, and leaving it out of the payload never
+    // overwrites the stored value. Only task-backed fields are offered as
+    // defaults — ephemeral gate fields (e.g. `reason`) are never sourced
+    // from the row. An explicit value in the payload still wins.
     const validation = this.stateMachine.validateTransition(
       task.state,
       input.action,
       input.payload,
+      persistedFieldDefaults(task),
     );
 
     if (!validation.ok) {
@@ -639,4 +646,26 @@ function persistableFromPayload(
   }
 
   return touched ? updates : null;
+}
+
+/**
+ * Builds the set of already-persisted, first-class task fields a gate may
+ * fall back to when they are absent from a transition payload. Keyed by
+ * the snake_case names workflows use in `requires`. Only task-backed
+ * fields appear here — ephemeral gate fields (e.g. `reason`) are never
+ * sourced from the row, so they must still be supplied explicitly.
+ *
+ * @param task - Current task row
+ * @returns Default values for the gate merge
+ */
+function persistedFieldDefaults(task: Task): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {
+    title: task.title,
+    acceptance_criteria: [...task.acceptanceCriteria],
+  };
+  if (task.description !== null) defaults.description = task.description;
+  if (task.estimate !== null) defaults.estimate = task.estimate;
+  defaults.priority = task.priority;
+  if (task.assigneeId !== null) defaults.assignee_id = task.assigneeId;
+  return defaults;
 }

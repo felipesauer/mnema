@@ -98,22 +98,33 @@ export class StateMachine {
    * Validates a transition attempt against the workflow.
    * Checks both the transition existence and the gate requirements.
    *
+   * When `defaults` is supplied, any key absent from `payload` falls back
+   * to the default before validation. This lets a gate validate the
+   * task's *resulting* state rather than the delta: a field already
+   * persisted (title, description, …) satisfies the gate without being
+   * resent, and omitting it never overwrites what is stored. The caller
+   * decides which fields are safe to default — the state machine just
+   * merges. Keys present in `payload` (even with a shorter value) win.
+   *
    * @param from - Source state
    * @param action - Action name
    * @param payload - Data to validate against the gate's requires schema
+   * @param defaults - Fallback values for keys missing from `payload`
    * @returns Result with target state and parsed data, or typed gate error
    */
   validateTransition(
     from: string,
     action: string,
     payload: unknown,
+    defaults: Readonly<Record<string, unknown>> = {},
   ): Result<ValidatedTransition, GateError> {
     const transition = this.workflow.transitions[from]?.[action];
     if (transition === undefined) {
       return Err({ kind: 'INVALID_TRANSITION', from, action });
     }
 
-    const parsed = transition.requires.safeParse(payload);
+    const merged = mergeDefaults(payload, defaults);
+    const parsed = transition.requires.safeParse(merged);
     if (!parsed.success) {
       return Err({ kind: 'GATE_FAILED', issues: parsed.error.issues });
     }
@@ -145,4 +156,24 @@ export class StateMachine {
   isTerminal(state: string): boolean {
     return this.workflow.terminal.includes(state);
   }
+}
+
+/**
+ * Returns `payload` with each default applied only where the payload
+ * omits that key (missing or `undefined`). An explicit value in the
+ * payload — including `null` or an empty string — is left untouched, so
+ * a caller can still clear a field on purpose. Non-object payloads pass
+ * through unchanged so the gate schema reports the real type error.
+ */
+function mergeDefaults(payload: unknown, defaults: Readonly<Record<string, unknown>>): unknown {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    return payload;
+  }
+  const result: Record<string, unknown> = { ...(payload as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(defaults)) {
+    if (result[key] === undefined && value !== undefined && value !== null) {
+      result[key] = value;
+    }
+  }
+  return result;
 }
