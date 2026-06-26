@@ -153,6 +153,13 @@ describe('MnemaMcpServer (in-memory)', () => {
     const workflow = payload.workflow as Record<string, unknown>;
     expect(workflow.name).toBe('default');
     expect(workflow.states as string[]).toContain('IN_PROGRESS');
+
+    // The protocol directive must ride on every bootstrap so the agent is
+    // told to record durable knowledge in Mnema, not its native memory —
+    // without depending on having read AGENTS.md.
+    const protocol = payload.protocol as { record_durable_knowledge_here?: string };
+    expect(protocol?.record_durable_knowledge_here).toContain('memory_record');
+    expect(protocol?.record_durable_knowledge_here).toMatch(/native memory/i);
   });
 
   it('agent_run_start captures the run id in the session and lets task_create proceed', async () => {
