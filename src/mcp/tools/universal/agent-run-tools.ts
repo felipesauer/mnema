@@ -4,9 +4,13 @@ import { z } from 'zod';
 import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
 import type { AgentRunService } from '../../../services/agent-run-service.js';
+import type { AuditQuery } from '../../../services/audit-query.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import { err, ok } from '../../mcp-tool-result.js';
+
+/** Audit kinds that count as the agent having recorded something it learned. */
+const KNOWLEDGE_KINDS = ['skill_recorded', 'memory_recorded', 'observation_recorded'] as const;
 
 /**
  * Registers the agent-run tool family on a {@link McpServer} instance:
@@ -24,6 +28,7 @@ export class AgentRunTools {
     private readonly agentRun: AgentRunService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly auditQuery: AuditQuery,
   ) {}
 
   /**
@@ -77,7 +82,7 @@ export class AgentRunTools {
       'agent_run_end',
       {
         description:
-          'Mark the currently-active agent run as ended. The run-end hook flushes the persistent sync buffer.',
+          'Mark the currently-active agent run as ended. The run-end hook flushes the persistent sync buffer. If a completed run recorded no skill/memory/observation, the result carries a `reminder` to capture what was learned.',
         inputSchema: {
           status: z
             .enum([AgentRunStatus.Completed, AgentRunStatus.Failed, AgentRunStatus.Aborted])
@@ -90,6 +95,13 @@ export class AgentRunTools {
         const runId = this.session.getCurrentRunId();
         if (runId === null) return err({ kind: ErrorCode.NoActiveRun });
 
+        // Count what the agent recorded during this run, before closing it.
+        // A completed run that captured nothing durable is usually a missed
+        // chance to leave knowledge behind — nudge, but never block.
+        const recorded = this.auditQuery
+          .run({ run: runId })
+          .filter((e) => (KNOWLEDGE_KINDS as readonly string[]).includes(e.kind));
+
         const ended = this.agentRun.end({
           runId,
           status,
@@ -99,10 +111,19 @@ export class AgentRunTools {
         if (!ended.ok) return err(ended.error);
 
         this.session.setCurrentRunId(null);
+        const reminder =
+          status === AgentRunStatus.Completed && recorded.length === 0
+            ? 'This run recorded no skill, memory or observation. If you learned ' +
+              'something durable — a repeatable procedure, a project fact, or a ' +
+              'signal worth revisiting — capture it now with skill_record / ' +
+              'memory_record / observation_record so the next session keeps it.'
+            : undefined;
+
         return ok({
           run_id: ended.value.id,
           status: ended.value.status,
           ended_at: ended.value.endedAt,
+          ...(reminder !== undefined ? { reminder } : {}),
         });
       },
     );
