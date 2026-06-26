@@ -11,6 +11,7 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
+import type { RoadmapMirror } from './roadmap-mirror.js';
 
 /**
  * Input for {@link DecisionService.record}.
@@ -96,6 +97,8 @@ export class DecisionService {
     private readonly audit: AuditService,
     private readonly notes: NoteRepository,
     private readonly tasks: TaskRepository,
+    // Optional so unit tests can drive the service without a filesystem.
+    private readonly mirror: RoadmapMirror | null = null,
   ) {}
 
   /**
@@ -155,6 +158,8 @@ export class DecisionService {
       run: input.runId,
       data: { key: decision.key, title: decision.title, status: decision.status },
     });
+
+    this.mirror?.writeDecision(decision);
 
     return Ok(decision);
   }
@@ -303,6 +308,8 @@ export class DecisionService {
         superseded_by: input.supersededBy,
       },
     });
+
+    this.mirror?.writeDecision(updated);
 
     return Ok(updated);
   }

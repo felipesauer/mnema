@@ -2,12 +2,26 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import { DecisionStatus } from '../domain/enums/decision-status.js';
+import { EpicState } from '../domain/enums/epic-state.js';
+import { SprintState } from '../domain/enums/sprint-state.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { parseTaskKey } from '../domain/id-generator.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
+import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
+import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+
+/**
+ * Per-entity tally of a {@link SyncRebuild.run} execution.
+ */
+export interface RebuildCounts {
+  readonly scanned: number;
+  readonly upserted: number;
+}
 
 /**
  * Outcome of a {@link SyncRebuild.run} execution.
@@ -15,21 +29,28 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
 export interface RebuildSummary {
   readonly tasksScanned: number;
   readonly tasksUpserted: number;
+  readonly epics: RebuildCounts;
+  readonly sprints: RebuildCounts;
+  readonly decisions: RebuildCounts;
   readonly skipped: readonly { readonly file: string; readonly reason: string }[];
 }
 
 /**
- * Reconstructs the `tasks` table from the markdowns under
- * `backlog/<STATE>/<KEY>.md`.
+ * Reconstructs the cache tables from the version-controlled markdown:
+ * epics and decisions under `roadmap/`, sprints under `sprints/`, and
+ * tasks under `backlog/<STATE>/<KEY>.md`.
  *
- * The historical record (`transitions`, `agent_runs`, `agent_plans`)
- * is **not** rebuilt — that history lives in `.audit/*.jsonl` and is
- * the canonical timeline for the human. `mnema sync` is therefore safe
- * to run on a clean database: it bootstraps the cache from disk, but
- * does not invent past events.
+ * The append-only history (`transitions`, `agent_runs`, `agent_plans`)
+ * is **not** rebuilt — that timeline lives in `.audit/*.jsonl` and is
+ * the canonical record for the human. `mnema sync` is therefore safe to
+ * run on a clean database: it bootstraps the cache from disk without
+ * inventing past events.
  *
- * Idempotent: rerunning produces the same final state when the
- * markdowns have not changed.
+ * Order matters. Epics and sprints are rebuilt before tasks so a task's
+ * `epic_key` / `sprint_key` can be resolved to a freshly-inserted row.
+ *
+ * Idempotent: rerunning produces the same final state when the markdown
+ * has not changed.
  */
 export class SyncRebuild {
   private readonly markdownIo = new MarkdownIo();
@@ -38,46 +59,104 @@ export class SyncRebuild {
     private readonly tasks: TaskRepository,
     private readonly actors: ActorRepository,
     private readonly projects: ProjectRepository,
-    private readonly paths: { readonly projectRoot: string; readonly backlogDir: string },
+    private readonly epics: EpicRepository,
+    private readonly sprints: SprintRepository,
+    private readonly decisions: DecisionRepository,
+    private readonly paths: {
+      readonly projectRoot: string;
+      readonly backlogDir: string;
+      readonly roadmapDir: string;
+      readonly sprintsDir: string;
+    },
   ) {}
 
   /**
-   * Walks `backlog/<STATE>/*.md` and upserts a task row for each entry.
+   * Walks the version-controlled markdown and upserts a row for each
+   * entity it finds, then relinks tasks to their epic/sprint.
    *
    * For each markdown:
    * - the `mnema:` frontmatter is the source of truth
    * - missing actors are created (handles taken verbatim from the file)
-   * - existing rows are touched only when the markdown carries a state
-   *   different from the database, to keep `updated_at` truthful
+   * - existing rows are touched only when something changed, to keep
+   *   `updated_at` truthful
    *
    * @param projectKey - Active project key (taken from `mnema.config.json`)
-   * @returns Summary describing what was scanned and what was changed
+   * @returns Summary describing what was scanned and what changed
    */
   run(projectKey: string): RebuildSummary {
+    const empty: RebuildSummary = {
+      tasksScanned: 0,
+      tasksUpserted: 0,
+      epics: { scanned: 0, upserted: 0 },
+      sprints: { scanned: 0, upserted: 0 },
+      decisions: { scanned: 0, upserted: 0 },
+      skipped: [],
+    };
+
     const project = this.projects.findByKey(projectKey);
     if (project === null) {
-      return { tasksScanned: 0, tasksUpserted: 0, skipped: [] };
-    }
-
-    const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
-    if (!existsSync(root)) {
-      return { tasksScanned: 0, tasksUpserted: 0, skipped: [] };
+      return empty;
     }
 
     const skipped: { file: string; reason: string }[] = [];
+
+    // Roadmap first so tasks can resolve their links afterwards.
+    const epics = this.rebuildRoadmap(
+      project.id,
+      project.key,
+      this.paths.roadmapDir,
+      'epic',
+      skipped,
+    );
+    const sprints = this.rebuildRoadmap(
+      project.id,
+      project.key,
+      this.paths.sprintsDir,
+      'sprint',
+      skipped,
+    );
+    const decisions = this.rebuildRoadmap(
+      project.id,
+      project.key,
+      this.paths.roadmapDir,
+      'decision',
+      skipped,
+    );
+    const tasks = this.rebuildTasks(project.id, project.key, skipped);
+
+    return {
+      tasksScanned: tasks.scanned,
+      tasksUpserted: tasks.upserted,
+      epics,
+      sprints,
+      decisions,
+      skipped,
+    };
+  }
+
+  /**
+   * Walks `backlog/<STATE>/*.md`, upserts each task, and relinks it to
+   * its epic/sprint by the keys recorded in the frontmatter.
+   */
+  private rebuildTasks(
+    projectId: string,
+    projectKey: string,
+    skipped: { file: string; reason: string }[],
+  ): RebuildCounts {
+    const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
+    if (!existsSync(root)) return { scanned: 0, upserted: 0 };
+
     let scanned = 0;
     let upserted = 0;
 
-    for (const stateDir of listStateDirs(root)) {
+    for (const stateDir of listDirs(root)) {
       const stateName = stateDir as TaskState;
       const stateRoot = path.join(root, stateDir);
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const filePath = path.join(stateRoot, fileName);
         scanned += 1;
 
-        const parsed = this.markdownIo.read(filePath);
-        const data = parsed.mnemaData;
-
+        const data = this.markdownIo.read(filePath).mnemaData;
         const key = readString(data, 'key');
         if (key === null) {
           skipped.push({ file: filePath, reason: 'missing mnema.key' });
@@ -94,23 +173,33 @@ export class SyncRebuild {
         }
 
         const parsedKey = parseTaskKey(key);
-        if (parsedKey === null || parsedKey.projectKey !== project.key) {
+        if (parsedKey === null || parsedKey.projectKey !== projectKey) {
           skipped.push({ file: filePath, reason: 'key prefix does not match project' });
           continue;
         }
 
-        const reporterHandle = readString(data, 'reporter') ?? 'unknown';
-        const reporterId = this.actors.upsert(reporterHandle, ActorKind.Human);
-
+        const reporterId = this.actors.upsert(
+          readString(data, 'reporter') ?? 'unknown',
+          ActorKind.Human,
+        );
         const assigneeHandle = readString(data, 'assignee');
         const assigneeId =
           assigneeHandle !== null ? this.actors.upsert(assigneeHandle, ActorKind.Human) : null;
+
+        // Resolve epic/sprint links by key — the rows exist already
+        // because the roadmap was rebuilt first. An unknown key links to
+        // nothing rather than failing the whole rebuild.
+        const epicKey = readString(data, 'epic_key');
+        const epicId = epicKey !== null ? (this.epics.findByKey(epicKey)?.id ?? null) : null;
+        const sprintKey = readString(data, 'sprint_key');
+        const sprintId =
+          sprintKey !== null ? (this.sprints.findByKey(sprintKey)?.id ?? null) : null;
 
         const existing = this.tasks.findByKey(key);
         if (existing === null) {
           this.tasks.insert({
             key,
-            projectId: project.id,
+            projectId,
             title: readString(data, 'title') ?? key,
             description: readString(data, 'description'),
             acceptanceCriteria: readStringArray(data, 'acceptance_criteria'),
@@ -119,6 +208,8 @@ export class SyncRebuild {
             priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,
+            epicId,
+            sprintId,
             metadata: readRecord(data, 'metadata'),
           });
           upserted += 1;
@@ -129,14 +220,167 @@ export class SyncRebuild {
           this.tasks.updateState(existing.id, stateName, null);
           upserted += 1;
         }
+        // Relink an existing row when its disk link drifted from the cache.
+        if (existing.epicId !== epicId) {
+          if (epicId !== null) this.epics.addTask(epicId, existing.id);
+          else this.epics.removeTask(existing.id);
+        }
+        if (existing.sprintId !== sprintId) {
+          if (sprintId !== null) this.sprints.addTask(sprintId, existing.id);
+          else this.sprints.removeTask(existing.id);
+        }
       }
     }
 
-    return { tasksScanned: scanned, tasksUpserted: upserted, skipped };
+    return { scanned, upserted };
+  }
+
+  /**
+   * Walks a directory for roadmap markdowns of the given kind (epics and
+   * decisions coexist in `roadmap/`, distinguished by their `kind:`
+   * frontmatter) and upserts a row for each.
+   */
+  private rebuildRoadmap(
+    projectId: string,
+    projectKey: string,
+    dir: string,
+    kind: 'epic' | 'sprint' | 'decision',
+    skipped: { file: string; reason: string }[],
+  ): RebuildCounts {
+    const root = path.join(this.paths.projectRoot, dir);
+    if (!existsSync(root)) return { scanned: 0, upserted: 0 };
+
+    let scanned = 0;
+    let upserted = 0;
+
+    for (const fileName of listMarkdownFiles(root)) {
+      const filePath = path.join(root, fileName);
+      const data = this.markdownIo.read(filePath).mnemaData;
+
+      // The directory may hold more than one kind (epic + decision); only
+      // act on files whose frontmatter matches the kind we're rebuilding.
+      if (readString(data, 'kind') !== kind) continue;
+      scanned += 1;
+
+      const key = readString(data, 'key');
+      if (key === null) {
+        skipped.push({ file: filePath, reason: 'missing mnema.key' });
+        continue;
+      }
+      const expectedKey = fileName.replace(/\.md$/, '');
+      if (key !== expectedKey) {
+        skipped.push({
+          file: filePath,
+          reason: `mnema.key (${key}) does not match filename (${expectedKey})`,
+        });
+        continue;
+      }
+      if (!key.startsWith(`${projectKey}-`)) {
+        skipped.push({ file: filePath, reason: 'key prefix does not match project' });
+        continue;
+      }
+
+      const changed =
+        kind === 'epic'
+          ? this.upsertEpic(projectId, key, data)
+          : kind === 'sprint'
+            ? this.upsertSprint(projectId, key, data)
+            : this.upsertDecision(projectId, key, data);
+      if (changed) upserted += 1;
+    }
+
+    return { scanned, upserted };
+  }
+
+  /** Inserts an epic when absent, or realigns its state when it drifted. */
+  private upsertEpic(projectId: string, key: string, data: Record<string, unknown>): boolean {
+    const state = readEnum(data, 'state', EpicState, EpicState.Open);
+    const existing = this.epics.findByKey(key);
+    if (existing === null) {
+      const epic = this.epics.insert({
+        key,
+        projectId,
+        title: readString(data, 'title') ?? key,
+        description: readString(data, 'description'),
+        metadata: readRecord(data, 'metadata'),
+      });
+      if (state !== EpicState.Open) this.epics.updateState(epic.id, state);
+      return true;
+    }
+    if (existing.state !== state) {
+      this.epics.updateState(existing.id, state);
+      return true;
+    }
+    return false;
+  }
+
+  /** Inserts a sprint when absent, or realigns its state when it drifted. */
+  private upsertSprint(projectId: string, key: string, data: Record<string, unknown>): boolean {
+    const state = readEnum(data, 'state', SprintState, SprintState.Planned);
+    const existing = this.sprints.findByKey(key);
+    if (existing === null) {
+      const sprint = this.sprints.insert({
+        key,
+        projectId,
+        name: readString(data, 'name') ?? key,
+        goal: readString(data, 'goal'),
+        startsAt: readString(data, 'starts_at'),
+        endsAt: readString(data, 'ends_at'),
+        capacity: readNumber(data, 'capacity'),
+        metadata: readRecord(data, 'metadata'),
+      });
+      if (state !== SprintState.Planned) this.sprints.updateState(sprint.id, state);
+      return true;
+    }
+    if (existing.state !== state) {
+      this.sprints.updateState(existing.id, state);
+      return true;
+    }
+    return false;
+  }
+
+  /** Inserts a decision when absent, or realigns its status when it drifted. */
+  private upsertDecision(projectId: string, key: string, data: Record<string, unknown>): boolean {
+    const status = readEnum(data, 'status', DecisionStatus, DecisionStatus.Proposed);
+    const decisionText = readString(data, 'decision');
+    const existing = this.decisions.findByKey(key);
+    if (existing === null) {
+      const authoredBy = this.actors.upsert(
+        readString(data, 'authored_by') ?? 'unknown',
+        ActorKind.Human,
+      );
+      const decision = this.decisions.insert({
+        key,
+        projectId,
+        title: readString(data, 'title') ?? key,
+        decision: decisionText ?? '',
+        context: readString(data, 'context'),
+        rationale: readString(data, 'rationale'),
+        consequences: readString(data, 'consequences'),
+        impacts: readStringArray(data, 'impacts'),
+        authoredBy,
+      });
+      if (status !== DecisionStatus.Proposed) {
+        // supersededBy is a key on disk; resolve it to an id when present.
+        const supersededByKey = readString(data, 'superseded_by');
+        const supersededById =
+          supersededByKey !== null ? (this.decisions.findByKey(supersededByKey)?.id ?? null) : null;
+        this.decisions.updateStatus(decision.id, status, supersededById);
+      }
+      return true;
+    }
+    if (existing.status !== status) {
+      const supersededByKey = readString(data, 'superseded_by');
+      const supersededById =
+        supersededByKey !== null ? (this.decisions.findByKey(supersededByKey)?.id ?? null) : null;
+      this.decisions.updateStatus(existing.id, status, supersededById);
+      return true;
+    }
+    return false;
   }
 }
 
-function listStateDirs(root: string): string[] {
+function listDirs(root: string): string[] {
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
@@ -171,4 +415,20 @@ function readRecord(data: Record<string, unknown>, key: string): Record<string, 
     return value as Record<string, unknown>;
   }
   return {};
+}
+
+/**
+ * Reads a string frontmatter value and narrows it to a known enum,
+ * falling back to a default when absent or unrecognised. Keeps a
+ * hand-edited or future-version file from crashing the rebuild.
+ */
+function readEnum<T extends Record<string, string>>(
+  data: Record<string, unknown>,
+  key: string,
+  enumObject: T,
+  fallback: T[keyof T],
+): T[keyof T] {
+  const value = data[key];
+  const values = Object.values(enumObject) as string[];
+  return typeof value === 'string' && values.includes(value) ? (value as T[keyof T]) : fallback;
 }

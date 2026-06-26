@@ -45,6 +45,7 @@ import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
+import { RoadmapMirror } from './roadmap-mirror.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
@@ -210,11 +211,23 @@ export function createServiceContainer(
 
   const stateDir = path.join(projectRoot, config.paths.state);
   const syncBuffer = new SyncBuffer(stateDir);
+  const roadmapMirror = new RoadmapMirror({
+    projectRoot,
+    roadmapDir: config.paths.roadmap,
+    sprintsDir: config.paths.sprints,
+  });
   const sync = new SyncService(
     tasks,
     new MarkdownIo(),
     { projectRoot, backlogDir: config.paths.backlog },
     syncBuffer,
+    // Resolve a task's epic/sprint UUIDs to their stable human keys for
+    // the markdown frontmatter; those keys survive a clone, the ids do not.
+    (task) => ({
+      epicKey: task.epicId !== null ? (epicRepository.findById(task.epicId)?.key ?? null) : null,
+      sprintKey:
+        task.sprintId !== null ? (sprintRepository.findById(task.sprintId)?.key ?? null) : null,
+    }),
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
@@ -222,14 +235,25 @@ export function createServiceContainer(
   });
   sync.setMode(options.syncMode ?? SyncMode.Push);
 
-  const syncRebuild = new SyncRebuild(tasks, actors, projects, {
-    projectRoot,
-    backlogDir: config.paths.backlog,
-  });
+  const syncRebuild = new SyncRebuild(
+    tasks,
+    actors,
+    projects,
+    epicRepository,
+    sprintRepository,
+    decisionRepository,
+    {
+      projectRoot,
+      backlogDir: config.paths.backlog,
+      roadmapDir: config.paths.roadmap,
+      sprintsDir: config.paths.sprints,
+    },
+  );
 
   const taskService = new TaskService(tasks, transitions, projects, stateMachine, audit, sync, {
     ensureActor: (handle, kind) =>
       identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
+    findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
   });
   trace.mark('services instantiated');
 
@@ -246,6 +270,8 @@ export function createServiceContainer(
     audit,
     stateMachine,
     sprintMetricRepository,
+    roadmapMirror,
+    sync,
   );
   const decisionService = new DecisionService(
     decisionRepository,
@@ -254,6 +280,7 @@ export function createServiceContainer(
     audit,
     noteRepository,
     tasks,
+    roadmapMirror,
   );
   const dependencyService = new DependencyService(
     dependencyRepository,
@@ -264,7 +291,15 @@ export function createServiceContainer(
   );
   const noteService = new NoteService(noteRepository, tasks, identity, audit);
   const taskEvidenceService = new TaskEvidenceService(taskEvidenceRepository, tasks, audit);
-  const epicService = new EpicService(epicRepository, tasks, projects, audit, stateMachine);
+  const epicService = new EpicService(
+    epicRepository,
+    tasks,
+    projects,
+    audit,
+    stateMachine,
+    roadmapMirror,
+    sync,
+  );
   const coverageService = new CoverageService(
     epicRepository,
     sprintRepository,

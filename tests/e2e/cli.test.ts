@@ -239,7 +239,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const first = runCli(['sync'], projectRoot);
     expect(first.status).toBe(0);
     expect(first.stdout).toContain('sync complete');
-    expect(first.stdout).toContain('upserted=0');
+    // The task already exists in the DB, so the rebuild scans it but
+    // upserts nothing (counts are reported as scanned/upserted).
+    expect(first.stdout).toContain('tasks=1/0');
   });
 
   it('mnema history shows aggregated activity for the day', () => {

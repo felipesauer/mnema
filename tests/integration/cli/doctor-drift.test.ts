@@ -90,14 +90,20 @@ describe('inspectMirrorDrift', () => {
   let work: string;
   let skillsDir: string;
   let memoryDir: string;
+  let roadmapDir: string;
+  let sprintsDir: string;
   let adapter: SqliteAdapter;
 
   beforeEach(() => {
     work = mkdtempSync(path.join(tmpdir(), 'mnema-doctor-mirror-'));
     skillsDir = path.join(work, 'skills');
     memoryDir = path.join(work, 'memory');
+    roadmapDir = path.join(work, 'roadmap');
+    sprintsDir = path.join(work, 'sprints');
     mkdirSync(skillsDir, { recursive: true });
     mkdirSync(memoryDir, { recursive: true });
+    mkdirSync(roadmapDir, { recursive: true });
+    mkdirSync(sprintsDir, { recursive: true });
     adapter = new SqliteAdapter(path.join(work, 'state.db'));
     new MigrationRunner().run(adapter, realMigrationsDir);
     // Seed one actor for FK constraints.
@@ -122,7 +128,7 @@ describe('inspectMirrorDrift', () => {
       .run();
     writeFileSync(path.join(skillsDir, 'foo.md'), '---\nname: Foo\n---\nc', 'utf-8');
 
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(true);
     expect(skills?.severity).toBe('warning');
@@ -138,7 +144,7 @@ describe('inspectMirrorDrift', () => {
       .run();
     // No mirror file written — drift.
 
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(false);
     expect(skills?.severity).toBe('warning');
@@ -154,7 +160,7 @@ describe('inspectMirrorDrift', () => {
       )
       .run();
 
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const mem = checks.find((c) => c.name === 'memories mirrored');
     expect(mem?.ok).toBe(false);
     expect(mem?.severity).toBe('warning');
@@ -164,8 +170,9 @@ describe('inspectMirrorDrift', () => {
   // import is touched — harmless.
   it('respects empty state without errors', () => {
     expect(readdirSync(skillsDir)).toEqual([]);
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
-    expect(checks).toHaveLength(2);
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
+    // skills, memories, epics, decisions, sprints
+    expect(checks).toHaveLength(5);
     expect(checks.every((c) => c.ok)).toBe(true);
   });
 
@@ -173,7 +180,7 @@ describe('inspectMirrorDrift', () => {
     // No SQLite row, but a stray `.md` lingers in the mirror dir.
     writeFileSync(path.join(skillsDir, 'ghost.md'), '---\nname: ghost\n---\nstray', 'utf-8');
 
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(false);
     expect(skills?.severity).toBe('warning');
@@ -183,7 +190,7 @@ describe('inspectMirrorDrift', () => {
   it('INDEX.md and dotfiles are not flagged as orphans', () => {
     writeFileSync(path.join(skillsDir, 'INDEX.md'), '# Skills index', 'utf-8');
     writeFileSync(path.join(skillsDir, '.gitkeep'), '', 'utf-8');
-    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir });
+    const checks = inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir });
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(true);
   });
