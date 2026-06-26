@@ -64,7 +64,7 @@ export class DoctorCommand {
       )
       .option(
         '--rebuild-mirrors',
-        'Recovery: recreate missing `.md` files under paths.skills and paths.memory from the SQLite rows. Skips the regular doctor checks.',
+        'Recovery: recreate missing `.md` files for skills, memories, epics, sprints and decisions from the SQLite rows. Skips the regular doctor checks.',
       )
       .option(
         '--prune-orphans',
@@ -83,13 +83,16 @@ export class DoctorCommand {
   }
 
   /**
-   * Rebuilds skill/memory `.md` mirror files for every SQLite row that
-   * has no matching file on disk. Existing files are left alone — this
-   * is a one-way "heal drift" operation, not a reformat. When
-   * `pruneOrphans` is true, also deletes mirrors whose slug has no
-   * matching SQLite row (FS→DB drift).
+   * Rebuilds `.md` mirror files for every SQLite row that has no matching
+   * file on disk — skills, memories, epics, sprints and decisions.
+   * Existing files are left alone: this is a one-way "heal drift"
+   * operation, not a reformat. When `pruneOrphans` is true, also deletes
+   * skill/memory mirrors whose slug has no matching SQLite row (FS→DB
+   * drift). Pruning is intentionally limited to skills/memories — epics
+   * and decisions share `roadmap/`, so an orphan sweep there needs the
+   * union of both key sets and is left out of this recovery path.
    *
-   * @param pruneOrphans - Whether to delete orphan `.md` files
+   * @param pruneOrphans - Whether to delete orphan skill/memory `.md` files
    * @returns Exit code (`0` on success, `3` if the context could not be
    *   opened)
    */
@@ -110,6 +113,9 @@ export class DoctorCommand {
 
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
+      const epics = container.epic.rebuildMirrors(config.project.key);
+      const sprints = container.sprint.rebuildMirrors(config.project.key);
+      const decisions = container.decision.rebuildMirrors(config.project.key);
       let prunedSkills: string[] = [];
       let prunedMemories: string[] = [];
 
@@ -149,6 +155,9 @@ export class DoctorCommand {
       if (
         skills.length === 0 &&
         memories.length === 0 &&
+        epics.length === 0 &&
+        sprints.length === 0 &&
+        decisions.length === 0 &&
         prunedSkills.length === 0 &&
         prunedMemories.length === 0
       ) {
@@ -160,6 +169,17 @@ export class DoctorCommand {
       }
       if (memories.length > 0) {
         process.stdout.write(`↻ memories mirrored: ${memories.length} — ${memories.join(', ')}\n`);
+      }
+      if (epics.length > 0) {
+        process.stdout.write(`↻ epics mirrored: ${epics.length} — ${epics.join(', ')}\n`);
+      }
+      if (sprints.length > 0) {
+        process.stdout.write(`↻ sprints mirrored: ${sprints.length} — ${sprints.join(', ')}\n`);
+      }
+      if (decisions.length > 0) {
+        process.stdout.write(
+          `↻ decisions mirrored: ${decisions.length} — ${decisions.join(', ')}\n`,
+        );
       }
       if (prunedSkills.length > 0) {
         process.stdout.write(
