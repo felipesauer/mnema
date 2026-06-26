@@ -28,6 +28,7 @@ export enum ErrorCode {
 
   AgentRunNotFound = 'AGENT_RUN_NOT_FOUND',
   AgentRunAlreadyEnded = 'AGENT_RUN_ALREADY_ENDED',
+  AgentRunNotResumable = 'AGENT_RUN_NOT_RESUMABLE',
   DepthLimitExceeded = 'DEPTH_LIMIT_EXCEEDED',
   AgentPlanNotFound = 'AGENT_PLAN_NOT_FOUND',
 

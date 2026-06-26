@@ -61,6 +61,11 @@ export type MnemaError =
       readonly status: string;
     }
   | {
+      readonly kind: ErrorCode.AgentRunNotResumable;
+      readonly runId: string;
+      readonly status: string;
+    }
+  | {
       readonly kind: ErrorCode.DepthLimitExceeded;
       readonly entity: 'agent_run' | 'agent_plan';
       readonly attemptedDepth: number;

@@ -135,6 +135,13 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Start a new run with agent_run_start`);
       break;
 
+    case ErrorCode.AgentRunNotResumable:
+      lines.push(`Agent run ${error.runId} cannot be resumed (status ${error.status})`);
+      lines.push(
+        `${pc.dim('hint:')} Only interrupted runs (aborted, failed) reopen; a completed run is closed — start a new one`,
+      );
+      break;
+
     case ErrorCode.DepthLimitExceeded:
       lines.push(`${error.entity} depth ${error.attemptedDepth} exceeds limit ${error.limit}`);
       lines.push(`${pc.dim('hint:')} Flatten the call hierarchy or split the work`);
@@ -365,6 +372,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.EpicInvalidState:
     case ErrorCode.InvalidWorkflowState:
     case ErrorCode.AgentRunAlreadyEnded:
+    case ErrorCode.AgentRunNotResumable:
     case ErrorCode.DependencyCycle:
     case ErrorCode.DependencySelf:
       return ExitCode.State;
