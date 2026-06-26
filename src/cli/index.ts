@@ -129,6 +129,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/sync-command.js')).SyncCommand(),
     description: 'Rebuild the SQLite cache from markdown files (idempotent)',
   },
+  upgrade: {
+    load: async () => new (await import('./commands/upgrade-command.js')).UpgradeCommand(),
+    description: 'Bring the project in line with the installed Mnema version',
+  },
   mcp: {
     load: async () => new (await import('./commands/mcp-command.js')).McpCommand(),
     description: 'MCP server commands (serve / install-instructions)',
