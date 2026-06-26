@@ -159,7 +159,7 @@ describe('ConfigLoader', () => {
     it('changes nothing when no user config exists', () => {
       writeConfig(tempRoot, validConfig);
       const config = scopedLoader.load(tempRoot);
-      expect(config.enforcement_mode).toBe('advisory'); // schema default
+      expect(config.enforcement_mode).toBe('strict'); // schema default
     });
 
     it('rejects a user config that sets a project-only key', () => {
