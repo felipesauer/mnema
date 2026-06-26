@@ -354,6 +354,26 @@ export class DecisionService {
   }
 
   /**
+   * Writes a markdown mirror for every decision that has none — the
+   * recovery path for projects created before mirrors existed, or after
+   * a manual deletion. Existing files are left untouched.
+   *
+   * @param projectKey - Project key
+   * @returns Keys of the decisions whose mirror was just written
+   */
+  rebuildMirrors(projectKey: string): string[] {
+    if (this.mirror === null) return [];
+    const rebuilt: string[] = [];
+    for (const decision of this.list(projectKey)) {
+      if (!this.mirror.hasDecision(decision.key)) {
+        this.mirror.writeDecision(decision);
+        rebuilt.push(decision.key);
+      }
+    }
+    return rebuilt;
+  }
+
+  /**
    * Returns the decisions of a project whose `impacts` list contains the
    * given artefact path/key — "which decision touched this?".
    *

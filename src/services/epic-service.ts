@@ -267,4 +267,24 @@ export class EpicService {
     if (project === null) return [];
     return this.epics.findByProject(project.id, state);
   }
+
+  /**
+   * Writes a markdown mirror for every epic that has none — the recovery
+   * path for projects created before mirrors existed, or after a manual
+   * deletion. Existing files are left untouched.
+   *
+   * @param projectKey - Project key
+   * @returns Keys of the epics whose mirror was just written
+   */
+  rebuildMirrors(projectKey: string): string[] {
+    if (this.mirror === null) return [];
+    const rebuilt: string[] = [];
+    for (const epic of this.list(projectKey)) {
+      if (!this.mirror.hasEpic(epic.key)) {
+        this.mirror.writeEpic(epic);
+        rebuilt.push(epic.key);
+      }
+    }
+    return rebuilt;
+  }
 }

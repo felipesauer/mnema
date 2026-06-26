@@ -29,7 +29,7 @@ import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
 import { VERSION } from '../../utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
-import { buildAgentsMd } from '../templates/agents-md.js';
+import { writeAgentsMd } from '../templates/agents-md.js';
 
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
@@ -275,46 +275,6 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
 
 function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
-}
-
-/**
- * Markers that bracket the Mnema-managed block in `AGENTS.md`.
- *
- * Same pattern as the memory consolidator: anything outside the
- * markers is the user's content and is preserved verbatim. Re-running
- * `init` updates only the managed section, so a project that already
- * has an `AGENTS.md` (e.g. from another tool) keeps its instructions
- * intact and just gains a `## Mnema` block at the bottom.
- */
-const AGENTS_MD_BEGIN = '<!-- MNEMA:START -->';
-const AGENTS_MD_END = '<!-- MNEMA:END -->';
-
-function writeAgentsMd(cwd: string, config: Config): void {
-  const file = path.join(cwd, 'AGENTS.md');
-  const managed = `${AGENTS_MD_BEGIN}\n${buildAgentsMd(config)}\n${AGENTS_MD_END}\n`;
-
-  if (!existsSync(file)) {
-    writeFileSync(file, managed, 'utf-8');
-    return;
-  }
-
-  const previous = readFileSync(file, 'utf-8');
-  const start = previous.indexOf(AGENTS_MD_BEGIN);
-  const endIdx = previous.indexOf(AGENTS_MD_END);
-  if (start !== -1 && endIdx !== -1 && endIdx > start) {
-    // Replace the existing managed block in place; everything around
-    // it stays exactly as the user wrote it.
-    const before = previous.slice(0, start);
-    const after = previous.slice(endIdx + AGENTS_MD_END.length);
-    writeFileSync(file, `${before}${managed.trimEnd()}${after}`, 'utf-8');
-    return;
-  }
-
-  // No marker yet — append the managed block at the end, preserving
-  // a single blank line of separation when the file does not already
-  // end with two newlines.
-  const separator = previous.endsWith('\n\n') ? '' : previous.endsWith('\n') ? '\n' : '\n\n';
-  writeFileSync(file, `${previous}${separator}${managed}`, 'utf-8');
 }
 
 function appendGitignore(cwd: string, statePath: string): void {

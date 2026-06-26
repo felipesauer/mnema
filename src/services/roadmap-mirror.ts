@@ -64,6 +64,21 @@ export class RoadmapMirror {
     this.writeFile(this.decisionPath(decision.key), serialiseDecision(decision), decision.title);
   }
 
+  /** True when an epic already has a markdown mirror on disk. */
+  hasEpic(key: string): boolean {
+    return existsSync(this.epicPath(key));
+  }
+
+  /** True when a sprint already has a markdown mirror on disk. */
+  hasSprint(key: string): boolean {
+    return existsSync(this.sprintPath(key));
+  }
+
+  /** True when a decision already has a markdown mirror on disk. */
+  hasDecision(key: string): boolean {
+    return existsSync(this.decisionPath(key));
+  }
+
   private writeFile(targetPath: string, mnemaData: Record<string, unknown>, heading: string): void {
     mkdirSync(path.dirname(targetPath), { recursive: true });
     const existing = this.markdownIo.read(targetPath);

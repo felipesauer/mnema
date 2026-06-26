@@ -123,7 +123,7 @@ and approve from the terminal — walked through end to end in
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, epic/sprint completion coverage, acceptance-criteria evidence, a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
-| **Skills, memories, observations** | Human-curated knowledge the agent records via MCP tools, mirrored to plain `.md` files (not semantic recall — see the note above). |
+| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
 | **MCP tools** | 40+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
@@ -174,13 +174,13 @@ my-project/
     │   └── current.jsonl
     ├── state/                # local cache — gitignored
     │   └── state.db          #   SQLite (FTS, tasks, runs, audit metadata)
-    ├── backlog/              # one folder per workflow state
-    │   ├── DRAFT/MYAPP-1.md
+    ├── backlog/              # one .md per task, foldered by workflow state
+    │   ├── DRAFT/MYAPP-1.md  #   carries its epic_key / sprint_key link
     │   ├── READY/
     │   └── …
-    ├── sprints/              # sprint planning notes
-    ├── roadmap/              # quarterly / theme docs
-    ├── memory/               # human-curated context (decisions, notes)
+    ├── sprints/              # one .md per sprint, mirrored from the DB
+    ├── roadmap/              # one .md per epic and per decision (ADR)
+    ├── memory/               # agent/human-recorded facts, mirrored to .md
     ├── skills/               # agent-recorded skills, mirrored to .md
     └── workflows/
         └── default.json      # active state machine
@@ -206,7 +206,9 @@ MCP tools. The commands group by what you're doing — run
 | Command | What it does |
 |---|---|
 | `mnema task create / list / show / move` | Manage tasks (`create` takes `--estimate`, `--context-budget`, `--priority`) |
+| `mnema task assign <key> --to <handle>` | Set or clear a task's assignee (`--clear`); an unknown handle is rejected |
 | `mnema sprint plan / start / close / show / add` | Manage sprints (one active per project) |
+| `mnema sprint add-tasks <key> <task...>` | Attach several tasks at once (best-effort, reports per-task failures) |
 | `mnema sprint metric <key> --name --target` | Add a measurable metric (baseline/unit/due optional) |
 | `mnema epic create / show / add / close` | Group tasks; `show` includes the derived lifecycle |
 | `mnema decision record / accept / reject / supersede` | Manage ADRs (`record` takes `--impact`) |
@@ -227,12 +229,19 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain |
+| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
 | `mnema inbox` | Tasks awaiting your review or blocked |
 | `mnema agent inspect <run_id>` · `mnema audit query [filters]` | One run with its plans + mutations; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
+
+**Keep current after a package upgrade**
+
+| Command | What it does |
+|---|---|
+| `mnema upgrade` | Detect everything out of date (pending migrations, stale AGENTS.md, missing mirrors, old `mnema_version`), show the plan, and apply it after confirmation (`--yes` to skip) |
+| `mnema agents sync` | Regenerate only the Mnema-managed block of AGENTS.md, preserving your own content |
 
 **Integrate (MCP)**
 

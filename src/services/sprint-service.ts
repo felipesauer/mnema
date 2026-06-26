@@ -498,6 +498,26 @@ export class SprintService {
     if (project === null) return [];
     return this.sprints.findByProject(project.id);
   }
+
+  /**
+   * Writes a markdown mirror for every sprint that has none — the
+   * recovery path for projects created before mirrors existed, or after
+   * a manual deletion. Existing files are left untouched.
+   *
+   * @param projectKey - Project key
+   * @returns Keys of the sprints whose mirror was just written
+   */
+  rebuildMirrors(projectKey: string): string[] {
+    if (this.mirror === null) return [];
+    const rebuilt: string[] = [];
+    for (const sprint of this.list(projectKey)) {
+      if (!this.mirror.hasSprint(sprint.key)) {
+        this.mirror.writeSprint(sprint);
+        rebuilt.push(sprint.key);
+      }
+    }
+    return rebuilt;
+  }
 }
 
 function validatePlanInput(input: PlanSprintInput): ErrorIssue[] {
