@@ -45,10 +45,6 @@ async function setupHarness(): Promise<Harness> {
     workflow: 'default',
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
-  container.adapter
-    .getDatabase()
-    .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-    .run();
 
   const server = new MnemaMcpServer(config, projectRoot, container, {
     agent_handle: 'test-agent',

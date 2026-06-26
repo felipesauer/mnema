@@ -52,10 +52,6 @@ async function setup(): Promise<Harness> {
     workflow: 'default',
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
-  container.adapter
-    .getDatabase()
-    .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-    .run();
   // Seed real data the read tools can return.
   container.adapter
     .getDatabase()

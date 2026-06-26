@@ -26,10 +26,6 @@ function setupProject(): { root: string; container: ServiceContainer } {
     workflow: 'default',
   });
   const container = createServiceContainer(config, root, { migrationsDir });
-  container.adapter
-    .getDatabase()
-    .prepare("INSERT INTO projects (id, key, name) VALUES ('p1', 'TEST', 'Test')")
-    .run();
   return { root, container };
 }
 

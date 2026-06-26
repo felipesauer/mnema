@@ -188,6 +188,19 @@ export function createServiceContainer(
   const auditStateRepository = new AuditStateRepository(adapter);
   trace.mark('repositories instantiated');
 
+  // Seed the project row from the (version-controlled) config when the
+  // database has none. `mnema.config.json` travels with the repository
+  // but `state.db` is git-ignored, so on a fresh clone the database is
+  // recreated empty by the migrations above and the `projects` table is
+  // bare. Without this, `mnema sync` would find no project and rebuild
+  // nothing from the committed backlog. Idempotent: existing rows are
+  // left untouched, so it is a no-op once initialised. Skipped while
+  // migrations are pending — mutating commands refuse to run under a
+  // stale schema anyway, and read-only commands never need the write.
+  if (pendingMigrations.length === 0) {
+    ensureProject(projects, config);
+  }
+
   const identity = new IdentityService(actors);
 
   const auditDir = path.join(projectRoot, config.paths.audit);
@@ -325,4 +338,22 @@ export function createServiceContainer(
     pendingMigrations,
     close: () => adapter.close(),
   };
+}
+
+/**
+ * Inserts the configured project into an empty database. No-op when a
+ * row for the key already exists, so it is safe to call on every boot.
+ * Mirrors the seed `mnema init` performs, keeping the config the single
+ * source of truth for project identity on a fresh clone.
+ *
+ * @param projects - Project repository bound to the open database
+ * @param config - Validated project configuration
+ */
+function ensureProject(projects: ProjectRepository, config: Config): void {
+  if (projects.findByKey(config.project.key) !== null) return;
+  projects.insert({
+    key: config.project.key,
+    name: config.project.name,
+    description: config.project.description ?? null,
+  });
 }
