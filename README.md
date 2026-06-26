@@ -123,7 +123,7 @@ and approve from the terminal — walked through end to end in
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, epic/sprint completion coverage, acceptance-criteria evidence, a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
-| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). |
+| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
 | **MCP tools** | 40+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
