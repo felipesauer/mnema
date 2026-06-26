@@ -40,6 +40,7 @@ import { AuditService } from './audit-service.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
 import { DependencyService } from './dependency-service.js';
+import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
@@ -217,6 +218,18 @@ export function createServiceContainer(
   const auditWriter = new AuditWriter(auditDir, auditStateRepository);
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
+
+  // Domain-event hooks: only attach the dispatcher when at least one
+  // hook is configured, so the common (no-hooks) path carries zero
+  // overhead. The dispatcher runs post-commit and records each firing,
+  // so a hook is part of the audit trail rather than a phantom effect.
+  const anyHookConfigured = Object.values(config.hooks).some((commands) => commands.length > 0);
+  if (anyHookConfigured) {
+    const dispatcher = new DomainEventDispatcher(config.hooks, workflow.terminal, (input) =>
+      audit.write(input),
+    );
+    audit.setWriteObserver((event) => dispatcher.dispatch(event));
+  }
 
   const stateDir = path.join(projectRoot, config.paths.state);
   const syncBuffer = new SyncBuffer(stateDir);
