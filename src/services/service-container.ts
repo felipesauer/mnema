@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import type { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import { StateMachine } from '../domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
 import { listAvailableToolNames } from '../mcp/tool-registry.js';
@@ -250,11 +251,20 @@ export function createServiceContainer(
     },
   );
 
-  const taskService = new TaskService(tasks, transitions, projects, stateMachine, audit, sync, {
-    ensureActor: (handle, kind) =>
-      identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
-    findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
-  });
+  const taskService = new TaskService(
+    tasks,
+    transitions,
+    projects,
+    stateMachine,
+    audit,
+    sync,
+    {
+      ensureActor: (handle, kind) =>
+        identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
+      findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
+    },
+    config.enforcement_mode as EnforcementMode,
+  );
   trace.mark('services instantiated');
 
   const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {

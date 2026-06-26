@@ -38,7 +38,11 @@ export const ConfigSchema = z.object({
   mode: z.literal('single').default('single'),
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
-  enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('advisory'),
+  // `strict` holds agents to the workflow gate (a failed gate blocks an
+  // agent mutation) while letting a human override — the default because
+  // it preserves the protection that matters without locking humans out.
+  // `blocking` blocks everyone; `advisory` only warns.
+  enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
   sync: z
     .object({
       mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),

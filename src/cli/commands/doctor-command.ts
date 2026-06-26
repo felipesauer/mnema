@@ -227,6 +227,19 @@ export class DoctorCommand {
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
 
+    // Surface the active gate-enforcement mode so its effect is never a
+    // surprise. Always ok — it is informational, not a failure.
+    checks.push({
+      name: 'enforcement mode',
+      ok: true,
+      detail:
+        config.enforcement_mode === 'blocking'
+          ? 'blocking — a failed gate blocks everyone'
+          : config.enforcement_mode === 'strict'
+            ? 'strict — a failed gate blocks agents; humans may override'
+            : 'advisory — a failed gate only warns; anyone may override',
+    });
+
     const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
     let loadedWorkflow: ReturnType<WorkflowLoader['load']> | null = null;
