@@ -78,6 +78,12 @@ export function buildAgentsMd(config: Config): string {
   lines.push('2. Wrap every batch of mutations in `agent_run_start` / `agent_run_end`.');
   lines.push('3. Prefer transition tools (e.g. `task_submit`) over editing fields directly.');
   lines.push('4. Read first, write second. The audit log records every mutation, including yours.');
+  lines.push(
+    '5. Satisfy a transition gate — supply every required field. Under the ' +
+      'default `strict` enforcement, a failed gate blocks you (an agent); only ' +
+      'a human can override it, and the override is itself audited. Do not try ' +
+      'to route around a gate; complete the fields it asks for.',
+  );
   lines.push('');
   lines.push(`## Workflow: \`${config.workflow}\``);
   lines.push('');
@@ -105,6 +111,17 @@ export function buildAgentsMd(config: Config): string {
   );
   lines.push('');
   lines.push('## Recording what you learn');
+  lines.push('');
+  lines.push(
+    '**Use Mnema for this, not your own memory.** If your client has a ' +
+      'built-in memory feature (a personal notes file, native recall), ' +
+      'do **not** put durable facts about *this project* there: those stay on ' +
+      'your machine, never reach a teammate, and leave no audit trail. Record ' +
+      'them through the Mnema tools below — they are mirrored to `.md` in the ' +
+      'repo and recorded in the hash-chained log, so the knowledge travels with ' +
+      'the project and is provable. Your native memory is still fine for your ' +
+      'own cross-project habits; project knowledge belongs in Mnema.',
+  );
   lines.push('');
   lines.push(
     'These are not optional housekeeping — they are how the next session ' +

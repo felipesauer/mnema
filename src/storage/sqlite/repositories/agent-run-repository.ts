@@ -145,6 +145,27 @@ export class AgentRunRepository {
       .run(status, result, errorMessage, isoNow(), runId);
     return this.findById(runId);
   }
+
+  /**
+   * Reopens a terminated run: clears `ended_at`, `result` and `error`
+   * and flips the status back to `running`. The run keeps its id, so an
+   * interrupted session reattaches to the same link in the chain of
+   * custody instead of orphaning it under a fresh run.
+   *
+   * @param runId - Run identifier
+   * @returns The updated run, or `null` if the id is unknown
+   */
+  reopen(runId: string): AgentRun | null {
+    this.adapter
+      .getDatabase()
+      .prepare(
+        `UPDATE agent_runs
+            SET status = ?, result = NULL, error = NULL, ended_at = NULL
+          WHERE id = ?`,
+      )
+      .run(AgentRunStatus.Running, runId);
+    return this.findById(runId);
+  }
 }
 
 function rowToAgentRun(row: AgentRunRow): AgentRun {

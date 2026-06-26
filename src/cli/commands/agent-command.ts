@@ -4,6 +4,7 @@ import type { AgentRun } from '../../domain/entities/agent-run.js';
 import { AgentPlanState } from '../../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { printError } from '../../errors/error-printer.js';
+import type { ServiceContainer } from '../../services/service-container.js';
 import type { TransitionWithKey } from '../../storage/sqlite/repositories/transition-repository.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
@@ -16,9 +17,9 @@ interface InspectOptions {
 /**
  * Registers the `mnema agent` command group.
  *
- * Right now it exposes a single subcommand — `agent inspect <runId>` —
- * which renders an agent run together with its plan tree and the
- * transitions caused by the run.
+ * Exposes `agent inspect <runId>` (full plan tree + transitions) and
+ * `agent resume <runId>` (reattach to an interrupted run and print a
+ * summary of what is still open).
  */
 export class AgentCommand {
   /**
@@ -55,7 +56,55 @@ export class AgentCommand {
           );
         });
       });
+
+    group
+      .command('resume <runId>')
+      .description('Reattach to an interrupted run and summarise what is still open')
+      .action(async (runId: string) => {
+        await withCliContext(({ container }) => {
+          const actor = container.identity.getDefaultActor();
+          const result = container.agentRun.resume({ runId, actor });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const run = result.value;
+
+          const summaryResult = container.agentRun.summarize(run.id);
+          process.stdout.write(`${formatResume(run, summaryResult)}\n`);
+        });
+      });
   }
+}
+
+function formatResume(
+  run: AgentRun,
+  summaryResult: ReturnType<ServiceContainer['agentRun']['summarize']>,
+): string {
+  const lines: string[] = [];
+  lines.push(`${pc.green('Resumed run:')} ${run.id}`);
+  lines.push(`${pc.bold('Goal:')} ${run.goal}`);
+  lines.push(`${pc.bold('Status:')} ${formatStatus(run.status)}`);
+
+  if (!summaryResult.ok) {
+    return lines.join('\n');
+  }
+  const summary = summaryResult.value;
+  lines.push('');
+  lines.push(
+    `${pc.bold('So far:')} ${summary.mutationCount} mutation(s), ${summary.planCount} plan(s)`,
+  );
+
+  lines.push('');
+  lines.push(`${pc.bold(`Open items (${summary.openItems.length}):`)}`);
+  if (summary.openItems.length === 0) {
+    lines.push(`  ${pc.dim('(nothing left open — pick up fresh work)')}`);
+  } else {
+    for (const item of summary.openItems) {
+      const tag = item.kind === 'plan' ? pc.dim('plan') : pc.dim('run ');
+      lines.push(`  ${tag} ${pc.yellow(`[${item.status}]`)} ${item.label}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 function formatRunDetail(

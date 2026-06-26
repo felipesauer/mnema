@@ -10,6 +10,7 @@ import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
+import { readUserMemories, type SourcedMemory } from './user-knowledge.js';
 
 /**
  * Input for {@link MemoryService.record}.
@@ -47,6 +48,11 @@ export class MemoryService {
     private readonly repo: MemoryRepository,
     private readonly identity: IdentityService,
     private readonly audit: AuditService,
+    // User-level knowledge dir (`~/.config/mnema`). When set, memories
+    // found under it are merged into list/show as read-only
+    // `source: 'user'` entries — a project memory of the same slug
+    // shadows them. Records always go to the project, never here.
+    private readonly userDir: string | null = null,
   ) {}
 
   /**
@@ -110,22 +116,38 @@ export class MemoryService {
    * @param slug - Memory slug
    * @returns The memory or an error
    */
-  show(slug: string): Result<Memory, MnemaError> {
+  show(slug: string): Result<SourcedMemory, MnemaError> {
     const memory = this.repo.findBySlug(slug);
-    if (memory === null) {
-      return Err({ kind: ErrorCode.MemoryNotFound, slug });
+    if (memory !== null) return Ok({ ...memory, source: 'project' });
+
+    // Fall back to a user-level memory only when the project has none —
+    // the project always shadows.
+    if (this.userDir !== null) {
+      const userMemory = readUserMemories(this.userDir).find((m) => m.slug === slug);
+      if (userMemory !== undefined) return Ok(userMemory);
     }
-    return Ok(memory);
+    return Err({ kind: ErrorCode.MemoryNotFound, slug });
   }
 
   /**
-   * Lists memories, optionally filtered by topic.
+   * Lists memories, optionally filtered by topic. Merges user-level
+   * memories under the project's (a project slug shadows the user's).
    *
    * @param topic - Optional topic filter
-   * @returns Memory rows newest-updated first
+   * @returns Memory rows newest-updated first, tagged with their source
    */
-  list(topic?: string): readonly Memory[] {
-    return this.repo.listAll(topic);
+  list(topic?: string): readonly SourcedMemory[] {
+    const project: SourcedMemory[] = this.repo
+      .listAll(topic)
+      .map((m) => ({ ...m, source: 'project' }));
+    if (this.userDir === null) return project;
+
+    const projectSlugs = new Set(project.map((m) => m.slug));
+    const userOnly = readUserMemories(this.userDir).filter((m) => {
+      if (projectSlugs.has(m.slug)) return false;
+      return topic === undefined || m.topics.includes(topic);
+    });
+    return [...project, ...userOnly];
   }
 
   /**

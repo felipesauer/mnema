@@ -8,6 +8,8 @@ import {
   ConfigInvalidError,
   ConfigLoader,
   ConfigNotFoundError,
+  USER_CONFIG_RELATIVE,
+  UserConfigInvalidError,
 } from '@/config/config-loader.js';
 
 const validConfig = {
@@ -106,6 +108,65 @@ describe('ConfigLoader', () => {
 
       expect(caught).toBeInstanceOf(ConfigInvalidError);
       expect((caught as ConfigInvalidError).issues).toBeTruthy();
+    });
+  });
+
+  describe('user-level config (~/.config/mnema/config.json)', () => {
+    let fakeHome: string;
+    let scopedLoader: ConfigLoader;
+
+    function writeUserConfig(payload: unknown): void {
+      const file = path.join(fakeHome, USER_CONFIG_RELATIVE);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify(payload));
+    }
+
+    beforeEach(() => {
+      // Isolate the home dir so the test never reads the real ~/.config.
+      fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-'));
+      scopedLoader = new ConfigLoader(() => fakeHome);
+    });
+
+    afterEach(() => {
+      rmSync(fakeHome, { recursive: true, force: true });
+    });
+
+    it('applies a user default when the project omits the key', () => {
+      writeConfig(tempRoot, validConfig); // no enforcement_mode
+      writeUserConfig({ enforcement_mode: 'blocking' });
+
+      const config = scopedLoader.load(tempRoot);
+      expect(config.enforcement_mode).toBe('blocking');
+    });
+
+    it('lets the project override the user default', () => {
+      writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'advisory' });
+      writeUserConfig({ enforcement_mode: 'blocking' });
+
+      const config = scopedLoader.load(tempRoot);
+      expect(config.enforcement_mode).toBe('advisory');
+    });
+
+    it('deep-merges sync: project sub-fields win, user sub-fields fill the gaps', () => {
+      writeConfig(tempRoot, { ...validConfig, sync: { agent_buffer_flush_count: 99 } });
+      writeUserConfig({ sync: { mode: 'push', agent_buffer_flush_count: 10 } });
+
+      const config = scopedLoader.load(tempRoot);
+      expect(config.sync.agent_buffer_flush_count).toBe(99); // project wins
+      expect(config.sync.mode).toBe('push'); // user fills the gap
+    });
+
+    it('changes nothing when no user config exists', () => {
+      writeConfig(tempRoot, validConfig);
+      const config = scopedLoader.load(tempRoot);
+      expect(config.enforcement_mode).toBe('strict'); // schema default
+    });
+
+    it('rejects a user config that sets a project-only key', () => {
+      writeConfig(tempRoot, validConfig);
+      writeUserConfig({ project: { key: 'OTHER', name: 'Nope' } });
+
+      expect(() => scopedLoader.load(tempRoot)).toThrow(UserConfigInvalidError);
     });
   });
 });

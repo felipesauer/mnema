@@ -153,6 +153,9 @@ describe('TaskService (integration)', () => {
         action: 'submit',
         payload: { title: 'X' },
         actor: 'daniel',
+        // As an agent (`via` set), the default `strict` mode holds the
+        // gate — a human could override, but an agent cannot.
+        via: 'agent:test',
       });
 
       expect(result.ok).toBe(false);

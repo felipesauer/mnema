@@ -17,6 +17,7 @@ const KNOWLEDGE_KINDS = ['skill_recorded', 'memory_recorded', 'observation_recor
  *
  * - `agent_run_start`  — opens a run, captures it in the session
  * - `agent_run_end`    — closes the active run, fires sync flush
+ * - `agent_run_resume` — reattaches to an interrupted run
  * - `agent_run_show`   — read-only inspection
  *
  * Every mutating MCP tool requires a run: the rule is enforced inside
@@ -124,6 +125,45 @@ export class AgentRunTools {
           status: ended.value.status,
           ended_at: ended.value.endedAt,
           ...(reminder !== undefined ? { reminder } : {}),
+        });
+      },
+    );
+
+    server.registerTool(
+      'agent_run_resume',
+      {
+        description:
+          'Reattach to an interrupted run (aborted or failed) instead of opening a new one, and make it the session active run. Resuming a run that is still running is a safe no-op; a completed run is rejected. Returns a summary of what is still open.',
+        inputSchema: {
+          run_id: z.string().describe('Identifier of the interrupted run to resume'),
+        },
+      },
+      ({ run_id: runId }) => {
+        const result = this.agentRun.resume({
+          runId,
+          actor: this.identity.getDefaultActor(),
+        });
+        if (!result.ok) return err(result.error);
+
+        this.session.setCurrentRunId(result.value.id);
+
+        const summary = this.agentRun.summarize(result.value.id);
+        return ok({
+          run_id: result.value.id,
+          status: result.value.status,
+          depth: result.value.depth,
+          ...(summary.ok
+            ? {
+                mutation_count: summary.value.mutationCount,
+                plan_count: summary.value.planCount,
+                open_items: summary.value.openItems.map((item) => ({
+                  kind: item.kind,
+                  id: item.id,
+                  label: item.label,
+                  status: item.status,
+                })),
+              }
+            : {}),
         });
       },
     );

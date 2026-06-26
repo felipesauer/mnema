@@ -199,6 +199,46 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(invalid.stderr).toContain('TODO');
   });
 
+  it('mnema domain-event hook fires on task done, records hook_ran, and is non-fatal on failure', () => {
+    runCli(['init', '--name', 'Lean App', '--key', 'LEAN', '--workflow', 'lean'], projectRoot);
+
+    // Wire a hook that captures the event JSON on stdin to a file, plus
+    // a second command that fails — proving a failing hook is audited
+    // but never breaks the transition that triggered it.
+    const configPath = path.join(projectRoot, '.mnema/mnema.config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const capturePath = path.join(projectRoot, 'hook-out.json');
+    config.hooks = { on_task_done: [`cat > '${capturePath}'`, 'exit 7'] };
+    writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    runCli(['task', 'create', '--title', 'Ship it'], projectRoot);
+    runCli(['task', 'move', 'LEAN-1', 'start'], projectRoot);
+    const done = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot);
+
+    // The transition itself succeeds despite the failing second hook.
+    expect(done.status).toBe(0);
+    expect(done.stdout).toContain('DONE');
+
+    // The first hook received the triggering event as JSON on stdin.
+    expect(existsSync(capturePath)).toBe(true);
+    const payload = JSON.parse(readFileSync(capturePath, 'utf-8'));
+    expect(payload.kind).toBe('task_transitioned');
+    expect(payload.data.to).toBe('DONE');
+
+    // Both firings are in the audit trail: one completed, one failed (exit 7).
+    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    const hookLines = audit
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+      .filter((e) => e.kind === 'hook_ran');
+    expect(hookLines).toHaveLength(2);
+    expect(hookLines.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
+      true,
+    );
+    expect(hookLines.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(true);
+  });
+
   it('mnema doctor reports a healthy project after init', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
@@ -206,6 +246,35 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('config.json valid');
     expect(result.stdout).toContain('database opens');
+  });
+
+  it('mnema upgrade rebuilds a missing task mirror and prunes an orphan', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+
+    const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
+    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
+    expect(existsSync(realMirror)).toBe(true);
+
+    // Simulate drift: the real task's mirror vanished; a stray orphan lingers.
+    rmSync(realMirror);
+    writeFileSync(orphanMirror, '---\n---\nstray', 'utf-8');
+
+    // doctor surfaces both before the fix.
+    const doctor = runCli(['doctor'], projectRoot);
+    expect(doctor.stdout).toContain('tasks mirrored');
+    expect(doctor.stdout).toContain('missing files: WEBAPP-1');
+    expect(doctor.stdout).toContain('orphan files: WEBAPP-999');
+
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgrade.status).toBe(0);
+    expect(upgrade.stdout).toContain('rebuilt 1 mirror file(s)');
+    expect(upgrade.stdout).toContain('pruned 1 orphan mirror file(s)');
+
+    // The real mirror is back; the orphan is gone.
+    expect(existsSync(realMirror)).toBe(true);
+    expect(existsSync(orphanMirror)).toBe(false);
   });
 
   it('mnema task list outside a project returns CONFIG_NOT_FOUND', () => {
@@ -443,6 +512,56 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     // And the actions still appear next to their respective keys.
     expect(result.stdout).toMatch(/create\s+WEBAPP-7/);
     expect(result.stdout).toMatch(/start\s+WEBAPP-9/);
+  });
+
+  it('mnema agent resume reopens an aborted run and lists open items', async () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'agent:cc', 'agent')").run();
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('h1', 'daniel', 'human')").run();
+      db.prepare(
+        `INSERT INTO agent_runs (id, agent_actor_id, invoked_by, goal, status,
+                                 error, started_at, ended_at, depth)
+         VALUES ('run-i', 'a1', 'h1', 'interrupted audit', 'aborted',
+                 'session dropped', '2026-05-01T10:00:00.000Z',
+                 '2026-05-01T10:00:30.000Z', 0)`,
+      ).run();
+      // An unfinished plan step — should surface as an open item.
+      db.prepare(
+        `INSERT INTO agent_plans (id, agent_run_id, content, state, position)
+         VALUES ('p1', 'run-i', 'finish the auth sweep', 'in_progress', 0)`,
+      ).run();
+    } finally {
+      db.close();
+    }
+
+    const result = runCli(['agent', 'resume', 'run-i'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Resumed run');
+    expect(result.stdout).toContain('running');
+    expect(result.stdout).toContain('Open items (1)');
+    expect(result.stdout).toContain('finish the auth sweep');
+
+    // A completed run cannot be resumed.
+    const db2 = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      db2
+        .prepare(
+          `INSERT INTO agent_runs (id, agent_actor_id, invoked_by, goal, status,
+                                   started_at, ended_at, depth)
+           VALUES ('run-done', 'a1', 'h1', 'done', 'completed',
+                   '2026-05-01T09:00:00.000Z', '2026-05-01T09:05:00.000Z', 0)`,
+        )
+        .run();
+    } finally {
+      db2.close();
+    }
+    const rejected = runCli(['agent', 'resume', 'run-done'], projectRoot);
+    expect(rejected.status).not.toBe(0);
+    expect(rejected.stderr).toContain('cannot be resumed');
   });
 
   it('mnema inbox lists tasks awaiting review and blocked tasks', () => {

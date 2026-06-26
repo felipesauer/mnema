@@ -38,7 +38,11 @@ export const ConfigSchema = z.object({
   mode: z.literal('single').default('single'),
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
-  enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('advisory'),
+  // `strict` holds agents to the workflow gate (a failed gate blocks an
+  // agent mutation) while letting a human override — the default because
+  // it preserves the protection that matters without locking humans out.
+  // `blocking` blocks everyone; `advisory` only warns.
+  enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
   sync: z
     .object({
       mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),
@@ -53,9 +57,64 @@ export const ConfigSchema = z.object({
       attachments: z.boolean().default(true),
     })
     .prefault({}),
+  // Hooks run a shell command when a curated domain event fires (a task
+  // reaching done, a decision accepted, …). Each key is a domain-event
+  // name; the value is the list of commands to run, in order. The
+  // command receives the audit event as JSON on stdin and each firing
+  // writes its own `hook_ran` audit event — a hook is part of the
+  // trail, never a phantom side effect. Defaults to no hooks.
+  hooks: z
+    .object({
+      on_task_done: z.array(z.string().min(1)).default([]),
+      on_task_transitioned: z.array(z.string().min(1)).default([]),
+      on_decision_accepted: z.array(z.string().min(1)).default([]),
+      on_sprint_closed: z.array(z.string().min(1)).default([]),
+      on_epic_closed: z.array(z.string().min(1)).default([]),
+    })
+    .prefault({}),
 });
 
 /**
  * Validated configuration object derived from the Zod schema.
  */
 export type Config = z.infer<typeof ConfigSchema>;
+
+/**
+ * Schema for the optional user-level config (`~/.config/mnema/config.json`).
+ *
+ * It carries only *behaviour preferences* — never project identity
+ * (`project`, `version`, `mnema_version`), layout (`paths`) or the active
+ * `workflow`, which are intrinsic to a project and must not leak across
+ * them. Every field is optional: the file is a partial set of defaults
+ * that a project config overrides key-by-key. `.strict()` rejects an
+ * unknown or disallowed key (e.g. a stray `project`) so a mistake is a
+ * loud error, not a silent global override.
+ */
+export const UserConfigSchema = z
+  .object({
+    audit_strategy: z.enum(['full', 'recent', 'local']).optional(),
+    audit_retention_months: z.number().int().positive().optional(),
+    enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).optional(),
+    sync: z
+      .object({
+        mode: z.enum(['hybrid', 'push', 'buffer']).optional(),
+        agent_buffer_flush_seconds: z.number().int().positive().optional(),
+        agent_buffer_flush_count: z.number().int().positive().optional(),
+        agent_buffer_flush_on_plan_complete: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    features: z
+      .object({
+        fts_search: z.boolean().optional(),
+        attachments: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Validated user-level config — a partial set of behaviour defaults.
+ */
+export type UserConfig = z.infer<typeof UserConfigSchema>;

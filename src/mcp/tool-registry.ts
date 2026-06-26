@@ -14,6 +14,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'context_bootstrap',
   'agent_run_start',
   'agent_run_end',
+  'agent_run_resume',
   'agent_run_show',
   'task_create',
   'task_create_many',

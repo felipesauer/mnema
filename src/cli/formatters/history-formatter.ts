@@ -105,6 +105,16 @@ function describe(event: AuditEvent): string {
       const colour = status === 'completed' ? pc.green : status === 'failed' ? pc.red : pc.yellow;
       return `${colour(`run ${status}`)}`;
     }
+    case 'run_resumed': {
+      const from = stringify(data.from_status);
+      return `${pc.cyan('run resumed')} ${pc.dim(`(was ${from})`)}`;
+    }
+    case 'hook_ran': {
+      const outcome = stringify(data.outcome);
+      const colour = outcome === 'completed' ? pc.green : pc.red;
+      const code = data.exit_code === null ? '?' : stringify(data.exit_code);
+      return `${colour(`hook ${outcome}`)} ${pc.dim(`${stringify(data.event)} (exit ${code})`)}`;
+    }
     case 'decision_recorded':
       return `recorded ${stringify(data.key)} ${pc.dim(`"${stringify(data.title)}"`)} ${pc.dim(`[${stringify(data.status)}]`)}`;
     case 'decision_status_changed': {

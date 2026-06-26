@@ -1,4 +1,5 @@
 import type { Task } from '../domain/entities/task.js';
+import { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
@@ -93,6 +94,10 @@ export class TaskService {
       ensureActor: (handle: string, kind: 'human' | 'agent') => string;
       findActorIdByHandle: (handle: string) => string | null;
     },
+    // How a failed gate is enforced. Defaults to Blocking — the historical
+    // behaviour (a failed gate always blocks) — so callers that don't pass
+    // it keep working; the container supplies the configured value.
+    private readonly enforcementMode: EnforcementMode = EnforcementMode.Blocking,
   ) {}
 
   /**
@@ -269,34 +274,61 @@ export class TaskService {
     // overwrites the stored value. Only task-backed fields are offered as
     // defaults — ephemeral gate fields (e.g. `reason`) are never sourced
     // from the row. An explicit value in the payload still wins.
-    const validation = this.stateMachine.validateTransition(
+    const resolution = this.stateMachine.resolveTransition(
       task.state,
       input.action,
       input.payload,
       persistedFieldDefaults(task),
     );
 
-    if (!validation.ok) {
-      const error = validation.error;
-      if (error.kind === 'INVALID_TRANSITION') {
-        const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
-        return Err({
-          kind: ErrorCode.InvalidTransition,
-          taskKey: task.key,
-          fromState: task.state,
-          action: input.action,
-          available,
-        });
-      }
+    // An unknown action is never negotiable — there is nothing to enforce.
+    if (!resolution.ok) {
+      const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
       return Err({
-        kind: ErrorCode.GateFailed,
+        kind: ErrorCode.InvalidTransition,
         taskKey: task.key,
+        fromState: task.state,
         action: input.action,
-        issues: fromZodIssues(error.issues),
+        available,
       });
     }
 
-    const { to, data } = validation.value;
+    // Apply `enforcement_mode` when required fields are missing. The actor
+    // matters: `via` present means an agent drove this, and `strict` holds
+    // agents to the gate while letting a human force the transition.
+    const isAgent = input.via !== undefined;
+    let gateOverride: ErrorIssue[] | null = null;
+    if (!resolution.value.gate.ok) {
+      const issues = fromZodIssues(resolution.value.gate.issues);
+      const blocked =
+        this.enforcementMode === EnforcementMode.Blocking ||
+        (this.enforcementMode === EnforcementMode.Strict && isAgent);
+      if (blocked) {
+        this.audit.write({
+          kind: 'transition_blocked',
+          actor: input.actor,
+          via: input.via,
+          run: input.runId,
+          data: {
+            key: task.key,
+            action: input.action,
+            mode: this.enforcementMode,
+            missing: issues.map((i) => i.path.join('.') || '(root)'),
+          },
+        });
+        return Err({
+          kind: ErrorCode.GateFailed,
+          taskKey: task.key,
+          action: input.action,
+          issues,
+        });
+      }
+      // Allowed despite the failed gate (advisory, or strict + human).
+      // Remember it so the post-commit audit records the override.
+      gateOverride = issues;
+    }
+
+    const { to, data } = resolution.value;
 
     // A custom workflow may declare `estimate`/`priority` as a MUTATING gate
     // field with looser bounds than the first-class column allows (estimate ≥
@@ -308,7 +340,7 @@ export class TaskService {
     // and never folded to a column, so its value must not be column-validated.
     if (data !== null && typeof data === 'object') {
       const payload = data as Record<string, unknown>;
-      const spec = validation.value.requiresSpec;
+      const spec = resolution.value.requiresSpec;
       const foldIssues: ErrorIssue[] = [];
       if (typeof payload.estimate === 'number' && isMutatingField(spec, 'estimate')) {
         checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
@@ -368,7 +400,7 @@ export class TaskService {
         // fold's resolver is the identity — it must not create an actor.
         const persisted = persistableFromPayload(
           (data ?? {}) as Record<string, unknown>,
-          validation.value.requiresSpec,
+          resolution.value.requiresSpec,
           (id) => id,
         );
         let finalTask =
@@ -426,6 +458,24 @@ export class TaskService {
         action: input.action,
       },
     });
+
+    // The gate failed but the mode let it through (advisory, or strict +
+    // human). Record the override so a skipped gate still leaves a trail —
+    // the whole point of the product is that nothing happens off the record.
+    if (gateOverride !== null) {
+      this.audit.write({
+        kind: 'gate_overridden',
+        actor: input.actor,
+        via: input.via,
+        run: input.runId,
+        data: {
+          key: task.key,
+          action: input.action,
+          mode: this.enforcementMode,
+          missing: gateOverride.map((i) => i.path.join('.') || '(root)'),
+        },
+      });
+    }
 
     this.sync.syncTask(task.key);
 

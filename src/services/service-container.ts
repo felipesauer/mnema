@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import type { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import { StateMachine } from '../domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
 import { listAvailableToolNames } from '../mcp/tool-registry.js';
@@ -39,6 +40,7 @@ import { AuditService } from './audit-service.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
 import { DependencyService } from './dependency-service.js';
+import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
@@ -53,6 +55,7 @@ import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
+import { userKnowledgeDir } from './user-knowledge.js';
 import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
 
@@ -67,6 +70,13 @@ export interface ServiceContainerOptions {
    * absolute path; production code relies on the default.
    */
   readonly migrationsDir?: string;
+  /**
+   * Override the user-level knowledge dir (`~/.config/mnema`). Production
+   * uses the real home dir; tests pass an isolated path (or `null` to
+   * disable the layer) so they never read the developer's own
+   * `~/.config/mnema`.
+   */
+  readonly userDir?: string | null;
 }
 
 /**
@@ -209,6 +219,18 @@ export function createServiceContainer(
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
 
+  // Domain-event hooks: only attach the dispatcher when at least one
+  // hook is configured, so the common (no-hooks) path carries zero
+  // overhead. The dispatcher runs post-commit and records each firing,
+  // so a hook is part of the audit trail rather than a phantom effect.
+  const anyHookConfigured = Object.values(config.hooks).some((commands) => commands.length > 0);
+  if (anyHookConfigured) {
+    const dispatcher = new DomainEventDispatcher(config.hooks, workflow.terminal, (input) =>
+      audit.write(input),
+    );
+    audit.setWriteObserver((event) => dispatcher.dispatch(event));
+  }
+
   const stateDir = path.join(projectRoot, config.paths.state);
   const syncBuffer = new SyncBuffer(stateDir);
   const roadmapMirror = new RoadmapMirror({
@@ -250,16 +272,33 @@ export function createServiceContainer(
     },
   );
 
-  const taskService = new TaskService(tasks, transitions, projects, stateMachine, audit, sync, {
-    ensureActor: (handle, kind) =>
-      identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
-    findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
-  });
+  const taskService = new TaskService(
+    tasks,
+    transitions,
+    projects,
+    stateMachine,
+    audit,
+    sync,
+    {
+      ensureActor: (handle, kind) =>
+        identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
+      findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
+    },
+    config.enforcement_mode as EnforcementMode,
+  );
   trace.mark('services instantiated');
 
-  const agentRunService = new AgentRunService(agentRuns, actors, identity, audit, () => {
-    sync.flushAll();
-  });
+  const agentRunService = new AgentRunService(
+    agentRuns,
+    actors,
+    identity,
+    audit,
+    agentPlans,
+    transitions,
+    () => {
+      sync.flushAll();
+    },
+  );
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
@@ -327,8 +366,19 @@ export function createServiceContainer(
   const skillsDir = path.join(projectRoot, config.paths.skills);
   const memoryDir = path.join(projectRoot, config.paths.memory);
   const knownTools = listAvailableToolNames(workflow);
-  const skillService = new SkillService(skillsDir, knownTools, skillRepository, identity, audit);
-  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit);
+  // User-level knowledge (`~/.config/mnema`) merges under the project's
+  // own skills/memories — read-only, project always shadows. Tests
+  // override this (or pass null) so they never read the real home dir.
+  const userDir = options.userDir !== undefined ? options.userDir : userKnowledgeDir();
+  const skillService = new SkillService(
+    skillsDir,
+    knownTools,
+    skillRepository,
+    identity,
+    audit,
+    userDir,
+  );
+  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit, userDir);
   const wikilinkLintService = new WikilinkLintService(
     skillsDir,
     memoryDir,

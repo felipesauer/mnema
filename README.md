@@ -123,7 +123,7 @@ and approve from the terminal — walked through end to end in
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, epic/sprint completion coverage, acceptance-criteria evidence, a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
-| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). |
+| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
 | **MCP tools** | 40+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
@@ -282,6 +282,7 @@ mnema watch                        # live tail of every mutation
 mnema inbox                        # what's waiting on your review
 mnema history --since=today        # formatted activity log
 mnema agent inspect <run_id>       # one run, with its plans + mutations
+mnema agent resume <run_id>        # reattach to an interrupted run
 mnema doctor                       # re-verify the audit chain anytime
 ```
 
@@ -306,6 +307,55 @@ Optional fields cover custom paths, audit retention, sync flush
 thresholds and feature flags. Run `mnema doctor` after editing — it
 re-validates the file against the schema and reports anything that
 drifted.
+
+One optional field worth calling out is `enforcement_mode`, which decides
+what a failed workflow gate means:
+
+| Mode | A failed gate… |
+|---|---|
+| `strict` *(default)* | blocks an agent; a human may override, and the override is audited |
+| `blocking` | blocks everyone, no override |
+| `advisory` | only warns — anyone may proceed, and the skipped gate is audited |
+
+`mnema doctor` prints the active mode so its effect is never a surprise.
+
+### User-level defaults
+
+A `~/.config/mnema/config.json` lets you set **behavior preferences once**
+for every project on your machine — `enforcement_mode`, `audit_strategy`,
+`audit_retention_months`, and the `sync` / `features` blocks. A project's
+own config always wins key-by-key; the user file only fills the gaps. It
+cannot set project identity, `paths` or `workflow` — those are intrinsic
+to a project and an attempt to set them is rejected. Example:
+
+```json
+{ "enforcement_mode": "strict", "sync": { "mode": "push" } }
+```
+
+### Domain-event hooks
+
+A `hooks` block runs a shell command when a **domain** event fires — a
+task reaching a done state, a decision accepted, a sprint or epic
+closed — not on generic tool calls. The command receives the triggering
+audit event as JSON on stdin:
+
+```json
+{
+  "hooks": {
+    "on_task_done": ["./scripts/notify.sh"],
+    "on_decision_accepted": ["jq '.data.key' >> decisions.log"]
+  }
+}
+```
+
+Supported events: `on_task_done`, `on_task_transitioned`,
+`on_decision_accepted`, `on_sprint_closed`, `on_epic_closed`.
+
+Hooks run **after** the triggering event is durably written, and each
+firing records its own `hook_ran` audit event (with the exit code) — a
+hook is part of the trail, never a phantom side effect. A failing or
+hung command (30s timeout) is captured and audited; it never rolls back
+the state that triggered it.
 
 ## Workflows
 
