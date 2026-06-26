@@ -295,6 +295,7 @@ export class DoctorCommand {
     }
 
     printChecks(checks);
+    printMirrorHints(checks);
     // Warnings keep exit 0; only errors fail the check.
     const hasError = checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
     return hasError ? ExitCode.State : ExitCode.Success;
@@ -822,5 +823,41 @@ function printChecks(checks: readonly DoctorCheck[]): void {
         ? pc.yellow('⚠')
         : pc.red('✗');
     process.stdout.write(`${mark} ${check.name}  ${pc.dim(check.detail)}\n`);
+  }
+}
+
+/**
+ * Derives the actionable hints to show for failing mirror checks, so a
+ * user does not have to know the recovery command exists. A "missing
+ * files" drift (rows in SQLite with no `.md`) is healed by
+ * `--rebuild-mirrors`; an "orphan files" drift (`.md` with no row) is the
+ * inverse and only resolved by deletion, so its hint is phrased
+ * conditionally — an orphan may well be content worth importing rather
+ * than discarding. Exported (pure) so the wording is testable without
+ * capturing terminal output.
+ *
+ * @param checks - The full doctor checklist
+ * @returns Zero, one, or two hint lines (without colour codes)
+ */
+export function mirrorHints(checks: readonly DoctorCheck[]): string[] {
+  const mirrorChecks = checks.filter((c) => !c.ok && c.name.endsWith('mirrored'));
+  const hints: string[] = [];
+  if (mirrorChecks.some((c) => c.detail.includes('missing files'))) {
+    hints.push(
+      'some rows have no markdown file — run `mnema doctor --rebuild-mirrors` to recreate them',
+    );
+  }
+  if (mirrorChecks.some((c) => c.detail.includes('orphan files'))) {
+    hints.push(
+      'some markdown files have no row — register them, or, if obsolete, run `mnema doctor --rebuild-mirrors --prune-orphans` to delete them',
+    );
+  }
+  return hints;
+}
+
+/** Prints the hints from {@link mirrorHints} under the checklist. */
+function printMirrorHints(checks: readonly DoctorCheck[]): void {
+  for (const hint of mirrorHints(checks)) {
+    process.stdout.write(`${pc.dim('hint:')} ${hint}\n`);
   }
 }
