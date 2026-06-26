@@ -307,6 +307,19 @@ thresholds and feature flags. Run `mnema doctor` after editing — it
 re-validates the file against the schema and reports anything that
 drifted.
 
+### User-level defaults
+
+A `~/.config/mnema/config.json` lets you set **behavior preferences once**
+for every project on your machine — `enforcement_mode`, `audit_strategy`,
+`audit_retention_months`, and the `sync` / `features` blocks. A project's
+own config always wins key-by-key; the user file only fills the gaps. It
+cannot set project identity, `paths` or `workflow` — those are intrinsic
+to a project and an attempt to set them is rejected. Example:
+
+```json
+{ "enforcement_mode": "strict", "sync": { "mode": "push" } }
+```
+
 ## Workflows
 
 Workflows are JSON files in `workflows/`. The default ships with

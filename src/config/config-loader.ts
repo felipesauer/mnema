@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
-import { type Config, ConfigSchema } from './config-schema.js';
+import { type Config, ConfigSchema, type UserConfig, UserConfigSchema } from './config-schema.js';
+
+/** User-level config location, relative to the home directory. */
+export const USER_CONFIG_RELATIVE = '.config/mnema/config.json';
 
 /**
  * Canonical location of the configuration file, relative to the
@@ -32,11 +36,31 @@ export class ConfigInvalidError extends Error {
 }
 
 /**
+ * Thrown when the user-level config (`~/.config/mnema/config.json`)
+ * exists but violates {@link UserConfigSchema} — e.g. it tries to set a
+ * project-only key. Kept distinct from {@link ConfigInvalidError} so the
+ * error names the user file, not the project one.
+ */
+export class UserConfigInvalidError extends Error {
+  constructor(public readonly issues: unknown) {
+    super(`${USER_CONFIG_RELATIVE} is invalid`);
+    this.name = 'UserConfigInvalidError';
+  }
+}
+
+/**
  * Loads and validates the project configuration by walking the
  * directory tree upward (mirroring how `git` discovers its repository
  * root).
  */
 export class ConfigLoader {
+  /**
+   * @param home - Resolver for the home directory. Defaults to
+   *   `os.homedir`; tests inject a temp dir to exercise the user-level
+   *   config without touching the real `~/.config`.
+   */
+  constructor(private readonly home: () => string = homedir) {}
+
   /**
    * Searches for `.mnema/mnema.config.json` starting from the given
    * directory, walking up the parent chain until the filesystem root.
@@ -68,9 +92,57 @@ export class ConfigLoader {
     const file = this.findConfigFile(startDir);
     if (file === null) throw new ConfigNotFoundError();
 
-    const raw: unknown = JSON.parse(readFileSync(file, 'utf-8'));
-    const parsed = ConfigSchema.safeParse(raw);
+    const raw = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, unknown>;
+
+    // Layer the user-level defaults UNDER the project config: the project
+    // always wins key-by-key. Only behaviour preferences are mergeable
+    // (UserConfigSchema), so project identity/paths/workflow can never be
+    // set globally. Validation runs on the merged object.
+    const userDefaults = this.loadUserConfig();
+    const merged = userDefaults === null ? raw : mergeUnderProject(userDefaults, raw);
+
+    const parsed = ConfigSchema.safeParse(merged);
     if (!parsed.success) throw new ConfigInvalidError(parsed.error.issues);
     return parsed.data;
   }
+
+  /**
+   * Reads and validates the optional user-level config. Returns `null`
+   * when the file does not exist (the common case).
+   *
+   * @throws UserConfigInvalidError when the file exists but is malformed
+   *   or sets a disallowed key
+   */
+  loadUserConfig(): UserConfig | null {
+    const file = path.join(this.home(), USER_CONFIG_RELATIVE);
+    if (!existsSync(file)) return null;
+    const raw: unknown = JSON.parse(readFileSync(file, 'utf-8'));
+    const parsed = UserConfigSchema.safeParse(raw);
+    if (!parsed.success) throw new UserConfigInvalidError(parsed.error.issues);
+    return parsed.data;
+  }
+}
+
+/**
+ * Merges user-level defaults under the project config: a top-level key
+ * present in the project wins; `sync`/`features` merge one level deep so
+ * a project that sets one sub-field doesn't drop the user's others.
+ *
+ * @param user - Validated user-level defaults
+ * @param project - Raw project config (wins on every conflict)
+ * @returns The merged object, ready for {@link ConfigSchema} validation
+ */
+function mergeUnderProject(
+  user: UserConfig,
+  project: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...user, ...project };
+  for (const key of ['sync', 'features'] as const) {
+    const u = user[key];
+    const p = project[key];
+    if (u !== undefined && p !== undefined && typeof p === 'object' && p !== null) {
+      out[key] = { ...u, ...(p as Record<string, unknown>) };
+    }
+  }
+  return out;
 }
