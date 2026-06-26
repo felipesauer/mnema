@@ -63,3 +63,43 @@ export const ConfigSchema = z.object({
  * Validated configuration object derived from the Zod schema.
  */
 export type Config = z.infer<typeof ConfigSchema>;
+
+/**
+ * Schema for the optional user-level config (`~/.config/mnema/config.json`).
+ *
+ * It carries only *behaviour preferences* — never project identity
+ * (`project`, `version`, `mnema_version`), layout (`paths`) or the active
+ * `workflow`, which are intrinsic to a project and must not leak across
+ * them. Every field is optional: the file is a partial set of defaults
+ * that a project config overrides key-by-key. `.strict()` rejects an
+ * unknown or disallowed key (e.g. a stray `project`) so a mistake is a
+ * loud error, not a silent global override.
+ */
+export const UserConfigSchema = z
+  .object({
+    audit_strategy: z.enum(['full', 'recent', 'local']).optional(),
+    audit_retention_months: z.number().int().positive().optional(),
+    enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).optional(),
+    sync: z
+      .object({
+        mode: z.enum(['hybrid', 'push', 'buffer']).optional(),
+        agent_buffer_flush_seconds: z.number().int().positive().optional(),
+        agent_buffer_flush_count: z.number().int().positive().optional(),
+        agent_buffer_flush_on_plan_complete: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    features: z
+      .object({
+        fts_search: z.boolean().optional(),
+        attachments: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Validated user-level config — a partial set of behaviour defaults.
+ */
+export type UserConfig = z.infer<typeof UserConfigSchema>;

@@ -318,6 +318,19 @@ what a failed workflow gate means:
 
 `mnema doctor` prints the active mode so its effect is never a surprise.
 
+### User-level defaults
+
+A `~/.config/mnema/config.json` lets you set **behavior preferences once**
+for every project on your machine — `enforcement_mode`, `audit_strategy`,
+`audit_retention_months`, and the `sync` / `features` blocks. A project's
+own config always wins key-by-key; the user file only fills the gaps. It
+cannot set project identity, `paths` or `workflow` — those are intrinsic
+to a project and an attempt to set them is rejected. Example:
+
+```json
+{ "enforcement_mode": "strict", "sync": { "mode": "push" } }
+```
+
 ## Workflows
 
 Workflows are JSON files in `workflows/`. The default ships with
