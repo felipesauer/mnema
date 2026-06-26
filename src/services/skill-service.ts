@@ -14,6 +14,7 @@ import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
+import { readUserSkills, type SourcedSkill } from './user-knowledge.js';
 
 /**
  * Severity of a skill-lint diagnostic.
@@ -112,6 +113,10 @@ export class SkillService {
     private readonly repo: SkillRepository | null = null,
     private readonly identity: IdentityService | null = null,
     private readonly audit: AuditService | null = null,
+    // User-level knowledge dir (`~/.config/mnema`). When set, skills found
+    // under it are merged into list/show as read-only `source: 'user'`
+    // entries — a project skill of the same slug always shadows them.
+    private readonly userDir: string | null = null,
   ) {}
 
   private requireRecordDeps(): {
@@ -258,16 +263,22 @@ export class SkillService {
    * @param version - Optional specific version
    * @returns The skill or an error
    */
-  show(slug: string, version?: number): Result<Skill, MnemaError> {
+  show(slug: string, version?: number): Result<SourcedSkill, MnemaError> {
     const { repo } = this.requireRecordDeps();
     const skill =
       version !== undefined
         ? repo.findBySlugAndVersion(slug, version)
         : repo.findLatestBySlug(slug);
-    if (skill === null) {
-      return Err({ kind: ErrorCode.SkillNotFound, slug });
+    if (skill !== null) return Ok({ ...skill, source: 'project' });
+
+    // Fall back to a user-level skill only when no project skill matches —
+    // the project always shadows. A specific version is a project concept,
+    // so a versioned lookup never falls through to the user layer.
+    if (version === undefined && this.userDir !== null) {
+      const userSkill = readUserSkills(this.userDir).find((s) => s.slug === slug);
+      if (userSkill !== undefined) return Ok(userSkill);
     }
-    return Ok(skill);
+    return Err({ kind: ErrorCode.SkillNotFound, slug });
   }
 
   /**
@@ -276,9 +287,15 @@ export class SkillService {
    *
    * @returns Skill rows
    */
-  list(): readonly Skill[] {
+  list(): readonly SourcedSkill[] {
     const { repo } = this.requireRecordDeps();
-    return repo.listLatest();
+    const project: SourcedSkill[] = repo.listLatest().map((s) => ({ ...s, source: 'project' }));
+    if (this.userDir === null) return project;
+
+    // Merge user-level skills, but a project slug shadows the user's.
+    const projectSlugs = new Set(project.map((s) => s.slug));
+    const userOnly = readUserSkills(this.userDir).filter((s) => !projectSlugs.has(s.slug));
+    return [...project, ...userOnly];
   }
 
   /**

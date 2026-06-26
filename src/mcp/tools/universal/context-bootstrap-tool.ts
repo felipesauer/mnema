@@ -157,11 +157,15 @@ export class ContextBootstrapTool {
         description: s.description,
         usage_count: s.usageCount,
         last_used_at: s.lastUsedAt,
+        // `user` skills come from ~/.config/mnema and are read-only
+        // background knowledge; `project` skills live in this repo.
+        source: s.source,
       })),
       memories_inventory: memories.map((m) => ({
         slug: m.slug,
         title: m.title,
         topics: m.topics,
+        source: m.source,
       })),
       recent_observations: recentObservations.map((o) => ({
         id: o.id,

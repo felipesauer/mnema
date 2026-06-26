@@ -54,6 +54,7 @@ import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
+import { userKnowledgeDir } from './user-knowledge.js';
 import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
 
@@ -68,6 +69,13 @@ export interface ServiceContainerOptions {
    * absolute path; production code relies on the default.
    */
   readonly migrationsDir?: string;
+  /**
+   * Override the user-level knowledge dir (`~/.config/mnema`). Production
+   * uses the real home dir; tests pass an isolated path (or `null` to
+   * disable the layer) so they never read the developer's own
+   * `~/.config/mnema`.
+   */
+  readonly userDir?: string | null;
 }
 
 /**
@@ -337,8 +345,19 @@ export function createServiceContainer(
   const skillsDir = path.join(projectRoot, config.paths.skills);
   const memoryDir = path.join(projectRoot, config.paths.memory);
   const knownTools = listAvailableToolNames(workflow);
-  const skillService = new SkillService(skillsDir, knownTools, skillRepository, identity, audit);
-  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit);
+  // User-level knowledge (`~/.config/mnema`) merges under the project's
+  // own skills/memories — read-only, project always shadows. Tests
+  // override this (or pass null) so they never read the real home dir.
+  const userDir = options.userDir !== undefined ? options.userDir : userKnowledgeDir();
+  const skillService = new SkillService(
+    skillsDir,
+    knownTools,
+    skillRepository,
+    identity,
+    audit,
+    userDir,
+  );
+  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit, userDir);
   const wikilinkLintService = new WikilinkLintService(
     skillsDir,
     memoryDir,
