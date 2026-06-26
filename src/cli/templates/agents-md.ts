@@ -124,7 +124,7 @@ export function buildAgentsMd(config: Config): string {
     '- **Worked out a repeatable procedure** (a sequence of steps you would ' +
       'follow again)? Write a **skill** with `skill_record(slug, name, ' +
       'description, content, …)`, and call `skill_use` each time you actually ' +
-      'apply it so the useful ones rise. Use `mode=\'new_version\'` for a ' +
+      "apply it so the useful ones rise. Use `mode='new_version'` for a " +
       'disruptive rewrite; the default updates in place. An empty `skills/` ' +
       'after real work usually means this step was skipped — don’t.',
   );
