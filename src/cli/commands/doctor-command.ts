@@ -581,7 +581,14 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
     .map((d) => path.join(auditDir, d.name))
     .sort();
 
-  let parsedLines = 0;
+  // Events that belong to the hash chain (v >= 2). `audit_state.event_count`
+  // tracks exactly these, so the count check compares against this — not
+  // the total line count, which also includes pre-chain legacy lines (v1)
+  // written before the integrity feature that never entered the counter.
+  // Counting all lines reports a false mismatch on any project with
+  // legacy history. Legacy lines are tallied separately for the report.
+  let chainedLines = 0;
+  let legacyLines = 0;
   let malformedLines = 0;
   let chainBroken = false;
   let chainBreakDetail = '';
@@ -600,11 +607,11 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
         malformedLines += 1;
         continue;
       }
-      parsedLines += 1;
 
       const v = typeof event.v === 'number' ? event.v : 1;
       if (v >= 2) {
         chainEverStarted = true;
+        chainedLines += 1;
         const hash = typeof event.hash === 'string' ? event.hash : null;
         const prev = (event.prev_hash ?? null) as string | null;
         const { hash: _h, ...rest } = event;
@@ -620,7 +627,9 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
         prevHashInFile = hash;
         lastHash = hash;
       } else {
-        // Legacy line: no per-line chain; just track the count.
+        // Legacy line: no per-line chain; counted separately so it does
+        // not inflate the chain-count comparison below.
+        legacyLines += 1;
         prevHashInFile = null;
       }
     }
@@ -638,18 +647,21 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
     return checks;
   }
 
-  if (parsedLines !== stateRow.event_count) {
+  // Surface legacy lines so a human can still reconcile the disk total
+  // (chained + legacy = lines on disk).
+  const legacyNote = legacyLines > 0 ? ` (+${legacyLines} legacy pre-chain)` : '';
+  if (chainedLines !== stateRow.event_count) {
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `disk has ${parsedLines} events, audit_state has ${stateRow.event_count}`,
+      detail: `disk has ${chainedLines} chained events${legacyNote}, audit_state has ${stateRow.event_count}`,
       severity: 'error',
     });
   } else {
     checks.push({
       name: 'audit event count',
       ok: true,
-      detail: `${parsedLines} events match audit_state.event_count`,
+      detail: `${chainedLines} chained events match audit_state.event_count${legacyNote}`,
     });
   }
 
