@@ -78,6 +78,12 @@ export function buildAgentsMd(config: Config): string {
   lines.push('2. Wrap every batch of mutations in `agent_run_start` / `agent_run_end`.');
   lines.push('3. Prefer transition tools (e.g. `task_submit`) over editing fields directly.');
   lines.push('4. Read first, write second. The audit log records every mutation, including yours.');
+  lines.push(
+    '5. Satisfy a transition gate — supply every required field. Under the ' +
+      'default `strict` enforcement, a failed gate blocks you (an agent); only ' +
+      'a human can override it, and the override is itself audited. Do not try ' +
+      'to route around a gate; complete the fields it asks for.',
+  );
   lines.push('');
   lines.push(`## Workflow: \`${config.workflow}\``);
   lines.push('');

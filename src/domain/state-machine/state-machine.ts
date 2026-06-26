@@ -67,6 +67,24 @@ export interface ValidatedTransition {
 }
 
 /**
+ * Outcome of {@link StateMachine.resolveTransition}: like
+ * {@link ValidatedTransition} but tolerant of a failed gate. The action
+ * must exist (an unknown action is still an error), so `to` and the
+ * best-effort `data` are always present; `gate` says whether the
+ * required-field check passed and, when not, carries the offending
+ * issues. The enforcement policy lives in the caller — the state machine
+ * only reports.
+ */
+export interface ResolvedTransition {
+  readonly to: string;
+  readonly data: unknown;
+  readonly requiresSpec: Readonly<Record<string, FieldSpec>>;
+  readonly gate:
+    | { readonly ok: true }
+    | { readonly ok: false; readonly issues: readonly z.core.$ZodIssue[] };
+}
+
+/**
  * Generic state machine driven by a declarative workflow.
  *
  * Holds no internal state — every method reads from the injected workflow.
@@ -133,6 +151,48 @@ export class StateMachine {
       to: transition.to,
       data: parsed.data,
       requiresSpec: transition.requiresSpec,
+    });
+  }
+
+  /**
+   * Resolves a transition without letting a failed gate abort it. Use
+   * this when the *caller* decides what a gate failure means (see
+   * `enforcement_mode`): an agent may be blocked while a human overrides.
+   *
+   * An unknown action is still an error — there is nothing to resolve.
+   * When the action exists, returns the target state, the best-effort
+   * parsed `data` (the fields that did parse, plus defaults), and a
+   * `gate` flag that is `{ ok: false, issues }` when required fields are
+   * missing. On a clean gate the `data` is the fully-validated payload,
+   * identical to {@link validateTransition}.
+   *
+   * @param from - Source state
+   * @param action - Action name
+   * @param payload - Data to validate against the gate
+   * @param defaults - Fallback values for keys missing from `payload`
+   * @returns Resolved transition, or `INVALID_TRANSITION` when the action
+   *   does not exist
+   */
+  resolveTransition(
+    from: string,
+    action: string,
+    payload: unknown,
+    defaults: Readonly<Record<string, unknown>> = {},
+  ): Result<ResolvedTransition, GateError> {
+    const transition = this.workflow.transitions[from]?.[action];
+    if (transition === undefined) {
+      return Err({ kind: 'INVALID_TRANSITION', from, action });
+    }
+
+    const merged = mergeDefaults(payload, defaults);
+    const parsed = transition.requires.safeParse(merged);
+    return Ok({
+      to: transition.to,
+      // On failure, hand back the merged payload so a caller permitting
+      // the override still persists whatever fields the user did supply.
+      data: parsed.success ? parsed.data : merged,
+      requiresSpec: transition.requiresSpec,
+      gate: parsed.success ? { ok: true } : { ok: false, issues: parsed.error.issues },
     });
   }
 

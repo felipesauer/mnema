@@ -109,6 +109,9 @@ describe('transition tolerates already-persisted gate fields', () => {
       action: 'submit',
       payload: {},
       actor: 'daniel',
+      // As an agent under the default `strict` mode, a missing required
+      // field is blocked (a human could override; an agent cannot).
+      via: 'agent:test',
     });
     expect(moved.ok).toBe(false);
   });
