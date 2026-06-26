@@ -105,6 +105,23 @@ export class TaskCommand {
       });
 
     group
+      .command('assign')
+      .description('Assign a task to an actor, or clear it with --clear')
+      .argument('<key>', 'Task key, e.g. WEBAPP-42')
+      .option('--to <handle>', 'Assignee handle (or UUID)')
+      .option('--clear', 'Remove the current assignee')
+      .action(async (key: string, options: { to?: string; clear?: boolean }) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.task.assign({
+            taskKey: key,
+            assignee: options.clear === true ? null : (options.to ?? null),
+            actor: container.identity.getDefaultActor(),
+          });
+          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
       .command('list')
       .description('List tasks, optionally filtered by state')
       .option('--state <state>', 'Filter by state from the active workflow')

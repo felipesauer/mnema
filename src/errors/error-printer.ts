@@ -106,6 +106,13 @@ export function formatError(error: MnemaError): string {
       );
       break;
 
+    case ErrorCode.UnknownAssignee:
+      lines.push(`Unknown assignee: ${error.handle}`);
+      lines.push(
+        `${pc.dim('hint:')} Register the actor with \`mnema identity add ${error.handle}\`, or pass a known handle`,
+      );
+      break;
+
     case ErrorCode.InitConflict:
       lines.push(`init aborted: ${error.path} already exists and would be overwritten`);
       lines.push(`${pc.dim('hint:')} Remove it or choose a dedicated paths-mode`);
@@ -381,6 +388,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.WorkflowInvalid:
     case ErrorCode.IdentityNotConfigured:
     case ErrorCode.AgentHandleMissing:
+    case ErrorCode.UnknownAssignee:
     case ErrorCode.AgentRunNotFound:
     case ErrorCode.AgentPlanNotFound:
     case ErrorCode.NoActiveRun:

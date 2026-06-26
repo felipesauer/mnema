@@ -17,6 +17,9 @@ import type { AuditService } from './audit-service.js';
 import { Err, Ok, type Result } from './result.js';
 import type { SyncService } from './sync-service.js';
 
+/** Matches a v4/v7 UUID so an assignee reference can be told apart from a handle. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Input for creating a new task.
  *
@@ -86,7 +89,10 @@ export class TaskService {
     private readonly stateMachine: StateMachine,
     private readonly audit: AuditService,
     private readonly sync: SyncService,
-    private readonly identity: { ensureActor: (handle: string, kind: 'human' | 'agent') => string },
+    private readonly identity: {
+      ensureActor: (handle: string, kind: 'human' | 'agent') => string;
+      findActorIdByHandle: (handle: string) => string | null;
+    },
   ) {}
 
   /**
@@ -109,6 +115,9 @@ export class TaskService {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
 
+    const assignee = this.resolveAssignee(input.assigneeId ?? null);
+    if (!assignee.ok) return assignee;
+
     const reporterId = this.identity.ensureActor(input.actor, 'human');
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
@@ -128,7 +137,7 @@ export class TaskService {
           estimate: input.estimate ?? null,
           contextBudget: input.contextBudget ?? null,
           priority: input.priority ?? 3,
-          assigneeId: input.assigneeId ?? null,
+          assigneeId: assignee.value,
           reporterId,
           state: initialState,
           metadata: input.metadata,
@@ -162,6 +171,66 @@ export class TaskService {
     this.sync.syncTask(task.key);
 
     return Ok(task);
+  }
+
+  /**
+   * Resolves an assignee reference (a handle like `maria` or a raw UUID)
+   * to an actor id, or `null` when unset. A handle is looked up — never
+   * created — so a typo surfaces as a clean {@link ErrorCode.UnknownAssignee}
+   * instead of the raw `FOREIGN KEY constraint failed` the database would
+   * throw on an unknown id. (The reporter, by contrast, is the active
+   * identity and is always ensured.)
+   *
+   * @param reference - Handle, UUID, or null
+   * @returns The resolved actor id (or null) on success
+   */
+  private resolveAssignee(reference: string | null): Result<string | null, MnemaError> {
+    if (reference === null || reference.length === 0) return Ok(null);
+    if (UUID_PATTERN.test(reference)) return Ok(reference);
+    const id = this.identity.findActorIdByHandle(reference);
+    if (id === null) return Err({ kind: ErrorCode.UnknownAssignee, handle: reference });
+    return Ok(id);
+  }
+
+  /**
+   * Assigns (or clears, when `assignee` is null) a task's owner without a
+   * state change. A first-class operation so callers don't have to route
+   * an assignment through a workflow transition.
+   *
+   * @param input - Task key + assignee reference + identity tuple
+   * @returns The updated task or a structured error
+   */
+  assign(input: {
+    readonly taskKey: string;
+    readonly assignee: string | null;
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+    const assignee = this.resolveAssignee(input.assignee);
+    if (!assignee.ok) return assignee;
+
+    const writeResult = tryMutation(() =>
+      this.tasks.updateFields(task.id, { assigneeId: assignee.value }),
+    );
+    if (!writeResult.ok) return writeResult;
+    const updated = writeResult.value;
+
+    this.audit.write({
+      kind: 'task_assigned',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, assignee_id: assignee.value },
+    });
+
+    this.sync.syncTask(updated.key);
+
+    return Ok(updated);
   }
 
   /**
@@ -243,6 +312,16 @@ export class TaskService {
       if (foldIssues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
       }
+
+      // Resolve a mutating `assignee_id` here, the same way `create`/`assign`
+      // do: an unknown handle fails closed with UNKNOWN_ASSIGNEE instead of
+      // the fold quietly minting a ghost actor for it. The resolved id is
+      // written back so the fold persists an actor id, never a raw handle.
+      if (typeof payload.assignee_id === 'string' && isMutatingField(spec, 'assignee_id')) {
+        const resolved = this.resolveAssignee(payload.assignee_id);
+        if (!resolved.ok) return resolved;
+        payload.assignee_id = resolved.value;
+      }
     }
 
     const actorId = this.identity.ensureActor(input.actor, 'human');
@@ -278,10 +357,12 @@ export class TaskService {
         // column (whitelist below); (b) the workflow spec for the field
         // must not declare `field_kind: 'validating'` — those are
         // one-shot annotations that live in `transitions.payload` only.
+        // `assignee_id` was already resolved to an actor id above, so the
+        // fold's resolver is the identity — it must not create an actor.
         const persisted = persistableFromPayload(
           (data ?? {}) as Record<string, unknown>,
           validation.value.requiresSpec,
-          (handle) => this.identity.ensureActor(handle, 'human'),
+          (id) => id,
         );
         let finalTask =
           persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
@@ -489,17 +570,17 @@ function isMutatingField(
  * pr_url, note, supersededBy, …) are filtered out — they remain in
  * `transitions.payload` for audit but never overwrite the task row.
  *
- * `assignee_id` carries a *handle* in the payload (the audit trail is
- * human-readable), but the column is a foreign key to `actors.id`. The
- * passed-in `resolveActor` translates handle → UUID, ensuring the actor
- * exists.
+ * `assignee_id` is already resolved to an actor id by the caller (which
+ * fails closed on an unknown handle), so `resolveActor` here is the
+ * identity. It stays a parameter so the column mapping is testable in
+ * isolation.
  *
  * Returns `null` when nothing in the payload is persistable, so the
  * caller can skip the UPDATE altogether and avoid a needless
  * `updated_at` bump.
  *
- * @param payload - Validated transition payload
- * @param resolveActor - Maps a human handle to the actor UUID (creating one if needed)
+ * @param payload - Validated transition payload (assignee_id pre-resolved)
+ * @param resolveActor - Maps the already-resolved assignee value through
  * @returns Subset suitable for {@link TaskRepository.updateFields} or null
  */
 function persistableFromPayload(
