@@ -270,6 +270,7 @@ describe('fresh clone → sync', () => {
         memoryDir: path.join(projectRoot, '.mnema/memory'),
         roadmapDir: path.join(projectRoot, '.mnema/roadmap'),
         sprintsDir: path.join(projectRoot, '.mnema/sprints'),
+        backlogDir: path.join(projectRoot, '.mnema/backlog'),
       });
       const roadmap = checks.filter((c) =>
         ['epics mirrored', 'sprints mirrored', 'decisions mirrored'].includes(c.name),

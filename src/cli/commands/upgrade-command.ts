@@ -1,3 +1,4 @@
+import * as nodeFs from 'node:fs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -5,6 +6,7 @@ import type { Command } from 'commander';
 
 import type { Config } from '../../config/config-schema.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
 import { VERSION } from '../../utils/version.js';
@@ -16,7 +18,11 @@ import {
   buildAgentsMd,
   writeAgentsMd,
 } from '../templates/agents-md.js';
-import { inspectMirrorDrift } from './doctor-command.js';
+import {
+  inspectMirrorDrift,
+  pruneNestedOrphanMirrors,
+  pruneOrphanMirrors,
+} from './doctor-command.js';
 
 /** A single thing `upgrade` would change, with a one-line description and the action to run it. */
 export interface UpgradeStep {
@@ -129,12 +135,14 @@ export class UpgradeCommand {
       memoryDir: path.join(projectRoot, config.paths.memory),
       roadmapDir: path.join(projectRoot, config.paths.roadmap),
       sprintsDir: path.join(projectRoot, config.paths.sprints),
+      backlogDir: path.join(projectRoot, config.paths.backlog),
     });
     if (mirrorChecks.some((c) => !c.ok && c.detail.includes('missing files'))) {
       steps.push({
-        label: 'rebuild missing markdown mirrors (skills, memories, roadmap)',
+        label: 'rebuild missing markdown mirrors (tasks, skills, memories, roadmap)',
         run: () => {
           const written = [
+            ...container.sync.rebuildMirrors(),
             ...container.skill.rebuildMirrors(),
             ...container.memory.rebuildMirrors(),
             ...container.epic.rebuildMirrors(config.project.key),
@@ -142,6 +150,24 @@ export class UpgradeCommand {
             ...container.decision.rebuildMirrors(config.project.key),
           ];
           return `rebuilt ${written.length} mirror file(s)`;
+        },
+      });
+    }
+
+    // Orphan mirrors — `.md` files with no live SQLite row. Left
+    // unhandled they masquerade as real entities after a clone/rebuild.
+    // `upgrade` surfaces them and offers to prune; the scan only reports
+    // here, the prune runs on confirmation.
+    if (mirrorChecks.some((c) => !c.ok && c.detail.includes('orphan files'))) {
+      const orphanDetail = mirrorChecks
+        .filter((c) => !c.ok && c.detail.includes('orphan files'))
+        .map((c) => c.name.replace(' mirrored', ''))
+        .join(', ');
+      steps.push({
+        label: `prune orphan markdown mirrors with no SQLite row (${orphanDetail})`,
+        run: () => {
+          const pruned = pruneAllOrphanMirrors(container.adapter, config, projectRoot);
+          return `pruned ${pruned} orphan mirror file(s)`;
         },
       });
     }
@@ -224,6 +250,64 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
   if (start === -1 || endIdx === -1 || endIdx < start) return true;
   const current = content.slice(start + AGENTS_MD_BEGIN.length, endIdx).trim();
   return current !== buildAgentsMd(config).trim();
+}
+
+/**
+ * Removes every orphan markdown mirror (a `.md` with no live SQLite
+ * row) across the entity directories and the per-state backlog. Returns
+ * the total number of files deleted. The slug/key sets are read from
+ * SQLite, which is authoritative.
+ */
+function pruneAllOrphanMirrors(
+  adapter: SqliteAdapter,
+  config: Config,
+  projectRoot: string,
+): number {
+  const db = adapter.getDatabase();
+  const fs = nodeFs;
+
+  const skillSlugs = new Set(
+    (
+      db
+        .prepare(
+          `SELECT s.slug FROM skills s INNER JOIN (
+             SELECT slug, MAX(version) AS max_version FROM skills GROUP BY slug
+           ) latest ON s.slug = latest.slug AND s.version = latest.max_version`,
+        )
+        .all() as Array<{ slug: string }>
+    ).map((r) => r.slug),
+  );
+  const memorySlugs = new Set(
+    (db.prepare('SELECT slug FROM memories').all() as Array<{ slug: string }>).map((r) => r.slug),
+  );
+  const epicKeys = (
+    db.prepare('SELECT key FROM epics WHERE deleted_at IS NULL').all() as Array<{ key: string }>
+  ).map((r) => r.key);
+  const decisionKeys = (
+    db.prepare('SELECT key FROM decisions WHERE deleted_at IS NULL').all() as Array<{ key: string }>
+  ).map((r) => r.key);
+  const sprintKeys = new Set(
+    (
+      db.prepare('SELECT key FROM sprints WHERE deleted_at IS NULL').all() as Array<{ key: string }>
+    ).map((r) => r.key),
+  );
+  const taskKeys = new Set(
+    (
+      db.prepare('SELECT key FROM tasks WHERE deleted_at IS NULL').all() as Array<{ key: string }>
+    ).map((r) => r.key),
+  );
+
+  const join = (relative: string) => path.join(projectRoot, relative);
+  const removed = [
+    ...pruneOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
+    ...pruneOrphanMirrors(join(config.paths.memory), memorySlugs, fs),
+    // Epics and decisions share the roadmap dir; a file is an orphan
+    // only when it belongs to neither set.
+    ...pruneOrphanMirrors(join(config.paths.roadmap), new Set([...epicKeys, ...decisionKeys]), fs),
+    ...pruneOrphanMirrors(join(config.paths.sprints), sprintKeys, fs),
+    ...pruneNestedOrphanMirrors(join(config.paths.backlog), taskKeys, fs),
+  ];
+  return removed.length;
 }
 
 /** Rewrites `mnema.config.json` with an updated `mnema_version`, preserving every other field. */

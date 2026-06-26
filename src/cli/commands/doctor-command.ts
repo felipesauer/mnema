@@ -300,6 +300,7 @@ export class DoctorCommand {
               memoryDir: path.join(projectRoot, config.paths.memory),
               roadmapDir: path.join(projectRoot, config.paths.roadmap),
               sprintsDir: path.join(projectRoot, config.paths.sprints),
+              backlogDir: path.join(projectRoot, config.paths.backlog),
             }),
           );
           checks.push(
@@ -394,6 +395,7 @@ export function inspectMirrorDrift(
     readonly memoryDir: string;
     readonly roadmapDir: string;
     readonly sprintsDir: string;
+    readonly backlogDir: string;
   },
 ): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
@@ -499,7 +501,56 @@ export function inspectMirrorDrift(
     detail: mirrorDetail(sprintKeys.length, sprintMissing, sprintOrphans),
   });
 
+  // Tasks differ from the flat-directory entities above: their mirrors
+  // live in per-state subfolders (`backlog/<STATE>/<KEY>.md`), so both
+  // the missing-file probe and the orphan scan walk one level deeper.
+  const taskRows = adapter
+    .getDatabase()
+    .prepare('SELECT key, state FROM tasks WHERE deleted_at IS NULL')
+    .all() as Array<{ key: string; state: string }>;
+  const taskKeys = new Set(taskRows.map((r) => r.key));
+  const taskMissing = taskRows
+    .filter((r) => !existsSync(path.join(dirs.backlogDir, r.state, `${r.key}.md`)))
+    .map((r) => r.key);
+  const taskOrphans = listNestedMirrorOrphans(dirs.backlogDir, taskKeys);
+  checks.push({
+    name: 'tasks mirrored',
+    ok: taskMissing.length === 0 && taskOrphans.length === 0,
+    severity: 'warning',
+    detail: mirrorDetail(taskRows.length, taskMissing, taskOrphans),
+  });
+
   return checks;
+}
+
+/**
+ * Like {@link listMirrorOrphans} but for the backlog's per-state layout:
+ * scans every `backlog/<STATE>/*.md` and returns the stems that match no
+ * known task key. A `.md` under any state folder whose key has no live
+ * SQLite row is an orphan (the row was deleted, renamed, or the file was
+ * left behind after a state move).
+ *
+ * @param backlogDir - Backlog root (returns empty if it does not exist)
+ * @param knownKeys - Authoritative set of task keys from SQLite
+ * @returns Orphan key list, alphabetical
+ */
+function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<string>): string[] {
+  if (!existsSync(backlogDir)) return [];
+  const orphans: string[] = [];
+  for (const stateDir of readdirSync(backlogDir, { withFileTypes: true })) {
+    if (!stateDir.isDirectory()) continue;
+    for (const entry of readdirSync(path.join(backlogDir, stateDir.name), {
+      withFileTypes: true,
+    })) {
+      if (!entry.isFile()) continue;
+      if (entry.name.startsWith('.')) continue;
+      if (entry.name === 'INDEX.md') continue;
+      if (!entry.name.endsWith('.md')) continue;
+      const key = entry.name.slice(0, -3);
+      if (!knownKeys.has(key)) orphans.push(key);
+    }
+  }
+  return orphans.sort();
 }
 
 /**
@@ -551,7 +602,7 @@ function mirrorDetail(
  * @param fs - `node:fs` namespace (injected for testability + lazy load)
  * @returns Slug list (alphabetical) of the files that were deleted
  */
-function pruneOrphanMirrors(
+export function pruneOrphanMirrors(
   dir: string,
   knownSlugs: ReadonlySet<string>,
   fs: typeof import('node:fs'),
@@ -567,6 +618,41 @@ function pruneOrphanMirrors(
     if (!knownSlugs.has(slug)) {
       fs.rmSync(path.join(dir, entry.name));
       removed.push(slug);
+    }
+  }
+  return removed.sort();
+}
+
+/**
+ * Like {@link pruneOrphanMirrors} but for the backlog's per-state
+ * layout: deletes every `backlog/<STATE>/*.md` whose key has no live
+ * SQLite row. Returns the keys whose mirror was removed.
+ *
+ * @param backlogDir - Backlog root (no-op if it does not exist)
+ * @param knownKeys - Authoritative task key set from SQLite
+ * @param fs - `node:fs` namespace (injected for testability + lazy load)
+ * @returns Key list (alphabetical) of the files that were deleted
+ */
+export function pruneNestedOrphanMirrors(
+  backlogDir: string,
+  knownKeys: ReadonlySet<string>,
+  fs: typeof import('node:fs'),
+): string[] {
+  if (!fs.existsSync(backlogDir)) return [];
+  const removed: string[] = [];
+  for (const stateDir of fs.readdirSync(backlogDir, { withFileTypes: true })) {
+    if (!stateDir.isDirectory()) continue;
+    const stateRoot = path.join(backlogDir, stateDir.name);
+    for (const entry of fs.readdirSync(stateRoot, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      if (entry.name.startsWith('.')) continue;
+      if (entry.name === 'INDEX.md') continue;
+      if (!entry.name.endsWith('.md')) continue;
+      const key = entry.name.slice(0, -3);
+      if (!knownKeys.has(key)) {
+        fs.rmSync(path.join(stateRoot, entry.name));
+        removed.push(key);
+      }
     }
   }
   return removed.sort();

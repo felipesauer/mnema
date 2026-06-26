@@ -248,6 +248,35 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toContain('database opens');
   });
 
+  it('mnema upgrade rebuilds a missing task mirror and prunes an orphan', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+
+    const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
+    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
+    expect(existsSync(realMirror)).toBe(true);
+
+    // Simulate drift: the real task's mirror vanished; a stray orphan lingers.
+    rmSync(realMirror);
+    writeFileSync(orphanMirror, '---\n---\nstray', 'utf-8');
+
+    // doctor surfaces both before the fix.
+    const doctor = runCli(['doctor'], projectRoot);
+    expect(doctor.stdout).toContain('tasks mirrored');
+    expect(doctor.stdout).toContain('missing files: WEBAPP-1');
+    expect(doctor.stdout).toContain('orphan files: WEBAPP-999');
+
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgrade.status).toBe(0);
+    expect(upgrade.stdout).toContain('rebuilt 1 mirror file(s)');
+    expect(upgrade.stdout).toContain('pruned 1 orphan mirror file(s)');
+
+    // The real mirror is back; the orphan is gone.
+    expect(existsSync(realMirror)).toBe(true);
+    expect(existsSync(orphanMirror)).toBe(false);
+  });
+
   it('mnema task list outside a project returns CONFIG_NOT_FOUND', () => {
     const result = runCli(['task', 'list'], projectRoot);
     expect(result.status).not.toBe(0);

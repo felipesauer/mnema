@@ -168,6 +168,29 @@ export class SyncService {
   }
 
   /**
+   * Recreates the markdown mirror for every active task whose `.md`
+   * file is missing from its expected `backlogDir/<STATE>/<KEY>.md`
+   * path, rebuilding from the SQLite row (the source of truth). Existing
+   * mirrors are left untouched — this only heals drift, it does not
+   * reformat content a human may have edited locally. Returns the keys
+   * whose mirror was just written.
+   *
+   * Mirrors {@link SkillService.rebuildMirrors} and the other entity
+   * rebuilds, extended to the backlog's per-state directory layout.
+   *
+   * @returns Task keys whose mirror file was created during this call
+   */
+  rebuildMirrors(): string[] {
+    const rebuilt: string[] = [];
+    for (const task of this.taskRepository.findAllActive()) {
+      if (existsSync(this.pathForTask(task))) continue;
+      this.flushOne(task.key);
+      rebuilt.push(task.key);
+    }
+    return rebuilt;
+  }
+
+  /**
    * Re-applies any leftover entries from a previous run. Idempotent —
    * each entry is replayed by writing the current task state to its
    * markdown target.
