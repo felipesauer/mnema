@@ -142,4 +142,29 @@ describe('inspectAuditIntegrity', () => {
     expect(integrity?.ok).toBe(true);
     expect(integrity?.detail).toContain('legacy');
   });
+
+  it('does not count archived legacy (pre-chain) lines against audit_state', () => {
+    // An archived month written before the hash chain existed: plain v1
+    // lines with no hash. `audit_state.event_count` never tracked these.
+    const legacy = [
+      { v: 1, at: '2026-05-01T00:00:00.000Z', kind: 'task_created', actor: 'old', data: {} },
+      { v: 1, at: '2026-05-02T00:00:00.000Z', kind: 'task_created', actor: 'old', data: {} },
+    ]
+      .map((e) => JSON.stringify(e))
+      .join('\n');
+    writeFileSync(path.join(auditDir, '2026-05.jsonl'), `${legacy}\n`, 'utf-8');
+
+    // Then a normal chained current month.
+    writeSampleEvents();
+
+    const checks = inspectAuditIntegrity(adapter, auditDir);
+    const count = checks.find((c) => c.name === 'audit event count');
+    // The 2 legacy lines must not inflate the comparison: 3 chained
+    // events match audit_state, even though 5 lines sit on disk.
+    expect(count?.ok).toBe(true);
+    expect(count?.detail).toContain('3 chained events');
+    expect(count?.detail).toContain('2 legacy pre-chain');
+    // The chain itself is unaffected by the archived legacy file.
+    expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
+  });
 });
