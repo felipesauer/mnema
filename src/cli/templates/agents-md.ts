@@ -1,4 +1,46 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
 import type { Config } from '../../config/config-schema.js';
+
+/** Delimiters around the Mnema-managed block inside `AGENTS.md`. */
+export const AGENTS_MD_BEGIN = '<!-- MNEMA:START -->';
+export const AGENTS_MD_END = '<!-- MNEMA:END -->';
+
+/**
+ * Writes the Mnema-managed block into `AGENTS.md`, creating the file when
+ * absent and otherwise replacing only the block between the markers —
+ * everything the user wrote around it is preserved. Shared by `mnema init`
+ * and `mnema agents sync` so the two never drift.
+ *
+ * @param cwd - Project root containing (or to contain) `AGENTS.md`
+ * @param config - Validated project configuration
+ * @returns How the file was changed: created, updated (block replaced),
+ *   or appended (markers were absent)
+ */
+export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated' | 'appended' {
+  const file = path.join(cwd, 'AGENTS.md');
+  const managed = `${AGENTS_MD_BEGIN}\n${buildAgentsMd(config)}\n${AGENTS_MD_END}\n`;
+
+  if (!existsSync(file)) {
+    writeFileSync(file, managed, 'utf-8');
+    return 'created';
+  }
+
+  const previous = readFileSync(file, 'utf-8');
+  const start = previous.indexOf(AGENTS_MD_BEGIN);
+  const endIdx = previous.indexOf(AGENTS_MD_END);
+  if (start !== -1 && endIdx !== -1 && endIdx > start) {
+    const before = previous.slice(0, start);
+    const after = previous.slice(endIdx + AGENTS_MD_END.length);
+    writeFileSync(file, `${before}${managed.trimEnd()}${after}`, 'utf-8');
+    return 'updated';
+  }
+
+  const separator = previous.endsWith('\n\n') ? '' : previous.endsWith('\n') ? '\n' : '\n\n';
+  writeFileSync(file, `${previous}${separator}${managed}`, 'utf-8');
+  return 'appended';
+}
 
 /**
  * Returns the body of `AGENTS.md` for the given project, customised to

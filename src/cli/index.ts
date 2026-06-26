@@ -121,6 +121,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
     description: 'Inspect agent activity (run inspect)',
   },
+  agents: {
+    load: async () => new (await import('./commands/agents-command.js')).AgentsCommand(),
+    description: 'Manage the generated AGENTS.md manual (sync)',
+  },
   sync: {
     load: async () => new (await import('./commands/sync-command.js')).SyncCommand(),
     description: 'Rebuild the SQLite cache from markdown files (idempotent)',
