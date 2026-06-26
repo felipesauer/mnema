@@ -50,71 +50,69 @@ export class UpgradeCommand {
       .option('--yes', 'Skip the confirmation prompt and apply the plan', false)
       .action(async (options: { readonly yes?: boolean }) => {
         await withCliContext(async (ctx) => {
-          const steps = this.plan(ctx);
+          const skipPrompt = options.yes === true;
+          let didSomething = false;
 
-          if (steps.length === 0) {
+          // Phase 1 — migrations FIRST, on their own. Detecting the rest
+          // of the plan reads domain tables (skills, epics, …) that a
+          // pending migration may not have created yet, so the schema has
+          // to be current before we inspect anything else.
+          const migrationStep = this.migrationStep(ctx);
+          if (migrationStep !== null) {
+            const ran = await runPhase('Pending schema migrations', [migrationStep], skipPrompt);
+            if (ran === 'aborted') return;
+            didSomething ||= ran === 'applied';
+          }
+
+          // Phase 2 — everything else, now that the schema is current.
+          const steps = this.postMigrationSteps(ctx);
+          if (steps.length > 0) {
+            const ran = await runPhase('Project sync', steps, skipPrompt);
+            if (ran === 'aborted') return;
+            didSomething ||= ran === 'applied';
+          }
+
+          if (!didSomething) {
             process.stdout.write(`${pc.green('✓')} already up to date — nothing to upgrade\n`);
-            return;
-          }
-
-          process.stdout.write(`${pc.bold('mnema upgrade')} will:\n`);
-          for (const step of steps) {
-            process.stdout.write(`  ${pc.cyan('•')} ${step.label}\n`);
-          }
-          process.stdout.write('\n');
-
-          if (options.yes !== true) {
-            const { confirm } = await import('@inquirer/prompts');
-            let go: boolean;
-            try {
-              go = await confirm({ message: 'Apply these changes?', default: true });
-            } catch (error) {
-              if (isPromptAbort(error)) {
-                process.stdout.write(`${pc.dim('aborted')}\n`);
-                return;
-              }
-              throw error;
-            }
-            if (!go) {
-              process.stdout.write(`${pc.dim('aborted')}\n`);
-              return;
-            }
-          }
-
-          for (const step of steps) {
-            process.stdout.write(`${pc.green('✓')} ${step.run()}\n`);
           }
         });
       });
   }
 
   /**
-   * Inspects the project and returns the ordered list of upgrade steps
-   * that actually have something to do. Migrations run first (later
-   * steps may depend on the schema), then AGENTS.md, then mirrors, then
-   * the version bump as the final "this project is now current" marker.
+   * The migration step, or null when no migrations are pending. Kept
+   * separate from {@link postMigrationSteps} because it must run before
+   * any domain table is read.
    *
    * @param ctx - Open CLI context
-   * @returns Steps to apply, in execution order (empty when up to date)
    */
-  private plan(ctx: CliContext): UpgradeStep[] {
+  private migrationStep(ctx: CliContext): UpgradeStep | null {
+    const { projectRoot, container } = ctx;
+    const pending = container.pendingMigrations;
+    if (pending.length === 0) return null;
+    const files = pending.map((m) => m.file).join(', ');
+    return {
+      label: `apply ${pending.length} pending migration(s): ${files}`,
+      run: () => {
+        const applied = new MigrationRunner().run(container.adapter, migrationDirs(projectRoot));
+        return `applied ${applied.length} migration(s)`;
+      },
+    };
+  }
+
+  /**
+   * The non-migration steps that actually have something to do: AGENTS.md
+   * sync, mirror rebuild, version bump. Reads domain tables, so it must
+   * only run after pending migrations have been applied.
+   *
+   * @param ctx - Open CLI context
+   * @returns Steps to apply, in execution order
+   */
+  private postMigrationSteps(ctx: CliContext): UpgradeStep[] {
     const { config, projectRoot, container } = ctx;
     const steps: UpgradeStep[] = [];
 
-    // 1. Pending migrations.
-    const pending = container.pendingMigrations;
-    if (pending.length > 0) {
-      const files = pending.map((m) => m.file).join(', ');
-      steps.push({
-        label: `apply ${pending.length} pending migration(s): ${files}`,
-        run: () => {
-          const applied = new MigrationRunner().run(container.adapter, migrationDirs(projectRoot));
-          return `applied ${applied.length} migration(s)`;
-        },
-      });
-    }
-
-    // 2. AGENTS.md managed block out of date (or absent).
+    // AGENTS.md managed block out of date (or absent).
     if (agentsBlockIsStale(projectRoot, config)) {
       steps.push({
         label: 'sync the AGENTS.md managed block to the current guidance',
@@ -125,7 +123,7 @@ export class UpgradeCommand {
       });
     }
 
-    // 3. Mirror drift — rows in SQLite with no `.md` on disk.
+    // Mirror drift — rows in SQLite with no `.md` on disk.
     const mirrorChecks = inspectMirrorDrift(container.adapter, {
       skillsDir: path.join(projectRoot, config.paths.skills),
       memoryDir: path.join(projectRoot, config.paths.memory),
@@ -148,7 +146,7 @@ export class UpgradeCommand {
       });
     }
 
-    // 4. mnema_version behind the installed package.
+    // mnema_version behind the installed package.
     const wanted = `^${VERSION}`;
     if (config.mnema_version !== wanted) {
       steps.push({
@@ -162,6 +160,51 @@ export class UpgradeCommand {
 
     return steps;
   }
+}
+
+/**
+ * Prints a phase's plan, asks for confirmation (unless skipped), and runs
+ * its steps. Returns what happened so the caller can track whether any
+ * work was done and stop on an abort.
+ *
+ * @param title - Phase heading shown above the step list
+ * @param steps - Steps to show and, on confirmation, run
+ * @param skipPrompt - When true, applies without asking (`--yes`)
+ * @returns `'applied'`, or `'aborted'` when the user declined
+ */
+async function runPhase(
+  title: string,
+  steps: readonly UpgradeStep[],
+  skipPrompt: boolean,
+): Promise<'applied' | 'aborted'> {
+  process.stdout.write(`${pc.bold(title)} — mnema upgrade will:\n`);
+  for (const step of steps) {
+    process.stdout.write(`  ${pc.cyan('•')} ${step.label}\n`);
+  }
+  process.stdout.write('\n');
+
+  if (!skipPrompt) {
+    const { confirm } = await import('@inquirer/prompts');
+    let go: boolean;
+    try {
+      go = await confirm({ message: 'Apply these changes?', default: true });
+    } catch (error) {
+      if (isPromptAbort(error)) {
+        process.stdout.write(`${pc.dim('aborted')}\n`);
+        return 'aborted';
+      }
+      throw error;
+    }
+    if (!go) {
+      process.stdout.write(`${pc.dim('aborted')}\n`);
+      return 'aborted';
+    }
+  }
+
+  for (const step of steps) {
+    process.stdout.write(`${pc.green('✓')} ${step.run()}\n`);
+  }
+  return 'applied';
 }
 
 /**

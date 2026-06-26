@@ -266,6 +266,36 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(second.stdout).toContain('already up to date');
   });
 
+  it('mnema upgrade applies a pending migration before inspecting the rest', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // A project-local migration the runner will see as pending. The
+    // upgrade must apply it (phase 1) before it reads any domain table
+    // for the mirror/AGENTS inspection (phase 2) — otherwise a migration
+    // that creates a table would make that inspection crash with
+    // "no such table". The bumped mnema_version gives phase 2 work to do.
+    const migrationsDir = path.join(projectRoot, '.mnema', 'migrations');
+    mkdirSync(migrationsDir, { recursive: true });
+    writeFileSync(
+      path.join(migrationsDir, '900_upgrade_probe.sql'),
+      'CREATE TABLE IF NOT EXISTS upgrade_probe (id INTEGER PRIMARY KEY);\n',
+      'utf-8',
+    );
+    const configPath = path.join(projectRoot, '.mnema', 'mnema.config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
+    writeFileSync(
+      configPath,
+      `${JSON.stringify({ ...config, mnema_version: '^0.0.1-alpha.0' }, null, 2)}\n`,
+      'utf-8',
+    );
+
+    const result = runCli(['upgrade', '--yes'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('applied 1 migration');
+    expect(result.stdout).toContain('set mnema_version');
+    expect(result.stderr).not.toContain('no such table');
+  });
+
   it('mnema history shows aggregated activity for the day', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     runCli(['task', 'create', '--title', 'First task title'], projectRoot);
