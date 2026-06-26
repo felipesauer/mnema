@@ -206,7 +206,9 @@ MCP tools. The commands group by what you're doing — run
 | Command | What it does |
 |---|---|
 | `mnema task create / list / show / move` | Manage tasks (`create` takes `--estimate`, `--context-budget`, `--priority`) |
+| `mnema task assign <key> --to <handle>` | Set or clear a task's assignee (`--clear`); an unknown handle is rejected |
 | `mnema sprint plan / start / close / show / add` | Manage sprints (one active per project) |
+| `mnema sprint add-tasks <key> <task...>` | Attach several tasks at once (best-effort, reports per-task failures) |
 | `mnema sprint metric <key> --name --target` | Add a measurable metric (baseline/unit/due optional) |
 | `mnema epic create / show / add / close` | Group tasks; `show` includes the derived lifecycle |
 | `mnema decision record / accept / reject / supersede` | Manage ADRs (`record` takes `--impact`) |
@@ -227,12 +229,19 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain |
+| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
 | `mnema inbox` | Tasks awaiting your review or blocked |
 | `mnema agent inspect <run_id>` · `mnema audit query [filters]` | One run with its plans + mutations; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
+
+**Keep current after a package upgrade**
+
+| Command | What it does |
+|---|---|
+| `mnema upgrade` | Detect everything out of date (pending migrations, stale AGENTS.md, missing mirrors, old `mnema_version`), show the plan, and apply it after confirmation (`--yes` to skip) |
+| `mnema agents sync` | Regenerate only the Mnema-managed block of AGENTS.md, preserving your own content |
 
 **Integrate (MCP)**
 
