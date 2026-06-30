@@ -32,10 +32,27 @@ export function ok(value: Record<string, unknown>): CallToolResult {
 export type Verbosity = 'full' | 'compact';
 
 /** The minimal shape a task is reduced to under `compact` verbosity. */
-interface CompactTask {
+export interface CompactTask {
   readonly key: string;
   readonly state: string;
   readonly updatedAt: string;
+}
+
+/**
+ * Reduces a task entity to its confirmation-sized form. Shared by the
+ * single-task `okTask` and batch tools that echo many tasks at once, so
+ * a large batch can opt out of repeating long descriptions and
+ * acceptance-criteria arrays.
+ *
+ * @param task - The full task entity
+ * @returns Just `{ key, state, updatedAt }`
+ */
+export function toCompactTask(task: {
+  key: string;
+  state: string;
+  updatedAt: string;
+}): CompactTask {
+  return { key: task.key, state: task.state, updatedAt: task.updatedAt };
 }
 
 /**
@@ -51,11 +68,7 @@ export function okTask(
   task: { key: string; state: string; updatedAt: string },
   verbosity: Verbosity = 'full',
 ): CallToolResult {
-  if (verbosity === 'compact') {
-    const compact: CompactTask = { key: task.key, state: task.state, updatedAt: task.updatedAt };
-    return ok({ task: compact });
-  }
-  return ok({ task });
+  return ok({ task: verbosity === 'compact' ? toCompactTask(task) : task });
 }
 
 /**

@@ -126,6 +126,29 @@ describe('observation length signal + mutation verbosity', () => {
     expect(Object.keys(compactTask).sort()).toEqual(['key', 'state', 'updatedAt']);
   });
 
+  it('task_create_many honours compact verbosity for every created task', async () => {
+    const full = (await harness.client.callTool({
+      name: 'task_create_many',
+      arguments: { tasks: [{ title: 'Batch one' }, { title: 'Batch two' }] },
+    })) as CallToolResult;
+    const fullCreated = parsePayload(full).created as Record<string, unknown>[];
+    expect(fullCreated).toHaveLength(2);
+    expect(fullCreated[0]).toHaveProperty('acceptanceCriteria');
+
+    const compact = (await harness.client.callTool({
+      name: 'task_create_many',
+      arguments: {
+        tasks: [{ title: 'Lean one' }, { title: 'Lean two' }],
+        verbosity: 'compact',
+      },
+    })) as CallToolResult;
+    const compactCreated = parsePayload(compact).created as Record<string, unknown>[];
+    expect(compactCreated).toHaveLength(2);
+    for (const t of compactCreated) {
+      expect(Object.keys(t).sort()).toEqual(['key', 'state', 'updatedAt']);
+    }
+  });
+
   it('transition tools honour compact verbosity', async () => {
     const created = (await harness.client.callTool({
       name: 'task_create',

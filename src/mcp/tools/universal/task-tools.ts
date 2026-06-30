@@ -6,7 +6,14 @@ import type { StateMachine } from '../../../domain/state-machine/state-machine.j
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, okTask, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  okTask,
+  requireActiveRun,
+  requireFreshSchema,
+  toCompactTask,
+} from '../../mcp-tool-result.js';
 
 /**
  * One task's fields for `task_create_many`. Mirrors the `task_create`
@@ -161,6 +168,14 @@ export class TaskTools {
           'bootstraps a backlog. Requires an active agent run.',
         inputSchema: {
           tasks: z.array(taskItemSchema).min(1).max(200).describe('Tasks to create, in order'),
+          verbosity: z
+            .enum(['full', 'compact'])
+            .optional()
+            .describe(
+              "Echo mode for each created task. 'full' (default) returns whole entities; " +
+                "'compact' returns only { key, state, updatedAt } each — recommended for large " +
+                'batches to avoid inflating context with repeated descriptions.',
+            ),
         },
       },
       (input) => {
@@ -189,8 +204,13 @@ export class TaskTools {
             via,
             runId: runId ?? undefined,
           });
-          if (result.ok) created.push(result.value);
-          else failed.push({ index, error: result.error });
+          if (result.ok) {
+            created.push(
+              input.verbosity === 'compact' ? toCompactTask(result.value) : result.value,
+            );
+          } else {
+            failed.push({ index, error: result.error });
+          }
         });
 
         return ok({ created, failed, created_count: created.length, failed_count: failed.length });

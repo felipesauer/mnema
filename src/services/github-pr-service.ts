@@ -38,11 +38,26 @@ const defaultRunner: CommandRunner = (command, args) => {
   };
 };
 
+/**
+ * One entry in `statusCheckRollup`. GitHub returns two shapes:
+ * `StatusContext` (legacy commit statuses) carries `state`; `CheckRun`
+ * (GitHub Actions and other Checks-API runs — the dominant case today)
+ * carries `status` + `conclusion` and **no** `state`. We read both.
+ */
+interface RollupEntry {
+  /** StatusContext: SUCCESS | FAILURE | PENDING | ERROR | EXPECTED. */
+  readonly state?: string;
+  /** CheckRun: QUEUED | IN_PROGRESS | COMPLETED | … */
+  readonly status?: string;
+  /** CheckRun (when COMPLETED): SUCCESS | FAILURE | NEUTRAL | SKIPPED | … */
+  readonly conclusion?: string;
+}
+
 /** Shape of the `gh pr view --json ...` payload we consume. */
 interface GhPrView {
   readonly state?: string;
   readonly mergedAt?: string | null;
-  readonly statusCheckRollup?: { readonly state?: string }[] | null;
+  readonly statusCheckRollup?: RollupEntry[] | null;
 }
 
 /**
@@ -119,7 +134,12 @@ export class GitHubPrService {
 
 /** Parse `https://github.com/<owner>/<repo>/pull/<n>` → label `owner/repo#n`. */
 function parsePrUrl(url: string): { label: string } | null {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+  // Anchor the host so `mygithub.com` / `notgithub.com` don't slip
+  // through: require the scheme + exactly `github.com` (or a `www.`)
+  // as the host, not just a substring match.
+  const match = url.match(
+    /^https?:\/\/(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[/?#]|$)/,
+  );
   if (match === null) return null;
   return { label: `${match[1]}/${match[2]}#${match[3]}` };
 }
@@ -140,12 +160,31 @@ function normaliseState(raw: string | undefined, merged: boolean): PrState {
 
 function normaliseCi(rollup: GhPrView['statusCheckRollup']): CiStatus {
   if (rollup === null || rollup === undefined || rollup.length === 0) return 'none';
-  const states = rollup.map((c) => (c.state ?? '').toUpperCase());
+  const states = rollup.map(rollupEntryState);
   if (states.some((s) => s === 'FAILURE' || s === 'ERROR')) return 'failing';
   if (states.some((s) => s === 'PENDING' || s === 'EXPECTED' || s === 'IN_PROGRESS'))
     return 'pending';
   if (states.every((s) => s === 'SUCCESS' || s === 'NEUTRAL' || s === 'SKIPPED')) return 'passing';
   return 'unknown';
+}
+
+/**
+ * Reduces one rollup entry to a single uppercased state token, reading
+ * whichever shape GitHub returned. A `CheckRun` (no `state`) reports
+ * `conclusion` once COMPLETED, else its in-flight `status` (QUEUED /
+ * IN_PROGRESS → treated as PENDING); a `StatusContext` reports `state`.
+ */
+function rollupEntryState(entry: RollupEntry): string {
+  if (typeof entry.state === 'string' && entry.state.length > 0) {
+    return entry.state.toUpperCase();
+  }
+  const status = (entry.status ?? '').toUpperCase();
+  if (status === 'COMPLETED') {
+    return (entry.conclusion ?? '').toUpperCase();
+  }
+  // QUEUED / IN_PROGRESS / WAITING / PENDING → not yet conclusive.
+  if (status.length > 0) return 'IN_PROGRESS';
+  return '';
 }
 
 function unavailable(ref: string, reason: string): PrStatus {
