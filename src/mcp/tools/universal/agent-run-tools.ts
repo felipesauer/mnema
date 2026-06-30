@@ -112,19 +112,28 @@ export class AgentRunTools {
         if (!ended.ok) return err(ended.error);
 
         this.session.setCurrentRunId(null);
-        const reminder =
-          status === AgentRunStatus.Completed && recorded.length === 0
-            ? 'This run recorded no skill, memory or observation. If you learned ' +
-              'something durable — a repeatable procedure, a project fact, or a ' +
-              'signal worth revisiting — capture it now with skill_record / ' +
-              'memory_record / observation_record so the next session keeps it.'
-            : undefined;
+        const shouldNudge = status === AgentRunStatus.Completed && recorded.length === 0;
+        const reminder = shouldNudge
+          ? 'This run recorded no skill, memory or observation. If you learned ' +
+            'something durable — a repeatable procedure, a project fact, or a ' +
+            'signal worth revisiting — capture it now with skill_record / ' +
+            'memory_record / observation_record so the next session keeps it.'
+          : undefined;
+
+        // Pre-fill a skill draft from what the run actually did, so
+        // "capture it" is one edit away instead of a blank form. Skills
+        // had near-zero adoption when the nudge was only a reminder; a
+        // concrete starting point lowers the cost of recording one.
+        const skillDraft = shouldNudge
+          ? buildSkillDraft(ended.value.goal, this.touchedTaskKeys(runId))
+          : undefined;
 
         return ok({
           run_id: ended.value.id,
           status: ended.value.status,
           ended_at: ended.value.endedAt,
           ...(reminder !== undefined ? { reminder } : {}),
+          ...(skillDraft !== undefined ? { skill_draft: skillDraft } : {}),
         });
       },
     );
@@ -183,4 +192,60 @@ export class AgentRunTools {
       },
     );
   }
+
+  /** Distinct task keys this run created or transitioned, in first-seen order. */
+  private touchedTaskKeys(runId: string): string[] {
+    const keys: string[] = [];
+    const seen = new Set<string>();
+    for (const event of this.auditQuery.run({ run: runId })) {
+      if (event.kind !== 'task_created' && event.kind !== 'task_transitioned') continue;
+      const key = (event.data as { key?: string }).key;
+      if (typeof key === 'string' && !seen.has(key)) {
+        seen.add(key);
+        keys.push(key);
+      }
+    }
+    return keys;
+  }
+}
+
+/** A pre-filled skill_record draft an agent can accept or edit. */
+export interface SkillDraft {
+  readonly slug: string;
+  readonly name: string;
+  readonly description: string;
+  readonly steps: string;
+}
+
+/**
+ * Builds a skill_record draft from a run's goal and the tasks it touched,
+ * turning the "record something" nudge into a concrete starting point.
+ * The agent is expected to refine it before calling skill_record.
+ *
+ * @param goal - The run's goal text
+ * @param taskKeys - Task keys the run created or transitioned
+ * @returns A {@link SkillDraft}
+ */
+export function buildSkillDraft(goal: string, taskKeys: readonly string[]): SkillDraft {
+  const name = goal.trim().length > 0 ? goal.trim() : 'Procedure from this run';
+  const tasksNote = taskKeys.length > 0 ? ` (touched ${taskKeys.join(', ')})` : '';
+  return {
+    slug: slugify(name),
+    name,
+    description: `Repeatable procedure distilled from this run${tasksNote}. Edit before recording.`,
+    steps:
+      '1. <first step you took>\n2. <next step>\n3. <how you verified it>\n' +
+      '— replace these with the actual procedure, then call skill_record.',
+  };
+}
+
+/** Lowercase kebab-case slug, trimmed to a sane length. */
+function slugify(text: string): string {
+  const base = text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '');
+  return base.length > 0 ? base : 'run-procedure';
 }

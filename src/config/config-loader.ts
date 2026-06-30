@@ -137,7 +137,7 @@ function mergeUnderProject(
   project: Record<string, unknown>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...user, ...project };
-  for (const key of ['sync', 'features'] as const) {
+  for (const key of ['sync', 'features', 'aging', 'github'] as const) {
     const u = user[key];
     const p = project[key];
     if (u !== undefined && p !== undefined && typeof p === 'object' && p !== null) {

@@ -42,9 +42,12 @@ import { DecisionService } from './decision-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
+import { FlowMetricsService } from './flow-metrics-service.js';
+import { GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
+import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
@@ -109,12 +112,15 @@ export interface ServiceContainer {
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
+  readonly flowMetrics: FlowMetricsService;
+  readonly githubPr: GitHubPrService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
+  readonly memoryStaleness: MemoryStalenessService;
   readonly observation: ObservationService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
@@ -345,6 +351,14 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
+  const flowMetricsService = new FlowMetricsService(
+    auditQuery,
+    taskService,
+    workflow,
+    sprintService,
+    config.project.key,
+  );
+  const githubPrService = new GitHubPrService();
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -390,6 +404,7 @@ export function createServiceContainer(
     projects,
   );
   const observationService = new ObservationService(observationRepository, tasks, identity, audit);
+  const memoryStalenessService = new MemoryStalenessService(projectRoot);
   trace.mark('all services wired');
   trace.end();
 
@@ -412,12 +427,15 @@ export function createServiceContainer(
     taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
+    flowMetrics: flowMetricsService,
+    githubPr: githubPrService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
+    memoryStaleness: memoryStalenessService,
     observation: observationService,
     transitions,
     pendingMigrations,

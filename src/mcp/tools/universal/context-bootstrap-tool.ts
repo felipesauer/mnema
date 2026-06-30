@@ -6,6 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Config } from '../../../config/config-schema.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
 import type { MemoryService } from '../../../services/memory-service.js';
+import type { MemoryStalenessService } from '../../../services/memory-staleness.js';
 import type { ObservationService } from '../../../services/observation-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
@@ -48,6 +49,7 @@ export class ContextBootstrapTool {
     private readonly skillService: SkillService,
     private readonly memoryService: MemoryService,
     private readonly observationService: ObservationService,
+    private readonly memoryStaleness: MemoryStalenessService,
   ) {}
 
   /**
@@ -94,6 +96,27 @@ export class ContextBootstrapTool {
     const inProgressStateName =
       inProgressAliases.find((alias) => this.workflow.states.includes(alias)) ?? null;
     const inProgressCount = inProgressStateName === null ? 0 : (byState[inProgressStateName] ?? 0);
+
+    // Aging: tasks parked in a non-terminal state past the configured
+    // threshold. This is the IN_REVIEW (and BLOCKED/IN_PROGRESS) limbo
+    // where a transition waits on a human who never acts — surfaced here
+    // so the rot is visible on every session start, not discovered by a
+    // manual disk sweep. Age is measured from `updatedAt` (the last
+    // transition), so a task resets its clock each time it actually moves.
+    const terminalStates = new Set(this.workflow.terminal);
+    const staleAfterDays = this.config.aging.stale_after_days;
+    const nowMs = Date.now();
+    const agedTasks = all
+      .filter((t) => !terminalStates.has(t.state))
+      .map((t) => ({
+        key: t.key,
+        state: t.state,
+        title: t.title,
+        updated_at: t.updatedAt,
+        age_days: Math.floor((nowMs - new Date(t.updatedAt).getTime()) / 86_400_000),
+      }))
+      .filter((t) => t.age_days >= staleAfterDays)
+      .sort((a, b) => b.age_days - a.age_days);
 
     const skills = this.skillService.list().slice(0, 20);
     const memories = this.memoryService.list().slice(0, 30);
@@ -150,6 +173,14 @@ export class ContextBootstrapTool {
         blocked: blockers.length,
         by_state: byState,
       },
+      // Tasks stuck in a non-terminal state longer than
+      // `aging.stale_after_days`, oldest first. Empty when nothing is
+      // stale. `stale_after_days` echoes the active threshold so the
+      // agent can explain why an item did (or did not) surface.
+      aging: {
+        stale_after_days: staleAfterDays,
+        stale_tasks: agedTasks,
+      },
       skills_inventory: skills.map((s) => ({
         slug: s.slug,
         name: s.name,
@@ -161,12 +192,24 @@ export class ContextBootstrapTool {
         // background knowledge; `project` skills live in this repo.
         source: s.source,
       })),
-      memories_inventory: memories.map((m) => ({
-        slug: m.slug,
-        title: m.title,
-        topics: m.topics,
-        source: m.source,
-      })),
+      memories_inventory: memories.map((m) => {
+        // Advisory only: flag a memory whose cited file:line references
+        // changed in git since it was written, so the agent knows which
+        // memories to re-check against current code. Never blocks recall.
+        const staleness = this.memoryStaleness.assess(m.content, m.updatedAt);
+        return {
+          slug: m.slug,
+          title: m.title,
+          topics: m.topics,
+          source: m.source,
+          stale: staleness.stale,
+          ...(staleness.stale
+            ? {
+                stale_files: staleness.cited_files.filter((c) => c.changedSince).map((c) => c.path),
+              }
+            : {}),
+        };
+      }),
       recent_observations: recentObservations.map((o) => ({
         id: o.id,
         content: o.content,

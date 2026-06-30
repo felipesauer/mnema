@@ -1,5 +1,8 @@
+import path from 'node:path';
+
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { Config } from '../config/config-schema.js';
 import type { ServiceContainer } from '../services/service-container.js';
@@ -15,22 +18,26 @@ import { TransitionToolsRegistrar } from './tools/transition-tools.js';
 import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
 import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
+import { AuditVerifyTool } from './tools/universal/audit-verify-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
+import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
+import { PrStatusTool } from './tools/universal/pr-status-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 import { WikilinkTools } from './tools/universal/wikilink-tools.js';
 import { WorkGraphLintTools } from './tools/universal/work-graph-lint-tools.js';
+import { installZodErrorMap, reformatSdkValidationError } from './validation-errors.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
 
@@ -66,6 +73,44 @@ export class MnemaMcpServer {
       { name: '@felipesauer/mnema', version: VERSION },
       { capabilities: { tools: {} } },
     );
+
+    // The MCP SDK validates a tool's input against its schema before the
+    // handler runs and, on failure, leaks the raw Zod issue dump to the
+    // client. Two coordinated fixes give the agent a human, field-named
+    // error instead: a global Zod error map (friendly per-issue text) and
+    // a wrap of the `tools/call` handler that flattens the leaked dump
+    // into Mnema's canonical VALIDATION_FAILED shape. The wrap is
+    // installed at the instance level — no SDK source patching — by
+    // intercepting setRequestHandler before McpServer claims `tools/call`.
+    installZodErrorMap();
+    this.wrapToolCallHandler();
+  }
+
+  /**
+   * Intercepts the underlying server's `setRequestHandler` so the
+   * `tools/call` handler McpServer installs has its result passed through
+   * {@link reformatSdkValidationError}. This converts the SDK's raw
+   * pre-handler validation leak into a friendly structured error without
+   * touching any of the ~60 individual tool registrations.
+   */
+  private wrapToolCallHandler(): void {
+    const callMethod = CallToolRequestSchema.shape.method.value;
+    // The SDK's setRequestHandler is heavily generic; this interop shim
+    // treats it structurally. The cast is contained to this one wrap.
+    // biome-ignore lint/suspicious/noExplicitAny: external generic API boundary
+    const server = this.sdk.server as any;
+    const originalSet = server.setRequestHandler.bind(server);
+    // biome-ignore lint/suspicious/noExplicitAny: external generic API boundary
+    server.setRequestHandler = (schema: any, handler: any): unknown => {
+      if (schema?.shape?.method?.value !== callMethod) {
+        return originalSet(schema, handler);
+      }
+      const wrapped = async (request: unknown, extra: unknown): Promise<CallToolResult> => {
+        const result = (await handler(request, extra)) as CallToolResult;
+        return reformatSdkValidationError(result);
+      };
+      return originalSet(schema, wrapped);
+    };
   }
 
   /**
@@ -135,6 +180,7 @@ export class MnemaMcpServer {
       this.services.skill,
       this.services.memory,
       this.services.observation,
+      this.services.memoryStaleness,
     ).register(this.sdk);
 
     new AgentRunTools(
@@ -153,6 +199,10 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
+    new AuditVerifyTool(
+      this.services.adapter,
+      path.join(this.projectRoot, this.config.paths.audit),
+    ).register(this.sdk);
     new DecisionTools(
       this.services.decision,
       this.services.identity,
@@ -169,6 +219,7 @@ export class MnemaMcpServer {
       this.services.identity,
       this.session,
       pendingFiles,
+      this.services.agentRun,
     ).register(this.sdk);
     new EpicTools(
       this.services.epic,
@@ -178,6 +229,8 @@ export class MnemaMcpServer {
       pendingFiles,
     ).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
+    new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
+    new PrStatusTool(this.services.githubPr).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
       this.services.sprint,
@@ -212,6 +265,9 @@ export class MnemaMcpServer {
       this.services.task,
       this.services.identity,
       this.session,
+      this.services.agentRun,
+      this.config,
+      this.services.githubPr,
     ).register(this.sdk);
   }
 

@@ -57,6 +57,28 @@ export const ConfigSchema = z.object({
       attachments: z.boolean().default(true),
     })
     .prefault({}),
+  // Aging surfaces tasks that have sat in a non-terminal state for too
+  // long — the IN_REVIEW limbo where a transition waits on a human that
+  // never comes. `context_bootstrap` reports anything older than
+  // `stale_after_days` so the backlog rot is visible on session start.
+  aging: z
+    .object({
+      stale_after_days: z.number().int().positive().default(3),
+    })
+    .prefault({}),
+  // GitHub integration policy for the terminal (DONE) transition. When a
+  // `pr_url` is supplied on approve, `done_pr_policy` decides what to do
+  // if that PR is not merged or its CI is red:
+  //   - `off`   (default): never check — fully opt-in, zero network.
+  //   - `warn`  : check and attach a `pr_warning`, but allow the move.
+  //   - `block` : refuse the transition with PR_NOT_READY.
+  // Unreachable GitHub (no gh / offline / unauth) never blocks — a status
+  // that can't be resolved is treated as "can't prove a problem".
+  github: z
+    .object({
+      done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
+    })
+    .prefault({}),
   // Hooks run a shell command when a curated domain event fires (a task
   // reaching done, a decision accepted, …). Each key is a domain-event
   // name; the value is the list of commands to run, in order. The
@@ -108,6 +130,18 @@ export const UserConfigSchema = z
       .object({
         fts_search: z.boolean().optional(),
         attachments: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    aging: z
+      .object({
+        stale_after_days: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+    github: z
+      .object({
+        done_pr_policy: z.enum(['off', 'warn', 'block']).optional(),
       })
       .strict()
       .optional(),

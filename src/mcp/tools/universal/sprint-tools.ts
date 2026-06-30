@@ -8,10 +8,12 @@ import type { McpSessionContext } from '../../mcp-session-context.js';
 import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
- * Registers the read-mostly sprint MCP tools — `sprint_show`,
- * `sprints_list`, `sprint_add_task`. Sprint creation, start and close
- * are intentionally CLI-only: choosing dates and capacity is human work,
- * not something an agent should do mid-run.
+ * Registers the sprint MCP tools. Reads (`sprint_show`, `sprints_list`)
+ * need no run; the mutations (`sprint_create`, `sprint_add_task[s]`,
+ * `sprint_start`, `sprint_close`, `sprint_remove`, `sprint_metric`) flow
+ * through an agent run like every other write, so an agent managing a
+ * sprint it itself planned stays in the dual-identity trail instead of
+ * dropping to the CLI for half the lifecycle.
  */
 export class SprintTools {
   constructor(
@@ -161,6 +163,137 @@ export class SprintTools {
         });
 
         return ok({ added, failed, added_count: added.length, failed_count: failed.length });
+      },
+    );
+
+    server.registerTool(
+      'sprint_start',
+      {
+        description: 'Activate a PLANNED sprint. Requires an active agent run.',
+        inputSchema: {
+          sprint_key: z.string().describe('Sprint key, e.g. WEBAPP-SPRINT-3'),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe('Optimistic concurrency token from a previous read'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.start({
+          sprintKey: input.sprint_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+          expectedUpdatedAt: input.expected_updated_at,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ sprint: result.value });
+      },
+    );
+
+    server.registerTool(
+      'sprint_close',
+      {
+        description: 'Close an ACTIVE sprint. Requires an active agent run.',
+        inputSchema: {
+          sprint_key: z.string().describe('Sprint key, e.g. WEBAPP-SPRINT-3'),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe('Optimistic concurrency token from a previous read'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.close({
+          sprintKey: input.sprint_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+          expectedUpdatedAt: input.expected_updated_at,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ sprint: result.value });
+      },
+    );
+
+    server.registerTool(
+      'sprint_remove',
+      {
+        description: 'Remove a task from its sprint. Requires an active agent run.',
+        inputSchema: {
+          sprint_key: z.string().describe('Sprint key, e.g. WEBAPP-SPRINT-3'),
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.removeTask({
+          sprintKey: input.sprint_key,
+          taskKey: input.task_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
+      'sprint_metric',
+      {
+        description:
+          'Add a measurable metric (name + target, optional baseline/unit/due) to a sprint. Requires an active agent run.',
+        inputSchema: {
+          sprint_key: z.string().describe('Sprint key, e.g. WEBAPP-SPRINT-3'),
+          name: z.string().min(1).describe('Metric name, e.g. "p95 latency"'),
+          target: z.number().describe('Target value to reach'),
+          baseline: z.number().optional().describe('Starting value'),
+          unit: z.string().optional().describe('Unit, e.g. ms, %, count'),
+          due_date: z.string().optional().describe('Due date (ISO-8601)'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.addMetric({
+          sprintKey: input.sprint_key,
+          name: input.name,
+          target: input.target,
+          baseline: input.baseline ?? null,
+          unit: input.unit ?? null,
+          dueDate: input.due_date ?? null,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ metric: result.value });
       },
     );
   }

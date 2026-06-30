@@ -156,6 +156,22 @@ describe('ConfigLoader', () => {
       expect(config.sync.mode).toBe('push'); // user fills the gap
     });
 
+    it('applies a user-level aging.stale_after_days when the project omits it', () => {
+      writeConfig(tempRoot, validConfig);
+      writeUserConfig({ aging: { stale_after_days: 9 } });
+
+      const config = scopedLoader.load(tempRoot);
+      expect(config.aging.stale_after_days).toBe(9);
+    });
+
+    it('lets the project override the user-level aging threshold', () => {
+      writeConfig(tempRoot, { ...validConfig, aging: { stale_after_days: 2 } });
+      writeUserConfig({ aging: { stale_after_days: 9 } });
+
+      const config = scopedLoader.load(tempRoot);
+      expect(config.aging.stale_after_days).toBe(2); // project wins
+    });
+
     it('changes nothing when no user config exists', () => {
       writeConfig(tempRoot, validConfig);
       const config = scopedLoader.load(tempRoot);
