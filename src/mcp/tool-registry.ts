@@ -55,6 +55,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'sprint_lint',
   'epic_lint',
   'tasks_search',
+  'tasks_query',
   'sprint_show',
   'sprints_list',
   'sprint_add_task',

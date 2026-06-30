@@ -1,0 +1,135 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { TaskState } from '@/domain/enums/task-state.js';
+import { PortfolioService } from '@/services/portfolio-service.js';
+import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
+import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
+import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
+import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
+import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+
+const migrationsDir = path.resolve('src/storage/sqlite/migrations');
+
+describe('PortfolioService', () => {
+  let tempRoot: string;
+  let adapter: SqliteAdapter;
+  let portfolio: PortfolioService;
+  let tasks: TaskRepository;
+  let epics: EpicRepository;
+  let sprints: SprintRepository;
+  let projectId: string;
+  let actorId: string;
+
+  beforeEach(() => {
+    tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-portfolio-'));
+    adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
+    new MigrationRunner().run(adapter, migrationsDir);
+    const projects = new ProjectRepository(adapter);
+    projectId = projects.insert({ key: 'TEST', name: 'Test' }).id;
+    adapter
+      .getDatabase()
+      .prepare("INSERT INTO actors (id, handle, kind) VALUES ('act-1', 'daniel', 'human')")
+      .run();
+    actorId = 'act-1';
+    tasks = new TaskRepository(adapter);
+    epics = new EpicRepository(adapter);
+    sprints = new SprintRepository(adapter);
+    portfolio = new PortfolioService(tasks, epics, sprints);
+  });
+
+  afterEach(() => {
+    adapter.close();
+    rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  /** Insert a task with a controllable state / epic / sprint / createdAt. */
+  function seed(
+    key: string,
+    opts: {
+      state?: TaskState;
+      epicId?: string;
+      sprintId?: string;
+      createdAt?: string;
+      title?: string;
+      description?: string;
+    } = {},
+  ): void {
+    const at = opts.createdAt ?? new Date().toISOString();
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO tasks (id, key, project_id, epic_id, sprint_id, title, description,
+           acceptance_criteria, state, priority, reporter_id, reopen_count, metadata,
+           created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, '[]', ?, 3, ?, 0, '{}', ?, ?)`,
+      )
+      .run(
+        `id-${key}`,
+        key,
+        projectId,
+        opts.epicId ?? null,
+        opts.sprintId ?? null,
+        opts.title ?? `Task ${key}`,
+        opts.description ?? null,
+        opts.state ?? TaskState.Draft,
+        actorId,
+        at,
+        at,
+      );
+  }
+
+  it('returns the whole backlog with per-state counts when unfiltered', () => {
+    seed('TEST-1', { state: TaskState.Draft });
+    seed('TEST-2', { state: TaskState.InReview });
+    seed('TEST-3', { state: TaskState.InReview });
+    const r = portfolio.run();
+    expect(r.total).toBe(3);
+    expect(r.by_state).toEqual({ DRAFT: 1, IN_REVIEW: 2 });
+    expect(r.tasks.map((t) => t.key).sort()).toEqual(['TEST-1', 'TEST-2', 'TEST-3']);
+  });
+
+  it('filters by state', () => {
+    seed('TEST-1', { state: TaskState.Draft });
+    seed('TEST-2', { state: TaskState.InReview });
+    const r = portfolio.run({ state: 'IN_REVIEW' });
+    expect(r.total).toBe(1);
+    expect(r.tasks[0]?.key).toBe('TEST-2');
+  });
+
+  it('filters by epic key (and an unknown epic yields empty, not unfiltered)', () => {
+    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'Epic A' });
+    seed('TEST-1', { epicId: epic.id });
+    seed('TEST-2', {});
+    expect(portfolio.run({ epicKey: epic.key }).total).toBe(1);
+    // Unknown key must NOT silently return everything.
+    expect(portfolio.run({ epicKey: 'TEST-EPIC-999' }).total).toBe(0);
+  });
+
+  it('filters by a creation window', () => {
+    seed('OLD-1', { createdAt: '2026-01-01T00:00:00.000Z' });
+    seed('NEW-1', { createdAt: '2026-06-01T00:00:00.000Z' });
+    const r = portfolio.run({ createdSince: '2026-03-01T00:00:00.000Z' });
+    expect(r.tasks.map((t) => t.key)).toEqual(['NEW-1']);
+  });
+
+  it('filters by free text over title and description', () => {
+    seed('TEST-1', { title: 'Wire the OAuth flow' });
+    seed('TEST-2', { title: 'Unrelated', description: 'touches the oauth token cache' });
+    seed('TEST-3', { title: 'Nothing here' });
+    const r = portfolio.run({ text: 'oauth' });
+    expect(r.tasks.map((t) => t.key).sort()).toEqual(['TEST-1', 'TEST-2']);
+  });
+
+  it('combines filters with AND', () => {
+    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'Epic A' });
+    seed('TEST-1', { state: TaskState.InReview, epicId: epic.id });
+    seed('TEST-2', { state: TaskState.Draft, epicId: epic.id });
+    seed('TEST-3', { state: TaskState.InReview });
+    const r = portfolio.run({ state: 'IN_REVIEW', epicKey: epic.key });
+    expect(r.tasks.map((t) => t.key)).toEqual(['TEST-1']);
+  });
+});

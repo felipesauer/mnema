@@ -50,6 +50,7 @@ import { MemoryService } from './memory-service.js';
 import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
+import { PortfolioService } from './portfolio-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
@@ -112,6 +113,7 @@ export interface ServiceContainer {
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
+  readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly githubPr: GitHubPrService;
   readonly workGraphLint: WorkGraphLintService;
@@ -351,6 +353,7 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
+  const portfolioService = new PortfolioService(tasks, epicRepository, sprintRepository);
   const flowMetricsService = new FlowMetricsService(
     auditQuery,
     taskService,
@@ -427,6 +430,7 @@ export function createServiceContainer(
     taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
+    portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     githubPr: githubPrService,
     workGraphLint: workGraphLintService,
