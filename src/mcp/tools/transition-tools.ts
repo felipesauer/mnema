@@ -11,13 +11,18 @@ import { err, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-resul
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
 
 /**
- * Workflow actions that are acts of governance rather than units of
- * work. They may be performed without a pre-existing execution run; when
- * none is active a short-lived system run is opened to keep provenance.
- * `approve` is the canonical case — signing off a finished task should
- * not require "starting work" first.
+ * Action names that, when they also move a task into a terminal state,
+ * are treated as acts of governance rather than units of work: they may
+ * run without a pre-existing execution run (a short-lived system run is
+ * opened to keep provenance). `approve` is the canonical case — signing
+ * off a finished task should not require "starting work" first.
+ *
+ * The terminal-target check matters: a custom workflow could name a
+ * mid-pipeline *work* transition `approve` (e.g. a lead approving a spec
+ * that then continues), and that one must keep its run guard. Gating on
+ * "named approve AND targets terminal" avoids silently relaxing it.
  */
-const GOVERNANCE_ACTIONS: ReadonlySet<string> = new Set(['approve']);
+const GOVERNANCE_ACTION_NAMES: ReadonlySet<string> = new Set(['approve']);
 
 /**
  * Generates one MCP tool per workflow action.
@@ -103,11 +108,15 @@ export class TransitionToolsRegistrar {
             inputSchema,
           },
           (input: Record<string, unknown>) => {
-            const isGovernance = GOVERNANCE_ACTIONS.has(action);
+            // Governance only when the action is named so AND it moves the
+            // task into a terminal state — a genuine sign-off, never a
+            // same-named mid-pipeline work transition.
+            const isGovernance =
+              GOVERNANCE_ACTION_NAMES.has(action) && this.workflow.terminal.includes(transition.to);
             // Work actions require a live execution run. Governance acts
-            // (e.g. approve) may run without one — a system run is opened
-            // to preserve provenance — so signing off a finished task
-            // does not force the agent to "start work" first.
+            // may run without one — a system run is opened to preserve
+            // provenance — so signing off a finished task does not force
+            // the agent to "start work" first.
             if (!isGovernance) {
               const guard = requireActiveRun(this.session.getCurrentRunId());
               if (guard !== null) return guard;
@@ -129,18 +138,23 @@ export class TransitionToolsRegistrar {
             };
 
             const handle = this.session.getClientMetadata().agent_handle;
-            const result = this.tasks.transition({
-              taskKey,
-              action,
-              payload,
-              actor: this.identity.getDefaultActor(),
-              via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-              runId: gov.runId,
-              expectedUpdatedAt,
-            });
-            gov.finalize();
-            if (!result.ok) return err(result.error);
-            return okTask(result.value, verbosity);
+            // try/finally so a thrown transition still closes any system
+            // run resolveGovernanceRun opened — no dangling run on error.
+            try {
+              const result = this.tasks.transition({
+                taskKey,
+                action,
+                payload,
+                actor: this.identity.getDefaultActor(),
+                via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+                runId: gov.runId,
+                expectedUpdatedAt,
+              });
+              if (!result.ok) return err(result.error);
+              return okTask(result.value, verbosity);
+            } finally {
+              gov.finalize();
+            }
           },
         );
         registered.push(toolName);

@@ -74,19 +74,24 @@ export class EvidenceTools {
           'task_attach_evidence',
         );
         const handle = this.session.getClientMetadata().agent_handle;
-        const result = this.evidence.attach({
-          taskKey: input.task_key,
-          criterionIndex: input.criterion_index,
-          kind: input.kind,
-          ref: input.ref,
-          note: input.note,
-          actor: this.identity.getDefaultActor(),
-          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-          runId: gov.runId,
-        });
-        gov.finalize();
-        if (!result.ok) return err(result.error);
-        return ok({ evidence: result.value });
+        // try/finally so a thrown attach still closes any system run the
+        // governance resolver opened — no dangling run on error.
+        try {
+          const result = this.evidence.attach({
+            taskKey: input.task_key,
+            criterionIndex: input.criterion_index,
+            kind: input.kind,
+            ref: input.ref,
+            note: input.note,
+            actor: this.identity.getDefaultActor(),
+            via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+            runId: gov.runId,
+          });
+          if (!result.ok) return err(result.error);
+          return ok({ evidence: result.value });
+        } finally {
+          gov.finalize();
+        }
       },
     );
 

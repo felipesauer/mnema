@@ -24,11 +24,33 @@ const defaultGitRunner: GitRunner = (args, cwd) => {
   return result.stdout;
 };
 
-// Matches `src/foo/bar.ts` and `src/foo/bar.ts:42` — a path with a slash
-// and a known-ish source extension, optionally followed by `:line`. Kept
-// deliberately conservative so prose with stray words is not misread as a
-// file reference.
-const FILE_REF = /\b([\w./-]+\/[\w.-]+\.[a-z]{1,5})(?::\d+)?/gi;
+// File extensions a *bare* (slash-less) filename must end in to count
+// as a citation — keeps `package.json` / `README.md` while rejecting
+// prose abbreviations like `e.g.` / `i.e.` (g, e are not real exts).
+// Longer extensions first so the alternation prefers `json` over `js`,
+// `tsx` over `ts`, etc. A trailing `(?!\w)` (below) also prevents a
+// short ext from matching when more word chars follow.
+const KNOWN_EXTS =
+  'tsx|ts|jsx|js|mjs|cjs|json|mdx|md|yaml|yml|toml|css|scss|html|sql|sh|py|rs|go|java|rb|txt|lock';
+
+// Two shapes, each optionally followed by `:line`:
+//   - PATH WITH A SEPARATOR: `src/foo/bar.ts`, `./README.md` — permissive
+//     extension (1–6 letters), since the slash already signals a path.
+//   - BARE FILENAME: `package.json`, `tsconfig.json` — must end in a
+//     KNOWN_EXTS extension so prose like `e.g.` is not mistaken for one.
+// A leading `./` is captured separately and dropped by `extractPaths`
+// so the spelling matches the repo-relative path git tracks. `words/
+// then.end` can still match the with-separator arm (`end` looks like an
+// ext) — accepted as a rare false positive; this is advisory-only.
+const FILE_REF = new RegExp(
+  '(?:^|[\\s([`\'"])(\\./)?(' +
+    '(?:[\\w.-]+\\/)+[\\w-]+\\.[a-z]{1,6}' + // with separator
+    '|[\\w-]+\\.(?:' +
+    KNOWN_EXTS +
+    ')(?![\\w])' + // bare filename, known ext, not followed by more word chars
+    ')(?::\\d+)?',
+  'gi',
+);
 
 /**
  * Flags whether a memory is likely stale by checking the files it cites
@@ -60,32 +82,59 @@ export class MemoryStalenessService {
     const paths = extractPaths(content);
     if (paths.length === 0) return { stale: false, cited_files: [] };
 
+    const changed = this.changedPathsSince(paths, writtenAt);
     const cited: CitedFile[] = paths.map((p) => ({
       path: p,
-      changedSince: this.changedSince(p, writtenAt),
+      changedSince: changed.has(p),
     }));
     return { stale: cited.some((c) => c.changedSince), cited_files: cited };
   }
 
-  /** True when `path` has a commit touching it strictly after `writtenAt`. */
-  private changedSince(filePath: string, writtenAt: string): boolean {
-    const sinceMs = Date.parse(writtenAt);
-    if (Number.isNaN(sinceMs)) return false;
-    // One commit subject line per commit that touched the path after the
-    // timestamp; any output at all means it changed.
+  /**
+   * Returns the subset of `paths` that a commit touched after
+   * `writtenAt`. A single `git log --name-only` over all cited paths
+   * replaces the previous one-fork-per-path, so a bootstrap with many
+   * memories no longer pays O(memories × files) git invocations. Outside
+   * a git repo (empty output) nothing is reported changed — advisory,
+   * never a false alarm.
+   */
+  private changedPathsSince(paths: readonly string[], writtenAt: string): Set<string> {
+    const changed = new Set<string>();
+    if (Number.isNaN(Date.parse(writtenAt))) return changed;
+
+    // `--name-only` lists every changed path (one per line) across the
+    // commits since the timestamp, limited to the cited pathspecs.
     const out = this.git(
-      ['log', `--since=${writtenAt}`, '--format=%H', '--', filePath],
+      ['log', `--since=${writtenAt}`, '--name-only', '--format=', '--', ...paths],
       this.projectRoot,
     );
-    return out.trim().length > 0;
+    if (out.trim().length === 0) return changed;
+
+    const touched = new Set(
+      out
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+    );
+    // git reports repo-relative paths for the pathspecs we passed, so an
+    // exact match is the reliable signal. (A bare filename citation that
+    // git can't resolve to a tracked path simply never appears here —
+    // advisory, so a miss is silent rather than a false alarm.)
+    for (const p of paths) {
+      if (touched.has(p)) changed.add(p);
+    }
+    return changed;
   }
 }
 
-/** Extract unique candidate file paths from a memory body. */
+/**
+ * Extract unique candidate file paths from a memory body, normalising a
+ * leading `./` away so the spelling matches what git tracks.
+ */
 function extractPaths(content: string): string[] {
   const found = new Set<string>();
   for (const match of content.matchAll(FILE_REF)) {
-    const p = match[1];
+    const p = match[2];
     if (p !== undefined) found.add(p);
   }
   return [...found];
