@@ -169,6 +169,7 @@ export class MnemaMcpServer {
       this.services.identity,
       this.session,
       pendingFiles,
+      this.services.agentRun,
     ).register(this.sdk);
     new EpicTools(
       this.services.epic,
@@ -212,6 +213,7 @@ export class MnemaMcpServer {
       this.services.task,
       this.services.identity,
       this.session,
+      this.services.agentRun,
     ).register(this.sdk);
   }
 

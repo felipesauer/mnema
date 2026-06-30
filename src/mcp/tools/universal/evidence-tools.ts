@@ -2,10 +2,12 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { EvidenceKind } from '../../../domain/entities/task-evidence.js';
+import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskEvidenceService } from '../../../services/task-evidence-service.js';
+import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import { err, ok, requireFreshSchema } from '../../mcp-tool-result.js';
 
 const evidenceKindValues = [
   'test',
@@ -29,6 +31,7 @@ export class EvidenceTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: readonly string[],
+    private readonly agentRun: AgentRunService,
   ) {}
 
   /**
@@ -41,7 +44,7 @@ export class EvidenceTools {
       'task_attach_evidence',
       {
         description:
-          "Attach concrete evidence (a test path, route, commit, doc or url) to one of a task's acceptance criteria, identified by its 0-based index. Requires an active agent run.",
+          "Attach concrete evidence (a test path, route, commit, doc or url) to one of a task's acceptance criteria, identified by its 0-based index. A governance act: if no agent run is active, a short-lived system run is opened to attribute it, so you can attach evidence retroactively without starting work.",
         inputSchema: {
           task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
           criterion_index: z
@@ -60,10 +63,16 @@ export class EvidenceTools {
       (input) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
-        const runId = this.session.getCurrentRunId();
-        const guard = requireActiveRun(runId);
-        if (guard !== null) return guard;
 
+        // Governance act: attaching evidence (often retroactive) should
+        // not require an execution run. If none is active, open a
+        // short-lived system run so provenance is still captured.
+        const gov = resolveGovernanceRun(
+          this.session,
+          this.agentRun,
+          this.identity,
+          'task_attach_evidence',
+        );
         const handle = this.session.getClientMetadata().agent_handle;
         const result = this.evidence.attach({
           taskKey: input.task_key,
@@ -73,8 +82,9 @@ export class EvidenceTools {
           note: input.note,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-          runId: runId ?? undefined,
+          runId: gov.runId,
         });
+        gov.finalize();
         if (!result.ok) return err(result.error);
         return ok({ evidence: result.value });
       },
