@@ -80,6 +80,51 @@ export class AgentCommand {
       });
 
     group
+      .command('close-orphans')
+      .description('Find runs left open past the threshold; with --apply, abort them with a note')
+      .option('--apply', 'Actually abort the stale runs (otherwise just list them)', false)
+      .option('--hours <n>', 'Override the orphan threshold in hours')
+      .action(async (options: { apply?: boolean; hours?: string }) => {
+        await withCliContext(({ container, config }) => {
+          const threshold =
+            options.hours !== undefined
+              ? Number.parseInt(options.hours, 10)
+              : config.aging.orphan_run_after_hours;
+          if (!Number.isInteger(threshold) || threshold <= 0) {
+            process.stderr.write(`${pc.red('error:')} --hours must be a positive integer\n`);
+            process.exit(2);
+          }
+          if (options.apply === true) {
+            const result = container.orphanRun.closeStale(threshold);
+            if (!result.ok) {
+              process.exit(printError(result.error));
+              return;
+            }
+            if (result.value.length === 0) {
+              process.stdout.write(`${pc.dim('No orphaned runs to close.')}\n`);
+              return;
+            }
+            for (const c of result.value) {
+              const mark = c.closed ? pc.green('✓') : pc.yellow('—');
+              process.stdout.write(`${mark} ${c.id} ${pc.dim(`(${c.ageHours}h)`)}\n`);
+            }
+            return;
+          }
+          const orphans = container.orphanRun.detect(threshold);
+          if (orphans.length === 0) {
+            process.stdout.write(`${pc.dim(`No runs open longer than ${threshold}h.`)}\n`);
+            return;
+          }
+          process.stdout.write(
+            `${pc.yellow(`${orphans.length} orphaned run(s)`)} ${pc.dim(`(open > ${threshold}h; rerun with --apply to abort)`)}\n`,
+          );
+          for (const o of orphans) {
+            process.stdout.write(`  ${o.id} ${pc.dim(`${o.ageHours}h — ${o.goal}`)}\n`);
+          }
+        });
+      });
+
+    group
       .command('resume <runId>')
       .description('Reattach to an interrupted run and summarise what is still open')
       .action(async (runId: string) => {

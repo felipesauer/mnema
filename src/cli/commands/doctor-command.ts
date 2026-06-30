@@ -14,7 +14,9 @@ import { printError } from '../../errors/error-printer.js';
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { findOrphanRuns } from '../../services/orphan-run-service.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
@@ -304,6 +306,7 @@ export class DoctorCommand {
           checks.push(
             ...inspectAuditIntegrity(adapter, path.join(projectRoot, config.paths.audit)),
           );
+          checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));
           if (loadedWorkflow !== null) {
             checks.push(...inspectWorkflowShape(loadedWorkflow));
             checks.push(...inspectTaskStateDrift(adapter, loadedWorkflow));
@@ -763,6 +766,32 @@ export function inspectTaskStateDrift(
       ok: false,
       severity: 'error',
       detail: `tasks in states not declared by the workflow: ${orphan.join(', ')}`,
+    },
+  ];
+}
+
+/**
+ * Surfaces agent runs left open past the orphan threshold (a dropped
+ * session that never called `agent_run_end`). A warning, never an error:
+ * an orphan is untidy, not broken, and `mnema agent close-orphans
+ * --apply` resolves it.
+ */
+function inspectOrphanRuns(adapter: SqliteAdapter, thresholdHours: number): DoctorCheck[] {
+  const orphans = findOrphanRuns(
+    new AgentRunRepository(adapter).findRunning(),
+    thresholdHours,
+    Date.now(),
+  );
+  if (orphans.length === 0) {
+    return [{ name: 'no orphaned runs', ok: true, detail: `none open > ${thresholdHours}h` }];
+  }
+  const oldest = orphans[orphans.length - 1];
+  return [
+    {
+      name: 'orphaned agent runs',
+      ok: false,
+      severity: 'warning',
+      detail: `${orphans.length} run(s) open > ${thresholdHours}h (oldest ${oldest?.ageHours}h) — \`mnema agent close-orphans --apply\` to abort`,
     },
   ];
 }

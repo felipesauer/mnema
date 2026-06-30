@@ -54,6 +54,7 @@ import { MemoryService } from './memory-service.js';
 import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
+import { OrphanRunService } from './orphan-run-service.js';
 import { PortfolioService } from './portfolio-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
 import { RunDiffService } from './run-diff-service.js';
@@ -116,6 +117,7 @@ export interface ServiceContainer {
   readonly sync: SyncService;
   readonly syncRebuild: SyncRebuild;
   readonly agentRun: AgentRunService;
+  readonly orphanRun: OrphanRunService;
   readonly agentPlan: AgentPlanService;
   readonly inbox: InboxService;
   readonly sprint: SprintService;
@@ -328,6 +330,7 @@ export function createServiceContainer(
     },
   );
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
+  const orphanRunService = new OrphanRunService(agentRuns, agentRunService);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
   const sprintService = new SprintService(
@@ -456,6 +459,7 @@ export function createServiceContainer(
     sync,
     syncRebuild,
     agentRun: agentRunService,
+    orphanRun: orphanRunService,
     agentPlan: agentPlanService,
     inbox: inboxService,
     sprint: sprintService,

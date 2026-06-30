@@ -56,6 +56,20 @@ export class AgentRunRepository {
   }
 
   /**
+   * Returns every run still in `running` status, oldest first. Used by
+   * orphan-run detection to find sessions that started and never ended.
+   *
+   * @returns Running runs ordered by `started_at` ascending
+   */
+  findRunning(): AgentRun[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare("SELECT * FROM agent_runs WHERE status = 'running' ORDER BY started_at")
+      .all() as AgentRunRow[];
+    return rows.map(rowToAgentRun);
+  }
+
+  /**
    * Returns direct children of the given run, ordered by start time.
    * The DB enforces a CHECK constraint that bounds nesting depth, so
    * recursive traversal is bounded.

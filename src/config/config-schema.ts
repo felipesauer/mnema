@@ -64,6 +64,10 @@ export const ConfigSchema = z.object({
   aging: z
     .object({
       stale_after_days: z.number().int().positive().default(3),
+      // A run that started and never ended past this many hours is treated
+      // as orphaned (a dropped session that left it open). `mnema doctor`
+      // surfaces these and `mnema agent close-orphans` can abort them.
+      orphan_run_after_hours: z.number().int().positive().default(24),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -136,6 +140,7 @@ export const UserConfigSchema = z
     aging: z
       .object({
         stale_after_days: z.number().int().positive().optional(),
+        orphan_run_after_hours: z.number().int().positive().optional(),
       })
       .strict()
       .optional(),
