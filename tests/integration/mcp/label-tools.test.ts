@@ -158,4 +158,24 @@ describe('label MCP tools', () => {
     })) as CallToolResult;
     expect(res.isError).toBe(true);
   });
+
+  it('tasks_query filters by label over MCP', async () => {
+    const a = await createTask('Query A');
+    const b = await createTask('Query B');
+    await harness.client.callTool({
+      name: 'task_set_labels',
+      arguments: { task_key: a, labels: ['area:api'] },
+    });
+    await harness.client.callTool({
+      name: 'task_set_labels',
+      arguments: { task_key: b, labels: ['area:web'] },
+    });
+    const res = (await harness.client.callTool({
+      name: 'tasks_query',
+      arguments: { labels: ['area:api'] },
+    })) as CallToolResult;
+    const result = payload(res) as { total: number; tasks: { key: string }[] };
+    expect(result.total).toBe(1);
+    expect(result.tasks[0]?.key).toBe(a);
+  });
 });

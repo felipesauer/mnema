@@ -28,14 +28,19 @@ export class PortfolioTool {
         description:
           'Aggregate query over the backlog: returns { total, by_state, tasks, filters } for ' +
           'tasks matching the given filters (all optional, AND-combined). Filter by state, ' +
-          'epic_key, sprint_key, a created-at window (created_since / created_until, ISO-8601) ' +
-          'and free text over title+description. An unknown epic/sprint key yields an empty ' +
-          'result, not a silently-ignored filter. Read-only; requires no active run. For ' +
-          'per-epic/per-sprint completion %, use epic_coverage / sprint_coverage.',
+          'epic_key, sprint_key, labels (the task must carry all of them), a created-at window ' +
+          '(created_since / created_until, ISO-8601) and free text over title+description. An ' +
+          'unknown epic/sprint key or label yields an empty result, not a silently-ignored ' +
+          'filter. Read-only; requires no active run. For per-epic/per-sprint completion %, use ' +
+          'epic_coverage / sprint_coverage.',
         inputSchema: {
           state: z.string().optional().describe('Exact workflow state, e.g. IN_REVIEW'),
           epic_key: z.string().optional().describe('Epic key, e.g. WEBAPP-EPIC-3'),
           sprint_key: z.string().optional().describe('Sprint key, e.g. WEBAPP-SPRINT-1'),
+          labels: z
+            .array(z.string().min(1))
+            .optional()
+            .describe('Labels the task must all carry (AND), e.g. ["area:api", "tipo:bug"]'),
           created_since: z
             .string()
             .optional()
@@ -55,6 +60,7 @@ export class PortfolioTool {
           state: input.state,
           epicKey: input.epic_key,
           sprintKey: input.sprint_key,
+          labels: input.labels,
           createdSince: input.created_since,
           createdUntil: input.created_until,
           text: input.text,

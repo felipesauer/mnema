@@ -94,4 +94,18 @@ describe('OrphanRunService', () => {
     const result = orphan.closeStale(24, now);
     expect(result.ok && result.value).toEqual([]);
   });
+
+  it('leaves an already-ended run alone (it is no longer running, so not detected)', () => {
+    const ended = startRunAged('stale but already ended', 30);
+    // A run that reached a terminal status is no longer `running`, so
+    // findRunning() excludes it and the sweep never touches it — the
+    // closeStale path only ever aborts runs that are still open.
+    agentRun.end({ runId: ended, status: AgentRunStatus.Completed, result: 'finished elsewhere' });
+
+    expect(orphan.detect(24, now)).toEqual([]);
+    const result = orphan.closeStale(24, now);
+    expect(result.ok && result.value).toEqual([]);
+    // Its terminal status is preserved, never overwritten to aborted.
+    expect(runs.findById(ended)?.status).toBe(AgentRunStatus.Completed);
+  });
 });

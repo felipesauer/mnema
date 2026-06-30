@@ -189,6 +189,32 @@ describe('audit log merges append-only under the scaffolded .gitattributes', () 
     expect(merged).toContain('"event":"A"');
     expect(merged).toContain('"event":"B"');
   });
+
+  it('negative control: the SAME merge conflicts without the union driver', () => {
+    // Remove the scaffolded .gitattributes so the audit log merges with
+    // git's default text driver. This proves the union attribute is what
+    // prevents the conflict above — the positive test is not vacuous.
+    rmSync(path.join(repo, '.gitattributes'), { force: true });
+    git(['commit', '-am', 'drop gitattributes']);
+
+    git(['checkout', '-b', 'feature']);
+    appendFileSync(auditFile(), '{"v":2,"event":"A"}\n', 'utf-8');
+    git(['commit', '-am', 'event A']);
+
+    git(['checkout', 'main']);
+    appendFileSync(auditFile(), '{"v":2,"event":"B"}\n', 'utf-8');
+    git(['commit', '-am', 'event B']);
+
+    // Without the union driver this merge must fail (conflict on the tail).
+    let conflicted = false;
+    try {
+      git(['merge', 'feature', '-m', 'merge']);
+    } catch {
+      conflicted = true;
+    }
+    expect(conflicted).toBe(true);
+    expect(readFileSync(auditFile(), 'utf-8')).toContain('<<<<<<<');
+  });
 });
 
 describe('InitCommand wizard helpers', () => {

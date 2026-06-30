@@ -119,6 +119,22 @@ describe('PortfolioService', () => {
     expect(r.tasks.map((t) => t.key)).toEqual(['NEW-1']);
   });
 
+  it('excludes a task with an unparseable createdAt from a window query', () => {
+    seed('GOOD-1', { createdAt: '2026-06-01T00:00:00.000Z' });
+    seed('BAD-1', { createdAt: 'not-a-date' });
+    // With a window active, a row of unknown date cannot be shown to fall
+    // inside it, so it is excluded (not silently kept).
+    const r = portfolio.run({ createdSince: '2026-03-01T00:00:00.000Z' });
+    expect(r.tasks.map((t) => t.key)).toEqual(['GOOD-1']);
+    // Without a window, the same row is returned normally.
+    expect(
+      portfolio
+        .run()
+        .tasks.map((t) => t.key)
+        .sort(),
+    ).toEqual(['BAD-1', 'GOOD-1']);
+  });
+
   it('filters by free text over title and description', () => {
     seed('TEST-1', { title: 'Wire the OAuth flow' });
     seed('TEST-2', { title: 'Unrelated', description: 'touches the oauth token cache' });
