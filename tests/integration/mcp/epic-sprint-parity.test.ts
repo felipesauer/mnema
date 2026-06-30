@@ -156,4 +156,65 @@ describe('epic/sprint lifecycle MCP parity', () => {
     expect(closed.isError).toBe(true);
     expect(parsePayload(closed).error).toBe('NO_ACTIVE_RUN');
   });
+
+  // Domain precondition errors — one per lifecycle tool, asserting the
+  // specific structured error code (not just the cross-cutting run guard).
+
+  it('epic_close on an already-closed epic returns EPIC_INVALID_STATE', async () => {
+    const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Twice closed' }))
+      .epic as { key: string };
+    await call(harness.client, 'epic_close', { epic_key: epic.key });
+    const again = await call(harness.client, 'epic_close', { epic_key: epic.key });
+    expect(again.isError).toBe(true);
+    expect(parsePayload(again).error).toBe('EPIC_INVALID_STATE');
+  });
+
+  it('epic_remove with a non-existent task returns TASK_NOT_FOUND', async () => {
+    const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Holder' }))
+      .epic as { key: string };
+    const result = await call(harness.client, 'epic_remove', {
+      epic_key: epic.key,
+      task_key: 'TEST-9999',
+    });
+    expect(result.isError).toBe(true);
+    expect(parsePayload(result).error).toBe('TASK_NOT_FOUND');
+  });
+
+  it('sprint_start on an already-active sprint returns SPRINT_INVALID_STATE', async () => {
+    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Live once' }))
+      .sprint as { key: string };
+    await call(harness.client, 'sprint_start', { sprint_key: sprint.key }); // PLANNED → ACTIVE
+    const again = await call(harness.client, 'sprint_start', { sprint_key: sprint.key });
+    expect(again.isError).toBe(true);
+    expect(parsePayload(again).error).toBe('SPRINT_INVALID_STATE');
+  });
+
+  it('sprint_close on a PLANNED (never-started) sprint returns SPRINT_INVALID_STATE', async () => {
+    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Never live' }))
+      .sprint as { key: string };
+    const result = await call(harness.client, 'sprint_close', { sprint_key: sprint.key });
+    expect(result.isError).toBe(true);
+    expect(parsePayload(result).error).toBe('SPRINT_INVALID_STATE');
+  });
+
+  it('sprint_remove with a non-existent task returns TASK_NOT_FOUND', async () => {
+    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Holder' }))
+      .sprint as { key: string };
+    const result = await call(harness.client, 'sprint_remove', {
+      sprint_key: sprint.key,
+      task_key: 'TEST-9999',
+    });
+    expect(result.isError).toBe(true);
+    expect(parsePayload(result).error).toBe('TASK_NOT_FOUND');
+  });
+
+  it('sprint_metric with a duplicate name returns SPRINT_METRIC_DUPLICATE', async () => {
+    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Measured' }))
+      .sprint as { key: string };
+    const metric = { sprint_key: sprint.key, name: 'p95 latency', target: 200 };
+    await call(harness.client, 'sprint_metric', metric);
+    const dup = await call(harness.client, 'sprint_metric', metric);
+    expect(dup.isError).toBe(true);
+    expect(parsePayload(dup).error).toBe('SPRINT_METRIC_DUPLICATE');
+  });
 });
