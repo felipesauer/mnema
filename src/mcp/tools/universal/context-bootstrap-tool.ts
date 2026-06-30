@@ -6,6 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Config } from '../../../config/config-schema.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
 import type { MemoryService } from '../../../services/memory-service.js';
+import type { MemoryStalenessService } from '../../../services/memory-staleness.js';
 import type { ObservationService } from '../../../services/observation-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
@@ -48,6 +49,7 @@ export class ContextBootstrapTool {
     private readonly skillService: SkillService,
     private readonly memoryService: MemoryService,
     private readonly observationService: ObservationService,
+    private readonly memoryStaleness: MemoryStalenessService,
   ) {}
 
   /**
@@ -161,12 +163,24 @@ export class ContextBootstrapTool {
         // background knowledge; `project` skills live in this repo.
         source: s.source,
       })),
-      memories_inventory: memories.map((m) => ({
-        slug: m.slug,
-        title: m.title,
-        topics: m.topics,
-        source: m.source,
-      })),
+      memories_inventory: memories.map((m) => {
+        // Advisory only: flag a memory whose cited file:line references
+        // changed in git since it was written, so the agent knows which
+        // memories to re-check against current code. Never blocks recall.
+        const staleness = this.memoryStaleness.assess(m.content, m.updatedAt);
+        return {
+          slug: m.slug,
+          title: m.title,
+          topics: m.topics,
+          source: m.source,
+          stale: staleness.stale,
+          ...(staleness.stale
+            ? {
+                stale_files: staleness.cited_files.filter((c) => c.changedSince).map((c) => c.path),
+              }
+            : {}),
+        };
+      }),
       recent_observations: recentObservations.map((o) => ({
         id: o.id,
         content: o.content,

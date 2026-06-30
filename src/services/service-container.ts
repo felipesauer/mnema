@@ -45,6 +45,7 @@ import { EpicService } from './epic-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
+import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
@@ -115,6 +116,7 @@ export interface ServiceContainer {
   readonly skill: SkillService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
+  readonly memoryStaleness: MemoryStalenessService;
   readonly observation: ObservationService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
@@ -390,6 +392,7 @@ export function createServiceContainer(
     projects,
   );
   const observationService = new ObservationService(observationRepository, tasks, identity, audit);
+  const memoryStalenessService = new MemoryStalenessService(projectRoot);
   trace.mark('all services wired');
   trace.end();
 
@@ -418,6 +421,7 @@ export function createServiceContainer(
     skill: skillService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
+    memoryStaleness: memoryStalenessService,
     observation: observationService,
     transitions,
     pendingMigrations,
