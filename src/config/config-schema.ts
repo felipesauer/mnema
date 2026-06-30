@@ -57,6 +57,15 @@ export const ConfigSchema = z.object({
       attachments: z.boolean().default(true),
     })
     .prefault({}),
+  // Aging surfaces tasks that have sat in a non-terminal state for too
+  // long — the IN_REVIEW limbo where a transition waits on a human that
+  // never comes. `context_bootstrap` reports anything older than
+  // `stale_after_days` so the backlog rot is visible on session start.
+  aging: z
+    .object({
+      stale_after_days: z.number().int().positive().default(3),
+    })
+    .prefault({}),
   // Hooks run a shell command when a curated domain event fires (a task
   // reaching done, a decision accepted, …). Each key is a domain-event
   // name; the value is the list of commands to run, in order. The
@@ -108,6 +117,12 @@ export const UserConfigSchema = z
       .object({
         fts_search: z.boolean().optional(),
         attachments: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    aging: z
+      .object({
+        stale_after_days: z.number().int().positive().optional(),
       })
       .strict()
       .optional(),
