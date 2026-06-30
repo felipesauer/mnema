@@ -1,15 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { type GitRunner, MemoryStalenessService } from '@/services/memory-staleness.js';
 
 const WRITTEN_AT = '2026-01-01T00:00:00.000Z';
 
-/** A git runner that reports `changed` paths as having commits since. */
+/**
+ * A git runner emulating `git log --since --name-only --format= -- <paths>`:
+ * echoes the `changed` paths (one per line), filtered to those actually
+ * passed as pathspecs (mirrors how git scopes `--name-only` output).
+ */
 function gitRunner(changed: ReadonlySet<string>): GitRunner {
   return (args) => {
-    // args: ['log', '--since=...', '--format=%H', '--', <path>]
-    const filePath = args[args.length - 1];
-    return filePath !== undefined && changed.has(filePath) ? 'abc123\n' : '';
+    const sep = args.indexOf('--');
+    const pathspecs = sep === -1 ? [] : args.slice(sep + 1);
+    const lines = [...changed].filter((c) => pathspecs.includes(c));
+    return lines.length > 0 ? `${lines.join('\n')}\n` : '';
   };
 }
 
@@ -36,9 +41,39 @@ describe('MemoryStalenessService', () => {
     expect(changed).toEqual(['src/b.ts']);
   });
 
+  it('makes a SINGLE git call regardless of how many files are cited', () => {
+    const runner = vi.fn(gitRunner(new Set(['src/b.ts'])));
+    const service = new MemoryStalenessService('/repo', runner);
+    service.assess('Touches src/a.ts, src/b.ts, src/c.ts and src/d.ts.', WRITTEN_AT);
+    // One batched `git log`, not one per cited file.
+    expect(runner).toHaveBeenCalledTimes(1);
+    const args = runner.mock.calls[0]?.[0] ?? [];
+    expect(args).toContain('--name-only');
+    // All four paths passed as pathspecs after the `--` separator.
+    const sep = args.indexOf('--');
+    expect(args.slice(sep + 1).sort()).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts', 'src/d.ts']);
+  });
+
+  it('detects slash-less filenames (package.json) and ./relative paths', () => {
+    // git reports the repo-relative path; the memory cites the bare name.
+    const service = new MemoryStalenessService('/repo', gitRunner(new Set(['package.json'])));
+    const v1 = service.assess('Bumped a dep in package.json.', WRITTEN_AT);
+    expect(v1.cited_files.map((c) => c.path)).toContain('package.json');
+    expect(v1.stale).toBe(true);
+
+    // `./README.md` is normalised to `README.md` (what git tracks).
+    const service2 = new MemoryStalenessService('/repo', gitRunner(new Set(['README.md'])));
+    const v2 = service2.assess('See ./README.md for setup.', WRITTEN_AT);
+    expect(v2.cited_files.map((c) => c.path)).toContain('README.md');
+    expect(v2.stale).toBe(true);
+  });
+
   it('returns not-stale and no files for prose with no file references', () => {
     const service = new MemoryStalenessService('/repo', gitRunner(new Set(['anything'])));
-    const verdict = service.assess('Prefer push over hybrid sync for CI runs.', WRITTEN_AT);
+    const verdict = service.assess(
+      'Prefer push over hybrid sync for CI runs (e.g. nightly).',
+      WRITTEN_AT,
+    );
     expect(verdict.stale).toBe(false);
     expect(verdict.cited_files).toHaveLength(0);
   });
