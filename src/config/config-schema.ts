@@ -64,6 +64,12 @@ export const ConfigSchema = z.object({
   aging: z
     .object({
       stale_after_days: z.number().int().positive().default(3),
+      // Per-state review SLA in days. A non-terminal task sitting in one
+      // of these states past its threshold is an SLA breach the inbox
+      // and context_bootstrap surface actively. A state without an entry
+      // falls back to `stale_after_days`. Keys are workflow state names
+      // (e.g. IN_REVIEW, BLOCKED).
+      sla_days: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -136,6 +142,7 @@ export const UserConfigSchema = z
     aging: z
       .object({
         stale_after_days: z.number().int().positive().optional(),
+        sla_days: z.record(z.string(), z.number().int().positive()).optional(),
       })
       .strict()
       .optional(),
