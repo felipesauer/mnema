@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -15,6 +17,7 @@ import { TransitionToolsRegistrar } from './tools/transition-tools.js';
 import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
 import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
+import { AuditVerifyTool } from './tools/universal/audit-verify-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
@@ -153,6 +156,10 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
+    new AuditVerifyTool(
+      this.services.adapter,
+      path.join(this.projectRoot, this.config.paths.audit),
+    ).register(this.sdk);
     new DecisionTools(
       this.services.decision,
       this.services.identity,
