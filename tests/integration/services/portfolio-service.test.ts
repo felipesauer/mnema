@@ -7,6 +7,7 @@ import { TaskState } from '@/domain/enums/task-state.js';
 import { PortfolioService } from '@/services/portfolio-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
+import { LabelRepository } from '@/storage/sqlite/repositories/label-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
@@ -21,6 +22,7 @@ describe('PortfolioService', () => {
   let tasks: TaskRepository;
   let epics: EpicRepository;
   let sprints: SprintRepository;
+  let labels: LabelRepository;
   let projectId: string;
   let actorId: string;
 
@@ -38,7 +40,8 @@ describe('PortfolioService', () => {
     tasks = new TaskRepository(adapter);
     epics = new EpicRepository(adapter);
     sprints = new SprintRepository(adapter);
-    portfolio = new PortfolioService(tasks, epics, sprints);
+    labels = new LabelRepository(adapter);
+    portfolio = new PortfolioService(tasks, epics, sprints, labels);
   });
 
   afterEach(() => {
@@ -131,5 +134,38 @@ describe('PortfolioService', () => {
     seed('TEST-3', { state: TaskState.InReview });
     const r = portfolio.run({ state: 'IN_REVIEW', epicKey: epic.key });
     expect(r.tasks.map((t) => t.key)).toEqual(['TEST-1']);
+  });
+
+  it('filters by a single label and surfaces labels on each row', () => {
+    seed('TEST-1');
+    seed('TEST-2');
+    labels.setForTask('id-TEST-1', ['area:api']);
+    const r = portfolio.run({ labels: ['area:api'] });
+    expect(r.tasks.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(r.tasks[0]?.labels).toEqual(['area:api']);
+  });
+
+  it('AND-combines multiple labels (task must carry all of them)', () => {
+    seed('TEST-1');
+    seed('TEST-2');
+    labels.setForTask('id-TEST-1', ['area:api', 'tipo:bug']);
+    labels.setForTask('id-TEST-2', ['area:api']);
+    // Only TEST-1 carries both.
+    expect(portfolio.run({ labels: ['area:api', 'tipo:bug'] }).tasks.map((t) => t.key)).toEqual([
+      'TEST-1',
+    ]);
+    // area:api alone matches both.
+    expect(
+      portfolio
+        .run({ labels: ['area:api'] })
+        .tasks.map((t) => t.key)
+        .sort(),
+    ).toEqual(['TEST-1', 'TEST-2']);
+  });
+
+  it('an unknown label yields empty, not unfiltered', () => {
+    seed('TEST-1');
+    labels.setForTask('id-TEST-1', ['area:api']);
+    expect(portfolio.run({ labels: ['area:nope'] }).total).toBe(0);
   });
 });

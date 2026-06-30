@@ -24,6 +24,7 @@ interface CreateOptions {
   readonly contextBudget?: number;
   readonly priority?: number;
   readonly assignee?: string;
+  readonly label?: string[];
 }
 
 interface ListOptions {
@@ -87,6 +88,7 @@ export class TaskCommand {
       )
       .option('--priority <n>', 'Priority 1..5 (default 3)', parseIntInRange(1, 5))
       .option('--assignee <handle>', 'Assignee handle')
+      .option('--label <label...>', 'Transversal label, e.g. area:api (repeat for multiple)')
       .action(async (options: CreateOptions) => {
         await withMutatingCliContext(({ container, config }) => {
           const result = container.task.create({
@@ -100,6 +102,16 @@ export class TaskCommand {
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),
           });
+          if (result.ok && options.label !== undefined && options.label.length > 0) {
+            const labelled = container.label.setLabels({
+              taskKey: result.value.key,
+              labels: options.label,
+              actor: container.identity.getDefaultActor(),
+            });
+            if (!labelled.ok) {
+              process.exit(printError(labelled.error));
+            }
+          }
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));
         });
       });
@@ -299,6 +311,40 @@ export class TaskCommand {
             process.exit(printError(result.error));
           }
           process.stdout.write(`${formatTaskList(result.value)}\n`);
+        });
+      });
+
+    group
+      .command('label <key> [labels...]')
+      .description('Set the transversal labels on a task (replaces all; omit labels to clear)')
+      .action(async (key: string, labels: string[]) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.label.setLabels({
+            taskKey: key,
+            labels,
+            actor: container.identity.getDefaultActor(),
+          });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const shown = result.value.length > 0 ? result.value.join(', ') : pc.dim('(no labels)');
+          process.stdout.write(`${pc.green('✓')} ${key} ${pc.dim('labels:')} ${shown}\n`);
+        });
+      });
+
+    group
+      .command('labels')
+      .description('List the label catalogue with the number of active tasks carrying each')
+      .action(async () => {
+        await withCliContext(({ container }) => {
+          const counts = container.label.counts();
+          if (counts.length === 0) {
+            process.stdout.write(`${pc.dim('No labels yet.')}\n`);
+            return;
+          }
+          for (const { name, count } of counts) {
+            process.stdout.write(`  ${pc.bold(String(count).padStart(4))}  ${name}\n`);
+          }
         });
       });
 

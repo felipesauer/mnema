@@ -28,7 +28,7 @@ describe('MigrationRunner', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
 
     expect(applied.map((a) => a.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
     ]);
 
     const versions = adapter
@@ -36,7 +36,7 @@ describe('MigrationRunner', () => {
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
     ]);
   });
 
@@ -52,7 +52,7 @@ describe('MigrationRunner', () => {
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
     ]);
   });
 
@@ -72,6 +72,8 @@ describe('MigrationRunner', () => {
     expect(names).toContain('agent_runs');
     expect(names).toContain('agent_plans');
     expect(names).toContain('attachments');
+    expect(names).toContain('labels');
+    expect(names).toContain('task_labels');
     expect(names).toContain('tasks_fts');
     expect(names).toContain('notes_fts');
     expect(names).toContain('decisions_fts');

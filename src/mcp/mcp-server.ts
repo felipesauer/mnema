@@ -27,6 +27,7 @@ import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
+import { LabelTools } from './tools/universal/label-tools.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
@@ -197,6 +198,7 @@ export class MnemaMcpServer {
       this.session,
       this.services.stateMachine,
       pendingFiles,
+      this.services.label,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
@@ -215,6 +217,12 @@ export class MnemaMcpServer {
     new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
       this.sdk,
     );
+    new LabelTools(
+      this.services.label,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,

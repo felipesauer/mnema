@@ -11,6 +11,7 @@ interface QueryOptions {
   readonly since?: string;
   readonly until?: string;
   readonly text?: string;
+  readonly label?: string[];
   readonly json?: boolean;
 }
 
@@ -28,10 +29,11 @@ export class QueryCommand {
   register(program: Command): void {
     program
       .command('query')
-      .description('Query the backlog by state, epic, sprint, creation window or free text')
+      .description('Query the backlog by state, epic, sprint, label, creation window or free text')
       .option('--state <state>', 'Filter by exact workflow state, e.g. IN_REVIEW')
       .option('--epic <key>', 'Filter by epic key')
       .option('--sprint <key>', 'Filter by sprint key')
+      .option('--label <label...>', 'Filter by label (repeat for AND; task must carry all)')
       .option('--since <iso>', 'Created at or after (ISO-8601)')
       .option('--until <iso>', 'Created at or before (ISO-8601)')
       .option('--text <text>', 'Substring over title + description')
@@ -42,6 +44,7 @@ export class QueryCommand {
             state: options.state,
             epicKey: options.epic,
             sprintKey: options.sprint,
+            labels: options.label,
             createdSince: options.since,
             createdUntil: options.until,
             text: options.text,
@@ -69,7 +72,8 @@ function render(r: PortfolioResult): string {
     return `${lines.join('\n')}\n`;
   }
   for (const t of r.tasks) {
-    lines.push(`  ${pc.bold(t.key.padEnd(12))} ${pc.dim(t.state.padEnd(12))} ${t.title}`);
+    const labels = t.labels.length > 0 ? `  ${pc.dim(`[${t.labels.join(', ')}]`)}` : '';
+    lines.push(`  ${pc.bold(t.key.padEnd(12))} ${pc.dim(t.state.padEnd(12))} ${t.title}${labels}`);
   }
   return `${lines.join('\n')}\n`;
 }

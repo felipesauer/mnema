@@ -19,6 +19,7 @@ import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
+import { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
@@ -46,6 +47,7 @@ import { FlowMetricsService } from './flow-metrics-service.js';
 import { GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
+import { LabelService } from './label-service.js';
 import { MemoryService } from './memory-service.js';
 import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
@@ -109,6 +111,7 @@ export interface ServiceContainer {
   readonly sprint: SprintService;
   readonly decision: DecisionService;
   readonly dependency: DependencyService;
+  readonly label: LabelService;
   readonly note: NoteService;
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
@@ -198,6 +201,7 @@ export function createServiceContainer(
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
   const dependencyRepository = new DependencyRepository(adapter);
+  const labelRepository = new LabelRepository(adapter);
   const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
@@ -258,6 +262,8 @@ export function createServiceContainer(
       sprintKey:
         task.sprintId !== null ? (sprintRepository.findById(task.sprintId)?.key ?? null) : null,
     }),
+    // Resolve a task's labels for the frontmatter `labels:` list.
+    (task) => labelRepository.findNamesByTask(task.id),
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
@@ -272,6 +278,7 @@ export function createServiceContainer(
     epicRepository,
     sprintRepository,
     decisionRepository,
+    labelRepository,
     {
       projectRoot,
       backlogDir: config.paths.backlog,
@@ -353,7 +360,13 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
-  const portfolioService = new PortfolioService(tasks, epicRepository, sprintRepository);
+  const labelService = new LabelService(labelRepository, tasks, audit, sync);
+  const portfolioService = new PortfolioService(
+    tasks,
+    epicRepository,
+    sprintRepository,
+    labelRepository,
+  );
   const flowMetricsService = new FlowMetricsService(
     auditQuery,
     taskService,
@@ -426,6 +439,7 @@ export function createServiceContainer(
     sprint: sprintService,
     decision: decisionService,
     dependency: dependencyService,
+    label: labelService,
     note: noteService,
     taskEvidence: taskEvidenceService,
     epic: epicService,
