@@ -41,6 +41,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'task_dependencies',
   'task_attach_evidence',
   'task_evidence',
+  'pr_status',
   'epic_show',
   'epics_list',
   'epic_create',
