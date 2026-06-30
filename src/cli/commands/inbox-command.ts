@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
+import type { SlaBreach } from '../../services/inbox-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -39,6 +40,8 @@ export class InboxCommand {
 
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           const sections: string[] = [];
+          // SLA breaches lead: they are the overdue cut, not just "waiting".
+          sections.push(formatBreaches(view.slaBreaches));
           sections.push(
             formatSection('Awaiting review', view.awaitingReview, pc.yellow('⚠'), mode),
           );
@@ -48,7 +51,8 @@ export class InboxCommand {
           const empty =
             view.awaitingReview.length === 0 &&
             view.blocked.length === 0 &&
-            view.pendingDecisions.length === 0;
+            view.pendingDecisions.length === 0 &&
+            view.slaBreaches.length === 0;
           if (empty) {
             process.stdout.write(`${pc.dim('Inbox is empty — nothing waiting on you.')}\n`);
             return;
@@ -71,6 +75,17 @@ function formatSection(
   for (const task of tasks) {
     const since = formatTimestamp(task.updatedAt, mode);
     lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.title.padEnd(40)} ${pc.dim(since)}`);
+  }
+  return lines.join('\n');
+}
+
+function formatBreaches(breaches: readonly SlaBreach[]): string {
+  if (breaches.length === 0) return '';
+  const lines: string[] = [];
+  lines.push(`${pc.red('▲')} ${pc.bold('SLA breached')} (${breaches.length})`);
+  for (const b of breaches) {
+    const over = `${b.age_days}d in ${b.state}, SLA ${b.sla_days}d`;
+    lines.push(`  ${pc.bold(b.key.padEnd(12))} ${b.title.padEnd(40)} ${pc.red(over)}`);
   }
   return lines.join('\n');
 }

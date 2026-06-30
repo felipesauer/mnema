@@ -68,6 +68,12 @@ export const ConfigSchema = z.object({
       // as orphaned (a dropped session that left it open). `mnema doctor`
       // surfaces these and `mnema agent close-orphans` can abort them.
       orphan_run_after_hours: z.number().int().positive().default(24),
+      // Per-state review SLA in days. A non-terminal task sitting in one
+      // of these states past its threshold is an SLA breach the inbox
+      // and context_bootstrap surface actively. A state without an entry
+      // falls back to `stale_after_days`. Keys are workflow state names
+      // (e.g. IN_REVIEW, BLOCKED).
+      sla_days: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -141,6 +147,7 @@ export const UserConfigSchema = z
       .object({
         stale_after_days: z.number().int().positive().optional(),
         orphan_run_after_hours: z.number().int().positive().optional(),
+        sla_days: z.record(z.string(), z.number().int().positive()).optional(),
       })
       .strict()
       .optional(),
