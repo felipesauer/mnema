@@ -122,5 +122,61 @@ export class EpicTools {
         return ok({ task: result.value });
       },
     );
+
+    server.registerTool(
+      'epic_close',
+      {
+        description: 'Close an OPEN epic. Requires an active agent run.',
+        inputSchema: {
+          epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.epics.close({
+          epicKey: input.epic_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ epic: result.value });
+      },
+    );
+
+    server.registerTool(
+      'epic_remove',
+      {
+        description: 'Remove a task from its epic. Requires an active agent run.',
+        inputSchema: {
+          epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.epics.removeTask({
+          epicKey: input.epic_key,
+          taskKey: input.task_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
   }
 }
