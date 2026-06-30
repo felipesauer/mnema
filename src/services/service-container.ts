@@ -41,6 +41,7 @@ import { AuditService } from './audit-service.js';
 import { CommitVerifier } from './commit-verifier.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
+import { DependencyGraphService } from './dependency-graph-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
@@ -124,6 +125,7 @@ export interface ServiceContainer {
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
+  readonly dependencyGraph: DependencyGraphService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly githubPr: GitHubPrService;
@@ -369,6 +371,13 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
+  const dependencyGraphService = new DependencyGraphService(
+    dependencyRepository,
+    tasks,
+    epicRepository,
+    sprintRepository,
+    stateMachine,
+  );
   const labelService = new LabelService(labelRepository, tasks, audit, sync);
   const portfolioService = new PortfolioService(
     tasks,
@@ -454,6 +463,7 @@ export function createServiceContainer(
     taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
+    dependencyGraph: dependencyGraphService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     githubPr: githubPrService,

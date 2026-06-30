@@ -22,6 +22,7 @@ import { AuditVerifyTool } from './tools/universal/audit-verify-tool.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
+import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
@@ -223,6 +224,7 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
     ).register(this.sdk);
+    new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,

@@ -117,6 +117,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
     description: 'Query the backlog by state, epic, sprint, creation window or free text',
   },
+  graph: {
+    load: async () => new (await import('./commands/graph-command.js')).GraphCommand(),
+    description: 'Show the dependency graph: cycles, ready/blocked frontier, critical path',
+  },
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),
     description: 'Live tail of the audit log (Ctrl+C to stop)',

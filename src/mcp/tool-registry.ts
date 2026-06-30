@@ -43,6 +43,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'task_set_labels',
   'task_labels',
   'labels_list',
+  'graph_dependencies',
   'task_attach_evidence',
   'task_evidence',
   'pr_status',
