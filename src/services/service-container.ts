@@ -42,6 +42,7 @@ import { DecisionService } from './decision-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
+import { FlowMetricsService } from './flow-metrics-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
@@ -109,6 +110,7 @@ export interface ServiceContainer {
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
+  readonly flowMetrics: FlowMetricsService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -345,6 +347,7 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
+  const flowMetricsService = new FlowMetricsService(auditQuery, taskService, workflow);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -412,6 +415,7 @@ export function createServiceContainer(
     taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
+    flowMetrics: flowMetricsService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,

@@ -46,6 +46,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'epic_create',
   'epic_add_task',
   'epic_coverage',
+  'metrics_flow',
   'sprint_coverage',
   'sprint_lint',
   'epic_lint',
