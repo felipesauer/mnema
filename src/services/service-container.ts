@@ -60,6 +60,7 @@ import { RoadmapMirror } from './roadmap-mirror.js';
 import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
+import { SnapshotService } from './snapshot-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
@@ -129,6 +130,7 @@ export interface ServiceContainer {
   readonly epic: EpicService;
   readonly coverage: CoverageService;
   readonly dependencyGraph: DependencyGraphService;
+  readonly snapshot: SnapshotService;
   readonly runDiff: RunDiffService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
@@ -412,6 +414,14 @@ export function createServiceContainer(
     staleAfterDays: config.aging.stale_after_days,
     slaDays: config.aging.sla_days,
   });
+  const snapshotService = new SnapshotService(
+    coverageService,
+    dependencyGraphService,
+    inboxService,
+    epicRepository,
+    sprintRepository,
+    tasks,
+  );
   const attachmentService = new AttachmentService(
     attachmentRepository,
     tasks,
@@ -474,6 +484,7 @@ export function createServiceContainer(
     epic: epicService,
     coverage: coverageService,
     dependencyGraph: dependencyGraphService,
+    snapshot: snapshotService,
     runDiff: runDiffService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,

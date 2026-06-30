@@ -37,6 +37,7 @@ import { PrStatusTool } from './tools/universal/pr-status-tool.js';
 import { RunDiffTool } from './tools/universal/run-diff-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
+import { SnapshotTool } from './tools/universal/snapshot-tool.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 import { WikilinkTools } from './tools/universal/wikilink-tools.js';
@@ -228,6 +229,7 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
+    new SnapshotTool(this.services.snapshot).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,
