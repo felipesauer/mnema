@@ -6,7 +6,7 @@ import type { StateMachine } from '../../../domain/state-machine/state-machine.j
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import { err, ok, okTask, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
 
 /**
  * One task's fields for `task_create_many`. Mirrors the `task_create`
@@ -81,6 +81,13 @@ export class TaskTools {
             .string()
             .optional()
             .describe('Assignee — a known actor handle (e.g. `maria`) or a UUID'),
+          verbosity: z
+            .enum(['full', 'compact'])
+            .optional()
+            .describe(
+              "Echo mode for the created task. 'full' (default) returns the whole entity; " +
+                "'compact' returns only { key, state, updatedAt } to save context in batches.",
+            ),
         },
       },
       (input) => {
@@ -105,7 +112,7 @@ export class TaskTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value, input.verbosity);
       },
     );
 
