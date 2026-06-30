@@ -30,6 +30,7 @@ import { HistoryTool } from './tools/universal/history-tool.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
+import { PrStatusTool } from './tools/universal/pr-status-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
@@ -229,6 +230,7 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
+    new PrStatusTool(this.services.githubPr).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
       this.services.sprint,

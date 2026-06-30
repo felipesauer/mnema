@@ -43,6 +43,7 @@ import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
+import { GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { MemoryService } from './memory-service.js';
@@ -112,6 +113,7 @@ export interface ServiceContainer {
   readonly epic: EpicService;
   readonly coverage: CoverageService;
   readonly flowMetrics: FlowMetricsService;
+  readonly githubPr: GitHubPrService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -350,6 +352,7 @@ export function createServiceContainer(
     stateMachine,
   );
   const flowMetricsService = new FlowMetricsService(auditQuery, taskService, workflow);
+  const githubPrService = new GitHubPrService();
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -419,6 +422,7 @@ export function createServiceContainer(
     epic: epicService,
     coverage: coverageService,
     flowMetrics: flowMetricsService,
+    githubPr: githubPrService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
