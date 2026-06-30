@@ -180,6 +180,7 @@ export class InitCommand {
     }
 
     appendGitignore(cwd, config.paths.state);
+    scaffoldGitattributes(cwd, config.paths.audit);
 
     const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
     const workflowDestFile = path.join(workflowsDest, `${config.workflow}.json`);
@@ -277,11 +278,33 @@ function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
 
+/**
+ * The `.gitignore` block Mnema writes. Only the **state** directory is
+ * ignored — it holds the SQLite cache, the sync buffer and attachment
+ * blobs, all of which are derived and rebuildable from the markdown via
+ * `mnema sync`. Everything else under `.mnema/` (the backlog / roadmap /
+ * sprint / memory / skill markdown and the `audit/` log) is the
+ * version-controlled record of the work and is meant to be committed:
+ * it is the source of truth and what survives a fresh clone. The
+ * comment lines double as the in-repo documentation of that split.
+ */
+function gitignoreBlock(statePath: string): string {
+  const entry = `${statePath.replace(/\/$/, '')}/`;
+  return [
+    '# mnema: ignore only the local cache (SQLite db, sync buffer,',
+    '# attachments). The backlog/roadmap/sprint/memory/skill markdown',
+    '# and the audit log under .mnema/ are the source of truth — commit',
+    '# them. The cache is rebuildable from that markdown via `mnema sync`.',
+    entry,
+  ].join('\n');
+}
+
 function appendGitignore(cwd: string, statePath: string): void {
   const file = path.join(cwd, '.gitignore');
   const entry = `${statePath.replace(/\/$/, '')}/`;
+  const block = gitignoreBlock(statePath);
   if (!existsSync(file)) {
-    writeFileSync(file, `# mnema\n${entry}\n`, 'utf-8');
+    writeFileSync(file, `${block}\n`, 'utf-8');
     return;
   }
   const current = readFileSync(file, 'utf-8');
@@ -290,7 +313,47 @@ function appendGitignore(cwd: string, statePath: string): void {
   // layout `.mnema/state`) is already ignored, the more specific
   // entry would be redundant — skip it.
   if (covers(current, entry)) return;
-  appendFileSync(file, `\n# mnema\n${entry}\n`, 'utf-8');
+  appendFileSync(file, `\n${block}\n`, 'utf-8');
+}
+
+/**
+ * The `.gitattributes` line Mnema writes for the audit log.
+ *
+ * The audit JSONL is append-only: every mutation adds a line, so two
+ * branches that both recorded activity will, on merge, conflict on the
+ * tail even though neither edited the other's lines. Git's built-in
+ * `union` merge driver resolves exactly this — it keeps the lines from
+ * both sides instead of raising a conflict, which is what an append-only
+ * log wants. `union` needs no `.git/config` entry; it ships with git.
+ *
+ * Caveat (documented for honesty): a `union` merge of two divergent
+ * histories can interleave lines and so fork the per-file SHA-256 hash
+ * chain. `mnema doctor` / `audit_verify` detect that, and `mnema sync`
+ * rebuilds the cache from the markdown (the real source of truth). For
+ * the common case — one machine, or branches that don't both append to
+ * the audit — `union` simply removes the conflict noise with no
+ * downside.
+ */
+function gitattributesLines(auditPath: string): string {
+  const dir = auditPath.replace(/\/$/, '');
+  return [
+    '# mnema: the audit log is append-only; merge with union so parallel',
+    '# branches keep both sides instead of conflicting on the tail.',
+    `${dir}/*.jsonl merge=union`,
+  ].join('\n');
+}
+
+function scaffoldGitattributes(cwd: string, auditPath: string): void {
+  const file = path.join(cwd, '.gitattributes');
+  const marker = `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
+  const block = gitattributesLines(auditPath);
+  if (!existsSync(file)) {
+    writeFileSync(file, `${block}\n`, 'utf-8');
+    return;
+  }
+  const current = readFileSync(file, 'utf-8');
+  if (current.includes(marker)) return;
+  appendFileSync(file, `\n${block}\n`, 'utf-8');
 }
 
 /**
