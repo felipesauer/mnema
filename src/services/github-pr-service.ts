@@ -29,7 +29,7 @@ export interface CommandResult {
 /** Runs a command and returns its captured result. Injectable for tests. */
 export type CommandRunner = (command: string, args: readonly string[]) => CommandResult;
 
-const defaultRunner: CommandRunner = (command, args) => {
+export const defaultRunner: CommandRunner = (command, args) => {
   const result = spawnSync(command, [...args], { encoding: 'utf-8', timeout: 10_000 });
   return {
     status: result.status,

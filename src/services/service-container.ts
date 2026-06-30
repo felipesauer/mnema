@@ -38,13 +38,14 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { CommitVerifier } from './commit-verifier.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
-import { GitHubPrService } from './github-pr-service.js';
+import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { LabelService } from './label-service.js';
@@ -83,6 +84,13 @@ export interface ServiceContainerOptions {
    * `~/.config/mnema`.
    */
   readonly userDir?: string | null;
+  /**
+   * Override the command runner used to verify commit refs against git.
+   * Production shells out via the default runner; tests inject a mock so
+   * they exercise the found / not-found / no-repo paths deterministically
+   * without a real repository.
+   */
+  readonly commitRunner?: CommandRunner;
 }
 
 /**
@@ -119,6 +127,7 @@ export interface ServiceContainer {
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly githubPr: GitHubPrService;
+  readonly commitVerifier: CommitVerifier;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -375,6 +384,7 @@ export function createServiceContainer(
     config.project.key,
   );
   const githubPrService = new GitHubPrService();
+  const commitVerifier = new CommitVerifier(options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -447,6 +457,7 @@ export function createServiceContainer(
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     githubPr: githubPrService,
+    commitVerifier,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,

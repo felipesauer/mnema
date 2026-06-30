@@ -229,6 +229,8 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
       this.services.agentRun,
+      this.services.commitVerifier,
+      this.projectRoot,
     ).register(this.sdk);
     new EpicTools(
       this.services.epic,

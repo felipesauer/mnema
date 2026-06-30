@@ -365,7 +365,7 @@ export class TaskCommand {
       .option('--note <text>', 'Optional note for the evidence')
       .action(async (key: string, options: EvidenceOptions) => {
         if (options.ref !== undefined) {
-          await withMutatingCliContext(({ container }) => {
+          await withMutatingCliContext(({ container, projectRoot }) => {
             const result = container.taskEvidence.attach({
               taskKey: key,
               criterionIndex: options.criterion ?? -1,
@@ -380,6 +380,16 @@ export class TaskCommand {
             process.stdout.write(
               `${pc.green('✓')} evidence attached to ${key} criterion ${result.value.criterionIndex} ${pc.dim(`(${result.value.kind})`)}\n`,
             );
+            // Advisory integrity check for a commit ref — never blocks the
+            // attach (it already succeeded); silent when git can't verify.
+            if (result.value.kind === 'commit') {
+              const check = container.commitVerifier.verify(result.value.ref, projectRoot);
+              if (check.checked && !check.found) {
+                process.stdout.write(
+                  `${pc.yellow('▲')} ${pc.dim(check.reason ?? `commit ${result.value.ref} not found in this repository`)}\n`,
+                );
+              }
+            }
           });
           return;
         }

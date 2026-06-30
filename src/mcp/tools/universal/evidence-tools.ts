@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import type { EvidenceKind } from '../../../domain/entities/task-evidence.js';
 import type { AgentRunService } from '../../../services/agent-run-service.js';
+import type { CommitVerifier } from '../../../services/commit-verifier.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskEvidenceService } from '../../../services/task-evidence-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
@@ -32,6 +33,8 @@ export class EvidenceTools {
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: readonly string[],
     private readonly agentRun: AgentRunService,
+    private readonly commitVerifier: CommitVerifier,
+    private readonly projectRoot: string,
   ) {}
 
   /**
@@ -88,6 +91,21 @@ export class EvidenceTools {
             runId: gov.runId,
           });
           if (!result.ok) return err(result.error);
+
+          // Opt-in integrity signal: for a commit ref, check it actually
+          // names a commit in the repo. This is advisory only — the
+          // attach already succeeded, and an unverifiable environment
+          // (no git / not a repo) stays silent. A real miss is surfaced
+          // as a `warning` field, never an error.
+          if (input.kind === 'commit') {
+            const check = this.commitVerifier.verify(input.ref, this.projectRoot);
+            if (check.checked && !check.found) {
+              return ok({
+                evidence: result.value,
+                warning: check.reason ?? `commit ${input.ref} not found in this repository`,
+              });
+            }
+          }
           return ok({ evidence: result.value });
         } finally {
           gov.finalize();
