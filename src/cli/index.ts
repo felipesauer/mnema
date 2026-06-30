@@ -109,6 +109,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/history-command.js')).HistoryCommand(),
     description: 'Show past activity from the audit log (formatted for humans)',
   },
+  stats: {
+    load: async () => new (await import('./commands/stats-command.js')).StatsCommand(),
+    description: 'Show derived flow metrics (throughput, lead/cycle time, reopen rate)',
+  },
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),
     description: 'Live tail of the audit log (Ctrl+C to stop)',

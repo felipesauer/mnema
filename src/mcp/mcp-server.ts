@@ -25,6 +25,7 @@ import { DecisionTools } from './tools/universal/decision-tools.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
+import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
@@ -226,6 +227,7 @@ export class MnemaMcpServer {
       pendingFiles,
     ).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
+    new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
       this.services.sprint,
