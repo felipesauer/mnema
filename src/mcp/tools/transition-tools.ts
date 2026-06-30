@@ -2,11 +2,22 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { Workflow } from '../../domain/state-machine/state-machine.js';
+import type { AgentRunService } from '../../services/agent-run-service.js';
 import type { IdentityService } from '../../services/identity-service.js';
 import type { TaskService } from '../../services/task-service.js';
+import { resolveGovernanceRun } from '../governance-run.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
 import { err, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
+
+/**
+ * Workflow actions that are acts of governance rather than units of
+ * work. They may be performed without a pre-existing execution run; when
+ * none is active a short-lived system run is opened to keep provenance.
+ * `approve` is the canonical case — signing off a finished task should
+ * not require "starting work" first.
+ */
+const GOVERNANCE_ACTIONS: ReadonlySet<string> = new Set(['approve']);
 
 /**
  * Generates one MCP tool per workflow action.
@@ -27,6 +38,7 @@ export class TransitionToolsRegistrar {
     private readonly tasks: TaskService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly agentRun: AgentRunService,
   ) {}
 
   /**
@@ -91,8 +103,18 @@ export class TransitionToolsRegistrar {
             inputSchema,
           },
           (input: Record<string, unknown>) => {
-            const guard = requireActiveRun(this.session.getCurrentRunId());
-            if (guard !== null) return guard;
+            const isGovernance = GOVERNANCE_ACTIONS.has(action);
+            // Work actions require a live execution run. Governance acts
+            // (e.g. approve) may run without one — a system run is opened
+            // to preserve provenance — so signing off a finished task
+            // does not force the agent to "start work" first.
+            if (!isGovernance) {
+              const guard = requireActiveRun(this.session.getCurrentRunId());
+              if (guard !== null) return guard;
+            }
+            const gov = isGovernance
+              ? resolveGovernanceRun(this.session, this.agentRun, this.identity, toolName)
+              : { runId: this.session.getCurrentRunId() ?? undefined, finalize: () => {} };
 
             const {
               task_key: taskKey,
@@ -113,9 +135,10 @@ export class TransitionToolsRegistrar {
               payload,
               actor: this.identity.getDefaultActor(),
               via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-              runId: this.session.getCurrentRunId() ?? undefined,
+              runId: gov.runId,
               expectedUpdatedAt,
             });
+            gov.finalize();
             if (!result.ok) return err(result.error);
             return okTask(result.value, verbosity);
           },
