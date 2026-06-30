@@ -59,6 +59,7 @@ describe('InboxService', () => {
     inbox = new InboxService(tasks, decisions, 'TEST', stateMachine, {
       staleAfterDays: 9999,
       slaDays: {},
+      wipLimits: {},
     });
   });
 
@@ -111,6 +112,7 @@ describe('InboxService', () => {
     const leanInbox = new InboxService(tasks, decisions, 'TEST', leanMachine, {
       staleAfterDays: 9999,
       slaDays: {},
+      wipLimits: {},
     });
     // Even if a task somehow has IN_REVIEW state, the inbox under lean
     // should not surface it — the concept does not exist for that workflow.

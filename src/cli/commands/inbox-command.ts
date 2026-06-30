@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
-import type { SlaBreach } from '../../services/inbox-service.js';
+import type { SlaBreach, WipBreach } from '../../services/inbox-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -42,6 +42,8 @@ export class InboxCommand {
           const sections: string[] = [];
           // SLA breaches lead: they are the overdue cut, not just "waiting".
           sections.push(formatBreaches(view.slaBreaches));
+          // WIP breaches are a state-level overflow signal, distinct from per-task SLA.
+          sections.push(formatWipBreaches(view.wipBreaches));
           sections.push(
             formatSection('Awaiting review', view.awaitingReview, pc.yellow('⚠'), mode),
           );
@@ -52,7 +54,8 @@ export class InboxCommand {
             view.awaitingReview.length === 0 &&
             view.blocked.length === 0 &&
             view.pendingDecisions.length === 0 &&
-            view.slaBreaches.length === 0;
+            view.slaBreaches.length === 0 &&
+            view.wipBreaches.length === 0;
           if (empty) {
             process.stdout.write(`${pc.dim('Inbox is empty — nothing waiting on you.')}\n`);
             return;
@@ -86,6 +89,18 @@ function formatBreaches(breaches: readonly SlaBreach[]): string {
   for (const b of breaches) {
     const over = `${b.age_days}d in ${b.state}, SLA ${b.sla_days}d`;
     lines.push(`  ${pc.bold(b.key.padEnd(12))} ${b.title.padEnd(40)} ${pc.red(over)}`);
+  }
+  return lines.join('\n');
+}
+
+function formatWipBreaches(breaches: readonly WipBreach[]): string {
+  if (breaches.length === 0) return '';
+  const lines: string[] = [];
+  lines.push(`${pc.yellow('▲')} ${pc.bold('WIP limit exceeded')} (${breaches.length})`);
+  for (const b of breaches) {
+    lines.push(
+      `  ${pc.bold(b.state.padEnd(14))} ${pc.yellow(`${b.count}/${b.limit}`)} ${pc.dim(b.keys.join(', '))}`,
+    );
   }
   return lines.join('\n');
 }

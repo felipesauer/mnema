@@ -185,6 +185,7 @@ export class ContextBootstrapTool {
         stale_after_days: staleAfterDays,
         stale_tasks: agedTasks,
         sla_breaches: this.inboxService.slaBreaches(nowMs),
+        wip_breaches: this.inboxService.wipBreaches(),
       },
       skills_inventory: skills.map((s) => ({
         slug: s.slug,

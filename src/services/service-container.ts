@@ -413,6 +413,7 @@ export function createServiceContainer(
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine, {
     staleAfterDays: config.aging.stale_after_days,
     slaDays: config.aging.sla_days,
+    wipLimits: config.aging.wip_limits,
   });
   const snapshotService = new SnapshotService(
     coverageService,

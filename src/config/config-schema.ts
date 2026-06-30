@@ -74,6 +74,11 @@ export const ConfigSchema = z.object({
       // falls back to `stale_after_days`. Keys are workflow state names
       // (e.g. IN_REVIEW, BLOCKED).
       sla_days: z.record(z.string(), z.number().int().positive()).default({}),
+      // Per-state work-in-progress limit. A state holding more active
+      // tasks than its limit is a WIP breach the inbox and
+      // context_bootstrap surface. Keys are workflow state names; a state
+      // without an entry is uncapped.
+      wip_limits: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -148,6 +153,7 @@ export const UserConfigSchema = z
         stale_after_days: z.number().int().positive().optional(),
         orphan_run_after_hours: z.number().int().positive().optional(),
         sla_days: z.record(z.string(), z.number().int().positive()).optional(),
+        wip_limits: z.record(z.string(), z.number().int().positive()).optional(),
       })
       .strict()
       .optional(),
