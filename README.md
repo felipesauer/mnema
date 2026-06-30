@@ -118,14 +118,15 @@ and approve from the terminal — walked through end to end in
 | **Workflow gates** | A state machine per task; each transition declares required fields and Mnema rejects invalid moves. |
 | **Agent runs & plans** | Wrap every batch of mutations in a run (parent/child, max depth 5); inspect any run later via the CLI. |
 | **Dual identity** | Each event records the human actor, the agent that executed, and the run — a built-in chain of custody. |
-| **Tasks, sprints, epics** | Full work tracking: tasks with acceptance criteria, estimate, assignee and a token `context_budget`; one active sprint per project (with measurable metrics); epics grouping tasks under a derived lifecycle. |
+| **Tasks, sprints, epics** | Full work tracking: tasks with acceptance criteria, estimate, assignee, transversal **labels** (e.g. `area:api`) and a token `context_budget`; one active sprint per project (with measurable metrics); epics grouping tasks under a derived lifecycle. |
 | **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, each able to record which artefacts it impacts, with a shortcut to promote a note into a decision. |
-| **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, epic/sprint completion coverage, acceptance-criteria evidence, a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
+| **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
+| **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, and an active inbox that surfaces review-SLA breaches and orphaned runs. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
 | **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
-| **MCP tools** | 40+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
+| **MCP tools** | 70+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
 ## Install
 
@@ -235,8 +236,9 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema task create / list / show / move` | Manage tasks (`create` takes `--estimate`, `--context-budget`, `--priority`) |
+| `mnema task create / list / show / move` | Manage tasks (`create` takes `--estimate`, `--context-budget`, `--priority`, `--label`) |
 | `mnema task assign <key> --to <handle>` | Set or clear a task's assignee (`--clear`); an unknown handle is rejected |
+| `mnema task label <key> [labels...]` · `mnema task labels` | Set a task's transversal labels (omit to clear); list the label catalogue with counts |
 | `mnema sprint plan / start / close / show / add` | Manage sprints (one active per project) |
 | `mnema sprint add-tasks <key> <task...>` | Attach several tasks at once (best-effort, reports per-task failures) |
 | `mnema sprint metric <key> --name --target` | Add a measurable metric (baseline/unit/due optional) |
@@ -249,7 +251,9 @@ MCP tools. The commands group by what you're doing — run
 | Command | What it does |
 |---|---|
 | `mnema task depends <key> <blocksKey>` · `mnema task ready` | Declare a task↔task dependency; list tasks whose blockers are all done |
-| `mnema task evidence <key> [--criterion --kind --ref]` | List or attach evidence for acceptance criteria |
+| `mnema graph [--epic\|--sprint]` | Dependency graph: cycles, the ready/blocked frontier, and the critical path |
+| `mnema query [--state --epic --sprint --label --since --until --text]` | Aggregate backlog query — counts + lists across any combination of filters |
+| `mnema task evidence <key> [--criterion --kind --ref]` | List or attach evidence for acceptance criteria (a `--kind commit` ref is checked against git) |
 | `mnema sprint coverage <key>` · `mnema epic coverage <key>` | Report % of tasks in a terminal state |
 | `mnema lint sprint <key>` · `mnema lint epic <key>` | Integrity checks (incomplete tasks, subagent-bypass, broken deps) |
 | `mnema decision impacting <ref>` | Which ADRs affect a given artefact |
@@ -261,8 +265,9 @@ MCP tools. The commands group by what you're doing — run
 |---|---|
 | `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
-| `mnema inbox` | Tasks awaiting your review or blocked |
-| `mnema agent inspect <run_id>` · `mnema audit query [filters]` | One run with its plans + mutations; raw log access |
+| `mnema inbox` | Tasks awaiting your review or blocked, plus review-SLA breaches |
+| `mnema agent inspect <run_id>` · `mnema agent diff <run_id>` | One run with its plans + mutations; a grouped diff of everything that run changed |
+| `mnema agent close-orphans [--apply]` · `mnema audit query [filters]` | Find (and abort) runs left open past the threshold; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
 
@@ -327,16 +332,18 @@ the hash-chained audit log, verifiable forever.
 ```json
 {
   "version": "1.0",
-  "mnema_version": "^0.5.0-alpha.0",
+  "mnema_version": "^0.8.0-alpha.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }
 ```
 
 Optional fields cover custom paths, audit retention, sync flush
-thresholds and feature flags. Run `mnema doctor` after editing — it
-re-validates the file against the schema and reports anything that
-drifted.
+thresholds, feature flags, and an `aging` block — `stale_after_days`,
+per-state review SLAs (`sla_days`, e.g. `{ "IN_REVIEW": 2 }`), and
+`orphan_run_after_hours` — that drives what `mnema inbox` and
+`mnema doctor` flag. Run `mnema doctor` after editing — it re-validates
+the file against the schema and reports anything that drifted.
 
 One optional field worth calling out is `enforcement_mode`, which decides
 what a failed workflow gate means:
@@ -353,7 +360,7 @@ what a failed workflow gate means:
 
 A `~/.config/mnema/config.json` lets you set **behavior preferences once**
 for every project on your machine — `enforcement_mode`, `audit_strategy`,
-`audit_retention_months`, and the `sync` / `features` blocks. A project's
+`audit_retention_months`, and the `sync` / `features` / `aging` blocks. A project's
 own config always wins key-by-key; the user file only fills the gaps. It
 cannot set project identity, `paths` or `workflow` — those are intrinsic
 to a project and an attempt to set them is rejected. Example:
@@ -411,7 +418,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **590 tests, 0
+Confidence comes from how hard it's shaken out: **816 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS), and a 13-check publish
