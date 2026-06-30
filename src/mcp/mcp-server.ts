@@ -1,5 +1,6 @@
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { Config } from '../config/config-schema.js';
 import type { ServiceContainer } from '../services/service-container.js';
@@ -31,6 +32,7 @@ import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 import { WikilinkTools } from './tools/universal/wikilink-tools.js';
 import { WorkGraphLintTools } from './tools/universal/work-graph-lint-tools.js';
+import { installZodErrorMap, reformatSdkValidationError } from './validation-errors.js';
 
 const HARD_SHUTDOWN_MS = 5_000;
 
@@ -66,6 +68,44 @@ export class MnemaMcpServer {
       { name: '@felipesauer/mnema', version: VERSION },
       { capabilities: { tools: {} } },
     );
+
+    // The MCP SDK validates a tool's input against its schema before the
+    // handler runs and, on failure, leaks the raw Zod issue dump to the
+    // client. Two coordinated fixes give the agent a human, field-named
+    // error instead: a global Zod error map (friendly per-issue text) and
+    // a wrap of the `tools/call` handler that flattens the leaked dump
+    // into Mnema's canonical VALIDATION_FAILED shape. The wrap is
+    // installed at the instance level — no SDK source patching — by
+    // intercepting setRequestHandler before McpServer claims `tools/call`.
+    installZodErrorMap();
+    this.wrapToolCallHandler();
+  }
+
+  /**
+   * Intercepts the underlying server's `setRequestHandler` so the
+   * `tools/call` handler McpServer installs has its result passed through
+   * {@link reformatSdkValidationError}. This converts the SDK's raw
+   * pre-handler validation leak into a friendly structured error without
+   * touching any of the ~60 individual tool registrations.
+   */
+  private wrapToolCallHandler(): void {
+    const callMethod = CallToolRequestSchema.shape.method.value;
+    // The SDK's setRequestHandler is heavily generic; this interop shim
+    // treats it structurally. The cast is contained to this one wrap.
+    // biome-ignore lint/suspicious/noExplicitAny: external generic API boundary
+    const server = this.sdk.server as any;
+    const originalSet = server.setRequestHandler.bind(server);
+    // biome-ignore lint/suspicious/noExplicitAny: external generic API boundary
+    server.setRequestHandler = (schema: any, handler: any): unknown => {
+      if (schema?.shape?.method?.value !== callMethod) {
+        return originalSet(schema, handler);
+      }
+      const wrapped = async (request: unknown, extra: unknown): Promise<CallToolResult> => {
+        const result = (await handler(request, extra)) as CallToolResult;
+        return reformatSdkValidationError(result);
+      };
+      return originalSet(schema, wrapped);
+    };
   }
 
   /**
