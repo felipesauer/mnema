@@ -1,10 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { ErrorCode } from '../../../errors/error-codes.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { ObservationService } from '../../../services/observation-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+
+/** Maximum length, in characters, of an observation's content. */
+const OBSERVATION_CONTENT_MAX = 2000;
 
 /**
  * Registers the observation-related MCP tools — `observation_record`,
@@ -33,7 +37,12 @@ export class ObservationTools {
         description:
           'Record an append-only context note. Use this for short-lived signals that may inform a memory or skill later, but are not durable truths on their own. Requires an active agent run.',
         inputSchema: {
-          content: z.string().min(1).max(2000),
+          content: z
+            .string()
+            .min(1)
+            .describe(
+              `The note. Keep it under ${OBSERVATION_CONTENT_MAX} characters — longer content is rejected with the exact overflow, so split it into two observations.`,
+            ),
           topics: z.array(z.string().min(1)).optional().describe('Free-form tags for filtering'),
           related_task_key: z
             .string()
@@ -48,6 +57,22 @@ export class ObservationTools {
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
+
+        // Enforce the length cap in the handler (not via `.max()` on the
+        // schema) so the agent gets an actionable message with the exact
+        // overflow, rather than the SDK's raw "too big" rejection.
+        if (input.content.length > OBSERVATION_CONTENT_MAX) {
+          const over = input.content.length - OBSERVATION_CONTENT_MAX;
+          return err({
+            kind: ErrorCode.ValidationFailed,
+            issues: [
+              {
+                path: ['content'],
+                message: `content is ${input.content.length} characters — ${over} over the ${OBSERVATION_CONTENT_MAX} limit. Split it into two observations.`,
+              },
+            ],
+          });
+        }
 
         const handle = this.session.getClientMetadata().agent_handle;
         const result = this.observations.record({

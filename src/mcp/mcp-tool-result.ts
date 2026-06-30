@@ -23,6 +23,42 @@ export function ok(value: Record<string, unknown>): CallToolResult {
 }
 
 /**
+ * Verbosity for a mutation's echoed task. `full` returns the whole task
+ * entity (the historical default); `compact` returns only the fields an
+ * agent needs to confirm the write — `{ key, state, updatedAt }` — so a
+ * batch of mutations doesn't inflate the agent's context with repeated
+ * long descriptions and acceptance-criteria arrays.
+ */
+export type Verbosity = 'full' | 'compact';
+
+/** The minimal shape a task is reduced to under `compact` verbosity. */
+interface CompactTask {
+  readonly key: string;
+  readonly state: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * Wraps a mutated task as a success response, honouring `verbosity`.
+ * `full` (default) echoes the whole entity under `task`; `compact`
+ * echoes only `{ key, state, updatedAt }`.
+ *
+ * @param task - The full task entity returned by the service
+ * @param verbosity - Echo mode; defaults to `full`
+ * @returns A success-shaped CallToolResult
+ */
+export function okTask(
+  task: { key: string; state: string; updatedAt: string },
+  verbosity: Verbosity = 'full',
+): CallToolResult {
+  if (verbosity === 'compact') {
+    const compact: CompactTask = { key: task.key, state: task.state, updatedAt: task.updatedAt };
+    return ok({ task: compact });
+  }
+  return ok({ task });
+}
+
+/**
  * Wraps a structured {@link MnemaError} as an MCP tool error.
  *
  * Sets the SDK's `isError` flag and includes the canonical structured

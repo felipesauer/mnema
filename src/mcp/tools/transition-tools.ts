@@ -5,7 +5,7 @@ import type { Workflow } from '../../domain/state-machine/state-machine.js';
 import type { IdentityService } from '../../services/identity-service.js';
 import type { TaskService } from '../../services/task-service.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../mcp-tool-result.js';
+import { err, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
 
 /**
@@ -69,6 +69,13 @@ export class TransitionToolsRegistrar {
             .string()
             .optional()
             .describe('Optimistic concurrency token from a previous read'),
+          verbosity: z
+            .enum(['full', 'compact'])
+            .optional()
+            .describe(
+              "Echo mode for the transitioned task. 'full' (default) returns the whole " +
+                "entity; 'compact' returns only { key, state, updatedAt } to save context.",
+            ),
           ...transition.requires.shape,
         } as Record<string, z.ZodTypeAny>;
 
@@ -90,10 +97,12 @@ export class TransitionToolsRegistrar {
             const {
               task_key: taskKey,
               expected_updated_at: expectedUpdatedAt,
+              verbosity,
               ...payload
             } = input as {
               task_key: string;
               expected_updated_at?: string;
+              verbosity?: Verbosity;
               [field: string]: unknown;
             };
 
@@ -108,7 +117,7 @@ export class TransitionToolsRegistrar {
               expectedUpdatedAt,
             });
             if (!result.ok) return err(result.error);
-            return ok({ task: result.value });
+            return okTask(result.value, verbosity);
           },
         );
         registered.push(toolName);
