@@ -1,13 +1,16 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import type { Config } from '../../config/config-schema.js';
 import type { Workflow } from '../../domain/state-machine/state-machine.js';
+import { ErrorCode } from '../../errors/error-codes.js';
 import type { AgentRunService } from '../../services/agent-run-service.js';
+import type { GitHubPrService, PrStatus } from '../../services/github-pr-service.js';
 import type { IdentityService } from '../../services/identity-service.js';
 import type { TaskService } from '../../services/task-service.js';
 import { resolveGovernanceRun } from '../governance-run.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
-import { err, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-result.js';
+import { err, ok, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
 
 /**
@@ -44,6 +47,8 @@ export class TransitionToolsRegistrar {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly agentRun: AgentRunService,
+    private readonly config: Config,
+    private readonly githubPr: GitHubPrService,
   ) {}
 
   /**
@@ -80,6 +85,10 @@ export class TransitionToolsRegistrar {
           continue;
         }
 
+        // A transition into a terminal state (e.g. approve → DONE) can be
+        // gated on PR/CI status when `github.done_pr_policy` is enabled.
+        const targetsTerminal = this.workflow.terminal.includes(transition.to);
+
         const inputSchema = {
           task_key: z.string().describe('Task key (e.g. WEBAPP-42)'),
           expected_updated_at: z
@@ -93,6 +102,18 @@ export class TransitionToolsRegistrar {
               "Echo mode for the transitioned task. 'full' (default) returns the whole " +
                 "entity; 'compact' returns only { key, state, updatedAt } to save context.",
             ),
+          ...(targetsTerminal
+            ? {
+                pr_url: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Optional PR URL to check against `github.done_pr_policy`. When the policy ' +
+                      'is warn/block and the PR is not merged or CI is red, the move is warned ' +
+                      'or refused. Ignored when the policy is off (default).',
+                  ),
+              }
+            : {}),
           ...transition.requires.shape,
         } as Record<string, z.ZodTypeAny>;
 
@@ -137,10 +158,41 @@ export class TransitionToolsRegistrar {
               [field: string]: unknown;
             };
 
+            // `pr_url` is a workflow field for some transitions (e.g.
+            // submit_review requires it) and ALSO the gate's input on a
+            // terminal transition. Read it without removing it from
+            // `payload`; only strip it from the service payload when this
+            // transition is the terminal one we inject it on, so a
+            // required `pr_url` still reaches non-terminal transitions.
+            const prUrl = typeof input.pr_url === 'string' ? input.pr_url : undefined;
+            if (targetsTerminal) delete (payload as { pr_url?: unknown }).pr_url;
+
             const handle = this.session.getClientMetadata().agent_handle;
-            // try/finally so a thrown transition still closes any system
-            // run resolveGovernanceRun opened — no dangling run on error.
+            // try/finally so any system run resolveGovernanceRun opened is
+            // always closed — even on a gate refusal or a thrown transition.
             try {
+              // DONE-gate: when this transition targets a terminal state, a
+              // pr_url was given, and the policy is on, check PR/CI. `block`
+              // refuses with GATE_FAILED before any state change; `warn`
+              // lets it through and attaches a warning. Unresolvable status
+              // (offline/unauth) never blocks.
+              let prWarning: string | undefined;
+              const policy = this.config.github.done_pr_policy;
+              if (targetsTerminal && policy !== 'off' && prUrl !== undefined && prUrl.length > 0) {
+                const problem = prProblem(this.githubPr.status(prUrl));
+                if (problem !== null) {
+                  if (policy === 'block') {
+                    return err({
+                      kind: ErrorCode.GateFailed,
+                      taskKey,
+                      action,
+                      issues: [{ path: ['pr_url'], message: problem }],
+                    });
+                  }
+                  prWarning = problem; // policy === 'warn'
+                }
+              }
+
               const result = this.tasks.transition({
                 taskKey,
                 action,
@@ -151,6 +203,9 @@ export class TransitionToolsRegistrar {
                 expectedUpdatedAt,
               });
               if (!result.ok) return err(result.error);
+              if (prWarning !== undefined) {
+                return ok({ task: result.value, pr_warning: prWarning });
+              }
               return okTask(result.value, verbosity);
             } finally {
               gov.finalize();
@@ -163,4 +218,25 @@ export class TransitionToolsRegistrar {
 
     return registered;
   }
+}
+
+/**
+ * Returns a human reason the PR is not ready to close the task, or null
+ * when it is ready (merged + CI passing/none) or its status can't be
+ * resolved (offline / unauth / unknown — never block on absence of
+ * evidence). Drives both the `block` refusal and the `warn` note.
+ */
+function prProblem(status: PrStatus): string | null {
+  if (!status.available) return null; // can't prove a problem → don't gate
+  const ref = status.ref ?? 'the PR';
+  if (!status.merged) {
+    return `${ref} is not merged (state: ${status.state}) — the task is moving to a terminal state before its PR landed.`;
+  }
+  if (status.ci === 'failing') {
+    return `${ref} merged but its CI is failing.`;
+  }
+  if (status.ci === 'pending') {
+    return `${ref} merged but its CI is still pending.`;
+  }
+  return null;
 }
