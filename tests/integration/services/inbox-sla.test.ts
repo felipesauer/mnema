@@ -48,8 +48,23 @@ function setup(
   };
 }
 
-/** Insert a task directly in a given state, last-moved `ageDays` ago. */
-function seedTask(container: ServiceContainer, key: string, state: string, ageDays: number): void {
+/**
+ * Insert a task directly in a given state, last-moved `ageDays` ago.
+ *
+ * `at` is derived from the same `now` the test later passes to
+ * `slaBreaches`, never from a fresh `Date.now()`. Anchoring both reads
+ * to one clock makes `now - at` exactly `ageDays * DAY`, so the
+ * service's `Math.floor` is exact — otherwise the few ms between the
+ * two `Date.now()` calls can drop the floored age by one day and make
+ * the assertion non-deterministic across runtimes.
+ */
+function seedTask(
+  container: ServiceContainer,
+  key: string,
+  state: string,
+  ageDays: number,
+  now: number,
+): void {
   const db = container.adapter.getDatabase();
   const project = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string };
   let actor = db.prepare('SELECT id FROM actors LIMIT 1').get() as { id: string } | undefined;
@@ -57,7 +72,7 @@ function seedTask(container: ServiceContainer, key: string, state: string, ageDa
     db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('act-1', 'daniel', 'human')").run();
     actor = { id: 'act-1' };
   }
-  const at = new Date(Date.now() - ageDays * DAY).toISOString();
+  const at = new Date(now - ageDays * DAY).toISOString();
   db.prepare(
     `INSERT INTO tasks (id, key, project_id, title, description, acceptance_criteria, state,
        priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
@@ -72,7 +87,7 @@ describe('InboxService SLA breaches', () => {
   it('flags a task past the per-state SLA, with age and threshold', () => {
     // IN_REVIEW SLA = 2 days; this task has sat 5 days → breach.
     h = setup({ IN_REVIEW: 2 });
-    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 5);
+    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 5, h.now);
     const breaches = h.container.inbox.slaBreaches(h.now);
     expect(breaches).toHaveLength(1);
     expect(breaches[0]).toMatchObject({
@@ -86,14 +101,14 @@ describe('InboxService SLA breaches', () => {
   it('does not flag a task within its per-state SLA', () => {
     // IN_REVIEW SLA = 5; only 2 days in → no breach.
     h = setup({ IN_REVIEW: 5 });
-    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 2);
+    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 2, h.now);
     expect(h.container.inbox.slaBreaches(h.now)).toHaveLength(0);
   });
 
   it('falls back to stale_after_days when a state has no SLA override', () => {
     // No override for IN_PROGRESS → uses stale_after_days = 3. 4 days → breach.
     h = setup({ IN_REVIEW: 10 }, 3);
-    seedTask(h.container, 'TEST-1', 'IN_PROGRESS', 4);
+    seedTask(h.container, 'TEST-1', 'IN_PROGRESS', 4, h.now);
     const breaches = h.container.inbox.slaBreaches(h.now);
     expect(breaches).toHaveLength(1);
     expect(breaches[0]?.sla_days).toBe(3); // the fallback, not 10
@@ -101,15 +116,15 @@ describe('InboxService SLA breaches', () => {
 
   it('never flags terminal-state tasks, however old', () => {
     h = setup({}, 1);
-    seedTask(h.container, 'TEST-1', 'DONE', 90);
-    seedTask(h.container, 'TEST-2', 'CANCELED', 90);
+    seedTask(h.container, 'TEST-1', 'DONE', 90, h.now);
+    seedTask(h.container, 'TEST-2', 'CANCELED', 90, h.now);
     expect(h.container.inbox.slaBreaches(h.now)).toHaveLength(0);
   });
 
   it('sorts breaches most-overdue first and surfaces them in view()', () => {
     h = setup({ IN_REVIEW: 1, BLOCKED: 1 });
-    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 3);
-    seedTask(h.container, 'TEST-2', 'BLOCKED', 9);
+    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 3, h.now);
+    seedTask(h.container, 'TEST-2', 'BLOCKED', 9, h.now);
     const view = h.container.inbox.view(h.now);
     expect(view.slaBreaches.map((b) => b.key)).toEqual(['TEST-2', 'TEST-1']); // 9d before 3d
   });
