@@ -4,6 +4,7 @@ import type { AgentRun } from '../../domain/entities/agent-run.js';
 import { AgentPlanState } from '../../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { printError } from '../../errors/error-printer.js';
+import type { RunDiff } from '../../services/run-diff-service.js';
 import type { ServiceContainer } from '../../services/service-container.js';
 import type { TransitionWithKey } from '../../storage/sqlite/repositories/transition-repository.js';
 import { pc } from '../../utils/colors.js';
@@ -58,6 +59,27 @@ export class AgentCommand {
       });
 
     group
+      .command('diff <runId>')
+      .description(
+        'Summarise everything one run changed (transitions, evidence, decisions, knowledge)',
+      )
+      .option('--json', 'Emit the raw diff as JSON', false)
+      .action(async (runId: string, options: { json?: boolean }) => {
+        await withCliContext(({ container }) => {
+          const result = container.runDiff.forRun(runId);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+            return;
+          }
+          if (options.json === true) {
+            process.stdout.write(`${JSON.stringify(result.value, null, 2)}\n`);
+            return;
+          }
+          process.stdout.write(`${formatRunDiff(result.value)}\n`);
+        });
+      });
+
+    group
       .command('resume <runId>')
       .description('Reattach to an interrupted run and summarise what is still open')
       .action(async (runId: string) => {
@@ -103,6 +125,43 @@ function formatResume(
       const tag = item.kind === 'plan' ? pc.dim('plan') : pc.dim('run ');
       lines.push(`  ${tag} ${pc.yellow(`[${item.status}]`)} ${item.label}`);
     }
+  }
+  return lines.join('\n');
+}
+
+function formatRunDiff(diff: RunDiff): string {
+  const lines: string[] = [];
+  lines.push(`${pc.bold('Run:')} ${diff.run.id} ${pc.dim(`(${formatStatus(diff.run.status)})`)}`);
+  lines.push(`${pc.bold('Goal:')} ${diff.run.goal}`);
+  lines.push(
+    pc.dim(
+      `${diff.counts.transitions} transition(s), ${diff.counts.evidence} evidence, ` +
+        `${diff.counts.decisions} decision(s), ${diff.counts.knowledge} knowledge`,
+    ),
+  );
+
+  const section = (title: string, changes: RunDiff['transitions']): void => {
+    if (changes.length === 0) return;
+    lines.push('');
+    lines.push(pc.bold(title));
+    for (const c of changes) {
+      lines.push(`  ${c.summary}`);
+    }
+  };
+  section('Transitions', diff.transitions);
+  section('Evidence', diff.evidence);
+  section('Decisions', diff.decisions);
+  section('Knowledge', diff.knowledge);
+
+  if (
+    diff.counts.transitions +
+      diff.counts.evidence +
+      diff.counts.decisions +
+      diff.counts.knowledge ===
+    0
+  ) {
+    lines.push('');
+    lines.push(pc.dim('(this run produced no substantive changes)'));
   }
   return lines.join('\n');
 }

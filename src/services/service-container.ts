@@ -56,6 +56,7 @@ import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
 import { PortfolioService } from './portfolio-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
+import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
 import { SprintService } from './sprint-service.js';
@@ -126,6 +127,7 @@ export interface ServiceContainer {
   readonly epic: EpicService;
   readonly coverage: CoverageService;
   readonly dependencyGraph: DependencyGraphService;
+  readonly runDiff: RunDiffService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly githubPr: GitHubPrService;
@@ -378,6 +380,7 @@ export function createServiceContainer(
     sprintRepository,
     stateMachine,
   );
+  const runDiffService = new RunDiffService(agentRuns, auditQuery);
   const labelService = new LabelService(labelRepository, tasks, audit, sync);
   const portfolioService = new PortfolioService(
     tasks,
@@ -464,6 +467,7 @@ export function createServiceContainer(
     epic: epicService,
     coverage: coverageService,
     dependencyGraph: dependencyGraphService,
+    runDiff: runDiffService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     githubPr: githubPrService,

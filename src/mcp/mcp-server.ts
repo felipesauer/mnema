@@ -34,6 +34,7 @@ import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
 import { PortfolioTool } from './tools/universal/portfolio-tool.js';
 import { PrStatusTool } from './tools/universal/pr-status-tool.js';
+import { RunDiffTool } from './tools/universal/run-diff-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
@@ -225,6 +226,7 @@ export class MnemaMcpServer {
       pendingFiles,
     ).register(this.sdk);
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
+    new RunDiffTool(this.services.runDiff).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,
