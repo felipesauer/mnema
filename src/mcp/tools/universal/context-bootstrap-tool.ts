@@ -95,6 +95,27 @@ export class ContextBootstrapTool {
       inProgressAliases.find((alias) => this.workflow.states.includes(alias)) ?? null;
     const inProgressCount = inProgressStateName === null ? 0 : (byState[inProgressStateName] ?? 0);
 
+    // Aging: tasks parked in a non-terminal state past the configured
+    // threshold. This is the IN_REVIEW (and BLOCKED/IN_PROGRESS) limbo
+    // where a transition waits on a human who never acts — surfaced here
+    // so the rot is visible on every session start, not discovered by a
+    // manual disk sweep. Age is measured from `updatedAt` (the last
+    // transition), so a task resets its clock each time it actually moves.
+    const terminalStates = new Set(this.workflow.terminal);
+    const staleAfterDays = this.config.aging.stale_after_days;
+    const nowMs = Date.now();
+    const agedTasks = all
+      .filter((t) => !terminalStates.has(t.state))
+      .map((t) => ({
+        key: t.key,
+        state: t.state,
+        title: t.title,
+        updated_at: t.updatedAt,
+        age_days: Math.floor((nowMs - new Date(t.updatedAt).getTime()) / 86_400_000),
+      }))
+      .filter((t) => t.age_days >= staleAfterDays)
+      .sort((a, b) => b.age_days - a.age_days);
+
     const skills = this.skillService.list().slice(0, 20);
     const memories = this.memoryService.list().slice(0, 30);
     const recentObservations = this.observationService.list({ limit: 5 });
@@ -149,6 +170,14 @@ export class ContextBootstrapTool {
         in_progress: inProgressCount,
         blocked: blockers.length,
         by_state: byState,
+      },
+      // Tasks stuck in a non-terminal state longer than
+      // `aging.stale_after_days`, oldest first. Empty when nothing is
+      // stale. `stale_after_days` echoes the active threshold so the
+      // agent can explain why an item did (or did not) surface.
+      aging: {
+        stale_after_days: staleAfterDays,
+        stale_tasks: agedTasks,
       },
       skills_inventory: skills.map((s) => ({
         slug: s.slug,
