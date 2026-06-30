@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Workflow } from '@/domain/state-machine/state-machine.js';
 import type { AuditQuery } from '@/services/audit-query.js';
 import { FlowMetricsService } from '@/services/flow-metrics-service.js';
+import type { SprintService } from '@/services/sprint-service.js';
 import type { TaskService } from '@/services/task-service.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
@@ -10,8 +11,15 @@ const HOUR = 3_600_000;
 const BASE = Date.parse('2026-01-01T00:00:00.000Z');
 const at = (hoursFromBase: number): string => new Date(BASE + hoursFromBase * HOUR).toISOString();
 
-function created(key: string, hours: number): AuditEvent {
-  return { v: 2, at: at(hours), kind: 'task_created', actor: 'a', data: { key, state: 'DRAFT' } };
+function created(key: string, hours: number, run?: string): AuditEvent {
+  return {
+    v: 2,
+    at: at(hours),
+    kind: 'task_created',
+    actor: 'a',
+    ...(run !== undefined ? { run } : {}),
+    data: { key, state: 'DRAFT' },
+  };
 }
 
 function transitioned(
@@ -20,14 +28,23 @@ function transitioned(
   from: string,
   to: string,
   action: string,
+  run?: string,
 ): AuditEvent {
   return {
     v: 2,
     at: at(hours),
     kind: 'task_transitioned',
     actor: 'a',
+    ...(run !== undefined ? { run } : {}),
     data: { key, from, to, action },
   };
+}
+
+function runStarted(run: string, hours: number): AuditEvent {
+  return { v: 2, at: at(hours), kind: 'run_started', actor: 'a', run, data: { goal: 'x' } };
+}
+function runEnded(run: string, hours: number): AuditEvent {
+  return { v: 2, at: at(hours), kind: 'run_ended', actor: 'a', run, data: { status: 'completed' } };
 }
 
 /** Minimal default-like workflow: DRAFT initial, DONE/CANCELED terminal. */
@@ -37,7 +54,6 @@ const workflow = {
   terminal: ['DONE', 'CANCELED'],
 } as unknown as Workflow;
 
-/** Fake AuditQuery returning a fixed event list (since-filter honoured). */
 function fakeAudit(events: AuditEvent[]): AuditQuery {
   return {
     run: (filter: { since?: string } = {}) => {
@@ -48,19 +64,35 @@ function fakeAudit(events: AuditEvent[]): AuditQuery {
   } as unknown as AuditQuery;
 }
 
-/** Fake TaskService exposing only list(), with the given estimates. */
-function fakeTasks(estimates: Record<string, number | null>): TaskService {
-  return {
-    list: () => Object.entries(estimates).map(([key, estimate]) => ({ key, estimate })),
-  } as unknown as TaskService;
+interface TaskRow {
+  key: string;
+  estimate: number | null;
+  sprintId: string | null;
+}
+
+/** Fake TaskService.list() with estimates and optional sprint membership. */
+function fakeTasks(rows: Record<string, number | null> | TaskRow[]): TaskService {
+  const list: TaskRow[] = Array.isArray(rows)
+    ? rows
+    : Object.entries(rows).map(([key, estimate]) => ({ key, estimate, sprintId: null }));
+  return { list: () => list } as unknown as TaskService;
+}
+
+/** Fake SprintService.list() returning sprints in creation order. */
+function fakeSprints(sprints: { id: string; key: string; name: string }[] = []): SprintService {
+  return { list: () => sprints } as unknown as SprintService;
+}
+
+function makeService(
+  events: AuditEvent[],
+  tasks: TaskService,
+  sprints: SprintService = fakeSprints(),
+): FlowMetricsService {
+  return new FlowMetricsService(fakeAudit(events), tasks, workflow, sprints, 'TEST');
 }
 
 describe('FlowMetricsService', () => {
   it('computes lead time, cycle time, throughput and reopen rate from the log', () => {
-    // NOTA-1: created@0, leaves DRAFT@2 (cycle start), DONE@10 → lead 10h, cycle 8h.
-    // NOTA-2: created@0, leaves DRAFT@1, DONE@5, reopened@6, DONE again@9
-    //         → first terminal at 5h: lead 5h, cycle 4h; reopened=true.
-    // NOTA-3: created@0, still IN_PROGRESS (never terminal) → excluded.
     const events: AuditEvent[] = [
       created('NOTA-1', 0),
       transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit'),
@@ -73,44 +105,101 @@ describe('FlowMetricsService', () => {
       created('NOTA-3', 0),
       transitioned('NOTA-3', 1, 'DRAFT', 'READY', 'submit'),
     ];
-    const service = new FlowMetricsService(
-      fakeAudit(events),
-      fakeTasks({ 'NOTA-1': 8, 'NOTA-2': 2, 'NOTA-3': 5 }),
-      workflow,
-    );
+    const m = makeService(events, fakeTasks({ 'NOTA-1': 8, 'NOTA-2': 2, 'NOTA-3': 5 })).compute();
 
-    const m = service.compute();
-
-    expect(m.throughput).toBe(2); // NOTA-1, NOTA-2
-    // Lead times: 10h and 5h → median 7.5, max 10.
+    expect(m.throughput).toBe(2);
     expect(m.lead_time.count).toBe(2);
     expect(m.lead_time.median_hours).toBe(7.5);
     expect(m.lead_time.max_hours).toBe(10);
-    // Cycle times: 8h (NOTA-1) and 4h (NOTA-2) → median 6.
     expect(m.cycle_time.median_hours).toBe(6);
-    // One of two completed tasks was reopened → 0.5.
     expect(m.reopen.completed_tasks).toBe(2);
     expect(m.reopen.reopened_tasks).toBe(1);
     expect(m.reopen.rate).toBe(0.5);
   });
 
-  it('joins estimate with realised lead time for done tasks', () => {
+  it('joins estimate with summed RUN DURATION when run data exists', () => {
+    // NOTA-1 touched by run R1 (start@1, end@4 → 3h) and R2 (start@5, end@6 → 1h) = 4h actual.
+    const events: AuditEvent[] = [
+      runStarted('R1', 1),
+      created('NOTA-1', 0, 'R1'),
+      transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit', 'R1'),
+      runEnded('R1', 4),
+      runStarted('R2', 5),
+      transitioned('NOTA-1', 6, 'IN_REVIEW', 'DONE', 'approve', 'R2'),
+      runEnded('R2', 6),
+    ];
+    const m = makeService(events, fakeTasks({ 'NOTA-1': 2 })).compute();
+
+    expect(m.estimate_vs_actual.samples).toHaveLength(1);
+    const s = m.estimate_vs_actual.samples[0];
+    expect(s?.actual_source).toBe('run_duration');
+    expect(s?.actual_hours).toBe(4); // 3h + 1h
+    expect(m.estimate_vs_actual.run_duration_samples).toBe(1);
+    expect(m.estimate_vs_actual.lead_time_fallback_samples).toBe(0);
+    expect(m.estimate_vs_actual.hours_per_point).toBe(2); // 4h / 2 pts
+  });
+
+  it('falls back to lead time (flagged) when a done task has no run data', () => {
     const events: AuditEvent[] = [
       created('NOTA-1', 0),
-      transitioned('NOTA-1', 10, 'IN_REVIEW', 'DONE', 'approve'), // lead 10h, est 5 → 2h/pt
-      created('NOTA-2', 0),
-      transitioned('NOTA-2', 6, 'IN_REVIEW', 'DONE', 'approve'), // lead 6h, est 1 → joins
+      transitioned('NOTA-1', 10, 'IN_REVIEW', 'DONE', 'approve'),
     ];
-    const service = new FlowMetricsService(
-      fakeAudit(events),
-      // NOTA-2 has estimate 1; NOTA-1 estimate 5. Total 6 pts, 16h → 2.7h/pt.
-      fakeTasks({ 'NOTA-1': 5, 'NOTA-2': 1 }),
-      workflow,
-    );
+    const m = makeService(events, fakeTasks({ 'NOTA-1': 5 })).compute();
+    const s = m.estimate_vs_actual.samples[0];
+    expect(s?.actual_source).toBe('lead_time');
+    expect(s?.actual_hours).toBe(10);
+    expect(m.estimate_vs_actual.lead_time_fallback_samples).toBe(1);
+    expect(m.estimate_vs_actual.run_duration_samples).toBe(0);
+  });
 
-    const m = service.compute();
-    expect(m.estimate_vs_actual.samples).toHaveLength(2);
-    expect(m.estimate_vs_actual.hours_per_point).toBeCloseTo(16 / 6, 1);
+  it('reports velocity (completed points) per sprint, newest first', () => {
+    const events: AuditEvent[] = [
+      created('NOTA-1', 0),
+      transitioned('NOTA-1', 5, 'IN_REVIEW', 'DONE', 'approve'),
+      created('NOTA-2', 0),
+      transitioned('NOTA-2', 6, 'IN_REVIEW', 'DONE', 'approve'),
+      created('NOTA-3', 0), // in sprint S1 but NOT done → excluded from velocity
+    ];
+    const tasks = fakeTasks([
+      { key: 'NOTA-1', estimate: 3, sprintId: 'S1' },
+      { key: 'NOTA-2', estimate: 5, sprintId: 'S2' },
+      { key: 'NOTA-3', estimate: 8, sprintId: 'S1' },
+    ]);
+    const sprints = fakeSprints([
+      { id: 'S1', key: 'TEST-SPRINT-1', name: 'Sprint One' },
+      { id: 'S2', key: 'TEST-SPRINT-2', name: 'Sprint Two' },
+    ]);
+    const m = makeService(events, tasks, sprints).compute();
+
+    // Newest first → S2 then S1. NOTA-3 (not done) excluded from S1's points.
+    expect(m.velocity).toEqual([
+      {
+        sprint_key: 'TEST-SPRINT-2',
+        sprint_name: 'Sprint Two',
+        completed_points: 5,
+        completed_tasks: 1,
+      },
+      {
+        sprint_key: 'TEST-SPRINT-1',
+        sprint_name: 'Sprint One',
+        completed_points: 3,
+        completed_tasks: 1,
+      },
+    ]);
+  });
+
+  it('returns empty velocity when no sprint has completed tasks', () => {
+    const events: AuditEvent[] = [
+      created('NOTA-1', 0),
+      transitioned('NOTA-1', 5, 'IN_REVIEW', 'DONE', 'approve'),
+    ];
+    // Task has no sprint; one sprint exists but owns no completed task.
+    const m = makeService(
+      events,
+      fakeTasks([{ key: 'NOTA-1', estimate: 3, sprintId: null }]),
+      fakeSprints([{ id: 'S1', key: 'TEST-SPRINT-1', name: 'Empty' }]),
+    ).compute();
+    expect(m.velocity).toEqual([]);
   });
 
   it('excludes tasks without a positive estimate from estimate-vs-actual', () => {
@@ -118,12 +207,7 @@ describe('FlowMetricsService', () => {
       created('NOTA-1', 0),
       transitioned('NOTA-1', 4, 'IN_REVIEW', 'DONE', 'approve'),
     ];
-    const service = new FlowMetricsService(
-      fakeAudit(events),
-      fakeTasks({ 'NOTA-1': null }),
-      workflow,
-    );
-    const m = service.compute();
+    const m = makeService(events, fakeTasks({ 'NOTA-1': null })).compute();
     expect(m.throughput).toBe(1);
     expect(m.estimate_vs_actual.samples).toHaveLength(0);
     expect(m.estimate_vs_actual.hours_per_point).toBeNull();
@@ -136,11 +220,7 @@ describe('FlowMetricsService', () => {
       created('NEW-1', 100),
       transitioned('NEW-1', 101, 'IN_REVIEW', 'DONE', 'approve'),
     ];
-    const service = new FlowMetricsService(fakeAudit(events), fakeTasks({}), workflow);
-    // Only events at/after hour 50 → just NEW-1's terminal transition.
-    const m = service.compute({ since: at(50) });
-    // NEW-1 has no created event in-window, so lead time has no sample,
-    // but it still counts as throughput (reached terminal in-window).
+    const m = makeService(events, fakeTasks({})).compute({ since: at(50) });
     expect(m.throughput).toBe(1);
   });
 
@@ -149,11 +229,11 @@ describe('FlowMetricsService', () => {
       created('NOTA-1', 0),
       transitioned('NOTA-1', 1, 'DRAFT', 'READY', 'submit'),
     ];
-    const service = new FlowMetricsService(fakeAudit(events), fakeTasks({ 'NOTA-1': 3 }), workflow);
-    const m = service.compute();
+    const m = makeService(events, fakeTasks({ 'NOTA-1': 3 })).compute();
     expect(m.throughput).toBe(0);
     expect(m.lead_time.count).toBe(0);
     expect(m.lead_time.median_hours).toBeNull();
     expect(m.reopen.rate).toBe(0);
+    expect(m.velocity).toEqual([]);
   });
 });

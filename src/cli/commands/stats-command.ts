@@ -56,13 +56,29 @@ function render(m: FlowMetrics, since: string | undefined): string {
     `  ${pc.dim('reopen rate')}    ${pct}% ${pc.dim(`(${m.reopen.reopened_tasks}/${m.reopen.completed_tasks})`)}`,
   );
   const hpp = m.estimate_vs_actual.hours_per_point;
+  const eva = m.estimate_vs_actual;
+  const evaSource =
+    eva.lead_time_fallback_samples > 0
+      ? pc.dim(
+          `(${eva.run_duration_samples} by run, ${eva.lead_time_fallback_samples} by lead-time fallback)`,
+        )
+      : pc.dim(`(${eva.run_duration_samples} sample(s), by run duration)`);
   lines.push(
     `  ${pc.dim('est vs actual')}  ${
-      hpp === null
-        ? pc.dim('no estimated+done tasks')
-        : `${hpp}h per point ${pc.dim(`(${m.estimate_vs_actual.samples.length} sample(s))`)}`
+      hpp === null ? pc.dim('no estimated+done tasks') : `${hpp}h per point ${evaSource}`
     }`,
   );
+
+  if (m.velocity.length === 0) {
+    lines.push(`  ${pc.dim('velocity')}       ${pc.dim('no sprint has completed tasks')}`);
+  } else {
+    lines.push(`  ${pc.dim('velocity')}`);
+    for (const v of m.velocity) {
+      lines.push(
+        `    ${v.sprint_key} ${v.completed_points} pt ${pc.dim(`(${v.completed_tasks} task(s)) — ${v.sprint_name}`)}`,
+      );
+    }
+  }
   return `${lines.join('\n')}\n`;
 }
 

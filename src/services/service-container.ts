@@ -351,7 +351,13 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
-  const flowMetricsService = new FlowMetricsService(auditQuery, taskService, workflow);
+  const flowMetricsService = new FlowMetricsService(
+    auditQuery,
+    taskService,
+    workflow,
+    sprintService,
+    config.project.key,
+  );
   const githubPrService = new GitHubPrService();
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,

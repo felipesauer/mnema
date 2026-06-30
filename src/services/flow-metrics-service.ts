@@ -1,5 +1,6 @@
 import type { Workflow } from '../domain/state-machine/state-machine.js';
 import type { AuditQuery } from './audit-query.js';
+import type { SprintService } from './sprint-service.js';
 import type { TaskService } from './task-service.js';
 
 /** Summary statistics for a set of durations, all in whole hours. */
@@ -14,11 +15,27 @@ export interface DurationSummary {
   readonly max_hours: number | null;
 }
 
-/** One task's estimate paired with its realised lead time. */
+/**
+ * One task's estimate paired with its realised effort. `actual_hours`
+ * is summed agent-run duration when run data exists for the task;
+ * otherwise it falls back to lead time, flagged by `actual_source`.
+ */
 export interface EstimateVsActual {
   readonly task_key: string;
   readonly estimate: number;
-  readonly lead_time_hours: number;
+  readonly actual_hours: number;
+  /** `run_duration` (summed run intervals) or `lead_time` (fallback). */
+  readonly actual_source: 'run_duration' | 'lead_time';
+}
+
+/** Points completed in a single sprint. */
+export interface SprintVelocity {
+  readonly sprint_key: string;
+  readonly sprint_name: string;
+  /** Sum of estimates of the sprint's tasks that reached a terminal state. */
+  readonly completed_points: number;
+  /** Count of the sprint's tasks that reached a terminal state. */
+  readonly completed_tasks: number;
 }
 
 /** The full flow-metrics report derived from the audit log. */
@@ -35,11 +52,16 @@ export interface FlowMetrics {
     readonly completed_tasks: number;
     readonly rate: number;
   };
-  /** Estimate vs realised lead time, for done tasks that carry an estimate. */
+  /** Completed points per sprint, newest sprint first. */
+  readonly velocity: SprintVelocity[];
+  /** Estimate vs realised effort, for done tasks that carry an estimate. */
   readonly estimate_vs_actual: {
     readonly samples: EstimateVsActual[];
     /** Mean realised hours per estimate point (null when no samples). */
     readonly hours_per_point: number | null;
+    /** How many samples used run duration vs the lead-time fallback. */
+    readonly run_duration_samples: number;
+    readonly lead_time_fallback_samples: number;
   };
 }
 
@@ -50,6 +72,8 @@ interface TaskTimeline {
   firstMoveAt: number | null;
   firstTerminalAt: number | null;
   reopened: boolean;
+  /** Run ids whose events touched this task (for run-duration join). */
+  readonly runIds: Set<string>;
 }
 
 /**
@@ -66,6 +90,8 @@ export class FlowMetricsService {
     private readonly audit: AuditQuery,
     private readonly tasks: TaskService,
     private readonly workflow: Workflow,
+    private readonly sprints: SprintService,
+    private readonly projectKey: string,
   ) {}
 
   /**
@@ -84,26 +110,48 @@ export class FlowMetricsService {
     const timelineFor = (key: string): TaskTimeline => {
       let t = timelines.get(key);
       if (t === undefined) {
-        t = { createdAt: null, firstMoveAt: null, firstTerminalAt: null, reopened: false };
+        t = {
+          createdAt: null,
+          firstMoveAt: null,
+          firstTerminalAt: null,
+          reopened: false,
+          runIds: new Set<string>(),
+        };
         timelines.set(key, t);
       }
       return t;
     };
 
+    // run id → { started, ended } epoch ms, to price each run's duration.
+    const runStart = new Map<string, number>();
+    const runEnd = new Map<string, number>();
+
     for (const event of events) {
+      const atMs = Date.parse(event.at);
+      if (Number.isNaN(atMs)) continue;
+
+      if (event.kind === 'run_started') {
+        if (typeof event.run === 'string') runStart.set(event.run, atMs);
+        continue;
+      }
+      if (event.kind === 'run_ended') {
+        if (typeof event.run === 'string') runEnd.set(event.run, atMs);
+        continue;
+      }
+
       const data = event.data as { key?: string; from?: string; to?: string; action?: string };
       const key = typeof data.key === 'string' ? data.key : undefined;
       if (key === undefined) continue;
-      const atMs = Date.parse(event.at);
-      if (Number.isNaN(atMs)) continue;
 
       if (event.kind === 'task_created') {
         const t = timelineFor(key);
         if (t.createdAt === null) t.createdAt = atMs;
+        if (typeof event.run === 'string') t.runIds.add(event.run);
         continue;
       }
       if (event.kind === 'task_transitioned') {
         const t = timelineFor(key);
+        if (typeof event.run === 'string') t.runIds.add(event.run);
         // First move off the initial state starts the cycle clock.
         if (t.firstMoveAt === null && data.from === initial) {
           t.firstMoveAt = atMs;
@@ -116,6 +164,22 @@ export class FlowMetricsService {
         }
       }
     }
+
+    // Summed run duration per task: for each run that touched the task,
+    // add (ended − started) when both endpoints are known in-window.
+    const runHoursForTask = (t: TaskTimeline): number | null => {
+      let ms = 0;
+      let any = false;
+      for (const runId of t.runIds) {
+        const s = runStart.get(runId);
+        const e = runEnd.get(runId);
+        if (s !== undefined && e !== undefined && e >= s) {
+          ms += e - s;
+          any = true;
+        }
+      }
+      return any ? ms / MS_PER_HOUR : null;
+    };
 
     const leadTimes: number[] = [];
     const cycleTimes: number[] = [];
@@ -137,25 +201,43 @@ export class FlowMetricsService {
       }
     }
 
-    // One listing builds a key→estimate map; the audit log carries no
-    // estimate, so it is read from the current task rows.
+    // One listing builds key→{estimate, sprintId}; the audit log carries
+    // neither, so they come from the current task rows.
     const estimateByKey = new Map<string, number | null>();
-    for (const task of this.tasks.list()) estimateByKey.set(task.key, task.estimate);
+    const sprintIdByKey = new Map<string, string | null>();
+    for (const task of this.tasks.list()) {
+      estimateByKey.set(task.key, task.estimate);
+      sprintIdByKey.set(task.key, task.sprintId);
+    }
 
+    // Estimate vs actual: prefer summed run duration (the effort the AC
+    // asks for); fall back to lead time, flagged, when no run data exists.
     const estimateSamples: EstimateVsActual[] = [];
     for (const key of completedKeys) {
       const t = timelines.get(key);
-      if (t === undefined || t.createdAt === null || t.firstTerminalAt === null) continue;
+      if (t === undefined || t.firstTerminalAt === null) continue;
       const estimate = estimateByKey.get(key) ?? null;
       if (estimate === null || estimate <= 0) continue;
-      estimateSamples.push({
-        task_key: key,
-        estimate,
-        lead_time_hours: round1((t.firstTerminalAt - t.createdAt) / MS_PER_HOUR),
-      });
+
+      const runHours = runHoursForTask(t);
+      if (runHours !== null) {
+        estimateSamples.push({
+          task_key: key,
+          estimate,
+          actual_hours: round1(runHours),
+          actual_source: 'run_duration',
+        });
+      } else if (t.createdAt !== null) {
+        estimateSamples.push({
+          task_key: key,
+          estimate,
+          actual_hours: round1((t.firstTerminalAt - t.createdAt) / MS_PER_HOUR),
+          actual_source: 'lead_time',
+        });
+      }
     }
     const totalPoints = estimateSamples.reduce((sum, s) => sum + s.estimate, 0);
-    const totalHours = estimateSamples.reduce((sum, s) => sum + s.lead_time_hours, 0);
+    const totalHours = estimateSamples.reduce((sum, s) => sum + s.actual_hours, 0);
 
     return {
       throughput: completed,
@@ -166,11 +248,55 @@ export class FlowMetricsService {
         completed_tasks: completed,
         rate: completed === 0 ? 0 : round2(reopened / completed),
       },
+      velocity: this.velocityBySprint(completedKeys, sprintIdByKey, estimateByKey),
       estimate_vs_actual: {
         samples: estimateSamples,
         hours_per_point: totalPoints === 0 ? null : round1(totalHours / totalPoints),
+        run_duration_samples: estimateSamples.filter((s) => s.actual_source === 'run_duration')
+          .length,
+        lead_time_fallback_samples: estimateSamples.filter((s) => s.actual_source === 'lead_time')
+          .length,
       },
     };
+  }
+
+  /**
+   * Completed points per sprint: sum the estimate of each sprint's tasks
+   * that reached a terminal state. Sprint membership comes from the task
+   * rows; sprints with no completed tasks are omitted. Newest first.
+   */
+  private velocityBySprint(
+    completedKeys: readonly string[],
+    sprintIdByKey: ReadonlyMap<string, string | null>,
+    estimateByKey: ReadonlyMap<string, number | null>,
+  ): SprintVelocity[] {
+    const sprints = this.sprints.list(this.projectKey);
+    if (sprints.length === 0) return [];
+    const completedSet = new Set(completedKeys);
+
+    const acc = new Map<string, { points: number; tasks: number }>();
+    for (const [key, sprintId] of sprintIdByKey) {
+      if (sprintId === null || !completedSet.has(key)) continue;
+      const estimate = estimateByKey.get(key) ?? 0;
+      const cur = acc.get(sprintId) ?? { points: 0, tasks: 0 };
+      cur.points += estimate ?? 0;
+      cur.tasks += 1;
+      acc.set(sprintId, cur);
+    }
+
+    const out: SprintVelocity[] = [];
+    for (const sprint of sprints) {
+      const a = acc.get(sprint.id);
+      if (a === undefined) continue;
+      out.push({
+        sprint_key: sprint.key,
+        sprint_name: sprint.name,
+        completed_points: a.points,
+        completed_tasks: a.tasks,
+      });
+    }
+    // `sprints.list` returns creation order; reverse for newest-first.
+    return out.reverse();
   }
 }
 
