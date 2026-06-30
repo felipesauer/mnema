@@ -268,6 +268,7 @@ export class MnemaMcpServer {
       this.services.agentRun,
       this.config,
       this.services.githubPr,
+      pendingFiles,
     ).register(this.sdk);
   }
 

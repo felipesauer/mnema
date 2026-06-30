@@ -9,10 +9,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
 import type { McpSessionContext } from '@/mcp/mcp-session-context.js';
+import { TransitionToolsRegistrar } from '@/mcp/tools/transition-tools.js';
 import { DecisionTools } from '@/mcp/tools/universal/decision-tools.js';
 import { EvidenceTools } from '@/mcp/tools/universal/evidence-tools.js';
 import { SprintTools } from '@/mcp/tools/universal/sprint-tools.js';
 import { TaskTools } from '@/mcp/tools/universal/task-tools.js';
+import { GitHubPrService } from '@/services/github-pr-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 /**
@@ -93,6 +95,18 @@ async function setup(): Promise<Harness> {
   new SprintTools(container.sprint, container.identity, config, session, PENDING).register(
     sdkServer,
   );
+  // Transition tools (task_submit/start/approve/…) are mutations too; the
+  // registrar must enforce the same drift guard. Forced PENDING here.
+  new TransitionToolsRegistrar(
+    container.stateMachine.getWorkflow(),
+    container.task,
+    container.identity,
+    session,
+    container.agentRun,
+    config,
+    new GitHubPrService(),
+    PENDING,
+  ).register(sdkServer);
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await sdkServer.connect(serverTransport);
@@ -153,6 +167,17 @@ describe('drift-guard policy: reads pass, mutations block (MNEMA-ADR contract)',
     ['task_create', { title: 'New task' }],
     ['task_attach_evidence', { task_key: 'TEST-1', criterion_index: 0, ref: 'r' }],
     ['sprint_add_task', { sprint_key: 'TEST-SPRINT-1', task_key: 'TEST-1' }],
+    // Transition mutation: must be drift-blocked like every other write.
+    [
+      'task_submit',
+      {
+        task_key: 'TEST-1',
+        title: 'Seed task',
+        description: 'long enough description for the gate',
+        acceptance_criteria: ['x'],
+        estimate: 1,
+      },
+    ],
   ];
   for (const [name, args] of mutations) {
     it(`mutation ${name} is blocked by drift`, async () => {
