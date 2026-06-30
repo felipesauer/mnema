@@ -79,6 +79,15 @@ function render(m: FlowMetrics, since: string | undefined): string {
       );
     }
   }
+
+  const sa = m.skill_adoption;
+  const adoption =
+    sa.recorded === 0 && sa.used === 0
+      ? pc.dim('no skill activity')
+      : `${sa.used} used / ${sa.recorded} recorded ${pc.dim(
+          `(${sa.uses_per_run ?? '—'} use/run, ${sa.used_vs_recorded ?? '—'} used/recorded)`,
+        )}`;
+  lines.push(`  ${pc.dim('skills')}         ${adoption}`);
   return `${lines.join('\n')}\n`;
 }
 

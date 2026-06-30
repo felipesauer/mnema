@@ -63,6 +63,22 @@ export interface FlowMetrics {
     readonly run_duration_samples: number;
     readonly lead_time_fallback_samples: number;
   };
+  /**
+   * Skill adoption: whether recorded skills are actually being reused.
+   * The dogfooding report flagged 9 recorded / 1 used; this makes the
+   * ratio observable so the effect of the run-end skill draft can be
+   * judged from data rather than guessed.
+   */
+  readonly skill_adoption: {
+    /** `skill_recorded` events in the window. */
+    readonly recorded: number;
+    /** `skill_used` events in the window. */
+    readonly used: number;
+    /** `skill_used` per agent run (null when no runs in the window). */
+    readonly uses_per_run: number | null;
+    /** used ÷ recorded (null when nothing recorded); >= 1 means each skill is reused. */
+    readonly used_vs_recorded: number | null;
+  };
 }
 
 const MS_PER_HOUR = 3_600_000;
@@ -125,17 +141,31 @@ export class FlowMetricsService {
     // run id → { started, ended } epoch ms, to price each run's duration.
     const runStart = new Map<string, number>();
     const runEnd = new Map<string, number>();
+    // Skill-adoption tallies (events carry no task key, so count them
+    // before the key guard below).
+    let runCount = 0;
+    let skillsRecorded = 0;
+    let skillsUsed = 0;
 
     for (const event of events) {
       const atMs = Date.parse(event.at);
       if (Number.isNaN(atMs)) continue;
 
       if (event.kind === 'run_started') {
+        runCount += 1;
         if (typeof event.run === 'string') runStart.set(event.run, atMs);
         continue;
       }
       if (event.kind === 'run_ended') {
         if (typeof event.run === 'string') runEnd.set(event.run, atMs);
+        continue;
+      }
+      if (event.kind === 'skill_recorded') {
+        skillsRecorded += 1;
+        continue;
+      }
+      if (event.kind === 'skill_used') {
+        skillsUsed += 1;
         continue;
       }
 
@@ -256,6 +286,12 @@ export class FlowMetricsService {
           .length,
         lead_time_fallback_samples: estimateSamples.filter((s) => s.actual_source === 'lead_time')
           .length,
+      },
+      skill_adoption: {
+        recorded: skillsRecorded,
+        used: skillsUsed,
+        uses_per_run: runCount === 0 ? null : round2(skillsUsed / runCount),
+        used_vs_recorded: skillsRecorded === 0 ? null : round2(skillsUsed / skillsRecorded),
       },
     };
   }
