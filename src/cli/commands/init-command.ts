@@ -34,11 +34,15 @@ import { writeAgentsMd } from '../templates/agents-md.js';
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
 
+const SUPPORTED_PROFILES = ['full', 'audit-only'] as const;
+type ProfileName = (typeof SUPPORTED_PROFILES)[number];
+
 interface InitOptions {
   readonly name?: string;
   readonly key?: string;
   readonly description?: string;
   readonly workflow?: string;
+  readonly profile?: string;
   readonly force?: boolean;
   readonly minimal?: boolean;
   readonly yes?: boolean;
@@ -54,6 +58,8 @@ interface ResolvedInitOptions {
   readonly key: string;
   readonly description?: string;
   readonly workflow: string;
+  /** Surface profile; defaults to `full` when omitted. */
+  readonly profile?: ProfileName;
   readonly force: boolean;
   readonly minimal: boolean;
   readonly cwd?: string;
@@ -97,6 +103,10 @@ export class InitCommand {
       .option('--key <key>', 'Project key (uppercase, 2-10 chars)')
       .option('--description <text>', 'Optional project description')
       .option('--workflow <name>', 'Workflow preset (default | lean | kanban | jira-classic)')
+      .option(
+        '--profile <name>',
+        'Surface profile: full (default) | audit-only (core audit + tasks; no epics/sprints/knowledge)',
+      )
       .option('--force', 'Overwrite existing files when paths conflict', false)
       .option('--minimal', 'Create only the essential files; use `mnema adopt` to grow', false)
       .option('--yes', 'Skip the wizard; requires --name and --key', false)
@@ -271,6 +281,11 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
       ...(options.description !== undefined ? { description: options.description } : {}),
     },
     workflow,
+    // audit-only trims the advertised surface to the core: the knowledge
+    // group (decisions/skills/memories/observations) is turned off here,
+    // and the lean-by-default workflow keeps epics/sprints off. Everything
+    // can be re-enabled later by flipping the flag / switching workflow.
+    ...(options.profile === 'audit-only' ? { features: { knowledge: false } } : {}),
   };
   return ConfigSchema.parse(raw);
 }
@@ -410,7 +425,33 @@ function createBacklogStateDirs(cwd: string, config: Config, workflowFile: strin
  * @param options - Raw flag input from Commander
  * @returns Resolved options or `null` when the wizard is aborted
  */
+/**
+ * Normalises the `--profile` flag, exiting with a usage error on an
+ * unknown value. Defaults to `full`.
+ */
+function resolveProfile(raw: string | undefined): ProfileName {
+  if (raw === undefined) return 'full';
+  if (!SUPPORTED_PROFILES.includes(raw as ProfileName)) {
+    process.stderr.write(
+      `${pc.red('error:')} unknown profile "${raw}"; choose one of ${SUPPORTED_PROFILES.join(', ')}\n`,
+    );
+    process.exit(2);
+  }
+  return raw as ProfileName;
+}
+
+/**
+ * The default workflow for a profile when `--workflow` was not given.
+ * audit-only pairs with the lean workflow (no sprints/epics/review) so the
+ * whole surface is small; full keeps the default workflow.
+ */
+function defaultWorkflowFor(profile: ProfileName): WorkflowName {
+  return profile === 'audit-only' ? 'lean' : 'default';
+}
+
 async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions | null> {
+  const profile = resolveProfile(options.profile);
+
   if (options.yes === true) {
     if (options.name === undefined || options.key === undefined) {
       process.stderr.write(`${pc.red('error:')} --yes requires --name and --key\n`);
@@ -420,7 +461,8 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
       name: options.name,
       key: options.key,
       description: options.description,
-      workflow: options.workflow ?? 'default',
+      workflow: options.workflow ?? defaultWorkflowFor(profile),
+      profile,
       force: options.force === true,
       minimal: options.minimal === true,
       cwd: options.cwd,
@@ -433,7 +475,8 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
       name: options.name,
       key: options.key,
       description: options.description,
-      workflow: options.workflow ?? 'default',
+      workflow: options.workflow ?? defaultWorkflowFor(profile),
+      profile,
       force: options.force === true,
       minimal: options.minimal === true,
       cwd: options.cwd,
@@ -491,6 +534,7 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
     key,
     description: description.trim().length > 0 ? description : undefined,
     workflow,
+    profile,
     force: options.force === true,
     minimal,
     cwd: options.cwd,

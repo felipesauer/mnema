@@ -180,6 +180,14 @@ export class MnemaMcpServer {
     // SCHEMA_OUT_OF_DATE result instead of a raw SqliteError.
     const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
 
+    // The advertised tool surface tracks the project's shape, so an agent
+    // is not offered tools that would only fail at runtime (or that the
+    // audit-only profile deliberately hides). Planning tools follow the
+    // workflow's own feature flags; the knowledge surface follows a config
+    // flag. Core audit/task/run/plan tools are always registered.
+    const workflow = this.services.stateMachine.getWorkflow();
+    const knowledgeEnabled = this.config.features.knowledge;
+
     new ContextBootstrapTool(
       this.config,
       this.services.stateMachine.getWorkflow(),
@@ -213,13 +221,15 @@ export class MnemaMcpServer {
       this.services.adapter,
       path.join(this.projectRoot, this.config.paths.audit),
     ).register(this.sdk);
-    new DecisionTools(
-      this.services.decision,
-      this.services.identity,
-      this.config,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
+    if (knowledgeEnabled) {
+      new DecisionTools(
+        this.services.decision,
+        this.services.identity,
+        this.config,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+    }
     new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
     new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
       this.sdk,
@@ -234,7 +244,9 @@ export class MnemaMcpServer {
     new FileCollisionTool(this.services.fileCollision).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
-    new ProvenanceTool(this.services.provenance).register(this.sdk);
+    if (knowledgeEnabled) {
+      new ProvenanceTool(this.services.provenance).register(this.sdk);
+    }
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,
@@ -244,47 +256,59 @@ export class MnemaMcpServer {
       this.services.commitVerifier,
       this.projectRoot,
     ).register(this.sdk);
-    new EpicTools(
-      this.services.epic,
-      this.config,
-      this.services.identity,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
-    new CoverageTools(this.services.coverage).register(this.sdk);
+    if (workflow.features.epics) {
+      new EpicTools(
+        this.services.epic,
+        this.config,
+        this.services.identity,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+    }
+    if (workflow.features.sprints) {
+      new SprintTools(
+        this.services.sprint,
+        this.services.identity,
+        this.config,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+    }
+    // Coverage and work-graph lint each span both planning domains
+    // (`epic_coverage`+`sprint_coverage`, `epic_lint`+`sprint_lint`), so
+    // they are advertised when either epics or sprints is enabled and hidden
+    // only when both are off (the audit-only case).
+    if (workflow.features.epics || workflow.features.sprints) {
+      new CoverageTools(this.services.coverage).register(this.sdk);
+      new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
+    }
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
     new PortfolioTool(this.services.portfolio).register(this.sdk);
     new PrStatusTool(this.services.githubPr).register(this.sdk);
-    new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
-    new SprintTools(
-      this.services.sprint,
-      this.services.identity,
-      this.config,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
     new SearchTool(this.services.search).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
-    new SkillTools(
-      this.services.skill,
-      this.services.identity,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
     new CommandTools(this.services.commandDefinition).register(this.sdk);
-    new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
-    new MemoryTools(
-      this.services.memory,
-      this.services.identity,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
-    new ObservationTools(
-      this.services.observation,
-      this.services.identity,
-      this.session,
-      pendingFiles,
-    ).register(this.sdk);
+    if (knowledgeEnabled) {
+      new SkillTools(
+        this.services.skill,
+        this.services.identity,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+      new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
+      new MemoryTools(
+        this.services.memory,
+        this.services.identity,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+      new ObservationTools(
+        this.services.observation,
+        this.services.identity,
+        this.session,
+        pendingFiles,
+      ).register(this.sdk);
+    }
     new TransitionToolsRegistrar(
       this.services.stateMachine.getWorkflow(),
       this.services.task,

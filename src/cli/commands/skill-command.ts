@@ -43,7 +43,13 @@ export class SkillCommand {
       .option('--json', 'Print diagnostics as JSON', false)
       .action(async (options: LintOptions) => {
         await withCliContext(({ container, config, projectRoot }) => {
-          const knownTools = listAvailableToolNames(container.stateMachine.getWorkflow());
+          // Lint validates tool existence, so check against the full
+          // catalogue (all groups), not the profile-gated subset.
+          const knownTools = listAvailableToolNames(container.stateMachine.getWorkflow(), {
+            epics: true,
+            sprints: true,
+            knowledge: true,
+          });
           const skillsDir = path.join(projectRoot, config.paths.skills);
           const report = new SkillService(skillsDir, knownTools).lint();
 

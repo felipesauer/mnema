@@ -103,6 +103,12 @@ export const ConfigSchema = z.object({
     .object({
       fts_search: z.boolean().default(true),
       attachments: z.boolean().default(true),
+      // Gates the knowledge surface (decisions/skills/memories/observations
+      // and the provenance chain that links them) as MCP tools. Off in the
+      // audit-only profile, where the point is a small core of audit + task
+      // + run tools. The underlying stores still work if re-enabled — this
+      // only controls what the agent sees.
+      knowledge: z.boolean().default(true),
     })
     .prefault({}),
   // Aging surfaces tasks that have sat in a non-terminal state for too
@@ -193,6 +199,7 @@ export const UserConfigSchema = z
       .object({
         fts_search: z.boolean().optional(),
         attachments: z.boolean().optional(),
+        knowledge: z.boolean().optional(),
       })
       .strict()
       .optional(),

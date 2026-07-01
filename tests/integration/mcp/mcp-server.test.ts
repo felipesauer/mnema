@@ -6,7 +6,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ConfigSchema } from '@/config/config-schema.js';
+import { type Config, ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
 import { listAvailableToolNames } from '@/mcp/tool-registry.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
@@ -16,6 +16,7 @@ const workflowsSrc = path.resolve('workflows');
 
 interface Harness {
   readonly projectRoot: string;
+  readonly config: Config;
   readonly container: ServiceContainer;
   readonly server: MnemaMcpServer;
   readonly client: Client;
@@ -26,6 +27,7 @@ async function setupHarness(
   options: {
     readonly clientMetadata?: Record<string, unknown>;
     readonly workflow?: 'default' | 'lean' | 'kanban' | 'jira-classic';
+    readonly knowledge?: boolean;
   } = {},
 ): Promise<Harness> {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-mcp-'));
@@ -43,6 +45,7 @@ async function setupHarness(
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test Project' },
     workflow: workflowName,
+    ...(options.knowledge === false ? { features: { knowledge: false } } : {}),
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
 
@@ -60,6 +63,7 @@ async function setupHarness(
 
   return {
     projectRoot,
+    config,
     container,
     server,
     client,
@@ -131,12 +135,67 @@ describe('MnemaMcpServer (in-memory)', () => {
     // active workflow generates, must match what the server exposes
     // one-for-one — a name listed but not wired (or wired but not listed)
     // is a silent bug this guards against.
-    const expected = listAvailableToolNames(harness.container.stateMachine.getWorkflow());
+    const workflow = harness.container.stateMachine.getWorkflow();
+    const expected = listAvailableToolNames(workflow, {
+      epics: workflow.features.epics,
+      sprints: workflow.features.sprints,
+      knowledge: harness.config.features.knowledge,
+    });
 
     const missing = [...expected].filter((n) => !registered.has(n));
     const orphan = [...registered].filter((n) => !expected.has(n));
     expect(missing, `listed in registry but not registered: ${missing.join(', ')}`).toEqual([]);
     expect(orphan, `registered but absent from registry: ${orphan.join(', ')}`).toEqual([]);
+  });
+
+  it('the audit-only profile hides epic/sprint/knowledge tools but keeps the core', async () => {
+    // lean workflow (no epics/sprints) + knowledge feature off = audit-only.
+    const audit = await setupHarness({ workflow: 'lean', knowledge: false });
+    try {
+      const registered = new Set((await audit.client.listTools()).tools.map((t) => t.name));
+      // Core stays.
+      expect(registered.has('audit_verify')).toBe(true);
+      expect(registered.has('task_create')).toBe(true);
+      expect(registered.has('note_add')).toBe(true);
+      // Epic/sprint/knowledge groups are gone.
+      expect(registered.has('epic_create')).toBe(false);
+      expect(registered.has('sprint_start')).toBe(false);
+      expect(registered.has('decision_record')).toBe(false);
+      expect(registered.has('memory_record')).toBe(false);
+      expect(registered.has('observation_record')).toBe(false);
+      expect(registered.has('skill_record')).toBe(false);
+      // The shared coverage/lint tools span both planning domains and must
+      // also be hidden when both are off — they used to leak because their
+      // registrars were unconditional.
+      expect(registered.has('epic_coverage')).toBe(false);
+      expect(registered.has('sprint_coverage')).toBe(false);
+      expect(registered.has('epic_lint')).toBe(false);
+      expect(registered.has('sprint_lint')).toBe(false);
+    } finally {
+      await audit.close();
+    }
+  });
+
+  it('registered set matches the advertised set for a gated (audit-only) project', async () => {
+    // The default-workflow parity test can't catch registered-vs-advertised
+    // drift that only appears when features are OFF. Exercise a gated config
+    // so a tool that is registered-but-unlisted (or vice-versa) fails here.
+    const audit = await setupHarness({ workflow: 'lean', knowledge: false });
+    try {
+      const registered = new Set((await audit.client.listTools()).tools.map((t) => t.name));
+      const workflow = audit.container.stateMachine.getWorkflow();
+      const expected = listAvailableToolNames(workflow, {
+        epics: workflow.features.epics,
+        sprints: workflow.features.sprints,
+        knowledge: audit.config.features.knowledge,
+      });
+      const missing = [...expected].filter((n) => !registered.has(n));
+      const orphan = [...registered].filter((n) => !expected.has(n));
+      expect(missing, `listed but not registered: ${missing.join(', ')}`).toEqual([]);
+      expect(orphan, `registered but not listed: ${orphan.join(', ')}`).toEqual([]);
+    } finally {
+      await audit.close();
+    }
   });
 
   it('context_bootstrap returns project + workflow + statistics', async () => {

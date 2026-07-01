@@ -40,6 +40,46 @@ describe('InitCommand.run (silent mode)', () => {
     expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
   });
 
+  it('the audit-only profile picks the lean workflow and disables knowledge', () => {
+    const result = new InitCommand().run({
+      cwd: projectRoot,
+      name: 'Audit App',
+      key: 'AO',
+      workflow: 'lean',
+      profile: 'audit-only',
+      force: false,
+      minimal: false,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const config = JSON.parse(readFileSync(result.value.configPath, 'utf-8')) as {
+      workflow: string;
+      features?: { knowledge?: boolean };
+    };
+    expect(config.workflow).toBe('lean');
+    expect(config.features?.knowledge).toBe(false);
+  });
+
+  it('the default (full) profile leaves the knowledge feature on', () => {
+    const result = new InitCommand().run({
+      cwd: projectRoot,
+      name: 'Full App',
+      key: 'FULL',
+      workflow: 'default',
+      force: false,
+      minimal: false,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const config = JSON.parse(readFileSync(result.value.configPath, 'utf-8')) as {
+      features: { knowledge: boolean };
+    };
+    // Schema default applies — knowledge stays on unless audit-only turned it off.
+    expect(config.features.knowledge).toBe(true);
+  });
+
   it('refuses to overwrite an existing config without --force', () => {
     const command = new InitCommand();
     command.run({
