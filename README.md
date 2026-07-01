@@ -383,14 +383,21 @@ to a fuller workflow) to grow into the complete surface, and use
 `mnema adopt` to add the skills/memory/roadmap directories when you want
 them. The default profile (`full`) keeps every surface on.
 
-The advertised tool groups are:
+The MCP surface is organised into conceptual **layers** so an agent (and
+you) reason about a handful of buckets instead of a flat list of ~80
+tools. `context_bootstrap` returns the exact per-tool grouping for the
+project as `tool_groups`, each flagged enabled/disabled for the active
+profile:
 
-| Group | Gated by | Examples |
+| Layer | Enabled when | Examples |
 |---|---|---|
-| **Core** | always on | `audit_query`, `audit_verify`, `task_*`, `agent_run_*`, `graph_dependencies` |
-| **Epics** | workflow `epics` feature | `epic_create`, `epic_coverage` |
-| **Sprints** | workflow `sprints` feature | `sprint_start`, `sprint_metric` |
-| **Knowledge** | `features.knowledge` | `decision_*`, `skill_*`, `memory_*`, `observation_*` |
+| **Core** | always | `audit_query`, `audit_verify`, `task_*`, `agent_run_*`, `graph_dependencies`, `snapshot_generate` |
+| **Workflow transitions** | always | one `task_<action>` per workflow transition (`task_submit`, `task_approve`, …) |
+| **Planning** | workflow enables epics and/or sprints | `epic_create`, `sprint_start`, `epic_coverage`, `sprint_lint` |
+| **Knowledge** | `features.knowledge` | `decision_*`, `skill_*`, `memory_*`, `observation_*`, `provenance`, `wikilink_references` |
+
+The audit-only profile leaves only **Core** and **Workflow transitions**
+on.
 
 ### User-level defaults
 
