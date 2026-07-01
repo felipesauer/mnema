@@ -279,10 +279,12 @@ function writeJson(filePath: string, data: unknown): void {
 }
 
 /**
- * The `.gitignore` block Mnema writes. Only the **state** directory is
- * ignored — it holds the SQLite cache, the sync buffer and attachment
- * blobs, all of which are derived and rebuildable from the markdown via
- * `mnema sync`. Everything else under `.mnema/` (the backlog / roadmap /
+ * The `.gitignore` block Mnema writes. Only the **state** directory and
+ * the personal `config.local.json` override are ignored — the state dir
+ * holds the SQLite cache, the sync buffer and attachment blobs, all of
+ * which are derived and rebuildable from the markdown via `mnema sync`;
+ * `config.local.json` is a per-user override that must not reach the
+ * team's repo. Everything else under `.mnema/` (the backlog / roadmap /
  * sprint / memory / skill markdown and the `audit/` log) is the
  * version-controlled record of the work and is meant to be committed:
  * it is the source of truth and what survives a fresh clone. The
@@ -292,10 +294,12 @@ function gitignoreBlock(statePath: string): string {
   const entry = `${statePath.replace(/\/$/, '')}/`;
   return [
     '# mnema: ignore only the local cache (SQLite db, sync buffer,',
-    '# attachments). The backlog/roadmap/sprint/memory/skill markdown',
-    '# and the audit log under .mnema/ are the source of truth — commit',
-    '# them. The cache is rebuildable from that markdown via `mnema sync`.',
+    '# attachments) and the personal config.local.json override. The',
+    '# backlog/roadmap/sprint/memory/skill markdown and the audit log',
+    '# under .mnema/ are the source of truth — commit them. The cache is',
+    '# rebuildable from that markdown via `mnema sync`.',
     entry,
+    '.mnema/config.local.json',
   ].join('\n');
 }
 

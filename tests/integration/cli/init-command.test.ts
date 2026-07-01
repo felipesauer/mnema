@@ -90,6 +90,8 @@ describe('InitCommand.run (silent mode)', () => {
     const gitignore = readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
     // The cache is ignored…
     expect(gitignore).toContain('.mnema/state/');
+    // …and so is the personal per-repo override…
+    expect(gitignore).toContain('.mnema/config.local.json');
     // …but the versioned mirror and audit log are NOT.
     expect(gitignore).not.toMatch(/^\.mnema\/backlog\/?$/m);
     expect(gitignore).not.toMatch(/^\.mnema\/audit\/?$/m);
