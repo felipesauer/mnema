@@ -46,6 +46,7 @@ import { DependencyGraphService } from './dependency-graph-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
+import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
@@ -132,6 +133,7 @@ export interface ServiceContainer {
   readonly epic: EpicService;
   readonly coverage: CoverageService;
   readonly dependencyGraph: DependencyGraphService;
+  readonly fileCollision: FileCollisionService;
   readonly snapshot: SnapshotService;
   readonly runDiff: RunDiffService;
   readonly portfolio: PortfolioService;
@@ -393,6 +395,14 @@ export function createServiceContainer(
     stateMachine,
   );
   const runDiffService = new RunDiffService(agentRuns, auditQuery);
+  const fileCollisionService = new FileCollisionService(
+    tasks,
+    taskEvidenceRepository,
+    epicRepository,
+    sprintRepository,
+    projectRoot,
+    options.commitRunner,
+  );
   const labelService = new LabelService(labelRepository, tasks, audit, sync);
   const portfolioService = new PortfolioService(
     tasks,
@@ -499,6 +509,7 @@ export function createServiceContainer(
     epic: epicService,
     coverage: coverageService,
     dependencyGraph: dependencyGraphService,
+    fileCollision: fileCollisionService,
     snapshot: snapshotService,
     runDiff: runDiffService,
     portfolio: portfolioService,

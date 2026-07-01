@@ -26,6 +26,7 @@ import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js'
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
+import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { LabelTools } from './tools/universal/label-tools.js';
@@ -229,6 +230,7 @@ export class MnemaMcpServer {
       pendingFiles,
     ).register(this.sdk);
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
+    new FileCollisionTool(this.services.fileCollision).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
     new ProvenanceTool(this.services.provenance).register(this.sdk);
