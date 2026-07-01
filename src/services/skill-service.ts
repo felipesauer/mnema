@@ -12,6 +12,7 @@ import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
+import { type CommandRunner, defaultRunner } from './github-pr-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
 import { readUserSkills, type SourcedSkill } from './user-knowledge.js';
@@ -57,6 +58,9 @@ export const SkillFrontmatterSchema = z.object({
   version: z.string().regex(/^\d+\.\d+\.\d+(-[\w.]+)?$/),
   description: z.string().min(1),
   tools_used: z.array(z.string()).default([]),
+  // Dynamic-invocation fields (optional; absent on a passive skill).
+  invocable: z.boolean().optional(),
+  dynamic_context: z.array(z.string()).optional(),
 });
 
 export type SkillFrontmatter = z.infer<typeof SkillFrontmatterSchema>;
@@ -76,6 +80,10 @@ export interface SkillRecordInput {
   readonly description: string;
   readonly content: string;
   readonly toolsUsed?: readonly string[];
+  /** When true, marks the skill invocable (see {@link Skill.invocable}). */
+  readonly invocable?: boolean;
+  /** Commands whose output is injected as context (see {@link Skill.dynamicContext}). */
+  readonly dynamicContext?: readonly string[];
   readonly mode?: SkillRecordMode;
   readonly actor: string;
   readonly via?: string;
@@ -117,6 +125,10 @@ export class SkillService {
     // under it are merged into list/show as read-only `source: 'user'`
     // entries — a project skill of the same slug always shadows them.
     private readonly userDir: string | null = null,
+    // Runner for a skill's dynamic-context commands. Injectable (like
+    // GitHubPrService / CommitVerifier) so tests drive it with a mock;
+    // the working directory is bound at call time.
+    private readonly run: CommandRunner = defaultRunner,
   ) {}
 
   private requireRecordDeps(): {
@@ -178,6 +190,8 @@ export class SkillService {
     const { repo, identity, audit } = this.requireRecordDeps();
     const createdBy = identity.ensureActor(input.actor, ActorKind.Human);
     const toolsUsed = input.toolsUsed ?? [];
+    const invocable = input.invocable ?? false;
+    const dynamicContext = input.dynamicContext ?? [];
     const latest = repo.findLatestBySlug(input.slug);
     const mode: SkillRecordMode = input.mode ?? 'update';
 
@@ -192,6 +206,8 @@ export class SkillService {
         description: input.description,
         content: input.content,
         toolsUsed,
+        invocable,
+        dynamicContext,
         createdBy,
       });
       action = 'created';
@@ -203,6 +219,8 @@ export class SkillService {
         description: input.description,
         content: input.content,
         toolsUsed,
+        invocable,
+        dynamicContext,
         createdBy,
       });
       action = 'new_version';
@@ -211,7 +229,9 @@ export class SkillService {
         latest.content === input.content &&
         latest.name === input.name &&
         latest.description === input.description &&
-        toolsArraysEqual(latest.toolsUsed, toolsUsed);
+        toolsArraysEqual(latest.toolsUsed, toolsUsed) &&
+        latest.invocable === invocable &&
+        toolsArraysEqual(latest.dynamicContext, dynamicContext);
       if (sameContent) {
         resulting = latest;
         action = 'no_op';
@@ -221,6 +241,8 @@ export class SkillService {
           description: input.description,
           content: input.content,
           toolsUsed,
+          invocable,
+          dynamicContext,
         });
         if (updated === null) {
           throw new Error('skill update returned null after a known row');
@@ -359,6 +381,45 @@ export class SkillService {
     return existsSync(path.join(this.skillsDir, `${skill.slug}.md`));
   }
 
+  /**
+   * Resolves a skill's `dynamicContext` commands into their current output,
+   * so an invocable skill can embed live state (e.g. `mnema tasks ready`)
+   * instead of a stale hand-written list. One entry per declared command,
+   * in order.
+   *
+   * Only `mnema …` commands are run — a hard allowlist on the first token,
+   * checked before any process is spawned, so a skill can never shell out
+   * to an arbitrary binary. Commands run through the injectable
+   * {@link CommandRunner} (argv array, no shell); they inherit the working
+   * directory of the mnema process, which is the project root. Advisory: a
+   * command that is disallowed, fails, or errors yields an entry with
+   * `ok: false` and a reason rather than throwing — showing a skill must
+   * never blow up because one embedded command failed.
+   *
+   * @param skill - The skill whose dynamic context to resolve
+   * @returns One result per command, preserving declaration order
+   */
+  resolveDynamicContext(
+    skill: Skill,
+  ): Array<{ readonly command: string; readonly ok: boolean; readonly output: string }> {
+    return skill.dynamicContext.map((command) => {
+      const tokens = command.trim().split(/\s+/).filter(Boolean);
+      if (tokens[0] !== 'mnema') {
+        return {
+          command,
+          ok: false,
+          output: 'skipped — only `mnema …` commands may be embedded as dynamic context',
+        };
+      }
+      const result = this.run('mnema', tokens.slice(1));
+      if (result.error !== undefined || result.status !== 0) {
+        const reason = result.error?.message ?? `exit ${result.status ?? 'unknown'}`;
+        return { command, ok: false, output: `command failed — ${reason}` };
+      }
+      return { command, ok: true, output: result.stdout.trimEnd() };
+    });
+  }
+
   private writeMirror(skill: Skill): void {
     const filePath = path.join(this.skillsDir, `${skill.slug}.md`);
     const frontmatter = [
@@ -367,6 +428,12 @@ export class SkillService {
       `version: ${skill.version}.0.0`,
       `description: ${quoteYaml(skill.description)}`,
       `tools_used: ${JSON.stringify(skill.toolsUsed)}`,
+      // Only emit the invocation fields when set, so a passive skill's
+      // mirror stays byte-identical to what earlier versions produced.
+      skill.invocable ? 'invocable: true' : null,
+      skill.dynamicContext.length > 0
+        ? `dynamic_context: ${JSON.stringify(skill.dynamicContext)}`
+        : null,
       `usage_count: ${skill.usageCount}`,
       skill.lastUsedAt !== null ? `last_used_at: ${skill.lastUsedAt}` : null,
       `created_at: ${skill.createdAt}`,

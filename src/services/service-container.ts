@@ -463,6 +463,7 @@ export function createServiceContainer(
     identity,
     audit,
     userDir,
+    options.commitRunner,
   );
   const memoryService = new MemoryService(
     memoryDir,

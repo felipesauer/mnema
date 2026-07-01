@@ -51,6 +51,16 @@ export class SkillTools {
             .array(z.string().min(1))
             .optional()
             .describe('MCP tools this skill relies on (used by `mnema skill lint`)'),
+          invocable: z
+            .boolean()
+            .optional()
+            .describe('Mark the skill as invocable (meant to be run), not just read'),
+          dynamic_context: z
+            .array(z.string().min(1))
+            .optional()
+            .describe(
+              'Commands whose output is embedded when the skill is shown, e.g. ["mnema tasks ready"]. Only `mnema …` commands are run.',
+            ),
           mode: z.enum(['update', 'new_version']).optional(),
         },
       },
@@ -68,6 +78,8 @@ export class SkillTools {
           description: input.description,
           content: input.content,
           toolsUsed: input.tools_used,
+          invocable: input.invocable,
+          dynamicContext: input.dynamic_context,
           mode: input.mode,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
@@ -92,7 +104,16 @@ export class SkillTools {
         if (drift !== null) return drift;
         const result = this.skills.show(slug, version);
         if (!result.ok) return err(result.error);
-        return ok({ skill: result.value });
+        const skill = result.value;
+        // For an invocable skill with declared commands, resolve their
+        // live output so the caller sees current state, not a stale list.
+        // Only ever runs on the latest version (a historical version's
+        // context is meaningless); resolution is advisory and never throws.
+        const dynamic_context =
+          skill.invocable && skill.dynamicContext.length > 0 && version === undefined
+            ? this.skills.resolveDynamicContext(skill)
+            : undefined;
+        return ok({ skill, dynamic_context });
       },
     );
 

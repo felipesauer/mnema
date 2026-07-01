@@ -12,6 +12,17 @@ export interface Skill {
   readonly description: string;
   readonly content: string;
   readonly toolsUsed: readonly string[];
+  /**
+   * When true, the skill is meant to be invoked (run), not just read as
+   * documentation. Passive skills leave this false.
+   */
+  readonly invocable: boolean;
+  /**
+   * Commands whose output is injected as context when the skill is shown
+   * — e.g. `['mnema tasks ready']` for a "pick next task" skill. Empty for
+   * a skill with no dynamic context.
+   */
+  readonly dynamicContext: readonly string[];
   readonly usageCount: number;
   readonly lastUsedAt: string | null;
   readonly createdBy: string;
