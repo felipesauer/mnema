@@ -116,7 +116,7 @@ try {
   const body = events.map((e) => JSON.stringify(e)).join('\n');
   writeFileSync(castOut, `${JSON.stringify(header)}\n${body}\n`);
   process.stdout.write(`✓ wrote ${path.relative(repoRoot, castOut)} (${events.length} frames)\n`);
-  process.stdout.write(`  render:  agg --speed 1.4 ${path.relative(repoRoot, castOut)} docs/quickstart.svg\n`);
+  process.stdout.write(`  render:  agg --speed 1.4 ${path.relative(repoRoot, castOut)} docs/quickstart.gif\n`);
   process.stdout.write(`  or host: asciinema upload ${path.relative(repoRoot, castOut)}\n`);
 } finally {
   rmSync(demoDir, { recursive: true, force: true });
