@@ -80,6 +80,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/lint-command.js')).LintCommand(),
     description: 'Integrity checks over the work graph (lint sprint / lint epic)',
   },
+  hooks: {
+    load: async () => new (await import('./commands/hooks-command.js')).HooksCommand(),
+    description: 'Review and approve domain-event hooks (approve / show)',
+  },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',

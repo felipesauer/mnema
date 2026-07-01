@@ -14,6 +14,7 @@ import { printError } from '../../errors/error-printer.js';
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { HookTrustService } from '../../services/hook-trust.js';
 import { findOrphanRuns } from '../../services/orphan-run-service.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
@@ -264,18 +265,25 @@ export class DoctorCommand {
             : 'advisory — a failed gate only warns; anyone may override',
     });
 
-    // Domain-event hooks are informational: always ok, but surface how
-    // many commands are wired so a misconfigured hook block is visible.
+    // Domain-event hooks: surface how many commands are wired, and whether
+    // the block is human-approved. An un-approved block is inert (it never
+    // executes) — flag it as not-ok so a configured-but-unapproved hook is
+    // visible rather than silently ignored.
     const hookEntries = Object.entries(config.hooks).filter(([, commands]) => commands.length > 0);
     const hookCount = hookEntries.reduce((sum, [, commands]) => sum + commands.length, 0);
-    checks.push({
-      name: 'domain-event hooks',
-      ok: true,
-      detail:
-        hookCount === 0
-          ? 'none configured'
-          : `${hookCount} command(s) on ${hookEntries.map(([event]) => event).join(', ')}`,
-    });
+    if (hookCount === 0) {
+      checks.push({ name: 'domain-event hooks', ok: true, detail: 'none configured' });
+    } else {
+      const approved = new HookTrustService(config.project.key).isTrusted(config.hooks);
+      const events = hookEntries.map(([event]) => event).join(', ');
+      checks.push({
+        name: 'domain-event hooks',
+        ok: approved,
+        detail: approved
+          ? `${hookCount} command(s) on ${events} (approved)`
+          : `${hookCount} command(s) on ${events} — NOT approved, inert until \`mnema hooks approve\``,
+      });
+    }
 
     const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
