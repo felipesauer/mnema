@@ -29,6 +29,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'audit_verify',
   'decision_record',
   'decision_promote_from_note',
+  'decision_promote_from_observation',
+  'provenance',
   'decision_show',
   'decisions_list',
   'decisions_impacting',

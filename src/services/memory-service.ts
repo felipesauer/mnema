@@ -6,6 +6,7 @@ import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
+import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -23,6 +24,8 @@ export interface MemoryRecordInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /** Decision key this memory was derived from — records a provenance edge. */
+  readonly derivedFromDecision?: string;
 }
 
 /**
@@ -53,6 +56,9 @@ export class MemoryService {
     // `source: 'user'` entries — a project memory of the same slug
     // shadows them. Records always go to the project, never here.
     private readonly userDir: string | null = null,
+    // Optional: when set and a record supplies `derivedFromDecision`, a
+    // navigable decision → memory provenance edge is recorded.
+    private readonly provenance: ProvenanceLinkRepository | null = null,
   ) {}
 
   /**
@@ -106,6 +112,15 @@ export class MemoryService {
       run: input.runId,
       data: { slug: memory.slug, action },
     });
+
+    // First-class, navigable edge: decision → memory, when the memory
+    // was recorded as derived from a decision.
+    if (input.derivedFromDecision !== undefined && input.derivedFromDecision.length > 0) {
+      this.provenance?.link(
+        { kind: 'decision', ref: input.derivedFromDecision },
+        { kind: 'memory', ref: memory.slug },
+      );
+    }
 
     return { memory, action };
   }

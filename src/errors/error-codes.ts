@@ -58,6 +58,7 @@ export enum ErrorCode {
   InvalidWorkflowState = 'INVALID_WORKFLOW_STATE',
 
   NoteNotFound = 'NOTE_NOT_FOUND',
+  ObservationNotFound = 'OBSERVATION_NOT_FOUND',
 
   DependencyCycle = 'DEPENDENCY_CYCLE',
   DependencyDuplicate = 'DEPENDENCY_DUPLICATE',

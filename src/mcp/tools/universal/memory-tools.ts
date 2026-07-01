@@ -46,6 +46,10 @@ export class MemoryTools {
             .array(z.string().min(1))
             .optional()
             .describe('Free-form tags for filtering, e.g. ["compliance", "estimation"]'),
+          derived_from_decision: z
+            .string()
+            .optional()
+            .describe('Decision key this memory was derived from — records a provenance edge'),
         },
       },
       (input) => {
@@ -61,6 +65,7 @@ export class MemoryTools {
           title: input.title,
           content: input.content,
           topics: input.topics,
+          derivedFromDecision: input.derived_from_decision,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,

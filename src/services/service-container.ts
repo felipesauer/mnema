@@ -24,6 +24,7 @@ import { MemoryRepository } from '../storage/sqlite/repositories/memory-reposito
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
@@ -56,6 +57,7 @@ import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
 import { OrphanRunService } from './orphan-run-service.js';
 import { PortfolioService } from './portfolio-service.js';
+import { ProvenanceService } from './provenance-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
 import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
@@ -144,6 +146,7 @@ export interface ServiceContainer {
   readonly memory: MemoryService;
   readonly memoryStaleness: MemoryStalenessService;
   readonly observation: ObservationService;
+  readonly provenance: ProvenanceService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
   readonly close: () => void;
@@ -225,6 +228,7 @@ export function createServiceContainer(
   const skillRepository = new SkillRepository(adapter);
   const memoryRepository = new MemoryRepository(adapter);
   const observationRepository = new ObservationRepository(adapter);
+  const provenanceLinkRepository = new ProvenanceLinkRepository(adapter);
   const auditStateRepository = new AuditStateRepository(adapter);
   trace.mark('repositories instantiated');
 
@@ -345,6 +349,7 @@ export function createServiceContainer(
     roadmapMirror,
     sync,
   );
+  const provenanceService = new ProvenanceService(provenanceLinkRepository);
   const decisionService = new DecisionService(
     decisionRepository,
     projects,
@@ -353,6 +358,8 @@ export function createServiceContainer(
     noteRepository,
     tasks,
     roadmapMirror,
+    provenanceLinkRepository,
+    observationRepository,
   );
   const dependencyService = new DependencyService(
     dependencyRepository,
@@ -447,7 +454,14 @@ export function createServiceContainer(
     audit,
     userDir,
   );
-  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit, userDir);
+  const memoryService = new MemoryService(
+    memoryDir,
+    memoryRepository,
+    identity,
+    audit,
+    userDir,
+    provenanceLinkRepository,
+  );
   const wikilinkLintService = new WikilinkLintService(
     skillsDir,
     memoryDir,
@@ -499,6 +513,7 @@ export function createServiceContainer(
     memory: memoryService,
     memoryStaleness: memoryStalenessService,
     observation: observationService,
+    provenance: provenanceService,
     transitions,
     pendingMigrations,
     close: () => adapter.close(),

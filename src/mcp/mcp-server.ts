@@ -34,6 +34,7 @@ import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
 import { PortfolioTool } from './tools/universal/portfolio-tool.js';
 import { PrStatusTool } from './tools/universal/pr-status-tool.js';
+import { ProvenanceTool } from './tools/universal/provenance-tool.js';
 import { RunDiffTool } from './tools/universal/run-diff-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
@@ -230,6 +231,7 @@ export class MnemaMcpServer {
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
+    new ProvenanceTool(this.services.provenance).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,
