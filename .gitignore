@@ -9,7 +9,7 @@ coverage/
 # committed demo cast the README links to can be re-included below.
 docs/*
 !docs/quickstart.cast
-!docs/quickstart.svg
+!docs/quickstart.gif
 .plan/
 evaluations/
 

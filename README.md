@@ -107,14 +107,17 @@ and approve from the terminal — walked through end to end in
 
 ### See it in 30 seconds
 
-The whole point in one flow — drive a task through the gates, `doctor`
-proves the audit chain, then a hand-edit to a past log line is caught:
+Drive a task through the gates, `doctor` proves the audit chain, then a
+hand-edit to a past log line is caught:
+
+![Mnema demo — init, review, doctor proves the chain, a tamper is caught](docs/quickstart.gif)
+
+Every frame is real command output. The same flow, condensed, in case the
+animation doesn't play:
 
 ```console
 $ mnema init --yes --name "Payments API" --key PAY
-$ mnema task create --title "Add rate limiting"
-$ mnema task move PAY-1 submit  --field ...   # → READY
-$ mnema task move PAY-1 approve                # → DONE
+$ mnema task move PAY-1 submit … && mnema task move PAY-1 approve   # → DONE
 $ mnema doctor
   ✓ audit hash chain  verified up to 6c4e68fc…
 
@@ -123,18 +126,13 @@ $ mnema doctor
   ✗ audit hash chain  hash mismatch on a line in current.jsonl
 ```
 
-<!-- The animated render below is committed once `docs/quickstart.svg`
-     exists (see the render command). Uncomment when the SVG is in place:
-![Mnema demo — init, review, doctor proves the chain, a tamper is caught](docs/quickstart.svg)
--->
-
-The snippet above is a recorded cast of this exact flow — every frame is
-real command output ([`docs/quickstart.cast`](docs/quickstart.cast)).
-Regenerate or render it (self-contained, no external service):
+The recording is [`docs/quickstart.cast`](docs/quickstart.cast) — a real
+asciinema cast. Regenerate or re-render it (self-contained, no external
+service):
 
 ```bash
 node scripts/make-cast.mjs                                  # regenerate the cast
-agg --speed 1.4 docs/quickstart.cast docs/quickstart.svg   # render an animated SVG
+agg --speed 1.4 docs/quickstart.cast docs/quickstart.gif   # re-render the GIF
 ```
 
 ## What you get
