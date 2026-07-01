@@ -32,6 +32,16 @@ function runCli(
   };
 }
 
+/** Parses every `hook_ran` event from a project's audit log, in order. */
+function readHookRan(projectRoot: string): { data: { outcome: string; exit_code: number } }[] {
+  const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+  return audit
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l))
+    .filter((e) => e.kind === 'hook_ran');
+}
+
 beforeAll(() => {
   if (!existsSync(cliEntry)) {
     throw new Error(`CLI entry not built. Run pnpm build before tests. Path: ${cliEntry}`);
@@ -199,44 +209,71 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(invalid.stderr).toContain('TODO');
   });
 
-  it('mnema domain-event hook fires on task done, records hook_ran, and is non-fatal on failure', () => {
+  it('domain-event hooks require human approval, run as argv (no shell), and are non-fatal', () => {
+    // Isolate the out-of-repo approval store (~/.config/mnema) inside the
+    // temp project so `mnema hooks approve` can be exercised hermetically.
+    const hookEnv = { HOME: projectRoot, USERPROFILE: projectRoot };
     runCli(['init', '--name', 'Lean App', '--key', 'LEAN', '--workflow', 'lean'], projectRoot);
 
-    // Wire a hook that captures the event JSON on stdin to a file, plus
-    // a second command that fails — proving a failing hook is audited
-    // but never breaks the transition that triggered it.
+    // A capture hook that writes its stdin (the event JSON) to a file, and
+    // a second hook that fails — proving a failing hook is audited but never
+    // breaks the transition. Both are argv arrays: the capture uses a tiny
+    // node one-liner because there is no shell to do redirection anymore.
     const configPath = path.join(projectRoot, '.mnema/mnema.config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf-8'));
     const capturePath = path.join(projectRoot, 'hook-out.json');
-    config.hooks = { on_task_done: [`cat > '${capturePath}'`, 'exit 7'] };
+    const captureScript = `require('fs').writeFileSync(process.argv[1],require('fs').readFileSync(0));`;
+    config.hooks = {
+      on_task_done: [
+        { command: 'node', args: ['-e', captureScript, capturePath] },
+        { command: 'node', args: ['-e', 'process.exit(7)'] },
+      ],
+    };
     writeFileSync(configPath, JSON.stringify(config, null, 2));
 
+    // --- Phase 1: un-approved block is INERT (MNEMA-100 regression) ---
     runCli(['task', 'create', '--title', 'Ship it'], projectRoot);
     runCli(['task', 'move', 'LEAN-1', 'start'], projectRoot);
-    const done = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot);
+    const doneUnapproved = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot, hookEnv);
+    expect(doneUnapproved.status).toBe(0);
+    expect(existsSync(capturePath)).toBe(false); // nothing executed
 
-    // The transition itself succeeds despite the failing second hook.
+    const auditAfterUnapproved = readHookRan(projectRoot);
+    expect(auditAfterUnapproved).toHaveLength(2); // both attempts recorded...
+    expect(auditAfterUnapproved.every((e) => e.data.outcome === 'skipped')).toBe(true); // ...as skipped
+
+    // doctor flags the configured-but-unapproved block as not-ok.
+    const doctorUnapproved = runCli(['doctor'], projectRoot, hookEnv);
+    expect(doctorUnapproved.stdout).toContain('NOT approved');
+
+    // --- Phase 2: after human approval, the same block RUNS ---
+    const approve = runCli(['hooks', 'approve'], projectRoot, hookEnv);
+    expect(approve.status).toBe(0);
+
+    // The approval is attested on the audit chain, not just on disk.
+    const auditLog = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    expect(auditLog).toContain('"kind":"hooks_approved"');
+
+    runCli(['task', 'create', '--title', 'Ship it again'], projectRoot);
+    runCli(['task', 'move', 'LEAN-2', 'start'], projectRoot);
+    const done = runCli(['task', 'move', 'LEAN-2', 'complete'], projectRoot, hookEnv);
     expect(done.status).toBe(0);
     expect(done.stdout).toContain('DONE');
 
-    // The first hook received the triggering event as JSON on stdin.
+    // The capture hook received the triggering event as JSON on stdin.
     expect(existsSync(capturePath)).toBe(true);
     const payload = JSON.parse(readFileSync(capturePath, 'utf-8'));
     expect(payload.kind).toBe('task_transitioned');
     expect(payload.data.to).toBe('DONE');
 
-    // Both firings are in the audit trail: one completed, one failed (exit 7).
-    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
-    const hookLines = audit
-      .trim()
-      .split('\n')
-      .map((l) => JSON.parse(l))
-      .filter((e) => e.kind === 'hook_ran');
-    expect(hookLines).toHaveLength(2);
-    expect(hookLines.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
+    // The second firing set has one completed and one failed (exit 7).
+    const runFirings = readHookRan(projectRoot).filter((e) => e.data.outcome !== 'skipped');
+    expect(runFirings.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
       true,
     );
-    expect(hookLines.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(true);
+    expect(runFirings.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(
+      true,
+    );
   });
 
   it('mnema doctor reports a healthy project after init', () => {

@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
-import type { Config } from '../config/config-schema.js';
+import type { Config, HookCommand } from '../config/config-schema.js';
 import { DomainEvent } from '../domain/enums/domain-event.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { AuditEventInput } from './audit-service.js';
@@ -16,21 +16,39 @@ export const HOOK_TIMEOUT_MS = 30_000;
  * Signature of a process runner. Abstracted so tests can inject a fake
  * without spawning real processes. Mirrors the subset of
  * {@link spawnSync}'s result the dispatcher needs.
+ *
+ * Takes an explicit argv (`command` + `args`) and is spawned WITHOUT a
+ * shell, so shell metacharacters in a hook definition are passed as
+ * literal argv data and never interpreted.
  */
 export type HookRunner = (
   command: string,
+  args: readonly string[],
   stdin: string,
 ) => { status: number | null; signal: string | null; error?: Error };
 
-const defaultRunner: HookRunner = (command, stdin) => {
-  const result = spawnSync(command, {
-    shell: true,
+const defaultRunner: HookRunner = (command, args, stdin) => {
+  // No `shell` option: argv is passed straight to the OS, so `$(…)`, `|`,
+  // `;` and friends are inert bytes, not commands. This is the primary
+  // control against hook-string injection.
+  const result = spawnSync(command, [...args], {
     input: stdin,
     timeout: HOOK_TIMEOUT_MS,
     encoding: 'utf-8',
   });
   return { status: result.status, signal: result.signal, error: result.error };
 };
+
+/**
+ * Decides whether a hook block is allowed to execute. Returns `true` for
+ * a trusted block (user-global origin, or a project block whose contents
+ * a human has approved) and `false` for an un-approved project block,
+ * which is then skipped-and-audited rather than run. Injected so the
+ * container can wire the real trust check and tests can force either
+ * answer. Defaults to "trusted" so the no-container unit path stays simple
+ * — the container always supplies the real predicate in production.
+ */
+export type HookTrust = () => boolean;
 
 /**
  * Writes an audit event. Injected (rather than the writer) so hook
@@ -90,11 +108,19 @@ export function resolveDomainEvents(
 export class DomainEventDispatcher {
   private readonly terminalStates: readonly string[];
 
+  /**
+   * @param trusted - Predicate gating execution. When it returns `false`
+   *   (an un-approved project hooks block) every hook is skipped and
+   *   audited as `hook_ran` with `outcome: 'skipped'` — the firing is
+   *   still recorded, but nothing runs. Defaults to always-trusted for
+   *   the bare unit path; the container injects the real check.
+   */
   constructor(
     private readonly hooks: Config['hooks'],
     terminalStates: readonly string[],
     private readonly audit: AuditSink,
     private readonly run: HookRunner = defaultRunner,
+    private readonly trusted: HookTrust = () => true,
   ) {
     this.terminalStates = terminalStates;
   }
@@ -107,24 +133,47 @@ export class DomainEventDispatcher {
    */
   dispatch(event: AuditEvent): void {
     const domainEvents = resolveDomainEvents(event, this.terminalStates);
+    if (domainEvents.length === 0) return;
+    // Evaluate trust once per dispatch: the whole hooks block shares one
+    // gate, so an audit event that resolves to several domain events (a
+    // terminal transition is both TaskTransitioned and TaskDone) checks
+    // trust a single time. An un-approved block never runs, but each of
+    // its hooks is still audited as skipped so the attempt is on the trail.
+    let allowed: boolean | null = null;
+    const payload = JSON.stringify(event);
     for (const domainEvent of domainEvents) {
-      const commands = this.hooks[domainEvent];
-      if (commands.length === 0) continue;
-      const payload = JSON.stringify(event);
-      for (const command of commands) {
-        this.fire(domainEvent, command, payload, event.actor);
+      const hooks = this.hooks[domainEvent];
+      if (hooks.length === 0) continue;
+      if (allowed === null) allowed = this.trusted();
+      for (const hook of hooks) {
+        this.fire(domainEvent, hook, payload, event.actor, allowed);
       }
     }
   }
 
-  /** Runs one command, swallowing every failure into an audit event. */
-  private fire(domainEvent: DomainEvent, command: string, payload: string, actor: string): void {
+  /** Runs one hook, swallowing every failure into an audit event. */
+  private fire(
+    domainEvent: DomainEvent,
+    hook: HookCommand,
+    payload: string,
+    actor: string,
+    allowed: boolean,
+  ): void {
+    const command = renderHookCommand(hook);
+
+    // Untrusted (un-approved project) hooks are recorded but never run —
+    // this is the control that neuters an agent-written config.
+    if (!allowed) {
+      this.writeHookRan(domainEvent, command, actor, 'skipped', 'hooks block not approved');
+      return;
+    }
+
     let status: number | null = null;
     let outcome: 'completed' | 'failed' = 'completed';
     let detail: string | undefined;
 
     try {
-      const result = this.run(command, payload);
+      const result = this.run(hook.command, hook.args, payload);
       status = result.status;
       if (result.error !== undefined) {
         outcome = 'failed';
@@ -144,6 +193,22 @@ export class DomainEventDispatcher {
       detail = err instanceof Error ? err.message : String(err);
     }
 
+    this.writeHookRan(domainEvent, command, actor, outcome, detail, status);
+  }
+
+  /**
+   * Records a single hook firing on the audit trail. Never throws into the
+   * caller: a hook is a side effect, so an unwritable log is surfaced by
+   * doctor, not by breaking the command that triggered the hook.
+   */
+  private writeHookRan(
+    domainEvent: DomainEvent,
+    command: string,
+    actor: string,
+    outcome: 'completed' | 'failed' | 'skipped',
+    detail?: string,
+    exitCode: number | null = null,
+  ): void {
     try {
       this.audit({
         kind: 'hook_ran',
@@ -152,14 +217,22 @@ export class DomainEventDispatcher {
           event: domainEvent,
           command,
           outcome,
-          exit_code: status,
+          exit_code: exitCode,
           ...(detail !== undefined ? { detail } : {}),
         },
       });
     } catch {
-      // Auditing the hook must also never throw into the caller. If the
-      // log is unwritable that is surfaced elsewhere (doctor); here we
-      // simply refuse to let a side effect break the triggering command.
+      // See method doc: auditing the hook must never throw into the caller.
     }
   }
+}
+
+/**
+ * Renders a hook's argv into a single human-readable string for display
+ * (the audit trail and `mnema hooks show`, e.g. `notify.sh --to done`).
+ * Display-only — execution always uses the structured argv, never this
+ * string.
+ */
+export function renderHookCommand(hook: HookCommand): string {
+  return hook.args.length === 0 ? hook.command : `${hook.command} ${hook.args.join(' ')}`;
 }

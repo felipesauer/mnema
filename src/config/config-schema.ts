@@ -1,6 +1,53 @@
 import { z } from 'zod';
 
 /**
+ * A single domain-event hook: an argv pair spawned WITHOUT a shell.
+ * `command` is the executable; `args` are passed verbatim as separate
+ * argv entries, so a value like `$(id -un)` is a literal string, never
+ * expanded — this removes shell-metacharacter injection at the type level.
+ *
+ * A bare string (the pre-argv format, e.g. `"./notify.sh"`) is rejected
+ * with an actionable message rather than an opaque "expected object": the
+ * shell form is intentionally no longer accepted, and the message tells
+ * the user the new shape.
+ */
+export const HookCommandSchema = z.preprocess(
+  (value, ctx) => {
+    if (typeof value === 'string') {
+      ctx.addIssue({
+        code: 'custom',
+        message: `hooks are now { "command": "...", "args": [...] } and run without a shell; rewrite "${value}" as { "command": "${value}", "args": [] }`,
+      });
+      return z.NEVER;
+    }
+    return value;
+  },
+  z.object({
+    command: z.string().min(1),
+    args: z.array(z.string()).default([]),
+  }),
+);
+
+/** A parsed, validated hook. */
+export type HookCommand = z.infer<typeof HookCommandSchema>;
+
+/**
+ * The `hooks` block: one ordered list of {@link HookCommandSchema} per
+ * curated domain event. Only the project {@link ConfigSchema} carries
+ * hooks; the user-level config does not (a hooks block must be approved
+ * in-project, so there is no global-origin hook path today).
+ */
+export const HooksSchema = z
+  .object({
+    on_task_done: z.array(HookCommandSchema).default([]),
+    on_task_transitioned: z.array(HookCommandSchema).default([]),
+    on_decision_accepted: z.array(HookCommandSchema).default([]),
+    on_sprint_closed: z.array(HookCommandSchema).default([]),
+    on_epic_closed: z.array(HookCommandSchema).default([]),
+  })
+  .prefault({});
+
+/**
  * Zod schema for `mnema.config.json`.
  *
  * Mirrors the configuration contract documented in DESIGN.md §4.1.
@@ -101,21 +148,21 @@ export const ConfigSchema = z.object({
       done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
     })
     .prefault({}),
-  // Hooks run a shell command when a curated domain event fires (a task
+  // Hooks run a command when a curated domain event fires (a task
   // reaching done, a decision accepted, …). Each key is a domain-event
-  // name; the value is the list of commands to run, in order. The
-  // command receives the audit event as JSON on stdin and each firing
-  // writes its own `hook_ran` audit event — a hook is part of the
-  // trail, never a phantom side effect. Defaults to no hooks.
-  hooks: z
-    .object({
-      on_task_done: z.array(z.string().min(1)).default([]),
-      on_task_transitioned: z.array(z.string().min(1)).default([]),
-      on_decision_accepted: z.array(z.string().min(1)).default([]),
-      on_sprint_closed: z.array(z.string().min(1)).default([]),
-      on_epic_closed: z.array(z.string().min(1)).default([]),
-    })
-    .prefault({}),
+  // name; the value is the list of hooks to run, in order. A hook is an
+  // argv pair — `{ command, args }` — spawned WITHOUT a shell, so shell
+  // metacharacters (`$(…)`, `|`, `;`, `&&`) are inert data, never
+  // interpreted. The audit event is delivered as JSON on the command's
+  // stdin and each firing writes its own `hook_ran` audit event — a hook
+  // is part of the trail, never a phantom side effect.
+  //
+  // Because this config file lives inside the repo and is writable by the
+  // very agents mnema keeps accountable, a configured hook block is inert
+  // until a human approves it via `mnema hooks approve`; editing the block
+  // afterwards revokes the approval. This closes the agent-writable-config
+  // command-execution vector. Defaults to no hooks.
+  hooks: HooksSchema,
 });
 
 /**
