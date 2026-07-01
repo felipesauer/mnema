@@ -105,10 +105,33 @@ From here your agent drives Mnema through MCP tools, and you watch
 and approve from the terminal — walked through end to end in
 [How the MCP loop works](#how-the-mcp-loop-works).
 
-<!-- TODO before public launch: record an asciinema cast of the loop
-     below (init → agent run → history → doctor) and embed it here —
-     a tamper-detection demo is the most persuasive thing this README
-     could show. -->
+### See it in 30 seconds
+
+The whole point in one flow — drive a task through the gates, `doctor`
+proves the audit chain, then a hand-edit to a past log line is caught:
+
+```console
+$ mnema init --yes --name "Payments API" --key PAY
+$ mnema task create --title "Add rate limiting"
+$ mnema task move PAY-1 submit  --field ...   # → READY
+$ mnema task move PAY-1 approve                # → DONE
+$ mnema doctor
+  ✓ audit hash chain  verified up to 6c4e68fc…
+
+# tamper: rewrite who did the work in a past audit line, then:
+$ mnema doctor
+  ✗ audit hash chain  hash mismatch on a line in current.jsonl
+```
+
+A recorded cast of this exact flow lives at
+[`docs/quickstart.cast`](docs/quickstart.cast) — every frame is real
+command output. Play or host it with asciinema:
+
+```bash
+node scripts/make-cast.mjs                        # regenerate the cast
+asciinema play docs/quickstart.cast               # watch it locally
+agg --speed 1.4 docs/quickstart.cast docs/quickstart.svg   # render to SVG
+```
 
 ## What you get
 

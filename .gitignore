@@ -5,17 +5,20 @@ coverage/
 *.tgz
 .DS_Store
 
-# Local-only documentation and planning
-docs/
+# Local-only documentation and planning. `docs/*` (not `docs/`) so the
+# committed demo cast the README links to can be re-included below.
+docs/*
+!docs/quickstart.cast
 .plan/
 evaluations/
 
 # Local AI-assistant state (permissions, plans)
 .claude/
 
-# Dev-only demo recorder (not part of build, CI, or release)
+# Dev-only live recorder (needs a human + asciinema; not part of build/CI).
+# The committed demo (scripts/demo-flow.sh + scripts/make-cast.mjs) and its
+# generated docs/quickstart.cast are versioned so the README can link them.
 scripts/record-quickstart.sh
-docs/quickstart.cast
 
 # Dogfood: running mnema against itself for testing.
 # Every Mnema-managed artefact lives under .mnema/ in the new layout,
