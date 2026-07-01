@@ -12,6 +12,7 @@ import type { ObservationService } from '../../../services/observation-service.j
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import { ok } from '../../mcp-tool-result.js';
+import { describeToolSurface } from '../../tool-registry.js';
 
 /**
  * Registers the `context_bootstrap` MCP tool — the canonical entry
@@ -143,6 +144,15 @@ export class ContextBootstrapTool {
         terminal: this.workflow.terminal,
         available_actions_summary: this.summariseActions(),
       },
+      // The MCP tool surface as a few conceptual layers, so the agent can
+      // reason about ~4 buckets instead of a flat list. `enabled` reflects
+      // this project's profile — a disabled layer's tools are listed but
+      // are not registered (e.g. Knowledge is off in the audit-only profile).
+      tool_groups: describeToolSurface(this.workflow, {
+        epics: this.workflow.features.epics,
+        sprints: this.workflow.features.sprints,
+        knowledge: this.config.features.knowledge,
+      }),
       agents_md: this.readTruncated('AGENTS.md', 8 * 1024),
       agents_md_path: existsSync(path.join(this.projectRoot, 'AGENTS.md')) ? 'AGENTS.md' : null,
       // Surfaced on every session start so the directive does not depend on

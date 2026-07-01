@@ -171,6 +171,19 @@ describe('MnemaMcpServer (in-memory)', () => {
       expect(registered.has('sprint_coverage')).toBe(false);
       expect(registered.has('epic_lint')).toBe(false);
       expect(registered.has('sprint_lint')).toBe(false);
+
+      // context_bootstrap advertises the same shape: Planning + Knowledge off.
+      const boot = parsePayload(
+        (await audit.client.callTool({
+          name: 'context_bootstrap',
+          arguments: {},
+        })) as CallToolResult,
+      );
+      const groups = boot.tool_groups as { name: string; enabled: boolean }[];
+      const enabled = Object.fromEntries(groups.map((g) => [g.name, g.enabled]));
+      expect(enabled.Core).toBe(true);
+      expect(enabled.Planning).toBe(false);
+      expect(enabled.Knowledge).toBe(false);
     } finally {
       await audit.close();
     }
@@ -219,6 +232,17 @@ describe('MnemaMcpServer (in-memory)', () => {
     const protocol = payload.protocol as { record_durable_knowledge_here?: string };
     expect(protocol?.record_durable_knowledge_here).toContain('memory_record');
     expect(protocol?.record_durable_knowledge_here).toMatch(/native memory/i);
+
+    // The layered tool surface rides on bootstrap so the agent reasons about
+    // buckets, not a flat list. Default project → all four layers enabled.
+    const groups = payload.tool_groups as { name: string; enabled: boolean }[];
+    expect(groups.map((g) => g.name)).toEqual([
+      'Core',
+      'Workflow transitions',
+      'Planning',
+      'Knowledge',
+    ]);
+    expect(groups.every((g) => g.enabled)).toBe(true);
   });
 
   it('agent_run_start captures the run id in the session and lets task_create proceed', async () => {

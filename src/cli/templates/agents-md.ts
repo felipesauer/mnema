@@ -183,16 +183,40 @@ export function buildAgentsMd(config: Config): string {
       'are rejected with `NO_ACTIVE_RUN`.',
   );
   lines.push('');
-  lines.push('## Planning surface');
+  lines.push('## MCP tool surface');
   lines.push('');
   lines.push(
-    'Roadmap structure is available through the MCP tools, so an agent never ' +
-      'has to drop to the CLI mid-run: `epic_create` / `epic_add_task`, ' +
-      '`sprint_create` / `sprint_add_task`, and the decision tools all flow ' +
-      'through the active run. Bootstrapping a large plan? Prefer the batch ' +
-      'tools — `task_create_many`, `sprint_add_tasks`, `task_depends_many` — ' +
-      'which attempt every item and report per-item failures instead of ' +
-      'failing the whole call.',
+    'The tools are organised in conceptual layers — reason about these ' +
+      'buckets rather than memorising every tool. `context_bootstrap` returns ' +
+      'the exact per-tool grouping (`tool_groups`) for this project:',
+  );
+  lines.push('');
+  lines.push(
+    '- **Core** — audit, agent runs/plans, tasks, dependencies, evidence, ' +
+      'search and read-only graph/snapshot. Always available.',
+  );
+  lines.push('- **Workflow transitions** — one `task_<action>` per workflow transition.');
+  lines.push(
+    '- **Planning** — epics, sprints and their coverage/lint. Available when ' +
+      'the active workflow enables epics and/or sprints.',
+  );
+  if (config.features.knowledge) {
+    lines.push(
+      '- **Knowledge** — decisions/ADRs, skills, memories, observations and the ' +
+        'provenance/wikilink chain. Available in this project.',
+    );
+  } else {
+    lines.push(
+      '- **Knowledge** — decisions, skills, memories, observations. ' +
+        '**Disabled** in this project (audit-only profile).',
+    );
+  }
+  lines.push('');
+  lines.push(
+    'When a layer is available, prefer its MCP tools over the CLI mid-run, and ' +
+      'prefer the batch forms — `task_create_many`, `sprint_add_tasks`, ' +
+      '`task_depends_many` — which attempt every item and report per-item ' +
+      'failures instead of failing the whole call.',
   );
   lines.push('');
   lines.push('## Recording what you learn');

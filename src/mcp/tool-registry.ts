@@ -155,18 +155,87 @@ export function listAvailableToolNames(
   workflow: Workflow,
   features: ToolSurfaceFeatures,
 ): ReadonlySet<string> {
-  const names = new Set<string>(CORE_TOOL_NAMES);
-  if (features.epics) for (const n of EPIC_TOOL_NAMES) names.add(n);
-  if (features.sprints) for (const n of SPRINT_TOOL_NAMES) names.add(n);
-  // Coverage/lint span both planning domains — advertised when either is on.
-  if (features.epics || features.sprints) {
-    for (const n of PLANNING_SHARED_TOOL_NAMES) names.add(n);
-  }
-  if (features.knowledge) for (const n of KNOWLEDGE_TOOL_NAMES) names.add(n);
-  for (const actions of Object.values(workflow.transitions)) {
-    for (const action of Object.keys(actions)) {
-      names.add(`task_${action}`);
-    }
+  // Derived from the single source of truth so the advertised set can never
+  // drift from the layered view: every enabled layer contributes its tools.
+  const names = new Set<string>();
+  for (const group of describeToolSurface(workflow, features)) {
+    if (group.enabled) for (const tool of group.tools) names.add(tool);
   }
   return names;
+}
+
+/** One conceptual layer of the MCP tool surface. */
+export interface ToolGroup {
+  /** Display name of the layer. */
+  readonly name: string;
+  /** One-line description of what the layer is for. */
+  readonly summary: string;
+  /** Whether this layer is advertised for the current project. */
+  readonly enabled: boolean;
+  /** When disabled, the config/workflow switch that would enable it. */
+  readonly enabledBy?: string;
+  /** The tool names in this layer (present whether enabled or not). */
+  readonly tools: readonly string[];
+}
+
+/** The `task_<action>` tools generated from a workflow's transitions. */
+function transitionToolNames(workflow: Workflow): string[] {
+  const names = new Set<string>();
+  for (const actions of Object.values(workflow.transitions)) {
+    for (const action of Object.keys(actions)) names.add(`task_${action}`);
+  }
+  return [...names].sort();
+}
+
+/**
+ * Describes the MCP tool surface as a handful of conceptual layers rather
+ * than a flat list, so an agent (via `context_bootstrap`) and a human (via
+ * the generated AGENTS.md) can reason about a few buckets instead of dozens
+ * of tools. This is the single source of truth for both the advertised set
+ * ({@link listAvailableToolNames} derives from it) and the server's
+ * registration gating, so the three never drift.
+ *
+ * A disabled layer still lists its `tools` (so the agent can see what
+ * enabling it would add) but sets `enabled: false` and an `enabledBy` hint;
+ * those tools are not registered on the server.
+ *
+ * @param workflow - Loaded workflow (for the transition tools)
+ * @param features - Which tool groups are enabled for this project
+ */
+export function describeToolSurface(
+  workflow: Workflow,
+  features: ToolSurfaceFeatures,
+): readonly ToolGroup[] {
+  return [
+    {
+      name: 'Core',
+      summary:
+        'Audit, agent runs/plans, tasks, dependencies, evidence, search and read-only graph/snapshot — always available.',
+      enabled: true,
+      tools: CORE_TOOL_NAMES,
+    },
+    {
+      name: 'Workflow transitions',
+      summary: 'One `task_<action>` per transition the active workflow declares.',
+      enabled: true,
+      tools: transitionToolNames(workflow),
+    },
+    {
+      name: 'Planning',
+      summary: 'Epics, sprints and their coverage/lint — grouping work above the task level.',
+      enabled: features.epics || features.sprints,
+      ...(features.epics || features.sprints
+        ? {}
+        : { enabledBy: 'a workflow with the epics and/or sprints feature' }),
+      tools: [...EPIC_TOOL_NAMES, ...SPRINT_TOOL_NAMES, ...PLANNING_SHARED_TOOL_NAMES],
+    },
+    {
+      name: 'Knowledge',
+      summary:
+        'Decisions/ADRs, skills, memories, observations and the provenance/wikilink chain that links them.',
+      enabled: features.knowledge,
+      ...(features.knowledge ? {} : { enabledBy: 'features.knowledge = true' }),
+      tools: KNOWLEDGE_TOOL_NAMES,
+    },
+  ];
 }

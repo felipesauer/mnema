@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import {
   CORE_TOOL_NAMES,
+  describeToolSurface,
   EPIC_TOOL_NAMES,
   KNOWLEDGE_TOOL_NAMES,
   listAvailableToolNames,
@@ -116,5 +117,80 @@ describe('listAvailableToolNames', () => {
     // `cancel` lives under DRAFT, READY and IN_PROGRESS — still one tool.
     const cancelEntries = [...names].filter((n) => n === 'task_cancel');
     expect(cancelEntries).toHaveLength(1);
+  });
+});
+
+describe('describeToolSurface', () => {
+  const groupNames = (wf: string, f: typeof ALL) =>
+    describeToolSurface(loadWorkflow(wf), f).map((g) => g.name);
+
+  it('returns the four conceptual layers', () => {
+    expect(groupNames('default', ALL)).toEqual([
+      'Core',
+      'Workflow transitions',
+      'Planning',
+      'Knowledge',
+    ]);
+  });
+
+  it('Core and Workflow transitions are always enabled', () => {
+    const groups = describeToolSurface(loadWorkflow('lean'), AUDIT_ONLY);
+    const core = groups.find((g) => g.name === 'Core');
+    const tx = groups.find((g) => g.name === 'Workflow transitions');
+    expect(core?.enabled).toBe(true);
+    expect(tx?.enabled).toBe(true);
+  });
+
+  it('Planning is enabled when either epics or sprints is on, disabled when both off', () => {
+    const find = (f: typeof ALL) =>
+      describeToolSurface(loadWorkflow('lean'), f).find((g) => g.name === 'Planning');
+    expect(find({ ...AUDIT_ONLY, epics: true })?.enabled).toBe(true);
+    expect(find({ ...AUDIT_ONLY, sprints: true })?.enabled).toBe(true);
+    expect(find(AUDIT_ONLY)?.enabled).toBe(false);
+  });
+
+  it('Knowledge tracks the knowledge feature and names how to enable it', () => {
+    const off = describeToolSurface(loadWorkflow('lean'), AUDIT_ONLY).find(
+      (g) => g.name === 'Knowledge',
+    );
+    expect(off?.enabled).toBe(false);
+    expect(off?.enabledBy).toContain('features.knowledge');
+    const on = describeToolSurface(loadWorkflow('default'), ALL).find(
+      (g) => g.name === 'Knowledge',
+    );
+    expect(on?.enabled).toBe(true);
+  });
+
+  it('the union of group tools equals the full catalogue (+ transitions), no orphans', () => {
+    // Every advertised tool must live in exactly one described layer, so the
+    // grouping is a faithful view of the surface, not a lossy summary.
+    const wf = loadWorkflow('default');
+    const grouped = new Set(describeToolSurface(wf, ALL).flatMap((g) => g.tools));
+    const advertised = listAvailableToolNames(wf, ALL);
+    for (const t of advertised) {
+      expect(grouped.has(t)).toBe(true);
+    }
+  });
+
+  it('omits enabledBy on an enabled layer (contract: only present when disabled)', () => {
+    for (const g of describeToolSurface(loadWorkflow('default'), ALL)) {
+      expect(g.enabled).toBe(true);
+      expect(g.enabledBy).toBeUndefined();
+    }
+  });
+
+  it('listAvailableToolNames equals the union of enabled layers (single source of truth)', () => {
+    // The advertised set is derived from describeToolSurface, so for any
+    // feature combination the two must agree exactly.
+    for (const features of [ALL, AUDIT_ONLY, { ...AUDIT_ONLY, epics: true }]) {
+      const wf = loadWorkflow('default');
+      const advertised = listAvailableToolNames(wf, features);
+      const fromLayers = new Set(
+        describeToolSurface(wf, features)
+          .filter((g) => g.enabled)
+          .flatMap((g) => g.tools),
+      );
+      expect([...advertised].sort()).toEqual([...fromLayers].sort());
+    }
   });
 });
