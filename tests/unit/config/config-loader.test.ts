@@ -111,6 +111,34 @@ describe('ConfigLoader', () => {
       expect(caught).toBeInstanceOf(ConfigInvalidError);
       expect((caught as ConfigInvalidError).issues).toBeTruthy();
     });
+
+    it('accepts the argv hook shape { command, args }', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        hooks: { on_task_done: [{ command: './notify.sh', args: ['--to', 'done'] }] },
+      });
+      const config = loader.load(tempRoot);
+      expect(config.hooks.on_task_done).toEqual([
+        { command: './notify.sh', args: ['--to', 'done'] },
+      ]);
+    });
+
+    it('rejects a legacy string hook with an actionable message', () => {
+      writeConfig(tempRoot, { ...validConfig, hooks: { on_task_done: ['./notify.sh'] } });
+
+      let caught: unknown;
+      try {
+        loader.load(tempRoot);
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(ConfigInvalidError);
+      // The message must guide the migration, not just say "expected object".
+      const issues = JSON.stringify((caught as ConfigInvalidError).issues);
+      expect(issues).toContain('command');
+      expect(issues).toContain('./notify.sh');
+    });
   });
 
   describe('user-level config (~/.config/mnema/config.json)', () => {

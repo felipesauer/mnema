@@ -15,6 +15,11 @@ function makeEvent(kind: string, data: Record<string, unknown>): AuditEvent {
   return { v: 1, at: '2026-06-26T00:00:00.000Z', kind, actor: 'daniel', data };
 }
 
+/** A hook argv pair (command + args), the post-ADR-30 shape. */
+function hook(command: string, args: string[] = []) {
+  return { command, args };
+}
+
 const noHooks = {
   on_task_done: [],
   on_task_transitioned: [],
@@ -22,6 +27,8 @@ const noHooks = {
   on_sprint_closed: [],
   on_epic_closed: [],
 };
+
+const okRunner: HookRunner = () => ({ status: 0, signal: null });
 
 describe('resolveDomainEvents', () => {
   it('maps a terminal transition to both transitioned and done', () => {
@@ -59,15 +66,15 @@ describe('resolveDomainEvents', () => {
 });
 
 describe('DomainEventDispatcher', () => {
-  it('runs the configured command with the event JSON on stdin', () => {
-    const seen: { command: string; stdin: string }[] = [];
-    const runner: HookRunner = (command, stdin) => {
-      seen.push({ command, stdin });
+  it('runs the configured command as argv with the event JSON on stdin', () => {
+    const seen: { command: string; args: readonly string[]; stdin: string }[] = [];
+    const runner: HookRunner = (command, args, stdin) => {
+      seen.push({ command, args, stdin });
       return { status: 0, signal: null };
     };
     const audits: AuditEventInput[] = [];
     const dispatcher = new DomainEventDispatcher(
-      { ...noHooks, on_task_done: ['notify.sh'] },
+      { ...noHooks, on_task_done: [hook('notify.sh', ['--to', 'done'])] },
       TERMINAL,
       (input) => audits.push(input),
       runner,
@@ -78,16 +85,17 @@ describe('DomainEventDispatcher', () => {
 
     expect(seen).toHaveLength(1);
     expect(seen[0].command).toBe('notify.sh');
+    expect(seen[0].args).toEqual(['--to', 'done']);
     expect(JSON.parse(seen[0].stdin)).toMatchObject({ kind: 'task_transitioned' });
   });
 
   it('writes a hook_ran audit event with the exit code', () => {
     const audits: AuditEventInput[] = [];
     const dispatcher = new DomainEventDispatcher(
-      { ...noHooks, on_sprint_closed: ['ok.sh'] },
+      { ...noHooks, on_sprint_closed: [hook('ok.sh')] },
       TERMINAL,
       (input) => audits.push(input),
-      () => ({ status: 0, signal: null }),
+      okRunner,
     );
 
     dispatcher.dispatch(makeEvent('sprint_closed', { key: 'S-1' }));
@@ -107,7 +115,7 @@ describe('DomainEventDispatcher', () => {
   it('audits a non-zero exit as failed without throwing', () => {
     const audits: AuditEventInput[] = [];
     const dispatcher = new DomainEventDispatcher(
-      { ...noHooks, on_epic_closed: ['boom.sh'] },
+      { ...noHooks, on_epic_closed: [hook('boom.sh')] },
       TERMINAL,
       (input) => audits.push(input),
       () => ({ status: 3, signal: null }),
@@ -120,7 +128,7 @@ describe('DomainEventDispatcher', () => {
   it('swallows a runner that throws (spawn could not start)', () => {
     const audits: AuditEventInput[] = [];
     const dispatcher = new DomainEventDispatcher(
-      { ...noHooks, on_epic_closed: ['x'] },
+      { ...noHooks, on_epic_closed: [hook('x')] },
       TERMINAL,
       (input) => audits.push(input),
       () => {
@@ -136,7 +144,7 @@ describe('DomainEventDispatcher', () => {
   it('runs every command for an event, in order', () => {
     const order: string[] = [];
     const dispatcher = new DomainEventDispatcher(
-      { ...noHooks, on_task_done: ['a', 'b'] },
+      { ...noHooks, on_task_done: [hook('a'), hook('b')] },
       TERMINAL,
       () => {},
       (command) => {
@@ -162,5 +170,61 @@ describe('DomainEventDispatcher', () => {
     );
     dispatcher.dispatch(makeEvent('task_transitioned', { to: 'DONE' }));
     expect(ran).toBe(false);
+  });
+
+  // --- Security: MNEMA-ADR-30 / MNEMA-100 regression ---
+
+  it('does NOT execute hooks when the block is untrusted (un-approved)', () => {
+    let ran = false;
+    const audits: AuditEventInput[] = [];
+    const dispatcher = new DomainEventDispatcher(
+      { ...noHooks, on_task_done: [hook('touch', ['/tmp/PWNED'])] },
+      TERMINAL,
+      (input) => audits.push(input),
+      () => {
+        ran = true;
+        return { status: 0, signal: null };
+      },
+      () => false, // trust predicate: block is not approved
+    );
+
+    dispatcher.dispatch(makeEvent('task_transitioned', { to: 'DONE' }));
+
+    // The malicious hook never ran...
+    expect(ran).toBe(false);
+    // ...but the attempt is still on the audit trail as skipped.
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({
+      kind: 'hook_ran',
+      data: {
+        event: DomainEvent.TaskDone,
+        command: 'touch /tmp/PWNED',
+        outcome: 'skipped',
+      },
+    });
+  });
+
+  it('passes shell metacharacters as inert argv, never interpreting them', () => {
+    // The MNEMA-100 payload was `touch PWNED_$(id -un)`. With argv exec and
+    // no shell, `$(id -un)` is a literal argument, not a subshell.
+    const seen: { command: string; args: readonly string[] }[] = [];
+    const dispatcher = new DomainEventDispatcher(
+      { ...noHooks, on_task_done: [hook('touch', ['PWNED_$(id -un)'])] },
+      TERMINAL,
+      () => {},
+      (command, args) => {
+        seen.push({ command, args });
+        return { status: 0, signal: null };
+      },
+      () => true, // approved — but the point is the argv stays literal
+    );
+
+    dispatcher.dispatch(makeEvent('task_transitioned', { to: 'DONE' }));
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].command).toBe('touch');
+    // The metacharacter payload is delivered verbatim as one argv entry —
+    // there is no shell to expand it.
+    expect(seen[0].args).toEqual(['PWNED_$(id -un)']);
   });
 });

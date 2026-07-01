@@ -387,22 +387,40 @@ override; like the user file, it can never change project identity,
 
 ### Domain-event hooks
 
-A `hooks` block runs a shell command when a **domain** event fires — a
+A `hooks` block runs a command when a **domain** event fires — a
 task reaching a done state, a decision accepted, a sprint or epic
-closed — not on generic tool calls. The command receives the triggering
-audit event as JSON on stdin:
+closed — not on generic tool calls. Each hook is an **argv pair**
+(`command` + `args`) spawned **without a shell**, and receives the
+triggering audit event as JSON on stdin:
 
 ```json
 {
   "hooks": {
-    "on_task_done": ["./scripts/notify.sh"],
-    "on_decision_accepted": ["jq '.data.key' >> decisions.log"]
+    "on_task_done": [{ "command": "./scripts/notify.sh", "args": ["--to", "done"] }],
+    "on_decision_accepted": [{ "command": "./scripts/log-decision.sh", "args": [] }]
   }
 }
 ```
 
 Supported events: `on_task_done`, `on_task_transitioned`,
 `on_decision_accepted`, `on_sprint_closed`, `on_epic_closed`.
+
+**Hooks require your approval before they run.** Because
+`mnema.config.json` lives in the repo and agents can edit it, a
+configured hook block is **inert** until a human approves it:
+
+```
+mnema hooks show      # review the configured hooks + approval status
+mnema hooks approve   # trust the current block to execute
+```
+
+Approval records a fingerprint of the exact hook block (stored outside
+the repo, under `~/.config/mnema/approvals/`), so **any later edit to the
+block revokes the approval automatically** — an agent that rewrites your
+hooks can never make new commands run. An un-approved firing is still
+recorded on the trail as a `hook_ran` with `outcome: "skipped"`. Because
+hooks run as argv with no shell, metacharacters like `$(…)`, `|` and `;`
+are inert data, never interpreted.
 
 Hooks run **after** the triggering event is durably written, and each
 firing records its own `hook_ran` audit event (with the exit code) — a
