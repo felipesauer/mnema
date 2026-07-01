@@ -6,7 +6,8 @@
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
 > A tamper-evident, local-first audit trail for AI-agent work.
-> *You drive, agents execute — and you can prove what happened.*
+> **Git for AI work** — version-control-grade accountability for what your agents do.
+> *You drive, agents execute — every change signed with who authorized it and who ran it.*
 
 Mnema is a local-first MCP server that gives external AI agents
 (Claude Code, Cursor, Aider, …) typed tools to do work behind
@@ -354,6 +355,20 @@ MCP tools. The commands group by what you're doing — run
 | `mnema mcp install-instructions <client>` | Print the right config snippet |
 
 ## How the MCP loop works
+
+```mermaid
+graph TD
+    H["Human<br/>drives via terminal"] -->|"approves via terminal"| G
+    A["AI agent<br/>typed tool calls"] --> G["Workflow gate<br/>rejects invalid moves"]
+    G -->|"stamps who + which agent + run"| E["Audit event<br/>dual-identity"]
+    E -->|"prev_hash link"| C["SHA-256 chain<br/>tamper-evident"]
+    C --> M["Markdown mirror<br/>source of truth"]
+    C --> S[("SQLite cache")]
+    M --> R["Git<br/>trail travels with repo"]
+    C -.->|"mnema doctor"| V(["Verify chain intact"])
+    classDef climax fill:#1f2937,stroke:#f59e0b,stroke-width:2px,color:#fff;
+    class E,C climax;
+```
 
 1. Your AI client (Claude Code, Cursor, …) spawns `mnema mcp serve`
    with `cwd` pointing at your project. Configure it once via
