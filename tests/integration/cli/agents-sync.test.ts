@@ -1,8 +1,8 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { writeAgentsMd } from '@/cli/templates/agents-md.js';
+import { expandAgentsImports, writeAgentsMd } from '@/cli/templates/agents-md.js';
 import { ConfigSchema } from '@/config/config-schema.js';
 
 /**
@@ -70,5 +70,85 @@ describe('writeAgentsMd (agents sync)', () => {
     const content = readFileSync(agentsFile(), 'utf-8');
     expect(content).toContain('# Pre-existing manual from another tool');
     expect(content).toContain('<!-- MNEMA:START -->');
+  });
+
+  it('expands the @path memory index into the generated block', () => {
+    // Seed the curated index the template references.
+    const memoryDir = path.join(root, '.mnema', 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# Memory index\n\n- [Foo](foo.md)\n', 'utf-8');
+
+    writeAgentsMd(root, makeConfig());
+    const content = readFileSync(agentsFile(), 'utf-8');
+    // The directive is gone; its target's contents are inlined with a marker.
+    expect(content).toContain('<!-- mnema:import @.mnema/memory/INDEX.md -->');
+    expect(content).toContain('- [Foo](foo.md)');
+    expect(content).not.toMatch(/^@\.mnema\/memory\/INDEX\.md$/m);
+  });
+
+  it('degrades gracefully when the @path target is missing', () => {
+    // No INDEX.md written — the directive should become a skipped note.
+    writeAgentsMd(root, makeConfig());
+    const content = readFileSync(agentsFile(), 'utf-8');
+    expect(content).toContain('skipped — file not found');
+    expect(content).not.toMatch(/^@\.mnema\/memory\/INDEX\.md$/m);
+  });
+
+  it('is idempotent: a second write with an unchanged index produces identical output', () => {
+    const memoryDir = path.join(root, '.mnema', 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# Memory index\n\n- [Foo](foo.md)\n', 'utf-8');
+
+    const first = writeAgentsMd(root, makeConfig());
+    expect(first).toBe('created');
+    const afterFirst = readFileSync(agentsFile(), 'utf-8');
+
+    // Second write finds the markers and rewrites the block; with the same
+    // index the expanded body must be byte-identical (no perpetual drift).
+    const second = writeAgentsMd(root, makeConfig());
+    expect(second).toBe('updated');
+    expect(readFileSync(agentsFile(), 'utf-8')).toBe(afterFirst);
+  });
+});
+
+describe('expandAgentsImports', () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'mnema-expand-'));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('inlines an existing file for a whole-line @path directive', () => {
+    writeFileSync(path.join(root, 'note.md'), 'imported body\n', 'utf-8');
+    const out = expandAgentsImports('before\n@note.md\nafter', root);
+    expect(out).toBe('before\n<!-- mnema:import @note.md -->\nimported body\nafter');
+  });
+
+  it('notes a missing target instead of leaving a dangling @path', () => {
+    const out = expandAgentsImports('@does-not-exist.md', root);
+    expect(out).toBe('> (mnema: `@does-not-exist.md` skipped — file not found)');
+  });
+
+  it('leaves an @ that is not a whole-line directive untouched', () => {
+    const line = 'email me @ someone@example.com or see @foo mid-sentence';
+    expect(expandAgentsImports(line, root)).toBe(line);
+  });
+
+  it('refuses to read a path that escapes the project root', () => {
+    // A traversal target that exists on disk must still be skipped.
+    const outside = mkdtempSync(path.join(tmpdir(), 'mnema-outside-'));
+    try {
+      writeFileSync(path.join(outside, 'secret.txt'), 'top secret', 'utf-8');
+      const rel = path.relative(root, path.join(outside, 'secret.txt'));
+      const out = expandAgentsImports(`@${rel}`, root);
+      expect(out).toContain('skipped — file not found');
+      expect(out).not.toContain('top secret');
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 });
