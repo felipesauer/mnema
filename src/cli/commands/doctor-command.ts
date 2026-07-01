@@ -64,11 +64,11 @@ export class DoctorCommand {
       )
       .option(
         '--rebuild-mirrors',
-        'Recovery: recreate missing `.md` files for skills, memories, epics, sprints and decisions from the SQLite rows. Skips the regular doctor checks.',
+        'Recovery: recreate missing `.md` files for tasks, skills, memories, epics, sprints and decisions from the SQLite rows. Skips the regular doctor checks.',
       )
       .option(
         '--prune-orphans',
-        'When combined with --rebuild-mirrors, also delete `.md` files whose slug has no matching SQLite row',
+        'When combined with --rebuild-mirrors, also delete `.md` files (including backlog task mirrors) whose slug/key has no matching SQLite row',
       )
       .action(
         async (options: { readonly rebuildMirrors?: boolean; readonly pruneOrphans?: boolean }) => {
@@ -84,15 +84,16 @@ export class DoctorCommand {
 
   /**
    * Rebuilds `.md` mirror files for every SQLite row that has no matching
-   * file on disk — skills, memories, epics, sprints and decisions.
+   * file on disk — tasks, skills, memories, epics, sprints and decisions.
    * Existing files are left alone: this is a one-way "heal drift"
    * operation, not a reformat. When `pruneOrphans` is true, also deletes
-   * skill/memory mirrors whose slug has no matching SQLite row (FS→DB
-   * drift). Pruning is intentionally limited to skills/memories — epics
-   * and decisions share `roadmap/`, so an orphan sweep there needs the
-   * union of both key sets and is left out of this recovery path.
+   * skill/memory mirrors and backlog task mirrors whose slug/key has no
+   * matching SQLite row (FS→DB drift). Pruning is limited to
+   * skills/memories/tasks — epics and decisions share `roadmap/`, so an
+   * orphan sweep there needs the union of both key sets and is left out of
+   * this recovery path.
    *
-   * @param pruneOrphans - Whether to delete orphan skill/memory `.md` files
+   * @param pruneOrphans - Whether to delete orphan skill/memory/task `.md` files
    * @returns Exit code (`0` on success, `3` if the context could not be
    *   opened)
    */
@@ -111,6 +112,7 @@ export class DoctorCommand {
       fsMod.mkdirSync(pathMod.join(memoryRoot, 'notes'), { recursive: true });
       fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.skills), { recursive: true });
 
+      const tasks = container.sync.rebuildMirrors();
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
       const epics = container.epic.rebuildMirrors(config.project.key);
@@ -118,6 +120,7 @@ export class DoctorCommand {
       const decisions = container.decision.rebuildMirrors(config.project.key);
       let prunedSkills: string[] = [];
       let prunedMemories: string[] = [];
+      let prunedTasks: string[] = [];
 
       if (pruneOrphans) {
         const adapter = container.adapter;
@@ -150,19 +153,37 @@ export class DoctorCommand {
           memorySlugs,
           fsMod,
         );
+        const taskKeys = new Set(
+          (
+            adapter
+              .getDatabase()
+              .prepare('SELECT key FROM tasks WHERE deleted_at IS NULL')
+              .all() as Array<{ key: string }>
+          ).map((r) => r.key),
+        );
+        prunedTasks = pruneNestedOrphanMirrors(
+          pathMod.join(projectRoot, config.paths.backlog),
+          taskKeys,
+          fsMod,
+        );
       }
 
       if (
+        tasks.length === 0 &&
         skills.length === 0 &&
         memories.length === 0 &&
         epics.length === 0 &&
         sprints.length === 0 &&
         decisions.length === 0 &&
+        prunedTasks.length === 0 &&
         prunedSkills.length === 0 &&
         prunedMemories.length === 0
       ) {
         process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
         return;
+      }
+      if (tasks.length > 0) {
+        process.stdout.write(`↻ tasks mirrored: ${tasks.length} — ${tasks.join(', ')}\n`);
       }
       if (skills.length > 0) {
         process.stdout.write(`↻ skills mirrored: ${skills.length} — ${skills.join(', ')}\n`);
@@ -190,6 +211,9 @@ export class DoctorCommand {
         process.stdout.write(
           `✗ memories pruned: ${prunedMemories.length} — ${prunedMemories.join(', ')}\n`,
         );
+      }
+      if (prunedTasks.length > 0) {
+        process.stdout.write(`✗ tasks pruned: ${prunedTasks.length} — ${prunedTasks.join(', ')}\n`);
       }
       exit = ExitCode.Success;
     });

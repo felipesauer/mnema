@@ -215,6 +215,7 @@ export class SearchService {
            FROM memories_fts
            JOIN memories m ON m.id = memories_fts.memory_id
           WHERE memories_fts MATCH ?
+            AND m.archived_at IS NULL
           ORDER BY rank
           LIMIT ?`,
       )

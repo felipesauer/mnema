@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -71,6 +71,26 @@ describe('CommitVerifier against real git', () => {
     const blobSha = git(['rev-parse', 'HEAD:file.txt']).trim();
     const result = verifier.verify(blobSha, repo);
     expect(result.checked).toBe(true);
+    expect(result.found).toBe(false);
+  });
+
+  it('treats a ref that looks like a flag as a miss, never an option', () => {
+    // A hostile evidence ref beginning with `-` must be read as an object
+    // name (and fail to resolve), not parsed by git as an option. Without
+    // the `--end-of-options` guard, `git cat-file` would reject it as an
+    // unknown flag instead of reporting a clean miss.
+    const result = verifier.verify('--not-a-real-flag', repo);
+    expect(result.checked).toBe(true);
+    expect(result.found).toBe(false);
+  });
+
+  it('does not honour a `--output=` ref (no arbitrary file write)', () => {
+    // Regression guard: `git` sub-commands accept `--output=<path>`, which
+    // would write an arbitrary file. The ref reaches the shell-out as an
+    // operand, so the guard must stop it from ever being seen as a flag.
+    const sink = path.join(repo, 'PWNED.txt');
+    const result = verifier.verify(`--output=${sink}`, repo);
+    expect(existsSync(sink)).toBe(false);
     expect(result.found).toBe(false);
   });
 

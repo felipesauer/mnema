@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Memory } from '../domain/entities/memory.js';
@@ -203,6 +203,12 @@ export class MemoryService {
   archive(slug: string, actor: string, via?: string, runId?: string): boolean {
     const archived = this.repo.archive(slug);
     if (archived) {
+      // The mirror reflects the source of truth: an archived memory is
+      // hidden from `list()`, so its `.md` must not linger on disk looking
+      // like a live entry. `rebuildMirrors` (listAll excludes archived)
+      // will not recreate it. Reactivating via upsert rewrites the mirror.
+      const mirrorPath = path.join(this.memoryDir, `${slug}.md`);
+      if (existsSync(mirrorPath)) unlinkSync(mirrorPath);
       this.audit.write({
         kind: 'memory_archived',
         actor,

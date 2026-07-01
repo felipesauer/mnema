@@ -116,12 +116,18 @@ export class FileCollisionService {
       if (ev.kind !== 'commit') continue;
       const sha = ev.ref.trim();
       if (sha.length === 0) continue;
+      // `--end-of-options` forces git to treat `sha` as a revision operand,
+      // never a flag — an evidence ref like `--output=<path>` would otherwise
+      // be honoured by `git show` and write an arbitrary file. Evidence refs
+      // are not format-validated at attach time, so a hostile ref can reach
+      // here from the database.
       const result = this.run('git', [
         '-C',
         this.projectRoot,
         'show',
         '--name-only',
         '--format=',
+        '--end-of-options',
         sha,
       ]);
       if (result.error !== undefined || result.status !== 0) continue;

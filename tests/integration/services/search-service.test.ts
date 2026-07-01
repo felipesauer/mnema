@@ -134,6 +134,27 @@ describe('SearchService', () => {
     expect(hits[0]?.key).toBe('pci');
   });
 
+  it('excludes an archived memory from search results', () => {
+    const db = adapter.getDatabase();
+    // Two memories sharing a distinctive term; one is then archived.
+    db.prepare(
+      `INSERT INTO memories (id, slug, title, content, topics, created_by)
+       VALUES
+         ('m1', 'live-quux', 'Live', 'the quuxtoken is documented here', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel')),
+         ('m2', 'archived-quux', 'Archived', 'the quuxtoken was documented here too', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    // Archiving sets archived_at; the FTS row is untouched (its triggers
+    // only fire on title/content changes), so the query itself must filter.
+    db.prepare(
+      "UPDATE memories SET archived_at = '2026-01-01T00:00:00.000Z' WHERE id = 'm2'",
+    ).run();
+
+    const hits = hitsOrThrow('quuxtoken', { entities: ['memory'] });
+    expect(hits.map((h) => h.key)).toEqual(['live-quux']);
+  });
+
   it('2.2: searches observations by content', () => {
     const db = adapter.getDatabase();
     db.prepare(

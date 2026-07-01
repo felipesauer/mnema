@@ -61,7 +61,16 @@ export class CommitVerifier {
     // `cat-file -e <ref>^{commit}` exits 0 iff the ref resolves to (or
     // peels to) a commit object. Passed as a single literal arg via the
     // array form — no shell, so the `^{commit}` suffix is safe.
-    const check = this.run('git', ['-C', cwd, 'cat-file', '-e', `${trimmed}^{commit}`]);
+    // `--end-of-options` forces the ref to be read as an object name, never
+    // a flag (a ref like `--foo` would otherwise be parsed as an option).
+    const check = this.run('git', [
+      '-C',
+      cwd,
+      'cat-file',
+      '-e',
+      '--end-of-options',
+      `${trimmed}^{commit}`,
+    ]);
     if (check.error !== undefined || check.status === null) {
       // The probe itself failed to execute — treat as unchecked.
       return { checked: false, found: false, reason: 'git invocation failed' };
