@@ -231,7 +231,7 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema init` | Create the full layout (use `--minimal` for adoption) |
+| `mnema init` | Create the full layout (`--minimal` for adoption, `--profile audit-only` for a core-only surface) |
 | `mnema adopt <component>` | Add `skills/`, `memory/` or `roadmap/` later |
 | `mnema import markdown --from PATH` | One-shot import from `## STATE Title` headings |
 | `mnema import github-issues --repo OWNER/REPO` | One-shot import from GitHub Issues |
@@ -362,6 +362,35 @@ what a failed workflow gate means:
 | `advisory` | only warns — anyone may proceed, and the skipped gate is audited |
 
 `mnema doctor` prints the active mode so its effect is never a surprise.
+
+### Audit-only profile
+
+If you only want the core thesis — a tamper-evident audit log, workflow
+gates and `doctor` — without the project-management surface (epics,
+sprints, decisions/ADRs, skills, memories), initialise with the
+audit-only profile:
+
+```bash
+mnema init --name "My App" --key "MYAPP" --profile audit-only
+```
+
+This picks the `lean` workflow and sets `features.knowledge: false`, so
+the MCP server advertises a **small core** of tools (audit, tasks, runs,
+plans, dependencies, evidence, search) instead of the full set — the
+agent isn't shown epic/sprint/knowledge tools it can't meaningfully use.
+Nothing is deleted: flip `features.knowledge` back to `true` (or switch
+to a fuller workflow) to grow into the complete surface, and use
+`mnema adopt` to add the skills/memory/roadmap directories when you want
+them. The default profile (`full`) keeps every surface on.
+
+The advertised tool groups are:
+
+| Group | Gated by | Examples |
+|---|---|---|
+| **Core** | always on | `audit_query`, `audit_verify`, `task_*`, `agent_run_*`, `graph_dependencies` |
+| **Epics** | workflow `epics` feature | `epic_create`, `epic_coverage` |
+| **Sprints** | workflow `sprints` feature | `sprint_start`, `sprint_metric` |
+| **Knowledge** | `features.knowledge` | `decision_*`, `skill_*`, `memory_*`, `observation_*` |
 
 ### User-level defaults
 

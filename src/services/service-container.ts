@@ -453,7 +453,14 @@ export function createServiceContainer(
   const searchService = new SearchService(adapter);
   const skillsDir = path.join(projectRoot, config.paths.skills);
   const memoryDir = path.join(projectRoot, config.paths.memory);
-  const knownTools = listAvailableToolNames(workflow);
+  // Skill lint checks that a referenced tool *exists*, not that it is
+  // advertised under the current profile, so validate against the full
+  // catalogue (all groups enabled) plus this workflow's transition tools.
+  const knownTools = listAvailableToolNames(workflow, {
+    epics: true,
+    sprints: true,
+    knowledge: true,
+  });
   // User-level knowledge (`~/.config/mnema`) merges under the project's
   // own skills/memories — read-only, project always shadows. Tests
   // override this (or pass null) so they never read the real home dir.
