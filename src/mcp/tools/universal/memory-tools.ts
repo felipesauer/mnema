@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { ErrorCode } from '../../../errors/error-codes.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
@@ -98,6 +99,36 @@ export class MemoryTools {
         if (drift !== null) return drift;
         const memories = this.memories.list(topic);
         return ok({ memories });
+      },
+    );
+
+    server.registerTool(
+      'memory_archive',
+      {
+        description:
+          'Archive a memory (soft, reversible retirement) — the row and its audit trail survive, and re-recording the slug reactivates it. Use to retire a memory flagged stale/obsolete without losing the record. Requires an active agent run.',
+        inputSchema: {
+          slug: z.string().min(1).describe('Memory slug to archive'),
+        },
+      },
+      ({ slug }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const archived = this.memories.archive(
+          slug,
+          this.identity.getDefaultActor(),
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!archived) {
+          return err({ kind: ErrorCode.MemoryNotFound, slug });
+        }
+        return ok({ slug, archived: true });
       },
     );
   }

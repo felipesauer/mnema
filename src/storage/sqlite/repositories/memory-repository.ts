@@ -12,6 +12,7 @@ interface MemoryRow {
   readonly created_by: string;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly archived_at: string | null;
 }
 
 /**
@@ -47,19 +48,39 @@ export class MemoryRepository {
   }
 
   /**
-   * Lists every memory, optionally filtered by topic.
+   * Lists memories, optionally filtered by topic. Archived memories are
+   * excluded unless `includeArchived` is set — the default listing (and
+   * the bootstrap inventory) shows only active memories.
    *
    * @param topic - Optional topic to filter by (membership in `topics`)
+   * @param includeArchived - Include archived memories (default false)
    * @returns Memory rows ordered by `updated_at` desc
    */
-  listAll(topic?: string): Memory[] {
+  listAll(topic?: string, includeArchived = false): Memory[] {
     const rows = this.adapter
       .getDatabase()
       .prepare('SELECT * FROM memories ORDER BY updated_at DESC')
       .all() as MemoryRow[];
-    const memories = rows.map(rowToMemory);
+    let memories = rows.map(rowToMemory);
+    if (!includeArchived) memories = memories.filter((m) => m.archivedAt === null);
     if (topic === undefined) return memories;
     return memories.filter((m) => m.topics.includes(topic));
+  }
+
+  /**
+   * Archives a memory by slug (soft, reversible). Sets `archived_at`; the
+   * row and its audit trail survive. No-op returns `false` for an unknown
+   * or already-archived slug.
+   *
+   * @param slug - Memory slug
+   * @returns `true` when a row transitioned to archived
+   */
+  archive(slug: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE memories SET archived_at = ? WHERE slug = ? AND archived_at IS NULL')
+      .run(isoNow(), slug);
+    return result.changes > 0;
   }
 
   /**
@@ -91,11 +112,13 @@ export class MemoryRepository {
           now,
         );
     } else {
+      // Re-recording a slug reactivates it: clear any archived_at so an
+      // archived memory brought back with fresh content is active again.
       this.adapter
         .getDatabase()
         .prepare(
           `UPDATE memories
-              SET title = ?, content = ?, topics = ?, updated_at = ?
+              SET title = ?, content = ?, topics = ?, updated_at = ?, archived_at = NULL
             WHERE slug = ?`,
         )
         .run(input.title, input.content, JSON.stringify(input.topics), now, input.slug);
@@ -133,5 +156,6 @@ function rowToMemory(row: MemoryRow): Memory {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    archivedAt: row.archived_at ?? null,
   };
 }

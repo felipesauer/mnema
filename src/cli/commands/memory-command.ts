@@ -6,7 +6,7 @@ import { printError } from '../../errors/error-printer.js';
 import { MemoryConsolidator } from '../../services/memory-consolidator.js';
 import { MemoryLinter } from '../../services/memory-linter.js';
 import { pc } from '../../utils/colors.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 
 interface LintOptions {
   readonly json?: boolean;
@@ -122,6 +122,22 @@ export class MemoryCommand {
           process.stdout.write(
             `${pc.bold(m.slug)} — ${m.title}\n${pc.dim(topics)}\n\n${m.content}\n`,
           );
+        });
+      });
+
+    group
+      .command('archive <slug>')
+      .description('Archive a memory (soft, reversible; re-record the slug to bring it back)')
+      .action(async (slug: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const archived = container.memory.archive(slug, container.identity.getDefaultActor());
+          if (!archived) {
+            process.stderr.write(
+              `${pc.red('error:')} no active memory with slug ${pc.bold(slug)}\n`,
+            );
+            process.exit(1);
+          }
+          process.stdout.write(`${pc.green('✓')} archived ${pc.bold(slug)}\n`);
         });
       });
   }

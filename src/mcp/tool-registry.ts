@@ -81,6 +81,7 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'memory_record',
   'memory_show',
   'memories_list',
+  'memory_archive',
   'observation_record',
   'observations_list',
 ];

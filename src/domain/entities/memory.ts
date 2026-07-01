@@ -15,4 +15,10 @@ export interface Memory {
   readonly createdBy: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /**
+   * When the memory was archived (soft, reversible retirement), or `null`
+   * when active. Archived memories are excluded from the default listing;
+   * re-recording the same slug clears this.
+   */
+  readonly archivedAt: string | null;
 }

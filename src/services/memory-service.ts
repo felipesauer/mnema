@@ -174,6 +174,32 @@ export class MemoryService {
   }
 
   /**
+   * Archives a memory (soft, reversible retirement) — the row and its
+   * audit trail survive, and re-recording the slug reactivates it. Used
+   * to retire a memory the staleness signal flagged as obsolete without
+   * losing the record.
+   *
+   * @param slug - Memory slug
+   * @param actor - Identity tuple for audit
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns `true` if archived, `false` if slug was unknown or already archived
+   */
+  archive(slug: string, actor: string, via?: string, runId?: string): boolean {
+    const archived = this.repo.archive(slug);
+    if (archived) {
+      this.audit.write({
+        kind: 'memory_archived',
+        actor,
+        via,
+        run: runId,
+        data: { slug },
+      });
+    }
+    return archived;
+  }
+
+  /**
    * Regenerates missing `.md` mirror files from every SQLite row. The
    * existing mirror files are left alone (no overwrite) — this only
    * heals drift, it does not reformat content the human may have

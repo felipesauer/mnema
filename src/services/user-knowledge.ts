@@ -81,6 +81,8 @@ export function readUserMemories(userDir: string): SourcedMemory[] {
         createdBy: 'user',
         createdAt: readString(data, 'created_at') ?? '',
         updatedAt: readString(data, 'updated_at') ?? '',
+        // User-level memories live in markdown and have no archive state.
+        archivedAt: null,
         source: 'user' as const,
       },
     ];

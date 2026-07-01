@@ -152,4 +152,39 @@ describe('MemoryService', () => {
     expect(existsSync(mirrorA)).toBe(true);
     expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
   });
+
+  it('archive hides a memory from the default listing but keeps it', () => {
+    service.record({ slug: 'old-fact', title: 'Old', content: 'stale', actor: 'daniel' });
+    service.record({ slug: 'live-fact', title: 'Live', content: 'fresh', actor: 'daniel' });
+
+    expect(service.archive('old-fact', 'daniel')).toBe(true);
+    // Default list excludes the archived one…
+    expect(
+      service
+        .list()
+        .map((m) => m.slug)
+        .sort(),
+    ).toEqual(['live-fact']);
+    // …but the row survives (show still finds it, marked archived).
+    const shown = service.show('old-fact');
+    expect(shown.ok).toBe(true);
+    if (shown.ok) expect(shown.value.archivedAt).not.toBeNull();
+  });
+
+  it('archive is a no-op (false) for an unknown or already-archived slug', () => {
+    expect(service.archive('nope', 'daniel')).toBe(false);
+    service.record({ slug: 's', title: 'S', content: 'x', actor: 'daniel' });
+    expect(service.archive('s', 'daniel')).toBe(true);
+    expect(service.archive('s', 'daniel')).toBe(false); // already archived
+  });
+
+  it('re-recording an archived slug reactivates it', () => {
+    service.record({ slug: 's', title: 'S', content: 'x', actor: 'daniel' });
+    service.archive('s', 'daniel');
+    service.record({ slug: 's', title: 'S', content: 'refreshed', actor: 'daniel' });
+    // Back in the default listing, no longer archived.
+    expect(service.list().map((m) => m.slug)).toContain('s');
+    const shown = service.show('s');
+    if (shown.ok) expect(shown.value.archivedAt).toBeNull();
+  });
 });

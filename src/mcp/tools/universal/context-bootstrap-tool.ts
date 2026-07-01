@@ -212,6 +212,11 @@ export class ContextBootstrapTool {
           ...(staleness.stale
             ? {
                 stale_files: staleness.cited_files.filter((c) => c.changedSince).map((c) => c.path),
+                // Turn the flag into an actionable nudge: re-record the
+                // slug to refresh it, or archive it if it is obsolete.
+                suggested_action:
+                  `cited files changed since this was written — re-check against current code, ` +
+                  `then \`memory_record\` to refresh it or \`memory_archive\` to retire it`,
               }
             : {}),
         };
