@@ -123,14 +123,17 @@ $ mnema doctor
   ✗ audit hash chain  hash mismatch on a line in current.jsonl
 ```
 
-A recorded cast of this exact flow lives at
-[`docs/quickstart.cast`](docs/quickstart.cast) — every frame is real
-command output. Play or host it with asciinema:
+<!-- Once the cast is uploaded (`asciinema upload docs/quickstart.cast`),
+     replace the line below with the clickable player thumbnail:
+     [![asciicast](https://asciinema.org/a/<ID>.svg)](https://asciinema.org/a/<ID>) -->
+
+▶ **[Watch the recorded cast](docs/quickstart.cast)** of this exact flow —
+every frame is real command output. Play or host it with asciinema:
 
 ```bash
 node scripts/make-cast.mjs                        # regenerate the cast
 asciinema play docs/quickstart.cast               # watch it locally
-agg --speed 1.4 docs/quickstart.cast docs/quickstart.svg   # render to SVG
+asciinema upload docs/quickstart.cast             # host it (returns a URL)
 ```
 
 ## What you get
