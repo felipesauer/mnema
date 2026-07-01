@@ -123,17 +123,18 @@ $ mnema doctor
   ✗ audit hash chain  hash mismatch on a line in current.jsonl
 ```
 
-<!-- Once the cast is uploaded (`asciinema upload docs/quickstart.cast`),
-     replace the line below with the clickable player thumbnail:
-     [![asciicast](https://asciinema.org/a/<ID>.svg)](https://asciinema.org/a/<ID>) -->
+<!-- The animated render below is committed once `docs/quickstart.svg`
+     exists (see the render command). Uncomment when the SVG is in place:
+![Mnema demo — init, review, doctor proves the chain, a tamper is caught](docs/quickstart.svg)
+-->
 
-▶ **[Watch the recorded cast](docs/quickstart.cast)** of this exact flow —
-every frame is real command output. Play or host it with asciinema:
+The snippet above is a recorded cast of this exact flow — every frame is
+real command output ([`docs/quickstart.cast`](docs/quickstart.cast)).
+Regenerate or render it (self-contained, no external service):
 
 ```bash
-node scripts/make-cast.mjs                        # regenerate the cast
-asciinema play docs/quickstart.cast               # watch it locally
-asciinema upload docs/quickstart.cast             # host it (returns a URL)
+node scripts/make-cast.mjs                                  # regenerate the cast
+agg --speed 1.4 docs/quickstart.cast docs/quickstart.svg   # render an animated SVG
 ```
 
 ## What you get
