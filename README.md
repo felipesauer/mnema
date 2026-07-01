@@ -120,13 +120,14 @@ and approve from the terminal — walked through end to end in
 | **Dual identity** | Each event records the human actor, the agent that executed, and the run — a built-in chain of custody. |
 | **Tasks, sprints, epics** | Full work tracking: tasks with acceptance criteria, estimate, assignee, transversal **labels** (e.g. `area:api`) and a token `context_budget`; one active sprint per project (with measurable metrics); epics grouping tasks under a derived lifecycle. |
 | **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, each able to record which artefacts it impacts, with a shortcut to promote a note into a decision. |
-| **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
-| **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, and an active inbox that surfaces review-SLA breaches and orphaned runs. |
+| **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), **file-collision** warnings (related tasks that touch the same files, inferred from commit evidence), a navigable **provenance chain** (observation/note → decision → memory, walkable in both directions), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
+| **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, an **executive snapshot** of an epic or sprint (coverage + graph + inbox, rendered to Markdown or HTML), and an active inbox that surfaces review-SLA breaches, per-state **WIP-limit** breaches, and orphaned runs. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
-| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
+| **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). A skill can be **invocable** with **dynamic context** — read-only `mnema` commands whose live output (e.g. `mnema tasks ready`) is embedded when the skill is shown. Memories can be **archived** when stale (hidden from listing and search, kept in the record). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
+| **Slash commands** | Reusable command flows versioned under `.mnema/commands/*.md` — a named bundle of `mnema` calls (e.g. `/standup` = bootstrap + inbox + today's history), discovered and surfaced to your client through MCP tools and the CLI. |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
-| **MCP tools** | 70+ universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
+| **MCP tools** | 78 universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
 
 ## Install
 
@@ -184,6 +185,8 @@ my-project/
     ├── roadmap/              # one .md per epic and per decision (ADR)
     ├── memory/               # agent/human-recorded facts, mirrored to .md
     ├── skills/               # agent-recorded skills, mirrored to .md
+    ├── commands/             # versioned slash-command definitions (.md)
+    ├── config.local.json     # optional personal overrides — gitignored
     └── workflows/
         └── default.json      # active state machine
 ```
@@ -198,10 +201,11 @@ between the two decides what belongs in git:
   version-controlled record of the work. They survive a fresh clone and
   are what a teammate (or another machine) reads. `mnema.config.json`
   and the active `workflows/*.json` are versioned too.
-- **Ignore it.** Only `.mnema/state/` is local: the SQLite cache, the
-  sync buffer and attachment blobs. All of it is *derived* and is
-  rebuilt from the markdown with `mnema sync`. `mnema init` pre-seeds
-  the `.gitignore` line for exactly this directory — nothing more.
+- **Ignore it.** `.mnema/state/` is local: the SQLite cache, the sync
+  buffer and attachment blobs — all *derived* and rebuilt from the
+  markdown with `mnema sync`. The optional `.mnema/config.local.json`
+  (per-repo personal overrides) is local too. `mnema init` pre-seeds the
+  `.gitignore` lines for exactly these — nothing more.
 
 Because the mirror is versioned, those `.md` files **do** change on
 every mutation and show up in `git status` — that is the trail, not
@@ -252,6 +256,7 @@ MCP tools. The commands group by what you're doing — run
 |---|---|
 | `mnema task depends <key> <blocksKey>` · `mnema task ready` | Declare a task↔task dependency; list tasks whose blockers are all done |
 | `mnema graph [--epic\|--sprint]` | Dependency graph: cycles, the ready/blocked frontier, and the critical path |
+| `mnema snapshot [--epic\|--sprint] [--out FILE]` | Executive snapshot (coverage + graph + inbox) as Markdown or HTML |
 | `mnema query [--state --epic --sprint --label --since --until --text]` | Aggregate backlog query — counts + lists across any combination of filters |
 | `mnema task evidence <key> [--criterion --kind --ref]` | List or attach evidence for acceptance criteria (a `--kind commit` ref is checked against git) |
 | `mnema sprint coverage <key>` · `mnema epic coverage <key>` | Report % of tasks in a terminal state |
@@ -270,13 +275,15 @@ MCP tools. The commands group by what you're doing — run
 | `mnema agent close-orphans [--apply]` · `mnema audit query [filters]` | Find (and abort) runs left open past the threshold; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
+| `mnema memory archive <slug>` | Archive a stale memory — hidden from listing and search, kept in the record |
+| `mnema commands list / show` | Discover the versioned slash-command flows under `.mnema/commands/` |
 
 **Keep current after a package upgrade**
 
 | Command | What it does |
 |---|---|
 | `mnema upgrade` | Detect everything out of date (pending migrations, stale AGENTS.md, missing mirrors, old `mnema_version`), show the plan, and apply it after confirmation (`--yes` to skip) |
-| `mnema agents sync` | Regenerate only the Mnema-managed block of AGENTS.md, preserving your own content |
+| `mnema agents sync` | Regenerate only the Mnema-managed block of AGENTS.md (with `@path` imports expanded, e.g. the live memory index), preserving your own content |
 
 **Integrate (MCP)**
 
@@ -369,6 +376,15 @@ to a project and an attempt to set them is rejected. Example:
 { "enforcement_mode": "strict", "sync": { "mode": "push" } }
 ```
 
+### Per-repo personal overrides
+
+A gitignored `.mnema/config.local.json` is the local counterpart: same
+behavior-only fields, but scoped to **one repo** and **your machine**, so
+you can loosen `enforcement_mode` in dev without touching the team's
+committed config. Precedence runs user global < project config < local
+override; like the user file, it can never change project identity,
+`paths` or `workflow`. `mnema init` gitignores it for you.
+
 ### Domain-event hooks
 
 A `hooks` block runs a shell command when a **domain** event fires — a
@@ -418,11 +434,12 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **816 tests, 0
+Confidence comes from how hard it's shaken out: **890 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
-validation, input-validation parity, ReDoS), and a 13-check publish
-gate ([scripts/publish-check.sh](scripts/publish-check.sh)) plus an
+validation, input-validation parity, ReDoS, and command/path-injection
+on the newer surfaces), and a 13-check publish gate
+([scripts/publish-check.sh](scripts/publish-check.sh)) plus an
 end-to-end smoke run before every tag. See
 [CHANGELOG.md](CHANGELOG.md) for the per-version history.
 
