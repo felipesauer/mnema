@@ -28,8 +28,8 @@ step "2. An agent captures a task and drives it through the workflow"
 mnema task create --title "Add rate limiting"
 mnema task move PAY-1 submit \
   --field title="Add rate limiting" \
-  --field description="Throttle the auth endpoint to 100 req/min" \
-  --field acceptance_criteria="429 on excess,rate-limit headers set" \
+  --field description="Throttle auth to 100 req/min" \
+  --field acceptance_criteria="429 on excess,headers set" \
   --field estimate=3
 mnema task move PAY-1 start --field assignee_id=you
 sleep 1

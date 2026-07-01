@@ -27,11 +27,11 @@ accountable.
 
 - [Why Mnema](#why-mnema)
 - [Quickstart](#quickstart)
-- [Install](#install)
 - [What you get](#what-you-get)
-- [How the MCP loop works](#how-the-mcp-loop-works)
+- [Install](#install)
 - [Project layout after `mnema init`](#project-layout-after-mnema-init)
 - [Common CLI commands](#common-cli-commands)
+- [How the MCP loop works](#how-the-mcp-loop-works)
 - [Configuration](#configuration)
 - [Workflows](#workflows)
 - [Status](#status)
@@ -108,32 +108,28 @@ and approve from the terminal — walked through end to end in
 ### See it in 30 seconds
 
 Drive a task through the gates, `doctor` proves the audit chain, then a
-hand-edit to a past log line is caught:
+hand-edit to a past log line is caught — every frame is real output:
 
 ![Mnema demo — init, review, doctor proves the chain, a tamper is caught](docs/quickstart.gif)
 
-Every frame is real command output. The same flow, condensed, in case the
-animation doesn't play:
+The same flow condensed, in case the animation doesn't play:
 
 ```console
 $ mnema init --yes --name "Payments API" --key PAY
-$ mnema task move PAY-1 submit … && mnema task move PAY-1 approve   # → DONE
+$ mnema task create --title "Add rate limiting"
+$ mnema task move PAY-1 submit …   # drive it through the gates → approve → DONE
 $ mnema doctor
-  ✓ audit hash chain  verified up to 6c4e68fc…
+  ✓ audit hash chain  verified
 
-# tamper: rewrite who did the work in a past audit line, then:
+# now tamper: rewrite who did the work in a past audit line
 $ mnema doctor
   ✗ audit hash chain  hash mismatch on a line in current.jsonl
 ```
 
-The recording is [`docs/quickstart.cast`](docs/quickstart.cast) — a real
-asciinema cast. Regenerate or re-render it (self-contained, no external
-service):
+<!-- The recording is docs/quickstart.cast (a real asciinema cast).
+     Regenerate it with `node scripts/make-cast.mjs`, then re-render the GIF
+     with `agg --speed 1.4 docs/quickstart.cast docs/quickstart.gif`. -->
 
-```bash
-node scripts/make-cast.mjs                                  # regenerate the cast
-agg --speed 1.4 docs/quickstart.cast docs/quickstart.gif   # re-render the GIF
-```
 
 ## What you get
 
@@ -552,7 +548,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **890 tests, 0
+Confidence comes from how hard it's shaken out: **931 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection

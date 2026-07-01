@@ -159,6 +159,8 @@ async function run(): Promise<void> {
 }
 
 run().catch((err) => {
-  process.stderr.write(`bench: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
+  process.stderr.write(
+    `bench: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
+  );
   process.exit(1);
 });

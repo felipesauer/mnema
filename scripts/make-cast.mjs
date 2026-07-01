@@ -40,13 +40,17 @@ function parseFlow(src) {
       continue;
     }
     if (/^(mnema|sed|echo|rm) /.test(line)) {
-      // Join backslash-continued lines into one command string.
-      let cmd = line;
-      while (cmd.endsWith('\\')) {
+      // Keep TWO forms of a backslash-continued command: `display` is the
+      // wrapped source (each line fits the terminal width and reads like a
+      // human typed it); `run` is the joined single line actually executed.
+      const display = [line];
+      let run = line;
+      while (run.endsWith('\\')) {
         i++;
-        cmd = `${cmd.slice(0, -1).trimEnd()} ${lines[i].trim()}`;
+        display.push(lines[i]);
+        run = `${run.slice(0, -1).trimEnd()} ${lines[i].trim()}`;
       }
-      steps.push({ kind: 'command', text: cmd });
+      steps.push({ kind: 'command', display, run });
     }
   }
   return steps;
@@ -95,10 +99,16 @@ try {
       emit(PROMPT);
       continue;
     }
-    // Show the command as typed, run it, stream the real output.
-    type(step.text);
+    // Type the command as written — a wrapped (backslash-continued)
+    // command types line by line, so no single line overflows the width;
+    // then run the joined form and stream its real output.
+    step.display.forEach((dline, idx) => {
+      // Continuation lines echo without a fresh prompt, mirroring a shell.
+      if (idx > 0) emit('[2m>[0m '); // dim continuation marker
+      type(dline);
+    });
     pause(0.3);
-    const out = run(step.text);
+    const out = run(step.run);
     if (out.length > 0) emit(out.endsWith('\n') ? out.replace(/\n/g, '\r\n') : `${out}\r\n`);
     pause(0.9);
     emit(PROMPT);
@@ -107,7 +117,7 @@ try {
 
   const header = {
     version: 2,
-    width: 90,
+    width: 100,
     height: 30,
     timestamp: 0,
     env: { SHELL: '/bin/bash', TERM: 'xterm-256color' },
@@ -116,7 +126,9 @@ try {
   const body = events.map((e) => JSON.stringify(e)).join('\n');
   writeFileSync(castOut, `${JSON.stringify(header)}\n${body}\n`);
   process.stdout.write(`✓ wrote ${path.relative(repoRoot, castOut)} (${events.length} frames)\n`);
-  process.stdout.write(`  render:  agg --speed 1.4 ${path.relative(repoRoot, castOut)} docs/quickstart.gif\n`);
+  process.stdout.write(
+    `  render:  agg --speed 1.4 ${path.relative(repoRoot, castOut)} docs/quickstart.gif\n`,
+  );
   process.stdout.write(`  or host: asciinema upload ${path.relative(repoRoot, castOut)}\n`);
 } finally {
   rmSync(demoDir, { recursive: true, force: true });

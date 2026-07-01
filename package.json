@@ -49,8 +49,8 @@
     "bench": "tsx bench/cli-bench.ts",
     "bench:mcp": "tsx bench/mcp-bench.ts",
     "bench:scale": "tsx bench/scale-bench.ts",
-    "lint": "biome check src/ tests/ bench/",
-    "lint:fix": "biome check --write src/ tests/ bench/",
+    "lint": "biome check src/ tests/ bench/ scripts/",
+    "lint:fix": "biome check --write src/ tests/ bench/ scripts/",
     "smoke:bootstrap": "bash scripts/smoke-bootstrap.sh",
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
     "publish:check": "bash scripts/publish-check.sh"
