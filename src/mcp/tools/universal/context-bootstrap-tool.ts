@@ -5,6 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import type { Config } from '../../../config/config-schema.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
+import type { InboxService } from '../../../services/inbox-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { MemoryStalenessService } from '../../../services/memory-staleness.js';
 import type { ObservationService } from '../../../services/observation-service.js';
@@ -50,6 +51,7 @@ export class ContextBootstrapTool {
     private readonly memoryService: MemoryService,
     private readonly observationService: ObservationService,
     private readonly memoryStaleness: MemoryStalenessService,
+    private readonly inboxService: InboxService,
   ) {}
 
   /**
@@ -177,9 +179,13 @@ export class ContextBootstrapTool {
       // `aging.stale_after_days`, oldest first. Empty when nothing is
       // stale. `stale_after_days` echoes the active threshold so the
       // agent can explain why an item did (or did not) surface.
+      // `sla_breaches` is the active cut: tasks past the per-state SLA
+      // (the IN_REVIEW limbo and friends), what is actually overdue.
       aging: {
         stale_after_days: staleAfterDays,
         stale_tasks: agedTasks,
+        sla_breaches: this.inboxService.slaBreaches(nowMs),
+        wip_breaches: this.inboxService.wipBreaches(),
       },
       skills_inventory: skills.map((s) => ({
         slug: s.slug,
@@ -206,6 +212,11 @@ export class ContextBootstrapTool {
           ...(staleness.stale
             ? {
                 stale_files: staleness.cited_files.filter((c) => c.changedSince).map((c) => c.path),
+                // Turn the flag into an actionable nudge: re-record the
+                // slug to refresh it, or archive it if it is obsolete.
+                suggested_action:
+                  `cited files changed since this was written — re-check against current code, ` +
+                  `then \`memory_record\` to refresh it or \`memory_archive\` to retire it`,
               }
             : {}),
         };

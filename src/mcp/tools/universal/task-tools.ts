@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { Config } from '../../../config/config-schema.js';
 import type { StateMachine } from '../../../domain/state-machine/state-machine.js';
 import type { IdentityService } from '../../../services/identity-service.js';
+import type { LabelService } from '../../../services/label-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -27,6 +28,7 @@ const taskItemSchema = z.object({
   context_budget: z.number().int().min(0).optional(),
   priority: z.number().int().min(1).max(5).optional(),
   assignee: z.string().optional(),
+  labels: z.array(z.string().min(1)).optional(),
 });
 
 /**
@@ -48,6 +50,7 @@ export class TaskTools {
     private readonly session: McpSessionContext,
     private readonly stateMachine: StateMachine,
     private readonly pendingMigrations: readonly string[],
+    private readonly labels: LabelService,
   ) {}
 
   /**
@@ -88,6 +91,10 @@ export class TaskTools {
             .string()
             .optional()
             .describe('Assignee — a known actor handle (e.g. `maria`) or a UUID'),
+          labels: z
+            .array(z.string().min(1))
+            .optional()
+            .describe('Transversal labels, e.g. ["area:api", "tipo:bug"]'),
           verbosity: z
             .enum(['full', 'compact'])
             .optional()
@@ -105,6 +112,7 @@ export class TaskTools {
         if (guard !== null) return guard;
 
         const handle = this.session.getClientMetadata().agent_handle;
+        const via = handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined;
         const result = this.tasks.create({
           projectKey: this.config.project.key,
           title: input.title,
@@ -115,10 +123,21 @@ export class TaskTools {
           priority: input.priority ?? 3,
           assigneeId: input.assignee ?? null,
           actor: this.identity.getDefaultActor(),
-          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          via,
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
+
+        if (input.labels !== undefined && input.labels.length > 0) {
+          const labelled = this.labels.setLabels({
+            taskKey: result.value.key,
+            labels: input.labels,
+            actor: this.identity.getDefaultActor(),
+            via,
+            runId: runId ?? undefined,
+          });
+          if (!labelled.ok) return err(labelled.error);
+        }
         return okTask(result.value, input.verbosity);
       },
     );
@@ -204,13 +223,27 @@ export class TaskTools {
             via,
             runId: runId ?? undefined,
           });
-          if (result.ok) {
-            created.push(
-              input.verbosity === 'compact' ? toCompactTask(result.value) : result.value,
-            );
-          } else {
+          if (!result.ok) {
             failed.push({ index, error: result.error });
+            return;
           }
+          if (item.labels !== undefined && item.labels.length > 0) {
+            const labelled = this.labels.setLabels({
+              taskKey: result.value.key,
+              labels: item.labels,
+              actor: this.identity.getDefaultActor(),
+              via,
+              runId: runId ?? undefined,
+            });
+            // The task itself was created; a bad label name is surfaced as
+            // this item's failure so the agent can fix and retry, rather
+            // than silently dropping the labels it asked for.
+            if (!labelled.ok) {
+              failed.push({ index, error: labelled.error });
+              return;
+            }
+          }
+          created.push(input.verbosity === 'compact' ? toCompactTask(result.value) : result.value);
         });
 
         return ok({ created, failed, created_count: created.length, failed_count: failed.length });

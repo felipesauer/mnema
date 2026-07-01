@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Config } from '../../config/config-schema.js';
@@ -20,7 +20,11 @@ export const AGENTS_MD_END = '<!-- MNEMA:END -->';
  */
 export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated' | 'appended' {
   const file = path.join(cwd, 'AGENTS.md');
-  const managed = `${AGENTS_MD_BEGIN}\n${buildAgentsMd(config)}\n${AGENTS_MD_END}\n`;
+  // `@path` directives in the template are expanded here, at generation
+  // time, against the project root — so the managed block always reflects
+  // current project state without the human maintaining it by hand.
+  const body = expandAgentsImports(buildAgentsMd(config), cwd);
+  const managed = `${AGENTS_MD_BEGIN}\n${body}\n${AGENTS_MD_END}\n`;
 
   if (!existsSync(file)) {
     writeFileSync(file, managed, 'utf-8');
@@ -29,7 +33,10 @@ export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated
 
   const previous = readFileSync(file, 'utf-8');
   const start = previous.indexOf(AGENTS_MD_BEGIN);
-  const endIdx = previous.indexOf(AGENTS_MD_END);
+  // Anchor on the LAST end marker: the managed block runs from the first
+  // START to the final END, so stray END-looking text imported into the
+  // block can't shorten the boundary and leak the block's tail outside.
+  const endIdx = previous.lastIndexOf(AGENTS_MD_END);
   if (start !== -1 && endIdx !== -1 && endIdx > start) {
     const before = previous.slice(0, start);
     const after = previous.slice(endIdx + AGENTS_MD_END.length);
@@ -40,6 +47,84 @@ export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated
   const separator = previous.endsWith('\n\n') ? '' : previous.endsWith('\n') ? '\n' : '\n\n';
   writeFileSync(file, `${previous}${separator}${managed}`, 'utf-8');
   return 'appended';
+}
+
+/**
+ * Expands `@path` import directives in a generated AGENTS.md body. A line
+ * whose sole content is `@<relative-path>` is replaced with the referenced
+ * file's contents, wrapped in a fenced note that records where it came
+ * from so a reader (and the next regeneration) can tell it is imported,
+ * not hand-written. A directive whose target does not exist degrades
+ * gracefully: the line becomes a one-line "skipped, file not found" note
+ * rather than an error or a dangling `@path`.
+ *
+ * Only whole-line directives are expanded; an `@` mid-sentence (or an
+ * email address) is left untouched. Paths are resolved against `cwd` and
+ * confined to it — a directive that escapes the project root (via `..` or
+ * an absolute path) is skipped with a note, never read.
+ *
+ * @param body - The generated body, possibly containing `@path` lines
+ * @param cwd - Project root the paths resolve against
+ * @returns The body with every directive expanded or noted
+ */
+export function expandAgentsImports(body: string, cwd: string): string {
+  // Resolve the root through the filesystem so the confinement check
+  // compares real paths (defeating a symlink that points outside).
+  let realRoot: string;
+  try {
+    realRoot = realpathSync(path.resolve(cwd));
+  } catch {
+    realRoot = path.resolve(cwd);
+  }
+  return body
+    .split('\n')
+    .map((line) => {
+      const match = /^@(\S+)$/.exec(line.trim());
+      if (match === null) return line;
+      const rel = match[1] as string;
+      const skipped = `> (mnema: \`@${rel}\` skipped — file not found)`;
+
+      const resolved = path.resolve(realRoot, rel);
+      if (!existsSync(resolved)) return skipped;
+
+      // Resolve symlinks before the confinement check: `path.resolve`
+      // normalises `..` but does NOT follow links, so a link inside the
+      // root pointing outside would otherwise pass and be read.
+      let real: string;
+      try {
+        real = realpathSync(resolved);
+      } catch {
+        return skipped;
+      }
+      const inside = real === realRoot || real.startsWith(`${realRoot}${path.sep}`);
+      if (!inside) return skipped;
+
+      // A directory target would throw EISDIR on read — degrade the same
+      // way a missing file does instead of crashing the whole generation.
+      if (!statSync(real).isFile()) return skipped;
+
+      // Neutralise the managed-block markers if they appear in the imported
+      // content: left intact, an embedded `<!-- MNEMA:END -->` would make
+      // the marker scan find the wrong block boundary. `writeAgentsMd`
+      // additionally anchors on the LAST end marker as defence in depth.
+      const contents = neutraliseBlockMarkers(readFileSync(real, 'utf-8').trimEnd());
+      return `<!-- mnema:import @${rel} -->\n${contents}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Rewrites any managed-block delimiter found *inside* imported content to
+ * a plainly-visible, inert form (`(MNEMA:END)` / `(MNEMA:START)`), so the
+ * imported text can never be mistaken for the real block boundary. Applied
+ * only to imported content, never to the generated body itself.
+ */
+function neutraliseBlockMarkers(content: string): string {
+  return content
+    .split(AGENTS_MD_END)
+    .join('(MNEMA:END)')
+    .split(AGENTS_MD_BEGIN)
+    .join('(MNEMA:START)');
 }
 
 /**
@@ -168,6 +253,20 @@ export function buildAgentsMd(config: Config): string {
       'supplements regenerated by `mnema memory consolidate` — read them for ' +
       'context, never write to them directly.',
   );
+  lines.push('');
+  lines.push('## Project memory');
+  lines.push('');
+  lines.push(
+    "The project's curated memory index is imported below at generation " +
+      'time, so this section always reflects the current state. Regenerate ' +
+      'it with `mnema memory consolidate`; this block refreshes on the next ' +
+      '`mnema agents sync` / `mnema upgrade`.',
+  );
+  lines.push('');
+  // A whole-line `@path` directive, expanded by expandAgentsImports at
+  // write time. If the index has not been generated yet, it degrades to a
+  // "skipped" note rather than a dangling reference.
+  lines.push(`@${config.paths.memory}/INDEX.md`);
   lines.push('');
   lines.push('## Useful CLI commands for the human');
   lines.push('');

@@ -6,7 +6,9 @@ import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
+import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -41,6 +43,24 @@ export interface RecordDecisionInput {
  */
 export interface PromoteNoteToDecisionInput {
   readonly noteId: string;
+  readonly title: string;
+  readonly decision: string;
+  readonly context?: string;
+  readonly rationale?: string;
+  readonly consequences?: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+}
+
+/**
+ * Input for {@link DecisionService.promoteFromObservation}. Unlike a
+ * note (which carries a parent task the project key is derived from), an
+ * observation has no such anchor, so `projectKey` is explicit.
+ */
+export interface PromoteObservationToDecisionInput {
+  readonly observationId: string;
+  readonly projectKey: string;
   readonly title: string;
   readonly decision: string;
   readonly context?: string;
@@ -99,6 +119,10 @@ export class DecisionService {
     private readonly tasks: TaskRepository,
     // Optional so unit tests can drive the service without a filesystem.
     private readonly mirror: RoadmapMirror | null = null,
+    // Optional provenance wiring: when present, promotion records a
+    // navigable source→decision edge. Absent in lean unit tests.
+    private readonly provenance: ProvenanceLinkRepository | null = null,
+    private readonly observations: ObservationRepository | null = null,
   ) {}
 
   /**
@@ -217,6 +241,60 @@ export class DecisionService {
         task_key: task.key,
       },
     });
+
+    // First-class, navigable edge: note → decision.
+    this.provenance?.link({ kind: 'note', ref: note.id }, { kind: 'decision', ref: decision.key });
+
+    return Ok(decision);
+  }
+
+  /**
+   * Promotes an observation into a decision — the observation's parallel
+   * to {@link promoteFromNote}. The observation stays put (it is
+   * append-only); this records the full decision body the caller supplies
+   * plus a navigable observation → decision provenance edge and a
+   * linkage audit event.
+   *
+   * @param input - Observation id + decision fields + identity tuple
+   * @returns The created decision or a structured error
+   */
+  promoteFromObservation(input: PromoteObservationToDecisionInput): Result<Decision, MnemaError> {
+    if (this.observations === null) {
+      // Wiring invariant: production always injects the observation repo.
+      // A missing one is a construction bug, not a user-facing state.
+      throw new Error('DecisionService.promoteFromObservation requires an ObservationRepository');
+    }
+    const observation = this.observations.findById(input.observationId);
+    if (observation === null) {
+      return Err({ kind: ErrorCode.ObservationNotFound, observationId: input.observationId });
+    }
+
+    const recorded = this.record({
+      projectKey: input.projectKey,
+      title: input.title,
+      decision: input.decision,
+      context: input.context,
+      rationale: input.rationale,
+      consequences: input.consequences,
+      actor: input.actor,
+      via: input.via,
+      runId: input.runId,
+    });
+    if (!recorded.ok) return recorded;
+    const decision = recorded.value;
+
+    this.audit.write({
+      kind: 'decision_promoted_from_observation',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { decision_key: decision.key, observation_id: observation.id },
+    });
+
+    this.provenance?.link(
+      { kind: 'observation', ref: observation.id },
+      { kind: 'decision', ref: decision.key },
+    );
 
     return Ok(decision);
   }

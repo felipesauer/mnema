@@ -277,6 +277,58 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(existsSync(orphanMirror)).toBe(false);
   });
 
+  it('mnema doctor --rebuild-mirrors recreates a missing task mirror and prunes an orphan', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+
+    const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
+    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
+
+    // Simulate drift: the real task's mirror vanished; a stray orphan lingers.
+    rmSync(realMirror);
+    writeFileSync(orphanMirror, '---\n---\nstray', 'utf-8');
+
+    const rebuild = runCli(['doctor', '--rebuild-mirrors', '--prune-orphans'], projectRoot);
+    expect(rebuild.status).toBe(0);
+    expect(rebuild.stdout).toContain('tasks mirrored: 1 — WEBAPP-1');
+    expect(rebuild.stdout).toContain('tasks pruned: 1 — WEBAPP-999');
+
+    // The real mirror is back; the orphan is gone.
+    expect(existsSync(realMirror)).toBe(true);
+    expect(existsSync(orphanMirror)).toBe(false);
+  });
+
+  it('mnema init scaffolds the .mnema/commands directory', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    expect(existsSync(path.join(projectRoot, '.mnema/commands'))).toBe(true);
+  });
+
+  it('mnema commands list discovers a versioned command', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    writeFileSync(
+      path.join(projectRoot, '.mnema/commands', 'standup.md'),
+      '---\ndescription: Daily standup\nsteps:\n  - inbox\n  - history --since=today\n---\n# Standup\n',
+      'utf-8',
+    );
+
+    const result = runCli(['commands', 'list'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('standup');
+    expect(result.stdout).toContain('Daily standup');
+
+    const show = runCli(['commands', 'show', 'standup'], projectRoot);
+    expect(show.stdout).toContain('mnema inbox');
+    expect(show.stdout).toContain('mnema history --since=today');
+  });
+
+  it('mnema mcp install-instructions mentions versioned slash commands', () => {
+    const result = runCli(['mcp', 'install-instructions', 'claude-code'], projectRoot);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('.mnema/commands/');
+    expect(result.stdout).toContain('commands_list');
+  });
+
   it('mnema task list outside a project returns CONFIG_NOT_FOUND', () => {
     const result = runCli(['task', 'list'], projectRoot);
     expect(result.status).not.toBe(0);

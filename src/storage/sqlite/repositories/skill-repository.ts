@@ -11,6 +11,8 @@ interface SkillRow {
   readonly description: string;
   readonly content: string;
   readonly tools_used: string;
+  readonly invocable: number;
+  readonly dynamic_context: string;
   readonly usage_count: number;
   readonly last_used_at: string | null;
   readonly created_by: string;
@@ -28,6 +30,8 @@ export interface SkillInsertInput {
   readonly description: string;
   readonly content: string;
   readonly toolsUsed: readonly string[];
+  readonly invocable?: boolean;
+  readonly dynamicContext?: readonly string[];
   readonly createdBy: string;
 }
 
@@ -117,8 +121,9 @@ export class SkillRepository {
       .prepare(
         `INSERT INTO skills (
            id, slug, name, version, description, content,
-           tools_used, usage_count, last_used_at, created_by, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
+           tools_used, invocable, dynamic_context,
+           usage_count, last_used_at, created_by, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
       )
       .run(
         id,
@@ -128,6 +133,8 @@ export class SkillRepository {
         input.description,
         input.content,
         JSON.stringify(input.toolsUsed),
+        input.invocable === true ? 1 : 0,
+        JSON.stringify(input.dynamicContext ?? []),
         input.createdBy,
         now,
         now,
@@ -155,13 +162,16 @@ export class SkillRepository {
       readonly description: string;
       readonly content: string;
       readonly toolsUsed: readonly string[];
+      readonly invocable?: boolean;
+      readonly dynamicContext?: readonly string[];
     },
   ): Skill | null {
     this.adapter
       .getDatabase()
       .prepare(
         `UPDATE skills
-            SET name = ?, description = ?, content = ?, tools_used = ?, updated_at = ?
+            SET name = ?, description = ?, content = ?, tools_used = ?,
+                invocable = ?, dynamic_context = ?, updated_at = ?
           WHERE id = ?`,
       )
       .run(
@@ -169,6 +179,8 @@ export class SkillRepository {
         fields.description,
         fields.content,
         JSON.stringify(fields.toolsUsed),
+        fields.invocable === true ? 1 : 0,
+        JSON.stringify(fields.dynamicContext ?? []),
         isoNow(),
         id,
       );
@@ -205,6 +217,8 @@ function rowToSkill(row: SkillRow): Skill {
     description: row.description,
     content: row.content,
     toolsUsed: JSON.parse(row.tools_used) as string[],
+    invocable: row.invocable === 1,
+    dynamicContext: JSON.parse(row.dynamic_context) as string[],
     usageCount: row.usage_count,
     lastUsedAt: row.last_used_at,
     createdBy: row.created_by,

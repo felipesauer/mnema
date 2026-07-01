@@ -1,8 +1,8 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { writeAgentsMd } from '@/cli/templates/agents-md.js';
+import { expandAgentsImports, writeAgentsMd } from '@/cli/templates/agents-md.js';
 import { ConfigSchema } from '@/config/config-schema.js';
 
 /**
@@ -70,5 +70,152 @@ describe('writeAgentsMd (agents sync)', () => {
     const content = readFileSync(agentsFile(), 'utf-8');
     expect(content).toContain('# Pre-existing manual from another tool');
     expect(content).toContain('<!-- MNEMA:START -->');
+  });
+
+  it('expands the @path memory index into the generated block', () => {
+    // Seed the curated index the template references.
+    const memoryDir = path.join(root, '.mnema', 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# Memory index\n\n- [Foo](foo.md)\n', 'utf-8');
+
+    writeAgentsMd(root, makeConfig());
+    const content = readFileSync(agentsFile(), 'utf-8');
+    // The directive is gone; its target's contents are inlined with a marker.
+    expect(content).toContain('<!-- mnema:import @.mnema/memory/INDEX.md -->');
+    expect(content).toContain('- [Foo](foo.md)');
+    expect(content).not.toMatch(/^@\.mnema\/memory\/INDEX\.md$/m);
+  });
+
+  it('degrades gracefully when the @path target is missing', () => {
+    // No INDEX.md written — the directive should become a skipped note.
+    writeAgentsMd(root, makeConfig());
+    const content = readFileSync(agentsFile(), 'utf-8');
+    expect(content).toContain('skipped — file not found');
+    expect(content).not.toMatch(/^@\.mnema\/memory\/INDEX\.md$/m);
+  });
+
+  it('is idempotent: a second write with an unchanged index produces identical output', () => {
+    const memoryDir = path.join(root, '.mnema', 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# Memory index\n\n- [Foo](foo.md)\n', 'utf-8');
+
+    const first = writeAgentsMd(root, makeConfig());
+    expect(first).toBe('created');
+    const afterFirst = readFileSync(agentsFile(), 'utf-8');
+
+    // Second write finds the markers and rewrites the block; with the same
+    // index the expanded body must be byte-identical (no perpetual drift).
+    const second = writeAgentsMd(root, makeConfig());
+    expect(second).toBe('updated');
+    expect(readFileSync(agentsFile(), 'utf-8')).toBe(afterFirst);
+  });
+});
+
+describe('expandAgentsImports', () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'mnema-expand-'));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('inlines an existing file for a whole-line @path directive', () => {
+    writeFileSync(path.join(root, 'note.md'), 'imported body\n', 'utf-8');
+    const out = expandAgentsImports('before\n@note.md\nafter', root);
+    expect(out).toBe('before\n<!-- mnema:import @note.md -->\nimported body\nafter');
+  });
+
+  it('notes a missing target instead of leaving a dangling @path', () => {
+    const out = expandAgentsImports('@does-not-exist.md', root);
+    expect(out).toBe('> (mnema: `@does-not-exist.md` skipped — file not found)');
+  });
+
+  it('leaves an @ that is not a whole-line directive untouched', () => {
+    const line = 'email me @ someone@example.com or see @foo mid-sentence';
+    expect(expandAgentsImports(line, root)).toBe(line);
+  });
+
+  it('refuses to read a path that escapes the project root', () => {
+    // A traversal target that exists on disk must still be skipped.
+    const outside = mkdtempSync(path.join(tmpdir(), 'mnema-outside-'));
+    try {
+      writeFileSync(path.join(outside, 'secret.txt'), 'top secret', 'utf-8');
+      const rel = path.relative(root, path.join(outside, 'secret.txt'));
+      const out = expandAgentsImports(`@${rel}`, root);
+      expect(out).toContain('skipped — file not found');
+      expect(out).not.toContain('top secret');
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a symlink inside the root that points outside it', () => {
+    const outside = mkdtempSync(path.join(tmpdir(), 'mnema-outside-'));
+    try {
+      writeFileSync(path.join(outside, 'secret.txt'), 'TOP SECRET OUTSIDE', 'utf-8');
+      // A link that lives inside the root but resolves outside it.
+      symlinkSync(path.join(outside, 'secret.txt'), path.join(root, 'link.txt'));
+      const out = expandAgentsImports('@link.txt', root);
+      expect(out).toContain('skipped — file not found');
+      expect(out).not.toContain('TOP SECRET OUTSIDE');
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('skips a directory target instead of crashing (EISDIR)', () => {
+    mkdirSync(path.join(root, 'adir'), { recursive: true });
+    // Must not throw; degrades like a missing file.
+    const out = expandAgentsImports('@adir', root);
+    expect(out).toContain('skipped — file not found');
+  });
+
+  it('neutralises managed-block markers found in imported content', () => {
+    writeFileSync(path.join(root, 'idx.md'), 'title <!-- MNEMA:END --> and more\n', 'utf-8');
+    const out = expandAgentsImports('@idx.md', root);
+    // The real END marker must not survive verbatim inside imported text.
+    expect(out).not.toContain('<!-- MNEMA:END -->');
+    expect(out).toContain('(MNEMA:END)');
+  });
+});
+
+describe('writeAgentsMd with a marker-bearing @path import', () => {
+  let root: string;
+  const agentsFile = () => path.join(root, 'AGENTS.md');
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'mnema-agents-marker-'));
+    // Seed the memory index the template imports, containing a stray END.
+    const memoryDir = path.join(root, '.mnema', 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(
+      path.join(memoryDir, 'INDEX.md'),
+      '# Memory index\n\n- [note about <!-- MNEMA:END --> handling](x.md)\n',
+      'utf-8',
+    );
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('stays byte-stable across regenerations (no runaway growth or leaked tail)', () => {
+    writeAgentsMd(root, makeConfig());
+    const afterFirst = readFileSync(agentsFile(), 'utf-8');
+    writeAgentsMd(root, makeConfig());
+    const afterSecond = readFileSync(agentsFile(), 'utf-8');
+    writeAgentsMd(root, makeConfig());
+    const afterThird = readFileSync(agentsFile(), 'utf-8');
+
+    // Idempotent: the managed block does not grow each pass.
+    expect(afterSecond).toBe(afterFirst);
+    expect(afterThird).toBe(afterFirst);
+    // Exactly one real END marker survives (the imported one is defanged).
+    expect(afterThird.match(/<!-- MNEMA:END -->/g)).toHaveLength(1);
+    // The section after the import is still inside the block.
+    expect(afterThird).toContain('## Useful CLI commands');
   });
 });

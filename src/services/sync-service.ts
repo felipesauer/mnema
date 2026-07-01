@@ -40,6 +40,14 @@ export type TaskLinkResolver = (task: Task) => {
 };
 
 /**
+ * Resolves the labels currently on a task for the markdown frontmatter.
+ * Labels live in a join table, not on the task row, so the resolver lets
+ * the sync service stay decoupled from the label repository (mirroring
+ * {@link TaskLinkResolver}). Returns `[]` for a task with no labels.
+ */
+export type TaskLabelResolver = (task: Task) => readonly string[];
+
+/**
  * Auto-flush thresholds. The MCP server overrides these from
  * `mnema.config.json`.
  */
@@ -77,6 +85,8 @@ export class SyncService {
     // Optional so existing callers/tests keep working without epic/sprint
     // wiring; when absent the links are simply written as null.
     private readonly resolveLinks: TaskLinkResolver | null = null,
+    // Optional for the same reason; when absent no `labels` key is written.
+    private readonly resolveLabels: TaskLabelResolver | null = null,
   ) {}
 
   /**
@@ -227,8 +237,9 @@ export class SyncService {
 
     const existing = this.markdownIo.read(targetPath);
     const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
+    const labels = this.resolveLabels?.(task) ?? [];
     this.markdownIo.write(targetPath, {
-      mnemaData: serialiseTask(task, links),
+      mnemaData: serialiseTask(task, links, labels),
       otherFrontmatter: existing.otherFrontmatter,
       content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
     });
@@ -286,6 +297,7 @@ export class SyncService {
 function serialiseTask(
   task: Task,
   links: { readonly epicKey: string | null; readonly sprintKey: string | null },
+  labels: readonly string[],
 ): Record<string, unknown> {
   return {
     key: task.key,
@@ -293,6 +305,7 @@ function serialiseTask(
     title: task.title,
     description: task.description,
     acceptance_criteria: [...task.acceptanceCriteria],
+    labels: [...labels],
     estimate: task.estimate,
     priority: task.priority,
     assignee: task.assigneeId,

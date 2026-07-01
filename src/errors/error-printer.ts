@@ -290,6 +290,10 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Valid states: ${error.allowed.join(', ')}.`);
       break;
 
+    case ErrorCode.ObservationNotFound:
+      lines.push(`Observation ${error.observationId} not found`);
+      break;
+
     case ErrorCode.NoteNotFound:
       lines.push(`Note ${error.noteId} not found`);
       lines.push(
@@ -410,6 +414,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.SearchInvalidQuery:
     case ErrorCode.FeatureNotAvailable:
     case ErrorCode.NoteNotFound:
+    case ErrorCode.ObservationNotFound:
     case ErrorCode.EvidenceCriterionOutOfRange:
     case ErrorCode.ValidationFailed:
       return ExitCode.Usage;

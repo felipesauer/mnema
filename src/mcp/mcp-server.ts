@@ -19,20 +19,28 @@ import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
 import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
 import { AuditVerifyTool } from './tools/universal/audit-verify-tool.js';
+import { CommandTools } from './tools/universal/command-tools.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
+import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
+import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
+import { LabelTools } from './tools/universal/label-tools.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
 import { NoteTools } from './tools/universal/note-tools.js';
 import { ObservationTools } from './tools/universal/observation-tools.js';
+import { PortfolioTool } from './tools/universal/portfolio-tool.js';
 import { PrStatusTool } from './tools/universal/pr-status-tool.js';
+import { ProvenanceTool } from './tools/universal/provenance-tool.js';
+import { RunDiffTool } from './tools/universal/run-diff-tool.js';
 import { SearchTool } from './tools/universal/search-tool.js';
 import { SkillTools } from './tools/universal/skill-tools.js';
+import { SnapshotTool } from './tools/universal/snapshot-tool.js';
 import { SprintTools } from './tools/universal/sprint-tools.js';
 import { TaskTools } from './tools/universal/task-tools.js';
 import { WikilinkTools } from './tools/universal/wikilink-tools.js';
@@ -181,6 +189,7 @@ export class MnemaMcpServer {
       this.services.memory,
       this.services.observation,
       this.services.memoryStaleness,
+      this.services.inbox,
     ).register(this.sdk);
 
     new AgentRunTools(
@@ -196,6 +205,7 @@ export class MnemaMcpServer {
       this.session,
       this.services.stateMachine,
       pendingFiles,
+      this.services.label,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
@@ -214,12 +224,25 @@ export class MnemaMcpServer {
     new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
       this.sdk,
     );
+    new LabelTools(
+      this.services.label,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
+    new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
+    new FileCollisionTool(this.services.fileCollision).register(this.sdk);
+    new RunDiffTool(this.services.runDiff).register(this.sdk);
+    new SnapshotTool(this.services.snapshot).register(this.sdk);
+    new ProvenanceTool(this.services.provenance).register(this.sdk);
     new EvidenceTools(
       this.services.taskEvidence,
       this.services.identity,
       this.session,
       pendingFiles,
       this.services.agentRun,
+      this.services.commitVerifier,
+      this.projectRoot,
     ).register(this.sdk);
     new EpicTools(
       this.services.epic,
@@ -230,6 +253,7 @@ export class MnemaMcpServer {
     ).register(this.sdk);
     new CoverageTools(this.services.coverage).register(this.sdk);
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
+    new PortfolioTool(this.services.portfolio).register(this.sdk);
     new PrStatusTool(this.services.githubPr).register(this.sdk);
     new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     new SprintTools(
@@ -247,6 +271,7 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
     ).register(this.sdk);
+    new CommandTools(this.services.commandDefinition).register(this.sdk);
     new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
     new MemoryTools(
       this.services.memory,
@@ -268,6 +293,7 @@ export class MnemaMcpServer {
       this.services.agentRun,
       this.config,
       this.services.githubPr,
+      pendingFiles,
     ).register(this.sdk);
   }
 

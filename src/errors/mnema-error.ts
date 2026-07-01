@@ -140,6 +140,7 @@ export type MnemaError =
       readonly allowed: readonly string[];
     }
   | { readonly kind: ErrorCode.NoteNotFound; readonly noteId: string }
+  | { readonly kind: ErrorCode.ObservationNotFound; readonly observationId: string }
   | {
       readonly kind: ErrorCode.DependencyCycle;
       readonly taskKey: string;

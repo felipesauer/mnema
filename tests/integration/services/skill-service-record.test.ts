@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { AuditService } from '@/services/audit-service.js';
+import type { CommandRunner } from '@/services/github-pr-service.js';
 import { IdentityService } from '@/services/identity-service.js';
 import { SkillService } from '@/services/skill-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
@@ -239,5 +240,197 @@ describe('SkillService (record/show/use)', () => {
     expect(existsSync(mirrorA)).toBe(true);
     // Untouched mirror stays byte-identical.
     expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
+
+  it('records an invocable skill with dynamic context (trigger flag persisted)', () => {
+    const result = service.record({
+      slug: 'pick-next',
+      name: 'Pick next task',
+      description: 'Choose what to work on next',
+      content: '## Steps',
+      invocable: true,
+      dynamicContext: ['mnema tasks ready'],
+      actor: 'daniel',
+    });
+    expect(result.skill.invocable).toBe(true);
+    expect(result.skill.dynamicContext).toEqual(['mnema tasks ready']);
+
+    // The fields round-trip through show…
+    const shown = service.show('pick-next');
+    expect(shown.ok).toBe(true);
+    if (shown.ok) {
+      expect(shown.value.invocable).toBe(true);
+      expect(shown.value.dynamicContext).toEqual(['mnema tasks ready']);
+    }
+    // …and into the mirror frontmatter.
+    const mirror = readFileSync(path.join(skillsDir, 'pick-next.md'), 'utf-8');
+    expect(mirror).toContain('invocable: true');
+    expect(mirror).toContain('dynamic_context: ["mnema tasks ready"]');
+  });
+
+  it('a passive skill stays invocable=false with no dynamic context, and its mirror omits the fields', () => {
+    service.record({
+      slug: 'passive',
+      name: 'Passive',
+      description: 'Just docs',
+      content: 'read me',
+      actor: 'daniel',
+    });
+    const shown = service.show('passive');
+    if (shown.ok) {
+      expect(shown.value.invocable).toBe(false);
+      expect(shown.value.dynamicContext).toEqual([]);
+    }
+    // Byte-level: the mirror carries neither field, so existing skills are
+    // unchanged by this feature.
+    const mirror = readFileSync(path.join(skillsDir, 'passive.md'), 'utf-8');
+    expect(mirror).not.toContain('invocable');
+    expect(mirror).not.toContain('dynamic_context');
+  });
+});
+
+describe('SkillService.resolveDynamicContext', () => {
+  let tempRoot: string;
+  let adapter: SqliteAdapter;
+
+  beforeEach(() => {
+    tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-skill-dyn-'));
+    adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
+    new MigrationRunner().run(adapter, migrationsDir);
+    new IdentityService(new ActorRepository(adapter)).ensureActor('daniel', ActorKind.Human);
+  });
+
+  afterEach(() => {
+    adapter.close();
+    rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  /** Builds a service whose dynamic-context runner is the given mock. */
+  function serviceWith(runner: CommandRunner): SkillService {
+    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const repo = new SkillRepository(adapter);
+    const identity = new IdentityService(new ActorRepository(adapter));
+    return new SkillService(
+      path.join(tempRoot, '.mnema', 'skills'),
+      KNOWN_TOOLS,
+      repo,
+      identity,
+      audit,
+      null,
+      runner,
+    );
+  }
+
+  /** Records and returns an invocable skill carrying the given commands. */
+  function invocableSkill(service: SkillService, commands: string[]) {
+    return service.record({
+      slug: 'dyn',
+      name: 'Dyn',
+      description: 'd',
+      content: 'c',
+      invocable: true,
+      dynamicContext: commands,
+      actor: 'daniel',
+    }).skill;
+  }
+
+  it('runs an allowed `mnema` command and returns its trimmed output', () => {
+    const calls: Array<{ command: string; args: readonly string[] }> = [];
+    const runner: CommandRunner = (command, args) => {
+      calls.push({ command, args });
+      return { status: 0, stdout: 'TASK-1 ready\nTASK-2 ready\n' };
+    };
+    const service = serviceWith(runner);
+    const skill = invocableSkill(service, ['mnema tasks ready']);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(resolved).toEqual([
+      { command: 'mnema tasks ready', ok: true, output: 'TASK-1 ready\nTASK-2 ready' },
+    ]);
+    // The `mnema` prefix is stripped from argv; only the subcommand is passed.
+    expect(calls).toEqual([{ command: 'mnema', args: ['tasks', 'ready'] }]);
+  });
+
+  it('refuses a non-`mnema` command without spawning anything', () => {
+    let spawned = false;
+    const runner: CommandRunner = () => {
+      spawned = true;
+      return { status: 0, stdout: 'should not run' };
+    };
+    const service = serviceWith(runner);
+    const skill = invocableSkill(service, ['rm -rf /']);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(spawned).toBe(false);
+    expect(resolved[0]?.ok).toBe(false);
+    expect(resolved[0]?.output).toContain('only `mnema');
+  });
+
+  it('refuses destructive / arbitrary-I/O mnema subcommands without spawning', () => {
+    let spawned = false;
+    const runner: CommandRunner = () => {
+      spawned = true;
+      return { status: 0, stdout: 'should not run' };
+    };
+    const service = serviceWith(runner);
+    // The `mnema` binary itself exposes these — the allowlist must block
+    // them even though the first token is `mnema`.
+    const dangerous = [
+      'mnema destroy --yes',
+      'mnema import markdown --from /home/user/.ssh/id_rsa',
+      'mnema snapshot --epic X --out /tmp/pwned',
+      'mnema task create --title x', // a write subaction of a read/write verb
+      'mnema mcp serve',
+    ];
+    const skill = invocableSkill(service, dangerous);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(spawned).toBe(false); // nothing was ever executed
+    expect(resolved.every((r) => !r.ok)).toBe(true);
+    expect(resolved.every((r) => r.output.includes('read-only'))).toBe(true);
+  });
+
+  it('allows read-only mnema subcommands (exact and with args)', () => {
+    const seen: string[] = [];
+    const runner: CommandRunner = (_cmd, args) => {
+      seen.push(args.join(' '));
+      return { status: 0, stdout: 'ok' };
+    };
+    const service = serviceWith(runner);
+    const skill = invocableSkill(service, [
+      'mnema history',
+      'mnema tasks ready --sprint S-1',
+      'mnema stats',
+    ]);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(resolved.every((r) => r.ok)).toBe(true);
+    expect(seen).toEqual(['history', 'tasks ready --sprint S-1', 'stats']);
+  });
+
+  it('does not allow a prefix that is only a partial word match', () => {
+    let spawned = false;
+    const runner: CommandRunner = () => {
+      spawned = true;
+      return { status: 0, stdout: '' };
+    };
+    const service = serviceWith(runner);
+    // `historyx` starts with the allowed `history` string but is a
+    // different command — the space-boundary check must reject it.
+    const skill = invocableSkill(service, ['mnema historyx']);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(spawned).toBe(false);
+    expect(resolved[0]?.ok).toBe(false);
+  });
+
+  it('degrades to a failure entry when an allowed command exits non-zero', () => {
+    const runner: CommandRunner = () => ({ status: 1, stdout: '' });
+    const service = serviceWith(runner);
+    const skill = invocableSkill(service, ['mnema tasks ready']);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(resolved[0]?.ok).toBe(false);
+    expect(resolved[0]?.output).toContain('command failed');
   });
 });

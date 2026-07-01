@@ -84,6 +84,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',
   },
+  commands: {
+    load: async () => new (await import('./commands/commands-command.js')).CommandsCommand(),
+    description: 'Versioned slash commands (list / show)',
+  },
   memory: {
     load: async () => new (await import('./commands/memory-command.js')).MemoryCommand(),
     description: 'Curate memory (consolidate / lint / list / show)',
@@ -112,6 +116,18 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   stats: {
     load: async () => new (await import('./commands/stats-command.js')).StatsCommand(),
     description: 'Show derived flow metrics (throughput, lead/cycle time, reopen rate)',
+  },
+  query: {
+    load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
+    description: 'Query the backlog by state, epic, sprint, creation window or free text',
+  },
+  graph: {
+    load: async () => new (await import('./commands/graph-command.js')).GraphCommand(),
+    description: 'Show the dependency graph: cycles, ready/blocked frontier, critical path',
+  },
+  snapshot: {
+    load: async () => new (await import('./commands/snapshot-command.js')).SnapshotCommand(),
+    description: 'Executive snapshot of an epic or sprint (coverage, deps, SLA) — markdown or HTML',
   },
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),

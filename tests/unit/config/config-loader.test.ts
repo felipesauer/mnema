@@ -8,6 +8,8 @@ import {
   ConfigInvalidError,
   ConfigLoader,
   ConfigNotFoundError,
+  LOCAL_CONFIG_RELATIVE,
+  LocalConfigInvalidError,
   USER_CONFIG_RELATIVE,
   UserConfigInvalidError,
 } from '@/config/config-loader.js';
@@ -183,6 +185,77 @@ describe('ConfigLoader', () => {
       writeUserConfig({ project: { key: 'OTHER', name: 'Nope' } });
 
       expect(() => scopedLoader.load(tempRoot)).toThrow(UserConfigInvalidError);
+    });
+  });
+
+  describe('per-repo override (.mnema/config.local.json)', () => {
+    function writeLocalConfig(payload: unknown): void {
+      const file = path.join(tempRoot, LOCAL_CONFIG_RELATIVE);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify(payload));
+    }
+
+    it('overrides the project config when present', () => {
+      writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'blocking' });
+      writeLocalConfig({ enforcement_mode: 'advisory' });
+
+      const config = loader.load(tempRoot);
+      expect(config.enforcement_mode).toBe('advisory'); // local wins over project
+    });
+
+    it('changes nothing when the local file is absent', () => {
+      writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'blocking' });
+      const config = loader.load(tempRoot);
+      expect(config.enforcement_mode).toBe('blocking');
+    });
+
+    it('deep-merges sync: local sub-fields win, project sub-fields fill the gaps', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        sync: { mode: 'push', agent_buffer_flush_count: 99 },
+      });
+      writeLocalConfig({ sync: { agent_buffer_flush_count: 5 } });
+
+      const config = loader.load(tempRoot);
+      expect(config.sync.agent_buffer_flush_count).toBe(5); // local wins
+      expect(config.sync.mode).toBe('push'); // project fills the gap
+    });
+
+    it('recursively merges a nested record (aging.sla_days) instead of replacing it', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        aging: { sla_days: { IN_REVIEW: 5, BLOCKED: 2 } },
+      });
+      // The local override touches a single state's SLA…
+      writeLocalConfig({ aging: { sla_days: { IN_REVIEW: 1 } } });
+
+      const config = loader.load(tempRoot);
+      expect(config.aging.sla_days?.IN_REVIEW).toBe(1); // local wins for the one it set
+      expect(config.aging.sla_days?.BLOCKED).toBe(2); // …the project's other SLA survives
+    });
+
+    it('sits on top of the whole stack: user < project < local', () => {
+      // user says blocking, project says strict, local says advisory → advisory
+      const fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-stack-'));
+      try {
+        const stackLoader = new ConfigLoader(() => fakeHome);
+        const userFile = path.join(fakeHome, USER_CONFIG_RELATIVE);
+        mkdirSync(path.dirname(userFile), { recursive: true });
+        writeFileSync(userFile, JSON.stringify({ enforcement_mode: 'blocking' }));
+        writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'strict' });
+        writeLocalConfig({ enforcement_mode: 'advisory' });
+
+        expect(stackLoader.load(tempRoot).enforcement_mode).toBe('advisory');
+      } finally {
+        rmSync(fakeHome, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects a local override that sets a project-only key', () => {
+      writeConfig(tempRoot, validConfig);
+      writeLocalConfig({ project: { key: 'OTHER', name: 'Nope' } });
+
+      expect(() => loader.load(tempRoot)).toThrow(LocalConfigInvalidError);
     });
   });
 });

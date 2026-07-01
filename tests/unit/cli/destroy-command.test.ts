@@ -23,6 +23,7 @@ const PATHS: DestroyPaths = {
   roadmap: '.mnema/roadmap',
   memory: '.mnema/memory',
   skills: '.mnema/skills',
+  commands: '.mnema/commands',
   workflow: 'default',
 };
 
@@ -44,6 +45,7 @@ describe('removeArtifacts', () => {
       PATHS.roadmap,
       PATHS.memory,
       PATHS.skills,
+      PATHS.commands,
     ]) {
       mkdirSync(path.join(projectRoot, dir), { recursive: true });
     }
@@ -85,6 +87,30 @@ describe('removeArtifacts', () => {
     expect(existsSync(path.join(projectRoot, PATHS.workflows))).toBe(false);
     // AGENTS.md had only the managed block, so it disappears entirely.
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(false);
+  });
+
+  it('folds the whole .mnema/ shell — the commands dir is not left orphaned', () => {
+    // With nothing kept, every managed dir (including the MNEMA-69
+    // commands dir) must go so `.mnema/` itself can be removed.
+    const removed = removeArtifacts(projectRoot, PATHS, {
+      keepMarkdown: false,
+      keepAudit: false,
+    });
+    expect(removed).toContain(PATHS.commands);
+    expect(existsSync(path.join(projectRoot, PATHS.commands))).toBe(false);
+    expect(existsSync(path.join(projectRoot, '.mnema'))).toBe(false);
+  });
+
+  it('folds an empty commands dir even when markdown is kept', () => {
+    // keepMarkdown preserves the trees, but an empty scaffolded commands
+    // dir is not content worth keeping — it is folded so it does not
+    // linger.
+    const removed = removeArtifacts(projectRoot, PATHS, {
+      keepMarkdown: true,
+      keepAudit: true,
+    });
+    expect(removed).toContain(PATHS.commands);
+    expect(existsSync(path.join(projectRoot, PATHS.commands))).toBe(false);
   });
 
   it('preserves a customised workflow JSON', () => {

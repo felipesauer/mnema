@@ -95,10 +95,27 @@ export class McpCommand {
 
         const handle = options.handle ?? client;
         const binary = process.execPath.endsWith('node') ? 'mnema' : process.execPath;
-        process.stdout.write(buildInstructions(client as SupportedClient, binary, handle));
+        process.stdout.write(
+          buildInstructions(client as SupportedClient, binary, handle) + COMMANDS_NOTE,
+        );
       });
   }
 }
+
+/**
+ * Appended to every client's instructions: points the user at the
+ * versioned slash commands so they discover the `commands_list` tool and
+ * the `.mnema/commands/` directory without having to read the docs.
+ */
+const COMMANDS_NOTE = [
+  'Versioned slash commands:',
+  '',
+  '  Define reusable flows in `.mnema/commands/<name>.md` (frontmatter:',
+  '  `description` + an ordered `steps` list of `mnema` calls). They are',
+  '  committed with the project and shared by the team; discover them with',
+  '  the `commands_list` MCP tool or `mnema commands list`.',
+  '',
+].join('\n');
 
 function buildInstructions(client: SupportedClient, binary: string, handle: string): string {
   // The agent handle travels through the spawned process's environment.

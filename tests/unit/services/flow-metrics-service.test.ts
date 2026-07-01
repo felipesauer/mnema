@@ -46,6 +46,12 @@ function runStarted(run: string, hours: number): AuditEvent {
 function runEnded(run: string, hours: number): AuditEvent {
   return { v: 2, at: at(hours), kind: 'run_ended', actor: 'a', run, data: { status: 'completed' } };
 }
+function skillRecorded(slug: string, hours: number): AuditEvent {
+  return { v: 2, at: at(hours), kind: 'skill_recorded', actor: 'a', data: { slug } };
+}
+function skillUsed(slug: string, hours: number): AuditEvent {
+  return { v: 2, at: at(hours), kind: 'skill_used', actor: 'a', data: { slug } };
+}
 
 /** Minimal default-like workflow: DRAFT initial, DONE/CANCELED terminal. */
 const workflow = {
@@ -235,5 +241,33 @@ describe('FlowMetricsService', () => {
     expect(m.lead_time.median_hours).toBeNull();
     expect(m.reopen.rate).toBe(0);
     expect(m.velocity).toEqual([]);
+  });
+
+  it('reports skill adoption (uses per run and used-vs-recorded ratio)', () => {
+    // 2 runs; 4 skills recorded, 1 used — the "captured but not reused" shape.
+    const events: AuditEvent[] = [
+      runStarted('r1', 0),
+      skillRecorded('add-tool', 1),
+      skillRecorded('add-migration', 2),
+      runEnded('r1', 3),
+      runStarted('r2', 4),
+      skillRecorded('plan-sprint', 5),
+      skillRecorded('review-flow', 6),
+      skillUsed('add-tool', 7),
+      runEnded('r2', 8),
+    ];
+    const m = makeService(events, fakeTasks({})).compute();
+    expect(m.skill_adoption.recorded).toBe(4);
+    expect(m.skill_adoption.used).toBe(1);
+    expect(m.skill_adoption.uses_per_run).toBe(0.5); // 1 use / 2 runs
+    expect(m.skill_adoption.used_vs_recorded).toBe(0.25); // 1 / 4
+  });
+
+  it('skill adoption is null-safe when there is no activity', () => {
+    const m = makeService([], fakeTasks({})).compute();
+    expect(m.skill_adoption.recorded).toBe(0);
+    expect(m.skill_adoption.used).toBe(0);
+    expect(m.skill_adoption.uses_per_run).toBeNull(); // no runs
+    expect(m.skill_adoption.used_vs_recorded).toBeNull(); // nothing recorded
   });
 });

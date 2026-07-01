@@ -11,6 +11,7 @@ import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
+import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -62,6 +63,7 @@ export class SyncRebuild {
     private readonly epics: EpicRepository,
     private readonly sprints: SprintRepository,
     private readonly decisions: DecisionRepository,
+    private readonly labels: LabelRepository,
     private readonly paths: {
       readonly projectRoot: string;
       readonly backlogDir: string;
@@ -196,8 +198,9 @@ export class SyncRebuild {
           sprintKey !== null ? (this.sprints.findByKey(sprintKey)?.id ?? null) : null;
 
         const existing = this.tasks.findByKey(key);
+        let taskId: string;
         if (existing === null) {
-          this.tasks.insert({
+          taskId = this.tasks.insert({
             key,
             projectId,
             title: readString(data, 'title') ?? key,
@@ -211,24 +214,30 @@ export class SyncRebuild {
             epicId,
             sprintId,
             metadata: readRecord(data, 'metadata'),
-          });
+          }).id;
           upserted += 1;
-          continue;
+        } else {
+          taskId = existing.id;
+          if (existing.state !== stateName) {
+            this.tasks.updateState(existing.id, stateName, null);
+            upserted += 1;
+          }
+          // Relink an existing row when its disk link drifted from the cache.
+          if (existing.epicId !== epicId) {
+            if (epicId !== null) this.epics.addTask(epicId, existing.id);
+            else this.epics.removeTask(existing.id);
+          }
+          if (existing.sprintId !== sprintId) {
+            if (sprintId !== null) this.sprints.addTask(sprintId, existing.id);
+            else this.sprints.removeTask(existing.id);
+          }
         }
 
-        if (existing.state !== stateName) {
-          this.tasks.updateState(existing.id, stateName, null);
-          upserted += 1;
-        }
-        // Relink an existing row when its disk link drifted from the cache.
-        if (existing.epicId !== epicId) {
-          if (epicId !== null) this.epics.addTask(epicId, existing.id);
-          else this.epics.removeTask(existing.id);
-        }
-        if (existing.sprintId !== sprintId) {
-          if (sprintId !== null) this.sprints.addTask(sprintId, existing.id);
-          else this.sprints.removeTask(existing.id);
-        }
+        // Mirror the frontmatter `labels:` list back into the join table.
+        // setForTask is a full replace, so it heals drift in both
+        // directions (added on disk, or removed) and is idempotent when
+        // the markdown is unchanged.
+        this.labels.setForTask(taskId, readStringArray(data, 'labels'));
       }
     }
 

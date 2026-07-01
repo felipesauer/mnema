@@ -19,10 +19,12 @@ import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
 import { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
+import { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import { NoteRepository } from '../storage/sqlite/repositories/note-repository.js';
 import { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
@@ -37,22 +39,32 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { CommandDefinitionService } from './command-definition-service.js';
+import { CommitVerifier } from './commit-verifier.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
+import { DependencyGraphService } from './dependency-graph-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
+import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
-import { GitHubPrService } from './github-pr-service.js';
+import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
+import { LabelService } from './label-service.js';
 import { MemoryService } from './memory-service.js';
 import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
 import { ObservationService } from './observation-service.js';
+import { OrphanRunService } from './orphan-run-service.js';
+import { PortfolioService } from './portfolio-service.js';
+import { ProvenanceService } from './provenance-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
+import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
 import { SkillService } from './skill-service.js';
+import { SnapshotService } from './snapshot-service.js';
 import { SprintService } from './sprint-service.js';
 import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
@@ -80,6 +92,13 @@ export interface ServiceContainerOptions {
    * `~/.config/mnema`.
    */
   readonly userDir?: string | null;
+  /**
+   * Override the command runner used to verify commit refs against git.
+   * Production shells out via the default runner; tests inject a mock so
+   * they exercise the found / not-found / no-repo paths deterministically
+   * without a real repository.
+   */
+  readonly commitRunner?: CommandRunner;
 }
 
 /**
@@ -103,25 +122,35 @@ export interface ServiceContainer {
   readonly sync: SyncService;
   readonly syncRebuild: SyncRebuild;
   readonly agentRun: AgentRunService;
+  readonly orphanRun: OrphanRunService;
   readonly agentPlan: AgentPlanService;
   readonly inbox: InboxService;
   readonly sprint: SprintService;
   readonly decision: DecisionService;
   readonly dependency: DependencyService;
+  readonly label: LabelService;
   readonly note: NoteService;
   readonly taskEvidence: TaskEvidenceService;
   readonly epic: EpicService;
   readonly coverage: CoverageService;
+  readonly dependencyGraph: DependencyGraphService;
+  readonly fileCollision: FileCollisionService;
+  readonly snapshot: SnapshotService;
+  readonly runDiff: RunDiffService;
+  readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly githubPr: GitHubPrService;
+  readonly commitVerifier: CommitVerifier;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
+  readonly commandDefinition: CommandDefinitionService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly memoryStaleness: MemoryStalenessService;
   readonly observation: ObservationService;
+  readonly provenance: ProvenanceService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
   readonly close: () => void;
@@ -196,12 +225,14 @@ export function createServiceContainer(
   const attachmentRepository = new AttachmentRepository(adapter);
   const decisionRepository = new DecisionRepository(adapter);
   const dependencyRepository = new DependencyRepository(adapter);
+  const labelRepository = new LabelRepository(adapter);
   const taskEvidenceRepository = new TaskEvidenceRepository(adapter);
   const noteRepository = new NoteRepository(adapter);
   const epicRepository = new EpicRepository(adapter);
   const skillRepository = new SkillRepository(adapter);
   const memoryRepository = new MemoryRepository(adapter);
   const observationRepository = new ObservationRepository(adapter);
+  const provenanceLinkRepository = new ProvenanceLinkRepository(adapter);
   const auditStateRepository = new AuditStateRepository(adapter);
   trace.mark('repositories instantiated');
 
@@ -256,6 +287,8 @@ export function createServiceContainer(
       sprintKey:
         task.sprintId !== null ? (sprintRepository.findById(task.sprintId)?.key ?? null) : null,
     }),
+    // Resolve a task's labels for the frontmatter `labels:` list.
+    (task) => labelRepository.findNamesByTask(task.id),
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
@@ -270,6 +303,7 @@ export function createServiceContainer(
     epicRepository,
     sprintRepository,
     decisionRepository,
+    labelRepository,
     {
       projectRoot,
       backlogDir: config.paths.backlog,
@@ -306,6 +340,7 @@ export function createServiceContainer(
     },
   );
   const agentPlanService = new AgentPlanService(agentPlans, agentRuns, tasks);
+  const orphanRunService = new OrphanRunService(agentRuns, agentRunService);
 
   const fileStore = new FileStore(path.join(stateDir, 'attachments'));
   const sprintService = new SprintService(
@@ -318,6 +353,7 @@ export function createServiceContainer(
     roadmapMirror,
     sync,
   );
+  const provenanceService = new ProvenanceService(provenanceLinkRepository);
   const decisionService = new DecisionService(
     decisionRepository,
     projects,
@@ -326,6 +362,8 @@ export function createServiceContainer(
     noteRepository,
     tasks,
     roadmapMirror,
+    provenanceLinkRepository,
+    observationRepository,
   );
   const dependencyService = new DependencyService(
     dependencyRepository,
@@ -351,6 +389,29 @@ export function createServiceContainer(
     tasks,
     stateMachine,
   );
+  const dependencyGraphService = new DependencyGraphService(
+    dependencyRepository,
+    tasks,
+    epicRepository,
+    sprintRepository,
+    stateMachine,
+  );
+  const runDiffService = new RunDiffService(agentRuns, auditQuery);
+  const fileCollisionService = new FileCollisionService(
+    tasks,
+    taskEvidenceRepository,
+    epicRepository,
+    sprintRepository,
+    projectRoot,
+    options.commitRunner,
+  );
+  const labelService = new LabelService(labelRepository, tasks, audit, sync);
+  const portfolioService = new PortfolioService(
+    tasks,
+    epicRepository,
+    sprintRepository,
+    labelRepository,
+  );
   const flowMetricsService = new FlowMetricsService(
     auditQuery,
     taskService,
@@ -359,6 +420,7 @@ export function createServiceContainer(
     config.project.key,
   );
   const githubPrService = new GitHubPrService();
+  const commitVerifier = new CommitVerifier(options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -367,7 +429,19 @@ export function createServiceContainer(
     auditQuery,
     adapter,
   );
-  const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine);
+  const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine, {
+    staleAfterDays: config.aging.stale_after_days,
+    slaDays: config.aging.sla_days,
+    wipLimits: config.aging.wip_limits,
+  });
+  const snapshotService = new SnapshotService(
+    coverageService,
+    dependencyGraphService,
+    inboxService,
+    epicRepository,
+    sprintRepository,
+    tasks,
+  );
   const attachmentService = new AttachmentService(
     attachmentRepository,
     tasks,
@@ -391,8 +465,19 @@ export function createServiceContainer(
     identity,
     audit,
     userDir,
+    options.commitRunner,
   );
-  const memoryService = new MemoryService(memoryDir, memoryRepository, identity, audit, userDir);
+  const commandDefinitionService = new CommandDefinitionService(
+    path.join(projectRoot, config.paths.commands),
+  );
+  const memoryService = new MemoryService(
+    memoryDir,
+    memoryRepository,
+    identity,
+    audit,
+    userDir,
+    provenanceLinkRepository,
+  );
   const wikilinkLintService = new WikilinkLintService(
     skillsDir,
     memoryDir,
@@ -418,25 +503,35 @@ export function createServiceContainer(
     sync,
     syncRebuild,
     agentRun: agentRunService,
+    orphanRun: orphanRunService,
     agentPlan: agentPlanService,
     inbox: inboxService,
     sprint: sprintService,
     decision: decisionService,
     dependency: dependencyService,
+    label: labelService,
     note: noteService,
     taskEvidence: taskEvidenceService,
     epic: epicService,
     coverage: coverageService,
+    dependencyGraph: dependencyGraphService,
+    fileCollision: fileCollisionService,
+    snapshot: snapshotService,
+    runDiff: runDiffService,
+    portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     githubPr: githubPrService,
+    commitVerifier,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
+    commandDefinition: commandDefinitionService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
     memoryStaleness: memoryStalenessService,
     observation: observationService,
+    provenance: provenanceService,
     transitions,
     pendingMigrations,
     close: () => adapter.close(),

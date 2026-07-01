@@ -10,7 +10,14 @@ import type { IdentityService } from '../../services/identity-service.js';
 import type { TaskService } from '../../services/task-service.js';
 import { resolveGovernanceRun } from '../governance-run.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
-import { err, ok, okTask, requireActiveRun, type Verbosity } from '../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  okTask,
+  requireActiveRun,
+  requireFreshSchema,
+  type Verbosity,
+} from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
 
 /**
@@ -49,6 +56,7 @@ export class TransitionToolsRegistrar {
     private readonly agentRun: AgentRunService,
     private readonly config: Config,
     private readonly githubPr: GitHubPrService,
+    private readonly pendingMigrations: readonly string[],
   ) {}
 
   /**
@@ -129,6 +137,14 @@ export class TransitionToolsRegistrar {
             inputSchema,
           },
           (input: Record<string, unknown>) => {
+            // A transition is a mutation: refuse on schema drift with the
+            // structured SCHEMA_OUT_OF_DATE (pointing at `mnema upgrade`)
+            // instead of letting a write hit a behind-schema DB and leak a
+            // raw SqliteError. The other mutation tools already do this;
+            // the transition registrar was the gap.
+            const drift = requireFreshSchema(this.pendingMigrations);
+            if (drift !== null) return drift;
+
             // Governance only when the action is named so AND it moves the
             // task into a terminal state — a genuine sign-off, never a
             // same-named mid-pipeline work transition.

@@ -74,6 +74,20 @@ export class ObservationRepository {
   }
 
   /**
+   * Finds an observation by id.
+   *
+   * @param id - Observation id
+   * @returns The observation or `null`
+   */
+  findById(id: string): Observation | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT * FROM observations WHERE id = ?')
+      .get(id) as ObservationRow | undefined;
+    return row === undefined ? null : rowToObservation(row);
+  }
+
+  /**
    * Lists observations, newest first, with optional filters.
    *
    * @param filters - Optional filter set

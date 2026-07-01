@@ -28,6 +28,7 @@ export const ConfigSchema = z.object({
       roadmap: z.string().default('.mnema/roadmap'),
       memory: z.string().default('.mnema/memory'),
       skills: z.string().default('.mnema/skills'),
+      commands: z.string().default('.mnema/commands'),
       workflows: z.string().default('.mnema/workflows'),
     })
     .prefault({}),
@@ -64,6 +65,21 @@ export const ConfigSchema = z.object({
   aging: z
     .object({
       stale_after_days: z.number().int().positive().default(3),
+      // A run that started and never ended past this many hours is treated
+      // as orphaned (a dropped session that left it open). `mnema doctor`
+      // surfaces these and `mnema agent close-orphans` can abort them.
+      orphan_run_after_hours: z.number().int().positive().default(24),
+      // Per-state review SLA in days. A non-terminal task sitting in one
+      // of these states past its threshold is an SLA breach the inbox
+      // and context_bootstrap surface actively. A state without an entry
+      // falls back to `stale_after_days`. Keys are workflow state names
+      // (e.g. IN_REVIEW, BLOCKED).
+      sla_days: z.record(z.string(), z.number().int().positive()).default({}),
+      // Per-state work-in-progress limit. A state holding more active
+      // tasks than its limit is a WIP breach the inbox and
+      // context_bootstrap surface. Keys are workflow state names; a state
+      // without an entry is uncapped.
+      wip_limits: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -136,6 +152,9 @@ export const UserConfigSchema = z
     aging: z
       .object({
         stale_after_days: z.number().int().positive().optional(),
+        orphan_run_after_hours: z.number().int().positive().optional(),
+        sla_days: z.record(z.string(), z.number().int().positive()).optional(),
+        wip_limits: z.record(z.string(), z.number().int().positive()).optional(),
       })
       .strict()
       .optional(),

@@ -16,6 +16,7 @@ import {
   AGENTS_MD_BEGIN,
   AGENTS_MD_END,
   buildAgentsMd,
+  expandAgentsImports,
   writeAgentsMd,
 } from '../templates/agents-md.js';
 import {
@@ -246,10 +247,18 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
     return true; // absent → init/sync should create it
   }
   const start = content.indexOf(AGENTS_MD_BEGIN);
-  const endIdx = content.indexOf(AGENTS_MD_END);
+  // Anchor on the LAST end marker (see writeAgentsMd) so an imported
+  // `@path` whose content contains an end-marker lookalike can't make the
+  // block read as perpetually stale.
+  const endIdx = content.lastIndexOf(AGENTS_MD_END);
   if (start === -1 || endIdx === -1 || endIdx < start) return true;
   const current = content.slice(start + AGENTS_MD_BEGIN.length, endIdx).trim();
-  return current !== buildAgentsMd(config).trim();
+  // Compare against the *expanded* body — writeAgentsMd expands `@path`
+  // imports at write time, so the on-disk block contains the imported
+  // contents, not the raw directive. Comparing to the unexpanded template
+  // would report the block as perpetually stale.
+  const expected = expandAgentsImports(buildAgentsMd(config), projectRoot).trim();
+  return current !== expected;
 }
 
 /**
