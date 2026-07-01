@@ -247,7 +247,10 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
     return true; // absent → init/sync should create it
   }
   const start = content.indexOf(AGENTS_MD_BEGIN);
-  const endIdx = content.indexOf(AGENTS_MD_END);
+  // Anchor on the LAST end marker (see writeAgentsMd) so an imported
+  // `@path` whose content contains an end-marker lookalike can't make the
+  // block read as perpetually stale.
+  const endIdx = content.lastIndexOf(AGENTS_MD_END);
   if (start === -1 || endIdx === -1 || endIdx < start) return true;
   const current = content.slice(start + AGENTS_MD_BEGIN.length, endIdx).trim();
   // Compare against the *expanded* body — writeAgentsMd expands `@path`

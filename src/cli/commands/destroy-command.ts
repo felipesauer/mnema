@@ -176,6 +176,7 @@ export interface DestroyPaths {
   readonly roadmap: string;
   readonly memory: string;
   readonly skills: string;
+  readonly commands: string;
   readonly workflow: string;
 }
 
@@ -226,6 +227,16 @@ export function removeArtifacts(
     for (const rel of [paths.backlog, paths.sprints, paths.roadmap, paths.memory]) {
       if (removeIfExists(projectRoot, rel)) removed.push(rel);
     }
+  }
+
+  // The commands dir (MNEMA-69) is versioned markdown like the trees
+  // above, but `init` scaffolds it empty. Under keepMarkdown it is only
+  // folded when empty (the scaffold), so user-authored commands survive;
+  // otherwise it is removed outright.
+  if (!decision.keepMarkdown) {
+    if (removeIfExists(projectRoot, paths.commands)) removed.push(paths.commands);
+  } else if (removeIfEmptyDir(projectRoot, paths.commands)) {
+    removed.push(paths.commands);
   }
 
   // Fold the bundled workflow directory if `removeBundledWorkflow`

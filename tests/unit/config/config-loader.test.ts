@@ -221,6 +221,19 @@ describe('ConfigLoader', () => {
       expect(config.sync.mode).toBe('push'); // project fills the gap
     });
 
+    it('recursively merges a nested record (aging.sla_days) instead of replacing it', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        aging: { sla_days: { IN_REVIEW: 5, BLOCKED: 2 } },
+      });
+      // The local override touches a single state's SLA…
+      writeLocalConfig({ aging: { sla_days: { IN_REVIEW: 1 } } });
+
+      const config = loader.load(tempRoot);
+      expect(config.aging.sla_days?.IN_REVIEW).toBe(1); // local wins for the one it set
+      expect(config.aging.sla_days?.BLOCKED).toBe(2); // …the project's other SLA survives
+    });
+
     it('sits on top of the whole stack: user < project < local', () => {
       // user says blocking, project says strict, local says advisory → advisory
       const fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-stack-'));

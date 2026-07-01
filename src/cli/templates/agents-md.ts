@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Config } from '../../config/config-schema.js';
@@ -33,7 +33,10 @@ export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated
 
   const previous = readFileSync(file, 'utf-8');
   const start = previous.indexOf(AGENTS_MD_BEGIN);
-  const endIdx = previous.indexOf(AGENTS_MD_END);
+  // Anchor on the LAST end marker: the managed block runs from the first
+  // START to the final END, so stray END-looking text imported into the
+  // block can't shorten the boundary and leak the block's tail outside.
+  const endIdx = previous.lastIndexOf(AGENTS_MD_END);
   if (start !== -1 && endIdx !== -1 && endIdx > start) {
     const before = previous.slice(0, start);
     const after = previous.slice(endIdx + AGENTS_MD_END.length);
@@ -65,24 +68,63 @@ export function writeAgentsMd(cwd: string, config: Config): 'created' | 'updated
  * @returns The body with every directive expanded or noted
  */
 export function expandAgentsImports(body: string, cwd: string): string {
-  const root = path.resolve(cwd);
+  // Resolve the root through the filesystem so the confinement check
+  // compares real paths (defeating a symlink that points outside).
+  let realRoot: string;
+  try {
+    realRoot = realpathSync(path.resolve(cwd));
+  } catch {
+    realRoot = path.resolve(cwd);
+  }
   return body
     .split('\n')
     .map((line) => {
       const match = /^@(\S+)$/.exec(line.trim());
       if (match === null) return line;
       const rel = match[1] as string;
-      const resolved = path.resolve(root, rel);
-      // Confine to the project root: a path that resolves outside (via
-      // `..` or an absolute path) is never read.
-      const inside = resolved === root || resolved.startsWith(`${root}${path.sep}`);
-      if (!inside || !existsSync(resolved)) {
-        return `> (mnema: \`@${rel}\` skipped — file not found)`;
+      const skipped = `> (mnema: \`@${rel}\` skipped — file not found)`;
+
+      const resolved = path.resolve(realRoot, rel);
+      if (!existsSync(resolved)) return skipped;
+
+      // Resolve symlinks before the confinement check: `path.resolve`
+      // normalises `..` but does NOT follow links, so a link inside the
+      // root pointing outside would otherwise pass and be read.
+      let real: string;
+      try {
+        real = realpathSync(resolved);
+      } catch {
+        return skipped;
       }
-      const contents = readFileSync(resolved, 'utf-8').trimEnd();
+      const inside = real === realRoot || real.startsWith(`${realRoot}${path.sep}`);
+      if (!inside) return skipped;
+
+      // A directory target would throw EISDIR on read — degrade the same
+      // way a missing file does instead of crashing the whole generation.
+      if (!statSync(real).isFile()) return skipped;
+
+      // Neutralise the managed-block markers if they appear in the imported
+      // content: left intact, an embedded `<!-- MNEMA:END -->` would make
+      // the marker scan find the wrong block boundary. `writeAgentsMd`
+      // additionally anchors on the LAST end marker as defence in depth.
+      const contents = neutraliseBlockMarkers(readFileSync(real, 'utf-8').trimEnd());
       return `<!-- mnema:import @${rel} -->\n${contents}`;
     })
     .join('\n');
+}
+
+/**
+ * Rewrites any managed-block delimiter found *inside* imported content to
+ * a plainly-visible, inert form (`(MNEMA:END)` / `(MNEMA:START)`), so the
+ * imported text can never be mistaken for the real block boundary. Applied
+ * only to imported content, never to the generated body itself.
+ */
+function neutraliseBlockMarkers(content: string): string {
+  return content
+    .split(AGENTS_MD_END)
+    .join('(MNEMA:END)')
+    .split(AGENTS_MD_BEGIN)
+    .join('(MNEMA:START)');
 }
 
 /**

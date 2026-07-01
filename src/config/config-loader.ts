@@ -175,15 +175,41 @@ export class ConfigLoader {
   }
 }
 
-/** Sub-objects merged one level deep instead of replaced wholesale. */
+/** Sub-objects merged recursively instead of replaced wholesale. */
 const DEEP_MERGE_KEYS = ['sync', 'features', 'aging', 'github'] as const;
+
+/** True for a plain object (mergeable), false for arrays / null / scalars. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Recursively merges two plain objects: the override wins on every leaf,
+ * nested plain objects merge key-by-key, and arrays/scalars replace
+ * wholesale. Used for the {@link DEEP_MERGE_KEYS} sub-trees so that a
+ * nested record like `aging.sla_days` keeps the base's per-state keys when
+ * the override only sets one of them.
+ */
+function mergeObjectsDeep(
+  base: Record<string, unknown>,
+  override: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, o] of Object.entries(override)) {
+    const b = out[key];
+    out[key] = isPlainObject(b) && isPlainObject(o) ? mergeObjectsDeep(b, o) : o;
+  }
+  return out;
+}
 
 /**
  * Layers `override` on top of `base`: a top-level key present in
- * `override` wins; the {@link DEEP_MERGE_KEYS} sub-objects merge one level
- * deep so an override that sets a single sub-field doesn't drop the
- * others. Used for both merge steps — user-under-project and
- * project-under-local — since both are "the higher layer wins key by key".
+ * `override` wins; the {@link DEEP_MERGE_KEYS} sub-trees merge *recursively*
+ * so an override that sets a single (possibly nested) sub-field doesn't
+ * drop the others — e.g. a local `aging.sla_days: { IN_REVIEW: 1 }` keeps
+ * the project's other per-state SLAs. Used for both merge steps
+ * (user-under-project and project-under-local) since both are "the higher
+ * layer wins key by key".
  *
  * @param base - Lower-precedence object
  * @param override - Higher-precedence object (wins on every conflict)
@@ -197,14 +223,8 @@ function deepMergeConfig(
   for (const key of DEEP_MERGE_KEYS) {
     const b = base[key];
     const o = override[key];
-    if (
-      typeof b === 'object' &&
-      b !== null &&
-      typeof o === 'object' &&
-      o !== null &&
-      !Array.isArray(o)
-    ) {
-      out[key] = { ...(b as Record<string, unknown>), ...(o as Record<string, unknown>) };
+    if (isPlainObject(b) && isPlainObject(o)) {
+      out[key] = mergeObjectsDeep(b, o);
     }
   }
   return out;

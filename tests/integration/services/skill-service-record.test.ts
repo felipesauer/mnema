@@ -366,10 +366,68 @@ describe('SkillService.resolveDynamicContext', () => {
     expect(resolved[0]?.output).toContain('only `mnema');
   });
 
-  it('degrades to a failure entry when a command exits non-zero', () => {
+  it('refuses destructive / arbitrary-I/O mnema subcommands without spawning', () => {
+    let spawned = false;
+    const runner: CommandRunner = () => {
+      spawned = true;
+      return { status: 0, stdout: 'should not run' };
+    };
+    const service = serviceWith(runner);
+    // The `mnema` binary itself exposes these — the allowlist must block
+    // them even though the first token is `mnema`.
+    const dangerous = [
+      'mnema destroy --yes',
+      'mnema import markdown --from /home/user/.ssh/id_rsa',
+      'mnema snapshot --epic X --out /tmp/pwned',
+      'mnema task create --title x', // a write subaction of a read/write verb
+      'mnema mcp serve',
+    ];
+    const skill = invocableSkill(service, dangerous);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(spawned).toBe(false); // nothing was ever executed
+    expect(resolved.every((r) => !r.ok)).toBe(true);
+    expect(resolved.every((r) => r.output.includes('read-only'))).toBe(true);
+  });
+
+  it('allows read-only mnema subcommands (exact and with args)', () => {
+    const seen: string[] = [];
+    const runner: CommandRunner = (_cmd, args) => {
+      seen.push(args.join(' '));
+      return { status: 0, stdout: 'ok' };
+    };
+    const service = serviceWith(runner);
+    const skill = invocableSkill(service, [
+      'mnema history',
+      'mnema tasks ready --sprint S-1',
+      'mnema stats',
+    ]);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(resolved.every((r) => r.ok)).toBe(true);
+    expect(seen).toEqual(['history', 'tasks ready --sprint S-1', 'stats']);
+  });
+
+  it('does not allow a prefix that is only a partial word match', () => {
+    let spawned = false;
+    const runner: CommandRunner = () => {
+      spawned = true;
+      return { status: 0, stdout: '' };
+    };
+    const service = serviceWith(runner);
+    // `historyx` starts with the allowed `history` string but is a
+    // different command — the space-boundary check must reject it.
+    const skill = invocableSkill(service, ['mnema historyx']);
+
+    const resolved = service.resolveDynamicContext(skill);
+    expect(spawned).toBe(false);
+    expect(resolved[0]?.ok).toBe(false);
+  });
+
+  it('degrades to a failure entry when an allowed command exits non-zero', () => {
     const runner: CommandRunner = () => ({ status: 1, stdout: '' });
     const service = serviceWith(runner);
-    const skill = invocableSkill(service, ['mnema bogus']);
+    const skill = invocableSkill(service, ['mnema tasks ready']);
 
     const resolved = service.resolveDynamicContext(skill);
     expect(resolved[0]?.ok).toBe(false);
