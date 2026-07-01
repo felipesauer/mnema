@@ -285,6 +285,83 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toContain('database opens');
   });
 
+  it('mnema commit keeps staged partial edits and never commits unstaged ones', () => {
+    // Real-git test: mocks can't catch pathspec-vs-index semantics, so drive
+    // the actual binary against a real repo.
+    const git = (...args: string[]) =>
+      spawnSync('git', args, { cwd: projectRoot, encoding: 'utf-8' });
+    git('init');
+    git('config', 'user.email', 't@t.co');
+    git('config', 'user.name', 't');
+    runCli(['init', '--name', 'Commit App', '--key', 'CMT'], projectRoot);
+    writeFileSync(path.join(projectRoot, 'app.js'), 'line1\nline2\nline3\n');
+    git('add', '-A');
+    git('commit', '-m', 'base');
+
+    // Stage a line1 change, then make a further UNSTAGED edit to line3, and
+    // create task churn under .mnema/.
+    writeFileSync(path.join(projectRoot, 'app.js'), 'LINE1\nline2\nline3\n');
+    git('add', 'app.js');
+    writeFileSync(path.join(projectRoot, 'app.js'), 'LINE1\nline2\nLINE3-unstaged\n');
+    runCli(['task', 'create', '--title', 'Churn'], projectRoot);
+
+    const res = runCli(['commit', '-m', 'feat: line1'], projectRoot);
+    expect(res.status).toBe(0);
+
+    // Two commits: code on top, trail beneath.
+    const log = spawnSync('git', ['log', '--oneline', '-2', '--format=%s'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    })
+      .stdout.trim()
+      .split('\n');
+    expect(log[0]).toBe('feat: line1');
+    expect(log[1]).toBe('chore(mnema): update trail');
+
+    // The committed code has ONLY the staged line1 change, NOT the unstaged one.
+    const committed = spawnSync('git', ['show', 'HEAD:app.js'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    }).stdout;
+    expect(committed).toContain('LINE1');
+    expect(committed).not.toContain('LINE3-unstaged');
+
+    // The unstaged edit is preserved in the working tree.
+    expect(readFileSync(path.join(projectRoot, 'app.js'), 'utf-8')).toContain('LINE3-unstaged');
+
+    // The trail commit does not touch app.js.
+    const trailStat = spawnSync('git', ['show', '--stat', '--format=', 'HEAD~1'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    }).stdout;
+    expect(trailStat).not.toContain('app.js');
+    expect(trailStat).toContain('.mnema');
+  });
+
+  it('mnema commit refuses to run mid-merge', () => {
+    const git = (...args: string[]) =>
+      spawnSync('git', args, { cwd: projectRoot, encoding: 'utf-8' });
+    git('init');
+    git('config', 'user.email', 't@t.co');
+    git('config', 'user.name', 't');
+    runCli(['init', '--name', 'Merge App', '--key', 'MRG'], projectRoot);
+    git('add', '-A');
+    git('commit', '-m', 'base');
+    // Build two divergent branches that both edit conflict.txt.
+    writeFileSync(path.join(projectRoot, 'conflict.txt'), 'A\n');
+    git('add', '-A');
+    git('commit', '-m', 'a');
+    git('checkout', '-b', 'other', 'HEAD~1');
+    writeFileSync(path.join(projectRoot, 'conflict.txt'), 'B\n');
+    git('add', '-A');
+    git('commit', '-m', 'b');
+    git('merge', 'master'); // conflicts, leaves MERGE_HEAD
+
+    const res = runCli(['commit', '-m', 'during merge'], projectRoot);
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toContain('merge is in progress');
+  });
+
   it('mnema upgrade rebuilds a missing task mirror and prunes an orphan', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     runCli(['task', 'create', '--title', 'Real task'], projectRoot);

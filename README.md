@@ -221,6 +221,25 @@ If you would rather treat the whole store as a private local cache, add
 `.mnema/` to your `.gitignore` instead — you keep a clean tree but give
 up the cross-clone history that is part of what Mnema offers.
 
+That trail churn is legitimate, but you rarely want it mixed into a code
+diff. `mnema commit` keeps them apart without hiding either:
+
+```bash
+git add src/rate-limit.ts          # stage the code you want to commit
+mnema commit -m "feat: add rate limiting"
+# → commit 1  chore(mnema): update trail   (.mnema/ only)
+# → commit 2  feat: add rate limiting      (your staged code)
+```
+
+It makes two commits — the `.mnema/` trail first (default message,
+overridable with `--trail-message`), then your code. The trail is staged
+for you; **your code is whatever you already staged** with `git add` (or
+`git add -p`) and is committed straight from the index, so unstaged edits
+and partial staging are preserved — the helper never `git add`s your code,
+never amends, and never pushes. An empty bucket is skipped rather than
+committed. Use `--trail-only` to commit just the trail. It refuses to run
+mid-merge/rebase so it can't leave a half-finished state.
+
 ## Common CLI commands
 
 You drive Mnema from the terminal; agents drive the same model through
@@ -274,6 +293,7 @@ MCP tools. The commands group by what you're doing — run
 | `mnema agent inspect <run_id>` · `mnema agent diff <run_id>` | One run with its plans + mutations; a grouped diff of everything that run changed |
 | `mnema agent close-orphans [--apply]` · `mnema audit query [filters]` | Find (and abort) runs left open past the threshold; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
+| `mnema commit -m "…"` | Commit the `.mnema/` trail and your code as two separate commits (trail first) |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
 | `mnema memory archive <slug>` | Archive a stale memory — hidden from listing and search, kept in the record |
 | `mnema commands list / show` | Discover the versioned slash-command flows under `.mnema/commands/` |

@@ -84,6 +84,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/hooks-command.js')).HooksCommand(),
     description: 'Review and approve domain-event hooks (approve / show)',
   },
+  commit: {
+    load: async () => new (await import('./commands/commit-command.js')).CommitCommand(),
+    description: 'Commit the .mnema/ trail separately from code (trail first, then code)',
+  },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',
