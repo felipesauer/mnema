@@ -84,6 +84,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',
   },
+  commands: {
+    load: async () => new (await import('./commands/commands-command.js')).CommandsCommand(),
+    description: 'Versioned slash commands (list / show)',
+  },
   memory: {
     load: async () => new (await import('./commands/memory-command.js')).MemoryCommand(),
     description: 'Curate memory (consolidate / lint / list / show)',

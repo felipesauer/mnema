@@ -79,6 +79,8 @@ export const UNIVERSAL_TOOL_NAMES: readonly string[] = [
   'skill_show',
   'skill_use',
   'skills_list',
+  'commands_list',
+  'command_show',
   'wikilinks_lint',
   'wikilink_references',
   'memory_record',

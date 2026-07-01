@@ -28,6 +28,7 @@ export const ConfigSchema = z.object({
       roadmap: z.string().default('.mnema/roadmap'),
       memory: z.string().default('.mnema/memory'),
       skills: z.string().default('.mnema/skills'),
+      commands: z.string().default('.mnema/commands'),
       workflows: z.string().default('.mnema/workflows'),
     })
     .prefault({}),

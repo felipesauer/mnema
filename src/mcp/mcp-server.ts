@@ -19,6 +19,7 @@ import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
 import { AuditQueryTool } from './tools/universal/audit-query-tool.js';
 import { AuditVerifyTool } from './tools/universal/audit-verify-tool.js';
+import { CommandTools } from './tools/universal/command-tools.js';
 import { ContextBootstrapTool } from './tools/universal/context-bootstrap-tool.js';
 import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
@@ -270,6 +271,7 @@ export class MnemaMcpServer {
       this.session,
       pendingFiles,
     ).register(this.sdk);
+    new CommandTools(this.services.commandDefinition).register(this.sdk);
     new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
     new MemoryTools(
       this.services.memory,

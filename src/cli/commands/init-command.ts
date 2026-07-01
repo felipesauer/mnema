@@ -177,6 +177,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.roadmap), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.memory), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
     }
 
     appendGitignore(cwd, config.paths.state);

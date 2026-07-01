@@ -39,6 +39,7 @@ import { AgentRunService } from './agent-run-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
+import { CommandDefinitionService } from './command-definition-service.js';
 import { CommitVerifier } from './commit-verifier.js';
 import { CoverageService } from './coverage-service.js';
 import { DecisionService } from './decision-service.js';
@@ -144,6 +145,7 @@ export interface ServiceContainer {
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
+  readonly commandDefinition: CommandDefinitionService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly memoryStaleness: MemoryStalenessService;
@@ -465,6 +467,9 @@ export function createServiceContainer(
     userDir,
     options.commitRunner,
   );
+  const commandDefinitionService = new CommandDefinitionService(
+    path.join(projectRoot, config.paths.commands),
+  );
   const memoryService = new MemoryService(
     memoryDir,
     memoryRepository,
@@ -521,6 +526,7 @@ export function createServiceContainer(
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
+    commandDefinition: commandDefinitionService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
     memoryStaleness: memoryStalenessService,
