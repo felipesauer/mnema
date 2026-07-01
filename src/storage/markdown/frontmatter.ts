@@ -9,10 +9,10 @@ import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
  *
  * Three guarantees over the bare `gray-matter` defaults:
  *
- * 1. The YAML engine is js-yaml 4.x (`load`/`dump`) instead of the 3.x that
+ * 1. The YAML engine is js-yaml 5.x (`load`/`dump`) instead of the 3.x that
  *    `gray-matter` bundles via `safeLoad`/`safeDump`. js-yaml 3.x is affected
  *    by CVE-2026-53550 (quadratic-complexity DoS on repeated merge-key
- *    aliases) and is unmaintained; 4.x fixes it and is safe by default.
+ *    aliases) and is unmaintained; 4.x+ fixes it and is safe by default.
  *    `gray-matter` still does what it is good at — splitting the `---`
  *    delimited block from the body — only the YAML parse/serialise is ours.
  * 2. The `javascript`/`js` engines are replaced by a function that throws.

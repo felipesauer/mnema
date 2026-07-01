@@ -64,10 +64,10 @@
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
+    "@biomejs/biome": "^2.5.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.1.0",
     "@types/proper-lockfile": "^4.1.4",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-v8": "^4.1.9",
@@ -91,12 +91,12 @@
     "better-sqlite3": "^12.9.0",
     "commander": "^14.0.3",
     "gray-matter": "^4.0.3",
-    "js-yaml": "^4.2.0",
+    "js-yaml": "^5.2.0",
     "picocolors": "^1.1.1",
     "pino": "^10.3.1",
     "proper-lockfile": "^4.1.2",
-    "semver": "^7.8.4",
-    "uuid": "^14.0.0",
+    "semver": "^7.8.5",
+    "uuid": "^14.0.1",
     "zod": "^4.4.3"
   }
 }

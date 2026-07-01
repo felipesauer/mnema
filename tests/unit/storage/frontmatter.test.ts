@@ -31,8 +31,8 @@ describe('parseFrontmatter', () => {
     expect(() => parseFrontmatter(malicious)).toThrow(/JavaScript front-matter engine is disabled/);
   });
 
-  it('rejects dangerous YAML tags (proves the js-yaml 4.x safe engine)', () => {
-    // js-yaml 3.x would resolve `!!js/function`; 4.x (used here) is safe by
+  it('rejects dangerous YAML tags (proves the js-yaml safe engine)', () => {
+    // js-yaml 3.x would resolve `!!js/function`; 5.x (used here) is safe by
     // default and throws. This pins the CVE-2026-53550 fix in place.
     const malicious = '---\nfn: !!js/function "function(){ return 1 }"\n---\nbody';
     expect(() => parseFrontmatter(malicious)).toThrow();
