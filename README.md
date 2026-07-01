@@ -27,11 +27,11 @@ accountable.
 
 - [Why Mnema](#why-mnema)
 - [Quickstart](#quickstart)
-- [Install](#install)
 - [What you get](#what-you-get)
-- [How the MCP loop works](#how-the-mcp-loop-works)
+- [Install](#install)
 - [Project layout after `mnema init`](#project-layout-after-mnema-init)
 - [Common CLI commands](#common-cli-commands)
+- [How the MCP loop works](#how-the-mcp-loop-works)
 - [Configuration](#configuration)
 - [Workflows](#workflows)
 - [Status](#status)
@@ -105,10 +105,32 @@ From here your agent drives Mnema through MCP tools, and you watch
 and approve from the terminal — walked through end to end in
 [How the MCP loop works](#how-the-mcp-loop-works).
 
-<!-- TODO before public launch: record an asciinema cast of the loop
-     below (init → agent run → history → doctor) and embed it here —
-     a tamper-detection demo is the most persuasive thing this README
-     could show. -->
+### See it in 30 seconds
+
+Drive a task through the gates, `doctor` proves the audit chain, then a
+hand-edit to a past log line is caught — every frame is real output:
+
+<img src="docs/quickstart.gif" width="640" alt="Mnema demo — init, review, doctor proves the chain, a tamper is caught">
+
+
+The same flow condensed, in case the animation doesn't play:
+
+```console
+$ mnema init --yes --name "Payments API" --key PAY
+$ mnema task create --title "Add rate limiting"
+$ mnema task move PAY-1 submit …   # drive it through the gates → approve → DONE
+$ mnema doctor
+  ✓ audit hash chain  verified
+
+# now tamper: rewrite who did the work in a past audit line
+$ mnema doctor
+  ✗ audit hash chain  hash mismatch on a line in current.jsonl
+```
+
+<!-- The recording is docs/quickstart.cast (a real asciinema cast).
+     Regenerate it with `node scripts/make-cast.mjs`, then re-render the GIF
+     with `agg --speed 1.4 docs/quickstart.cast docs/quickstart.gif`. -->
+
 
 ## What you get
 
@@ -527,7 +549,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **890 tests, 0
+Confidence comes from how hard it's shaken out: **931 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection

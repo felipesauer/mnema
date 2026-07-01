@@ -37,7 +37,12 @@ try {
   });
   // The container loads the workflow from disk, so seed the layout the
   // config points at before building it.
-  for (const dir of [config.paths.state, config.paths.audit, config.paths.backlog, config.paths.workflows]) {
+  for (const dir of [
+    config.paths.state,
+    config.paths.audit,
+    config.paths.backlog,
+    config.paths.workflows,
+  ]) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
   }
   copyFileSync(

@@ -285,6 +285,35 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toContain('database opens');
   });
 
+  it('the demo flow still runs against the current CLI (guards docs/quickstart.cast)', () => {
+    // Runs scripts/make-cast.mjs, which drives scripts/demo-flow.sh through
+    // the REAL binary. If a demo command goes stale (renamed flag, new
+    // required field) the generated cast loses the arc and this fails —
+    // catching demo rot that a committed .cast would otherwise hide.
+    const castOut = path.join(projectRoot, 'demo.cast');
+    const gen = spawnSync('node', [path.join(repoRoot, 'scripts', 'make-cast.mjs')], {
+      env: { ...process.env, CAST_OUT: castOut, MNEMA_ACTOR: 'you' },
+      encoding: 'utf-8',
+    });
+    expect(gen.status, gen.stderr).toBe(0);
+
+    // Decode the cast's terminal output and assert the whole arc is present.
+    // Build the ANSI-escape matcher from the ESC code point so the source
+    // carries no literal control character.
+    const ansi = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+    const frames = readFileSync(castOut, 'utf-8')
+      .split('\n')
+      .slice(1)
+      .filter((l) => l.length > 0)
+      .map((l) => (JSON.parse(l) as [number, string, string])[2])
+      .join('')
+      .replace(ansi, '');
+    expect(frames).toContain('mnema init');
+    expect(frames).toContain('Add rate limiting');
+    expect(frames).toContain('audit hash chain  verified'); // doctor green
+    expect(frames).toContain('hash mismatch'); // tamper caught
+  });
+
   it('mnema commit keeps staged partial edits and never commits unstaged ones', () => {
     // Real-git test: mocks can't catch pathspec-vs-index semantics, so drive
     // the actual binary against a real repo.

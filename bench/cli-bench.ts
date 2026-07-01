@@ -51,9 +51,7 @@ function nextBenchKey(): string {
 }
 
 if (!existsSync(cliEntry)) {
-  process.stderr.write(
-    `error: ${cliEntry} not found. Run \`pnpm build\` before \`pnpm bench\`.\n`,
-  );
+  process.stderr.write(`error: ${cliEntry} not found. Run \`pnpm build\` before \`pnpm bench\`.\n`);
   process.exit(1);
 }
 
