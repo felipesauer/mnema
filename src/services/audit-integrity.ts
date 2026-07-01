@@ -24,9 +24,11 @@ export interface IntegrityCheck {
 }
 
 /**
- * Walks every JSONL file under `auditDir`, parses each line, and
- * verifies the per-file SHA-256 chain against the head hash stored
- * in SQLite. Returns one or more {@link IntegrityCheck} rows.
+ * Walks every JSONL file under `auditDir` in chain order, parses each
+ * line, and verifies the SHA-256 chain END TO END — across the rotated
+ * `YYYY-MM.jsonl` segments and `current.jsonl` as one continuous sequence
+ * — against the head hash stored in SQLite. Returns one or more
+ * {@link IntegrityCheck} rows.
  *
  * The check covers four invariants:
  * - **count**: parseable lines on disk match `audit_state.event_count`.
@@ -74,10 +76,7 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
     return checks;
   }
 
-  const files = readdirSync(auditDir, { withFileTypes: true })
-    .filter((d) => d.isFile() && d.name.endsWith('.jsonl'))
-    .map((d) => path.join(auditDir, d.name))
-    .sort();
+  const files = orderedAuditFiles(auditDir);
 
   // Events that belong to the hash chain (v >= 2). `audit_state.event_count`
   // tracks exactly these, so the count check compares against this — not
@@ -92,9 +91,15 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   let chainBreakDetail = '';
   let lastHash: string | null = null;
   let chainEverStarted = false;
+  // The running chain head, carried ACROSS files. The chain is a single
+  // sequence even though rotation splits it into `YYYY-MM.jsonl` segments
+  // plus `current.jsonl`, so the first line of one file links to the tail
+  // of the previous one. Resetting per file (the old behaviour) reported a
+  // false `prev_hash break` at every rotation boundary. Genesis is `null`;
+  // a legacy (v1) line resets it since pre-chain lines have no hash.
+  let prevHash: string | null = null;
 
   for (const file of files) {
-    let prevHashInFile: string | null = null;
     const lines = readFileSync(file, 'utf-8').split('\n');
     for (const line of lines) {
       if (line.length === 0) continue;
@@ -118,17 +123,23 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
           chainBroken = true;
           chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
         }
-        if (prev !== prevHashInFile) {
+        if (prev !== prevHash) {
           chainBroken = true;
-          chainBreakDetail = `prev_hash break on a line in ${path.basename(file)}`;
+          // A break on the first line of a rotated segment means the
+          // previous segment's tail is missing or altered (e.g. a whole
+          // archived month was deleted) — name that explicitly.
+          chainBreakDetail =
+            prevHash === null
+              ? `prev_hash break at the start of ${path.basename(file)} (a prior segment may be missing)`
+              : `prev_hash break on a line in ${path.basename(file)}`;
         }
-        prevHashInFile = hash;
+        prevHash = hash;
         lastHash = hash;
       } else {
         // Legacy line: no per-line chain; counted separately so it does
         // not inflate the chain-count comparison below.
         legacyLines += 1;
-        prevHashInFile = null;
+        prevHash = null;
       }
     }
   }
@@ -195,4 +206,26 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   }
 
   return checks;
+}
+
+/**
+ * Lists the audit JSONL files in chain order: the archived monthly
+ * segments (`YYYY-MM.jsonl`) oldest-first, then the active `current.jsonl`
+ * last. Rotation only ever renames `current.jsonl` to a past month, so the
+ * running chain is exactly [oldest month … newest month, current]. Relying
+ * on a plain lexicographic sort happens to work only because `current`
+ * sorts after digits; ordering explicitly makes the chain walk correct and
+ * robust to any future segment naming.
+ *
+ * @param auditDir - Directory holding the audit log files
+ * @returns Absolute paths in chain order (may be empty)
+ */
+export function orderedAuditFiles(auditDir: string): string[] {
+  if (!existsSync(auditDir)) return [];
+  const names = readdirSync(auditDir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith('.jsonl'))
+    .map((d) => d.name);
+  const current = names.filter((n) => n === 'current.jsonl');
+  const archived = names.filter((n) => n !== 'current.jsonl').sort();
+  return [...archived, ...current].map((n) => path.join(auditDir, n));
 }

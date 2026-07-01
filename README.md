@@ -240,6 +240,25 @@ never amends, and never pushes. An empty bucket is skipped rather than
 committed. Use `--trail-only` to commit just the trail. It refuses to run
 mid-merge/rebase so it can't leave a half-finished state.
 
+### Log growth and rotation
+
+The audit log rotates by month: `current.jsonl` receives new events, and
+at the first write of a new month the previous file is rolled to
+`audit/YYYY-MM.jsonl`. The hash chain runs **continuously across those
+segments** — the first line of each file links to the tail of the one
+before it — and `mnema doctor` verifies the whole chain end to end,
+segment boundaries included. Deleting or editing an archived month is
+caught the same as tampering with `current.jsonl`.
+
+Growth is modest and bounded per month: one compact JSON line per
+mutation (JSONL compresses well under git's packing), and completed-task
+markdown stays as small per-task files. On a 600-task history, verifying
+the full chain (`mnema doctor`) takes single-digit milliseconds and a
+mirror rebuild (`mnema sync`) well under a second — measured by
+`pnpm bench:scale`. The `audit_strategy` and `audit_retention_months`
+config keys are reserved for a future compaction pass (compressing or
+pruning old months); they are accepted today but not yet enforced.
+
 ## Common CLI commands
 
 You drive Mnema from the terminal; agents drive the same model through

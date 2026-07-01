@@ -167,4 +167,58 @@ describe('inspectAuditIntegrity', () => {
     // The chain itself is unaffected by the archived legacy file.
     expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
   });
+
+  /**
+   * Splits `current.jsonl` at `keepInArchive` lines into an archived
+   * segment plus a fresh current file — exactly the shape month rotation
+   * produces (`renameSync(current → YYYY-MM.jsonl)`, then new writes append
+   * to a new current whose first `prev_hash` is the archived tail). The
+   * hash chain stays continuous across the two files.
+   */
+  function rotateInto(archiveName: string, keepInArchive: number): void {
+    const file = path.join(auditDir, 'current.jsonl');
+    const lines = readFileSync(file, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    writeFileSync(
+      path.join(auditDir, archiveName),
+      `${lines.slice(0, keepInArchive).join('\n')}\n`,
+    );
+    writeFileSync(file, `${lines.slice(keepInArchive).join('\n')}\n`);
+  }
+
+  it('verifies a chain that spans a rotation boundary (no false break)', () => {
+    writeSampleEvents(); // 3 chained events
+    rotateInto('2026-05.jsonl', 2); // 2 in the archive, 1 in current — chain continuous
+
+    const checks = inspectAuditIntegrity(adapter, auditDir);
+    // The old per-file walk reported a false `prev_hash break` here.
+    expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
+    expect(checks.find((c) => c.name === 'audit event count')?.ok).toBe(true);
+  });
+
+  it('detects a whole archived segment being deleted (cross-file break)', () => {
+    writeSampleEvents();
+    rotateInto('2026-05.jsonl', 2);
+    rmSync(path.join(auditDir, '2026-05.jsonl')); // lose the head of the chain
+
+    const chain = inspectAuditIntegrity(adapter, auditDir).find(
+      (c) => c.name === 'audit hash chain',
+    );
+    expect(chain?.ok).toBe(false);
+    expect(chain?.detail).toContain('prior segment may be missing');
+  });
+
+  it('detects tampering inside an archived segment', () => {
+    writeSampleEvents();
+    rotateInto('2026-05.jsonl', 2);
+    const archive = path.join(auditDir, '2026-05.jsonl');
+    writeFileSync(archive, readFileSync(archive, 'utf-8').replace('"daniel"', '"mallory"'));
+
+    const chain = inspectAuditIntegrity(adapter, auditDir).find(
+      (c) => c.name === 'audit hash chain',
+    );
+    expect(chain?.ok).toBe(false);
+    expect(chain?.detail).toContain('2026-05.jsonl');
+  });
 });

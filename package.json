@@ -48,6 +48,7 @@
     "prebench": "pnpm build",
     "bench": "tsx bench/cli-bench.ts",
     "bench:mcp": "tsx bench/mcp-bench.ts",
+    "bench:scale": "tsx bench/scale-bench.ts",
     "lint": "biome check src/ tests/ bench/",
     "lint:fix": "biome check --write src/ tests/ bench/",
     "smoke:bootstrap": "bash scripts/smoke-bootstrap.sh",
