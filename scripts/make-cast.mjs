@@ -71,9 +71,17 @@ function run(cmd) {
   return `${r.stdout ?? ''}${r.stderr ?? ''}`;
 }
 
+// ANSI helpers. ESC is built from its code point so the source carries no
+// invisible control byte (which is easy to drop on an edit and then renders
+// as literal `[32m…` in the cast).
+const ESC = String.fromCharCode(27);
+const green = (s) => `${ESC}[32m${s}${ESC}[0m`;
+const cyan = (s) => `${ESC}[36m${s}${ESC}[0m`;
+const dim = (s) => `${ESC}[2m${s}${ESC}[0m`;
+
 const events = [];
 let t = 0;
-const PROMPT = '[32m$[0m '; // green $
+const PROMPT = `${green('$')} `;
 const emit = (text) => events.push([Number(t.toFixed(3)), 'o', text]);
 const pause = (s) => {
   t += s;
@@ -94,7 +102,7 @@ try {
   pause(0.5);
   for (const step of steps) {
     if (step.kind === 'banner') {
-      type(`[36m# ${step.text}[0m`); // cyan comment
+      type(cyan(`# ${step.text}`));
       pause(0.6);
       emit(PROMPT);
       continue;
@@ -104,7 +112,7 @@ try {
     // then run the joined form and stream its real output.
     step.display.forEach((dline, idx) => {
       // Continuation lines echo without a fresh prompt, mirroring a shell.
-      if (idx > 0) emit('[2m>[0m '); // dim continuation marker
+      if (idx > 0) emit(`${dim('>')} `); // dim continuation marker
       type(dline);
     });
     pause(0.3);

@@ -110,7 +110,8 @@ and approve from the terminal — walked through end to end in
 Drive a task through the gates, `doctor` proves the audit chain, then a
 hand-edit to a past log line is caught — every frame is real output:
 
-![Mnema demo — init, review, doctor proves the chain, a tamper is caught](docs/quickstart.gif)
+<img src="docs/quickstart.gif" width="640" alt="Mnema demo — init, review, doctor proves the chain, a tamper is caught">
+
 
 The same flow condensed, in case the animation doesn't play:
 
