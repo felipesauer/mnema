@@ -61,10 +61,10 @@ export function isLoopbackHost(host: string): boolean {
  * Creates and starts a live dashboard server: a loopback-only HTTP server
  * that serves the live shell, exposes the aggregate panels as JSON, and
  * pushes each new audit event to connected browsers via Server-Sent
- * Events. Strictly read-only — it composes the same read services the
- * static dashboard uses and reuses {@link AuditTail} (file-watch) as the
- * push source, so it learns of events written by ANY process (the MCP
- * server, a CLI mutation) without coupling to them.
+ * Events. Strictly read-only — it composes the existing read services and
+ * reuses {@link AuditTail} (file-watch) as the push source, so it learns
+ * of events written by ANY process (the MCP server, a CLI mutation)
+ * without coupling to them.
  *
  * The caller owns the container lifecycle; `close()` here does not close
  * the container.
