@@ -1,418 +1,20 @@
 import type { IntegrityCheck } from './audit-integrity.js';
-import type { DependencyGraph } from './dependency-graph-service.js';
-import type { SlaBreach } from './inbox-service.js';
+import { barChart, donut, gauge, lineChart, nodeLink, scatter } from './dashboard-charts.js';
+import type { DashboardData, RecentEvent } from './dashboard-data.js';
 
 /**
- * Everything the dashboard renders, already read from the existing
- * read-only services by the caller. The renderer is a pure function of
- * this input — no IO, no service access, no data collection. Keeping the
- * read and the render separate is what lets the renderer be unit-tested
- * against fixtures and keeps the "consumes only already-recorded data"
- * guarantee obvious: this module cannot reach a database.
- */
-export interface DashboardData {
-  /** Project key, for the document title. */
-  readonly projectKey: string;
-  /** ISO8601 time the dashboard was generated (passed in, not read here). */
-  readonly generatedAt: string;
-  /** The audit-chain verdict rows from {@link inspectAuditIntegrity}. */
-  readonly integrity: readonly IntegrityCheck[];
-  /** The project-wide dependency graph. */
-  readonly graph: DependencyGraph;
-  /** SLA breaches from the inbox, most-overdue first. */
-  readonly slaBreaches: readonly SlaBreach[];
-  /** The most recent audit events, oldest-first within the window. */
-  readonly recent: readonly RecentEvent[];
-  /**
-   * True when the SQLite schema has pending migrations. Surfaced as a
-   * banner so a dashboard read under a drifted schema is not silently
-   * trusted (read-only commands are deliberately allowed to run drifted).
-   */
-  readonly schemaDrift: boolean;
-}
-
-/**
- * One row in the recent-activity panel. The caller resolves `actor`/`via`
- * handles to display names (via IdentityService) before rendering, so the
- * renderer stays a pure formatter with no service dependency.
- */
-export interface RecentEvent {
-  readonly at: string;
-  readonly kind: string;
-  /** Display name of the responsible human. */
-  readonly actor: string;
-  /** Display name of the agent that executed the work, when present. */
-  readonly via?: string;
-  /** The task/decision key this event is about, when derivable. */
-  readonly key?: string;
-}
-
-/**
- * The four aggregate-panel fragments, rendered from {@link DashboardData}.
- * Shared verbatim between the static document ({@link renderDashboard})
- * and the live server's `/panels` endpoint so the two views never drift.
- * Each value is an HTML fragment (no document scaffolding).
- */
-export interface DashboardPanels {
-  readonly chain: string;
-  readonly coverage: string;
-  readonly deps: string;
-  readonly sla: string;
-  /** The drift banner fragment, empty when the schema is current. */
-  readonly drift: string;
-}
-
-/**
- * The chain verdict, using the SAME severity-aware rule as `mnema doctor`
- * and `audit_verify`: a check only breaks the verdict when it is an
- * *error* (`ok:false` with severity `error`, the default). A
- * warning-severity `ok:false` row — e.g. a malformed line while the hash
- * chain itself verifies — does not make the chain "not intact"; it is
- * surfaced as a yellow warning row instead. An empty check list is
- * treated as intact (nothing failed), matching how `[].every`/`[].some`
- * decide it in doctor and audit-verify. Anything else would let the
- * dashboard disagree with the tool users already trust.
- */
-function isIntact(checks: readonly IntegrityCheck[]): boolean {
-  return !checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
-}
-
-/** Coverage derived from the graph nodes — no separate collection. */
-function coverageFromGraph(graph: DependencyGraph): {
-  total: number;
-  terminal: number;
-  percent: number;
-  byState: Array<[string, number]>;
-} {
-  const total = graph.nodes.length;
-  const terminal = graph.nodes.filter((n) => n.terminal).length;
-  const percent = total === 0 ? 0 : Math.round((terminal / total) * 100);
-  const counts = new Map<string, number>();
-  for (const node of graph.nodes) counts.set(node.state, (counts.get(node.state) ?? 0) + 1);
-  const byState = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  return { total, terminal, percent, byState };
-}
-
-/** The audit-chain panel body: verdict headline + per-check rows. */
-function renderChainPanel(integrity: readonly IntegrityCheck[]): string {
-  const chainVerdict = isIntact(integrity)
-    ? '<span class="ok">chain intact</span>'
-    : '<span class="bad">chain NOT intact</span>';
-  const rows = integrity
-    .map((c) => {
-      const cls = c.ok ? 'ok' : c.severity === 'warning' ? 'warn' : 'bad';
-      const mark = c.ok ? '✓' : c.severity === 'warning' ? '⚠' : '✗';
-      return `<li class="${cls}"><span class="mark">${mark}</span> <strong>${esc(c.name)}</strong> — ${esc(c.detail)}</li>`;
-    })
-    .join('');
-  return `<p class="verdict">${chainVerdict}</p>\n<ul>${rows}</ul>`;
-}
-
-/** The coverage panel body: percent complete + per-state pills. */
-function renderCoveragePanel(graph: DependencyGraph): string {
-  const cov = coverageFromGraph(graph);
-  const byStatePills = cov.byState
-    .map(([state, n]) => `<span class="pill">${esc(state)} ${n}</span>`)
-    .join(' ');
-  return `<p><span class="big">${cov.percent}%</span> complete — ${cov.terminal}/${cov.total} terminal</p>\n<p>${byStatePills}</p>`;
-}
-
-/** The dependencies panel body: cycles/critical path + ready/blocked frontier. */
-function renderDepsPanel(graph: DependencyGraph): string {
-  const graphBody =
-    graph.cycles.length > 0
-      ? `<p class="warn">⚠️ ${graph.cycles.length} cycle(s) — critical path suppressed</p>` +
-        `<ul>${graph.cycles.map((c) => `<li>${c.map(esc).join(' → ')}</li>`).join('')}</ul>`
-      : graph.criticalPath.length > 0
-        ? `<p>Critical path (${graph.criticalPath.length}): <code>${graph.criticalPath.map(esc).join(' → ')}</code></p>`
-        : '<p class="muted">No blocking chain.</p>';
-
-  const ready = graph.frontier.ready;
-  const blocked = graph.frontier.blocked;
-  const frontierBody =
-    `<p class="muted">${ready.length} ready · ${blocked.length} blocked</p>` +
-    (ready.length > 0
-      ? `<p><strong>Ready:</strong> ${ready.map((k) => `<code>${esc(k)}</code>`).join(' ')}</p>`
-      : '') +
-    (blocked.length > 0
-      ? `<ul>${blocked
-          .map(
-            (b) =>
-              `<li><code>${esc(b.key)}</code> <span class="muted">blocked by</span> ${b.blockedBy.map((k) => `<code>${esc(k)}</code>`).join(' ')}</li>`,
-          )
-          .join('')}</ul>`
-      : '');
-
-  return `${graphBody}\n${frontierBody}`;
-}
-
-/** The SLA-breaches panel body. */
-function renderSlaPanel(slaBreaches: readonly SlaBreach[]): string {
-  return slaBreaches.length === 0
-    ? '<p class="muted">None.</p>'
-    : `<ul>${slaBreaches
-        .map(
-          (b) =>
-            `<li><strong>${esc(b.key)}</strong> <span class="muted">(${esc(b.state)})</span> — ${b.age_days}d / SLA ${b.sla_days}d</li>`,
-        )
-        .join('')}</ul>`;
-}
-
-/** The schema-drift banner, or empty when the schema is current. */
-function renderDriftBanner(schemaDrift: boolean): string {
-  return schemaDrift
-    ? '<p class="warn banner">⚠️ Schema drift: this database has pending migrations. Run <code>mnema migrate</code>; the figures below are read from the current shape.</p>'
-    : '';
-}
-
-/**
- * Renders the four aggregate panels plus the drift banner from a
- * {@link DashboardData}. Pure. This is the single source of panel markup:
- * the static document embeds these fragments, and the live server ships
- * the same fragments as JSON over its `/panels` endpoint so the page can
- * refresh in place without a full reload.
+ * Renders the live dashboard: a dark, tabbed, self-contained page whose
+ * charts are inline SVG (no external asset, no chart library). The page is
+ * built from a {@link DashboardData} snapshot; the per-tab fragments are
+ * ALSO what the server's JSON routes return, so the initial shell and the
+ * live refresh never diverge.
  *
- * @param d - The composed dashboard data
- * @returns The panel HTML fragments
+ * Security note: every interpolated value goes through {@link esc}, which
+ * additionally strips CR/LF so a recorded value cannot break the SSE
+ * framing used to push live rows.
  */
-export function renderPanels(d: DashboardData): DashboardPanels {
-  return {
-    chain: renderChainPanel(d.integrity),
-    coverage: renderCoveragePanel(d.graph),
-    deps: renderDepsPanel(d.graph),
-    sla: renderSlaPanel(d.slaBreaches),
-    drift: renderDriftBanner(d.schemaDrift),
-  };
-}
 
-/**
- * Renders one recent-activity table row for a {@link RecentEvent}. Shared
- * by the static table, the live shell's initial rows, and the SSE client
- * (which appends the same markup on each pushed event) so a live row is
- * byte-identical to a reloaded one.
- *
- * @param e - A recent event with handles already resolved to display names
- * @returns A single `<tr>` element
- */
-export function renderEventRow(e: RecentEvent): string {
-  const key = e.key !== undefined ? `<code>${esc(e.key)}</code>` : '<span class="muted">—</span>';
-  const via = e.via !== undefined ? esc(e.via) : '<span class="muted">—</span>';
-  return `<tr><td class="muted mono">${esc(e.at)}</td><td><code>${esc(e.kind)}</code></td><td>${key}</td><td>${esc(e.actor)}</td><td>${via}</td></tr>`;
-}
-
-/**
- * The recent-activity table (header + rows).
- *
- * @param recent - Events to render, oldest-first (as the query returns them)
- * @param live - When true, two things change for the live shell: (1) the
- *   table is always emitted with a `<tbody id="trail-body">` even with zero
- *   rows, so the SSE client has a stable insertion target; and (2) the
- *   backfilled rows are reversed to newest-first, so they match the order
- *   the client prepends live events in — otherwise the initial rows would
- *   read oldest-at-top while every pushed row lands newest-at-top. The
- *   static document keeps the natural oldest-first order and shows a
- *   friendly empty-state note.
- */
-function renderRecentTable(recent: readonly RecentEvent[], live = false): string {
-  if (recent.length === 0 && !live) return '<p class="muted">No recorded activity yet.</p>';
-  const rows = live ? [...recent].reverse() : recent;
-  return `<table class="trail">
-<thead><tr><th>When</th><th>Event</th><th>Key</th><th>Who</th><th>Via</th></tr></thead>
-<tbody id="trail-body">${rows.map(renderEventRow).join('')}</tbody>
-</table>`;
-}
-
-/** Shared inline stylesheet for both the static document and the live shell. */
-const DASHBOARD_CSS = `  :root { color-scheme: light dark; }
-  body { margin: 0; padding: 2rem 1.25rem; font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; background: #fafafa; max-width: 900px; margin-inline: auto; }
-  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
-  h2 { font-size: 1.05rem; margin: 1.8rem 0 .5rem; border-bottom: 1px solid #e3e3e3; padding-bottom: .25rem; }
-  .scope { color: #777; font-size: .85rem; margin: 0 0 1rem; }
-  .big { font-size: 2rem; font-weight: 700; }
-  .pill { display: inline-block; background: #ececec; border-radius: 999px; padding: 1px 9px; font-size: .8rem; margin: 2px 2px 2px 0; }
-  code { background: #ececec; padding: 1px 5px; border-radius: 3px; font-size: .85em; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .muted { color: #888; }
-  .ok { color: #1a7f37; }
-  .warn { color: #a8360c; font-weight: 600; }
-  .bad { color: #b00020; font-weight: 700; }
-  .banner { background: #fff3cd; border: 1px solid #ffe69c; border-radius: 6px; padding: .5rem .75rem; }
-  ul { margin: .3rem 0; padding-left: 1.2rem; list-style: none; }
-  li { margin: .25rem 0; }
-  .mark { display: inline-block; width: 1.1em; }
-  table.trail { border-collapse: collapse; width: 100%; font-size: .85rem; }
-  table.trail th { text-align: left; border-bottom: 1px solid #ccc; padding: .3rem .5rem; }
-  table.trail td { border-bottom: 1px solid #eee; padding: .3rem .5rem; vertical-align: top; }
-  .verdict { font-size: 1.1rem; font-weight: 700; }
-  .live-dot { display: inline-block; width: .6em; height: .6em; border-radius: 50%; background: #1a7f37; margin-right: .3em; vertical-align: middle; }
-  tr.flash { animation: flash 1s ease-out; }
-  @keyframes flash { from { background: #fff3b0; } to { background: transparent; } }
-  @media (prefers-reduced-motion: reduce) { tr.flash { animation: none; } }`;
-
-/**
- * Renders a {@link DashboardData} as a single self-contained HTML
- * document — inline CSS, no external assets, no script, safe to write to
- * a file and open or attach to a review. Pure function; no IO. Composes
- * the shared panel builders so it never drifts from the live server.
- *
- * @param d - The composed dashboard data
- * @returns A complete HTML document
- */
-export function renderDashboard(d: DashboardData): string {
-  const panels = renderPanels(d);
-  // Self-contained: inline styles only, no external requests, no script.
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard — ${esc(d.projectKey)}</title>
-<style>
-${DASHBOARD_CSS}
-</style>
-</head>
-<body>
-<h1>${esc(d.projectKey)} dashboard</h1>
-<p class="scope">Read-only · generated ${esc(d.generatedAt)} · project-wide</p>
-${panels.drift}
-
-<h2>Audit chain</h2>
-${panels.chain}
-
-<h2>Coverage</h2>
-${panels.coverage}
-
-<h2>Dependencies</h2>
-${panels.deps}
-
-<h2>SLA breaches</h2>
-${panels.sla}
-
-<h2>Recent activity</h2>
-${renderRecentTable(d.recent)}
-</body>
-</html>
-`;
-}
-
-/**
- * Renders the LIVE dashboard shell: the same panels as the static
- * document, plus a single inline `<script>` (no external requests) that
- * opens an `EventSource` on `/stream`, prepends each pushed event to the
- * activity table, and refreshes the aggregate panels from `/panels` on
- * change. Every `id`/class the script touches is emitted here so the
- * page is coherent before the first event arrives.
- *
- * The script is inline and asset-free by design — it must never add an
- * external request, to keep the same "nothing leaves the machine"
- * guarantee the static view has.
- *
- * @param d - The composed dashboard data for the initial render
- * @returns A complete HTML document with a live SSE client
- */
-export function renderLiveShell(d: DashboardData): string {
-  const panels = renderPanels(d);
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live — ${esc(d.projectKey)}</title>
-<style>
-${DASHBOARD_CSS}
-</style>
-</head>
-<body>
-<h1>${esc(d.projectKey)} dashboard</h1>
-<p class="scope"><span class="live-dot" id="live-dot"></span><span id="live-status">live</span> · loopback · project-wide</p>
-<div id="drift">${panels.drift}</div>
-
-<h2>Audit chain</h2>
-<div id="panel-chain">${panels.chain}</div>
-
-<h2>Coverage</h2>
-<div id="panel-coverage">${panels.coverage}</div>
-
-<h2>Dependencies</h2>
-<div id="panel-deps">${panels.deps}</div>
-
-<h2>SLA breaches</h2>
-<div id="panel-sla">${panels.sla}</div>
-
-<h2>Recent activity</h2>
-${renderRecentTable(d.recent, true)}
-<script>
-${LIVE_CLIENT_SCRIPT}
-</script>
-</body>
-</html>
-`;
-}
-
-/**
- * The inline SSE client. Kept as a plain string (not a bundled asset) so
- * the shell stays self-contained. It reuses the exact row markup the
- * server sends (each SSE `data:` line is a ready-to-insert `<tr>` string),
- * debounces panel refreshes, and degrades quietly if the stream drops
- * (EventSource reconnects on its own).
- */
-const LIVE_CLIENT_SCRIPT = `(function () {
-  var body = document.getElementById('trail-body');
-  var dot = document.getElementById('live-dot');
-  var status = document.getElementById('live-status');
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var timer = null;
-
-  function refreshPanels() {
-    fetch('panels', { headers: { 'accept': 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (p) {
-        if (!p) return;
-        setHtml('panel-chain', p.chain);
-        setHtml('panel-coverage', p.coverage);
-        setHtml('panel-deps', p.deps);
-        setHtml('panel-sla', p.sla);
-        setHtml('drift', p.drift);
-      })
-      .catch(function () {});
-  }
-
-  function setHtml(id, html) {
-    var el = document.getElementById(id);
-    if (el && typeof html === 'string') el.innerHTML = html;
-  }
-
-  function scheduleRefresh() {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(refreshPanels, 250);
-  }
-
-  var es = new EventSource('stream');
-  es.onopen = function () { if (status) status.textContent = 'live'; if (dot) dot.style.background = '#1a7f37'; };
-  es.onerror = function () { if (status) status.textContent = 'reconnecting…'; if (dot) dot.style.background = '#a8360c'; };
-  es.onmessage = function (ev) {
-    if (body && ev.data) {
-      body.insertAdjacentHTML('afterbegin', ev.data);
-      if (!reduce && body.firstElementChild) body.firstElementChild.classList.add('flash');
-    }
-    scheduleRefresh();
-  };
-})();`;
-
-/**
- * HTML-escapes interpolated text AND neutralises line terminators.
- *
- * Beyond the usual `& < > "`, this collapses CR/LF to a space. That
- * matters specifically for the live server: each pushed row is sent as a
- * single Server-Sent-Events `data:` frame, and the EventSource wire format
- * treats a bare CR, LF, or CRLF as a line boundary. A recorded value
- * carrying a `\r` (display names and event keys are free-text written by
- * any process and are not otherwise sanitised) could otherwise break out
- * of the frame and inject a second event whose markup the client would
- * insert into the DOM. Escaping newlines here closes that at the source,
- * so every consumer — the static document and the SSE stream alike — is
- * safe by construction.
- */
+/** HTML escaping that also neutralises line terminators (SSE-safe). */
 function esc(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -421,3 +23,459 @@ function esc(value: string): string {
     .replace(/"/g, '&quot;')
     .replace(/[\r\n]+/g, ' ');
 }
+
+/**
+ * The chain verdict, using the SAME severity-aware rule as `mnema doctor`
+ * and `audit_verify`: only an error-severity failed check breaks it; a
+ * warning stays a warning; an empty list is intact.
+ */
+function isIntact(checks: readonly IntegrityCheck[]): boolean {
+  return !checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
+}
+
+/** Coverage donut segments derived from the graph nodes (no collection). */
+function coverageDonut(data: DashboardData): string {
+  const nodes = data.graph.nodes;
+  const total = nodes.length;
+  const terminal = nodes.filter((n) => n.terminal).length;
+  const percent = total === 0 ? 0 : Math.round((terminal / total) * 100);
+  return donut(
+    [
+      { label: 'Terminal', value: terminal, color: 'var(--ok)' },
+      { label: 'Open', value: total - terminal, color: 'var(--track)' },
+    ],
+    `${percent}%`,
+  );
+}
+
+/** A small labeled metric tile. */
+function tile(label: string, value: string, sub = ''): string {
+  const subLine = sub === '' ? '' : `<div class="tile-sub">${esc(sub)}</div>`;
+  return `<div class="tile"><div class="tile-value">${esc(value)}</div><div class="tile-label">${esc(label)}</div>${subLine}</div>`;
+}
+
+/** A card wrapper with a heading. */
+function card(title: string, body: string, extraClass = ''): string {
+  return `<section class="card ${extraClass}"><h2>${esc(title)}</h2>${body}</section>`;
+}
+
+function hours(v: number | null): string {
+  return v === null ? '—' : `${v}h`;
+}
+
+/** The chain verdict pill for the top bar. */
+export function renderChainPill(integrity: readonly IntegrityCheck[]): string {
+  return isIntact(integrity)
+    ? '<span class="pill ok">chain intact</span>'
+    : '<span class="pill bad">chain NOT intact</span>';
+}
+
+/** The drift banner, or empty when the schema is current. */
+function renderDrift(schemaDrift: boolean): string {
+  return schemaDrift
+    ? '<div class="banner warn">⚠️ Schema drift: pending migrations. Run <code>mnema migrate</code>; figures are read from the current shape.</div>'
+    : '';
+}
+
+// ── Tab bodies. Each is pure and returned both in the shell and by the
+// matching JSON route, so a refresh swaps identical markup. ──
+
+/** Overview: coverage, flow tiles, WIP, SLA, chain checks. */
+export function renderOverviewTab(d: DashboardData): string {
+  const cov = card('Coverage', `<div class="center">${coverageDonut(d)}</div>`);
+
+  const flowTiles = card(
+    'Flow',
+    `<div class="tiles">
+${tile('Throughput', String(d.flow.throughput), `in ${d.window}`)}
+${tile('Lead time', hours(d.flow.lead_time.median_hours), 'median')}
+${tile('Cycle time', hours(d.flow.cycle_time.median_hours), 'median')}
+${tile('Reopen rate', `${Math.round(d.flow.reopen.rate * 100)}%`, `${d.flow.reopen.reopened_tasks}/${d.flow.reopen.completed_tasks}`)}
+</div>`,
+  );
+
+  const wip = card(
+    'WIP vs limit',
+    d.inbox.wipBreaches.length === 0
+      ? '<p class="muted">Within limits.</p>'
+      : barChart(
+          d.inbox.wipBreaches.map((w) => ({
+            label: w.state,
+            value: w.count,
+            threshold: w.limit,
+            color: 'var(--warn)',
+          })),
+        ),
+  );
+
+  const sla = card(
+    'SLA aging',
+    d.inbox.slaBreaches.length === 0
+      ? '<p class="muted">None overdue.</p>'
+      : barChart(
+          d.inbox.slaBreaches.slice(0, 10).map((b) => ({
+            label: b.key,
+            value: b.age_days,
+            threshold: b.sla_days,
+            color: 'var(--bad)',
+          })),
+        ),
+  );
+
+  const chain = card(
+    'Audit chain',
+    `<ul class="checks">${d.integrity
+      .map((c) => {
+        const cls = c.ok ? 'ok' : c.severity === 'warning' ? 'warn' : 'bad';
+        const mark = c.ok ? '✓' : c.severity === 'warning' ? '⚠' : '✗';
+        return `<li class="${cls}"><span class="mark">${mark}</span> <strong>${esc(c.name)}</strong> — ${esc(c.detail)}</li>`;
+      })
+      .join('')}</ul>`,
+  );
+
+  return `${renderDrift(d.schemaDrift)}<div class="grid">${cov}${flowTiles}${wip}${sla}${chain}</div>`;
+}
+
+/** Flow: velocity, reopen gauge, estimate-vs-actual, throughput line, skills. */
+export function renderFlowTab(d: DashboardData): string {
+  const velocity = card(
+    'Velocity',
+    d.flow.velocity.length === 0
+      ? '<p class="muted">No completed sprints yet.</p>'
+      : barChart(
+          d.flow.velocity
+            .slice(0, 8)
+            .map((v) => ({ label: v.sprint_key, value: v.completed_points })),
+        ),
+  );
+
+  const reopen = card(
+    'Reopen rate',
+    `<div class="center">${gauge(d.flow.reopen.rate, `${Math.round(d.flow.reopen.rate * 100)}%`)}</div>`,
+  );
+
+  const eva = card(
+    'Estimate vs actual',
+    `<div class="center">${scatter(
+      d.flow.estimate_vs_actual.samples.map((s) => ({
+        x: s.estimate,
+        y: s.actual_hours,
+        label: s.task_key,
+        color: s.actual_source === 'run_duration' ? 'var(--accent)' : 'var(--warn)',
+      })),
+    )}</div><p class="muted">accent = measured run duration · amber = lead-time fallback</p>`,
+  );
+
+  const throughput = card('Throughput over time', lineChart(d.series.throughputByDay));
+
+  const adoption = card(
+    'Skill adoption',
+    `<div class="center">${gauge(
+      Math.min(1, d.flow.skill_adoption.used_vs_recorded ?? 0),
+      d.flow.skill_adoption.used_vs_recorded === null
+        ? '—'
+        : `${d.flow.skill_adoption.used}/${d.flow.skill_adoption.recorded}`,
+    )}</div><p class="muted">used vs recorded</p>`,
+  );
+
+  return `<div class="grid">${velocity}${throughput}${reopen}${adoption}${eva}</div>`;
+}
+
+/** Activity: events-by-kind, activity line, and the live feed with filters. */
+export function renderActivityTab(d: DashboardData): string {
+  const byKind = card(
+    'Events by kind',
+    barChart(d.series.eventsByKind.slice(0, 12).map((p) => ({ label: p.label, value: p.value }))),
+  );
+  const overTime = card('Activity over time', lineChart(d.series.activityByDay));
+  const feed = card(
+    'Live activity',
+    `<div class="filters">
+<input id="filter-text" type="search" placeholder="filter…" aria-label="filter activity" />
+</div>
+${renderRecentTable(d.recent)}`,
+    'span-2',
+  );
+  return `<div class="grid">${byKind}${overTime}${feed}</div>`;
+}
+
+/** Graph: the dependency node-link diagram + frontier summary. */
+export function renderGraphTab(d: DashboardData): string {
+  const g = d.graph;
+  const summary =
+    g.cycles.length > 0
+      ? `<p class="warn">⚠️ ${g.cycles.length} cycle(s) — critical path suppressed</p>`
+      : g.criticalPath.length > 0
+        ? `<p>Critical path (${g.criticalPath.length}): <code>${g.criticalPath.map(esc).join(' → ')}</code></p>`
+        : '<p class="muted">No blocking chain.</p>';
+  const frontier = `<p class="muted">${g.frontier.ready.length} ready · ${g.frontier.blocked.length} blocked</p>`;
+  return `<div class="grid"><section class="card span-2"><h2>Dependency graph</h2>${summary}${frontier}${nodeLink(g)}
+<p class="legend"><span class="dot ok"></span>terminal <span class="dot accent"></span>ready <span class="dot bad"></span>blocked <span class="dot track"></span>other · <span class="accent-line"></span> critical path</p>
+</section></div>`;
+}
+
+/** Renders one recent-activity table row (shared by shell + SSE push). */
+export function renderEventRow(e: RecentEvent): string {
+  const key = e.key !== undefined ? `<code>${esc(e.key)}</code>` : '<span class="muted">—</span>';
+  const via = e.via !== undefined ? esc(e.via) : '<span class="muted">—</span>';
+  // data-* attributes let the client filter rows without re-fetching.
+  return `<tr data-kind="${esc(e.kind)}" data-actor="${esc(e.actor)}"><td class="muted mono">${esc(e.at)}</td><td><code>${esc(e.kind)}</code></td><td>${key}</td><td>${esc(e.actor)}</td><td>${via}</td></tr>`;
+}
+
+/** The recent-activity table with a stable `#trail-body` insertion target. */
+function renderRecentTable(recent: readonly RecentEvent[]): string {
+  const rows = [...recent].reverse().map(renderEventRow).join('');
+  return `<div class="trail-wrap"><table class="trail">
+<thead><tr><th>When</th><th>Event</th><th>Key</th><th>Who</th><th>Via</th></tr></thead>
+<tbody id="trail-body">${rows}</tbody>
+</table></div>`;
+}
+
+/** The four tabs, keyed by id — the single source both shell and routes use. */
+export function renderTabBody(tab: string, d: DashboardData): string {
+  switch (tab) {
+    case 'flow':
+      return renderFlowTab(d);
+    case 'activity':
+      return renderActivityTab(d);
+    case 'graph':
+      return renderGraphTab(d);
+    default:
+      return renderOverviewTab(d);
+  }
+}
+
+/**
+ * Renders the full live dashboard document: dark tokens, top bar, tab bar,
+ * the four tab sections, and one inline SSE client. Self-contained — no
+ * external requests.
+ *
+ * @param d - The composed dashboard data
+ * @returns A complete HTML document
+ */
+export function renderLiveShell(d: DashboardData): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(d.projectKey)} — dashboard</title>
+<style>
+${DASHBOARD_CSS}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="live-dot" id="live-dot"></span>${esc(d.projectKey)} <span class="muted" id="live-status">live</span></div>
+  <div class="topbar-right">${renderChainPill(d.integrity)} <span class="muted">${esc(d.window)} window</span></div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Dashboard sections">
+  <button class="tab active" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pane-overview" tabindex="0">Overview</button>
+  <button class="tab" role="tab" id="tab-flow" data-tab="flow" aria-selected="false" aria-controls="pane-flow" tabindex="-1">Flow</button>
+  <button class="tab" role="tab" id="tab-activity" data-tab="activity" aria-selected="false" aria-controls="pane-activity" tabindex="-1">Activity</button>
+  <button class="tab" role="tab" id="tab-graph" data-tab="graph" aria-selected="false" aria-controls="pane-graph" tabindex="-1">Graph</button>
+</nav>
+<main>
+  <section class="tabpane active" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview" data-tab="overview" tabindex="0">${renderOverviewTab(d)}</section>
+  <section class="tabpane" id="pane-flow" role="tabpanel" aria-labelledby="tab-flow" data-tab="flow" tabindex="0" hidden>${renderFlowTab(d)}</section>
+  <section class="tabpane" id="pane-activity" role="tabpanel" aria-labelledby="tab-activity" data-tab="activity" tabindex="0" hidden>${renderActivityTab(d)}</section>
+  <section class="tabpane" id="pane-graph" role="tabpanel" aria-labelledby="tab-graph" data-tab="graph" tabindex="0" hidden>${renderGraphTab(d)}</section>
+</main>
+<script>
+${LIVE_CLIENT_SCRIPT}
+</script>
+</body>
+</html>
+`;
+}
+
+/** Dark-first token system; light via prefers-color-scheme. */
+const DASHBOARD_CSS = `:root {
+  --bg: #14161a; --panel: #1c1f26; --fg: #e6e8ec; --muted: #8b93a1;
+  --track: #333a45; --accent: #4c9ffe; --ok: #2ea043; --warn: #d29922; --bad: #f85149;
+  --on-node: #0b0d10; --border: #2a2e37;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fafafa; --panel: #ffffff; --fg: #1a1a1a; --muted: #6b7280;
+    --track: #d6dbe1; --accent: #1f6feb; --ok: #1a7f37; --warn: #9a6700; --bad: #b00020;
+    --on-node: #ffffff; --border: #e3e6ea;
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.25rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+.brand { font-weight: 700; font-size: 1.05rem; }
+.topbar-right { display: flex; align-items: center; gap: .6rem; font-size: .85rem; }
+.live-dot { display: inline-block; width: .6em; height: .6em; border-radius: 50%; background: var(--ok); margin-right: .35em; vertical-align: middle; }
+.muted { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { background: var(--panel); border: 1px solid var(--border); padding: 0 4px; border-radius: 3px; font-size: .85em; }
+.pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: .78rem; font-weight: 600; }
+.pill.ok { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+.tabs { display: flex; gap: .25rem; padding: .5rem 1.25rem 0; border-bottom: 1px solid var(--border); position: sticky; top: 49px; background: var(--bg); z-index: 4; }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font: inherit; padding: .5rem .9rem; cursor: pointer; border-radius: 6px 6px 0 0; }
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { padding: 1.25rem; max-width: 1100px; margin-inline: auto; }
+.tabpane { display: none; }
+.tabpane.active { display: block; }
+.tabpane[hidden] { display: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+.card.span-2 { grid-column: 1 / -1; }
+.card h2 { font-size: .95rem; margin: 0 0 .75rem; color: var(--fg); }
+.center { display: flex; justify-content: center; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .75rem; }
+.tile { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .7rem; }
+.tile-value { font-size: 1.5rem; font-weight: 700; }
+.tile-label { font-size: .75rem; color: var(--muted); }
+.tile-sub { font-size: .7rem; color: var(--muted); }
+.banner { border-radius: 8px; padding: .5rem .75rem; margin-bottom: 1rem; }
+.banner.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); border: 1px solid var(--warn); }
+ul.checks { list-style: none; margin: 0; padding: 0; }
+ul.checks li { margin: .3rem 0; }
+.checks .ok { color: var(--ok); } .checks .warn { color: var(--warn); } .checks .bad { color: var(--bad); }
+.mark { display: inline-block; width: 1.1em; }
+.warn { color: var(--warn); }
+.filters { margin-bottom: .6rem; }
+.filters input { background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 6px; padding: .35rem .6rem; width: 220px; font: inherit; }
+.trail-wrap { overflow-x: auto; }
+table.trail { border-collapse: collapse; width: 100%; font-size: .82rem; }
+table.trail th { text-align: left; border-bottom: 1px solid var(--border); padding: .3rem .5rem; white-space: nowrap; color: var(--muted); }
+table.trail td { border-bottom: 1px solid var(--border); padding: .3rem .5rem; vertical-align: top; }
+.graph-scroll { overflow-x: auto; }
+.legend { font-size: .78rem; color: var(--muted); margin-top: .6rem; }
+.legend .dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin: 0 .2em 0 .6em; vertical-align: middle; }
+.legend .dot.ok { background: var(--ok); } .legend .dot.accent { background: var(--accent); } .legend .dot.bad { background: var(--bad); } .legend .dot.track { background: var(--track); }
+.legend .accent-line { display: inline-block; width: 1.4em; height: 2px; background: var(--accent); vertical-align: middle; margin: 0 .2em 0 .6em; }
+tr.flash { animation: flash 1s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 30%, transparent); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { tr.flash { animation: none; } }`;
+
+/**
+ * The inline live client. One script, no external requests. Handles:
+ *  - keyboard-operable tabs (WAI-ARIA pattern: click, arrows, Home/End,
+ *    roving tabindex, hidden panels);
+ *  - SSE feed prepend on the Activity tab (never a fragment swap there, so
+ *    live rows are not destroyed mid-flight);
+ *  - dirty-gated, single-in-flight refresh of the OTHER tabs' charts;
+ *  - a client-side text filter over the feed.
+ */
+const LIVE_CLIENT_SCRIPT = `(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ORDER = ['overview', 'flow', 'activity', 'graph'];
+  var current = 'overview';
+  var dirty = false;          // an event arrived since the visible tab last rendered
+  var inflight = false;       // a chart refetch is in progress
+
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function tabEl(name) { return document.getElementById('tab-' + name); }
+  function paneEl(name) { return document.getElementById('pane-' + name); }
+
+  function show(name) {
+    tabs.forEach(function (t) {
+      var on = t.getAttribute('data-tab') === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
+    });
+    ORDER.forEach(function (n) {
+      var p = paneEl(n);
+      if (!p) return;
+      var on = n === name;
+      p.classList.toggle('active', on);
+      if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
+    });
+  }
+
+  function activate(name, focus) {
+    current = name;
+    show(name);
+    var t = tabEl(name);
+    if (focus && t) t.focus();
+    // The Activity feed updates live via SSE; the other tabs hold charts
+    // that only change when new events land — refetch them, but only when
+    // something is actually dirty, and never the Activity pane (a swap
+    // there would drop rows the SSE handler just prepended).
+    if (name !== 'activity' && dirty) refreshTab(name);
+    else if (name === 'activity') applyFilter();
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { activate(t.getAttribute('data-tab'), false); });
+    t.addEventListener('keydown', function (e) {
+      var i = ORDER.indexOf(t.getAttribute('data-tab'));
+      var next = -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % ORDER.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + ORDER.length) % ORDER.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = ORDER.length - 1;
+      if (next !== -1) { e.preventDefault(); activate(ORDER[next], true); }
+    });
+  });
+
+  // Fetch the visible tab's fragment and swap its pane. Guarded so at most
+  // one request is in flight; a burst collapses to a single trailing fetch.
+  function refreshTab(name) {
+    if (inflight) { dirty = true; return; }
+    inflight = true;
+    dirty = false;
+    fetch(name, { headers: { 'accept': 'text/html' } })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (html) {
+        var pane = paneEl(name);
+        if (html !== null && pane) pane.innerHTML = html;
+      })
+      .catch(function () {})
+      .then(function () {
+        inflight = false;
+        // If more events arrived during the fetch, and this tab is still
+        // visible and not Activity, catch up once.
+        if (dirty && current === name && name !== 'activity') refreshTab(name);
+      });
+  }
+
+  var timer = null;
+  function scheduleRefresh() {
+    dirty = true;
+    if (current === 'activity') return; // feed already updated in place
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { refreshTab(current); }, 300);
+  }
+
+  // Client-side activity filter (text over the row's kind/actor/key/time).
+  function applyFilter() {
+    var input = document.getElementById('filter-text');
+    if (!input) return;
+    var q = input.value.trim().toLowerCase();
+    var rows = document.querySelectorAll('#trail-body tr');
+    rows.forEach(function (row) {
+      var hit = q === '' || row.textContent.toLowerCase().indexOf(q) !== -1;
+      row.style.display = hit ? '' : 'none';
+    });
+  }
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'filter-text') applyFilter();
+  });
+
+  // SSE: prepend new rows to the feed; mark other tabs dirty.
+  var es = new EventSource('stream');
+  var dot = document.getElementById('live-dot');
+  var status = document.getElementById('live-status');
+  es.onopen = function () { if (status) status.textContent = 'live'; if (dot) dot.style.background = 'var(--ok)'; };
+  es.onerror = function () { if (status) status.textContent = 'reconnecting…'; if (dot) dot.style.background = 'var(--bad)'; };
+  es.onmessage = function (ev) {
+    var body = document.getElementById('trail-body');
+    if (body && ev.data) {
+      body.insertAdjacentHTML('afterbegin', ev.data);
+      if (!reduce && body.firstElementChild) body.firstElementChild.classList.add('flash');
+      applyFilter();
+    }
+    scheduleRefresh();
+  };
+})();`;

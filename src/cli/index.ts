@@ -137,11 +137,6 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/snapshot-command.js')).SnapshotCommand(),
     description: 'Executive snapshot of an epic or sprint (coverage, deps, SLA) — markdown or HTML',
   },
-  dashboard: {
-    load: async () => new (await import('./commands/dashboard-command.js')).DashboardCommand(),
-    description:
-      'Self-contained HTML dashboard over recorded data (chain, deps, SLA, activity) — read-only',
-  },
   serve: {
     load: async () => new (await import('./commands/serve-command.js')).ServeCommand(),
     description: 'Live local dashboard on localhost (real-time, read-only) — Ctrl+C to stop',

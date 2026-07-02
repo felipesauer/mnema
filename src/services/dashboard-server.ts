@@ -3,8 +3,13 @@ import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
 import { AuditTail } from './audit-tail.js';
-import { buildDashboardData, DEFAULT_RECENT_LIMIT, toRecentEvent } from './dashboard-data.js';
-import { renderEventRow, renderLiveShell, renderPanels } from './dashboard-render.js';
+import {
+  buildDashboardData,
+  DEFAULT_METRICS_WINDOW,
+  DEFAULT_RECENT_LIMIT,
+  toRecentEvent,
+} from './dashboard-data.js';
+import { renderEventRow, renderLiveShell, renderTabBody } from './dashboard-render.js';
 import type { ServiceContainer } from './service-container.js';
 
 /** Loopback host the server binds to by default. Never `0.0.0.0`. */
@@ -33,6 +38,8 @@ export interface DashboardServerOptions {
   readonly port?: number;
   /** Recent-activity rows to backfill on page load. */
   readonly limit?: number;
+  /** Lookback window for flow metrics + time-series (e.g. `30d`). */
+  readonly window?: string;
 }
 
 /** A running dashboard server. */
@@ -81,8 +88,22 @@ export async function createDashboardServer(
   }
   const port = options.port ?? DEFAULT_PORT;
   const limit = options.limit ?? DEFAULT_RECENT_LIMIT;
+  const window = options.window ?? DEFAULT_METRICS_WINDOW;
   const auditDir = path.join(projectRoot, config.paths.audit);
   const display = container.identity.getDisplayFor.bind(container.identity);
+
+  /** Composes a fresh snapshot for a request. */
+  function snapshot() {
+    return buildDashboardData(container, config, projectRoot, { limit, window });
+  }
+
+  /** The four tab routes → the tab id their fragment renders. */
+  const TAB_ROUTES: Record<string, string> = {
+    '/overview': 'overview',
+    '/flow': 'flow',
+    '/activity': 'activity',
+    '/graph': 'graph',
+  };
 
   // Every connected /stream response. Broadcast writes to all of them.
   const clients = new Set<ServerResponse>();
@@ -118,16 +139,18 @@ export async function createDashboardServer(
     }
 
     if (url === '/' || url === '/index.html') {
-      const html = renderLiveShell(buildDashboardData(container, config, projectRoot, { limit }));
+      const html = renderLiveShell(snapshot());
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end(html);
       return;
     }
 
-    if (url === '/panels') {
-      const panels = renderPanels(buildDashboardData(container, config, projectRoot, { limit }));
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(panels));
+    // Per-tab HTML fragments — the client fetches only the visible tab and
+    // swaps the pane, so a live refresh redraws just that tab's charts.
+    const tab = TAB_ROUTES[url];
+    if (tab !== undefined) {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(renderTabBody(tab, snapshot()));
       return;
     }
 

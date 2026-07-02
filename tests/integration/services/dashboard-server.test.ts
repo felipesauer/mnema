@@ -107,20 +107,25 @@ describe('createDashboardServer (integration)', () => {
     expect(body).toContain("new EventSource('stream')");
   });
 
-  it('serves the aggregate panels as JSON', async () => {
-    const { status, body } = await httpGet(server.port, '/panels');
-    expect(status).toBe(200);
-    const panels = JSON.parse(body);
-    expect(panels).toHaveProperty('chain');
-    expect(panels).toHaveProperty('coverage');
-    expect(panels).toHaveProperty('deps');
-    expect(panels).toHaveProperty('sla');
+  it('serves each per-tab HTML fragment', async () => {
+    for (const tab of ['/overview', '/flow', '/activity', '/graph']) {
+      const { status, body } = await httpGet(server.port, tab);
+      expect(status).toBe(200);
+      expect(body.length).toBeGreaterThan(0);
+      // A fragment, not a full document.
+      expect(body).not.toContain('<!doctype html>');
+    }
+    // The overview fragment carries the coverage card; the graph fragment
+    // carries the dependency-graph card (its SVG appears once there are
+    // nodes — the seeded temp project has none).
+    expect((await httpGet(server.port, '/overview')).body).toContain('Coverage');
+    expect((await httpGet(server.port, '/graph')).body).toContain('Dependency graph');
   });
 
   it('rejects a foreign Host header and accepts a loopback one', async () => {
     const foreign = await httpGet(server.port, '/', { host: 'evil.example' });
     expect(foreign.status).toBe(403);
-    const ok = await httpGet(server.port, '/panels', { host: `localhost:${server.port}` });
+    const ok = await httpGet(server.port, '/overview', { host: `localhost:${server.port}` });
     expect(ok.status).toBe(200);
   });
 
@@ -144,7 +149,7 @@ describe('createDashboardServer (integration)', () => {
   it('recovers a request even if it would throw (never crashes the daemon)', async () => {
     // After a bad request the server must still serve the next one — a
     // throw inside the handler must become a response, not a process exit.
-    await httpGet(server.port, '/panels');
+    await httpGet(server.port, '/overview');
     const again = await httpGet(server.port, '/');
     expect(again.status).toBe(200);
   });
@@ -175,7 +180,8 @@ describe('createDashboardServer (integration)', () => {
     streamReq.destroy();
 
     const all = received.join('');
-    expect(all).toContain('data: <tr>');
+    // The row now carries data-* filter attributes, so match the opening tag.
+    expect(all).toContain('data: <tr');
     expect(all).toContain('TEST-1');
     expect(all).toContain('test_event');
   });

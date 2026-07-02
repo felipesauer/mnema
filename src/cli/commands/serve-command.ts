@@ -11,24 +11,25 @@ import {
 } from '../../services/dashboard-server.js';
 import { pc } from '../../utils/colors.js';
 import { openCliContext } from '../cli-context.js';
-import { parseLimit } from './dashboard-command.js';
 
 interface ServeOptions {
   readonly port?: string;
   readonly host?: string;
   readonly open?: boolean;
   readonly limit?: string;
+  readonly window?: string;
 }
 
 /** Grace period before a stuck shutdown is forced, mirroring the MCP server. */
 const HARD_SHUTDOWN_MS = 5_000;
 
 /**
- * Registers `mnema serve` — a foreground, loopback-only live dashboard.
- * It serves the same view as `mnema dashboard` but pushes each audit
- * event to the browser in real time (Server-Sent Events over file-watch),
- * so project state is watched as work happens. Strictly read-only; the
- * server binds loopback only, so nothing leaves the machine.
+ * Registers `mnema serve` — a foreground, loopback-only live dashboard:
+ * a dark, tabbed UI (Overview / Flow / Activity / Graph) with inline-SVG
+ * charts that pushes each audit event to the browser in real time
+ * (Server-Sent Events over file-watch), so project state is watched as
+ * work happens. Strictly read-only; the server binds loopback only, so
+ * nothing leaves the machine.
  */
 export class ServeCommand {
   /**
@@ -44,13 +45,14 @@ export class ServeCommand {
       .option('--host <h>', `Host to bind (default ${DEFAULT_HOST}, loopback only)`)
       .option('--no-open', 'Do not open the browser automatically')
       .option('--limit <n>', 'Recent-activity rows to backfill on load')
+      .option('--window <dur>', 'Lookback for metrics and charts (e.g. 7d, 30d, 90d)')
       .action(async (options: ServeOptions) => {
         const port = parsePort(options.port);
         if (port === null) {
           process.stderr.write(`${pc.red('error:')} --port must be an integer in 1..65535\n`);
           process.exit(2);
         }
-        const limit = options.limit === undefined ? undefined : parseLimit(options.limit);
+        const limit = parseLimit(options.limit);
         if (limit === null) {
           process.stderr.write(`${pc.red('error:')} --limit must be a positive integer\n`);
           process.exit(2);
@@ -61,6 +63,13 @@ export class ServeCommand {
         if (!isLoopbackHost(host)) {
           process.stderr.write(
             `${pc.red('error:')} --host must be a loopback address (127.0.0.1, localhost or ::1)\n`,
+          );
+          process.exit(2);
+        }
+        const window = parseWindow(options.window);
+        if (window === null) {
+          process.stderr.write(
+            `${pc.red('error:')} --window must be a duration like 7d, 24h, 30d\n`,
           );
           process.exit(2);
         }
@@ -75,6 +84,7 @@ export class ServeCommand {
             host,
             port,
             ...(limit !== undefined ? { limit } : {}),
+            ...(window !== undefined ? { window } : {}),
           });
         } catch (error) {
           context.container.close();
@@ -127,6 +137,28 @@ function parsePort(raw: string | undefined): number | null {
   if (!/^[0-9]+$/.test(raw)) return null;
   const n = Number(raw);
   return Number.isInteger(n) && n >= 1 && n <= 65535 ? n : null;
+}
+
+/**
+ * Parses `--limit`: absent → `undefined` (server default); a plain decimal
+ * positive integer → that number; anything else → `null` (rejected). The
+ * decimal-only regex refuses hex/exponent that `Number()` would accept.
+ */
+export function parseLimit(raw: string | undefined): number | undefined | null {
+  if (raw === undefined) return undefined;
+  if (!/^[0-9]+$/.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
+/**
+ * Parses `--window`: absent → `undefined` (server default); a relative
+ * duration like `7d`/`24h`/`30d`/`15m` → the string; anything else →
+ * `null`. Matches the durations AuditQuery/FlowMetrics accept.
+ */
+export function parseWindow(raw: string | undefined): string | undefined | null {
+  if (raw === undefined) return undefined;
+  return /^[0-9]+[smhd]$/.test(raw) ? raw : null;
 }
 
 /**
