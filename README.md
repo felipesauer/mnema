@@ -144,6 +144,7 @@ $ mnema doctor
 | **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, each able to record which artefacts it impacts, with a shortcut to promote a note into a decision. |
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), **file-collision** warnings (related tasks that touch the same files, inferred from commit evidence), a navigable **provenance chain** (observation/note → decision → memory, walkable in both directions), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, an **executive snapshot** of an epic or sprint (coverage + graph + inbox, rendered to Markdown or HTML), and an active inbox that surfaces review-SLA breaches, per-state **WIP-limit** breaches, and orphaned runs. |
+| **Live dashboard & metrics** | `mnema serve` — a dark, tabbed **local dashboard** (Overview / Flow / Activity / Graph, inline-SVG charts including a dependency node-link diagram) that streams each audit event over SSE in real time; loopback-only and self-contained, so nothing leaves your machine. `mnema metrics` — a local adoption report (time-to-first-done, feature activation, doctor use, skill adoption), derived from the trail with no telemetry. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
 | **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). A skill can be **invocable** with **dynamic context** — read-only `mnema` commands whose live output (e.g. `mnema tasks ready`) is embedded when the skill is shown. Memories can be **archived** when stale (hidden from listing and search, kept in the record). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
@@ -331,6 +332,9 @@ MCP tools. The commands group by what you're doing — run
 | `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
 | `mnema inbox` | Tasks awaiting your review or blocked, plus review-SLA breaches |
+| `mnema serve` | Live local dashboard on `localhost` — dark, tabbed (Overview / Flow / Activity / Graph), pushes each audit event over SSE as it lands. Loopback-only, read-only, zero external assets |
+| `mnema stats [--since]` | Derived flow metrics from the audit log (throughput, lead/cycle time, reopen rate, velocity) |
+| `mnema metrics [--json]` | Local adoption report (time-to-first-done, feature activation, doctor use, skill adoption) — derived locally, no telemetry |
 | `mnema agent inspect <run_id>` · `mnema agent diff <run_id>` | One run with its plans + mutations; a grouped diff of everything that run changed |
 | `mnema agent close-orphans [--apply]` · `mnema audit query [filters]` | Find (and abort) runs left open past the threshold; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
@@ -352,6 +356,29 @@ MCP tools. The commands group by what you're doing — run
 |---|---|
 | `mnema mcp serve` | Start the MCP server on stdio (called by your AI client) |
 | `mnema mcp install-instructions <client>` | Print the right config snippet |
+
+### Live dashboard
+
+`mnema serve` opens a dark, tabbed dashboard on `localhost` and pushes
+each audit event to it in real time — so you watch the project move as
+agents (or you) work, without refreshing:
+
+```bash
+mnema serve            # → http://127.0.0.1:4700, opens your browser
+```
+
+- **Overview** — coverage, throughput/lead/cycle time, WIP vs limits, SLA
+  breaches, and the chain verdict.
+- **Flow** — velocity, reopen rate, estimate-vs-actual, throughput over time.
+- **Activity** — a live event feed (filterable) plus events-by-kind.
+- **Graph** — the dependency graph as a node-link diagram with the critical
+  path highlighted.
+
+It is strictly read-only and derives everything from what's already
+recorded — no new collection. The server binds the loopback interface
+only and the page is self-contained (no external requests, no chart
+library), so **nothing leaves your machine**. It receives events from
+*any* process (an agent over MCP, a CLI mutation) by watching the trail.
 
 ## How the MCP loop works
 
@@ -566,7 +593,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **931 tests, 0
+Confidence comes from how hard it's shaken out: **992 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection
