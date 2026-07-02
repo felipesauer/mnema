@@ -35,7 +35,7 @@ export function formatError(error: MnemaError): string {
 
     case ErrorCode.VersionMismatch:
       lines.push(`Project requires mnema ${error.required}, but you have ${error.current}`);
-      lines.push(`${pc.dim('hint:')} Update with \`npm i -g mnema@latest\``);
+      lines.push(`${pc.dim('hint:')} Update with \`npm i -g @felipesauer/mnema@latest\``);
       break;
 
     case ErrorCode.TaskNotFound:

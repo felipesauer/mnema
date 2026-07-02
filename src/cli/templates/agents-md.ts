@@ -152,7 +152,7 @@ export function buildAgentsMd(config: Config): string {
   }
   lines.push('');
   lines.push(
-    'This Mnema project is managed by the `mnema` MCP server. ' +
+    'This Mnema project is managed by the `@felipesauer/mnema` MCP server. ' +
       'Anything an agent does in this repository must flow through the tools ' +
       'exposed by the server.',
   );
