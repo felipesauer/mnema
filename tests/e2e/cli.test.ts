@@ -32,6 +32,16 @@ function runCli(
   };
 }
 
+/** Parses every `hook_ran` event from a project's audit log, in order. */
+function readHookRan(projectRoot: string): { data: { outcome: string; exit_code: number } }[] {
+  const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+  return audit
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l))
+    .filter((e) => e.kind === 'hook_ran');
+}
+
 beforeAll(() => {
   if (!existsSync(cliEntry)) {
     throw new Error(`CLI entry not built. Run pnpm build before tests. Path: ${cliEntry}`);
@@ -199,44 +209,71 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(invalid.stderr).toContain('TODO');
   });
 
-  it('mnema domain-event hook fires on task done, records hook_ran, and is non-fatal on failure', () => {
+  it('domain-event hooks require human approval, run as argv (no shell), and are non-fatal', () => {
+    // Isolate the out-of-repo approval store (~/.config/mnema) inside the
+    // temp project so `mnema hooks approve` can be exercised hermetically.
+    const hookEnv = { HOME: projectRoot, USERPROFILE: projectRoot };
     runCli(['init', '--name', 'Lean App', '--key', 'LEAN', '--workflow', 'lean'], projectRoot);
 
-    // Wire a hook that captures the event JSON on stdin to a file, plus
-    // a second command that fails — proving a failing hook is audited
-    // but never breaks the transition that triggered it.
+    // A capture hook that writes its stdin (the event JSON) to a file, and
+    // a second hook that fails — proving a failing hook is audited but never
+    // breaks the transition. Both are argv arrays: the capture uses a tiny
+    // node one-liner because there is no shell to do redirection anymore.
     const configPath = path.join(projectRoot, '.mnema/mnema.config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf-8'));
     const capturePath = path.join(projectRoot, 'hook-out.json');
-    config.hooks = { on_task_done: [`cat > '${capturePath}'`, 'exit 7'] };
+    const captureScript = `require('fs').writeFileSync(process.argv[1],require('fs').readFileSync(0));`;
+    config.hooks = {
+      on_task_done: [
+        { command: 'node', args: ['-e', captureScript, capturePath] },
+        { command: 'node', args: ['-e', 'process.exit(7)'] },
+      ],
+    };
     writeFileSync(configPath, JSON.stringify(config, null, 2));
 
+    // --- Phase 1: un-approved block is INERT (MNEMA-100 regression) ---
     runCli(['task', 'create', '--title', 'Ship it'], projectRoot);
     runCli(['task', 'move', 'LEAN-1', 'start'], projectRoot);
-    const done = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot);
+    const doneUnapproved = runCli(['task', 'move', 'LEAN-1', 'complete'], projectRoot, hookEnv);
+    expect(doneUnapproved.status).toBe(0);
+    expect(existsSync(capturePath)).toBe(false); // nothing executed
 
-    // The transition itself succeeds despite the failing second hook.
+    const auditAfterUnapproved = readHookRan(projectRoot);
+    expect(auditAfterUnapproved).toHaveLength(2); // both attempts recorded...
+    expect(auditAfterUnapproved.every((e) => e.data.outcome === 'skipped')).toBe(true); // ...as skipped
+
+    // doctor flags the configured-but-unapproved block as not-ok.
+    const doctorUnapproved = runCli(['doctor'], projectRoot, hookEnv);
+    expect(doctorUnapproved.stdout).toContain('NOT approved');
+
+    // --- Phase 2: after human approval, the same block RUNS ---
+    const approve = runCli(['hooks', 'approve'], projectRoot, hookEnv);
+    expect(approve.status).toBe(0);
+
+    // The approval is attested on the audit chain, not just on disk.
+    const auditLog = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    expect(auditLog).toContain('"kind":"hooks_approved"');
+
+    runCli(['task', 'create', '--title', 'Ship it again'], projectRoot);
+    runCli(['task', 'move', 'LEAN-2', 'start'], projectRoot);
+    const done = runCli(['task', 'move', 'LEAN-2', 'complete'], projectRoot, hookEnv);
     expect(done.status).toBe(0);
     expect(done.stdout).toContain('DONE');
 
-    // The first hook received the triggering event as JSON on stdin.
+    // The capture hook received the triggering event as JSON on stdin.
     expect(existsSync(capturePath)).toBe(true);
     const payload = JSON.parse(readFileSync(capturePath, 'utf-8'));
     expect(payload.kind).toBe('task_transitioned');
     expect(payload.data.to).toBe('DONE');
 
-    // Both firings are in the audit trail: one completed, one failed (exit 7).
-    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
-    const hookLines = audit
-      .trim()
-      .split('\n')
-      .map((l) => JSON.parse(l))
-      .filter((e) => e.kind === 'hook_ran');
-    expect(hookLines).toHaveLength(2);
-    expect(hookLines.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
+    // The second firing set has one completed and one failed (exit 7).
+    const runFirings = readHookRan(projectRoot).filter((e) => e.data.outcome !== 'skipped');
+    expect(runFirings.some((e) => e.data.outcome === 'completed' && e.data.exit_code === 0)).toBe(
       true,
     );
-    expect(hookLines.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(true);
+    expect(runFirings.some((e) => e.data.outcome === 'failed' && e.data.exit_code === 7)).toBe(
+      true,
+    );
   });
 
   it('mnema doctor reports a healthy project after init', () => {
@@ -246,6 +283,112 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('config.json valid');
     expect(result.stdout).toContain('database opens');
+  });
+
+  it('the demo flow still runs against the current CLI (guards docs/quickstart.cast)', () => {
+    // Runs scripts/make-cast.mjs, which drives scripts/demo-flow.sh through
+    // the REAL binary. If a demo command goes stale (renamed flag, new
+    // required field) the generated cast loses the arc and this fails —
+    // catching demo rot that a committed .cast would otherwise hide.
+    const castOut = path.join(projectRoot, 'demo.cast');
+    const gen = spawnSync('node', [path.join(repoRoot, 'scripts', 'make-cast.mjs')], {
+      env: { ...process.env, CAST_OUT: castOut, MNEMA_ACTOR: 'you' },
+      encoding: 'utf-8',
+    });
+    expect(gen.status, gen.stderr).toBe(0);
+
+    // Decode the cast's terminal output and assert the whole arc is present.
+    // Build the ANSI-escape matcher from the ESC code point so the source
+    // carries no literal control character.
+    const ansi = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+    const frames = readFileSync(castOut, 'utf-8')
+      .split('\n')
+      .slice(1)
+      .filter((l) => l.length > 0)
+      .map((l) => (JSON.parse(l) as [number, string, string])[2])
+      .join('')
+      .replace(ansi, '');
+    expect(frames).toContain('mnema init');
+    expect(frames).toContain('Add rate limiting');
+    expect(frames).toContain('audit hash chain  verified'); // doctor green
+    expect(frames).toContain('hash mismatch'); // tamper caught
+  });
+
+  it('mnema commit keeps staged partial edits and never commits unstaged ones', () => {
+    // Real-git test: mocks can't catch pathspec-vs-index semantics, so drive
+    // the actual binary against a real repo.
+    const git = (...args: string[]) =>
+      spawnSync('git', args, { cwd: projectRoot, encoding: 'utf-8' });
+    git('init');
+    git('config', 'user.email', 't@t.co');
+    git('config', 'user.name', 't');
+    runCli(['init', '--name', 'Commit App', '--key', 'CMT'], projectRoot);
+    writeFileSync(path.join(projectRoot, 'app.js'), 'line1\nline2\nline3\n');
+    git('add', '-A');
+    git('commit', '-m', 'base');
+
+    // Stage a line1 change, then make a further UNSTAGED edit to line3, and
+    // create task churn under .mnema/.
+    writeFileSync(path.join(projectRoot, 'app.js'), 'LINE1\nline2\nline3\n');
+    git('add', 'app.js');
+    writeFileSync(path.join(projectRoot, 'app.js'), 'LINE1\nline2\nLINE3-unstaged\n');
+    runCli(['task', 'create', '--title', 'Churn'], projectRoot);
+
+    const res = runCli(['commit', '-m', 'feat: line1'], projectRoot);
+    expect(res.status).toBe(0);
+
+    // Two commits: code on top, trail beneath.
+    const log = spawnSync('git', ['log', '--oneline', '-2', '--format=%s'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    })
+      .stdout.trim()
+      .split('\n');
+    expect(log[0]).toBe('feat: line1');
+    expect(log[1]).toBe('chore(mnema): update trail');
+
+    // The committed code has ONLY the staged line1 change, NOT the unstaged one.
+    const committed = spawnSync('git', ['show', 'HEAD:app.js'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    }).stdout;
+    expect(committed).toContain('LINE1');
+    expect(committed).not.toContain('LINE3-unstaged');
+
+    // The unstaged edit is preserved in the working tree.
+    expect(readFileSync(path.join(projectRoot, 'app.js'), 'utf-8')).toContain('LINE3-unstaged');
+
+    // The trail commit does not touch app.js.
+    const trailStat = spawnSync('git', ['show', '--stat', '--format=', 'HEAD~1'], {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+    }).stdout;
+    expect(trailStat).not.toContain('app.js');
+    expect(trailStat).toContain('.mnema');
+  });
+
+  it('mnema commit refuses to run mid-merge', () => {
+    const git = (...args: string[]) =>
+      spawnSync('git', args, { cwd: projectRoot, encoding: 'utf-8' });
+    git('init');
+    git('config', 'user.email', 't@t.co');
+    git('config', 'user.name', 't');
+    runCli(['init', '--name', 'Merge App', '--key', 'MRG'], projectRoot);
+    git('add', '-A');
+    git('commit', '-m', 'base');
+    // Build two divergent branches that both edit conflict.txt.
+    writeFileSync(path.join(projectRoot, 'conflict.txt'), 'A\n');
+    git('add', '-A');
+    git('commit', '-m', 'a');
+    git('checkout', '-b', 'other', 'HEAD~1');
+    writeFileSync(path.join(projectRoot, 'conflict.txt'), 'B\n');
+    git('add', '-A');
+    git('commit', '-m', 'b');
+    git('merge', 'master'); // conflicts, leaves MERGE_HEAD
+
+    const res = runCli(['commit', '-m', 'during merge'], projectRoot);
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toContain('merge is in progress');
   });
 
   it('mnema upgrade rebuilds a missing task mirror and prunes an orphan', () => {

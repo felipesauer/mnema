@@ -183,90 +183,130 @@ export function buildAgentsMd(config: Config): string {
       'are rejected with `NO_ACTIVE_RUN`.',
   );
   lines.push('');
-  lines.push('## Planning surface');
+  lines.push('## MCP tool surface');
   lines.push('');
   lines.push(
-    'Roadmap structure is available through the MCP tools, so an agent never ' +
-      'has to drop to the CLI mid-run: `epic_create` / `epic_add_task`, ' +
-      '`sprint_create` / `sprint_add_task`, and the decision tools all flow ' +
-      'through the active run. Bootstrapping a large plan? Prefer the batch ' +
-      'tools — `task_create_many`, `sprint_add_tasks`, `task_depends_many` — ' +
-      'which attempt every item and report per-item failures instead of ' +
-      'failing the whole call.',
+    'The tools are organised in conceptual layers — reason about these ' +
+      'buckets rather than memorising every tool. `context_bootstrap` returns ' +
+      'the exact per-tool grouping (`tool_groups`) for this project:',
+  );
+  lines.push('');
+  lines.push(
+    '- **Core** — audit, agent runs/plans, tasks, dependencies, evidence, ' +
+      'search and read-only graph/snapshot. Always available.',
+  );
+  lines.push('- **Workflow transitions** — one `task_<action>` per workflow transition.');
+  lines.push(
+    '- **Planning** — epics, sprints and their coverage/lint. Available when ' +
+      'the active workflow enables epics and/or sprints.',
+  );
+  if (config.features.knowledge) {
+    lines.push(
+      '- **Knowledge** — decisions/ADRs, skills, memories, observations and the ' +
+        'provenance/wikilink chain. Available in this project.',
+    );
+  } else {
+    lines.push(
+      '- **Knowledge** — decisions, skills, memories, observations. ' +
+        '**Disabled** in this project (audit-only profile).',
+    );
+  }
+  lines.push('');
+  lines.push(
+    'When a layer is available, prefer its MCP tools over the CLI mid-run, and ' +
+      'prefer the batch forms — `task_create_many`, `sprint_add_tasks`, ' +
+      '`task_depends_many` — which attempt every item and report per-item ' +
+      'failures instead of failing the whole call.',
   );
   lines.push('');
   lines.push('## Recording what you learn');
   lines.push('');
-  lines.push(
-    '**Use Mnema for this, not your own memory.** If your client has a ' +
-      'built-in memory feature (a personal notes file, native recall), ' +
-      'do **not** put durable facts about *this project* there: those stay on ' +
-      'your machine, never reach a teammate, and leave no audit trail. Record ' +
-      'them through the Mnema tools below — they are mirrored to `.md` in the ' +
-      'repo and recorded in the hash-chained log, so the knowledge travels with ' +
-      'the project and is provable. Your native memory is still fine for your ' +
-      'own cross-project habits; project knowledge belongs in Mnema.',
-  );
-  lines.push('');
-  lines.push(
-    'These are not optional housekeeping — they are how the next session ' +
-      '(yours or a teammate’s) avoids relearning what you already know. ' +
-      'Record as you work, not in a batch at the end. Concretely:',
-  );
-  lines.push('');
-  lines.push(
-    '- **Hit a non-obvious fact about *this* project** (a constraint, a ' +
-      'convention, why something is the way it is)? Write a **memory** with ' +
-      '`memory_record(slug, title, content, …)`. Upsert by slug — the latest ' +
-      'content wins. Rule of thumb: if you would re-explain it to yourself ' +
-      'next week, it is a memory.',
-  );
-  lines.push('');
-  lines.push(
-    '- **Worked out a repeatable procedure** (a sequence of steps you would ' +
-      'follow again)? Write a **skill** with `skill_record(slug, name, ' +
-      'description, content, …)`, and call `skill_use` each time you actually ' +
-      "apply it so the useful ones rise. Use `mode='new_version'` for a " +
-      'disruptive rewrite; the default updates in place. An empty `skills/` ' +
-      'after real work usually means this step was skipped — don’t.',
-  );
-  lines.push('');
-  lines.push(
-    '- **Noticed something that might matter later** but isn’t yet a durable ' +
-      'fact (a smell, a surprise, a TODO-shaped signal)? Append an ' +
-      '**observation** with `observation_record` — no slug, no upsert, ' +
-      'fire-and-forget. It is the cheapest gateway: an observation can later ' +
-      'be consolidated into a memory or hardened into a skill.',
-  );
-  lines.push('');
-  lines.push(
-    '- **Made a choice the team should be able to contest later**? Record a ' +
-      'formal ADR with `decision_record`. When a free-form `note_add` matures ' +
-      'into a decision, use `decision_promote_from_note(note_id, …)` so the ' +
-      'audit log links the ADR back to the note.',
-  );
-  lines.push('');
-  lines.push(
-    'All of the above are mirrored to `.md` on disk so they travel with the ' +
-      'repository and are reviewable in a pull request. The `memory_index` / ' +
-      '`decisions_index` fields in `context_bootstrap` are human-curated ' +
-      'supplements regenerated by `mnema memory consolidate` — read them for ' +
-      'context, never write to them directly.',
-  );
-  lines.push('');
-  lines.push('## Project memory');
-  lines.push('');
-  lines.push(
-    "The project's curated memory index is imported below at generation " +
-      'time, so this section always reflects the current state. Regenerate ' +
-      'it with `mnema memory consolidate`; this block refreshes on the next ' +
-      '`mnema agents sync` / `mnema upgrade`.',
-  );
-  lines.push('');
-  // A whole-line `@path` directive, expanded by expandAgentsImports at
-  // write time. If the index has not been generated yet, it degrades to a
-  // "skipped" note rather than a dangling reference.
-  lines.push(`@${config.paths.memory}/INDEX.md`);
+  if (!config.features.knowledge) {
+    // Audit-only profile: the knowledge tools (memory/skill/observation/
+    // decision) are not advertised, so don't instruct the agent to use
+    // them. The audit/gate/task guidance above and the CLI section below
+    // still apply.
+    lines.push(
+      'This project runs in the **audit-only profile**: the knowledge tools ' +
+        '(memories, skills, observations, decisions) are turned off, so there ' +
+        'is nothing to record here. The audit log still captures every action ' +
+        'you take. To enable knowledge capture later, set ' +
+        '`features.knowledge: true` in `.mnema/mnema.config.json` (and run ' +
+        '`mnema adopt memory skills` for the on-disk directories).',
+    );
+    lines.push('');
+  } else {
+    lines.push(
+      '**Use Mnema for this, not your own memory.** If your client has a ' +
+        'built-in memory feature (a personal notes file, native recall), ' +
+        'do **not** put durable facts about *this project* there: those stay on ' +
+        'your machine, never reach a teammate, and leave no audit trail. Record ' +
+        'them through the Mnema tools below — they are mirrored to `.md` in the ' +
+        'repo and recorded in the hash-chained log, so the knowledge travels with ' +
+        'the project and is provable. Your native memory is still fine for your ' +
+        'own cross-project habits; project knowledge belongs in Mnema.',
+    );
+    lines.push('');
+    lines.push(
+      'These are not optional housekeeping — they are how the next session ' +
+        '(yours or a teammate’s) avoids relearning what you already know. ' +
+        'Record as you work, not in a batch at the end. Concretely:',
+    );
+    lines.push('');
+    lines.push(
+      '- **Hit a non-obvious fact about *this* project** (a constraint, a ' +
+        'convention, why something is the way it is)? Write a **memory** with ' +
+        '`memory_record(slug, title, content, …)`. Upsert by slug — the latest ' +
+        'content wins. Rule of thumb: if you would re-explain it to yourself ' +
+        'next week, it is a memory.',
+    );
+    lines.push('');
+    lines.push(
+      '- **Worked out a repeatable procedure** (a sequence of steps you would ' +
+        'follow again)? Write a **skill** with `skill_record(slug, name, ' +
+        'description, content, …)`, and call `skill_use` each time you actually ' +
+        "apply it so the useful ones rise. Use `mode='new_version'` for a " +
+        'disruptive rewrite; the default updates in place. An empty `skills/` ' +
+        'after real work usually means this step was skipped — don’t.',
+    );
+    lines.push('');
+    lines.push(
+      '- **Noticed something that might matter later** but isn’t yet a durable ' +
+        'fact (a smell, a surprise, a TODO-shaped signal)? Append an ' +
+        '**observation** with `observation_record` — no slug, no upsert, ' +
+        'fire-and-forget. It is the cheapest gateway: an observation can later ' +
+        'be consolidated into a memory or hardened into a skill.',
+    );
+    lines.push('');
+    lines.push(
+      '- **Made a choice the team should be able to contest later**? Record a ' +
+        'formal ADR with `decision_record`. When a free-form `note_add` matures ' +
+        'into a decision, use `decision_promote_from_note(note_id, …)` so the ' +
+        'audit log links the ADR back to the note.',
+    );
+    lines.push('');
+    lines.push(
+      'All of the above are mirrored to `.md` on disk so they travel with the ' +
+        'repository and are reviewable in a pull request. The `memory_index` / ' +
+        '`decisions_index` fields in `context_bootstrap` are human-curated ' +
+        'supplements regenerated by `mnema memory consolidate` — read them for ' +
+        'context, never write to them directly.',
+    );
+    lines.push('');
+    lines.push('## Project memory');
+    lines.push('');
+    lines.push(
+      "The project's curated memory index is imported below at generation " +
+        'time, so this section always reflects the current state. Regenerate ' +
+        'it with `mnema memory consolidate`; this block refreshes on the next ' +
+        '`mnema agents sync` / `mnema upgrade`.',
+    );
+    lines.push('');
+    // A whole-line `@path` directive, expanded by expandAgentsImports at
+    // write time. If the index has not been generated yet, it degrades to a
+    // "skipped" note rather than a dangling reference.
+    lines.push(`@${config.paths.memory}/INDEX.md`);
+  }
   lines.push('');
   lines.push('## Useful CLI commands for the human');
   lines.push('');

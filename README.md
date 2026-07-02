@@ -6,7 +6,7 @@
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
 > A tamper-evident, local-first audit trail for AI-agent work.
-> *You drive, agents execute — and you can prove what happened.*
+> *You drive, agents execute — every change stamped with who authorized it and which agent ran it, in a log you can prove wasn't altered.*
 
 Mnema is a local-first MCP server that gives external AI agents
 (Claude Code, Cursor, Aider, …) typed tools to do work behind
@@ -27,11 +27,11 @@ accountable.
 
 - [Why Mnema](#why-mnema)
 - [Quickstart](#quickstart)
-- [Install](#install)
 - [What you get](#what-you-get)
-- [How the MCP loop works](#how-the-mcp-loop-works)
+- [Install](#install)
 - [Project layout after `mnema init`](#project-layout-after-mnema-init)
 - [Common CLI commands](#common-cli-commands)
+- [How the MCP loop works](#how-the-mcp-loop-works)
 - [Configuration](#configuration)
 - [Workflows](#workflows)
 - [Status](#status)
@@ -105,10 +105,32 @@ From here your agent drives Mnema through MCP tools, and you watch
 and approve from the terminal — walked through end to end in
 [How the MCP loop works](#how-the-mcp-loop-works).
 
-<!-- TODO before public launch: record an asciinema cast of the loop
-     below (init → agent run → history → doctor) and embed it here —
-     a tamper-detection demo is the most persuasive thing this README
-     could show. -->
+### See it in 30 seconds
+
+Drive a task through the gates, `doctor` proves the audit chain, then a
+hand-edit to a past log line is caught — every frame is real output:
+
+<img src="docs/quickstart.gif" width="640" alt="Mnema demo — init, review, doctor proves the chain, a tamper is caught">
+
+
+The same flow condensed, in case the animation doesn't play:
+
+```console
+$ mnema init --yes --name "Payments API" --key PAY
+$ mnema task create --title "Add rate limiting"
+$ mnema task move PAY-1 submit …   # drive it through the gates → approve → DONE
+$ mnema doctor
+  ✓ audit hash chain  verified
+
+# now tamper: rewrite who did the work in a past audit line
+$ mnema doctor
+  ✗ audit hash chain  hash mismatch on a line in current.jsonl
+```
+
+<!-- The recording is docs/quickstart.cast (a real asciinema cast).
+     Regenerate it with `node scripts/make-cast.mjs`, then re-render the GIF
+     with `agg --speed 1.4 docs/quickstart.cast docs/quickstart.gif`. -->
+
 
 ## What you get
 
@@ -122,6 +144,7 @@ and approve from the terminal — walked through end to end in
 | **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, each able to record which artefacts it impacts, with a shortcut to promote a note into a decision. |
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), **file-collision** warnings (related tasks that touch the same files, inferred from commit evidence), a navigable **provenance chain** (observation/note → decision → memory, walkable in both directions), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, an **executive snapshot** of an epic or sprint (coverage + graph + inbox, rendered to Markdown or HTML), and an active inbox that surfaces review-SLA breaches, per-state **WIP-limit** breaches, and orphaned runs. |
+| **Live dashboard & metrics** | `mnema serve` — a dark, tabbed **local dashboard** (Overview / Flow / Activity / Graph, inline-SVG charts including a dependency node-link diagram) that streams each audit event over SSE in real time; loopback-only and self-contained, so nothing leaves your machine. `mnema metrics` — a local adoption report (time-to-first-done, feature activation, doctor use, skill adoption), derived from the trail with no telemetry. |
 | **Full-text search** | Search across tasks, decisions, notes and more — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
 | **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). A skill can be **invocable** with **dynamic context** — read-only `mnema` commands whose live output (e.g. `mnema tasks ready`) is embedded when the skill is shown. Memories can be **archived** when stale (hidden from listing and search, kept in the record). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
@@ -221,6 +244,44 @@ If you would rather treat the whole store as a private local cache, add
 `.mnema/` to your `.gitignore` instead — you keep a clean tree but give
 up the cross-clone history that is part of what Mnema offers.
 
+That trail churn is legitimate, but you rarely want it mixed into a code
+diff. `mnema commit` keeps them apart without hiding either:
+
+```bash
+git add src/rate-limit.ts          # stage the code you want to commit
+mnema commit -m "feat: add rate limiting"
+# → commit 1  chore(mnema): update trail   (.mnema/ only)
+# → commit 2  feat: add rate limiting      (your staged code)
+```
+
+It makes two commits — the `.mnema/` trail first (default message,
+overridable with `--trail-message`), then your code. The trail is staged
+for you; **your code is whatever you already staged** with `git add` (or
+`git add -p`) and is committed straight from the index, so unstaged edits
+and partial staging are preserved — the helper never `git add`s your code,
+never amends, and never pushes. An empty bucket is skipped rather than
+committed. Use `--trail-only` to commit just the trail. It refuses to run
+mid-merge/rebase so it can't leave a half-finished state.
+
+### Log growth and rotation
+
+The audit log rotates by month: `current.jsonl` receives new events, and
+at the first write of a new month the previous file is rolled to
+`audit/YYYY-MM.jsonl`. The hash chain runs **continuously across those
+segments** — the first line of each file links to the tail of the one
+before it — and `mnema doctor` verifies the whole chain end to end,
+segment boundaries included. Deleting or editing an archived month is
+caught the same as tampering with `current.jsonl`.
+
+Growth is modest and bounded per month: one compact JSON line per
+mutation (JSONL compresses well under git's packing), and completed-task
+markdown stays as small per-task files. On a 600-task history, verifying
+the full chain (`mnema doctor`) takes single-digit milliseconds and a
+mirror rebuild (`mnema sync`) well under a second — measured by
+`pnpm bench:scale`. The `audit_strategy` and `audit_retention_months`
+config keys are reserved for a future compaction pass (compressing or
+pruning old months); they are accepted today but not yet enforced.
+
 ## Common CLI commands
 
 You drive Mnema from the terminal; agents drive the same model through
@@ -231,7 +292,7 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema init` | Create the full layout (use `--minimal` for adoption) |
+| `mnema init` | Create the full layout (`--minimal` for adoption, `--profile audit-only` for a core-only surface) |
 | `mnema adopt <component>` | Add `skills/`, `memory/` or `roadmap/` later |
 | `mnema import markdown --from PATH` | One-shot import from `## STATE Title` headings |
 | `mnema import github-issues --repo OWNER/REPO` | One-shot import from GitHub Issues |
@@ -271,9 +332,13 @@ MCP tools. The commands group by what you're doing — run
 | `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
 | `mnema inbox` | Tasks awaiting your review or blocked, plus review-SLA breaches |
+| `mnema serve` | Live local dashboard on `localhost` — dark, tabbed (Overview / Flow / Activity / Graph), pushes each audit event over SSE as it lands. Loopback-only, read-only, zero external assets |
+| `mnema stats [--since]` | Derived flow metrics from the audit log (throughput, lead/cycle time, reopen rate, velocity) |
+| `mnema metrics [--json]` | Local adoption report (time-to-first-done, feature activation, doctor use, skill adoption) — derived locally, no telemetry |
 | `mnema agent inspect <run_id>` · `mnema agent diff <run_id>` | One run with its plans + mutations; a grouped diff of everything that run changed |
 | `mnema agent close-orphans [--apply]` · `mnema audit query [filters]` | Find (and abort) runs left open past the threshold; raw log access |
 | `mnema sync` | Rebuild the SQLite cache from the markdowns |
+| `mnema commit -m "…"` | Commit the `.mnema/` trail and your code as two separate commits (trail first) |
 | `mnema skill lint / links / refs` · `mnema memory consolidate` | Validate skills & wikilinks; regenerate memory `INDEX.md` |
 | `mnema memory archive <slug>` | Archive a stale memory — hidden from listing and search, kept in the record |
 | `mnema commands list / show` | Discover the versioned slash-command flows under `.mnema/commands/` |
@@ -292,7 +357,47 @@ MCP tools. The commands group by what you're doing — run
 | `mnema mcp serve` | Start the MCP server on stdio (called by your AI client) |
 | `mnema mcp install-instructions <client>` | Print the right config snippet |
 
+### Live dashboard
+
+`mnema serve` opens a dark, tabbed dashboard on `localhost` and pushes
+each audit event to it in real time — so you watch the project move as
+agents (or you) work, without refreshing:
+
+```bash
+mnema serve            # → http://127.0.0.1:4700, opens your browser
+```
+
+- **Overview** — coverage, throughput/lead/cycle time, WIP vs limits, SLA
+  breaches, and the chain verdict.
+- **Flow** — velocity, reopen rate, estimate-vs-actual, throughput over time.
+- **Activity** — a live event feed (filterable) plus events-by-kind.
+- **Graph** — the dependency graph as a node-link diagram with the critical
+  path highlighted.
+
+It is strictly read-only and derives everything from what's already
+recorded — no new collection. The server binds the loopback interface
+only and the page is self-contained (no external requests, no chart
+library), so **nothing leaves your machine**. It receives events from
+*any* process (an agent over MCP, a CLI mutation) by watching the trail.
+
 ## How the MCP loop works
+
+```mermaid
+graph TD
+    H["Human<br/>drives via terminal"] -->|"approves via terminal"| G
+    A["AI agent<br/>typed tool calls"] --> G["Workflow gate<br/>rejects invalid moves"]
+    G -->|"stamps who + which agent + run"| E["Audit event<br/>dual-identity"]
+    E -->|"prev_hash link"| C["SHA-256 chain<br/>tamper-evident"]
+    C --> M["Markdown mirror<br/>source of truth"]
+    M -->|"mnema sync rebuilds"| S[("SQLite cache")]
+    M --> R["Git<br/>trail travels with repo"]
+    C -.->|"mnema doctor"| V(["Verify chain intact"])
+    classDef climax fill:#1f2937,stroke:#f59e0b,stroke-width:2px,color:#fff;
+    class E,C climax;
+```
+
+*The diagram is the accountability spine — where every action ends up. The
+steps below are the agent's tool-call lifecycle that feeds it:*
 
 1. Your AI client (Claude Code, Cursor, …) spawns `mnema mcp serve`
    with `cwd` pointing at your project. Configure it once via
@@ -363,6 +468,42 @@ what a failed workflow gate means:
 
 `mnema doctor` prints the active mode so its effect is never a surprise.
 
+### Audit-only profile
+
+If you only want the core thesis — a tamper-evident audit log, workflow
+gates and `doctor` — without the project-management surface (epics,
+sprints, decisions/ADRs, skills, memories), initialise with the
+audit-only profile:
+
+```bash
+mnema init --name "My App" --key "MYAPP" --profile audit-only
+```
+
+This picks the `lean` workflow and sets `features.knowledge: false`, so
+the MCP server advertises a **small core** of tools (audit, tasks, runs,
+plans, dependencies, evidence, search) instead of the full set — the
+agent isn't shown epic/sprint/knowledge tools it can't meaningfully use.
+Nothing is deleted: flip `features.knowledge` back to `true` (or switch
+to a fuller workflow) to grow into the complete surface, and use
+`mnema adopt` to add the skills/memory/roadmap directories when you want
+them. The default profile (`full`) keeps every surface on.
+
+The MCP surface is organised into conceptual **layers** so an agent (and
+you) reason about a handful of buckets instead of a flat list of ~80
+tools. `context_bootstrap` returns the exact per-tool grouping for the
+project as `tool_groups`, each flagged enabled/disabled for the active
+profile:
+
+| Layer | Enabled when | Examples |
+|---|---|---|
+| **Core** | always | `audit_query`, `audit_verify`, `task_*`, `agent_run_*`, `graph_dependencies`, `snapshot_generate` |
+| **Workflow transitions** | always | one `task_<action>` per workflow transition (`task_submit`, `task_approve`, …) |
+| **Planning** | workflow enables epics and/or sprints | `epic_create`, `sprint_start`, `epic_coverage`, `sprint_lint` |
+| **Knowledge** | `features.knowledge` | `decision_*`, `skill_*`, `memory_*`, `observation_*`, `provenance`, `wikilink_references` |
+
+The audit-only profile leaves only **Core** and **Workflow transitions**
+on.
+
 ### User-level defaults
 
 A `~/.config/mnema/config.json` lets you set **behavior preferences once**
@@ -387,22 +528,40 @@ override; like the user file, it can never change project identity,
 
 ### Domain-event hooks
 
-A `hooks` block runs a shell command when a **domain** event fires — a
+A `hooks` block runs a command when a **domain** event fires — a
 task reaching a done state, a decision accepted, a sprint or epic
-closed — not on generic tool calls. The command receives the triggering
-audit event as JSON on stdin:
+closed — not on generic tool calls. Each hook is an **argv pair**
+(`command` + `args`) spawned **without a shell**, and receives the
+triggering audit event as JSON on stdin:
 
 ```json
 {
   "hooks": {
-    "on_task_done": ["./scripts/notify.sh"],
-    "on_decision_accepted": ["jq '.data.key' >> decisions.log"]
+    "on_task_done": [{ "command": "./scripts/notify.sh", "args": ["--to", "done"] }],
+    "on_decision_accepted": [{ "command": "./scripts/log-decision.sh", "args": [] }]
   }
 }
 ```
 
 Supported events: `on_task_done`, `on_task_transitioned`,
 `on_decision_accepted`, `on_sprint_closed`, `on_epic_closed`.
+
+**Hooks require your approval before they run.** Because
+`mnema.config.json` lives in the repo and agents can edit it, a
+configured hook block is **inert** until a human approves it:
+
+```
+mnema hooks show      # review the configured hooks + approval status
+mnema hooks approve   # trust the current block to execute
+```
+
+Approval records a fingerprint of the exact hook block (stored outside
+the repo, under `~/.config/mnema/approvals/`), so **any later edit to the
+block revokes the approval automatically** — an agent that rewrites your
+hooks can never make new commands run. An un-approved firing is still
+recorded on the trail as a `hook_ran` with `outcome: "skipped"`. Because
+hooks run as argv with no shell, metacharacters like `$(…)`, `|` and `;`
+are inert data, never interpreted.
 
 Hooks run **after** the triggering event is durably written, and each
 firing records its own `hook_ran` audit event (with the exit code) — a
@@ -434,7 +593,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **890 tests, 0
+Confidence comes from how hard it's shaken out: **992 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection

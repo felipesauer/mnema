@@ -80,6 +80,14 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/lint-command.js')).LintCommand(),
     description: 'Integrity checks over the work graph (lint sprint / lint epic)',
   },
+  hooks: {
+    load: async () => new (await import('./commands/hooks-command.js')).HooksCommand(),
+    description: 'Review and approve domain-event hooks (approve / show)',
+  },
+  commit: {
+    load: async () => new (await import('./commands/commit-command.js')).CommitCommand(),
+    description: 'Commit the .mnema/ trail separately from code (trail first, then code)',
+  },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',
@@ -117,6 +125,11 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/stats-command.js')).StatsCommand(),
     description: 'Show derived flow metrics (throughput, lead/cycle time, reopen rate)',
   },
+  metrics: {
+    load: async () => new (await import('./commands/metrics-command.js')).MetricsCommand(),
+    description:
+      'Local adoption report (quickstart time, feature activation, doctor use) — no telemetry',
+  },
   query: {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
     description: 'Query the backlog by state, epic, sprint, creation window or free text',
@@ -128,6 +141,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   snapshot: {
     load: async () => new (await import('./commands/snapshot-command.js')).SnapshotCommand(),
     description: 'Executive snapshot of an epic or sprint (coverage, deps, SLA) — markdown or HTML',
+  },
+  serve: {
+    load: async () => new (await import('./commands/serve-command.js')).ServeCommand(),
+    description: 'Live local dashboard on localhost (real-time, read-only) — Ctrl+C to stop',
   },
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),

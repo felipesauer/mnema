@@ -216,6 +216,15 @@ export class StateMachine {
   isTerminal(state: string): boolean {
     return this.workflow.terminal.includes(state);
   }
+
+  /**
+   * The workflow's terminal state names.
+   *
+   * @returns The terminal states (a task in one of these is "done")
+   */
+  terminalStates(): readonly string[] {
+    return this.workflow.terminal;
+  }
 }
 
 /**

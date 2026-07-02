@@ -50,6 +50,7 @@ import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
+import { HookTrustService, hasAnyHook } from './hook-trust.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { LabelService } from './label-service.js';
@@ -139,6 +140,7 @@ export interface ServiceContainer {
   readonly runDiff: RunDiffService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
+  readonly hookTrust: HookTrustService;
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
   readonly workGraphLint: WorkGraphLintService;
@@ -260,10 +262,26 @@ export function createServiceContainer(
   // hook is configured, so the common (no-hooks) path carries zero
   // overhead. The dispatcher runs post-commit and records each firing,
   // so a hook is part of the audit trail rather than a phantom effect.
-  const anyHookConfigured = Object.values(config.hooks).some((commands) => commands.length > 0);
-  if (anyHookConfigured) {
-    const dispatcher = new DomainEventDispatcher(config.hooks, workflow.terminal, (input) =>
-      audit.write(input),
+  // Execution is gated by HookTrustService: an in-repo hooks block runs
+  // only if a human approved these exact hooks; an un-approved block is
+  // recorded as skipped and never executed. Trust is resolved ONCE here
+  // (config and approval are immutable within a process) rather than on
+  // every dispatch, so the approval-file read + fingerprint hash do not
+  // run on the audit hot path. `userDir` resolves to the same location
+  // the user-knowledge layer uses; `options.userDir === null` (tests
+  // disabling that layer) falls back to the real dir so the trust check
+  // is still exercised.
+  // Built unconditionally so `mnema hooks show/approve` can reuse the same
+  // wiring (and userDir isolation) as the dispatcher.
+  const hookTrust = new HookTrustService(config.project.key, options.userDir ?? userKnowledgeDir());
+  if (hasAnyHook(config.hooks)) {
+    const hooksTrusted = hookTrust.isTrusted(config.hooks);
+    const dispatcher = new DomainEventDispatcher(
+      config.hooks,
+      workflow.terminal,
+      (input) => audit.write(input),
+      undefined,
+      () => hooksTrusted,
     );
     audit.setWriteObserver((event) => dispatcher.dispatch(event));
   }
@@ -453,7 +471,14 @@ export function createServiceContainer(
   const searchService = new SearchService(adapter);
   const skillsDir = path.join(projectRoot, config.paths.skills);
   const memoryDir = path.join(projectRoot, config.paths.memory);
-  const knownTools = listAvailableToolNames(workflow);
+  // Skill lint checks that a referenced tool *exists*, not that it is
+  // advertised under the current profile, so validate against the full
+  // catalogue (all groups enabled) plus this workflow's transition tools.
+  const knownTools = listAvailableToolNames(workflow, {
+    epics: true,
+    sprints: true,
+    knowledge: true,
+  });
   // User-level knowledge (`~/.config/mnema`) merges under the project's
   // own skills/memories — read-only, project always shadows. Tests
   // override this (or pass null) so they never read the real home dir.
@@ -520,6 +545,7 @@ export function createServiceContainer(
     runDiff: runDiffService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
+    hookTrust,
     githubPr: githubPrService,
     commitVerifier,
     workGraphLint: workGraphLintService,
