@@ -142,6 +142,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     description:
       'Self-contained HTML dashboard over recorded data (chain, deps, SLA, activity) — read-only',
   },
+  serve: {
+    load: async () => new (await import('./commands/serve-command.js')).ServeCommand(),
+    description: 'Live local dashboard on localhost (real-time, read-only) — Ctrl+C to stop',
+  },
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),
     description: 'Live tail of the audit log (Ctrl+C to stop)',

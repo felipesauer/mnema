@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { IntegrityCheck } from '@/services/audit-integrity.js';
-import { type DashboardData, renderDashboard } from '@/services/dashboard-render.js';
+import {
+  type DashboardData,
+  renderDashboard,
+  renderEventRow,
+  renderLiveShell,
+  renderPanels,
+} from '@/services/dashboard-render.js';
 import type { DependencyGraph } from '@/services/dependency-graph-service.js';
 
 function graph(overrides: Partial<DependencyGraph> = {}): DependencyGraph {
@@ -129,5 +135,114 @@ describe('renderDashboard', () => {
 
   it('reports no activity gracefully when the trail window is empty', () => {
     expect(renderDashboard(data({ recent: [] }))).toContain('No recorded activity yet');
+  });
+});
+
+describe('renderPanels', () => {
+  it('renders the four panels plus the drift fragment from shared builders', () => {
+    const p = renderPanels(data());
+    expect(p.chain).toContain('chain intact');
+    expect(p.coverage).toContain('50%');
+    expect(p.deps).toContain('Critical path');
+    expect(p.sla).toContain('None.');
+    expect(p.drift).toBe('');
+  });
+
+  it('emits the drift fragment only when the schema has drifted', () => {
+    expect(renderPanels(data({ schemaDrift: true })).drift).toContain('Schema drift');
+  });
+
+  it('produces the same panel markup the static document embeds', () => {
+    // The static doc must not diverge from the live /panels source.
+    const d = data();
+    const doc = renderDashboard(d);
+    const panels = renderPanels(d);
+    expect(doc).toContain(panels.chain);
+    expect(doc).toContain(panels.coverage);
+  });
+});
+
+describe('renderEventRow', () => {
+  it('renders a table row with resolved dual-identity and key', () => {
+    const row = renderEventRow({
+      at: '2026-07-01T10:00:00Z',
+      kind: 'task_transitioned',
+      actor: 'Felipe',
+      via: 'Claude',
+      key: 'DEMO-1',
+    });
+    expect(row.startsWith('<tr>')).toBe(true);
+    expect(row).toContain('Felipe');
+    expect(row).toContain('Claude');
+    expect(row).toContain('DEMO-1');
+  });
+
+  it('escapes recorded data to prevent injection in a pushed row', () => {
+    const row = renderEventRow({ at: 'x', kind: 'k', actor: '<img src=x onerror=1>' });
+    expect(row).not.toContain('<img src=x');
+    expect(row).toContain('&lt;img');
+  });
+
+  it('shows an em dash when there is no via or key', () => {
+    const row = renderEventRow({ at: 'x', kind: 'run_started', actor: 'a' });
+    expect(row).toContain('—');
+  });
+
+  it('neutralises CR/LF so a recorded value cannot break the SSE frame', () => {
+    // A bare CR in a free-text field (a display name / key) would otherwise
+    // start a new SSE line in the browser and inject a second event.
+    const row = renderEventRow({
+      at: 'x',
+      kind: 'k',
+      actor: 'Bob\rdata: <img src=x onerror=alert(1)>',
+      key: 'K\nINJECT',
+    });
+    expect(row).not.toContain('\r');
+    expect(row).not.toContain('\n');
+    // The payload survives only as escaped, single-line text.
+    expect(row).toContain('&lt;img');
+  });
+});
+
+describe('renderLiveShell', () => {
+  it('is self-contained: the only script is the inline SSE client, no external requests', () => {
+    const html = renderLiveShell(data());
+    expect(html.startsWith('<!doctype html>')).toBe(true);
+    expect(html).not.toMatch(/https?:\/\//);
+    expect(html).not.toContain('<link');
+    // Exactly one <script> — and it has no src attribute (it is inline).
+    const scriptTags = html.match(/<script/g) ?? [];
+    expect(scriptTags).toHaveLength(1);
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/);
+  });
+
+  it('wires the EventSource on the stream endpoint and refreshes panels', () => {
+    const html = renderLiveShell(data());
+    expect(html).toContain("new EventSource('stream')");
+    expect(html).toContain("fetch('panels'");
+    // Stable insertion target for pushed rows must exist even with no rows.
+    expect(html).toContain('id="trail-body"');
+  });
+
+  it('always emits the activity table (never the empty-state note) so pushes have a target', () => {
+    const html = renderLiveShell(data({ recent: [] }));
+    expect(html).toContain('id="trail-body"');
+    expect(html).not.toContain('No recorded activity yet');
+  });
+
+  it('backfills newest-first so initial rows match the order live pushes prepend in', () => {
+    // buildDashboardData yields recent oldest-first; the live shell must
+    // reverse it so the newest backfilled row sits at the top, where the
+    // next SSE push will also land.
+    const html = renderLiveShell(
+      data({
+        recent: [
+          { at: '2026-01-01T00:00:00Z', kind: 'first', actor: 'a', key: 'OLD' },
+          { at: '2026-01-02T00:00:00Z', kind: 'second', actor: 'a', key: 'NEW' },
+        ],
+      }),
+    );
+    // NEW (newest) must appear before OLD in the document.
+    expect(html.indexOf('NEW')).toBeLessThan(html.indexOf('OLD'));
   });
 });
