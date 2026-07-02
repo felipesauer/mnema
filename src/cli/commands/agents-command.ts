@@ -9,7 +9,7 @@ import { writeAgentsMd } from '../templates/agents-md.js';
  * `AGENTS.md` operating manual.
  *
  * `agents sync` regenerates the Mnema-managed block from the current
- * package version — the recovery path after `npm i -g @felipesauer/mnema`
+ * package version — the recovery path after `npm i -g mnema`
  * brings new guidance that an existing project's `AGENTS.md` predates.
  * Only the block between the `MNEMA:START` / `MNEMA:END` markers is
  * rewritten; everything the user wrote around it is preserved.

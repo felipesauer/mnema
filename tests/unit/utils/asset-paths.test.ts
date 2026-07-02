@@ -31,7 +31,7 @@ describe('asset-paths helpers', () => {
     // A trivial sanity check: the manifest at this path advertises
     // the Mnema package name.
     const manifest = JSON.parse(readFileSync(`${root}/package.json`, 'utf-8')) as { name: string };
-    expect(manifest.name).toBe('@felipesauer/mnema');
+    expect(manifest.name).toBe('mnema');
   });
 
   it('migrationsDir() returns an absolute path inside the package', () => {
