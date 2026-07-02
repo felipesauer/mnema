@@ -125,6 +125,11 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/stats-command.js')).StatsCommand(),
     description: 'Show derived flow metrics (throughput, lead/cycle time, reopen rate)',
   },
+  metrics: {
+    load: async () => new (await import('./commands/metrics-command.js')).MetricsCommand(),
+    description:
+      'Local adoption report (quickstart time, feature activation, doctor use) — no telemetry',
+  },
   query: {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
     description: 'Query the backlog by state, epic, sprint, creation window or free text',

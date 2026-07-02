@@ -15,6 +15,7 @@ import { printError } from '../../errors/error-printer.js';
 // existing `doctor-command` importers working.
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { HookTrustService } from '../../services/hook-trust.js';
+import { recordCounter } from '../../services/metrics-counter.js';
 import { findOrphanRuns } from '../../services/orphan-run-service.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
@@ -356,6 +357,14 @@ export class DoctorCommand {
 
     printChecks(checks);
     printMirrorHints(checks);
+    // Record this run in the LOCAL counter log (outside the audit chain,
+    // never transmitted — see MNEMA-ADR-36) so `mnema metrics` can report
+    // doctor adoption. Best-effort: it never affects doctor's verdict.
+    recordCounter(
+      path.join(projectRoot, config.paths.state),
+      'doctor_ran',
+      new Date().toISOString(),
+    );
     // Warnings keep exit 0; only errors fail the check.
     const hasError = checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
     return hasError ? ExitCode.State : ExitCode.Success;
