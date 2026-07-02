@@ -31,7 +31,7 @@ export function checkVersion(required: string): VersionCheckResult {
   if (!compatible) {
     return {
       ok: false,
-      message: `Project requires mnema ${required}, you have ${VERSION}. Update with: npm i -g mnema`,
+      message: `Project requires mnema ${required}, you have ${VERSION}. Update with: npm i -g @felipesauer/mnema`,
     };
   }
   return { ok: true };

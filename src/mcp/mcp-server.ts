@@ -78,7 +78,7 @@ export class MnemaMcpServer {
   ) {
     this.session = new McpSessionContext(clientMetadata);
     this.sdk = new SdkMcpServer(
-      { name: 'mnema', version: VERSION },
+      { name: '@felipesauer/mnema', version: VERSION },
       { capabilities: { tools: {} } },
     );
 

@@ -1,7 +1,7 @@
 # Mnema
 
 [![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/mnema/alpha?label=npm%20alpha&color=orange)](https://www.npmjs.com/package/mnema)
+[![npm](https://img.shields.io/npm/v/@felipesauer/mnema/alpha?label=npm%20alpha&color=orange)](https://www.npmjs.com/package/@felipesauer/mnema)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
 
@@ -25,31 +25,19 @@ accountable.
 
 ## Table of contents
 
-- [Mnema](#mnema)
-  - [Table of contents](#table-of-contents)
-  - [Why Mnema](#why-mnema)
-  - [Quickstart](#quickstart)
-    - [See it in 30 seconds](#see-it-in-30-seconds)
-  - [What you get](#what-you-get)
-  - [Install](#install)
-    - [Adopting an existing project](#adopting-an-existing-project)
-  - [Project layout after `mnema init`](#project-layout-after-mnema-init)
-    - [What to commit, and the dirty-tree question](#what-to-commit-and-the-dirty-tree-question)
-    - [Log growth and rotation](#log-growth-and-rotation)
-  - [Common CLI commands](#common-cli-commands)
-    - [Live dashboard](#live-dashboard)
-  - [How the MCP loop works](#how-the-mcp-loop-works)
-    - [A concrete pass](#a-concrete-pass)
-  - [Configuration](#configuration)
-    - [Audit-only profile](#audit-only-profile)
-    - [User-level defaults](#user-level-defaults)
-    - [Per-repo personal overrides](#per-repo-personal-overrides)
-    - [Domain-event hooks](#domain-event-hooks)
-  - [Workflows](#workflows)
-  - [Status](#status)
-  - [Getting help](#getting-help)
-  - [Further reading](#further-reading)
-  - [License](#license)
+- [Why Mnema](#why-mnema)
+- [Quickstart](#quickstart)
+- [What you get](#what-you-get)
+- [Install](#install)
+- [Project layout after `mnema init`](#project-layout-after-mnema-init)
+- [Common CLI commands](#common-cli-commands)
+- [How the MCP loop works](#how-the-mcp-loop-works)
+- [Configuration](#configuration)
+- [Workflows](#workflows)
+- [Status](#status)
+- [Getting help](#getting-help)
+- [Further reading](#further-reading)
+- [License](#license)
 
 ## Why Mnema
 
@@ -88,7 +76,7 @@ Mnema answers all three.
 
 ```bash
 # 1. Install and initialise a project
-npm install -g mnema@alpha
+npm install -g @felipesauer/mnema@alpha
 cd my-project
 mnema init --name "My App" --key "MYAPP"
 
@@ -167,7 +155,7 @@ $ mnema doctor
 ## Install
 
 The Quickstart above covers the common path
-(`npm install -g mnema@alpha`). A few platform notes:
+(`npm install -g @felipesauer/mnema@alpha`). A few platform notes:
 
 - Alpha releases live under the `alpha` dist-tag, so install with
   `@alpha` to be explicit about what you're getting. (Until the first
@@ -456,7 +444,7 @@ the hash-chained audit log, verifiable forever.
 ```json
 {
   "version": "1.0",
-  "mnema_version": "^0.10.0-alpha.0",
+  "mnema_version": "^0.8.0-alpha.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }

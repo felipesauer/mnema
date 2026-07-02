@@ -32,16 +32,16 @@ jobs:
       - name: Verify the version is published before moving the tag
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          if ! npm view "mnema@$VERSION" version >/dev/null 2>&1; then
-            echo "::error::mnema@$VERSION is not published — refusing to move a dist-tag to a non-existent version"
+          if ! npm view "@felipesauer/mnema@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::@felipesauer/mnema@$VERSION is not published — refusing to move a dist-tag to a non-existent version"
             exit 1
           fi
-          echo "mnema@$VERSION is published; proceeding"
+          echo "@felipesauer/mnema@$VERSION is published; proceeding"
 
       - name: Move the dist-tag
-        run: npm dist-tag add "mnema@${{ github.event.inputs.version }}" "${{ github.event.inputs.tag }}"
+        run: npm dist-tag add "@felipesauer/mnema@${{ github.event.inputs.version }}" "${{ github.event.inputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Show resulting dist-tags
-        run: npm dist-tag ls mnema
+        run: npm dist-tag ls @felipesauer/mnema
