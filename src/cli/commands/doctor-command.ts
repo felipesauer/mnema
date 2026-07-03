@@ -15,9 +15,11 @@ import { printError } from '../../errors/error-printer.js';
 // existing `doctor-command` importers working.
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { HookTrustService } from '../../services/hook-trust.js';
+import { IdentityService } from '../../services/identity-service.js';
 import { recordCounter } from '../../services/metrics-counter.js';
 import { findOrphanRuns } from '../../services/orphan-run-service.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
@@ -331,6 +333,11 @@ export class DoctorCommand {
             ...inspectAuditIntegrity(adapter, path.join(projectRoot, config.paths.audit)),
           );
           checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));
+          checks.push(
+            ...inspectIdentity(
+              new IdentityService(new ActorRepository(adapter)).resolveDefaultActor(),
+            ),
+          );
           if (loadedWorkflow !== null) {
             checks.push(...inspectWorkflowShape(loadedWorkflow));
             checks.push(...inspectTaskStateDrift(adapter, loadedWorkflow));
@@ -717,6 +724,41 @@ export { inspectAuditIntegrity };
  * @param mode - The effective `enforcement_mode` from the merged config
  * @returns A single-element check list
  */
+/**
+ * Reports whether a default human identity resolves. Every mutation needs
+ * an actor, and a fresh machine (or a clone with no `MNEMA_ACTOR`) has
+ * none — yet doctor previously said nothing, so the gap was only found on
+ * the first write. A missing identity is a warning (not an error): the
+ * project is otherwise healthy, the user just has to set it.
+ *
+ * @param identity - Result of `IdentityService.resolveDefaultActor()`
+ * @returns A single-element check list
+ */
+export function inspectIdentity(identity: {
+  readonly actor: string | null;
+  readonly source: 'env' | 'config' | 'none';
+}): DoctorCheck[] {
+  if (identity.actor === null) {
+    return [
+      {
+        name: 'identity configured',
+        ok: false,
+        severity: 'warning',
+        detail:
+          'no default actor — set one with `mnema identity set <handle>` or export MNEMA_ACTOR ' +
+          '(required before any mutation)',
+      },
+    ];
+  }
+  return [
+    {
+      name: 'identity configured',
+      ok: true,
+      detail: `${identity.actor} (${identity.source})`,
+    },
+  ];
+}
+
 export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking'): DoctorCheck[] {
   return [
     {
