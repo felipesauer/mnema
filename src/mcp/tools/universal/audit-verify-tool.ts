@@ -1,6 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import { inspectAuditIntegrity } from '../../../services/audit-integrity.js';
+import {
+  type AttestationSource,
+  inspectAuditIntegrity,
+} from '../../../services/audit-integrity.js';
 import type { ProjectSecretService } from '../../../services/project-secret.js';
 import type { SqliteAdapter } from '../../../storage/sqlite/sqlite-adapter.js';
 import { ok } from '../../mcp-tool-result.js';
@@ -29,6 +32,7 @@ export class AuditVerifyTool {
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
     private readonly secrets: ProjectSecretService | null = null,
+    private readonly attestation: AttestationSource | null = null,
   ) {}
 
   /**
@@ -58,6 +62,7 @@ export class AuditVerifyTool {
           this.auditDir,
           this.secrets?.read() ?? null,
           this.secrets?.readFingerprint() != null,
+          this.attestation,
         );
         const intact = checks.every((check) => check.ok);
         return ok({ intact, checks });
