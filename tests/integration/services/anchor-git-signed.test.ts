@@ -137,4 +137,19 @@ describe('GitSignedAnchorProvider', () => {
     const provider2 = new GitSignedAnchorProvider('/repo', undefined, null, stripped.run);
     expect((await provider2.verify(head, receipt)).state).toBe('broken');
   });
+
+  it('verify() is cannot-verify (not broken) when git is unavailable', async () => {
+    // A runner that simulates git absent from PATH (status 127) — git is
+    // optional, so its absence must not be reported as a tampered anchor.
+    const gitAbsent: GitCommandRunner = () => ({
+      status: 127,
+      stdout: '',
+      stderr: 'git unavailable: spawn git ENOENT',
+    });
+    const provider = new GitSignedAnchorProvider('/repo', undefined, null, gitAbsent);
+    const receipt = { provider: 'git-signed', head, blob: 'somesha', status: 'anchored' as const };
+    const result = await provider.verify(head, receipt);
+    expect(result.state).toBe('cannot-verify');
+    expect(result.detail).toMatch(/git unavailable/i);
+  });
 });
