@@ -10,6 +10,7 @@ import path from 'node:path';
 
 import lockfile from 'proper-lockfile';
 
+import type { AnchorScheduler } from '../../services/anchor/anchor-scheduler.js';
 import type { HeadCheckpointService } from '../../services/head-checkpoint.js';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
 import { hashEvent, hmacEvent } from './audit-hash.js';
@@ -117,6 +118,10 @@ export class AuditWriter {
    *   off the per-event hot path in the sense that it signs at most once
    *   per checkpoint interval, not once per event). `null` disables layer-2
    *   head signing.
+   * @param anchorScheduler - Optional temporal-anchoring scheduler (layer
+   *   3). When a checkpoint signs a new head, it is handed here AFTER the
+   *   write lock is released; the scheduler records it pending and stamps
+   *   asynchronously, fail-open. `null` disables anchoring.
    */
   constructor(
     private readonly auditDir: string,
@@ -124,6 +129,7 @@ export class AuditWriter {
     now: () => Date = () => new Date(),
     private readonly secretProvider: (() => Buffer | null) | null = null,
     private readonly headCheckpoint: HeadCheckpointService | null = null,
+    private readonly anchorScheduler: AnchorScheduler | null = null,
   ) {
     this.now = now;
     if (!existsSync(this.auditDir)) {
@@ -188,6 +194,9 @@ export class AuditWriter {
     // so a read-only command that never writes does not mint a secret or
     // the committed fingerprint.
     const secret = this.resolveSecret();
+    // Set by the checkpoint below when a new head is signed; consumed after
+    // the lock is released to kick off anchoring off the write path.
+    let signedHead: { coveredHeadHash: string } | null = null;
     const release = this.acquireLock();
     try {
       this.state.withChainAdvance((currentHead) => {
@@ -218,10 +227,20 @@ export class AuditWriter {
       // single read-and-compare, not a signing call.
       if (this.headCheckpoint !== null) {
         const { chainHeadHash, eventCount } = this.state.read();
-        if (chainHeadHash !== null) this.headCheckpoint.maybeSign(chainHeadHash, eventCount);
+        if (chainHeadHash !== null) {
+          signedHead = this.headCheckpoint.maybeSign(chainHeadHash, eventCount);
+        }
       }
     } finally {
       release();
+    }
+
+    // Temporal anchoring runs OUTSIDE the write lock and is fire-and-forget:
+    // when a new head was just signed, hand it to the scheduler, which
+    // records it pending and stamps asynchronously (fail-open). The write
+    // has already returned by the time any network I/O happens.
+    if (signedHead !== null && this.anchorScheduler !== null) {
+      this.anchorScheduler.onSignedHead(signedHead.coveredHeadHash);
     }
   }
 
