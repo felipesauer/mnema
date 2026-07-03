@@ -3,6 +3,16 @@ import { z } from 'zod';
 import type { FieldSpec } from './workflow-meta-schema.js';
 
 /**
+ * Defensive upper bound on the length of a pattern-validated string field
+ * when the spec declares no explicit `max`. ReDoS needs a long input to
+ * blow up; the pattern screen ({@link screenRegexPattern}) is the first
+ * line of defence, and this cap is the second — even a pattern that slips
+ * through cannot be handed an unbounded payload. 4096 is far above any
+ * legitimate gate value (keys, handles, short identifiers).
+ */
+const PATTERN_FIELD_MAX_LENGTH = 4096;
+
+/**
  * Translates a single field specification (JSON) into a Zod schema.
  *
  * Recursive for array and object fields. The runtime value type matches
@@ -45,7 +55,15 @@ function buildString(spec: Extract<FieldSpec, { type: 'string' }>): z.ZodType {
   if (spec.format === 'uuid') return s.pipe(z.uuid());
   if (spec.format === 'iso8601') return s.pipe(z.iso.datetime());
   if (spec.format === 'task_key') return s.regex(/^[A-Z][A-Z0-9]*-\d+$/);
-  if (spec.pattern !== undefined) return s.regex(new RegExp(spec.pattern));
+  if (spec.pattern !== undefined) {
+    // Cap the matched length before the regex runs. The pattern is
+    // already screened for catastrophic backtracking, but a length bound
+    // is the second line of defence: a ReDoS needs a long input, so an
+    // explicit `max` (or this default) keeps the engine's work bounded
+    // even if a pathological pattern ever slips the screen.
+    if (spec.max === undefined) s = s.max(PATTERN_FIELD_MAX_LENGTH);
+    return s.regex(new RegExp(spec.pattern));
+  }
   if (spec.enum !== undefined && spec.enum.length > 0) {
     const allowed = [...spec.enum];
     return s.refine((v) => allowed.includes(v), {
