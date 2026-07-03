@@ -57,8 +57,10 @@ describe('AnchorScheduler honours the anchor interval', () => {
       scheduler.onSignedHead(head(ec), ec);
     }
     await scheduler.settle();
-    // First anchor at ec=3 (>=3 since baseline null → the 'events' bound),
-    // second at ec=6 (3 more). Events 1,2,4,5 are below the interval.
+    // First anchor fires immediately at ec=1 (baseline null → always due),
+    // second at ec=4 (3 events after the ec=1 baseline). ec=2,3,5,6 are
+    // below the interval. Two anchors from six signed heads — the interval
+    // is honoured, not one-per-head.
     expect(provider.stamps).toBe(2);
     expect(anchors.listAll()).toHaveLength(2);
   });
