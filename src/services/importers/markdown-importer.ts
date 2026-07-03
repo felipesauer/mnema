@@ -91,15 +91,29 @@ export class MarkdownImporter {
     const skipped: { source: string; reason: string }[] = [];
     let created = 0;
     let skippedExisting = 0;
+    // Titles created earlier in THIS import, normalised (trim, collapse
+    // inner whitespace, lowercase). The DB check is case-sensitive
+    // (title = ?), so two headings that differ only by case or spacing —
+    // "Foo Bar" vs "foo  bar" — would each pass it and both be created.
+    // The normalized in-memory set collapses them within the batch.
+    // (Exactly-equal titles are already caught by the DB check, since each
+    // create commits before the next heading is looked up.)
+    const seenTitles = new Set<string>();
     for (const file of files) {
       const parsed = MarkdownImporter.parse(readFileSync(file, 'utf-8'), file);
       for (const task of parsed) {
         if (options.skipExisting === true) {
+          const normalized = task.title.trim().replace(/\s+/g, ' ').toLowerCase();
+          if (seenTitles.has(normalized)) {
+            skippedExisting += 1;
+            continue;
+          }
           const existing = this.tasks.findActiveByTitle(this.projectKey, task.title);
           if (existing.length > 0) {
             skippedExisting += 1;
             continue;
           }
+          seenTitles.add(normalized);
         }
         const result = this.tasks.create({
           projectKey: this.projectKey,
