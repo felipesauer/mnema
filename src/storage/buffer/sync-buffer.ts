@@ -39,6 +39,27 @@ const LOCK_MAX_ATTEMPTS = 10;
 const LOCK_BACKOFF_MS = 50;
 
 /**
+ * Explicit lock options. `proper-lockfile`'s default `stale` is 10s, and
+ * `lockSync` does not run the async mtime auto-update, so a lock held
+ * across a slow critical section could be judged stale by a second
+ * process and stolen — exactly the overlap the lock exists to prevent.
+ * The truncate/drain section is microseconds, so the library's minimum
+ * `stale` (2000ms) is ample and shrinks that theft window five-fold. A
+ * genuinely orphaned lock (dead process) still becomes recoverable once
+ * 2s elapse. `realpath: false` avoids a stat the lock target may not need,
+ * and `onCompromised` swallows a late compromise notification instead of
+ * letting it crash the process (the sync callers handle contention via
+ * the retry loop).
+ */
+const LOCK_OPTIONS = {
+  stale: 2000,
+  realpath: false,
+  onCompromised: () => {
+    /* handled cooperatively by the acquire retry loop; do not throw */
+  },
+} as const;
+
+/**
  * Persistent append-only buffer of pending markdown updates, stored at
  * `.app/buffer.jsonl` next to the SQLite database.
  *
@@ -150,7 +171,7 @@ export class SyncBuffer {
     let lastErr: unknown;
     for (let attempt = 0; attempt < LOCK_MAX_ATTEMPTS; attempt += 1) {
       try {
-        return lockfile.lockSync(this.lockTarget);
+        return lockfile.lockSync(this.lockTarget, LOCK_OPTIONS);
       } catch (err) {
         lastErr = err;
         sleepBriefly(LOCK_BACKOFF_MS);
