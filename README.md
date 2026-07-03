@@ -444,7 +444,7 @@ the hash-chained audit log, verifiable forever.
 ```json
 {
   "version": "1.0",
-  "mnema_version": "^0.8.0-alpha.0",
+  "mnema_version": "^0.10.0-alpha.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }
@@ -593,7 +593,7 @@ protection described in [Why Mnema](#why-mnema) and
 surface around it is built out; the remaining road to a stable `1.0`
 is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **992 tests, 0
+Confidence comes from how hard it's shaken out: **1083 tests, 0
 skipped, lint + build clean**, repeated adversarial review sweeps
 (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection
