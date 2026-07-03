@@ -36,6 +36,36 @@ import { writeAgentsMd } from '../templates/agents-md.js';
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
 
+/**
+ * Reads the ordered `states` array from a bundled workflow's JSON. The
+ * wizard shows these to the user, so they must be sourced from the same
+ * file `init` actually copies — hard-coded label strings silently drift
+ * from the JSON (they had, for every preset). Kept deliberately small:
+ * the full {@link WorkflowLoader} pulls in Zod compilation we do not need
+ * just to list state names.
+ */
+function workflowStates(name: WorkflowName): readonly string[] {
+  const raw = readFileSync(path.join(workflowsDir(), `${name}.json`), 'utf-8');
+  const states = (JSON.parse(raw) as { states?: unknown }).states;
+  if (!Array.isArray(states) || !states.every((s): s is string => typeof s === 'string')) {
+    throw new Error(`workflow ${name}.json has no string[] states array`);
+  }
+  return states;
+}
+
+/**
+ * Builds the wizard's workflow-preset choices, deriving each state list
+ * from its JSON via {@link workflowStates}. Iterating
+ * {@link SUPPORTED_WORKFLOWS} means a future preset is covered the moment
+ * its file ships — nothing to keep in sync by hand.
+ */
+function buildWorkflowChoices(): { name: string; value: WorkflowName }[] {
+  return SUPPORTED_WORKFLOWS.map((name) => ({
+    name: `${name} — ${workflowStates(name).join('/')}`,
+    value: name,
+  }));
+}
+
 const SUPPORTED_PROFILES = ['full', 'audit-only'] as const;
 type ProfileName = (typeof SUPPORTED_PROFILES)[number];
 
@@ -536,12 +566,7 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
   const workflow = await select<WorkflowName>({
     message: 'Workflow preset',
     default: (options.workflow as WorkflowName | undefined) ?? 'default',
-    choices: [
-      { name: 'default — DRAFT/READY/IN_PROGRESS/IN_REVIEW/DONE/BLOCKED', value: 'default' },
-      { name: 'lean — DRAFT/IN_PROGRESS/DONE', value: 'lean' },
-      { name: 'kanban — TODO/DOING/DONE', value: 'kanban' },
-      { name: 'jira-classic — TO_DO/IN_PROGRESS/IN_REVIEW/DONE', value: 'jira-classic' },
-    ],
+    choices: buildWorkflowChoices(),
   });
 
   const minimal =
@@ -582,4 +607,10 @@ function deriveKey(name: string): string | undefined {
 }
 
 // Re-export for tests
-export const _internal = { validateOptions, buildConfig, deriveKey };
+export const _internal = {
+  validateOptions,
+  buildConfig,
+  deriveKey,
+  workflowStates,
+  buildWorkflowChoices,
+};
