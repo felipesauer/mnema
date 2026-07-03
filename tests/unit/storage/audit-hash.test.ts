@@ -1,8 +1,8 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { hashEvent } from '@/storage/audit/audit-hash.js';
+import { hashEvent, hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 /**
@@ -75,5 +75,56 @@ describe('hashEvent', () => {
     const { hash: _o, ...rest } = genesis;
     const expected = createHash('sha256').update(JSON.stringify(rest)).digest('hex');
     expect(hashEvent(genesis)).toBe(expected);
+  });
+});
+
+/**
+ * v3 keys the SAME canonicalisation with the per-project HMAC secret
+ * (ADR-37 layer 2). Only a secret-holder can produce or verify it, so it
+ * proves project authenticity — a keyless SHA-256 (v2) does not.
+ */
+describe('hmacEvent', () => {
+  const secret = Buffer.from(
+    '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff',
+    'hex',
+  );
+  const event: AuditEvent = {
+    v: 3,
+    at: '2026-07-03T00:00:00.000Z',
+    kind: 'task_transitioned',
+    actor: 'felipesauer',
+    via: 'claude-code',
+    run: '019f0000-0000-7000-8000-000000000000',
+    data: { from: 'READY', to: 'IN_PROGRESS', nested: { a: 1, b: [2, 3] } },
+    prev_hash: 'abc123',
+    hash: 'SHOULD_BE_OMITTED',
+  };
+
+  it('pins the keyed digest to a golden hex', () => {
+    expect(hmacEvent(event, secret)).toBe(
+      'ca011485b3ad7e4813ac71a1e01f94728dc2e83ef0df66d10f6b65d9464b204e',
+    );
+  });
+
+  it('is byte-identical to a from-scratch HMAC over the hash-omitted event', () => {
+    const { hash: _omit, ...rest } = event;
+    const fromScratch = createHmac('sha256', secret).update(JSON.stringify(rest)).digest('hex');
+    expect(hmacEvent(event, secret)).toBe(fromScratch);
+  });
+
+  it('omits the `hash` field, like hashEvent', () => {
+    const { hash: _stray, ...unsealed } = event;
+    expect(hmacEvent(event, secret)).toBe(hmacEvent(unsealed as AuditEvent, secret));
+  });
+
+  it('a wrong secret yields a different digest (authenticity depends on the key)', () => {
+    const wrong = Buffer.from(`ff`.repeat(32), 'hex');
+    expect(hmacEvent(event, wrong)).not.toBe(hmacEvent(event, secret));
+  });
+
+  it('differs from the keyless v2 hash of the same canonical event', () => {
+    // Same bytes fed to the digest; only the keying differs. This is why a
+    // v3 line cannot be verified with the v2 rule and vice-versa.
+    expect(hmacEvent(event, secret)).not.toBe(hashEvent(event));
   });
 });

@@ -18,6 +18,7 @@ import { HookTrustService } from '../../services/hook-trust.js';
 import { IdentityService } from '../../services/identity-service.js';
 import { recordCounter } from '../../services/metrics-counter.js';
 import { findOrphanRuns } from '../../services/orphan-run-service.js';
+import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
@@ -330,7 +331,13 @@ export class DoctorCommand {
             }),
           );
           checks.push(
-            ...inspectAuditIntegrity(adapter, path.join(projectRoot, config.paths.audit)),
+            ...inspectAuditIntegrity(
+              adapter,
+              path.join(projectRoot, config.paths.audit),
+              // read() not getOrCreate(): doctor verifies, it never mints a
+              // secret. A clone without it → v3 lines report 'unverifiable'.
+              new ProjectSecretService(projectRoot, config.project.key).read(),
+            ),
           );
           checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));
           checks.push(

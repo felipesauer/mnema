@@ -19,10 +19,13 @@ export class AuditVerifyTool {
   /**
    * @param adapter - Open SQLite adapter (source of the chain head + count)
    * @param auditDir - Absolute path to `.mnema/audit/`
+   * @param secret - Per-project HMAC secret for verifying v3 lines, or
+   *   `null` (v3 lines then report as authenticity-unverifiable)
    */
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
+    private readonly secret: Buffer | null = null,
   ) {}
 
   /**
@@ -45,7 +48,7 @@ export class AuditVerifyTool {
         inputSchema: {},
       },
       () => {
-        const checks = inspectAuditIntegrity(this.adapter, this.auditDir);
+        const checks = inspectAuditIntegrity(this.adapter, this.auditDir, this.secret);
         const intact = checks.every((check) => check.ok);
         return ok({ intact, checks });
       },

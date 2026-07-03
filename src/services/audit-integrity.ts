@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { auditFilesSignature, orderedAuditFiles } from '../storage/audit/audit-files.js';
-import { hashEvent } from '../storage/audit/audit-hash.js';
+import { hashEvent, hmacEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 
@@ -47,9 +47,17 @@ export interface IntegrityCheck {
  *
  * @param adapter - Open SQLite adapter
  * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param secret - Per-project HMAC secret for verifying v3 lines. When
+ *   omitted, v3 lines are not hash-verified (their authenticity is
+ *   unverifiable without the secret) but their `prev_hash` continuity is
+ *   still checked; a v2-only log is unaffected.
  * @returns Audit-integrity checks
  */
-export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string): IntegrityCheck[] {
+export function inspectAuditIntegrity(
+  adapter: SqliteAdapter,
+  auditDir: string,
+  secret: Buffer | null = null,
+): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
     checks.push({
@@ -89,6 +97,7 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   let chainedLines = 0;
   let legacyLines = 0;
   let malformedLines = 0;
+  let v3Unverifiable = 0;
   let chainBroken = false;
   let chainBreakDetail = '';
   let lastHash: string | null = null;
@@ -119,10 +128,21 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
         chainedLines += 1;
         const hash = typeof event.hash === 'string' ? event.hash : null;
         const prev = (event.prev_hash ?? null) as string | null;
-        const recomputed = hashEvent(event as unknown as AuditEvent);
-        if (hash !== recomputed) {
-          chainBroken = true;
-          chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
+        // Dispatch by version: v3 is HMAC-keyed (needs the secret), v2 is
+        // keyless SHA-256. A v3 line with no secret available cannot be
+        // hash-verified here — flag it as unverifiable rather than a false
+        // tamper; its prev_hash continuity is still checked below.
+        if (v >= 3 && secret === null) {
+          v3Unverifiable += 1;
+        } else {
+          const recomputed =
+            v >= 3
+              ? hmacEvent(event as unknown as AuditEvent, secret as Buffer)
+              : hashEvent(event as unknown as AuditEvent);
+          if (hash !== recomputed) {
+            chainBroken = true;
+            chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
+          }
         }
         if (prev !== prevHash) {
           chainBroken = true;
@@ -197,6 +217,19 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
     });
   }
 
+  // v3 lines are HMAC-keyed with the project secret. Without the secret
+  // (a clone that has not imported it) their authenticity cannot be
+  // checked — report it as a warning, never a tamper error: the chain
+  // consistency above still holds, only project-authenticity is unproven.
+  if (v3Unverifiable > 0) {
+    checks.push({
+      name: 'audit authenticity',
+      ok: false,
+      detail: `${v3Unverifiable} HMAC-keyed (v3) line(s) could not be verified — project secret not present. Import it with the project secret to verify authenticity.`,
+      severity: 'warning',
+    });
+  }
+
   if (malformedLines > 0) {
     checks.push({
       name: 'audit lines parse',
@@ -230,6 +263,7 @@ export class CachedAuditIntegrity {
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
+    private readonly secret: Buffer | null = null,
   ) {}
 
   /**
@@ -243,7 +277,7 @@ export class CachedAuditIntegrity {
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
-    const checks = inspectAuditIntegrity(this.adapter, this.auditDir);
+    const checks = inspectAuditIntegrity(this.adapter, this.auditDir, this.secret);
     this.signature = signature;
     this.cached = checks;
     return checks;
