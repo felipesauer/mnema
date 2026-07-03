@@ -11,7 +11,7 @@ import path from 'node:path';
 import lockfile from 'proper-lockfile';
 
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
-import { hashEvent } from './audit-hash.js';
+import { hashEvent, hmacEvent } from './audit-hash.js';
 
 /**
  * Cross-process lock policy for the chained write path. Mirrors the sync
@@ -102,11 +102,14 @@ export class AuditWriter {
    * @param auditDir - Absolute path to the audit directory
    * @param state - Optional SQLite mirror; enables hash chain + invariants
    * @param now - Optional clock; defaults to `() => new Date()`
+   * @param secret - Optional per-project HMAC secret; when present, events
+   *   are sealed as v3 (HMAC-keyed) instead of v2 (SHA-256)
    */
   constructor(
     private readonly auditDir: string,
     private readonly state: AuditStateRepository | null = null,
     now: () => Date = () => new Date(),
+    private readonly secret: Buffer | null = null,
   ) {
     this.now = now;
     if (!existsSync(this.auditDir)) {
@@ -171,12 +174,16 @@ export class AuditWriter {
     try {
       this.state.withChainAdvance((currentHead) => {
         this.checkRotation();
+        // v3 (HMAC-keyed, project-authentic) when a secret is wired;
+        // otherwise the legacy v2 (keyless SHA-256). The canonical input
+        // is identical either way — only the version tag and the keying
+        // differ — so the verifier dispatches purely on `v`.
         const chained: AuditEvent = {
           ...event,
-          v: 2,
+          v: this.secret !== null ? 3 : 2,
           prev_hash: currentHead,
         };
-        const hash = hashEvent(chained);
+        const hash = this.secret !== null ? hmacEvent(chained, this.secret) : hashEvent(chained);
         const sealed: AuditEvent = { ...chained, hash };
         const line = `${JSON.stringify(sealed)}\n`;
         return {

@@ -52,20 +52,29 @@ export class ProjectSecretService {
   }
 
   /**
-   * Returns the project secret, generating and persisting it on first use.
-   * Idempotent: an existing secret is returned untouched (never
-   * regenerated), and its fingerprint is (re)written if missing so a fresh
-   * clone that already holds the secret still records the anchor.
+   * Returns the project secret, generating it ONLY for a brand-new project
+   * (no committed fingerprint and no local secret). The three cases:
    *
-   * @returns The 32-byte secret
+   * - local secret present → return it (self-heal a missing fingerprint);
+   * - committed fingerprint present but NO local secret → this is a clone
+   *   that has not imported the secret. Return `null` — do NOT invent a
+   *   new secret, which would fork the chain under a second key and
+   *   clobber the committed fingerprint. The caller writes v2 (degraded)
+   *   until the secret is imported (MNEMA-170);
+   * - neither present → a genuinely new project: generate + persist both.
+   *
+   * @returns The 32-byte secret, or `null` when it exists but is not on
+   *   this machine (clone-without-import)
    */
-  getOrCreate(): Buffer {
+  getOrCreate(): Buffer | null {
     const existing = this.read();
     if (existing !== null) {
-      // Self-heal a missing fingerprint without touching the secret.
       if (!existsSync(this.fingerprintPath())) this.writeFingerprint(existing);
       return existing;
     }
+    // A committed fingerprint with no local secret ⇒ clone-without-import.
+    // Never generate a competing secret here.
+    if (this.readFingerprint() !== null) return null;
 
     const secret = randomBytes(SECRET_BYTES);
     this.writeSecretAtomic(secret);

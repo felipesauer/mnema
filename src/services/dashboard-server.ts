@@ -11,6 +11,7 @@ import {
   toRecentEvent,
 } from './dashboard-data.js';
 import { renderEventRow, renderLiveShell, renderTabBody } from './dashboard-render.js';
+import { ProjectSecretService } from './project-secret.js';
 import type { ServiceContainer } from './service-container.js';
 
 /** Loopback host the server binds to by default. Never `0.0.0.0`. */
@@ -97,7 +98,11 @@ export async function createDashboardServer(
   // request/tab. The cache recomputes when the files' stat signature moves
   // (append, rotation, or an in-place edit — so tampering between requests
   // is still caught) and serves the prior result otherwise.
-  const integrityCache = new CachedAuditIntegrity(container.adapter, auditDir);
+  const integrityCache = new CachedAuditIntegrity(
+    container.adapter,
+    auditDir,
+    new ProjectSecretService(projectRoot, config.project.key).read(),
+  );
 
   /** Composes a fresh snapshot for a request. */
   function snapshot() {

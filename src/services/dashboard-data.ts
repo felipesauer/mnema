@@ -13,6 +13,7 @@ import {
 import type { DependencyGraph } from './dependency-graph-service.js';
 import type { FlowMetrics } from './flow-metrics-service.js';
 import type { SlaBreach, WipBreach } from './inbox-service.js';
+import { ProjectSecretService } from './project-secret.js';
 import type { ServiceContainer } from './service-container.js';
 
 /**
@@ -151,7 +152,13 @@ export function buildDashboardData(
   }
 
   const auditDir = path.join(projectRoot, config.paths.audit);
-  const integrity = options.integrity ?? inspectAuditIntegrity(container.adapter, auditDir);
+  const integrity =
+    options.integrity ??
+    inspectAuditIntegrity(
+      container.adapter,
+      auditDir,
+      new ProjectSecretService(projectRoot, config.project.key).read(),
+    );
   const inbox = container.inbox.view();
   const flow = container.flowMetrics.compute({ since: window });
   const display = container.identity.getDisplayFor.bind(container.identity);
