@@ -22,6 +22,27 @@ export interface SecretSource {
   readFingerprint(): string | null;
 }
 
+/** The persisted head signature the attestation check verifies. */
+export interface HeadSignatureView {
+  readonly coveredHeadHash: string;
+  readonly signerActor: string;
+  readonly signerFingerprint: string;
+  readonly signature: string;
+}
+
+/**
+ * Minimal structural view of the machine-attestation sources, kept local so
+ * audit-integrity does not depend on the repository or key-service classes.
+ * `readHeadSignature` returns the latest recorded head signature (or `null`
+ * when none). `verifyHeadSignature` verifies it against the committed public
+ * key of its signer, resolved by fingerprint — returns `null` when that
+ * public key is not present in the repo (a signer whose `.pub` is missing).
+ */
+export interface AttestationSource {
+  readHeadSignature(): HeadSignatureView | null;
+  verifyHeadSignature(sig: HeadSignatureView): boolean | null;
+}
+
 /**
  * One verdict line produced by an integrity inspection. Shared between
  * `mnema doctor` (which renders it as a checklist row) and the
@@ -65,6 +86,11 @@ export interface IntegrityCheck {
  *   is a total downgrade and is reported as tampering. Independent of
  *   `secret`: a clone without the secret still has the (committed)
  *   fingerprint, so it still detects a wholesale downgrade.
+ * @param attestation - Optional machine-attestation source. When wired,
+ *   the latest recorded head signature is verified against the committed
+ *   public key of its signer and reported as a SEPARATE verdict (`audit
+ *   machine attestation`), distinct from chain consistency and HMAC
+ *   authenticity. `null` omits the check.
  * @returns Audit-integrity checks
  */
 export function inspectAuditIntegrity(
@@ -72,6 +98,7 @@ export function inspectAuditIntegrity(
   auditDir: string,
   secret: Buffer | null = null,
   hasFingerprint = false,
+  attestation: AttestationSource | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -273,6 +300,15 @@ export function inspectAuditIntegrity(
     });
   }
 
+  // Machine attestation (ADR-37 layer 2): the latest recorded head
+  // signature, verified against the committed public key of its signer.
+  // This is SEPARATE from chain consistency (layer 1) and HMAC authenticity
+  // — it attests WHICH machine advanced the head. Only meaningful once the
+  // chain has started, so it is skipped for a legacy/empty log above.
+  if (attestation !== null) {
+    checks.push(attestationCheck(attestation, stateRow.chain_head_hash));
+  }
+
   if (malformedLines > 0) {
     checks.push({
       name: 'audit lines parse',
@@ -283,6 +319,61 @@ export function inspectAuditIntegrity(
   }
 
   return checks;
+}
+
+/**
+ * Verdict for the machine-attestation layer. Distinguishes:
+ * - no signature yet (warning — a fresh project, or below the first
+ *   checkpoint interval);
+ * - signer's public key missing from the repo (warning — cannot attest,
+ *   not a tamper);
+ * - signature does not verify (ERROR — the head or the signature was
+ *   forged);
+ * - verifies and covers the current head (ok);
+ * - verifies but the head has advanced past the last signed checkpoint (ok
+ *   — the signature is valid for the head it covered; the next checkpoint
+ *   will re-attest).
+ */
+function attestationCheck(
+  attestation: AttestationSource,
+  currentHead: string | null,
+): IntegrityCheck {
+  const sig = attestation.readHeadSignature();
+  if (sig === null) {
+    return {
+      name: 'audit machine attestation',
+      ok: true,
+      detail: 'no head signature yet (signs at the next checkpoint interval)',
+      severity: 'warning',
+    };
+  }
+
+  const verified = attestation.verifyHeadSignature(sig);
+  if (verified === null) {
+    return {
+      name: 'audit machine attestation',
+      ok: false,
+      detail: `signer ${sig.signerActor}'s public key (…${sig.signerFingerprint.slice(0, 12)}) is not present in .mnema/keys — cannot attest`,
+      severity: 'warning',
+    };
+  }
+  if (!verified) {
+    return {
+      name: 'audit machine attestation',
+      ok: false,
+      detail: `head signature by ${sig.signerActor} does not verify — the head or the signature was tampered`,
+      severity: 'error',
+    };
+  }
+
+  const coversCurrent = sig.coveredHeadHash === currentHead;
+  return {
+    name: 'audit machine attestation',
+    ok: true,
+    detail: coversCurrent
+      ? `head signed by ${sig.signerActor} (…${sig.signerFingerprint.slice(0, 12)})`
+      : `head signed by ${sig.signerActor} up to an earlier checkpoint (…${sig.coveredHeadHash.slice(0, 12)}); re-attests next checkpoint`,
+  };
 }
 
 /**

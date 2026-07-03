@@ -1,8 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs';
+
 import type {
   AuditHeadSignatureRepository,
   HeadSignature,
 } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
-import type { MachineKeyService } from './machine-key.js';
+import type { AttestationSource } from './audit-integrity.js';
+import { MachineKeyService } from './machine-key.js';
 
 /** The checkpoint cadence: sign after `events` new events OR `seconds`. */
 export interface CheckpointInterval {
@@ -74,4 +77,41 @@ export class HeadCheckpointService {
     const elapsedMs = this.now().getTime() - new Date(last.signedAt).getTime();
     return elapsedMs >= this.interval.seconds * 1000;
   }
+}
+
+/**
+ * Builds an {@link AttestationSource} for `inspectAuditIntegrity`: reads the
+ * latest recorded head signature and verifies it against the committed
+ * public key of ITS signer, resolved by (actor, fingerprint) at
+ * `.mnema/keys/<actor>.<fp12>.pub`. Verification returns `null` when that
+ * public key is absent (a signer whose `.pub` was never committed / is
+ * missing on this checkout) so the caller reports "cannot attest" rather
+ * than a false tamper. Kept here so the machine-key path resolution lives
+ * next to the signer, and reused by the verify tool, doctor and dashboard.
+ *
+ * @param projectRoot - Absolute project root (holds `.mnema/keys/`)
+ * @param signatures - The head-signature repository
+ * @returns An attestation source, or `null` when no signature is recorded
+ */
+export function createAttestationSource(
+  projectRoot: string,
+  signatures: AuditHeadSignatureRepository,
+): AttestationSource {
+  return {
+    readHeadSignature: () => signatures.read(),
+    verifyHeadSignature: (sig) => {
+      // Resolve the signer's committed .pub by (actor, fingerprint). The
+      // MachineKeyService instance is only used for its pure path helper, so
+      // the actor it is constructed with is the signer's, not "ours".
+      const keyService = new MachineKeyService(projectRoot, sig.signerActor);
+      const pubPath = keyService.publicKeyPathFor(sig.signerFingerprint);
+      if (!existsSync(pubPath)) return null;
+      const record = MachineKeyService.parsePublicKey(readFileSync(pubPath, 'utf-8'));
+      return MachineKeyService.verify(
+        Buffer.from(sig.coveredHeadHash, 'hex'),
+        Buffer.from(sig.signature, 'base64'),
+        record.publicKey,
+      );
+    },
+  };
 }
