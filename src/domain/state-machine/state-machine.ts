@@ -188,9 +188,12 @@ export class StateMachine {
     const parsed = transition.requires.safeParse(merged);
     return Ok({
       to: transition.to,
-      // On failure, hand back the merged payload so a caller permitting
-      // the override still persists whatever fields the user did supply.
-      data: parsed.success ? parsed.data : merged,
+      // On success Zod has already stripped keys not declared by the gate.
+      // On failure (a permitted override), hand back only the DECLARED
+      // fields the user did supply — never the raw payload, so an
+      // undeclared key cannot ride the override path into the append-only
+      // audit log. The override intent (valid fields) is preserved.
+      data: parsed.success ? parsed.data : pickDeclared(merged, transition.requiresSpec),
       requiresSpec: transition.requiresSpec,
       gate: parsed.success ? { ok: true } : { ok: false, issues: parsed.error.issues },
     });
@@ -243,6 +246,25 @@ function mergeDefaults(payload: unknown, defaults: Readonly<Record<string, unkno
     if (result[key] === undefined && value !== undefined && value !== null) {
       result[key] = value;
     }
+  }
+  return result;
+}
+
+/**
+ * Restricts a payload to the keys declared by the gate spec, mirroring
+ * the strip Zod applies on the success path. Used on the failed-gate
+ * (override) path so an undeclared key cannot reach the audit log. A
+ * non-object payload passes through unchanged, so the gate still reports
+ * the real type error rather than this masking it as an empty object.
+ */
+function pickDeclared(payload: unknown, spec: Readonly<Record<string, unknown>>): unknown {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    return payload;
+  }
+  const source = payload as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(spec)) {
+    if (key in source) result[key] = source[key];
   }
   return result;
 }
