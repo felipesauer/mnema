@@ -1,7 +1,7 @@
 import type { Decision } from '../domain/entities/decision.js';
 import type { Task } from '../domain/entities/task.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
-import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import type { LeanTask, TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { DecisionService } from './decision-service.js';
 
 /**
@@ -89,12 +89,15 @@ export class InboxService {
    */
   view(now: number = Date.now()): InboxView {
     const features = this.stateMachine.getWorkflow().features;
+    // Read the active tasks ONCE (lean projection, no JSON.parse) and feed
+    // both breach computations, rather than scanning the table twice.
+    const active = this.tasks.findActiveLean();
     return {
       awaitingReview: features.reviewWorkflow ? this.tasks.findByState('IN_REVIEW') : [],
       blocked: features.blockedState ? this.tasks.findByState('BLOCKED') : [],
       pendingDecisions: this.decisions.listPending(this.projectKey),
-      slaBreaches: this.slaBreaches(now),
-      wipBreaches: this.wipBreaches(),
+      slaBreaches: this.computeSlaBreaches(active, now),
+      wipBreaches: this.computeWipBreaches(active),
     };
   }
 
@@ -107,13 +110,18 @@ export class InboxService {
    * @returns Breaches, the most over-limit state first
    */
   wipBreaches(): WipBreach[] {
+    return this.computeWipBreaches(this.tasks.findActiveLean());
+  }
+
+  /** WIP-breach computation over an already-fetched active task list. */
+  private computeWipBreaches(tasks: readonly LeanTask[]): WipBreach[] {
     // Tolerate a config that predates wip_limits (older callers/fixtures).
     const limits = this.sla.wipLimits ?? {};
     if (Object.keys(limits).length === 0) return [];
     const terminal = new Set(this.stateMachine.getWorkflow().terminal);
 
     const keysByState = new Map<string, string[]>();
-    for (const task of this.tasks.findAllActive()) {
+    for (const task of tasks) {
       if (terminal.has(task.state)) continue;
       if (limits[task.state] === undefined) continue;
       const list = keysByState.get(task.state) ?? [];
@@ -141,9 +149,14 @@ export class InboxService {
    * @returns Breaches, most overdue first
    */
   slaBreaches(now: number = Date.now()): SlaBreach[] {
+    return this.computeSlaBreaches(this.tasks.findActiveLean(), now);
+  }
+
+  /** SLA-breach computation over an already-fetched active task list. */
+  private computeSlaBreaches(tasks: readonly LeanTask[], now: number): SlaBreach[] {
     const terminal = new Set(this.stateMachine.getWorkflow().terminal);
     const breaches: SlaBreach[] = [];
-    for (const task of this.tasks.findAllActive()) {
+    for (const task of tasks) {
       if (terminal.has(task.state)) continue;
       const slaDays = this.sla.slaDays[task.state] ?? this.sla.staleAfterDays;
       const ageDays = Math.floor((now - new Date(task.updatedAt).getTime()) / MS_PER_DAY);

@@ -133,5 +133,54 @@ describe('repositories', () => {
 
       expect(tasks.countActive()).toBe(1);
     });
+
+    it('findActiveLean projects without parsing acceptance_criteria/metadata', () => {
+      const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
+      const reporter = actors.upsert('daniel', ActorKind.Human);
+      const t = tasks.insert({
+        key: 'WEBAPP-1',
+        projectId: project.id,
+        title: 'Lean',
+        reporterId: reporter,
+      });
+      // Corrupt the two JSON blobs. rowToTask would throw on these; the lean
+      // projection never reads them, so it must tolerate the malformed row.
+      adapter
+        .getDatabase()
+        .prepare(
+          "UPDATE tasks SET acceptance_criteria = '{not json', metadata = 'broken' WHERE id = ?",
+        )
+        .run(t.id);
+
+      // The lean path returns the row and does NOT parse the blobs.
+      const lean = tasks.findActiveLean();
+      expect(lean.map((r) => r.key)).toEqual(['WEBAPP-1']);
+      expect(lean[0]?.state).toBe(TaskState.Draft);
+
+      // Contrast: the full read DOES parse and therefore throws on the same
+      // row — this is the cost the lean projection avoids.
+      expect(() => tasks.findAllActive()).toThrow();
+    });
+
+    it('findActiveLean pushes equality filters into SQL', () => {
+      const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
+      const reporter = actors.upsert('daniel', ActorKind.Human);
+      const a = tasks.insert({
+        key: 'WEBAPP-1',
+        projectId: project.id,
+        title: 'A',
+        reporterId: reporter,
+      });
+      tasks.updateState(a.id, TaskState.InReview, null);
+      tasks.insert({ key: 'WEBAPP-2', projectId: project.id, title: 'B', reporterId: reporter });
+
+      // Only the IN_REVIEW task comes back when filtered by state.
+      const filtered = tasks.findActiveLean({ state: TaskState.InReview });
+      expect(filtered.map((r) => r.key)).toEqual(['WEBAPP-1']);
+      // No filter → both active tasks, key-ordered.
+      expect(tasks.findActiveLean().map((r) => r.key)).toEqual(['WEBAPP-1', 'WEBAPP-2']);
+      // A non-matching equality (sentinel-style) → empty.
+      expect(tasks.findActiveLean({ epicId: ' no-match' })).toEqual([]);
+    });
   });
 });
