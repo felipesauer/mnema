@@ -214,11 +214,26 @@ export class SyncService {
   /**
    * Resolves the absolute markdown path a task should live at.
    *
+   * The task's `state` names a subdirectory of the backlog, and since
+   * migration 004 dropped the DB CHECK on `tasks.state`, a crafted state
+   * (`../../etc`) could otherwise steer the write outside the backlog
+   * root. The resolved path is asserted to stay within that root — a
+   * defence in depth beyond the rebuild-time state validation, covering
+   * every write/relocate/delete that goes through here.
+   *
    * @param task - Task to locate
    * @returns Absolute path under the configured backlog directory
+   * @throws Error if `state` would escape the backlog root
    */
   pathForTask(task: Task): string {
-    return path.join(this.paths.projectRoot, this.paths.backlogDir, task.state, `${task.key}.md`);
+    const backlogRoot = path.resolve(this.paths.projectRoot, this.paths.backlogDir);
+    const target = path.resolve(backlogRoot, task.state, `${task.key}.md`);
+    if (!isWithin(backlogRoot, target)) {
+      throw new Error(
+        `refusing to write task ${task.key}: state '${task.state}' escapes the backlog directory`,
+      );
+    }
+    return target;
   }
 
   private flushOne(taskKey: string): void {
@@ -334,4 +349,17 @@ export function removeTaskMarkdown(filePath: string): void {
   if (existsSync(filePath)) {
     unlinkSync(filePath);
   }
+}
+
+/**
+ * True when `target` is `root` itself or lives strictly inside it, after
+ * resolving both. Used to keep task markdown writes contained to the
+ * backlog directory even when a task's state is hostile (`../../…`).
+ *
+ * @param root - The containing directory (already absolute)
+ * @param target - The candidate path (already absolute)
+ */
+function isWithin(root: string, target: string): boolean {
+  const rel = path.relative(root, target);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
