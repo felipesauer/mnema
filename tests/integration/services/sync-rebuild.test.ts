@@ -142,4 +142,49 @@ body
     const list = container.task.list();
     expect(list).toHaveLength(0);
   });
+
+  it('skips a backlog directory whose name is not a workflow state', () => {
+    // A valid task in a real state, alongside a task under a bogus
+    // directory. Since migration 004 dropped the tasks.state CHECK, an
+    // unknown state would otherwise persist and strand the task past the
+    // workflow gates — the rebuild must refuse it.
+    const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
+    mkdirSync(draftDir, { recursive: true });
+    const validMd = `---
+mnema:
+  key: TEST-1
+  state: DRAFT
+  title: Legit task
+  reporter: daniel
+---
+
+# Legit task
+`;
+    writeFileSync(path.join(draftDir, 'TEST-1.md'), validMd, 'utf-8');
+
+    const bogusDir = path.join(root, '.mnema/backlog', 'NOTASTATE');
+    mkdirSync(bogusDir, { recursive: true });
+    const bogusMd = `---
+mnema:
+  key: TEST-2
+  state: NOTASTATE
+  title: Smuggled task
+  reporter: daniel
+---
+
+# Smuggled task
+`;
+    writeFileSync(path.join(bogusDir, 'TEST-2.md'), bogusMd, 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+
+    // The legit task is upserted; the smuggled one is reported skipped.
+    const list = container.task.list();
+    expect(list.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(summary.skipped.some((s) => s.file.includes('TEST-2.md'))).toBe(true);
+    expect(summary.skipped.some((s) => s.reason.includes('NOTASTATE'))).toBe(true);
+
+    // No row anywhere carries the invalid state.
+    expect(container.task.list().some((t) => t.state === 'NOTASTATE')).toBe(false);
+  });
 });
