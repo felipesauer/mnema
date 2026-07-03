@@ -36,7 +36,7 @@ function freshClone(): string {
   // Deliberately NO `.mnema/state/` — that is the git-ignored directory
   // a clone never has.
   mkdirSync(path.join(projectRoot, '.mnema/workflows'), { recursive: true });
-  mkdirSync(path.join(projectRoot, '.mnema/backlog/TODO'), { recursive: true });
+  mkdirSync(path.join(projectRoot, '.mnema/backlog/DRAFT'), { recursive: true });
   mkdirSync(path.join(projectRoot, '.mnema/roadmap'), { recursive: true });
   mkdirSync(path.join(projectRoot, '.mnema/sprints'), { recursive: true });
 
@@ -63,7 +63,7 @@ function freshClone(): string {
     '---',
     'mnema:',
     '  key: CLONE-1',
-    '  state: TODO',
+    '  state: DRAFT',
     '  title: Survives the clone',
     '  description: A task that was committed as markdown',
     '  acceptance_criteria:',
@@ -81,7 +81,7 @@ function freshClone(): string {
     '# Survives the clone',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/backlog/TODO/CLONE-1.md'), taskMd);
+  writeFileSync(path.join(projectRoot, '.mnema/backlog/DRAFT/CLONE-1.md'), taskMd);
 
   // Committed roadmap: an epic and a decision share roadmap/, the sprint
   // lives under sprints/ — the shape `RoadmapMirror` writes.
@@ -204,7 +204,7 @@ describe('fresh clone → sync', () => {
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       expect(result.value.title).toBe('Survives the clone');
-      expect(result.value.state).toBe('TODO');
+      expect(result.value.state).toBe('DRAFT');
       expect([...result.value.acceptanceCriteria]).toEqual(['rebuilds from disk']);
     });
   });

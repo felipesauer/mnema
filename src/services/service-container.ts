@@ -328,6 +328,7 @@ export function createServiceContainer(
       roadmapDir: config.paths.roadmap,
       sprintsDir: config.paths.sprints,
     },
+    new Set(stateMachine.getWorkflow().states),
   );
 
   const taskService = new TaskService(

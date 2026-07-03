@@ -70,6 +70,15 @@ export class SyncRebuild {
       readonly roadmapDir: string;
       readonly sprintsDir: string;
     },
+    /**
+     * The states declared by the active workflow. A `backlog/<STATE>/`
+     * directory whose name is not in this set is skipped rather than
+     * upserted: since migration 004 dropped the DB CHECK on
+     * `tasks.state`, an arbitrary or hand-created directory would
+     * otherwise persist a task in a state no transition can leave —
+     * a way to smuggle a task past the workflow gates.
+     */
+    private readonly validStates: ReadonlySet<string>,
   ) {}
 
   /**
@@ -152,8 +161,26 @@ export class SyncRebuild {
     let upserted = 0;
 
     for (const stateDir of listDirs(root)) {
-      const stateName = stateDir as TaskState;
       const stateRoot = path.join(root, stateDir);
+
+      // The directory name is the task's state. Reject any that the
+      // active workflow doesn't declare BEFORE touching the database:
+      // persisting an unknown state (the DB CHECK is gone since
+      // migration 004) would strand the task in a state with no
+      // outbound transition — a gate bypass. Each contained file is
+      // recorded as skipped so the reason is visible in the summary.
+      if (!this.validStates.has(stateDir)) {
+        for (const fileName of listMarkdownFiles(stateRoot)) {
+          scanned += 1;
+          skipped.push({
+            file: path.join(stateRoot, fileName),
+            reason: `unknown workflow state '${stateDir}' (not in the active workflow)`,
+          });
+        }
+        continue;
+      }
+
+      const stateName = stateDir as TaskState;
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const filePath = path.join(stateRoot, fileName);
         scanned += 1;
