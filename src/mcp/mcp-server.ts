@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { Config } from '../config/config-schema.js';
+import { ProjectSecretService } from '../services/project-secret.js';
 import type { ServiceContainer } from '../services/service-container.js';
 import { SyncMode } from '../services/sync-service.js';
 import { logger } from '../utils/logger.js';
@@ -229,6 +230,7 @@ export class MnemaMcpServer {
     new AuditVerifyTool(
       this.services.adapter,
       path.join(this.projectRoot, this.config.paths.audit),
+      new ProjectSecretService(this.projectRoot, this.config.project.key).read(),
     ).register(this.sdk);
     if (knowledgeEnabled) {
       new DecisionTools(
