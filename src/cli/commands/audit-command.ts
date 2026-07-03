@@ -1,6 +1,15 @@
-import type { Command } from 'commander';
-import { pc } from '../../utils/colors.js';
+import path from 'node:path';
 
+import type { Command } from 'commander';
+
+import { buildAnchorRegistry } from '../../services/anchor/anchor-factory.js';
+import { inspectAnchors } from '../../services/anchor/anchor-inspect.js';
+import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { createAttestationSource } from '../../services/head-checkpoint.js';
+import { ProjectSecretService } from '../../services/project-secret.js';
+import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
+import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 import { parsePositiveInt } from '../option-parsers.js';
@@ -83,6 +92,54 @@ export class AuditCommand {
             );
           }
         });
+      });
+
+    group
+      .command('verify')
+      .description(
+        'Verify audit-log integrity: the hash chain and HMAC authenticity (layer 1+2, ' +
+          'offline) plus, with --verify-anchors, the temporal anchors online (layer 3). ' +
+          'Exits non-zero when any error-severity check fails.',
+      )
+      .option(
+        '--verify-anchors',
+        'Also verify recorded anchors against their provider (online; requires network for opentimestamps/rfc3161)',
+        false,
+      )
+      .action(async (options: { readonly verifyAnchors?: boolean }) => {
+        let hasError = false;
+        await withCliContext(async ({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, config.paths.audit);
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const checks = inspectAuditIntegrity(
+            container.adapter,
+            auditDir,
+            secret.read(),
+            secret.readFingerprint() !== null,
+            createAttestationSource(
+              projectRoot,
+              new AuditHeadSignatureRepository(container.adapter),
+            ),
+          );
+          if (options.verifyAnchors === true) {
+            const anchors = new AnchorRepository(container.adapter);
+            const registry = buildAnchorRegistry(config, projectRoot);
+            checks.push(
+              ...(await inspectAnchors(anchors, registry, config.audit.anchor.provider, true)),
+            );
+          }
+          for (const check of checks) {
+            const severity = check.severity ?? 'error';
+            const mark = check.ok
+              ? pc.green('✔')
+              : severity === 'warning'
+                ? pc.yellow('⚠')
+                : pc.red('✘');
+            if (!check.ok && severity === 'error') hasError = true;
+            process.stdout.write(`${mark}  ${check.name}: ${pc.dim(check.detail)}\n`);
+          }
+        });
+        process.exit(hasError ? 1 : 0);
       });
   }
 }
