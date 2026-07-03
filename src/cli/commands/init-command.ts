@@ -22,8 +22,10 @@ import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
+import { IdentityService } from '../../services/identity-service.js';
 import { Err, Ok, type Result } from '../../services/result.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
@@ -71,6 +73,13 @@ interface ResolvedInitOptions {
 export interface InitOutcome {
   readonly configPath: string;
   readonly mode: 'full' | 'minimal';
+  /**
+   * Whether a default human identity is already resolvable (via
+   * `MNEMA_ACTOR` or `~/.config/mnema/identity.json`). When false, init
+   * points the user at `mnema identity set`, since every mutation needs
+   * an actor and its absence is the most common first-run failure.
+   */
+  readonly identityConfigured: boolean;
 }
 
 /**
@@ -134,6 +143,14 @@ export class InitCommand {
         if (outcome.mode === 'minimal') {
           process.stdout.write(
             `${pc.dim('  minimal layout — run `mnema adopt all` to add skills/memory/roadmap')}\n`,
+          );
+        }
+        // Every mutation needs a human actor; a fresh machine has none, and
+        // the failure is otherwise only discovered on the first write. Point
+        // the user at it now as an explicit next step.
+        if (!outcome.identityConfigured) {
+          process.stdout.write(
+            `${pc.dim('  next: set your identity — `mnema identity set <handle>` (or export MNEMA_ACTOR) before your first change')}\n`,
           );
         }
       });
@@ -212,6 +229,7 @@ export class InitCommand {
 
     const dbPath = path.join(stateDir, 'state.db');
     const adapter = new SqliteAdapter(dbPath);
+    let identityConfigured = false;
     try {
       new MigrationRunner().run(adapter, migrationDirs(cwd));
       const projects = new ProjectRepository(adapter);
@@ -222,6 +240,11 @@ export class InitCommand {
           description: config.project.description ?? null,
         });
       }
+      // resolveDefaultActor never throws and reads only env + the user
+      // identity file, so it is safe to probe here purely to decide
+      // whether init should nudge the user to set their identity.
+      identityConfigured =
+        new IdentityService(new ActorRepository(adapter)).resolveDefaultActor().actor !== null;
     } finally {
       adapter.close();
     }
@@ -231,7 +254,7 @@ export class InitCommand {
       writeFileSync(auditFile, '', 'utf-8');
     }
 
-    return Ok({ configPath, mode: minimal ? 'minimal' : 'full' });
+    return Ok({ configPath, mode: minimal ? 'minimal' : 'full', identityConfigured });
   }
 }
 
