@@ -18,11 +18,20 @@ export type PatternRejection = string | null;
  * Workflow files are agent-writable, and `buildString` compiles their
  * `pattern` directly; a catastrophically-backtracking regex (ReDoS) plus
  * a crafted payload would peg the synchronous CLI/MCP process. This is a
- * deliberately conservative, dependency-free screen — it rejects the
- * classic ReDoS shape (a quantified group that is itself immediately
- * quantified, e.g. `(a+)+`, `(a*)*`, `(a+)*`, `(?:ab+)+`) and caps the
- * length. It errs toward refusing an exotic-but-safe pattern rather than
- * admitting an unsafe one; the built-in `format`s cover the common cases.
+ * deliberately conservative, dependency-free screen: it rejects an
+ * immediately-quantified group whose body could backtrack — whether that
+ * body holds its own quantifier (`(a+)+`, `(a*)*`, `(?:ab+)+`), an
+ * overlapping alternation (`(a|a)*`, `(a|ab)*`, `([a-z]|[a-z])*`), or a
+ * nested group (`((a+))+`). All three are classic exponential shapes, and
+ * matching them without a full regex parser means treating any quantified
+ * group with a "dangerous" body as suspect. Plain quantified groups
+ * (`(abc)+`, `(ab|cd)+` over disjoint literals is still refused — we do
+ * not try to prove disjointness) are the cost of erring toward refusal;
+ * the built-in `format`s and a length cap cover the common cases.
+ *
+ * Screening the pattern is necessary but not sufficient on its own — a
+ * pattern that slips through still cannot blow up without a long input,
+ * so `buildString` also caps the matched value length (defence in depth).
  *
  * @param pattern - The raw pattern string from the workflow spec
  * @returns `null` if safe, otherwise the reason it is rejected
@@ -41,23 +50,72 @@ export function screenRegexPattern(pattern: string): PatternRejection {
     return `pattern is not a valid regular expression (${message})`;
   }
 
-  // Nested quantifier: a group closed with `)` followed by a quantifier
-  // (`* + ? {`), where the group's contents already contain a quantifier.
-  // This is the hallmark of exponential backtracking, e.g. `(a+)+`,
-  // `(a*)*`, `(?:x+)*`, `(a{1,9})+`. Non-quantified groups (`(abc)+`) are
-  // fine and stay allowed.
-  if (NESTED_QUANTIFIER.test(pattern)) {
-    return 'pattern contains a nested quantifier (ReDoS risk); simplify it or use a built-in format';
+  if (hasDangerousQuantifiedGroup(pattern)) {
+    return 'pattern contains a quantified group that can backtrack exponentially (nested quantifier, overlapping alternation, or nested group); simplify it or use a built-in format';
   }
 
   return null;
 }
 
 /**
- * Matches a group whose body contains a quantifier and which is itself
- * immediately quantified — the nested-quantifier ReDoS shape. The body
- * `[^()]*` stays within a single group level (no nesting of parentheses),
- * which is enough to catch the common catastrophic patterns without a
- * full regex parser.
+ * Reports whether `pattern` contains a group that is immediately followed
+ * by a `*`/`+`/`{` quantifier and whose body is itself capable of
+ * super-linear backtracking. A body is treated as dangerous when it
+ * contains another quantifier (`* + ? {`), an alternation (`|`), or a
+ * nested group (`(`) — the three shapes behind catastrophic backtracking.
+ *
+ * This is a scanner, not a parser: it walks the string tracking group
+ * depth and, whenever a group closes and is quantified, inspects the body
+ * it just closed. Escaped parentheses (`\(`) and character classes
+ * (`[...]`, where `(` `)` `|` are literal) are skipped so they neither
+ * open a group nor count as a dangerous body character.
  */
-const NESTED_QUANTIFIER = /\([^()]*[*+?}][^()]*\)[*+{]/;
+function hasDangerousQuantifiedGroup(pattern: string): boolean {
+  // Stack of the start index (just past `(`) of each open group.
+  const openStarts: number[] = [];
+  let inClass = false;
+
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i];
+
+    if (ch === '\\') {
+      i += 1; // skip the escaped character
+      continue;
+    }
+    if (inClass) {
+      if (ch === ']') inClass = false;
+      continue;
+    }
+    if (ch === '[') {
+      inClass = true;
+      continue;
+    }
+    if (ch === '(') {
+      openStarts.push(i + 1);
+      continue;
+    }
+    if (ch === ')') {
+      const start = openStarts.pop();
+      if (start === undefined) continue; // unbalanced; RegExp() would have thrown
+      const next = pattern[i + 1];
+      if (next === '*' || next === '+' || next === '{') {
+        // Body is [start, i). Dangerous if it can backtrack.
+        const body = pattern.slice(start, i);
+        if (bodyCanBacktrack(body)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether a quantified group's body can drive super-linear backtracking:
+ * it holds another quantifier, an alternation, or a nested group. A
+ * leading group prefix — `?:` (non-capturing), `?=` `?!` (lookahead),
+ * `?<=` `?<!` (lookbehind), `?<name>` (named) — is stripped first so its
+ * `?`/`<` are not mistaken for a quantifier or content.
+ */
+function bodyCanBacktrack(body: string): boolean {
+  const core = body.replace(/^\?(:|=|!|<=|<!|<[A-Za-z_][A-Za-z0-9_]*>)/, '');
+  return /[*+?{]/.test(core) || core.includes('|') || core.includes('(');
+}
