@@ -2,6 +2,7 @@ import type { Config } from '../../config/config-schema.js';
 import type { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AnchorRegistry } from './anchor-registry.js';
 import { AnchorScheduler } from './anchor-scheduler.js';
+import { GitSignedAnchorProvider } from './git-signed-anchor-provider.js';
 import { NoneAnchorProvider } from './none-anchor-provider.js';
 
 /**
@@ -14,10 +15,17 @@ import { NoneAnchorProvider } from './none-anchor-provider.js';
  * @param projectRoot - Absolute project root (git-signed needs the repo)
  * @returns A registry ready to resolve the configured provider
  */
-export function buildAnchorRegistry(_config: Config, _projectRoot: string): AnchorRegistry {
+export function buildAnchorRegistry(config: Config, projectRoot: string): AnchorRegistry {
   const registry = new AnchorRegistry();
   registry.register(new NoneAnchorProvider());
-  // git-signed / opentimestamps / rfc3161 register here as they land.
+  registry.register(
+    new GitSignedAnchorProvider(
+      projectRoot,
+      config.audit.anchor.ref,
+      config.audit.anchor.remote ?? null,
+    ),
+  );
+  // opentimestamps / rfc3161 register here as they land.
   return registry;
 }
 
