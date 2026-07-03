@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TaskState } from '@/domain/enums/task-state.js';
 import { PortfolioService } from '@/services/portfolio-service.js';
@@ -183,5 +183,31 @@ describe('PortfolioService', () => {
     seed('TEST-1');
     labels.setForTask('id-TEST-1', ['area:api']);
     expect(portfolio.run({ labels: ['area:nope'] }).total).toBe(0);
+  });
+
+  it('filters by sprint key (and an unknown sprint yields empty)', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    seed('TEST-1', { sprintId: sprint.id });
+    seed('TEST-2', {});
+    expect(portfolio.run({ sprintKey: sprint.key }).total).toBe(1);
+    // Unknown key resolves to the NO_MATCH sentinel → empty, not everything.
+    expect(portfolio.run({ sprintKey: 'TEST-SPRINT-999' }).total).toBe(0);
+  });
+
+  it('pushes state/epic/sprint equality into the repository query', () => {
+    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    seed('TEST-1', { state: TaskState.InReview, epicId: epic.id, sprintId: sprint.id });
+
+    const spy = vi.spyOn(tasks, 'findActiveLean');
+    portfolio.run({ state: 'IN_REVIEW', epicKey: epic.key, sprintKey: sprint.key });
+
+    // The equality filters are handed to SQL, not applied in JS afterward.
+    expect(spy).toHaveBeenCalledWith({
+      state: 'IN_REVIEW',
+      epicId: epic.id,
+      sprintId: sprint.id,
+    });
+    spy.mockRestore();
   });
 });

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { DecisionStatus } from '@/domain/enums/decision-status.js';
@@ -121,5 +121,22 @@ describe('InboxService', () => {
     const view = leanInbox.view();
     expect(view.awaitingReview).toHaveLength(0);
     expect(view.blocked).toHaveLength(0);
+  });
+
+  it('view() reads the active task list once, not once per breach computation', () => {
+    insertTask('TEST-1', TaskState.InReview);
+    insertTask('TEST-2', TaskState.Draft);
+
+    const lean = vi.spyOn(tasks, 'findActiveLean');
+    const legacy = vi.spyOn(tasks, 'findAllActive');
+
+    inbox.view();
+
+    // One lean read powers both SLA and WIP; the full-parse read is gone.
+    expect(lean).toHaveBeenCalledTimes(1);
+    expect(legacy).not.toHaveBeenCalled();
+
+    lean.mockRestore();
+    legacy.mockRestore();
   });
 });
