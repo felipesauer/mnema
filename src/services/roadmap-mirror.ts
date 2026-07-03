@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Decision } from '../domain/entities/decision.js';
@@ -138,14 +138,4 @@ export function serialiseDecision(decision: Decision): Record<string, unknown> {
     metadata: { ...decision.metadata },
     at: decision.at,
   };
-}
-
-/**
- * Removes an entity's markdown mirror when the row is hard-deleted
- * upstream. No-op when the file is already gone.
- */
-export function removeRoadmapMarkdown(filePath: string): void {
-  if (existsSync(filePath)) {
-    unlinkSync(filePath);
-  }
 }
