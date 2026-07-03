@@ -91,7 +91,7 @@ export class RoadmapMirror {
 }
 
 /** Serialises an epic to its `mnema:` frontmatter shape. */
-export function serialiseEpic(epic: Epic): Record<string, unknown> {
+function serialiseEpic(epic: Epic): Record<string, unknown> {
   return {
     key: epic.key,
     kind: 'epic',
@@ -105,7 +105,7 @@ export function serialiseEpic(epic: Epic): Record<string, unknown> {
 }
 
 /** Serialises a sprint to its `mnema:` frontmatter shape. */
-export function serialiseSprint(sprint: Sprint): Record<string, unknown> {
+function serialiseSprint(sprint: Sprint): Record<string, unknown> {
   return {
     key: sprint.key,
     kind: 'sprint',
@@ -122,7 +122,7 @@ export function serialiseSprint(sprint: Sprint): Record<string, unknown> {
 }
 
 /** Serialises a decision to its `mnema:` frontmatter shape. */
-export function serialiseDecision(decision: Decision): Record<string, unknown> {
+function serialiseDecision(decision: Decision): Record<string, unknown> {
   return {
     key: decision.key,
     kind: 'decision',
