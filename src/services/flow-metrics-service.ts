@@ -1,4 +1,5 @@
 import type { Workflow } from '../domain/state-machine/state-machine.js';
+import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { AuditQuery } from './audit-query.js';
 import type { SprintService } from './sprint-service.js';
 import type { TaskService } from './task-service.js';
@@ -115,10 +116,19 @@ export class FlowMetricsService {
    *
    * @param options.since - Optional lower time bound (ISO8601 or a
    *   relative duration like `7d`); only events at or after it count.
+   * @param options.events - Pre-read audit events to compute from,
+   *   letting a caller that already walked the log (e.g. `mnema metrics`,
+   *   which also renders adoption metrics from the same read) avoid a
+   *   second full read+parse. When supplied, the caller is responsible
+   *   for any `since` filtering — this method does not re-filter a passed
+   *   array. When omitted, the log is read here (optionally with `since`).
    * @returns The derived {@link FlowMetrics}.
    */
-  compute(options: { readonly since?: string } = {}): FlowMetrics {
-    const events = this.audit.run(options.since === undefined ? {} : { since: options.since });
+  compute(
+    options: { readonly since?: string; readonly events?: readonly AuditEvent[] } = {},
+  ): FlowMetrics {
+    const events =
+      options.events ?? this.audit.run(options.since === undefined ? {} : { since: options.since });
     const terminal = new Set(this.workflow.terminal);
     const initial = this.workflow.initial;
 

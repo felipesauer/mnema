@@ -37,7 +37,9 @@ export class MetricsCommand {
           const events = container.auditQuery.run();
           const counters = readCounters(stateDir);
           const terminal = new Set(container.stateMachine.terminalStates());
-          const flow = container.flowMetrics.compute();
+          // Reuse the single read above — flow metrics walk the same log, so
+          // passing the pre-read events avoids a second full read + parse.
+          const flow = container.flowMetrics.compute({ events });
 
           const metrics = computeAdoptionMetrics(events, counters, terminal, flow);
           if (options.json === true) {
