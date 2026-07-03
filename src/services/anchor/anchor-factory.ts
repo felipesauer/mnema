@@ -2,7 +2,7 @@ import type { Config } from '../../config/config-schema.js';
 import type { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AnchorRegistry } from './anchor-registry.js';
 import { AnchorScheduler } from './anchor-scheduler.js';
-import { GitSignedAnchorProvider } from './git-signed-anchor-provider.js';
+import { GIT_SIGNED_PROVIDER, GitSignedAnchorProvider } from './git-signed-anchor-provider.js';
 import { NoneAnchorProvider } from './none-anchor-provider.js';
 
 /**
@@ -17,15 +17,21 @@ import { NoneAnchorProvider } from './none-anchor-provider.js';
  */
 export function buildAnchorRegistry(config: Config, projectRoot: string): AnchorRegistry {
   const registry = new AnchorRegistry();
+  // `none` is always available and is the default — anchoring, and the git
+  // it would use, are strictly OPT-IN. A network/git-backed provider is
+  // registered ONLY when the project explicitly selects it, so the default
+  // path never depends on git being present at all.
   registry.register(new NoneAnchorProvider());
-  registry.register(
-    new GitSignedAnchorProvider(
-      projectRoot,
-      config.audit.anchor.ref,
-      config.audit.anchor.remote ?? null,
-    ),
-  );
-  // opentimestamps / rfc3161 register here as they land.
+  if (config.audit.anchor.provider === GIT_SIGNED_PROVIDER) {
+    registry.register(
+      new GitSignedAnchorProvider(
+        projectRoot,
+        config.audit.anchor.ref,
+        config.audit.anchor.remote ?? null,
+      ),
+    );
+  }
+  // opentimestamps / rfc3161 register here as they land, same opt-in rule.
   return registry;
 }
 
