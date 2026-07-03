@@ -99,16 +99,34 @@ export class MigrationRunner {
   private applyOne(database: DatabaseType, sql: string): void {
     const disableForeignKeys = /^\s*--\s*mnema:disable-foreign-keys/m.test(sql);
     if (!disableForeignKeys) {
-      database.exec(sql);
+      this.execSql(database, sql);
       return;
     }
 
     const previousFk = database.pragma('foreign_keys', { simple: true }) as 0 | 1;
     if (previousFk === 1) database.pragma('foreign_keys = OFF');
     try {
-      database.exec(sql);
+      this.execSql(database, sql);
     } finally {
       if (previousFk === 1) database.pragma('foreign_keys = ON');
+    }
+  }
+
+  /**
+   * Runs a migration script. If the script opens its own transaction
+   * (`BEGIN;` … `COMMIT;`) and a statement fails before the `COMMIT`,
+   * `better-sqlite3`'s `exec` throws but leaves the transaction OPEN —
+   * it does not roll back. Left dangling, the partial migration (e.g. a
+   * dropped-but-not-recreated trigger) would leak into whatever runs
+   * next. Roll back explicitly on failure so a self-transacting
+   * migration is truly all-or-nothing.
+   */
+  private execSql(database: DatabaseType, sql: string): void {
+    try {
+      database.exec(sql);
+    } catch (error) {
+      if (database.inTransaction) database.exec('ROLLBACK');
+      throw error;
     }
   }
 

@@ -12,6 +12,14 @@
 --    repos sempre passam timestamp explícito via binding desde esta migration).
 -- =============================================================================
 
+-- Wrapped in a single transaction so the temporary drop of
+-- trg_transitions_no_update (below) and its recreation apply atomically:
+-- a crash mid-migration must never leave `transitions` mutable with the
+-- append-only guard gone. This migration sets no PRAGMAs (unlike 001), so
+-- an explicit transaction is safe. better-sqlite3's exec() runs the
+-- BEGIN/COMMIT as part of the script.
+BEGIN;
+
 -- =============================================================================
 -- 1. Normalização de timestamps existentes
 -- Replace ' ' por 'T' e append 'Z' quando ausente.
@@ -140,3 +148,5 @@ END;
 
 INSERT INTO schema_migrations (version, applied_at)
 VALUES (5, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+
+COMMIT;
