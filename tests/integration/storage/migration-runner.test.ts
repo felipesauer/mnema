@@ -1,10 +1,27 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import type { Database as DatabaseType } from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+
+/** True when a trigger of the given name exists in the schema. */
+function triggerExists(db: DatabaseType, name: string): boolean {
+  const row = db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = ?")
+    .get(name);
+  return row !== undefined;
+}
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -103,6 +120,45 @@ describe('MigrationRunner', () => {
     expect(() => db.prepare("DELETE FROM transitions WHERE id = 'tr1'").run()).toThrow(
       /cannot be deleted/,
     );
+  });
+
+  it('migration 005 is wrapped in a transaction (atomicity guard)', () => {
+    // 005 drops and recreates the transitions append-only trigger. If it
+    // is not atomic, a crash between the two leaves the guard gone. Pin
+    // the wrapping so it cannot be silently removed.
+    const sql = readFileSync(path.join(migrationsDir, '005_iso8601_timestamps.sql'), 'utf-8');
+    expect(sql).toMatch(/^\s*BEGIN\s*;/m);
+    expect(sql).toMatch(/^\s*COMMIT\s*;/m);
+  });
+
+  it('rolls back the whole of 005 on a mid-migration failure (append-only guard survives)', () => {
+    // Build a migrations dir with the real 001..004 plus a 005 that fails
+    // partway through — right after the trigger drop. The runner must roll
+    // the whole 005 back (BEGIN/COMMIT wrapping + the runner's rollback on
+    // error), leaving the append-only trigger from 001 intact rather than
+    // dropped-and-not-recreated.
+    const brokenDir = mkdtempSync(path.join(tmpdir(), 'mnema-mig-broken-'));
+    for (const file of readdirSync(migrationsDir).filter((f) => /^00[1-4]_.*\.sql$/.test(f))) {
+      copyFileSync(path.join(migrationsDir, file), path.join(brokenDir, file));
+    }
+    const real005 = readFileSync(path.join(migrationsDir, '005_iso8601_timestamps.sql'), 'utf-8');
+    const broken005 = real005.replace(
+      'DROP TRIGGER IF EXISTS trg_transitions_no_update;',
+      'DROP TRIGGER IF EXISTS trg_transitions_no_update;\nINSERT INTO no_such_table VALUES (1);',
+    );
+    writeFileSync(path.join(brokenDir, '005_iso8601_timestamps.sql'), broken005, 'utf-8');
+
+    const runner = new MigrationRunner();
+    // The failing migration surfaces as a thrown error.
+    expect(() => runner.run(adapter, brokenDir)).toThrow();
+
+    const db = adapter.getDatabase();
+    // The DROP was rolled back with the rest of 005: the guard is intact.
+    expect(triggerExists(db, 'trg_transitions_no_update')).toBe(true);
+    // And no transaction is left dangling for whatever runs next.
+    expect(db.inTransaction).toBe(false);
+
+    rmSync(brokenDir, { recursive: true, force: true });
   });
 
   describe('detectDrift', () => {
