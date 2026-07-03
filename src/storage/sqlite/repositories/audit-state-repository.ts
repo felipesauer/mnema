@@ -68,14 +68,14 @@ export class AuditStateRepository {
   }
 
   /**
-   * Serialises a chain advance against concurrent writers. The
-   * callback receives the current head and must return the new
-   * head plus the `at` timestamp of the event it appended. The
-   * append (typically `appendFileSync` on a JSONL file) happens
-   * inside the SQLite write transaction, so two concurrent CLI
-   * invocations are forced to interleave: one acquires the lock,
-   * appends, updates the head, commits; the second sees the new
-   * head and chains correctly.
+   * Serialises a chain advance against concurrent writers within one
+   * process. The callback receives the current head and returns the new
+   * head, the event `at`, and an `afterCommit` action (the JSONL append).
+   * This method orders only the SQLite mirror update via `BEGIN
+   * IMMEDIATE`; the append runs after COMMIT (see below) and is therefore
+   * NOT ordered across processes by this transaction alone. The caller
+   * (`AuditWriter`) wraps the whole call in a cross-process file lock so
+   * two processes cannot interleave commit-order and append-order.
    *
    * `BEGIN IMMEDIATE` is used (not `BEGIN`) so the lock is taken
    * up front rather than on the first write inside the transaction

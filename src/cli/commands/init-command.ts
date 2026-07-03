@@ -237,7 +237,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
     }
 
-    appendGitignore(cwd, config.paths.state);
+    appendGitignore(cwd, config.paths.state, config.paths.audit);
     scaffoldGitattributes(cwd, config.paths.audit);
 
     const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
@@ -359,7 +359,7 @@ function writeJson(filePath: string, data: unknown): void {
  * it is the source of truth and what survives a fresh clone. The
  * comment lines double as the in-repo documentation of that split.
  */
-function gitignoreBlock(statePath: string): string {
+function gitignoreBlock(statePath: string, auditPath: string): string {
   const entry = `${statePath.replace(/\/$/, '')}/`;
   return [
     '# mnema: ignore only the local cache (SQLite db, sync buffer,',
@@ -369,13 +369,16 @@ function gitignoreBlock(statePath: string): string {
     '# rebuildable from that markdown via `mnema sync`.',
     entry,
     '.mnema/config.local.json',
+    // The audit dir is committed, but the cross-process write lock in it
+    // is transient local state — never version it.
+    `${auditPath.replace(/\/$/, '')}/.audit.lock*`,
   ].join('\n');
 }
 
-function appendGitignore(cwd: string, statePath: string): void {
+function appendGitignore(cwd: string, statePath: string, auditPath: string): void {
   const file = path.join(cwd, '.gitignore');
   const entry = `${statePath.replace(/\/$/, '')}/`;
-  const block = gitignoreBlock(statePath);
+  const block = gitignoreBlock(statePath, auditPath);
   if (!existsSync(file)) {
     writeFileSync(file, `${block}\n`, 'utf-8');
     return;
