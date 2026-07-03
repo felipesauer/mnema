@@ -161,17 +161,36 @@ export class SyncService {
    */
   flushAll(): void {
     if (this.buffer === null) return;
-    // drain() takes the cooperative lock so a parallel flush from
-    // another MCP server cannot replay the same entries.
+    // drain() takes the cooperative lock and empties the buffer in one
+    // atomic critical section, so a parallel flush from another MCP server
+    // cannot replay the same entries. But the markdown writes below happen
+    // AFTER the buffer is already cleared — if one throws (or the process
+    // dies) mid-loop, the un-written entries would be lost. So on failure
+    // we re-append the failing entry and every entry after it back to the
+    // buffer before rethrowing: a later flushAll/recover replays them, and
+    // nothing is dropped.
     const entries = this.buffer.drain();
     if (entries.length === 0) {
       this.lastFlushAt = Date.now();
       return;
     }
+    const buffer = this.buffer;
     const seen = new Set<string>();
-    for (const entry of entries) {
+    for (let i = 0; i < entries.length; i += 1) {
+      const entry = entries[i];
+      if (entry === undefined) continue;
       if (seen.has(entry.taskKey)) continue;
-      this.flushOne(entry.taskKey);
+      try {
+        this.flushOne(entry.taskKey);
+      } catch (error) {
+        // Put back this entry and all not-yet-processed ones (raw, so a
+        // deduped-but-unwritten key is not lost) for the next flush.
+        for (let j = i; j < entries.length; j += 1) {
+          const remaining = entries[j];
+          if (remaining !== undefined) buffer.append(remaining);
+        }
+        throw error;
+      }
       seen.add(entry.taskKey);
     }
     this.lastFlushAt = Date.now();
