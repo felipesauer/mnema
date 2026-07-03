@@ -80,4 +80,48 @@ describe('StateMachine (default workflow)', () => {
     });
     expect(bad.ok).toBe(false);
   });
+
+  describe('resolveTransition override payload', () => {
+    it('drops undeclared keys from data when the gate fails (override path)', () => {
+      // DRAFT→submit requires title/description/acceptance_criteria/estimate.
+      // Supply only title (declared) plus __attack__ (undeclared): the gate
+      // fails, and the returned data — which a permitted override would
+      // persist to the audit log — must contain title but NOT __attack__.
+      const resolved = machine.resolveTransition('DRAFT', 'submit', {
+        title: 'A task',
+        __attack__: 'evil',
+        nested: { x: 1 },
+      });
+      expect(resolved.ok).toBe(true);
+      if (!resolved.ok) return;
+
+      expect(resolved.value.gate.ok).toBe(false); // missing required fields
+      const data = resolved.value.data as Record<string, unknown>;
+      expect(data.title).toBe('A task');
+      expect('__attack__' in data).toBe(false);
+      expect('nested' in data).toBe(false);
+    });
+
+    it('strips undeclared keys on a clean gate too (Zod strip)', () => {
+      // DRAFT→cancel requires only `reason`. A clean gate + an extra key.
+      const resolved = machine.resolveTransition('DRAFT', 'cancel', {
+        reason: 'no longer needed',
+        __attack__: 'evil',
+      });
+      expect(resolved.ok).toBe(true);
+      if (!resolved.ok) return;
+      expect(resolved.value.gate.ok).toBe(true);
+      const data = resolved.value.data as Record<string, unknown>;
+      expect(data.reason).toBe('no longer needed');
+      expect('__attack__' in data).toBe(false);
+    });
+
+    it('passes a non-object payload through so the gate reports the type error', () => {
+      const resolved = machine.resolveTransition('DRAFT', 'submit', 'not-an-object');
+      expect(resolved.ok).toBe(true);
+      if (!resolved.ok) return;
+      expect(resolved.value.gate.ok).toBe(false);
+      expect(resolved.value.data).toBe('not-an-object');
+    });
+  });
 });
