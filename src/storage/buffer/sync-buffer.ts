@@ -107,11 +107,24 @@ export class SyncBuffer {
   }
 
   /**
-   * Returns the number of buffered entries, or `0` when the file does
-   * not exist or contains only blank lines.
+   * Returns the number of buffered lines, or `0` when the file does not
+   * exist or contains only blank lines.
+   *
+   * Counts non-empty lines directly and does NOT `JSON.parse` them, so
+   * `append`-then-`size` in a loop stays linear rather than O(n²). This
+   * counts the pending WORK on disk: a malformed line (from an aborted
+   * write) is still a line that occupies the buffer, so it is counted
+   * here even though {@link readAll} — which returns parseable entries —
+   * would drop it. The two can differ by exactly the malformed-line count.
    */
   size(): number {
-    return this.readAll().length;
+    if (!existsSync(this.bufferPath)) return 0;
+    const raw = readFileSync(this.bufferPath, 'utf-8');
+    let count = 0;
+    for (const line of raw.split('\n')) {
+      if (line.length > 0) count += 1;
+    }
+    return count;
   }
 
   /**
@@ -201,14 +214,21 @@ export class SyncBuffer {
 }
 
 /**
- * Synchronous busy-wait used between lock attempts. We deliberately
- * stay synchronous: the SyncBuffer API is sync (better-sqlite3 also
- * is), and the wait is bounded to single-digit milliseconds in
- * practice.
+ * A private lock only this process's thread ever waits on, so the wait
+ * always times out (nothing notifies it) — it is purely a non-burning
+ * sleep. `Atomics.wait` parks the thread instead of spinning, so lock
+ * contention no longer pins a CPU core.
+ */
+const SLEEP_LOCK = new Int32Array(new SharedArrayBuffer(4));
+
+/**
+ * Synchronous, non-spinning pause used between lock attempts. Stays
+ * synchronous (the SyncBuffer API is sync, like better-sqlite3) but uses
+ * `Atomics.wait` — which blocks the thread without burning CPU — rather
+ * than a busy loop. The wait always elapses via timeout: `SLEEP_LOCK[0]`
+ * is never changed or notified, so `Atomics.wait` returns `timed-out`
+ * after `ms`.
  */
 function sleepBriefly(ms: number): void {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    // tight loop — short by construction
-  }
+  Atomics.wait(SLEEP_LOCK, 0, 0, ms);
 }
