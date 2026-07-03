@@ -114,8 +114,17 @@ export class MnemaMcpServer {
         return originalSet(schema, handler);
       }
       const wrapped = async (request: unknown, extra: unknown): Promise<CallToolResult> => {
-        const result = (await handler(request, extra)) as CallToolResult;
-        return reformatSdkValidationError(result);
+        // Bracket every tools/call so `waitInflight` can hold graceful
+        // shutdown open until in-flight writes settle. The finally must run
+        // even when the handler throws, or a failed call would leak the
+        // counter and wedge the drain until its timeout.
+        this.trackStart();
+        try {
+          const result = (await handler(request, extra)) as CallToolResult;
+          return reformatSdkValidationError(result);
+        } finally {
+          this.trackEnd();
+        }
       };
       return originalSet(schema, wrapped);
     };
