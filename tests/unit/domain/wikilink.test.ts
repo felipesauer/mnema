@@ -10,7 +10,12 @@ describe('extractWikilinks', () => {
   it('extracts a single bare wikilink', () => {
     const links = extractWikilinks('see [[safe-migration]] for details');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ slug: 'safe-migration', anchor: null, raw: '[[safe-migration]]' });
+    expect(links[0]).toEqual({
+      slug: 'safe-migration',
+      anchor: null,
+      alias: null,
+      raw: '[[safe-migration]]',
+    });
   });
 
   it('extracts a wikilink with an anchor', () => {
@@ -19,6 +24,7 @@ describe('extractWikilinks', () => {
     expect(links[0]).toEqual({
       slug: 'architecture',
       anchor: 'caching',
+      alias: null,
       raw: '[[architecture#caching]]',
     });
   });
@@ -51,7 +57,12 @@ describe('extractWikilinks', () => {
   it('captures the slug when the anchor is empty (trailing #)', () => {
     const links = extractWikilinks('see [[other-skill#]] here');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ slug: 'other-skill', anchor: null, raw: '[[other-skill#]]' });
+    expect(links[0]).toEqual({
+      slug: 'other-skill',
+      anchor: null,
+      alias: null,
+      raw: '[[other-skill#]]',
+    });
   });
 
   it('still parses later links on a line that has a trailing-# link', () => {
@@ -71,5 +82,41 @@ describe('extractWikilinks', () => {
     const links = extractWikilinks('[[[[slug]]]]');
     expect(links[0]?.slug).toBe('slug');
     expect(links[0]?.slug).not.toContain('[');
+  });
+
+  it('resolves the slug and captures the alias for [[slug|Label]] (Obsidian alias)', () => {
+    const links = extractWikilinks('see [[real-slug|Display Text]] here');
+    expect(links).toHaveLength(1);
+    // The slug is the target; before the fix it was 'real-slug|Display Text'.
+    expect(links[0]?.slug).toBe('real-slug');
+    expect(links[0]?.slug).not.toContain('|');
+    expect(links[0]?.alias).toBe('Display Text');
+    expect(links[0]?.raw).toBe('[[real-slug|Display Text]]');
+  });
+
+  it('captures slug, anchor, and alias together ([[slug#anchor|alias]])', () => {
+    const links = extractWikilinks('[[architecture#caching|the cache section]]');
+    expect(links[0]).toEqual({
+      slug: 'architecture',
+      anchor: 'caching',
+      alias: 'the cache section',
+      raw: '[[architecture#caching|the cache section]]',
+    });
+  });
+
+  it('treats an empty alias ([[slug|]]) as null', () => {
+    const links = extractWikilinks('[[a|]]');
+    expect(links[0]?.slug).toBe('a');
+    expect(links[0]?.alias).toBeNull();
+  });
+
+  it('skips a link with an empty slug before the pipe ([[|b]])', () => {
+    expect(extractWikilinks('[[|b]]')).toEqual([]);
+  });
+
+  it('takes the first pipe as the separator, alias keeps the rest ([[a|b|c]])', () => {
+    const links = extractWikilinks('[[a|b|c]]');
+    expect(links[0]?.slug).toBe('a');
+    expect(links[0]?.alias).toBe('b|c');
   });
 });
