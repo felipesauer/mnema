@@ -14,6 +14,7 @@ import { type AppliedMigration, MigrationRunner } from '../storage/sqlite/migrat
 import { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
+import { AnchorRepository } from '../storage/sqlite/repositories/anchor-repository.js';
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
 import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
@@ -37,6 +38,7 @@ import { migrationsDir as assetPathsMigrationsDir } from '../utils/asset-paths.j
 import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
+import { buildAnchorScheduler } from './anchor/anchor-factory.js';
 import { AttachmentService } from './attachment-service.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
@@ -286,12 +288,21 @@ export function createServiceContainer(
           resolvedActor,
           config.audit.checkpoint,
         );
+  // Temporal anchoring (ADR-37 layer 3): resolve the configured provider
+  // and wire a fire-and-forget scheduler. Inert for the default `none`
+  // provider, so a local-first project pays nothing; a real provider stamps
+  // the signed head off the write path, fail-open. Retries any anchor left
+  // pending by a prior process on boot.
+  const anchorRepository = new AnchorRepository(adapter);
+  const anchorScheduler = buildAnchorScheduler(config, projectRoot, anchorRepository);
+  if (pendingMigrations.length === 0) anchorScheduler.retryPending();
   const auditWriter = new AuditWriter(
     auditDir,
     auditStateRepository,
     undefined,
     () => projectSecretService.getOrCreate(),
     headCheckpoint,
+    anchorScheduler,
   );
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
