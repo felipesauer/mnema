@@ -93,6 +93,9 @@ export class AuditWriter {
   private readonly currentFile: string;
   private readonly lockTarget: string;
   private readonly now: () => Date;
+  /** Cached result of the lazy secret provider, resolved on first write. */
+  private secretResolved = false;
+  private secret: Buffer | null = null;
 
   /**
    * Initialises the writer. Creates the audit directory if needed and
@@ -102,14 +105,18 @@ export class AuditWriter {
    * @param auditDir - Absolute path to the audit directory
    * @param state - Optional SQLite mirror; enables hash chain + invariants
    * @param now - Optional clock; defaults to `() => new Date()`
-   * @param secret - Optional per-project HMAC secret; when present, events
-   *   are sealed as v3 (HMAC-keyed) instead of v2 (SHA-256)
+   * @param secretProvider - Optional lazy source of the per-project HMAC
+   *   secret. Resolved on the FIRST write (not at construction), so a
+   *   read-only command that never writes neither generates a secret nor
+   *   writes the committed fingerprint. When it yields a secret, events
+   *   are sealed as v3 (HMAC-keyed); when it yields `null` (e.g. a clone
+   *   without the secret), they stay v2 (SHA-256).
    */
   constructor(
     private readonly auditDir: string,
     private readonly state: AuditStateRepository | null = null,
     now: () => Date = () => new Date(),
-    private readonly secret: Buffer | null = null,
+    private readonly secretProvider: (() => Buffer | null) | null = null,
   ) {
     this.now = now;
     if (!existsSync(this.auditDir)) {
@@ -170,6 +177,10 @@ export class AuditWriter {
     // still appended only AFTER the commit, so a crash between the two
     // leaves the mirror one event ahead of disk (recoverable), never a
     // line the committed mirror did not record.
+    // Resolve the secret lazily on the first write (never at construction),
+    // so a read-only command that never writes does not mint a secret or
+    // the committed fingerprint.
+    const secret = this.resolveSecret();
     const release = this.acquireLock();
     try {
       this.state.withChainAdvance((currentHead) => {
@@ -180,10 +191,10 @@ export class AuditWriter {
         // differ — so the verifier dispatches purely on `v`.
         const chained: AuditEvent = {
           ...event,
-          v: this.secret !== null ? 3 : 2,
+          v: secret !== null ? 3 : 2,
           prev_hash: currentHead,
         };
-        const hash = this.secret !== null ? hmacEvent(chained, this.secret) : hashEvent(chained);
+        const hash = secret !== null ? hmacEvent(chained, secret) : hashEvent(chained);
         const sealed: AuditEvent = { ...chained, hash };
         const line = `${JSON.stringify(sealed)}\n`;
         return {
@@ -195,6 +206,19 @@ export class AuditWriter {
     } finally {
       release();
     }
+  }
+
+  /**
+   * Resolves the per-project secret once, on first write, caching the
+   * result (including `null`). Calling the provider lazily is what keeps a
+   * read-only command from generating the secret + fingerprint.
+   */
+  private resolveSecret(): Buffer | null {
+    if (!this.secretResolved) {
+      this.secret = this.secretProvider !== null ? this.secretProvider() : null;
+      this.secretResolved = true;
+    }
+    return this.secret;
   }
 
   /**

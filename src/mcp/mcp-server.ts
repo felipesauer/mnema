@@ -230,7 +230,7 @@ export class MnemaMcpServer {
     new AuditVerifyTool(
       this.services.adapter,
       path.join(this.projectRoot, this.config.paths.audit),
-      new ProjectSecretService(this.projectRoot, this.config.project.key).read(),
+      new ProjectSecretService(this.projectRoot, this.config.project.key),
     ).register(this.sdk);
     if (knowledgeEnabled) {
       new DecisionTools(

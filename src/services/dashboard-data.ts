@@ -152,12 +152,14 @@ export function buildDashboardData(
   }
 
   const auditDir = path.join(projectRoot, config.paths.audit);
+  const dataSecret = new ProjectSecretService(projectRoot, config.project.key);
   const integrity =
     options.integrity ??
     inspectAuditIntegrity(
       container.adapter,
       auditDir,
-      new ProjectSecretService(projectRoot, config.project.key).read(),
+      dataSecret.read(),
+      dataSecret.readFingerprint() !== null,
     );
   const inbox = container.inbox.view();
   const flow = container.flowMetrics.compute({ since: window });

@@ -255,13 +255,22 @@ export function createServiceContainer(
   const identity = new IdentityService(actors);
 
   const auditDir = path.join(projectRoot, config.paths.audit);
-  // Per-project HMAC secret keys the v3 chain (ADR-37 layer 2). Resolved
-  // (and generated on first use) here so every mutation writes v3; a
-  // clone that has not imported the secret still WRITES v3 with its own,
-  // and verification without the secret degrades to "unverifiable", never
-  // a false tamper.
-  const projectSecret = new ProjectSecretService(projectRoot, config.project.key).getOrCreate();
-  const auditWriter = new AuditWriter(auditDir, auditStateRepository, undefined, projectSecret);
+  // Per-project HMAC secret keys the v3 chain (ADR-37 layer 2). Passed to
+  // the writer as a LAZY provider: the secret is generated only on the
+  // first actual write (a read-only command never mints it or the
+  // committed fingerprint). Resolved under the same user dir as the other
+  // user-level services so tests (and the isolation below) stay in one
+  // place; `null` (knowledge layer disabled) still gets a real home for
+  // the secret, which is not part of that optional layer.
+  const secretUserDir = options.userDir ?? userKnowledgeDir();
+  const projectSecretService = new ProjectSecretService(
+    projectRoot,
+    config.project.key,
+    secretUserDir,
+  );
+  const auditWriter = new AuditWriter(auditDir, auditStateRepository, undefined, () =>
+    projectSecretService.getOrCreate(),
+  );
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
 
