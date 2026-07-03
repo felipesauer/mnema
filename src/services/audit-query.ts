@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 
 import { orderedAuditFiles } from '../storage/audit/audit-files.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
@@ -88,6 +89,13 @@ export class AuditQuery {
     let malformedLines = 0;
 
     for (const file of files) {
+      // Skip an archived monthly segment whose entire month falls outside
+      // the [since, until] window — a `since=30d` query on a project with
+      // years of archives should not read every segment. Only files named
+      // `YYYY-MM.jsonl` are candidates; `current.jsonl` (and any other
+      // name) is always read. A month that straddles a bound is kept.
+      if (monthlyFileOutOfWindow(path.basename(file), sinceMs, untilMs)) continue;
+
       const lines = readFileSync(file, 'utf-8').split('\n');
       for (const line of lines) {
         if (line.length === 0) continue;
@@ -157,6 +165,41 @@ export function parseTimeBound(value: string | Date | undefined): number | null 
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) return null;
   return parsed;
+}
+
+/**
+ * Whether an archived monthly segment can be skipped entirely for a query
+ * bounded by `[sinceMs, untilMs]`. Only files named `YYYY-MM.jsonl`
+ * qualify; anything else (notably `current.jsonl`) returns `false` and is
+ * always read. A segment is out of window when its whole month ends before
+ * `since` or begins after `until`; a month that straddles either bound is
+ * kept so no in-window event is missed.
+ *
+ * @param basename - File name, e.g. `2019-01.jsonl` or `current.jsonl`
+ * @param sinceMs - Lower bound epoch ms, or `null` for no lower bound
+ * @param untilMs - Upper bound epoch ms, or `null` for no upper bound
+ * @returns `true` if the file's month lies wholly outside the window
+ */
+function monthlyFileOutOfWindow(
+  basename: string,
+  sinceMs: number | null,
+  untilMs: number | null,
+): boolean {
+  if (sinceMs === null && untilMs === null) return false;
+  const match = basename.match(/^(\d{4})-(\d{2})\.jsonl$/);
+  if (match === null) return false; // current.jsonl / unknown names: always read
+
+  const year = Number.parseInt(match[1] as string, 10);
+  const month = Number.parseInt(match[2] as string, 10); // 1-12
+  // Half-open month span [monthStart, nextMonthStart) in UTC.
+  const monthStart = Date.UTC(year, month - 1, 1);
+  const nextMonthStart = Date.UTC(year, month, 1);
+
+  // Whole month precedes `since` (its last instant is < since).
+  if (sinceMs !== null && nextMonthStart <= sinceMs) return true;
+  // Whole month follows `until` (its first instant is > until).
+  if (untilMs !== null && monthStart > untilMs) return true;
+  return false;
 }
 
 function matchesTaskKey(event: AuditEvent, taskKey: string): boolean {
