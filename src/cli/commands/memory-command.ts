@@ -7,6 +7,7 @@ import { MemoryConsolidator } from '../../services/memory-consolidator.js';
 import { MemoryLinter } from '../../services/memory-linter.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { collectRepeatable } from '../option-helpers.js';
 
 interface LintOptions {
   readonly json?: boolean;
@@ -14,6 +15,12 @@ interface LintOptions {
 
 interface ListOptions {
   readonly topic?: string;
+}
+
+interface RecordOptions {
+  readonly title: string;
+  readonly content: string;
+  readonly topic?: readonly string[];
 }
 
 /**
@@ -87,6 +94,28 @@ export class MemoryCommand {
           if (report.errorCount > 0) {
             process.exit(ExitCode.State);
           }
+        });
+      });
+
+    group
+      .command('record <slug>')
+      .description('Record (or update) a memory by slug')
+      .requiredOption('--title <title>', 'Human-readable title')
+      .requiredOption('--content <text>', 'Memory body')
+      .option('--topic <topic>', 'Topic tag (repeatable)', collectRepeatable, [])
+      .action(async (slug: string, options: RecordOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const { memory, action } = container.memory.record({
+            slug,
+            title: options.title,
+            content: options.content,
+            topics: options.topic,
+            actor: container.identity.getDefaultActor(),
+            via: 'cli',
+          });
+          const verb =
+            action === 'no_op' ? 'unchanged' : action === 'created' ? 'recorded' : 'updated';
+          process.stdout.write(`${pc.green('✓')} ${verb} ${pc.bold(memory.slug)}\n`);
         });
       });
 
