@@ -367,6 +367,12 @@ export class MnemaMcpServer {
       logger.error({ err: error }, 'MCP server: SDK close failed');
     }
     this.services.close();
+    // The clean path finished, so disarm the watchdog: its pending
+    // process.exit(1) would otherwise still fire — turning a graceful
+    // shutdown into a non-zero exit — if anything kept the event loop
+    // alive past the timeout, and it leaves a dangling forced-exit timer
+    // in long-lived hosts and tests.
+    clearTimeout(hardExit);
     logger.info('MCP server: graceful shutdown complete');
   }
 
