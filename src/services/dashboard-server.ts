@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
+import { CachedAuditIntegrity } from './audit-integrity.js';
 import { AuditTail } from './audit-tail.js';
 import {
   buildDashboardData,
@@ -92,9 +93,19 @@ export async function createDashboardServer(
   const auditDir = path.join(projectRoot, config.paths.audit);
   const display = container.identity.getDisplayFor.bind(container.identity);
 
+  // Verify the hash chain at most once per audit-file change, not once per
+  // request/tab. The cache recomputes when the files' stat signature moves
+  // (append, rotation, or an in-place edit — so tampering between requests
+  // is still caught) and serves the prior result otherwise.
+  const integrityCache = new CachedAuditIntegrity(container.adapter, auditDir);
+
   /** Composes a fresh snapshot for a request. */
   function snapshot() {
-    return buildDashboardData(container, config, projectRoot, { limit, window });
+    return buildDashboardData(container, config, projectRoot, {
+      limit,
+      window,
+      integrity: integrityCache.get(),
+    });
   }
 
   /** The four tab routes → the tab id their fragment renders. */

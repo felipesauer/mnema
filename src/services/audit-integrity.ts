@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { orderedAuditFiles } from '../storage/audit/audit-files.js';
+import { auditFilesSignature, orderedAuditFiles } from '../storage/audit/audit-files.js';
 import { hashEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -207,4 +207,45 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   }
 
   return checks;
+}
+
+/**
+ * Caches {@link inspectAuditIntegrity} keyed by a cheap audit-file
+ * signature ({@link auditFilesSignature}), recomputing only when the log
+ * actually changes. Intended for hot repeated callers — notably the live
+ * dashboard, which composes a snapshot per HTTP request and per tab
+ * switch and would otherwise re-hash the whole chain every time.
+ *
+ * The signature is `stat`-based (mtime + size per file), so it flips on an
+ * append, a rotation, AND an in-place edit of a past line that keeps the
+ * size identical (the tampering shape) — the cache therefore never serves
+ * a stale "integrity OK" over a mutated log. Non-dashboard callers
+ * (`doctor`, `audit_verify`) keep calling {@link inspectAuditIntegrity}
+ * directly and are unaffected.
+ */
+export class CachedAuditIntegrity {
+  private signature: string | null = null;
+  private cached: IntegrityCheck[] | null = null;
+
+  constructor(
+    private readonly adapter: SqliteAdapter,
+    private readonly auditDir: string,
+  ) {}
+
+  /**
+   * Returns the integrity checks, recomputing only when the audit files
+   * changed since the last call.
+   *
+   * @returns The (possibly cached) integrity checks
+   */
+  get(): IntegrityCheck[] {
+    const signature = auditFilesSignature(this.auditDir);
+    if (this.cached !== null && signature === this.signature) {
+      return this.cached;
+    }
+    const checks = inspectAuditIntegrity(this.adapter, this.auditDir);
+    this.signature = signature;
+    this.cached = checks;
+    return checks;
+  }
 }
