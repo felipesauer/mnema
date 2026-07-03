@@ -1,6 +1,7 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { orderedAuditFiles } from '../storage/audit/audit-files.js';
 import { hashEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -206,26 +207,4 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
   }
 
   return checks;
-}
-
-/**
- * Lists the audit JSONL files in chain order: the archived monthly
- * segments (`YYYY-MM.jsonl`) oldest-first, then the active `current.jsonl`
- * last. Rotation only ever renames `current.jsonl` to a past month, so the
- * running chain is exactly [oldest month … newest month, current]. Relying
- * on a plain lexicographic sort happens to work only because `current`
- * sorts after digits; ordering explicitly makes the chain walk correct and
- * robust to any future segment naming.
- *
- * @param auditDir - Directory holding the audit log files
- * @returns Absolute paths in chain order (may be empty)
- */
-export function orderedAuditFiles(auditDir: string): string[] {
-  if (!existsSync(auditDir)) return [];
-  const names = readdirSync(auditDir, { withFileTypes: true })
-    .filter((d) => d.isFile() && d.name.endsWith('.jsonl'))
-    .map((d) => d.name);
-  const current = names.filter((n) => n === 'current.jsonl');
-  const archived = names.filter((n) => n !== 'current.jsonl').sort();
-  return [...archived, ...current].map((n) => path.join(auditDir, n));
 }
