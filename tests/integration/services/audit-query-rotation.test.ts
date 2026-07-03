@@ -125,8 +125,90 @@ describe('AuditQuery (rotation across YYYY-MM.jsonl files)', () => {
   });
 });
 
+/**
+ * A `since`-bounded query must not even read monthly segments whose whole
+ * month precedes the bound. Rather than mock the file reader (a named ESM
+ * import can't be spied), each far-past archive carries a MALFORMED line:
+ * if the file were read, `runStrict().malformedByFile` would record it, so
+ * the absence of that entry proves the file was skipped. `current.jsonl`'s
+ * malformed line, by contrast, is always counted (it is always read).
+ */
+describe('AuditQuery (skips out-of-window monthly segments)', () => {
+  let auditDir: string;
+  let query: AuditQuery;
+  const ancient = '2019-01.jsonl';
+
+  beforeEach(() => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mnema-audit-skip-'));
+    auditDir = path.join(root, 'audit');
+    mkdirSync(auditDir, { recursive: true });
+
+    // Far-past archive: one valid event + a malformed sentinel line.
+    writeRaw(auditDir, ancient, [
+      JSON.stringify(makeEvent('task_created', '2019-01-10T09:00:00.000Z', { key: 'ANCIENT-1' })),
+      '{ this is not json — read-sentinel }',
+    ]);
+    // In-window current data.
+    writeRaw(auditDir, 'current.jsonl', [
+      JSON.stringify(makeEvent('task_created', new Date().toISOString(), { key: 'NEW-1' })),
+    ]);
+
+    query = new AuditQuery(auditDir);
+  });
+
+  afterEach(() => {
+    rmSync(path.dirname(auditDir), { recursive: true, force: true });
+  });
+
+  const readAncient = (): boolean =>
+    [...query.runStrict({ since: '30d' }).malformedByFile.keys()].some((f) => f.endsWith(ancient));
+
+  it('does not read a monthly segment whose whole month precedes since', () => {
+    const { events, malformedByFile } = query.runStrict({ since: '30d' });
+    // The ancient file's malformed line was never seen → file was skipped.
+    expect([...malformedByFile.keys()].some((f) => f.endsWith(ancient))).toBe(false);
+    // Only the in-window NEW-1 comes back.
+    expect(events.map((e) => (e.data as Record<string, unknown>).key)).toEqual(['NEW-1']);
+  });
+
+  it('DOES read the ancient file when the window includes it (parity check)', () => {
+    // A bound covering 2019 must read the file — proven by its malformed
+    // line now being counted — and still return the ancient event.
+    const { events, malformedByFile } = query.runStrict({ since: '2019-01-01T00:00:00.000Z' });
+    expect([...malformedByFile.keys()].some((f) => f.endsWith(ancient))).toBe(true);
+    expect(events.map((e) => (e.data as Record<string, unknown>).key).sort()).toEqual([
+      'ANCIENT-1',
+      'NEW-1',
+    ]);
+  });
+
+  it('unbounded query reads every file (no skip without a bound)', () => {
+    expect(readAncient()).toBe(false); // sanity: the helper uses since:30d
+    const { malformedByFile } = query.runStrict();
+    expect([...malformedByFile.keys()].some((f) => f.endsWith(ancient))).toBe(true);
+  });
+
+  it('reads a segment that straddles the since bound', () => {
+    // An archive dated to the current month must be read even with since a
+    // few days back — part of the month is in window. Its malformed line
+    // must therefore be counted.
+    const now = new Date();
+    const thisMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}.jsonl`;
+    writeRaw(auditDir, thisMonth, [
+      JSON.stringify(makeEvent('task_created', now.toISOString(), { key: 'STRADDLE-1' })),
+      '{ malformed straddle sentinel }',
+    ]);
+    const { malformedByFile } = query.runStrict({ since: '7d' });
+    expect([...malformedByFile.keys()].some((f) => f.endsWith(thisMonth))).toBe(true);
+  });
+});
+
 function makeEvent(kind: string, at: string, data: Record<string, unknown>): AuditEvent {
   return { v: 1, at, kind, actor: 'daniel', data };
+}
+
+function writeRaw(dir: string, fileName: string, lines: readonly string[]): void {
+  writeFileSync(path.join(dir, fileName), `${lines.join('\n')}\n`, 'utf-8');
 }
 
 function writeArchive(
