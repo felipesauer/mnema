@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generateUuid } from '@/domain/id-generator.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
@@ -25,6 +25,7 @@ describe('WorkGraphLintService', () => {
   let adapter: SqliteAdapter;
   let lint: WorkGraphLintService;
   let audit: AuditService;
+  let auditQuery: AuditQuery;
   let sprints: SprintRepository;
   let epics: EpicRepository;
   let tasks: TaskRepository;
@@ -38,7 +39,7 @@ describe('WorkGraphLintService', () => {
 
     const auditDir = path.join(tempRoot, '.audit');
     audit = new AuditService(new AuditWriter(auditDir));
-    const auditQuery = new AuditQuery(auditDir);
+    auditQuery = new AuditQuery(auditDir);
 
     const projects = new ProjectRepository(adapter);
     projectId = projects.insert({ key: 'TEST', name: 'Test' }).id;
@@ -269,5 +270,56 @@ describe('WorkGraphLintService', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
+  });
+
+  it('reads the audit log ONCE regardless of how many terminal tasks there are', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    // Three terminal tasks — the old code read the whole log once per task.
+    for (const key of ['TEST-1', 'TEST-2', 'TEST-3']) {
+      makeTask(key, 'DONE', sprint.id);
+      audit.write({
+        kind: 'task_transitioned',
+        actor: 'daniel',
+        run: generateUuid(),
+        data: { key, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      });
+    }
+
+    const spy = vi.spyOn(auditQuery, 'run');
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+
+    // A single read powers all three bypass checks (was one read per task).
+    expect(spy).toHaveBeenCalledTimes(1);
+    // Parity: all three are correctly seen as run-tracked (no bypass).
+    if (result.ok) {
+      expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
+    }
+    spy.mockRestore();
+  });
+
+  it('still flags a bypass correctly with the single bucketed read (mixed tasks)', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    // TEST-1 arrives DONE under a run (clean); TEST-2 arrives DONE with NO run (bypass).
+    makeTask('TEST-1', 'DONE', sprint.id);
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      run: generateUuid(),
+      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+    });
+    makeTask('TEST-2', 'DONE', sprint.id);
+    audit.write({
+      kind: 'task_transitioned',
+      actor: 'daniel',
+      data: { key: 'TEST-2', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+    });
+
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bypasses = result.value.diagnostics.filter((d) => d.rule === 'subagent-bypass');
+    expect(bypasses).toHaveLength(1);
+    expect(bypasses[0]?.message).toContain('TEST-2');
   });
 });

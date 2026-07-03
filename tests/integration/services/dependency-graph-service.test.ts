@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
@@ -131,5 +131,44 @@ describe('DependencyGraphService', () => {
     const result = graph.forScope({ kind: 'epic', key: 'NOPE-EPIC-9' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(ErrorCode.EpicNotFound);
+  });
+
+  it('reads dependencies with ONE query for the whole scope, not one per task', () => {
+    // A → B → C → D → E chain: 5 tasks, so the old code issued 5 queries.
+    const ids = ['T-A', 'T-B', 'T-C', 'T-D', 'T-E'].map((k) => makeTask(k));
+    for (let i = 1; i < ids.length; i += 1) blocks(ids[i - 1] as string, ids[i] as string);
+
+    const perTask = vi.spyOn(deps, 'findByTask');
+    const batched = vi.spyOn(deps, 'findByTasks');
+
+    const result = graph.forScope({ kind: 'project' });
+    expect(result.ok).toBe(true);
+
+    // One batched query for all five tasks; the per-task path is not used.
+    expect(batched).toHaveBeenCalledTimes(1);
+    expect(perTask).not.toHaveBeenCalled();
+
+    // Parity: the batched result still yields the correct critical path.
+    if (result.ok) {
+      expect(result.value.criticalPath).toEqual(['T-A', 'T-B', 'T-C', 'T-D', 'T-E']);
+    }
+    perTask.mockRestore();
+    batched.mockRestore();
+  });
+
+  it('findByTasks returns identical edges to per-task findByTask (bucketed)', () => {
+    const a = makeTask('T-A');
+    const b = makeTask('T-B');
+    const c = makeTask('T-C');
+    blocks(a, b); // B blocked by A
+    blocks(b, c); // C blocked by B
+
+    const batched = deps.findByTasks([a, b, c]);
+    // Each task's batched bucket equals its individual findByTask result.
+    for (const id of [a, b, c]) {
+      expect(batched.get(id) ?? []).toEqual(deps.findByTask(id));
+    }
+    // A task with no outgoing edges is absent from the map.
+    expect(batched.has(a)).toBe(false); // A has no `task_id = A` rows (it blocks, isn't blocked)
   });
 });
