@@ -82,12 +82,21 @@ export class AuditStateRepository {
    * — that avoids the read-then-immediate-write race that
    * `BEGIN DEFERRED` exhibits.
    *
-   * @param advance - Callback that performs the append and returns
-   *   the new chain-head hash + event `at` timestamp
+   * @param advance - Callback that, given the current head, computes the
+   *   new chain-head hash + event `at` and returns an `afterCommit`
+   *   action (the JSONL append). The append is deliberately NOT run
+   *   inside the transaction: it executes only after `COMMIT` succeeds,
+   *   so a crash between the two can never leave a line on disk that the
+   *   committed mirror did not record. If `afterCommit` itself throws,
+   *   the mirror is one event ahead of disk — the safe, recoverable
+   *   direction (doctor classifies it as benign, never false tampering).
    */
-  withChainAdvance(advance: (currentHead: string | null) => { hash: string; at: string }): void {
+  withChainAdvance(
+    advance: (currentHead: string | null) => { hash: string; at: string; afterCommit: () => void },
+  ): void {
     const db = this.adapter.getDatabase();
     db.exec('BEGIN IMMEDIATE');
+    let afterCommit: () => void;
     try {
       const row = db.prepare('SELECT chain_head_hash FROM audit_state WHERE id = 1').get() as
         | { chain_head_hash: string | null }
@@ -95,7 +104,8 @@ export class AuditStateRepository {
       if (row === undefined) {
         throw new Error('audit_state row is missing — migration 011 may not have been applied');
       }
-      const { hash, at } = advance(row.chain_head_hash);
+      const advanced = advance(row.chain_head_hash);
+      afterCommit = advanced.afterCommit;
       db.prepare(
         `UPDATE audit_state
             SET event_count = event_count + 1,
@@ -103,11 +113,15 @@ export class AuditStateRepository {
                 chain_head_hash = ?,
                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
           WHERE id = 1`,
-      ).run(at, hash);
+      ).run(advanced.at, advanced.hash);
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');
       throw error;
     }
+    // Past COMMIT: the mirror is durable. Append the line now. A failure
+    // here leaves the mirror one ahead of disk (recoverable), not a
+    // line the mirror never saw (which would read as tampering).
+    afterCommit();
   }
 }

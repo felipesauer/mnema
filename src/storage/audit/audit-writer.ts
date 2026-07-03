@@ -105,11 +105,16 @@ export class AuditWriter {
       return;
     }
 
-    // The append + mirror update must be serialised against concurrent
-    // writers so the on-disk chain doesn't fork. `withChainAdvance`
-    // wraps the trio in `BEGIN IMMEDIATE`: only one writer holds the
-    // SQLite write lock at a time, so a second concurrent process is
-    // queued and reads the new head when its turn comes up.
+    // The mirror update must be serialised against concurrent writers so
+    // the on-disk chain doesn't fork. `withChainAdvance` wraps the read +
+    // update in `BEGIN IMMEDIATE`: only one writer holds the SQLite write
+    // lock at a time, so a second concurrent process is queued and reads
+    // the new head when its turn comes up.
+    //
+    // The line is computed here but appended only AFTER the commit (via
+    // `afterCommit`), so a crash between the mirror update and the append
+    // can never leave a line on disk that the committed mirror did not
+    // record — the failure mode that read as tampering.
     this.state.withChainAdvance((currentHead) => {
       const chained: AuditEvent = {
         ...event,
@@ -119,8 +124,11 @@ export class AuditWriter {
       const hash = hashEvent(chained);
       const sealed: AuditEvent = { ...chained, hash };
       const line = `${JSON.stringify(sealed)}\n`;
-      appendFileSync(this.currentFile, line, { flag: 'a' });
-      return { hash, at: sealed.at };
+      return {
+        hash,
+        at: sealed.at,
+        afterCommit: () => appendFileSync(this.currentFile, line, { flag: 'a' }),
+      };
     });
   }
 
