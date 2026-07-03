@@ -2,6 +2,7 @@ import type { Task } from '../domain/entities/task.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
+import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -139,8 +140,22 @@ export class WorkGraphLintService {
       });
     }
 
+    // Read the audit log ONCE and bucket task_transitioned events by key,
+    // rather than re-reading the whole log per terminal task.
+    const transitionsByKey = new Map<string, AuditEvent[]>();
+    for (const e of this.auditQuery.run()) {
+      if (e.kind !== 'task_transitioned') continue;
+      const key = (e.data as Record<string, unknown> | undefined)?.key;
+      if (typeof key !== 'string') continue;
+      const list = transitionsByKey.get(key);
+      if (list === undefined) transitionsByKey.set(key, [e]);
+      else list.push(e);
+    }
     for (const task of tasks) {
-      if (this.stateMachine.isTerminal(task.state) && this.isSubagentBypass(task.key, task.state)) {
+      if (
+        this.stateMachine.isTerminal(task.state) &&
+        this.isSubagentBypass(transitionsByKey.get(task.key) ?? [], task.state)
+      ) {
         diagnostics.push({
           scope,
           severity: 'warning',
@@ -177,10 +192,7 @@ export class WorkGraphLintService {
    * count — a note/attachment/creation event can carry a `run` id without any
    * transition having gone through a tracked run.
    */
-  private isSubagentBypass(taskKey: string, terminalState: string): boolean {
-    const transitions = this.auditQuery
-      .run({ taskKey })
-      .filter((e) => e.kind === 'task_transitioned');
+  private isSubagentBypass(transitions: readonly AuditEvent[], terminalState: string): boolean {
     if (transitions.length === 0) return false; // no transition trail — not our signal
 
     // The transitions that arrive at the current terminal state. auditQuery

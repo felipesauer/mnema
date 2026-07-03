@@ -66,6 +66,41 @@ export class DependencyRepository {
   }
 
   /**
+   * Outgoing edges for many tasks in one query, keyed by `task_id`. Lets a
+   * caller that needs every task's dependencies (e.g. building a graph
+   * over a scope) avoid one query per task. Ids are chunked to stay under
+   * SQLite's bound-parameter limit; a task with no edges is absent from
+   * the map (callers should default to an empty list).
+   *
+   * @param taskIds - Internal task ids
+   * @returns Map of task id → its dependencies (created-time order within each)
+   */
+  findByTasks(taskIds: readonly string[]): Map<string, Dependency[]> {
+    const byTask = new Map<string, Dependency[]>();
+    if (taskIds.length === 0) return byTask;
+
+    const db = this.adapter.getDatabase();
+    // SQLite caps bound parameters (historically 999); chunk well under it.
+    const CHUNK = 500;
+    for (let i = 0; i < taskIds.length; i += CHUNK) {
+      const chunk = taskIds.slice(i, i + CHUNK);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = db
+        .prepare(
+          `SELECT * FROM dependencies WHERE task_id IN (${placeholders}) ORDER BY task_id, created_at`,
+        )
+        .all(...chunk) as DependencyRow[];
+      for (const row of rows) {
+        const dep = rowToDependency(row);
+        const list = byTask.get(row.task_id);
+        if (list === undefined) byTask.set(row.task_id, [dep]);
+        else list.push(dep);
+      }
+    }
+    return byTask;
+  }
+
+  /**
    * Incoming edges of a task — the dependencies that point at it (what
    * this task blocks).
    *

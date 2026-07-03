@@ -111,8 +111,10 @@ export class DependencyGraphService {
       blockedBy.set(t.key, []);
       blocks.set(t.key, []);
     }
+    // One query for every in-scope task's edges, not one per task.
+    const depsByTask = this.dependencies.findByTasks(tasks.map((t) => t.id));
     for (const t of tasks) {
-      for (const dep of this.dependencies.findByTask(t.id)) {
+      for (const dep of depsByTask.get(t.id) ?? []) {
         if (dep.kind !== BLOCKS) continue;
         const blockerKey = idToKey.get(dep.blocksTaskId);
         if (blockerKey === undefined) continue; // out-of-scope blocker
