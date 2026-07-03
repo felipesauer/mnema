@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { inspectAuditIntegrity } from '@/cli/commands/doctor-command.js';
 import { AuditService } from '@/services/audit-service.js';
+import { createAttestationSource, HeadCheckpointService } from '@/services/head-checkpoint.js';
+import { MachineKeyService } from '@/services/machine-key.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { AuditHeadSignatureRepository } from '@/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -220,5 +223,44 @@ describe('inspectAuditIntegrity', () => {
     );
     expect(chain?.ok).toBe(false);
     expect(chain?.detail).toContain('2026-05.jsonl');
+  });
+
+  // Layer-2 machine attestation, as surfaced by doctor (which passes an
+  // attestation source into inspectAuditIntegrity).
+  describe('machine attestation line', () => {
+    it('shows a signed head when a checkpoint has signed', () => {
+      const userDir = path.join(tempRoot, 'home', '.config', 'mnema');
+      mkdirSync(userDir, { recursive: true });
+      const projectRoot = tempRoot; // .audit lives under tempRoot here
+      const signatures = new AuditHeadSignatureRepository(adapter);
+      const machineKey = new MachineKeyService(projectRoot, 'felipesauer', userDir);
+      const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
+        events: 1,
+        seconds: 100_000,
+      });
+      // A writer that signs every event (checkpoint interval = 1).
+      const signedAudit = new AuditService(
+        new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      );
+      signedAudit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
+
+      const attest = createAttestationSource(projectRoot, signatures);
+      const verdict = inspectAuditIntegrity(adapter, auditDir, null, false, attest).find(
+        (c) => c.name === 'audit machine attestation',
+      );
+      expect(verdict?.ok).toBe(true);
+      expect(verdict?.detail).toMatch(/head signed by felipesauer/i);
+    });
+
+    it('warns (no signature yet) when nothing has signed', () => {
+      writeSampleEvents(); // written through the unsigned writer
+      const attest = createAttestationSource(tempRoot, new AuditHeadSignatureRepository(adapter));
+      const verdict = inspectAuditIntegrity(adapter, auditDir, null, false, attest).find(
+        (c) => c.name === 'audit machine attestation',
+      );
+      expect(verdict?.ok).toBe(true);
+      expect(verdict?.severity).toBe('warning');
+      expect(verdict?.detail).toMatch(/no head signature yet/i);
+    });
   });
 });

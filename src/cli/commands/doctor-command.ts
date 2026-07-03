@@ -14,6 +14,7 @@ import { printError } from '../../errors/error-printer.js';
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { HookTrustService } from '../../services/hook-trust.js';
 import { IdentityService } from '../../services/identity-service.js';
 import { recordCounter } from '../../services/metrics-counter.js';
@@ -22,6 +23,7 @@ import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
+import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
@@ -340,6 +342,10 @@ export class DoctorCommand {
               path.join(projectRoot, config.paths.audit),
               doctorSecret.read(),
               doctorSecret.readFingerprint() !== null,
+              // Machine attestation: verify the recorded head signature
+              // against the committed public key. Offline (no network) — it
+              // reads .mnema/keys and the local SQLite only.
+              createAttestationSource(projectRoot, new AuditHeadSignatureRepository(adapter)),
             ),
           );
           checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));
