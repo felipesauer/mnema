@@ -28,6 +28,40 @@ interface TaskRow {
 }
 
 /**
+ * A lean projection of a task row for aggregate reads (portfolio, inbox)
+ * that need only these columns and never touch `acceptance_criteria` or
+ * `metadata`. Deliberately skips the two JSON blobs — do NOT substitute
+ * this where a full {@link Task} (with acceptanceCriteria/metadata) is
+ * required. `state` is `string` (not `TaskState`) to match how the
+ * aggregate services compare it.
+ */
+export interface LeanTask {
+  readonly id: string;
+  readonly key: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly state: string;
+  readonly priority: number;
+  readonly assigneeId: string | null;
+  readonly epicId: string | null;
+  readonly sprintId: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * Optional equality filters pushed into SQL by {@link TaskRepository.findActiveLean}.
+ * Values must be non-null — this method matches by equality and does not
+ * support `IS NULL` filtering (a null here would match no rows and bypass
+ * the partial indexes).
+ */
+export interface LeanTaskFilter {
+  readonly state?: string;
+  readonly epicId?: string;
+  readonly sprintId?: string;
+}
+
+/**
  * Input shape for {@link TaskRepository.insert}.
  */
 export interface TaskInsertInput {
@@ -149,6 +183,46 @@ export class TaskRepository {
       )
       .all() as TaskRow[];
     return rows.map(rowToTask);
+  }
+
+  /**
+   * Lean projection of active tasks for aggregate reads (portfolio,
+   * inbox). Selects only the columns those features use and skips the two
+   * JSON blobs, so it does NOT `JSON.parse` acceptance_criteria/metadata —
+   * unlike {@link findAllActive}. Optional equality filters are pushed
+   * into the WHERE so the partial `idx_tasks_state/_epic/_sprint` indexes
+   * are eligible (each equality value must be non-null; `deleted_at IS
+   * NULL` is always present, matching the indexes' partial predicates).
+   *
+   * @param filter - Optional non-null equality filters (state/epic/sprint)
+   * @returns Lean task rows ordered by key
+   */
+  findActiveLean(filter: LeanTaskFilter = {}): LeanTask[] {
+    const clauses = ['deleted_at IS NULL'];
+    const values: string[] = [];
+    if (filter.state !== undefined) {
+      clauses.push('state = ?');
+      values.push(filter.state);
+    }
+    if (filter.epicId !== undefined) {
+      clauses.push('epic_id = ?');
+      values.push(filter.epicId);
+    }
+    if (filter.sprintId !== undefined) {
+      clauses.push('sprint_id = ?');
+      values.push(filter.sprintId);
+    }
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT id, key, title, description, state, priority,
+                assignee_id, epic_id, sprint_id, created_at, updated_at
+           FROM tasks
+          WHERE ${clauses.join(' AND ')}
+          ORDER BY key`,
+      )
+      .all(...values) as LeanRow[];
+    return rows.map(rowToLeanTask);
   }
 
   /**
@@ -477,5 +551,37 @@ function rowToTask(row: TaskRow): Task {
     updatedAt: row.updated_at,
     closedAt: row.closed_at,
     deletedAt: row.deleted_at,
+  };
+}
+
+/** The columns {@link TaskRepository.findActiveLean} projects. */
+interface LeanRow {
+  readonly id: string;
+  readonly key: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly state: string;
+  readonly priority: number;
+  readonly assignee_id: string | null;
+  readonly epic_id: string | null;
+  readonly sprint_id: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+/** Maps a projected row to {@link LeanTask} — no JSON.parse (that's the point). */
+function rowToLeanTask(row: LeanRow): LeanTask {
+  return {
+    id: row.id,
+    key: row.key,
+    title: row.title,
+    description: row.description,
+    state: row.state,
+    priority: row.priority,
+    assigneeId: row.assignee_id,
+    epicId: row.epic_id,
+    sprintId: row.sprint_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
