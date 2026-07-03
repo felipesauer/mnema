@@ -15,6 +15,7 @@ import { ActorRepository } from '../storage/sqlite/repositories/actor-repository
 import { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import { AttachmentRepository } from '../storage/sqlite/repositories/attachment-repository.js';
+import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
@@ -50,10 +51,12 @@ import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
+import { HeadCheckpointService } from './head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from './hook-trust.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
 import { LabelService } from './label-service.js';
+import { MachineKeyService } from './machine-key.js';
 import { MemoryService } from './memory-service.js';
 import { MemoryStalenessService } from './memory-staleness.js';
 import { NoteService } from './note-service.js';
@@ -268,8 +271,27 @@ export function createServiceContainer(
     config.project.key,
     secretUserDir,
   );
-  const auditWriter = new AuditWriter(auditDir, auditStateRepository, undefined, () =>
-    projectSecretService.getOrCreate(),
+  // Machine attestation (ADR-37 layer 2): sign the chain head with the
+  // per-machine Ed25519 key at a checkpoint interval. Bound to the resolved
+  // actor; when no identity is configured there is nobody to attest, so head
+  // signing is simply skipped (the keyed chain still protects the log). The
+  // signer no-ops between checkpoints, so it never sits on the per-event cost.
+  const resolvedActor = identity.resolveDefaultActor().actor;
+  const headCheckpoint =
+    resolvedActor === null
+      ? null
+      : new HeadCheckpointService(
+          new AuditHeadSignatureRepository(adapter),
+          new MachineKeyService(projectRoot, resolvedActor, secretUserDir),
+          resolvedActor,
+          config.audit.checkpoint,
+        );
+  const auditWriter = new AuditWriter(
+    auditDir,
+    auditStateRepository,
+    undefined,
+    () => projectSecretService.getOrCreate(),
+    headCheckpoint,
   );
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);
