@@ -5,9 +5,11 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { Config } from '../config/config-schema.js';
+import { createAttestationSource } from '../services/head-checkpoint.js';
 import { ProjectSecretService } from '../services/project-secret.js';
 import type { ServiceContainer } from '../services/service-container.js';
 import { SyncMode } from '../services/sync-service.js';
+import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { logger } from '../utils/logger.js';
 import { VERSION } from '../utils/version.js';
 import {
@@ -231,6 +233,10 @@ export class MnemaMcpServer {
       this.services.adapter,
       path.join(this.projectRoot, this.config.paths.audit),
       new ProjectSecretService(this.projectRoot, this.config.project.key),
+      createAttestationSource(
+        this.projectRoot,
+        new AuditHeadSignatureRepository(this.services.adapter),
+      ),
     ).register(this.sdk);
     if (knowledgeEnabled) {
       new DecisionTools(
