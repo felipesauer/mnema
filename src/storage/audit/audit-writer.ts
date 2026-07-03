@@ -95,27 +95,30 @@ export class AuditWriter {
    * @param event - Event to append (will be JSON-serialised on a single line)
    */
   write(event: AuditEvent): void {
-    this.checkRotation();
-
     if (this.state === null) {
-      // Legacy path: no chain, no mirror. Kept so tests that mount the
-      // writer standalone keep working.
+      // Legacy path: no chain, no mirror, no lock. Rotation happens here
+      // since there is no critical section to fold it into. Kept so tests
+      // that mount the writer standalone keep working.
+      this.checkRotation();
       const line = `${JSON.stringify(event)}\n`;
       appendFileSync(this.currentFile, line, { flag: 'a' });
       return;
     }
 
-    // The mirror update must be serialised against concurrent writers so
-    // the on-disk chain doesn't fork. `withChainAdvance` wraps the read +
-    // update in `BEGIN IMMEDIATE`: only one writer holds the SQLite write
-    // lock at a time, so a second concurrent process is queued and reads
-    // the new head when its turn comes up.
+    // The rotation + mirror update must be serialised against concurrent
+    // writers so the on-disk chain doesn't fork. `withChainAdvance` wraps
+    // the read + update in `BEGIN IMMEDIATE`: only one writer holds the
+    // SQLite write lock at a time. Rotation runs INSIDE that section —
+    // otherwise two processes crossing a month boundary could both pass a
+    // pre-lock rotation check and race the rename against each other's
+    // append, landing a line in the wrong month file.
     //
     // The line is computed here but appended only AFTER the commit (via
     // `afterCommit`), so a crash between the mirror update and the append
     // can never leave a line on disk that the committed mirror did not
     // record — the failure mode that read as tampering.
     this.state.withChainAdvance((currentHead) => {
+      this.checkRotation();
       const chained: AuditEvent = {
         ...event,
         v: 2,
@@ -144,16 +147,29 @@ export class AuditWriter {
   /**
    * Checks whether the existing `current.jsonl` belongs to the current
    * month; rotates it to `YYYY-MM.jsonl` if not.
+   *
+   * Fails closed if the destination archive already exists: `renameSync`
+   * would otherwise clobber it atomically, silently destroying a whole
+   * archived month of the chain (which can happen on clock skew, a second
+   * rotation for the same month, or a restored archive). Refusing to
+   * overwrite is safer than losing append-only history — the caller can
+   * reconcile the collision by hand.
    */
   checkRotation(): void {
     if (!existsSync(this.currentFile)) return;
 
     const currentMonth = monthKey(this.now());
     const fileMonth = monthKey(statSync(this.currentFile).mtime);
+    if (fileMonth === currentMonth) return;
 
-    if (fileMonth !== currentMonth) {
-      renameSync(this.currentFile, path.join(this.auditDir, `${fileMonth}.jsonl`));
+    const target = path.join(this.auditDir, `${fileMonth}.jsonl`);
+    if (existsSync(target)) {
+      throw new Error(
+        `audit rotation refused: ${path.basename(target)} already exists — ` +
+          'refusing to overwrite an archived month. Reconcile the collision manually.',
+      );
     }
+    renameSync(this.currentFile, target);
   }
 }
 
