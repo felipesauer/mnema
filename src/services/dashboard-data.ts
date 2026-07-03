@@ -112,6 +112,13 @@ export interface BuildOptions {
   readonly limit?: number;
   /** Lookback for flow + series (default {@link DEFAULT_METRICS_WINDOW}). */
   readonly window?: string;
+  /**
+   * Pre-computed integrity checks. A hot caller (the live dashboard) that
+   * caches the full hash-chain verification passes it here to avoid
+   * re-hashing the whole log on every request/tab. When omitted, the
+   * checks are computed inline (the default for one-off callers).
+   */
+  readonly integrity?: IntegrityCheck[];
 }
 
 /**
@@ -144,7 +151,7 @@ export function buildDashboardData(
   }
 
   const auditDir = path.join(projectRoot, config.paths.audit);
-  const integrity = inspectAuditIntegrity(container.adapter, auditDir);
+  const integrity = options.integrity ?? inspectAuditIntegrity(container.adapter, auditDir);
   const inbox = container.inbox.view();
   const flow = container.flowMetrics.compute({ since: window });
   const display = container.identity.getDisplayFor.bind(container.identity);
