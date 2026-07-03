@@ -111,4 +111,46 @@ describe('MarkdownImporter (integration)', () => {
     expect(second.value.tasksSkippedExisting).toBe(2);
     expect(container.task.list()).toHaveLength(2);
   });
+
+  it('dedupes titles differing only by case/whitespace within one import (skipExisting)', () => {
+    const sourcePath = path.join(root, 'TODO.md');
+    // The DB check is case-sensitive (title = ?), so it alone would create
+    // both "DRAFT Implement OAuth" and "DRAFT implement oauth". The
+    // in-memory normalized set is what collapses them within the batch.
+    writeFileSync(
+      sourcePath,
+      [
+        '## DRAFT Implement OAuth',
+        '',
+        'First.',
+        '',
+        '## DRAFT   implement oauth  ',
+        '',
+        'Dup by case/space.',
+      ].join('\n'),
+      'utf-8',
+    );
+    const importer = new MarkdownImporter(container.task, 'TEST', 'daniel');
+
+    const result = importer.import(sourcePath, { skipExisting: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.tasksCreated).toBe(1);
+    expect(result.value.tasksSkippedExisting).toBe(1);
+    expect(container.task.list()).toHaveLength(1);
+  });
+
+  it('still creates duplicates within a batch when `skipExisting` is off', () => {
+    const sourcePath = path.join(root, 'TODO.md');
+    writeFileSync(
+      sourcePath,
+      ['## DRAFT Same title', '', 'a', '', '## DRAFT Same title', '', 'b'].join('\n'),
+      'utf-8',
+    );
+    const importer = new MarkdownImporter(container.task, 'TEST', 'daniel');
+
+    const result = importer.import(sourcePath); // skipExisting off
+    expect(result.ok && result.value.tasksCreated).toBe(2);
+    expect(container.task.list()).toHaveLength(2);
+  });
 });
