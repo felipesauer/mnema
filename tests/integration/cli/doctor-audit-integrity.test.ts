@@ -4,11 +4,13 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { inspectAuditIntegrity } from '@/cli/commands/doctor-command.js';
+import { anchorStatusCheck } from '@/services/anchor/anchor-inspect.js';
 import { AuditService } from '@/services/audit-service.js';
 import { createAttestationSource, HeadCheckpointService } from '@/services/head-checkpoint.js';
 import { MachineKeyService } from '@/services/machine-key.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { AnchorRepository } from '@/storage/sqlite/repositories/anchor-repository.js';
 import { AuditHeadSignatureRepository } from '@/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -261,6 +263,28 @@ describe('inspectAuditIntegrity', () => {
       expect(verdict?.ok).toBe(true);
       expect(verdict?.severity).toBe('warning');
       expect(verdict?.detail).toMatch(/no head signature yet/i);
+    });
+  });
+
+  // Layer-3 anchoring line, as surfaced by doctor (offline status only).
+  describe('anchoring line', () => {
+    it('shows anchoring disabled for the default none provider', () => {
+      const check = anchorStatusCheck(new AnchorRepository(adapter), 'none');
+      expect(check.name).toBe('audit anchoring');
+      expect(check.ok).toBe(true);
+      expect(check.detail).toMatch(/disabled/i);
+    });
+
+    it('summarises anchored/pending when a provider is configured', () => {
+      const anchors = new AnchorRepository(adapter);
+      anchors.upsert({
+        headHash: 'a'.repeat(64),
+        provider: 'git-signed',
+        status: 'anchored',
+        receipt: 'sha',
+      });
+      const check = anchorStatusCheck(anchors, 'git-signed');
+      expect(check.detail).toMatch(/1 anchored/);
     });
   });
 });

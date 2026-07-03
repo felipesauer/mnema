@@ -13,6 +13,7 @@ import { printError } from '../../errors/error-printer.js';
 // the CLI doctor and the `audit_verify` MCP tool consume one source of
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
+import { anchorStatusCheck } from '../../services/anchor/anchor-inspect.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { HookTrustService } from '../../services/hook-trust.js';
@@ -23,6 +24,7 @@ import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
+import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
@@ -347,6 +349,14 @@ export class DoctorCommand {
               // reads .mnema/keys and the local SQLite only.
               createAttestationSource(projectRoot, new AuditHeadSignatureRepository(adapter)),
             ),
+          );
+          // Temporal anchoring (layer 3): offline status only — how many
+          // heads are anchored vs pending. Verifying receipts against a
+          // provider is the online `audit verify --verify-anchors` path, so
+          // doctor never contacts the network and a clone is never red for a
+          // missing anchor.
+          checks.push(
+            anchorStatusCheck(new AnchorRepository(adapter), config.audit.anchor.provider),
           );
           checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));
           checks.push(
