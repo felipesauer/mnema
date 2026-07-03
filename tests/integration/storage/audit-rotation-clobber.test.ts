@@ -77,7 +77,12 @@ describe('AuditWriter rotation hardening', () => {
     expect(files).not.toContain('current.jsonl');
   });
 
-  it('A2: a month-boundary write on the chained path rotates under the lock and stays verifiable', () => {
+  it('A2: a month-boundary write on the chained path rotates and stays verifiable across the boundary', () => {
+    // Scope: this asserts rotation on the chained path leaves the chain
+    // verifiable across the fresh-file boundary (single-process). The
+    // concurrency property — that rotation + append happen under a
+    // cross-process lock — is not observable single-threaded and is
+    // covered separately in audit-writer-lock.test.ts.
     const adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
     const state = new AuditStateRepository(adapter);
@@ -89,8 +94,8 @@ describe('AuditWriter rotation hardening', () => {
       new AuditService(janWriter).write({ kind: 'task_created', actor: 'a', data: { key: 'T-1' } });
 
       // Age current.jsonl into January, then write in February: the write
-      // must rotate (inside the lock) and land the new line in a fresh
-      // current.jsonl, with the chain intact across the boundary.
+      // must rotate and land the new line in a fresh current.jsonl, with
+      // the chain intact across the boundary.
       const currentPath = path.join(auditDir, 'current.jsonl');
       utimesSync(currentPath, january, january);
 

@@ -1,8 +1,41 @@
-import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
+
+import lockfile from 'proper-lockfile';
 
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
 import { hashEvent } from './audit-hash.js';
+
+/**
+ * Cross-process lock policy for the chained write path. Mirrors the sync
+ * buffer's: `lockSync` takes no retries option, so we drive ten attempts
+ * with 50ms backoff. The critical section (one SQLite transaction + one
+ * append) is sub-millisecond, so the worst-case wait stays well under 1s.
+ */
+const LOCK_MAX_ATTEMPTS = 10;
+const LOCK_BACKOFF_MS = 50;
+
+/**
+ * The `stale` of 2000ms is `proper-lockfile`'s enforced minimum; since
+ * `lockSync` runs no async mtime auto-update, a long hold could otherwise
+ * be judged stale and stolen. The section here is far shorter than 2s, so
+ * this is ample while keeping a genuinely orphaned lock recoverable.
+ * `onCompromised` must not throw — contention is handled by the retry loop.
+ */
+const LOCK_OPTIONS = {
+  stale: 2000,
+  realpath: false,
+  onCompromised: () => {
+    /* handled cooperatively by the acquire retry loop; do not throw */
+  },
+} as const;
 
 /**
  * Append-only event written to the audit log.
@@ -58,6 +91,7 @@ export interface AuditEvent {
  */
 export class AuditWriter {
   private readonly currentFile: string;
+  private readonly lockTarget: string;
   private readonly now: () => Date;
 
   /**
@@ -79,7 +113,21 @@ export class AuditWriter {
       mkdirSync(this.auditDir, { recursive: true });
     }
     this.currentFile = path.join(auditDir, 'current.jsonl');
-    this.checkRotation();
+    this.lockTarget = path.join(auditDir, '.audit.lock');
+    // The chained write path takes a cross-process lock (only when a
+    // mirror is wired). The startup rotation shares that lock so two
+    // processes booting across a month boundary cannot race the rename.
+    if (this.state !== null) {
+      if (!existsSync(this.lockTarget)) writeFileSync(this.lockTarget, '', 'utf-8');
+      const release = this.acquireLock();
+      try {
+        this.checkRotation();
+      } finally {
+        release();
+      }
+    } else {
+      this.checkRotation();
+    }
   }
 
   /**
@@ -105,34 +153,59 @@ export class AuditWriter {
       return;
     }
 
-    // The rotation + mirror update must be serialised against concurrent
-    // writers so the on-disk chain doesn't fork. `withChainAdvance` wraps
-    // the read + update in `BEGIN IMMEDIATE`: only one writer holds the
-    // SQLite write lock at a time. Rotation runs INSIDE that section —
-    // otherwise two processes crossing a month boundary could both pass a
-    // pre-lock rotation check and race the rename against each other's
-    // append, landing a line in the wrong month file.
+    // A cross-process file lock wraps the WHOLE critical section —
+    // rotation, the SQLite transaction, AND the post-commit append. The
+    // SQLite `BEGIN IMMEDIATE` inside `withChainAdvance` only serialises
+    // the mirror update; it does NOT order the append, which runs after
+    // COMMIT. Without this outer lock, two processes could commit in one
+    // order (A then B) but append in the other (B's line first), forking
+    // the on-disk chain so `mnema doctor` reads a benign concurrent write
+    // as a `prev_hash` break — false tampering. Holding the lock across
+    // the append forces B to wait until A's line is on disk.
     //
-    // The line is computed here but appended only AFTER the commit (via
-    // `afterCommit`), so a crash between the mirror update and the append
-    // can never leave a line on disk that the committed mirror did not
-    // record — the failure mode that read as tampering.
-    this.state.withChainAdvance((currentHead) => {
-      this.checkRotation();
-      const chained: AuditEvent = {
-        ...event,
-        v: 2,
-        prev_hash: currentHead,
-      };
-      const hash = hashEvent(chained);
-      const sealed: AuditEvent = { ...chained, hash };
-      const line = `${JSON.stringify(sealed)}\n`;
-      return {
-        hash,
-        at: sealed.at,
-        afterCommit: () => appendFileSync(this.currentFile, line, { flag: 'a' }),
-      };
-    });
+    // Crash-safety from the post-commit append is preserved: the line is
+    // still appended only AFTER the commit, so a crash between the two
+    // leaves the mirror one event ahead of disk (recoverable), never a
+    // line the committed mirror did not record.
+    const release = this.acquireLock();
+    try {
+      this.state.withChainAdvance((currentHead) => {
+        this.checkRotation();
+        const chained: AuditEvent = {
+          ...event,
+          v: 2,
+          prev_hash: currentHead,
+        };
+        const hash = hashEvent(chained);
+        const sealed: AuditEvent = { ...chained, hash };
+        const line = `${JSON.stringify(sealed)}\n`;
+        return {
+          hash,
+          at: sealed.at,
+          afterCommit: () => appendFileSync(this.currentFile, line, { flag: 'a' }),
+        };
+      });
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Acquires the cross-process audit lock, retrying on contention.
+   * `proper-lockfile.lockSync` takes no retries option, so the loop is
+   * explicit. Returns the release function.
+   */
+  private acquireLock(): () => void {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < LOCK_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        return lockfile.lockSync(this.lockTarget, LOCK_OPTIONS);
+      } catch (err) {
+        lastErr = err;
+        sleepBriefly(LOCK_BACKOFF_MS);
+      }
+    }
+    throw lastErr ?? new Error('failed to acquire audit lock');
   }
 
   /**
@@ -175,4 +248,16 @@ export class AuditWriter {
 
 function monthKey(date: Date): string {
   return date.toISOString().slice(0, 7);
+}
+
+/**
+ * Short synchronous backoff for the lock retry loop. The critical section
+ * is sub-millisecond, so the total wait across attempts stays well under
+ * a second; a spin is simpler than an async sleep on this sync path.
+ */
+function sleepBriefly(ms: number): void {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    // tight loop — short by construction
+  }
 }
