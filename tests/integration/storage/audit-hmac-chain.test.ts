@@ -41,7 +41,7 @@ describe('v3 HMAC audit chain', () => {
   /** Writes 3 events through a secret-wired writer (v3). */
   function writeV3(): void {
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, secret),
+      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, () => secret),
     );
     audit.write({ kind: 'task_created', actor: 'alice', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'bob', data: { key: 'T-2' } });

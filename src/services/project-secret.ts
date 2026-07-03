@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { userKnowledgeDir } from './user-knowledge.js';
@@ -33,17 +32,21 @@ export class ProjectSecretService {
   /**
    * @param projectRoot - Absolute project root (holds `.mnema/`)
    * @param projectKey - Project key; names the per-project secret dir
-   * @param home - Home-dir resolver; injectable for tests
+   * @param userDir - The user-level dir (`~/.config/mnema`); injectable so
+   *   tests point at an isolated path and never touch the real home. Must
+   *   be the SAME value the container's other user-level services use
+   *   (`options.userDir ?? userKnowledgeDir()`), or the writer and the
+   *   verifier would resolve different secrets.
    */
   constructor(
     private readonly projectRoot: string,
     private readonly projectKey: string,
-    private readonly home: () => string = homedir,
+    private readonly userDir: string = userKnowledgeDir(),
   ) {}
 
   /** Absolute path to the raw secret file (outside the repo). */
   secretPath(): string {
-    return path.join(userKnowledgeDir(this.home), 'projects', this.projectKey, 'hmac.key');
+    return path.join(this.userDir, 'projects', this.projectKey, 'hmac.key');
   }
 
   /** Absolute path to the committed, non-secret fingerprint file. */

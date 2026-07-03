@@ -14,16 +14,18 @@ import { ProjectSecretService } from '@/services/project-secret.js';
 describe('ProjectSecretService', () => {
   let root: string;
   let projectRoot: string;
-  let home: string;
+  let userDir: string;
   let svc: ProjectSecretService;
 
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), 'mnema-secret-'));
     projectRoot = path.join(root, 'proj');
-    home = path.join(root, 'home');
+    // Isolated user-level dir (the `~/.config/mnema` equivalent) so the
+    // test never touches the developer's real home.
+    userDir = path.join(root, 'home', '.config', 'mnema');
     mkdirSync(path.join(projectRoot, '.mnema'), { recursive: true });
-    mkdirSync(home, { recursive: true });
-    svc = new ProjectSecretService(projectRoot, 'SMOKE', () => home);
+    mkdirSync(userDir, { recursive: true });
+    svc = new ProjectSecretService(projectRoot, 'SMOKE', userDir);
   });
 
   afterEach(() => {
@@ -43,9 +45,7 @@ describe('ProjectSecretService', () => {
   it('generates a 32-byte secret at ~/.config/mnema/projects/<key>/hmac.key with 0600', () => {
     const secret = svc.getOrCreate();
     expect(secret).toHaveLength(32);
-    expect(svc.secretPath()).toBe(
-      path.join(home, '.config', 'mnema', 'projects', 'SMOKE', 'hmac.key'),
-    );
+    expect(svc.secretPath()).toBe(path.join(userDir, 'projects', 'SMOKE', 'hmac.key'));
     expect(statSync(svc.secretPath()).mode & 0o777).toBe(0o600);
   });
 
@@ -68,7 +68,7 @@ describe('ProjectSecretService', () => {
     const second = svc.getOrCreate();
     expect(second.equals(first)).toBe(true);
     // A second service instance on the same paths sees the same secret.
-    const other = new ProjectSecretService(projectRoot, 'SMOKE', () => home).getOrCreate();
+    const other = new ProjectSecretService(projectRoot, 'SMOKE', userDir).getOrCreate();
     expect(other.equals(first)).toBe(true);
   });
 

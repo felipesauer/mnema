@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { inspectAuditIntegrity } from '../../../services/audit-integrity.js';
+import type { ProjectSecretService } from '../../../services/project-secret.js';
 import type { SqliteAdapter } from '../../../storage/sqlite/sqlite-adapter.js';
 import { ok } from '../../mcp-tool-result.js';
 
@@ -19,13 +20,15 @@ export class AuditVerifyTool {
   /**
    * @param adapter - Open SQLite adapter (source of the chain head + count)
    * @param auditDir - Absolute path to `.mnema/audit/`
-   * @param secret - Per-project HMAC secret for verifying v3 lines, or
-   *   `null` (v3 lines then report as authenticity-unverifiable)
+   * @param secrets - Per-project secret service, or `null` for a
+   *   secret-less setup. The secret and fingerprint are resolved at
+   *   CALL time (not construction), since the secret is generated lazily
+   *   on the first write and may be imported after this tool is built.
    */
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
-    private readonly secret: Buffer | null = null,
+    private readonly secrets: ProjectSecretService | null = null,
   ) {}
 
   /**
@@ -48,7 +51,14 @@ export class AuditVerifyTool {
         inputSchema: {},
       },
       () => {
-        const checks = inspectAuditIntegrity(this.adapter, this.auditDir, this.secret);
+        // Resolve at call time: the secret is minted lazily on first write
+        // and may be imported after this tool was constructed.
+        const checks = inspectAuditIntegrity(
+          this.adapter,
+          this.auditDir,
+          this.secrets?.read() ?? null,
+          this.secrets?.readFingerprint() != null,
+        );
         const intact = checks.every((check) => check.ok);
         return ok({ intact, checks });
       },
