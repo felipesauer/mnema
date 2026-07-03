@@ -20,6 +20,13 @@ export type GitCommandRunner = (args: readonly string[], cwd: string) => GitResu
 
 const defaultGitRunner: GitCommandRunner = (args, cwd) => {
   const result = spawnSync('git', [...args], { cwd, encoding: 'utf-8', timeout: 15_000 });
+  // git absent from PATH (or unspawnable): spawnSync sets `error` and leaves
+  // status null. Report it as 127 ("command not found") with a clear stderr
+  // so the provider degrades to cannot-verify — git is optional, its absence
+  // is never mistaken for a broken/tampered anchor.
+  if (result.error !== undefined) {
+    return { status: 127, stdout: '', stderr: `git unavailable: ${result.error.message}` };
+  }
   return {
     status: result.status,
     stdout: typeof result.stdout === 'string' ? result.stdout : '',
@@ -125,6 +132,12 @@ export class GitSignedAnchorProvider implements AnchorProvider {
     const sha = receipt.blob;
     // The commit must exist and be a commit object.
     const type = this.git('cat-file', '-t', sha);
+    // git unavailable (127) is cannot-verify, NOT broken — git is optional,
+    // so a checkout without git can't attest the anchor but must not report
+    // it as tampered.
+    if (type.status === 127) {
+      return { state: 'cannot-verify', detail: `cannot verify: ${type.stderr.trim()}` };
+    }
     if (type.status !== 0 || type.stdout.trim() !== 'commit') {
       return { state: 'broken', detail: `anchor commit ${sha.slice(0, 12)} not found` };
     }
