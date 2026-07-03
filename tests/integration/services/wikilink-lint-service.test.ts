@@ -107,6 +107,14 @@ describe('WikilinkLintService', () => {
     expect(report.diagnostics).toEqual([]);
   });
 
+  it('accepts an Obsidian alias wikilink whose slug resolves', () => {
+    // Before the alias fix the slug was "other-skill|Look here", which no
+    // target matches, so the link was wrongly flagged as broken.
+    writeSkill('a-skill', 'see [[other-skill|Look here]] and [[other-skill#usage|the usage]]');
+    const report = lint.lint();
+    expect(report.diagnostics).toEqual([]);
+  });
+
   it('ignores wikilink-looking text inside frontmatter', () => {
     // gray-matter strips frontmatter; only the body is scanned
     writeFileSync(
