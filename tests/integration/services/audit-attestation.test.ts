@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -56,10 +56,14 @@ describe('audit machine attestation verdict', () => {
 
   /** Writes one event through a checkpoint-every-event signer. */
   function writeSignedEvent(): void {
-    const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-      events: 1,
-      seconds: 100_000,
-    });
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => ({ machineKey, actor: 'felipesauer' }),
+      {
+        events: 1,
+        seconds: 100_000,
+      },
+    );
     const audit = new AuditService(
       new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
     );
@@ -98,6 +102,21 @@ describe('audit machine attestation verdict', () => {
     // Remove the committed .pub so the signer's key cannot be resolved.
     rmSync(machineKey.publicKeyPath());
     const verdict = attestationVerdict(attestation());
+    expect(verdict?.ok).toBe(false);
+    expect(verdict?.severity).toBe('warning');
+    expect(verdict?.detail).toMatch(/not present|cannot attest/i);
+  });
+
+  it('warns (cannot attest), not crash, when the committed .pub is corrupt', () => {
+    writeSignedEvent();
+    // Corrupt the committed public-key record (truncated JSON). parsePublicKey
+    // would throw — the attestation source must swallow it into cannot-verify,
+    // never crash the whole verify.
+    writeFileSync(machineKey.publicKeyPath(), '{ "not": "valid pub', 'utf-8');
+    let verdict: ReturnType<typeof attestationVerdict>;
+    expect(() => {
+      verdict = attestationVerdict(attestation());
+    }).not.toThrow();
     expect(verdict?.ok).toBe(false);
     expect(verdict?.severity).toBe('warning');
     expect(verdict?.detail).toMatch(/not present|cannot attest/i);

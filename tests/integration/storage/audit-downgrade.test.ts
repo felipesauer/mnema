@@ -46,6 +46,10 @@ describe('audit chain downgrade defense', () => {
     inspectAuditIntegrity(adapter, auditDir, secretArg, hasFingerprint).find(
       (c) => c.name === 'audit hash chain',
     );
+  const anchorCheck = (secretArg: Buffer | null, hasFingerprint: boolean) =>
+    inspectAuditIntegrity(adapter, auditDir, secretArg, hasFingerprint).find(
+      (c) => c.name === 'audit downgrade anchor',
+    );
 
   /**
    * Hand-builds a chain of the given per-line versions, sets the SQLite
@@ -144,5 +148,21 @@ describe('audit chain downgrade defense', () => {
     const chain = chainCheck(null, true);
     expect(chain?.ok).toBe(false);
     expect(chain?.detail).toMatch(/entirely v2|downgrade/i);
+  });
+
+  it('warns when a v3 chain has NO committed fingerprint (downgrade anchor disarmed)', () => {
+    // A v3 chain but the fingerprint is absent — the anchor that guards the
+    // wholesale downgrade is missing (never committed, or deleted to disarm
+    // the defense). Must warn, not pass silently.
+    buildChain([3, 3]);
+    const anchor = anchorCheck(secret, false);
+    expect(anchor?.ok).toBe(false);
+    expect(anchor?.severity).toBe('warning');
+    expect(anchor?.detail).toMatch(/no committed fingerprint|disarmed/i);
+  });
+
+  it('does not warn when the v3 chain has its committed fingerprint (anchor armed)', () => {
+    buildChain([3, 3]);
+    expect(anchorCheck(secret, true)).toBeUndefined();
   });
 });

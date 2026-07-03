@@ -250,18 +250,35 @@ export function inspectAuditIntegrity(
   // Surface legacy lines so a human can still reconcile the disk total
   // (chained + legacy = lines on disk).
   const legacyNote = legacyLines > 0 ? ` (+${legacyLines} legacy pre-chain)` : '';
-  if (chainedLines !== stateRow.event_count) {
+  // The writer commits the SQLite mirror BEFORE appending the JSONL line, so
+  // a crash in that window leaves the mirror EXACTLY one event ahead of disk.
+  // That is a recoverable state — BUT it is byte-for-byte indistinguishable
+  // from a malicious truncation of the last line (both leave the mirror one
+  // ahead with a self-consistent disk tail). So it is neither a clean pass
+  // nor a hard tamper error: report it as a WARNING that names both causes,
+  // so a crash isn't a screaming false-positive yet a truncation is never
+  // silently green. Any other discrepancy (mirror behind disk, or ahead by
+  // more than one) is unambiguous tampering/corruption and stays an error.
+  const mirrorOneAhead = stateRow.event_count === chainedLines + 1;
+  if (chainedLines === stateRow.event_count) {
+    checks.push({
+      name: 'audit event count',
+      ok: true,
+      detail: `${chainedLines} chained events match audit_state.event_count${legacyNote}`,
+    });
+  } else if (mirrorOneAhead) {
+    checks.push({
+      name: 'audit event count',
+      ok: false,
+      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}${legacyNote}) — either a crash between the mirror commit and the log append (recoverable; the next write reconciles it) OR a truncation of the last line. Investigate if no crash occurred.`,
+      severity: 'warning',
+    });
+  } else {
     checks.push({
       name: 'audit event count',
       ok: false,
       detail: `disk has ${chainedLines} chained events${legacyNote}, audit_state has ${stateRow.event_count}`,
       severity: 'error',
-    });
-  } else {
-    checks.push({
-      name: 'audit event count',
-      ok: true,
-      detail: `${chainedLines} chained events match audit_state.event_count${legacyNote}`,
     });
   }
 
@@ -271,6 +288,17 @@ export function inspectAuditIntegrity(
       ok: false,
       detail: chainBreakDetail,
       severity: 'error',
+    });
+  } else if (lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
+    // The mirror head points one past the disk tail — the same ambiguous
+    // one-ahead state as the count check: a recoverable crash window OR a
+    // last-line truncation. Warning (not a hard error, not a clean pass) —
+    // the per-line chain on disk is itself consistent (chainBroken is false).
+    checks.push({
+      name: 'audit hash chain',
+      ok: false,
+      detail: `disk tail lags audit_state.chain_head_hash by one event (recoverable crash window, or a truncated last line); on-disk chain is self-consistent up to ${lastHash?.slice(0, 12) ?? '(empty)'}…`,
+      severity: 'warning',
     });
   } else if (lastHash !== stateRow.chain_head_hash) {
     checks.push({
@@ -296,6 +324,22 @@ export function inspectAuditIntegrity(
       name: 'audit authenticity',
       ok: false,
       detail: `${v3Unverifiable} HMAC-keyed (v3) line(s) could not be verified — project secret not present. Import it with the project secret to verify authenticity.`,
+      severity: 'warning',
+    });
+  }
+
+  // Downgrade anchor present: the fingerprint-implies-v3 rule (above) can
+  // only catch a wholesale v3→v2 downgrade while the committed fingerprint
+  // survives. A chain that clearly adopted v3 but has NO committed
+  // fingerprint has lost that anchor — either it was never committed, or it
+  // was deleted to disable the downgrade defense. Warn so the user commits
+  // (or restores) it; without it a wholesale downgrade would pass silently.
+  if (anyV3 && !hasFingerprint) {
+    checks.push({
+      name: 'audit downgrade anchor',
+      ok: false,
+      detail:
+        'this project uses HMAC-keyed (v3) events but has no committed fingerprint (.mnema/keys/project.hmac-id) — the wholesale-downgrade defense is disarmed. Commit the fingerprint (and keep it tracked) so a v3→v2 downgrade cannot pass unnoticed.',
       severity: 'warning',
     });
   }

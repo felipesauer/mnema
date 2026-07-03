@@ -57,10 +57,14 @@ describe('head-signature checkpoint', () => {
   it('signs exactly once when the event-count interval is crossed, not per event', () => {
     const signSpy = vi.spyOn(machineKey, 'sign');
     // Checkpoint every 3 events; a long time window so only the count fires.
-    const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-      events: 3,
-      seconds: 100_000,
-    });
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => ({ machineKey, actor: 'felipesauer' }),
+      {
+        events: 3,
+        seconds: 100_000,
+      },
+    );
     const audit = writer(checkpoint);
 
     // Events 1 and 2: below the interval, no signing.
@@ -83,10 +87,14 @@ describe('head-signature checkpoint', () => {
   });
 
   it('signs a head that verifies against the committed public key', () => {
-    const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-      events: 1,
-      seconds: 100_000,
-    });
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => ({ machineKey, actor: 'felipesauer' }),
+      {
+        events: 1,
+        seconds: 100_000,
+      },
+    );
     const audit = writer(checkpoint);
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
 
@@ -103,10 +111,14 @@ describe('head-signature checkpoint', () => {
   });
 
   it('a tampered head no longer verifies', () => {
-    const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-      events: 1,
-      seconds: 100_000,
-    });
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => ({ machineKey, actor: 'felipesauer' }),
+      {
+        events: 1,
+        seconds: 100_000,
+      },
+    );
     const audit = writer(checkpoint);
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
 
@@ -124,10 +136,14 @@ describe('head-signature checkpoint', () => {
 
   it('does not re-sign the same head at a later checkpoint with no new events', () => {
     const signSpy = vi.spyOn(machineKey, 'sign');
-    const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-      events: 1,
-      seconds: 0, // time always "elapsed" — isolates the no-new-events guard
-    });
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => ({ machineKey, actor: 'felipesauer' }),
+      {
+        events: 1,
+        seconds: 0, // time always "elapsed" — isolates the no-new-events guard
+      },
+    );
     // One write signs; calling maybeSign again with the same count is a no-op.
     const audit = writer(checkpoint);
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
@@ -135,5 +151,28 @@ describe('head-signature checkpoint', () => {
     const state = new AuditStateRepository(adapter).read();
     expect(checkpoint.maybeSign(state.chainHeadHash as string, state.eventCount)).toBeNull();
     expect(signSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts attesting once identity appears — not frozen at boot (lazy signer)', () => {
+    // Simulate a process that boots WITHOUT identity: resolveSigner returns
+    // null at first, then the signer once identity is configured mid-session.
+    let identityReady = false;
+    const checkpoint = new HeadCheckpointService(
+      signatures,
+      () => (identityReady ? { machineKey, actor: 'felipesauer' } : null),
+      { events: 1, seconds: 100_000 },
+    );
+    const audit = writer(checkpoint);
+
+    // First write with no identity: chain advances, but nothing is signed —
+    // and crucially the checkpoint is NOT permanently disabled.
+    audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
+    expect(signatures.read()).toBeNull();
+
+    // Identity is configured; the very next write signs.
+    identityReady = true;
+    audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-2' } });
+    expect(signatures.read()).not.toBeNull();
+    expect(signatures.read()?.signerActor).toBe('felipesauer');
   });
 });

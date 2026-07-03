@@ -274,20 +274,30 @@ export function createServiceContainer(
     secretUserDir,
   );
   // Machine attestation (ADR-37 layer 2): sign the chain head with the
-  // per-machine Ed25519 key at a checkpoint interval. Bound to the resolved
-  // actor; when no identity is configured there is nobody to attest, so head
-  // signing is simply skipped (the keyed chain still protects the log). The
-  // signer no-ops between checkpoints, so it never sits on the per-event cost.
-  const resolvedActor = identity.resolveDefaultActor().actor;
-  const headCheckpoint =
-    resolvedActor === null
-      ? null
-      : new HeadCheckpointService(
-          new AuditHeadSignatureRepository(adapter),
-          new MachineKeyService(projectRoot, resolvedActor, secretUserDir),
-          resolvedActor,
-          config.audit.checkpoint,
-        );
+  // per-machine Ed25519 key at a checkpoint interval. The signer is resolved
+  // LAZILY per checkpoint (not frozen at boot): a long-lived process that
+  // starts before an identity is configured begins attesting as soon as the
+  // identity appears, instead of staying key-less for the whole session. When
+  // no identity is configured the checkpoint is skipped (the keyed chain
+  // still protects the log). The signer no-ops between checkpoints, so it
+  // never sits on the per-event cost. The MachineKeyService is memoised per
+  // actor so repeated checkpoints don't rebuild it.
+  let cachedSigner: { actor: string; machineKey: MachineKeyService } | null = null;
+  const headCheckpoint = new HeadCheckpointService(
+    new AuditHeadSignatureRepository(adapter),
+    () => {
+      const actor = identity.resolveDefaultActor().actor;
+      if (actor === null) return null;
+      if (cachedSigner === null || cachedSigner.actor !== actor) {
+        cachedSigner = {
+          actor,
+          machineKey: new MachineKeyService(projectRoot, actor, secretUserDir),
+        };
+      }
+      return cachedSigner;
+    },
+    config.audit.checkpoint,
+  );
   // Temporal anchoring (ADR-37 layer 3): resolve the configured provider
   // and wire a fire-and-forget scheduler. Inert for the default `none`
   // provider, so a local-first project pays nothing; a real provider stamps

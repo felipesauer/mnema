@@ -10,6 +10,8 @@ export interface AnchorRecord {
   readonly status: AnchorRecordStatus;
   /** Serialized provider-specific proof, or `null` while pending. */
   readonly receipt: string | null;
+  /** `event_count` at which this anchor was made — the by-events baseline. */
+  readonly eventCountAt: number | null;
   readonly createdAt: string;
   readonly confirmedAt: string | null;
 }
@@ -19,6 +21,7 @@ interface AnchorRow {
   readonly provider: string;
   readonly status: AnchorRecordStatus;
   readonly receipt: string | null;
+  readonly event_count_at: number | null;
   readonly created_at: string;
   readonly confirmed_at: string | null;
 }
@@ -29,6 +32,8 @@ export interface AnchorUpsert {
   readonly provider: string;
   readonly status: AnchorRecordStatus;
   readonly receipt: string | null;
+  /** `event_count` at anchor time; omitted → NULL (time-only interval). */
+  readonly eventCountAt?: number;
 }
 
 /**
@@ -54,14 +59,34 @@ export class AnchorRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO anchors (head_hash, provider, status, receipt, confirmed_at)
-         VALUES (?, ?, ?, ?, ${confirmedAt})
+        `INSERT INTO anchors (head_hash, provider, status, receipt, event_count_at, confirmed_at)
+         VALUES (?, ?, ?, ?, ?, ${confirmedAt})
          ON CONFLICT(head_hash, provider) DO UPDATE SET
             status = excluded.status,
             receipt = excluded.receipt,
+            event_count_at = COALESCE(excluded.event_count_at, anchors.event_count_at),
             confirmed_at = ${confirmedAt}`,
       )
-      .run(anchor.headHash, anchor.provider, anchor.status, anchor.receipt);
+      .run(
+        anchor.headHash,
+        anchor.provider,
+        anchor.status,
+        anchor.receipt,
+        anchor.eventCountAt ?? null,
+      );
+  }
+
+  /** The most recent anchor for `provider` (by event_count then time), or null. */
+  latestForProvider(provider: string): AnchorRecord | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT head_hash, provider, status, receipt, event_count_at, created_at, confirmed_at
+           FROM anchors WHERE provider = ?
+          ORDER BY COALESCE(event_count_at, 0) DESC, created_at DESC LIMIT 1`,
+      )
+      .get(provider) as AnchorRow | undefined;
+    return row === undefined ? null : toRecord(row);
   }
 
   /** Reads the anchor for one `(headHash, provider)`, or `null`. */
@@ -69,7 +94,7 @@ export class AnchorRepository {
     const row = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT head_hash, provider, status, receipt, created_at, confirmed_at
+        `SELECT head_hash, provider, status, receipt, event_count_at, created_at, confirmed_at
            FROM anchors WHERE head_hash = ? AND provider = ?`,
       )
       .get(headHash, provider) as AnchorRow | undefined;
@@ -81,7 +106,7 @@ export class AnchorRepository {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT head_hash, provider, status, receipt, created_at, confirmed_at
+        `SELECT head_hash, provider, status, receipt, event_count_at, created_at, confirmed_at
            FROM anchors WHERE status = 'pending' ORDER BY created_at`,
       )
       .all() as AnchorRow[];
@@ -93,7 +118,7 @@ export class AnchorRepository {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT head_hash, provider, status, receipt, created_at, confirmed_at
+        `SELECT head_hash, provider, status, receipt, event_count_at, created_at, confirmed_at
            FROM anchors ORDER BY created_at DESC`,
       )
       .all() as AnchorRow[];
@@ -107,6 +132,7 @@ function toRecord(row: AnchorRow): AnchorRecord {
     provider: row.provider,
     status: row.status,
     receipt: row.receipt,
+    eventCountAt: row.event_count_at,
     createdAt: row.created_at,
     confirmedAt: row.confirmed_at,
   };

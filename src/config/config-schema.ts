@@ -139,7 +139,18 @@ export const ConfigSchema = z.object({
           // rfc3161: the Time-Stamp Authority endpoint (required for that
           // provider). git-signed: optional remote + ref to push the anchor
           // commit to (local-only when omitted).
-          tsa: z.url().optional(),
+          //
+          // `tsa` is constrained to https:// — `z.url()` alone accepts
+          // file://, http://localhost, and cloud-metadata IPs, which would be
+          // an SSRF / local-file vector once a provider fetches it. The repo
+          // config is agent-writable, so lock the scheme at the schema layer
+          // BEFORE the rfc3161 provider ships and starts dereferencing it.
+          tsa: z
+            .url()
+            .refine((u) => u.startsWith('https://'), {
+              message: 'audit.anchor.tsa must be an https:// URL',
+            })
+            .optional(),
           remote: z.string().min(1).optional(),
           ref: z.string().min(1).optional(),
         })
