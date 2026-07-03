@@ -119,6 +119,41 @@ export const ConfigSchema = z.object({
           seconds: z.number().int().positive().default(3600),
         })
         .prefault({}),
+      // Temporal anchoring (ADR-37 layer 3): pluggable, OPT-IN, default
+      // `none`. A real provider stamps the signed head into an external,
+      // independently-verifiable timestamp OFF the write path, fail-open.
+      // Per-provider options are validated below: rfc3161 requires a `tsa`
+      // URL; git-signed may name a `remote`/`ref`.
+      anchor: z
+        .object({
+          provider: z.enum(['none', 'git-signed', 'opentimestamps', 'rfc3161']).default('none'),
+          // How often the scheduler anchors the head. Either bound may be
+          // set; when neither is given the anchor cadence follows the
+          // checkpoint interval (resolved by the scheduler, MNEMA-160).
+          interval: z
+            .object({
+              events: z.number().int().positive().optional(),
+              seconds: z.number().int().positive().optional(),
+            })
+            .prefault({}),
+          // rfc3161: the Time-Stamp Authority endpoint (required for that
+          // provider). git-signed: optional remote + ref to push the anchor
+          // commit to (local-only when omitted).
+          tsa: z.url().optional(),
+          remote: z.string().min(1).optional(),
+          ref: z.string().min(1).optional(),
+        })
+        .prefault({})
+        .check((ctx) => {
+          if (ctx.value.provider === 'rfc3161' && ctx.value.tsa === undefined) {
+            ctx.issues.push({
+              code: 'custom',
+              input: ctx.value,
+              path: ['tsa'],
+              message: 'audit.anchor.tsa (a TSA URL) is required when provider is "rfc3161"',
+            });
+          }
+        }),
     })
     .prefault({}),
   // `strict` holds agents to the workflow gate (a failed gate blocks an
