@@ -45,7 +45,7 @@ describe('MigrationRunner', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
 
     expect(applied.map((a) => a.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     ]);
 
     const versions = adapter
@@ -53,7 +53,7 @@ describe('MigrationRunner', () => {
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     ]);
   });
 
@@ -69,7 +69,7 @@ describe('MigrationRunner', () => {
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     ]);
   });
 
@@ -96,6 +96,28 @@ describe('MigrationRunner', () => {
     expect(names).toContain('notes_fts');
     expect(names).toContain('decisions_fts');
     expect(names).toContain('workspace_config');
+  });
+
+  it('creates idx_tasks_title and uses it for the findByTitle lookup', () => {
+    new MigrationRunner().run(adapter, migrationsDir);
+    const db = adapter.getDatabase();
+
+    // The partial index exists…
+    const index = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_tasks_title'")
+      .get() as { name: string } | undefined;
+    expect(index?.name).toBe('idx_tasks_title');
+
+    // …and the planner uses it for the importer's dedupe query rather than
+    // scanning the table. EXPLAIN QUERY PLAN names the index it picks.
+    const plan = db
+      .prepare(
+        'EXPLAIN QUERY PLAN SELECT * FROM tasks WHERE project_id = ? AND title = ? AND deleted_at IS NULL',
+      )
+      .all('p1', 'Some title') as Array<{ detail: string }>;
+    const detail = plan.map((r) => r.detail).join(' | ');
+    expect(detail).toContain('idx_tasks_title');
+    expect(detail).not.toMatch(/SCAN TABLE tasks\b(?!.*USING INDEX)/);
   });
 
   it('enforces append-only on transitions via trigger', () => {
