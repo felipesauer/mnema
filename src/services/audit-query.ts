@@ -1,6 +1,6 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
+import { orderedAuditFiles } from '../storage/audit/audit-files.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 
 /**
@@ -82,7 +82,7 @@ export class AuditQuery {
 
     const sinceMs = parseTimeBound(filter.since);
     const untilMs = parseTimeBound(filter.until);
-    const files = listAuditFiles(this.auditDir);
+    const files = orderedAuditFiles(this.auditDir);
     const matches: AuditEvent[] = [];
     const malformedByFile = new Map<string, number>();
     let malformedLines = 0;
@@ -177,11 +177,4 @@ function unitToSeconds(unit: string): number {
     default:
       return 1;
   }
-}
-
-function listAuditFiles(auditDir: string): string[] {
-  return readdirSync(auditDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.jsonl'))
-    .map((entry) => path.join(auditDir, entry.name))
-    .sort();
 }
