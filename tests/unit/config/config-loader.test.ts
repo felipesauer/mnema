@@ -112,6 +112,33 @@ describe('ConfigLoader', () => {
       expect((caught as ConfigInvalidError).issues).toBeTruthy();
     });
 
+    it('rejects a paths.* entry with a ".." segment (traversal)', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        project: { key: 'TEST', name: 'Test project' },
+        paths: { backlog: '../../../tmp/escape' },
+      });
+      expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+    });
+
+    it('rejects a paths.* entry with an absolute path', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        project: { key: 'TEST', name: 'Test project' },
+        paths: { audit: '/etc/evil' },
+      });
+      expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+    });
+
+    it('accepts a nested-but-contained relative paths.* entry', () => {
+      writeConfig(tempRoot, {
+        ...validConfig,
+        project: { key: 'TEST', name: 'Test project' },
+        paths: { backlog: './.mnema/sub/backlog' },
+      });
+      expect(() => loader.load(tempRoot)).not.toThrow();
+    });
+
     it('accepts the argv hook shape { command, args }', () => {
       writeConfig(tempRoot, {
         ...validConfig,
