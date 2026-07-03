@@ -88,6 +88,55 @@ describe('SyncBuffer', () => {
     expect(buffer.size()).toBe(0);
   });
 
+  it('size() counts lines (incl. a malformed one) without parsing them', () => {
+    // A malformed line is dropped by readAll (parse fails) but still
+    // occupies the buffer — so size() (line count) counts it while
+    // readAll (parsed entries) does not. This proves size() does not go
+    // through the JSON.parse path.
+    writeFileSync(
+      buffer.getPath(),
+      `${JSON.stringify(makeEntry('TST-1'))}\n{not json\n${JSON.stringify(makeEntry('TST-2'))}\n`,
+      'utf-8',
+    );
+    expect(buffer.size()).toBe(3); // three non-empty lines
+    expect(buffer.readAll()).toHaveLength(2); // only the two parseable ones
+  });
+
+  it('size() ignores blank lines and a missing file', () => {
+    expect(buffer.size()).toBe(0); // file absent
+    writeFileSync(buffer.getPath(), '\n\n', 'utf-8');
+    expect(buffer.size()).toBe(0); // only blank lines
+    buffer.append(makeEntry('TST-1'));
+    expect(buffer.size()).toBe(1);
+  });
+
+  it('the lock backoff parks the thread instead of burning CPU', () => {
+    // Hold the lock so a second buffer's drain() must go through the
+    // retry backoff. A spin loop would consume CPU ≈ wall-clock; the
+    // Atomics.wait park consumes far less. Assert CPU time is well under
+    // the wall time spent waiting.
+    const a = new SyncBuffer(dir);
+    a.append(makeEntry('TST-1'));
+    // Take and hold the lock out from under the retry loop.
+    // biome-ignore lint/suspicious/noExplicitAny: reach the private lock for the test
+    const release = (a as any).acquireLock() as () => void;
+
+    const b = new SyncBuffer(dir);
+    const cpuBefore = process.cpuUsage();
+    const wallBefore = Date.now();
+    // b.drain() will retry (≈10×50ms) and then fail to acquire → throws.
+    expect(() => b.drain()).toThrow();
+    const wallMs = Date.now() - wallBefore;
+    const cpuMs = (process.cpuUsage(cpuBefore).user + process.cpuUsage(cpuBefore).system) / 1000;
+    release();
+
+    // It genuinely waited (multiple backoffs)…
+    expect(wallMs).toBeGreaterThan(100);
+    // …but did not spin: CPU time is a fraction of the wall time. A busy
+    // loop would make cpuMs ≈ wallMs; parking keeps it far below.
+    expect(cpuMs).toBeLessThan(wallMs / 2);
+  });
+
   it('a second drain() while the lock is held by a parallel buffer waits, then sees an empty buffer', () => {
     buffer.append(makeEntry('TST-1'));
 
