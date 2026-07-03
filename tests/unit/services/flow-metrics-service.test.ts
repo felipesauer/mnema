@@ -270,4 +270,58 @@ describe('FlowMetricsService', () => {
     expect(m.skill_adoption.uses_per_run).toBeNull(); // no runs
     expect(m.skill_adoption.used_vs_recorded).toBeNull(); // nothing recorded
   });
+
+  describe('compute({ events }) reuses a pre-read log (single-read on the metrics path)', () => {
+    // A counting AuditQuery so we can assert how many times the log is read.
+    function countingAudit(events: AuditEvent[]): { audit: AuditQuery; reads: () => number } {
+      let reads = 0;
+      const audit = {
+        run: () => {
+          reads += 1;
+          return events;
+        },
+      } as unknown as AuditQuery;
+      return { audit, reads: () => reads };
+    }
+
+    const sampleEvents: AuditEvent[] = [
+      created('NOTA-1', 0),
+      transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit'),
+      transitioned('NOTA-1', 5, 'READY', 'DONE', 'approve'),
+    ];
+
+    it('does not read the audit log when events are supplied', () => {
+      const { audit, reads } = countingAudit(sampleEvents);
+      const svc = new FlowMetricsService(
+        audit,
+        fakeTasks({ 'NOTA-1': 3 }),
+        workflow,
+        fakeSprints(),
+        'TEST',
+      );
+      svc.compute({ events: sampleEvents });
+      expect(reads()).toBe(0); // the caller's read is reused; no second read
+    });
+
+    it('reads once when events are omitted (standalone still works)', () => {
+      const { audit, reads } = countingAudit(sampleEvents);
+      const svc = new FlowMetricsService(
+        audit,
+        fakeTasks({ 'NOTA-1': 3 }),
+        workflow,
+        fakeSprints(),
+        'TEST',
+      );
+      svc.compute();
+      expect(reads()).toBe(1);
+    });
+
+    it('produces identical metrics whether events are passed or read', () => {
+      const passed = makeService(sampleEvents, fakeTasks({ 'NOTA-1': 3 })).compute({
+        events: sampleEvents,
+      });
+      const read = makeService(sampleEvents, fakeTasks({ 'NOTA-1': 3 })).compute();
+      expect(passed).toEqual(read);
+    });
+  });
 });
