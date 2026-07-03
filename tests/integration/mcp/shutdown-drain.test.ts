@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { type Config, ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
-import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
+import { createServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('workflows');

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import lockfile from 'proper-lockfile';
@@ -54,6 +54,42 @@ describe('SyncBuffer lock hardening', () => {
       expect(() => buffer.truncate()).toThrow();
     } finally {
       release();
+    }
+  });
+
+  it('reclaims a lock aged past the 2s stale that the old 10s default would have left held', () => {
+    // The fix is the `stale` value, so the test must exercise an age that
+    // falls between the two: a ~3s-old lock is reclaimable under the new
+    // 2000ms stale but would still be held under the old 10000ms default.
+    // Acquire, then backdate the lock dir's mtime to 3s ago.
+    const release = lockfile.lockSync(lockTarget, { stale: 2000, realpath: false });
+    const lockDir = `${lockTarget}.lock`;
+    const threeSecondsAgo = new Date(Date.now() - 3000);
+    utimesSync(lockDir, threeSecondsAgo, threeSecondsAgo);
+
+    try {
+      // Under the hardened 2s stale, the buffer judges the lock stale and
+      // reclaims it, so drain() SUCCEEDS. Under the old 10s default the
+      // lock would still be live and this would throw — that is the
+      // behavioural difference the fix introduces.
+      const buffer = new SyncBuffer(dir);
+      buffer.append(entry('T-1'));
+      expect(() => buffer.drain()).not.toThrow();
+
+      // Cross-check the pre-fix behaviour directly: a fresh acquire with
+      // the OLD 10s stale against the same 3s-aged lock is refused.
+      const stolen = lockfile.lockSync(lockTarget, { stale: 2000, realpath: false });
+      utimesSync(lockDir, threeSecondsAgo, threeSecondsAgo);
+      expect(() => lockfile.lockSync(lockTarget, { stale: 10_000, realpath: false })).toThrow();
+      stolen();
+    } finally {
+      // The original holder was already reclaimed; releasing it is a no-op
+      // guard in case drain() did not run.
+      try {
+        release();
+      } catch {
+        /* already reclaimed */
+      }
     }
   });
 
