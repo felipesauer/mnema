@@ -115,7 +115,10 @@ export class ConfigLoader {
     const file = this.findConfigFile(startDir);
     if (file === null) throw new ConfigNotFoundError();
 
-    const raw = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, unknown>;
+    const raw = readJsonFile(file, (cause) => new ConfigInvalidError(cause)) as Record<
+      string,
+      unknown
+    >;
 
     // Precedence, lowest to highest:
     //   user-level defaults  <  project config  <  per-repo local override
@@ -149,7 +152,7 @@ export class ConfigLoader {
   loadUserConfig(): UserConfig | null {
     const file = path.join(this.home(), USER_CONFIG_RELATIVE);
     if (!existsSync(file)) return null;
-    const raw: unknown = JSON.parse(readFileSync(file, 'utf-8'));
+    const raw = readJsonFile(file, (cause) => new UserConfigInvalidError(cause));
     const parsed = UserConfigSchema.safeParse(raw);
     if (!parsed.success) throw new UserConfigInvalidError(parsed.error.issues);
     return parsed.data;
@@ -168,7 +171,7 @@ export class ConfigLoader {
   loadLocalConfig(configFile: string): UserConfig | null {
     const file = path.join(path.dirname(configFile), 'config.local.json');
     if (!existsSync(file)) return null;
-    const raw: unknown = JSON.parse(readFileSync(file, 'utf-8'));
+    const raw = readJsonFile(file, (cause) => new LocalConfigInvalidError(cause));
     const parsed = UserConfigSchema.safeParse(raw);
     if (!parsed.success) throw new LocalConfigInvalidError(parsed.error.issues);
     return parsed.data;
@@ -181,6 +184,27 @@ const DEEP_MERGE_KEYS = ['sync', 'features', 'aging', 'github'] as const;
 /** True for a plain object (mergeable), false for arrays / null / scalars. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Reads a config file and parses it as JSON. A syntactically broken file
+ * would otherwise throw Node's raw `SyntaxError` before schema validation
+ * runs — a bare "Unexpected token" stack with no filename. Instead, the
+ * parse failure is rethrown as the caller's typed error (carrying the
+ * SyntaxError as its `issues`), so it renders as a clean, file-named line
+ * exactly like a schema failure does.
+ *
+ * @param file - Absolute path to the config file
+ * @param makeError - Builds the typed error for this config layer
+ * @returns The parsed JSON value
+ */
+function readJsonFile(file: string, makeError: (cause: unknown) => Error): unknown {
+  const raw = readFileSync(file, 'utf-8');
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    throw makeError(error);
+  }
 }
 
 /**

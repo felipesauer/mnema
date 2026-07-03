@@ -139,6 +139,25 @@ describe('ConfigLoader', () => {
       expect(() => loader.load(tempRoot)).not.toThrow();
     });
 
+    it('throws ConfigInvalidError (not a raw SyntaxError) on malformed JSON', () => {
+      // Write raw, syntactically broken JSON — not JSON.stringify.
+      const configPath = path.join(tempRoot, CONFIG_FILE_RELATIVE);
+      mkdirSync(path.dirname(configPath), { recursive: true });
+      writeFileSync(configPath, '{ "version": "1.0", broken json');
+
+      let caught: unknown;
+      try {
+        loader.load(tempRoot);
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(ConfigInvalidError);
+      expect(caught).not.toBeInstanceOf(SyntaxError);
+      // The SyntaxError is carried as the issues cause for diagnostics.
+      expect((caught as ConfigInvalidError).issues).toBeInstanceOf(SyntaxError);
+    });
+
     it('accepts the argv hook shape { command, args }', () => {
       writeConfig(tempRoot, {
         ...validConfig,
@@ -194,6 +213,22 @@ describe('ConfigLoader', () => {
 
       const config = scopedLoader.load(tempRoot);
       expect(config.enforcement_mode).toBe('blocking');
+    });
+
+    it('throws UserConfigInvalidError (not a raw SyntaxError) on malformed user JSON', () => {
+      writeConfig(tempRoot, validConfig);
+      const file = path.join(fakeHome, USER_CONFIG_RELATIVE);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, '{ not valid json ');
+
+      let caught: unknown;
+      try {
+        scopedLoader.load(tempRoot);
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(UserConfigInvalidError);
+      expect(caught).not.toBeInstanceOf(SyntaxError);
     });
 
     it('lets the project override the user default', () => {
