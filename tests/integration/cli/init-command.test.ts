@@ -7,6 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { _internal, InitCommand } from '@/cli/commands/init-command.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 
+/** Restores an env var to its prior value, or deletes it if it was unset. */
+function restoreEnv(key: string, prev: string | undefined): void {
+  if (prev === undefined) delete process.env[key];
+  else process.env[key] = prev;
+}
+
 describe('InitCommand.run (silent mode)', () => {
   let projectRoot: string;
 
@@ -38,6 +44,56 @@ describe('InitCommand.run (silent mode)', () => {
     expect((config.project as { name: string }).name).toBe('My App');
     expect(config.workflow).toBe('default');
     expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
+  });
+
+  it('reports identityConfigured=false when no actor is resolvable', () => {
+    const prevActor = process.env.MNEMA_ACTOR;
+    const prevHome = process.env.HOME;
+    const prevProfile = process.env.USERPROFILE;
+    // Isolate HOME so resolveDefaultActor cannot read the developer's real
+    // ~/.config/mnema/identity.json, and clear the env actor.
+    const fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-'));
+    process.env.MNEMA_ACTOR = '';
+    process.env.HOME = fakeHome;
+    process.env.USERPROFILE = fakeHome;
+    try {
+      const result = new InitCommand().run({
+        cwd: projectRoot,
+        name: 'No Id',
+        key: 'NOID',
+        workflow: 'default',
+        force: false,
+        minimal: false,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.identityConfigured).toBe(false);
+    } finally {
+      restoreEnv('MNEMA_ACTOR', prevActor);
+      restoreEnv('HOME', prevHome);
+      restoreEnv('USERPROFILE', prevProfile);
+      rmSync(fakeHome, { recursive: true, force: true });
+    }
+  });
+
+  it('reports identityConfigured=true when MNEMA_ACTOR is set', () => {
+    const prev = process.env.MNEMA_ACTOR;
+    process.env.MNEMA_ACTOR = 'alice';
+    try {
+      const result = new InitCommand().run({
+        cwd: projectRoot,
+        name: 'Has Id',
+        key: 'HASID',
+        workflow: 'default',
+        force: false,
+        minimal: false,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.identityConfigured).toBe(true);
+    } finally {
+      restoreEnv('MNEMA_ACTOR', prev);
+    }
   });
 
   it('the audit-only profile picks the lean workflow and disables knowledge', () => {

@@ -7,6 +7,7 @@ import {
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import { fromZodIssues } from '../errors/mnema-error.js';
+import { IdentityNotConfiguredError } from '../services/identity-service.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
 import { perfTrace } from '../utils/perf-trace.js';
@@ -86,6 +87,14 @@ export async function withCliContext(
   const context = openCliContext();
   try {
     await handler(context);
+  } catch (error) {
+    // A missing identity is a common first-run failure; route it through
+    // the structured printer (friendly hint + Usage exit) rather than
+    // letting a bare Error reach the global handler as a generic Internal.
+    if (error instanceof IdentityNotConfiguredError) {
+      process.exit(printError({ kind: ErrorCode.IdentityNotConfigured }));
+    }
+    throw error;
   } finally {
     context.container.close();
   }
@@ -116,6 +125,11 @@ export async function withMutatingCliContext(
       process.exit(code);
     }
     await handler(context);
+  } catch (error) {
+    if (error instanceof IdentityNotConfiguredError) {
+      process.exit(printError({ kind: ErrorCode.IdentityNotConfigured }));
+    }
+    throw error;
   } finally {
     context.container.close();
   }
