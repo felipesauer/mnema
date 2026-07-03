@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { screenRegexPattern } from './safe-regex.js';
+
 /**
  * Supported string formats for workflow gate fields.
  * Keep aligned with the format branch in `field-spec-to-zod.ts`.
@@ -90,7 +92,20 @@ const StringFieldSchema = FieldSpecBase.extend({
   min: z.number().int().nonnegative().optional(),
   max: z.number().int().positive().optional(),
   format: StringFormatEnum.optional(),
-  pattern: z.string().optional(),
+  // A `pattern` is compiled into a live RegExp and matched against
+  // agent/user payloads, so it is screened here — at load — for ReDoS
+  // safety. An unsafe pattern is rejected as a WorkflowInvalidError
+  // before any payload can be matched against it.
+  pattern: z
+    .string()
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined) return;
+      const rejection = screenRegexPattern(value);
+      if (rejection !== null) {
+        ctx.addIssue({ code: 'custom', message: rejection });
+      }
+    }),
   enum: z.array(z.string()).optional(),
 });
 
