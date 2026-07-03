@@ -253,18 +253,9 @@ export class DoctorCommand {
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
 
-    // Surface the active gate-enforcement mode so its effect is never a
-    // surprise. Always ok — it is informational, not a failure.
-    checks.push({
-      name: 'enforcement mode',
-      ok: true,
-      detail:
-        config.enforcement_mode === 'blocking'
-          ? 'blocking — a failed gate blocks everyone'
-          : config.enforcement_mode === 'strict'
-            ? 'strict — a failed gate blocks agents; humans may override'
-            : 'advisory — a failed gate only warns; anyone may override',
-    });
+    // Surface the active gate-enforcement mode; a weakened (advisory) mode
+    // is flagged as a warning rather than passing silently.
+    checks.push(...inspectEnforcementMode(config.enforcement_mode));
 
     // Domain-event hooks: surface how many commands are wired, and whether
     // the block is human-approved. An un-approved block is inert (it never
@@ -716,6 +707,33 @@ export { inspectAuditIntegrity };
  * that intentionally use those shapes (e.g. a state populated only by
  * external tooling). The doctor's exit code stays clean.
  */
+/**
+ * Reports the active gate-enforcement mode. `strict` (the default) and
+ * `blocking` sit at or above the safe baseline and pass. `advisory` is
+ * looser — a failed gate no longer blocks agents — so a repo (e.g. a
+ * clone) that ships it silently drops the protection that matters; it is
+ * flagged as a warning (visible, but not a hard failure — exit stays 0).
+ *
+ * @param mode - The effective `enforcement_mode` from the merged config
+ * @returns A single-element check list
+ */
+export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking'): DoctorCheck[] {
+  return [
+    {
+      name: 'enforcement mode',
+      ok: mode !== 'advisory',
+      severity: 'warning',
+      detail:
+        mode === 'blocking'
+          ? 'blocking — a failed gate blocks everyone'
+          : mode === 'strict'
+            ? 'strict — a failed gate blocks agents; humans may override'
+            : 'advisory — gate enforcement is off (a failed gate only warns); ' +
+              'set enforcement_mode to "strict" to restore it',
+    },
+  ];
+}
+
 export function inspectWorkflowShape(
   workflow: import('../../domain/state-machine/state-machine.js').Workflow,
 ): DoctorCheck[] {
