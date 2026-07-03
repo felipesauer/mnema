@@ -1,4 +1,24 @@
+import path from 'node:path';
+
 import { z } from 'zod';
+
+/**
+ * A path entry under `paths.*`. Every Mnema artefact directory is
+ * resolved relative to the project root, so an entry with a `..` segment
+ * or an absolute path could steer writes outside the project — a lever a
+ * cloned repo's config should not have. Reject both; a leading `./` and
+ * nested-but-contained relative paths stay valid.
+ *
+ * @param defaultValue - The default directory (already project-relative)
+ */
+function relativePathField(defaultValue: string) {
+  return z
+    .string()
+    .default(defaultValue)
+    .refine((p) => !path.isAbsolute(p) && !p.split(/[/\\]/).includes('..'), {
+      message: 'must be a project-relative path without ".." segments',
+    });
+}
 
 /**
  * A single domain-event hook: an argv pair spawned WITHOUT a shell.
@@ -68,15 +88,15 @@ export const ConfigSchema = z.object({
       // so `mnema init` does not pollute the project root with eight
       // top-level entries. Users who want a different layout (e.g.
       // visible `backlog/` for GitHub) override individual entries.
-      state: z.string().default('.mnema/state'),
-      audit: z.string().default('.mnema/audit'),
-      backlog: z.string().default('.mnema/backlog'),
-      sprints: z.string().default('.mnema/sprints'),
-      roadmap: z.string().default('.mnema/roadmap'),
-      memory: z.string().default('.mnema/memory'),
-      skills: z.string().default('.mnema/skills'),
-      commands: z.string().default('.mnema/commands'),
-      workflows: z.string().default('.mnema/workflows'),
+      state: relativePathField('.mnema/state'),
+      audit: relativePathField('.mnema/audit'),
+      backlog: relativePathField('.mnema/backlog'),
+      sprints: relativePathField('.mnema/sprints'),
+      roadmap: relativePathField('.mnema/roadmap'),
+      memory: relativePathField('.mnema/memory'),
+      skills: relativePathField('.mnema/skills'),
+      commands: relativePathField('.mnema/commands'),
+      workflows: relativePathField('.mnema/workflows'),
     })
     .prefault({}),
   workflow: z.string().default('default'),
