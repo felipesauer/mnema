@@ -196,7 +196,7 @@ export class AuditWriter {
     const secret = this.resolveSecret();
     // Set by the checkpoint below when a new head is signed; consumed after
     // the lock is released to kick off anchoring off the write path.
-    let signedHead: { coveredHeadHash: string } | null = null;
+    let signedHead: { hash: string; eventCount: number } | null = null;
     const release = this.acquireLock();
     try {
       this.state.withChainAdvance((currentHead) => {
@@ -228,7 +228,8 @@ export class AuditWriter {
       if (this.headCheckpoint !== null) {
         const { chainHeadHash, eventCount } = this.state.read();
         if (chainHeadHash !== null) {
-          signedHead = this.headCheckpoint.maybeSign(chainHeadHash, eventCount);
+          const sig = this.headCheckpoint.maybeSign(chainHeadHash, eventCount);
+          if (sig !== null) signedHead = { hash: sig.coveredHeadHash, eventCount };
         }
       }
     } finally {
@@ -237,10 +238,11 @@ export class AuditWriter {
 
     // Temporal anchoring runs OUTSIDE the write lock and is fire-and-forget:
     // when a new head was just signed, hand it to the scheduler, which
-    // records it pending and stamps asynchronously (fail-open). The write
-    // has already returned by the time any network I/O happens.
+    // records it pending and stamps asynchronously (fail-open) — but only
+    // once the configured anchor interval has elapsed. The write has already
+    // returned by the time any network I/O happens.
     if (signedHead !== null && this.anchorScheduler !== null) {
-      this.anchorScheduler.onSignedHead(signedHead.coveredHeadHash);
+      this.anchorScheduler.onSignedHead(signedHead.hash, signedHead.eventCount);
     }
   }
 
@@ -318,13 +320,15 @@ function monthKey(date: Date): string {
 }
 
 /**
- * Short synchronous backoff for the lock retry loop. The critical section
- * is sub-millisecond, so the total wait across attempts stays well under
- * a second; a spin is simpler than an async sleep on this sync path.
+ * Short synchronous backoff for the lock retry loop. The write path is
+ * synchronous, so this must block without an event-loop turn — but it must
+ * NOT busy-spin: a tight `while (Date.now() < end)` pins a full CPU core for
+ * the whole backoff and, under contention, starves the very process holding
+ * the lock (which needs the CPU to finish its sub-ms critical section and
+ * release). `Atomics.wait` on a private buffer blocks the thread for `ms`
+ * without burning CPU, staying fully synchronous. It always times out (the
+ * value never changes), so it is a pure sleep.
  */
 function sleepBriefly(ms: number): void {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    // tight loop — short by construction
-  }
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }

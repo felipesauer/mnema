@@ -2,6 +2,12 @@ import type { AnchorRepository } from '../../storage/sqlite/repositories/anchor-
 import type { AnchorProvider } from './anchor-provider.js';
 import { NONE_PROVIDER } from './none-anchor-provider.js';
 
+/** The anchor cadence: anchor after `events` new events OR `seconds`. */
+export interface AnchorInterval {
+  readonly events?: number;
+  readonly seconds?: number;
+}
+
 /**
  * Drives temporal anchoring OFF the write hot path (ADR-37 layer 3). When a
  * new head is signed, {@link onSignedHead} records the head as `pending` and
@@ -9,6 +15,11 @@ import { NONE_PROVIDER } from './none-anchor-provider.js';
  * it. FAIL-OPEN: if `stamp` throws or hangs, the write already succeeded and
  * the head stays `pending` for a later {@link retryPending}. Anchoring never
  * blocks or fails a write.
+ *
+ * Anchoring fires at the configured `audit.anchor.interval` — NOT on every
+ * signed head. A head is anchored when enough new events OR enough elapsed
+ * time have accrued since the last anchor. When the interval is empty the
+ * cadence follows the checkpoint (every signed head), the documented default.
  *
  * Inert for the `none` provider: `onSignedHead` returns immediately and
  * records nothing, so a local-first project pays nothing.
@@ -23,6 +34,8 @@ export class AnchorScheduler {
   constructor(
     private readonly anchors: AnchorRepository,
     private readonly provider: AnchorProvider,
+    private readonly interval: AnchorInterval = {},
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   /** True when anchoring is active (any provider other than `none`). */
@@ -31,14 +44,18 @@ export class AnchorScheduler {
   }
 
   /**
-   * Records `head` as pending and kicks off `stamp()` WITHOUT awaiting it.
-   * Returns synchronously so the write path is never held on the network.
-   * A `none` provider is a no-op.
+   * Records `head` as pending and kicks off `stamp()` WITHOUT awaiting it,
+   * BUT only when the configured anchor interval has elapsed since the last
+   * anchor — so anchoring honours `audit.anchor.interval`, not the checkpoint
+   * cadence. Returns synchronously so the write path is never held on the
+   * network. A `none` provider is a no-op.
    *
    * @param head - The freshly-signed chain-head hash (hex)
+   * @param eventCount - `event_count` from the audit-state mirror
    */
-  onSignedHead(head: string): void {
+  onSignedHead(head: string, eventCount: number): void {
     if (!this.enabled) return;
+    if (!this.shouldAnchor(eventCount)) return;
     // Record pending FIRST (synchronous, local) so a crash before stamp
     // settles still leaves a retry marker. Then stamp off the hot path.
     this.anchors.upsert({
@@ -46,8 +63,31 @@ export class AnchorScheduler {
       provider: this.provider.name,
       status: 'pending',
       receipt: null,
+      eventCountAt: eventCount,
     });
     this.spawnStamp(head);
+  }
+
+  /**
+   * True when a new anchor is due: none yet, OR enough new events / elapsed
+   * time since the last anchor for this provider. An empty interval means
+   * "every signed head" (the documented default cadence). Uses the most
+   * recent anchor for this provider as the baseline.
+   */
+  private shouldAnchor(eventCount: number): boolean {
+    const { events, seconds } = this.interval;
+    if (events === undefined && seconds === undefined) return true;
+    const last = this.anchors.latestForProvider(this.provider.name);
+    if (last === null) return true;
+    if (last.eventCountAt !== null && eventCount <= last.eventCountAt) return false;
+    if (events !== undefined && last.eventCountAt !== null) {
+      if (eventCount - last.eventCountAt >= events) return true;
+    }
+    if (seconds !== undefined) {
+      const elapsedMs = this.now().getTime() - new Date(last.createdAt).getTime();
+      if (elapsedMs >= seconds * 1000) return true;
+    }
+    return false;
   }
 
   /**

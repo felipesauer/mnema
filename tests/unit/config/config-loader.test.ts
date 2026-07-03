@@ -147,6 +147,22 @@ describe('ConfigLoader', () => {
         });
         expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
       });
+
+      it('rejects a non-https tsa url (file:// — local-file/SSRF vector)', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'rfc3161', tsa: 'file:///etc/passwd' } },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
+
+      it('rejects a plain-http tsa url (loopback/metadata SSRF vector)', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'rfc3161', tsa: 'http://169.254.169.254/' } },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
     });
 
     it('throws ConfigNotFoundError when no config exists', () => {

@@ -80,10 +80,12 @@ describe('AuditWriter crash ordering', () => {
     const chain = checks.find((c) => c.name === 'audit hash chain');
     const count = checks.find((c) => c.name === 'audit event count');
 
-    // The count is off by one (mirror ahead) — surfaced, but NOT as a
-    // hash-chain tamper. The two lines actually on disk verify cleanly.
+    // The count is off by one (mirror ahead) — surfaced as a WARNING (the
+    // recoverable crash window, ambiguous with a last-line truncation), not
+    // a hard error and not a silent pass.
     expect(count?.ok).toBe(false);
-    expect(count?.detail).toContain('2 chained events');
+    expect(count?.severity).toBe('warning');
+    expect(count?.detail).toMatch(/one event ahead|crash|truncat/i);
     // The chain hash check must NOT report a mismatch: the on-disk lines
     // are internally consistent; only the tail differs from the mirror's
     // head (the recoverable direction), never a "hash mismatch on a line".

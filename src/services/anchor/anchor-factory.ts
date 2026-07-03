@@ -51,5 +51,5 @@ export function buildAnchorScheduler(
 ): AnchorScheduler {
   const registry = buildAnchorRegistry(config, projectRoot);
   const provider = registry.resolve(config.audit.anchor.provider);
-  return new AnchorScheduler(anchors, provider);
+  return new AnchorScheduler(anchors, provider, config.audit.anchor.interval);
 }
