@@ -106,6 +106,21 @@ export const ConfigSchema = z.object({
   mode: z.literal('single').default('single'),
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
+  // Machine attestation (ADR-37 layer 2): the chain head is signed with the
+  // per-machine Ed25519 key at a checkpoint interval — NOT every event, to
+  // spare the write hot path and cold-start. A checkpoint fires when EITHER
+  // `events` new events have accrued since the last signature OR `seconds`
+  // have elapsed, whichever comes first.
+  audit: z
+    .object({
+      checkpoint: z
+        .object({
+          events: z.number().int().positive().default(100),
+          seconds: z.number().int().positive().default(3600),
+        })
+        .prefault({}),
+    })
+    .prefault({}),
   // `strict` holds agents to the workflow gate (a failed gate blocks an
   // agent mutation) while letting a human override — the default because
   // it preserves the protection that matters without locking humans out.
