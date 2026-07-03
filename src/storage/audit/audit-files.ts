@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -25,4 +25,33 @@ export function orderedAuditFiles(auditDir: string): string[] {
   const current = names.filter((n) => n === 'current.jsonl');
   const archived = names.filter((n) => n !== 'current.jsonl').sort();
   return [...archived, ...current].map((n) => path.join(auditDir, n));
+}
+
+/**
+ * A cheap content-change signature for the audit files: each file's
+ * `name:mtimeMs:size`, joined. Any mutation — an append, a rotation, or
+ * an in-place edit of a past line — changes an mtime (and usually the
+ * size), so the signature changes. This lets a caller cache an expensive
+ * derivation (e.g. the full hash-chain verification) and recompute only
+ * when the log actually changed, WITHOUT re-reading the file contents.
+ *
+ * Crucially it flips on an in-place edit that keeps the size identical
+ * (the tampering shape): mtime still advances. `stat` only — no read.
+ *
+ * @param auditDir - Directory holding the audit log files
+ * @returns A signature string (`""` when the dir is absent/empty)
+ */
+export function auditFilesSignature(auditDir: string): string {
+  if (!existsSync(auditDir)) return '';
+  return orderedAuditFiles(auditDir)
+    .map((file) => {
+      try {
+        const s = statSync(file);
+        return `${path.basename(file)}:${s.mtimeMs}:${s.size}`;
+      } catch {
+        // Raced away between listing and stat — treat as a change.
+        return `${path.basename(file)}:gone`;
+      }
+    })
+    .join('|');
 }
