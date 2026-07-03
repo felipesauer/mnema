@@ -88,6 +88,67 @@ describe('ConfigLoader', () => {
       expect(config.features.fts_search).toBe(true);
     });
 
+    describe('audit.anchor (layer 3)', () => {
+      it('defaults the anchor provider to none', () => {
+        writeConfig(tempRoot, validConfig);
+        const config = loader.load(tempRoot);
+        expect(config.audit.anchor.provider).toBe('none');
+      });
+
+      it('is backward-compatible: a config with no audit.anchor still loads', () => {
+        // validConfig has no `audit` block at all.
+        writeConfig(tempRoot, validConfig);
+        expect(() => loader.load(tempRoot)).not.toThrow();
+      });
+
+      it('parses a valid opentimestamps config', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'opentimestamps', interval: { seconds: 86400 } } },
+        });
+        const config = loader.load(tempRoot);
+        expect(config.audit.anchor.provider).toBe('opentimestamps');
+        expect(config.audit.anchor.interval.seconds).toBe(86400);
+      });
+
+      it('parses a valid git-signed config with remote and ref', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: {
+            anchor: { provider: 'git-signed', remote: 'origin', ref: 'refs/mnema/anchors' },
+          },
+        });
+        const config = loader.load(tempRoot);
+        expect(config.audit.anchor.provider).toBe('git-signed');
+        expect(config.audit.anchor.remote).toBe('origin');
+      });
+
+      it('parses a valid rfc3161 config with a tsa url', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'rfc3161', tsa: 'https://tsa.example.com' } },
+        });
+        const config = loader.load(tempRoot);
+        expect(config.audit.anchor.tsa).toBe('https://tsa.example.com');
+      });
+
+      it('rejects rfc3161 without a tsa url', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'rfc3161' } },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
+
+      it('rejects an unknown provider', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: { anchor: { provider: 'blockchain-magic' } },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
+    });
+
     it('throws ConfigNotFoundError when no config exists', () => {
       const isolated = mkdtempSync(path.join(tmpdir(), 'mnema-notfound-'));
       try {
