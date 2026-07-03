@@ -1,13 +1,20 @@
 import type { Command } from 'commander';
+import { printError } from '../../errors/error-printer.js';
 import { pc } from '../../utils/colors.js';
 
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { collectRepeatable } from '../option-helpers.js';
 
 interface ListOptions {
   readonly topic?: string;
   readonly task?: string;
   readonly since?: string;
   readonly limit?: string;
+}
+
+interface RecordOptions {
+  readonly topic?: readonly string[];
+  readonly task?: string;
 }
 
 /**
@@ -24,7 +31,30 @@ export class ObservationCommand {
    * @param program - Root Commander program
    */
   register(program: Command): void {
-    const group = program.command('observation').description('Read agent-recorded observations');
+    const group = program.command('observation').description('Record and read observations');
+
+    group
+      .command('record <content>')
+      .description('Record an observation (a note-to-future-self, newest-first log)')
+      .option('--topic <topic>', 'Topic tag (repeatable)', collectRepeatable, [])
+      .option('--task <key>', 'Relate to a task by key')
+      .action(async (content: string, options: RecordOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.observation.record({
+            content,
+            topics: options.topic,
+            relatedTaskKey: options.task,
+            actor: container.identity.getDefaultActor(),
+            via: 'cli',
+          });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const o = result.value;
+          const topics = o.topics.length > 0 ? ` [${o.topics.join(', ')}]` : '';
+          process.stdout.write(`${pc.green('✓')} observation recorded${pc.dim(topics)}\n`);
+        });
+      });
 
     group
       .command('list')

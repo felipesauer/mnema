@@ -6,7 +6,8 @@ import { printError } from '../../errors/error-printer.js';
 import { listAvailableToolNames } from '../../mcp/tool-registry.js';
 import { SkillService } from '../../services/skill-service.js';
 import { pc } from '../../utils/colors.js';
-import { withCliContext } from '../cli-context.js';
+import { withCliContext, withMutatingCliContext } from '../cli-context.js';
+import { collectRepeatable } from '../option-helpers.js';
 
 interface LintOptions {
   readonly json?: boolean;
@@ -14,6 +15,16 @@ interface LintOptions {
 
 interface ShowOptions {
   readonly version?: string;
+}
+
+interface RecordOptions {
+  readonly name: string;
+  readonly description: string;
+  readonly content: string;
+  readonly tool?: readonly string[];
+  readonly invocable?: boolean;
+  readonly dynamicContext?: readonly string[];
+  readonly newVersion?: boolean;
 }
 
 /**
@@ -62,6 +73,41 @@ export class SkillCommand {
           if (report.errorCount > 0) {
             process.exit(ExitCode.State);
           }
+        });
+      });
+
+    group
+      .command('record <slug>')
+      .description('Record (or update/bump) a skill by slug')
+      .requiredOption('--name <name>', 'Short human-readable name')
+      .requiredOption('--description <text>', 'One-line description')
+      .requiredOption('--content <markdown>', 'Skill body — steps, examples, gotchas')
+      .option('--tool <name>', 'MCP tool this skill relies on (repeatable)', collectRepeatable, [])
+      .option('--invocable', 'Mark the skill as invocable (meant to be run), not just read')
+      .option(
+        '--dynamic-context <command>',
+        'Command whose output is embedded when shown (repeatable; only `mnema …`)',
+        collectRepeatable,
+        [],
+      )
+      .option('--new-version', 'Bump a new version instead of overwriting the latest in place')
+      .action(async (slug: string, options: RecordOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const { skill, action } = container.skill.record({
+            slug,
+            name: options.name,
+            description: options.description,
+            content: options.content,
+            toolsUsed: options.tool,
+            invocable: options.invocable,
+            dynamicContext: options.dynamicContext,
+            mode: options.newVersion === true ? 'new_version' : 'update',
+            actor: container.identity.getDefaultActor(),
+            via: 'cli',
+          });
+          process.stdout.write(
+            `${pc.green('✓')} ${action} ${pc.bold(skill.slug)} ${pc.dim(`v${skill.version}`)}\n`,
+          );
         });
       });
 
