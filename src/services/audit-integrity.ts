@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { hashEvent } from '../storage/audit/audit-hash.js';
+import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 
 /**
@@ -117,8 +118,7 @@ export function inspectAuditIntegrity(adapter: SqliteAdapter, auditDir: string):
         chainedLines += 1;
         const hash = typeof event.hash === 'string' ? event.hash : null;
         const prev = (event.prev_hash ?? null) as string | null;
-        const { hash: _h, ...rest } = event;
-        const recomputed = createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+        const recomputed = hashEvent(event as unknown as AuditEvent);
         if (hash !== recomputed) {
           chainBroken = true;
           chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;

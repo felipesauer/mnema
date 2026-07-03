@@ -1,8 +1,8 @@
-import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
+import { hashEvent } from './audit-hash.js';
 
 /**
  * Append-only event written to the audit log.
@@ -151,19 +151,4 @@ export class AuditWriter {
 
 function monthKey(date: Date): string {
   return date.toISOString().slice(0, 7);
-}
-
-/**
- * Computes the SHA-256 hash of an event with the `hash` field
- * omitted. The same canonicalisation is used by writer (to fill in
- * `hash`) and by doctor (to verify the chain), so any change here
- * must be applied in both spots.
- *
- * @param event - Event in its pre-sealed form (no `hash` field)
- * @returns Hex-encoded SHA-256 digest
- */
-export function hashEvent(event: AuditEvent): string {
-  const { hash: _omit, ...rest } = event;
-  const payload = JSON.stringify(rest);
-  return createHash('sha256').update(payload).digest('hex');
 }
