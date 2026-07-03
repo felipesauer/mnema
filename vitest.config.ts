@@ -10,6 +10,10 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
+    // Redirect $HOME to a per-process sandbox so anything resolving the
+    // user-level dir (~/.config/mnema: project HMAC secret, hook
+    // approvals, identity) never touches the developer's real home.
+    setupFiles: ['tests/setup/isolate-home.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

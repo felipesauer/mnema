@@ -101,7 +101,7 @@ export async function createDashboardServer(
   const integrityCache = new CachedAuditIntegrity(
     container.adapter,
     auditDir,
-    new ProjectSecretService(projectRoot, config.project.key).read(),
+    new ProjectSecretService(projectRoot, config.project.key),
   );
 
   /** Composes a fresh snapshot for a request. */

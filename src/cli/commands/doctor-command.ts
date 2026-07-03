@@ -330,13 +330,16 @@ export class DoctorCommand {
               backlogDir: path.join(projectRoot, config.paths.backlog),
             }),
           );
+          // read() not getOrCreate(): doctor verifies, it never mints a
+          // secret. A clone without it → v3 lines report 'unverifiable';
+          // the committed fingerprint still forces v3 (downgrade detection).
+          const doctorSecret = new ProjectSecretService(projectRoot, config.project.key);
           checks.push(
             ...inspectAuditIntegrity(
               adapter,
               path.join(projectRoot, config.paths.audit),
-              // read() not getOrCreate(): doctor verifies, it never mints a
-              // secret. A clone without it → v3 lines report 'unverifiable'.
-              new ProjectSecretService(projectRoot, config.project.key).read(),
+              doctorSecret.read(),
+              doctorSecret.readFingerprint() !== null,
             ),
           );
           checks.push(...inspectOrphanRuns(adapter, config.aging.orphan_run_after_hours));

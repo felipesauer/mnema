@@ -14,6 +14,15 @@ import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 export type IntegrityCheckSeverity = 'error' | 'warning';
 
 /**
+ * Minimal structural view of the project-secret service the cache reads,
+ * kept local so audit-integrity does not depend on the concrete class.
+ */
+export interface SecretSource {
+  read(): Buffer | null;
+  readFingerprint(): string | null;
+}
+
+/**
  * One verdict line produced by an integrity inspection. Shared between
  * `mnema doctor` (which renders it as a checklist row) and the
  * `audit_verify` MCP tool (which returns it as structured JSON).
@@ -51,12 +60,18 @@ export interface IntegrityCheck {
  *   omitted, v3 lines are not hash-verified (their authenticity is
  *   unverifiable without the secret) but their `prev_hash` continuity is
  *   still checked; a v2-only log is unaffected.
+ * @param hasFingerprint - Whether the project has a committed HMAC
+ *   fingerprint. When true the project has adopted v3, so an all-v2 chain
+ *   is a total downgrade and is reported as tampering. Independent of
+ *   `secret`: a clone without the secret still has the (committed)
+ *   fingerprint, so it still detects a wholesale downgrade.
  * @returns Audit-integrity checks
  */
 export function inspectAuditIntegrity(
   adapter: SqliteAdapter,
   auditDir: string,
   secret: Buffer | null = null,
+  hasFingerprint = false,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -98,6 +113,10 @@ export function inspectAuditIntegrity(
   let legacyLines = 0;
   let malformedLines = 0;
   let v3Unverifiable = 0;
+  let anyV3 = false;
+  // Highest chain version seen so far, to enforce monotonicity (the chain
+  // may migrate v2→v3 but must never regress v3→v2).
+  let maxVersionSeen = 0;
   let chainBroken = false;
   let chainBreakDetail = '';
   let lastHash: string | null = null;
@@ -126,6 +145,17 @@ export function inspectAuditIntegrity(
       if (v >= 2) {
         chainEverStarted = true;
         chainedLines += 1;
+        if (v >= 3) anyV3 = true;
+        // Version monotonicity: the chain version must never DECREASE. A
+        // v2 line after a v3 line is a downgrade — an attacker rewriting a
+        // v3 (HMAC) line as v2 (keyless SHA-256), which they can recompute
+        // without the secret, to strip authenticity. Legitimate migration
+        // only ever goes v2→v3, so a decrease is always tampering.
+        if (v < maxVersionSeen) {
+          chainBroken = true;
+          chainBreakDetail = `version downgrade to v${v} on a line in ${path.basename(file)} (a v${maxVersionSeen} line preceded it) — the chain cannot regress`;
+        }
+        maxVersionSeen = Math.max(maxVersionSeen, v);
         const hash = typeof event.hash === 'string' ? event.hash : null;
         const prev = (event.prev_hash ?? null) as string | null;
         // Dispatch by version: v3 is HMAC-keyed (needs the secret), v2 is
@@ -163,6 +193,19 @@ export function inspectAuditIntegrity(
         prevHash = null;
       }
     }
+  }
+
+  // Fingerprint implies v3: a committed HMAC fingerprint means the project
+  // adopted keyed events, so a chain with chained lines but NO v3 line is a
+  // total downgrade — every v3 line rewritten to keyless v2. (Version
+  // monotonicity above catches a partial downgrade; this catches a
+  // wholesale one, where nothing remains as v3 to violate monotonicity.)
+  // The fingerprint is committed under versioned .mnema/keys, so removing
+  // it to evade this shows up in `git status`.
+  if (hasFingerprint && chainedLines > 0 && !anyV3) {
+    chainBroken = true;
+    chainBreakDetail =
+      'chain is entirely v2 but the project has a committed HMAC fingerprint — a wholesale v3→v2 downgrade (keyed events were stripped)';
   }
 
   // No new-format lines anywhere: the project predates the integrity
@@ -260,24 +303,36 @@ export class CachedAuditIntegrity {
   private signature: string | null = null;
   private cached: IntegrityCheck[] | null = null;
 
+  /**
+   * @param adapter - Open SQLite adapter
+   * @param auditDir - Absolute path to `.mnema/audit/`
+   * @param secrets - Per-project secret source, resolved at each `get()`
+   *   (not construction) so importing the secret during the dashboard's
+   *   lifetime takes effect. `null` for a secret-less setup.
+   */
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
-    private readonly secret: Buffer | null = null,
+    private readonly secrets: SecretSource | null = null,
   ) {}
 
   /**
    * Returns the integrity checks, recomputing only when the audit files
-   * changed since the last call.
+   * OR the secret-presence changed since the last call.
    *
    * @returns The (possibly cached) integrity checks
    */
   get(): IntegrityCheck[] {
-    const signature = auditFilesSignature(this.auditDir);
+    const secret = this.secrets?.read() ?? null;
+    const hasFingerprint = this.secrets?.readFingerprint() != null;
+    // Fold secret-presence into the cache key: importing the secret
+    // changes ~/.config (not the audit files), so it would not move the
+    // file signature — but it must invalidate a prior "unverifiable".
+    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}`;
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
-    const checks = inspectAuditIntegrity(this.adapter, this.auditDir, this.secret);
+    const checks = inspectAuditIntegrity(this.adapter, this.auditDir, secret, hasFingerprint);
     this.signature = signature;
     this.cached = checks;
     return checks;

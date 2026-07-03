@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
+import { ProjectSecretService } from '@/services/project-secret.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -134,6 +135,31 @@ describe('audit_verify MCP tool', () => {
     // The chain check should have actually run (not the legacy/dormant path).
     const chain = payload.checks.find((c) => c.name === 'audit hash chain');
     expect(chain?.ok).toBe(true);
+  });
+
+  it('warns (not tampers) when the project secret is absent, through the wired tool', async () => {
+    // Write a v3 chain, then remove the secret (as a clone that never
+    // imported it would be) while leaving the committed fingerprint. The
+    // WIRED audit_verify must then report authenticity unverifiable — a
+    // warning — with the chain still consistent, resolving the secret at
+    // call time (not construction). This exercises the production path,
+    // not inspectAuditIntegrity called directly.
+    await recordSomeHistory(harness.client);
+    const secrets = new ProjectSecretService(harness.projectRoot, 'TEST');
+    rmSync(secrets.secretPath(), { force: true });
+
+    const result = (await harness.client.callTool({
+      name: 'audit_verify',
+      arguments: {},
+    })) as CallToolResult;
+    const payload = parsePayload(result) as unknown as VerifyPayload;
+
+    // Authenticity is a warning, chain consistency still holds, not intact.
+    const auth = payload.checks.find((c) => c.name === 'audit authenticity');
+    expect(auth?.ok).toBe(false);
+    expect(auth?.severity).toBe('warning');
+    expect(payload.checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
+    expect(payload.intact).toBe(false); // the unverifiable warning makes it not-intact
   });
 
   it('reports intact=false and flags the broken link for a tampered chain', async () => {
