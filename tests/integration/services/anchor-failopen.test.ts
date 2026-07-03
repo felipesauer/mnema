@@ -75,7 +75,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
     const scheduler = new AnchorScheduler(anchors, provider);
     // onSignedHead must NOT block on the hung stamp — it returns at once,
     // and the head is already recorded pending for a later retry.
-    scheduler.onSignedHead(head);
+    scheduler.onSignedHead(head, 1);
     expect(anchors.read(head, 'controllable')?.status).toBe('pending');
     expect(provider.calls).toBe(1); // stamp was kicked off, not awaited
   });
@@ -83,7 +83,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
   it('leaves the anchor pending when stamp() throws (fail-open)', async () => {
     provider.setMode('throw');
     const scheduler = new AnchorScheduler(anchors, provider);
-    scheduler.onSignedHead(head);
+    scheduler.onSignedHead(head, 1);
     await scheduler.settle(); // let the failing stamp settle
     // The failure never surfaced; the anchor is still pending for retry.
     expect(anchors.read(head, 'controllable')?.status).toBe('pending');
@@ -92,7 +92,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
   it('marks the anchor anchored once stamp() succeeds', async () => {
     provider.setMode('resolve');
     const scheduler = new AnchorScheduler(anchors, provider);
-    scheduler.onSignedHead(head);
+    scheduler.onSignedHead(head, 1);
     await scheduler.settle();
     const rec = anchors.read(head, 'controllable');
     expect(rec?.status).toBe('anchored');
@@ -103,7 +103,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
   it('a successful retry clears a pending anchor', async () => {
     provider.setMode('throw');
     const scheduler = new AnchorScheduler(anchors, provider);
-    scheduler.onSignedHead(head);
+    scheduler.onSignedHead(head, 1);
     await scheduler.settle();
     expect(anchors.read(head, 'controllable')?.status).toBe('pending');
 
@@ -116,7 +116,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
 
   it('is inert for the none provider (records nothing, no stamp)', () => {
     const scheduler = new AnchorScheduler(anchors, new NoneAnchorProvider());
-    scheduler.onSignedHead(head);
+    scheduler.onSignedHead(head, 1);
     scheduler.retryPending();
     expect(anchors.read(head, 'none')).toBeNull();
     expect(anchors.listAll()).toHaveLength(0);
@@ -136,8 +136,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
     // reading audit_state after the write (the checkpoint signs at interval 1).
     const checkpoint = new HeadCheckpointService(
       new AuditHeadSignatureRepository(adapter),
-      machineKey,
-      'felipesauer',
+      () => ({ machineKey, actor: 'felipesauer' }),
       { events: 1, seconds: 100_000 },
     );
     const scheduler = new AnchorScheduler(anchors, provider);

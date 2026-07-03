@@ -236,10 +236,14 @@ describe('inspectAuditIntegrity', () => {
       const projectRoot = tempRoot; // .audit lives under tempRoot here
       const signatures = new AuditHeadSignatureRepository(adapter);
       const machineKey = new MachineKeyService(projectRoot, 'felipesauer', userDir);
-      const checkpoint = new HeadCheckpointService(signatures, machineKey, 'felipesauer', {
-        events: 1,
-        seconds: 100_000,
-      });
+      const checkpoint = new HeadCheckpointService(
+        signatures,
+        () => ({ machineKey, actor: 'felipesauer' }),
+        {
+          events: 1,
+          seconds: 100_000,
+        },
+      );
       // A writer that signs every event (checkpoint interval = 1).
       const signedAudit = new AuditService(
         new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),

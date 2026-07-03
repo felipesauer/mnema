@@ -13,6 +13,12 @@ export interface CheckpointInterval {
   readonly seconds: number;
 }
 
+/** A resolved signer: the machine key plus the actor handle it belongs to. */
+export interface CheckpointSigner {
+  readonly machineKey: MachineKeyService;
+  readonly actor: string;
+}
+
 /**
  * Signs the audit chain head with the per-machine Ed25519 key at a
  * checkpoint interval (ADR-37 layer 2), OFF the per-event hot path. The
@@ -21,6 +27,13 @@ export interface CheckpointInterval {
  * wall-clock — since the last recorded checkpoint. Between checkpoints the
  * call is a cheap read-and-compare with no signing.
  *
+ * The signer is resolved LAZILY, per checkpoint, via `resolveSigner` — so a
+ * long-lived process (e.g. an MCP server) that boots before an identity is
+ * configured starts attesting as soon as the identity appears, instead of
+ * being frozen key-less for the whole session. `resolveSigner` returns
+ * `null` while no identity is configured; the checkpoint is simply skipped
+ * and retried on the next write.
+ *
  * Kept separate from the writer so the "how often" policy and the crypto
  * live in one testable place, and so the writer stays free of the machine
  * key + signature repository.
@@ -28,8 +41,7 @@ export interface CheckpointInterval {
 export class HeadCheckpointService {
   constructor(
     private readonly signatures: AuditHeadSignatureRepository,
-    private readonly machineKey: MachineKeyService,
-    private readonly actor: string,
+    private readonly resolveSigner: () => CheckpointSigner | null,
     private readonly interval: CheckpointInterval,
     private readonly now: () => Date = () => new Date(),
   ) {}
@@ -38,7 +50,8 @@ export class HeadCheckpointService {
    * Signs `headHash` and records the checkpoint when the interval has
    * elapsed since the last signature; otherwise does nothing. Idempotent
    * across a no-op call (a checkpoint with no new events never re-signs the
-   * same head).
+   * same head). Resolves the signer lazily; when no identity is configured
+   * yet it skips signing (and retries next write).
    *
    * @param headHash - The current `chain_head_hash` (hex)
    * @param eventCount - `event_count` from the audit-state mirror
@@ -46,13 +59,15 @@ export class HeadCheckpointService {
    */
   maybeSign(headHash: string, eventCount: number): HeadSignature | null {
     if (!this.shouldSign(eventCount)) return null;
+    const signer = this.resolveSigner();
+    if (signer === null) return null; // no identity yet — retry next write
 
-    const { fingerprint } = this.machineKey.getOrCreate();
-    const signature = this.machineKey.sign(Buffer.from(headHash, 'hex')).toString('base64');
+    const { fingerprint } = signer.machineKey.getOrCreate();
+    const signature = signer.machineKey.sign(Buffer.from(headHash, 'hex')).toString('base64');
     const record: HeadSignature = {
       coveredHeadHash: headHash,
       eventCountAt: eventCount,
-      signerActor: this.actor,
+      signerActor: signer.actor,
       signerFingerprint: fingerprint,
       signature,
       signedAt: this.now().toISOString(),
@@ -100,18 +115,25 @@ export function createAttestationSource(
   return {
     readHeadSignature: () => signatures.read(),
     verifyHeadSignature: (sig) => {
-      // Resolve the signer's committed .pub by (actor, fingerprint). The
-      // MachineKeyService instance is only used for its pure path helper, so
-      // the actor it is constructed with is the signer's, not "ours".
-      const keyService = new MachineKeyService(projectRoot, sig.signerActor);
-      const pubPath = keyService.publicKeyPathFor(sig.signerFingerprint);
-      if (!existsSync(pubPath)) return null;
-      const record = MachineKeyService.parsePublicKey(readFileSync(pubPath, 'utf-8'));
-      return MachineKeyService.verify(
-        Buffer.from(sig.coveredHeadHash, 'hex'),
-        Buffer.from(sig.signature, 'base64'),
-        record.publicKey,
-      );
+      // Everything here runs on attacker-influenceable data from the
+      // (untracked) SQLite signature row and the committed `.pub`: the actor
+      // handle (a bad one makes the MachineKeyService constructor throw), and
+      // the `.pub` contents (a corrupt/truncated record makes parsePublicKey
+      // throw). Neither is a tamper verdict — treat any such failure as
+      // "cannot attest" (null), never a crash and never a false `broken`.
+      try {
+        const keyService = new MachineKeyService(projectRoot, sig.signerActor);
+        const pubPath = keyService.publicKeyPathFor(sig.signerFingerprint);
+        if (!existsSync(pubPath)) return null;
+        const record = MachineKeyService.parsePublicKey(readFileSync(pubPath, 'utf-8'));
+        return MachineKeyService.verify(
+          Buffer.from(sig.coveredHeadHash, 'hex'),
+          Buffer.from(sig.signature, 'base64'),
+          record.publicKey,
+        );
+      } catch {
+        return null;
+      }
     },
   };
 }
