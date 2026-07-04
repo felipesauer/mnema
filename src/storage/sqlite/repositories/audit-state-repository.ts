@@ -137,6 +137,21 @@ export class AuditStateRepository {
    * (mirror behind disk, ahead by more than one) is left untouched for the
    * verifier to report as tampering — this method never masks those.
    *
+   * SECURITY NOTE — the one-ahead shape is byte-for-byte indistinguishable
+   * from a truncation of the last line: both leave the mirror one ahead with
+   * a self-consistent disk tail. Rewinding is therefore correct for a crash
+   * but, on its own, would silently accept a truncation of the most recent
+   * (as-yet-unsigned) event. This is bounded, not unbounded:
+   *   - A truncation that removes any event AT OR BELOW the last signed
+   *     checkpoint is caught by the attestation layer (a durable signature
+   *     covers a higher event_count than the chain now holds → hard error;
+   *     see `attestationCheck`). The attacker cannot lower that signature
+   *     without the machine key.
+   *   - Only events written AFTER the last checkpoint (not yet signed) can be
+   *     truncated undetectably, and closing THAT would require signing every
+   *     event — which ADR-37 rejects to keep the write hot path cheap. The
+   *     checkpoint interval is the knob that bounds this window.
+   *
    * @param diskCount - Chained (v>=2) lines actually present on disk
    * @param diskTailHash - `hash` of the last chained line on disk, or `null`
    *   when the disk chain is empty

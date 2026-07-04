@@ -28,6 +28,8 @@ export interface HeadSignatureView {
   readonly signerActor: string;
   readonly signerFingerprint: string;
   readonly signature: string;
+  /** `event_count` the signature was made at — the attested high-water mark. */
+  readonly eventCountAt: number;
 }
 
 /**
@@ -360,7 +362,7 @@ export function inspectAuditIntegrity(
   // — it attests WHICH machine advanced the head. Only meaningful once the
   // chain has started, so it is skipped for a legacy/empty log above.
   if (attestation !== null) {
-    checks.push(attestationCheck(attestation, stateRow.chain_head_hash));
+    checks.push(attestationCheck(attestation, stateRow.chain_head_hash, stateRow.event_count));
   }
 
   if (malformedLines > 0) {
@@ -391,6 +393,7 @@ export function inspectAuditIntegrity(
 function attestationCheck(
   attestation: AttestationSource,
   currentHead: string | null,
+  currentEventCount: number,
 ): IntegrityCheck {
   const sig = attestation.readHeadSignature();
   if (sig === null) {
@@ -416,6 +419,23 @@ function attestationCheck(
       name: 'audit machine attestation',
       ok: false,
       detail: `head signature by ${sig.signerActor} does not verify — the head or the signature was tampered`,
+      severity: 'error',
+    };
+  }
+
+  // Rollback / truncation detection. A valid signature is durable, signed
+  // evidence that the chain once reached `eventCountAt`. If the current chain
+  // is SHORTER than a signed checkpoint, the log retreated below an attested
+  // high-water mark — a truncation (or a rollback), which the count/hash
+  // checks alone cannot tell from a benign crash (and which boot
+  // reconciliation would otherwise launder to green). The attacker cannot
+  // forge or lower the signature without the machine key, so this is a hard
+  // tamper signal.
+  if (currentEventCount < sig.eventCountAt) {
+    return {
+      name: 'audit machine attestation',
+      ok: false,
+      detail: `chain retreated below a signed checkpoint: a valid signature by ${sig.signerActor} covers event ${sig.eventCountAt}, but the chain now holds only ${currentEventCount} — the log was truncated/rolled back below attested history`,
       severity: 'error',
     };
   }

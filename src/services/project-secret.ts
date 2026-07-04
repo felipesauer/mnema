@@ -1,5 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 
 import { userKnowledgeDir } from './user-knowledge.js';
@@ -116,8 +124,15 @@ export class ProjectSecretService {
     // a shared host. Created 0600 atomically; chmod is belt-and-braces.
     const tmp = `${file}.${randomBytes(8).toString('hex')}.tmp`;
     writeFileSync(tmp, secret, { mode: 0o600, flag: 'wx' });
-    chmodSync(tmp, 0o600);
-    renameSync(tmp, file);
+    try {
+      chmodSync(tmp, 0o600);
+      renameSync(tmp, file);
+    } catch (error) {
+      // A failure after the tmp was created (chmod/rename) would orphan it —
+      // remove it so no stray secret file lingers.
+      if (existsSync(tmp)) unlinkSync(tmp);
+      throw error;
+    }
   }
 
   private writeFingerprint(secret: Buffer): void {
