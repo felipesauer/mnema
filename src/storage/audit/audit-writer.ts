@@ -2,6 +2,7 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   renameSync,
   statSync,
   writeFileSync,
@@ -13,6 +14,7 @@ import lockfile from 'proper-lockfile';
 import type { AnchorScheduler } from '../../services/anchor/anchor-scheduler.js';
 import type { HeadCheckpointService } from '../../services/head-checkpoint.js';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
+import { orderedAuditFiles } from './audit-files.js';
 import { hashEvent, hmacEvent } from './audit-hash.js';
 
 /**
@@ -145,12 +147,56 @@ export class AuditWriter {
       const release = this.acquireLock();
       try {
         this.checkRotation();
+        // Recover from a crash in the commit→append window: if the mirror is
+        // one event ahead of the on-disk tail (a committed head whose line
+        // never landed), rewind it to the real tail so the next write chains
+        // from a line that exists — otherwise it would fork the chain onto a
+        // phantom head. Done under the same boot lock as rotation.
+        this.reconcileMirror();
       } finally {
         release();
       }
     } else {
       this.checkRotation();
     }
+  }
+
+  /**
+   * Rewinds the SQLite mirror to the real on-disk chain tail when a crash
+   * left it exactly one event ahead. Delegates the exact-shape check + rewind
+   * to the repository, which only acts on the recoverable one-ahead case; a
+   * genuine truncation is separately caught by the attestation layer
+   * (a signed checkpoint above the rewound count is flagged as a rollback).
+   *
+   * The FULL chain is counted (all rotated segments + current), not just
+   * `current.jsonl`: the mirror's `event_count` is the project-wide total, so
+   * the one-ahead comparison needs the total. The tail hash/at always come
+   * from the last chained line (the crash only ever drops the current tail).
+   * This is one boot-time scan, under the write lock — the same cost `doctor`
+   * already pays, run once per process start.
+   */
+  private reconcileMirror(): void {
+    if (this.state === null) return;
+    let count = 0;
+    let tailHash: string | null = null;
+    let tailAt: string | null = null;
+    for (const file of orderedAuditFiles(this.auditDir)) {
+      for (const line of readFileSync(file, 'utf-8').split('\n')) {
+        if (line.length === 0) continue;
+        let event: { v?: number; hash?: unknown; at?: unknown };
+        try {
+          event = JSON.parse(line);
+        } catch {
+          continue; // malformed line: not a chained event
+        }
+        if (typeof event.v === 'number' && event.v >= 2) {
+          count += 1;
+          tailHash = typeof event.hash === 'string' ? event.hash : null;
+          tailAt = typeof event.at === 'string' ? event.at : null;
+        }
+      }
+    }
+    this.state.reconcileToDisk(count, tailHash, tailAt);
   }
 
   /**

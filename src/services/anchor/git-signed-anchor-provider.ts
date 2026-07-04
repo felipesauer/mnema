@@ -146,6 +146,38 @@ export class GitSignedAnchorProvider implements AnchorProvider {
     if (subject.stdout.trim() !== `${ANCHOR_SUBJECT}${head}`) {
       return { state: 'broken', detail: 'anchor commit does not cover this head' };
     }
+    // The tree must be the empty tree. `stamp` always commits over the empty
+    // tree; a commit carrying arbitrary content with the right subject is not
+    // a genuine anchor (an attacker could smuggle a normal signed commit in).
+    const emptyTree = this.git('hash-object', '-t', 'tree', '/dev/null');
+    const tree = this.git('log', '-1', '--format=%T', sha);
+    if (
+      emptyTree.status !== 0 ||
+      tree.status !== 0 ||
+      tree.stdout.trim() !== emptyTree.stdout.trim()
+    ) {
+      return { state: 'broken', detail: 'anchor commit does not have the expected empty tree' };
+    }
+    // The commit must be REACHABLE from the anchor ref. `verify()` otherwise
+    // accepts any object that merely exists in the object DB (a dangling or
+    // planted commit). Reachability ties the receipt to the ref that `stamp`
+    // advanced, so a signed-but-unanchored commit is rejected. If the ref is
+    // absent (e.g. verifying a clone that never fetched it) this is
+    // cannot-verify, not broken.
+    const refExists = this.git('rev-parse', '--verify', '--quiet', this.ref);
+    if (refExists.status !== 0 || refExists.stdout.trim().length === 0) {
+      return {
+        state: 'cannot-verify',
+        detail: `anchor ref ${this.ref} not present here — cannot confirm reachability`,
+      };
+    }
+    const reachable = this.git('merge-base', '--is-ancestor', sha, this.ref);
+    if (reachable.status !== 0) {
+      return {
+        state: 'broken',
+        detail: `anchor commit ${sha.slice(0, 12)} is not reachable from ${this.ref} (dangling or planted)`,
+      };
+    }
     // The signature must verify. `verify-commit` exits non-zero for a bad or
     // absent signature. An unknown signer key (cannot check) is reported as
     // cannot-verify, distinct from a broken signature.

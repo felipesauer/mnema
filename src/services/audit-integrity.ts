@@ -28,6 +28,8 @@ export interface HeadSignatureView {
   readonly signerActor: string;
   readonly signerFingerprint: string;
   readonly signature: string;
+  /** `event_count` the signature was made at — the attested high-water mark. */
+  readonly eventCountAt: number;
 }
 
 /**
@@ -259,25 +261,35 @@ export function inspectAuditIntegrity(
   // so a crash isn't a screaming false-positive yet a truncation is never
   // silently green. Any other discrepancy (mirror behind disk, or ahead by
   // more than one) is unambiguous tampering/corruption and stays an error.
+  // The one-ahead state is benign ONLY when it is a clean crash/truncation
+  // shape. If the log ALSO contains a malformed line or an interior legacy
+  // (v1) line, the count shortfall is exactly what an attacker uses to
+  // launder an interior deletion — a garbage line or a v1 chain-reset masks a
+  // removed chained line while keeping the count off-by-one. That is not the
+  // recoverable crash window; escalate to a hard error.
   const mirrorOneAhead = stateRow.event_count === chainedLines + 1;
+  const oneAheadIsClean = mirrorOneAhead && malformedLines === 0 && legacyLines === 0;
   if (chainedLines === stateRow.event_count) {
     checks.push({
       name: 'audit event count',
       ok: true,
       detail: `${chainedLines} chained events match audit_state.event_count${legacyNote}`,
     });
-  } else if (mirrorOneAhead) {
+  } else if (oneAheadIsClean) {
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}${legacyNote}) — either a crash between the mirror commit and the log append (recoverable; the next write reconciles it) OR a truncation of the last line. Investigate if no crash occurred.`,
+      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}${legacyNote}) — either a crash between the mirror commit and the log append OR a truncation of the last line. A crash is reconciled at the next writer boot (the mirror is rewound to the on-disk tail); if this persists after a restart with no crash, investigate a truncation.`,
       severity: 'warning',
     });
   } else {
+    const maskNote = mirrorOneAhead
+      ? ' with malformed/legacy lines present — a possible masked interior deletion'
+      : '';
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `disk has ${chainedLines} chained events${legacyNote}, audit_state has ${stateRow.event_count}`,
+      detail: `disk has ${chainedLines} chained events${legacyNote}, audit_state has ${stateRow.event_count}${maskNote}`,
       severity: 'error',
     });
   }
@@ -350,7 +362,7 @@ export function inspectAuditIntegrity(
   // — it attests WHICH machine advanced the head. Only meaningful once the
   // chain has started, so it is skipped for a legacy/empty log above.
   if (attestation !== null) {
-    checks.push(attestationCheck(attestation, stateRow.chain_head_hash));
+    checks.push(attestationCheck(attestation, stateRow.chain_head_hash, stateRow.event_count));
   }
 
   if (malformedLines > 0) {
@@ -381,6 +393,7 @@ export function inspectAuditIntegrity(
 function attestationCheck(
   attestation: AttestationSource,
   currentHead: string | null,
+  currentEventCount: number,
 ): IntegrityCheck {
   const sig = attestation.readHeadSignature();
   if (sig === null) {
@@ -406,6 +419,23 @@ function attestationCheck(
       name: 'audit machine attestation',
       ok: false,
       detail: `head signature by ${sig.signerActor} does not verify — the head or the signature was tampered`,
+      severity: 'error',
+    };
+  }
+
+  // Rollback / truncation detection. A valid signature is durable, signed
+  // evidence that the chain once reached `eventCountAt`. If the current chain
+  // is SHORTER than a signed checkpoint, the log retreated below an attested
+  // high-water mark — a truncation (or a rollback), which the count/hash
+  // checks alone cannot tell from a benign crash (and which boot
+  // reconciliation would otherwise launder to green). The attacker cannot
+  // forge or lower the signature without the machine key, so this is a hard
+  // tamper signal.
+  if (currentEventCount < sig.eventCountAt) {
+    return {
+      name: 'audit machine attestation',
+      ok: false,
+      detail: `chain retreated below a signed checkpoint: a valid signature by ${sig.signerActor} covers event ${sig.eventCountAt}, but the chain now holds only ${currentEventCount} — the log was truncated/rolled back below attested history`,
       severity: 'error',
     };
   }
@@ -449,25 +479,40 @@ export class CachedAuditIntegrity {
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
     private readonly secrets: SecretSource | null = null,
+    private readonly attestation: AttestationSource | null = null,
   ) {}
 
   /**
-   * Returns the integrity checks, recomputing only when the audit files
-   * OR the secret-presence changed since the last call.
+   * Returns the integrity checks, recomputing only when the audit files,
+   * the secret-presence, OR the recorded head signature changed since the
+   * last call. The head signature lives in SQLite (not the audit files), so
+   * it must be folded into the cache key explicitly — otherwise the
+   * dashboard would serve a stale attestation verdict when a signature is
+   * recorded/tampered without an audit-file change.
    *
    * @returns The (possibly cached) integrity checks
    */
   get(): IntegrityCheck[] {
     const secret = this.secrets?.read() ?? null;
     const hasFingerprint = this.secrets?.readFingerprint() != null;
-    // Fold secret-presence into the cache key: importing the secret
-    // changes ~/.config (not the audit files), so it would not move the
-    // file signature — but it must invalidate a prior "unverifiable".
-    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}`;
+    // The attestation verdict depends on the recorded head signature, which
+    // is SQLite state outside the audit files — fold its identity (covered
+    // head + signer fingerprint) into the key so a signature change (or a
+    // direct tamper of the signature row) invalidates the cache.
+    const sig = this.attestation?.readHeadSignature() ?? null;
+    const sigKey =
+      sig === null ? 'none' : `${sig.coveredHeadHash}:${sig.signerFingerprint}:${sig.signature}`;
+    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}`;
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
-    const checks = inspectAuditIntegrity(this.adapter, this.auditDir, secret, hasFingerprint);
+    const checks = inspectAuditIntegrity(
+      this.adapter,
+      this.auditDir,
+      secret,
+      hasFingerprint,
+      this.attestation,
+    );
     this.signature = signature;
     this.cached = checks;
     return checks;
