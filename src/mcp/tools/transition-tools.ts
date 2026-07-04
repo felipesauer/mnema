@@ -14,6 +14,7 @@ import {
   err,
   ok,
   okTask,
+  type PendingMigrationsSource,
   requireActiveRun,
   requireFreshSchema,
   type Verbosity,
@@ -56,7 +57,7 @@ export class TransitionToolsRegistrar {
     private readonly agentRun: AgentRunService,
     private readonly config: Config,
     private readonly githubPr: GitHubPrService,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**

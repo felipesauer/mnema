@@ -4,7 +4,13 @@ import { z } from 'zod';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 /**
  * Registers the skill-related MCP tools — `skill_record`, `skill_show`,
@@ -18,7 +24,7 @@ export class SkillTools {
     private readonly skills: SkillService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**

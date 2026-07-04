@@ -6,7 +6,13 @@ import { EpicState } from '../../../domain/enums/epic-state.js';
 import type { EpicService } from '../../../services/epic-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const epicStateValues = Object.values(EpicState) as [EpicState, ...EpicState[]];
 
@@ -22,7 +28,7 @@ export class EpicTools {
     private readonly config: Config,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**

@@ -6,7 +6,13 @@ import { DecisionStatus } from '../../../domain/enums/decision-status.js';
 import type { DecisionService } from '../../../services/decision-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const decisionStatusValues = Object.values(DecisionStatus) as [DecisionStatus, ...DecisionStatus[]];
 
@@ -23,7 +29,7 @@ export class DecisionTools {
     private readonly identity: IdentityService,
     private readonly config: Config,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
