@@ -140,6 +140,30 @@ describe('inspectAuditIntegrity', () => {
     expect(parseCheck?.severity).toBe('warning');
   });
 
+  it('escalates a one-ahead count to ERROR when a malformed line is present (masked interior deletion)', () => {
+    // Attack: delete an interior chained line, drop a garbage line in its
+    // place (so it is not counted), and decrement audit_state.event_count so
+    // the count is only "one ahead". Without the guard this masquerades as
+    // the benign crash-window warning; it must be a hard error instead.
+    writeSampleEvents(); // 3 chained events, event_count = 3
+    const file = path.join(auditDir, 'current.jsonl');
+    const lines = readFileSync(file, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    lines[1] = '{garbage not json'; // replace an interior line with malformed
+    writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
+    // Now disk has 2 chained + 1 malformed; event_count is still 3 → count is
+    // "one ahead" (3 === 2+1) but with a malformed line present. The benign
+    // crash-window path must NOT apply — this is a masked interior deletion.
+
+    const count = inspectAuditIntegrity(adapter, auditDir).find(
+      (c) => c.name === 'audit event count',
+    );
+    expect(count?.ok).toBe(false);
+    expect(count?.severity).toBe('error'); // NOT the benign warning
+    expect(count?.detail).toMatch(/masked interior deletion|malformed/i);
+  });
+
   it('reports legacy mode when no events have been written yet', () => {
     // No events written through the writer; chain head is null.
     const checks = inspectAuditIntegrity(adapter, auditDir);
