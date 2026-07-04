@@ -107,10 +107,18 @@ export function requireActiveRun(runId: string | null): CallToolResult | null {
  * the list of pending files. Read-only tools should NOT use this — the
  * cooperative guard only blocks mutations.
  *
- * @param pending - File names of pending migrations (empty when fresh)
+ * Accepts either a fixed list or a thunk. A thunk lets a long-lived server
+ * re-detect drift at call time, so a `mnema migrate` from another process
+ * unblocks mutations without a restart (the CLI passes a fixed list — it
+ * opens a fresh container per invocation, so it is never stale).
+ *
+ * @param pending - Pending migration file names, or a thunk returning them
  * @returns `null` when schema is current, or an error result otherwise
  */
-export function requireFreshSchema(pending: readonly string[]): CallToolResult | null {
-  if (pending.length === 0) return null;
-  return err({ kind: ErrorCode.SchemaOutOfDate, pending });
+export type PendingMigrationsSource = readonly string[] | (() => readonly string[]);
+
+export function requireFreshSchema(pending: PendingMigrationsSource): CallToolResult | null {
+  const files = typeof pending === 'function' ? pending() : pending;
+  if (files.length === 0) return null;
+  return err({ kind: ErrorCode.SchemaOutOfDate, pending: files });
 }

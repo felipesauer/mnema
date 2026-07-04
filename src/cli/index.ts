@@ -113,6 +113,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/audit-command.js')).AuditCommand(),
     description: 'Inspect the raw audit log (query with filters)',
   },
+  update: {
+    load: async () => new (await import('./commands/update-command.js')).UpdateCommand(),
+    description: 'Check npm for a newer mnema version (explicit, opt-in network)',
+  },
   identity: {
     load: async () => new (await import('./commands/identity-command.js')).IdentityCommand(),
     description: 'Manage your default actor handle (set / whoami / unset / add / list)',

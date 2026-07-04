@@ -190,6 +190,13 @@ export const ConfigSchema = z.object({
       // + run tools. The underlying stores still work if re-enabled — this
       // only controls what the agent sees.
       knowledge: z.boolean().default(true),
+      // Opt-in npm update check (ADR-40). Default OFF: Mnema is offline /
+      // zero-telemetry by default, and a registry check is an outbound
+      // request. When true, `mnema doctor` compares the installed version
+      // against the latest published one and surfaces a hint (fail-open,
+      // cached). `mnema update check` works on demand regardless of this
+      // flag. No usage data is ever transmitted.
+      update_check: z.boolean().default(false),
     })
     .prefault({}),
   // Aging surfaces tasks that have sat in a non-terminal state for too
@@ -281,6 +288,7 @@ export const UserConfigSchema = z
         fts_search: z.boolean().optional(),
         attachments: z.boolean().optional(),
         knowledge: z.boolean().optional(),
+        update_check: z.boolean().optional(),
       })
       .strict()
       .optional(),

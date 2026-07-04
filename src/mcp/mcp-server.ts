@@ -190,7 +190,14 @@ export class MnemaMcpServer {
     // tool that touches a Sprint-5 column/table is constructed with this so a
     // drifted (upgraded-but-unmigrated) DB returns a structured
     // SCHEMA_OUT_OF_DATE result instead of a raw SqliteError.
-    const pendingFiles = this.services.pendingMigrations.map((m) => m.file);
+    // A THUNK, not a boot snapshot: each mutating tool re-detects drift at
+    // call time, so a `mnema migrate` run by another process (the CLI) lifts
+    // the SCHEMA_OUT_OF_DATE block on this long-lived server without a
+    // restart — and re-raises it if new drift appears mid-session. Re-detect
+    // is cheap (one SELECT + one readdir) and only ever unblocks; it never
+    // applies DDL under the live connection.
+    const pendingFiles = (): readonly string[] =>
+      this.services.detectPendingMigrations().map((m) => m.file);
 
     // The advertised tool surface tracks the project's shape, so an agent
     // is not offered tools that would only fail at runtime (or that the

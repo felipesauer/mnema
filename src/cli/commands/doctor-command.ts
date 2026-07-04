@@ -29,7 +29,7 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
-import { checkVersion } from '../../utils/version-check.js';
+import { checkForUpdate, checkVersion, fetchLatestVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
 /**
@@ -85,7 +85,7 @@ export class DoctorCommand {
             const exit = await this.rebuildMirrors(options.pruneOrphans === true);
             process.exit(exit);
           }
-          const exit = this.run();
+          const exit = await this.run();
           process.exit(exit);
         },
       );
@@ -234,7 +234,7 @@ export class DoctorCommand {
    *
    * @returns Exit code (`0` when every check passes, otherwise `3`)
    */
-  run(): number {
+  async run(): Promise<number> {
     const checks: DoctorCheck[] = [];
     const loader = new ConfigLoader();
     const configFile = loader.findConfigFile();
@@ -259,6 +259,20 @@ export class DoctorCommand {
       ok: versionCheck.ok,
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
+
+    // Opt-in npm update check (ADR-40). Only runs when the project set
+    // features.update_check — offline/zero-telemetry stays the default. The
+    // outbound registry query is fail-open (a failure degrades to a warning,
+    // never fails doctor) and a newer version is a warning, not an error.
+    if (config.features.update_check) {
+      const update = checkForUpdate(await fetchLatestVersion());
+      checks.push({
+        name: 'mnema up to date',
+        ok: !update.updateAvailable,
+        detail: update.message,
+        severity: 'warning',
+      });
+    }
 
     // Surface the active gate-enforcement mode; a weakened (advisory) mode
     // is flagged as a warning rather than passing silently.

@@ -11,6 +11,7 @@ import {
   err,
   ok,
   okTask,
+  type PendingMigrationsSource,
   requireActiveRun,
   requireFreshSchema,
   toCompactTask,
@@ -49,7 +50,7 @@ export class TaskTools {
     private readonly config: Config,
     private readonly session: McpSessionContext,
     private readonly stateMachine: StateMachine,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
     private readonly labels: LabelService,
   ) {}
 

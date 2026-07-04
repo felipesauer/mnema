@@ -5,7 +5,13 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { ObservationService } from '../../../services/observation-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 /** Maximum length, in characters, of an observation's content. */
 const OBSERVATION_CONTENT_MAX = 2000;
@@ -22,7 +28,7 @@ export class ObservationTools {
     private readonly observations: ObservationService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
