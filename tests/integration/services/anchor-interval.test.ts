@@ -93,4 +93,33 @@ describe('AnchorScheduler honours the anchor interval', () => {
     expect(provider.stamps).toBe(1);
     expect(anchors.latestForProvider('counting')?.eventCountAt).toBe(1);
   });
+
+  it('an events-only interval does NOT wedge when the latest baseline has NULL event_count_at (A2)', async () => {
+    // Seed a latest row with NULL event_count_at (a legacy/time-only anchor).
+    anchors.upsert({ headHash: head(1), provider: 'counting', status: 'anchored', receipt: 'r' });
+    expect(anchors.latestForProvider('counting')?.eventCountAt).toBeNull();
+    // Events-only interval + NULL baseline: the next signed head must still
+    // be able to anchor (not stuck forever at return false).
+    const scheduler = new AnchorScheduler(anchors, provider, { events: 3 });
+    scheduler.onSignedHead(head(2), 50);
+    await scheduler.settle();
+    expect(provider.stamps).toBe(1);
+  });
+
+  it('a provider that RETURNS failed leaves the anchor pending (retryable), not stuck (A1)', async () => {
+    const failing: AnchorProvider = {
+      name: 'counting',
+      async stamp(h: string): Promise<AnchorReceipt> {
+        return { provider: 'counting', head: h, blob: '', status: 'failed' };
+      },
+      async verify(): Promise<never> {
+        throw new Error('unused');
+      },
+    };
+    const scheduler = new AnchorScheduler(anchors, failing, {});
+    scheduler.onSignedHead(head(1), 1);
+    await scheduler.settle();
+    expect(anchors.read(head(1), 'counting')?.status).toBe('pending');
+    expect(anchors.listPending().map((a) => a.headHash)).toContain(head(1));
+  });
 });

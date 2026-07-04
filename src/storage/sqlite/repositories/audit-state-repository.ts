@@ -124,4 +124,57 @@ export class AuditStateRepository {
     // line the mirror never saw (which would read as tampering).
     afterCommit();
   }
+
+  /**
+   * Reconciles the mirror to the actual on-disk chain tail after a crash in
+   * the commit→append window. If the mirror is EXACTLY one event ahead of
+   * disk (the committed count/head reference a line the append never wrote),
+   * rewind the mirror to the real disk tail: that phantom line never existed
+   * on disk, so the next write must chain from the real tail, not the
+   * phantom head — otherwise it forks the chain permanently.
+   *
+   * Only the exact one-ahead shape is reconciled. Any other divergence
+   * (mirror behind disk, ahead by more than one) is left untouched for the
+   * verifier to report as tampering — this method never masks those.
+   *
+   * @param diskCount - Chained (v>=2) lines actually present on disk
+   * @param diskTailHash - `hash` of the last chained line on disk, or `null`
+   *   when the disk chain is empty
+   * @param lastAt - `at` of the last chained line on disk, or `null`
+   * @returns True when a rewind was applied
+   */
+  reconcileToDisk(diskCount: number, diskTailHash: string | null, lastAt: string | null): boolean {
+    const db = this.adapter.getDatabase();
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const row = db
+        .prepare('SELECT event_count, chain_head_hash FROM audit_state WHERE id = 1')
+        .get() as { event_count: number; chain_head_hash: string | null } | undefined;
+      if (row === undefined) {
+        db.exec('ROLLBACK');
+        return false;
+      }
+      // Reconcile only the exact crash-window shape: mirror one ahead AND its
+      // head does not match the disk tail (the phantom line's head).
+      const oneAhead = row.event_count === diskCount + 1;
+      const headDiverges = row.chain_head_hash !== diskTailHash;
+      if (!oneAhead || !headDiverges) {
+        db.exec('ROLLBACK');
+        return false;
+      }
+      db.prepare(
+        `UPDATE audit_state
+            SET event_count = ?,
+                last_event_at = ?,
+                chain_head_hash = ?,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+          WHERE id = 1`,
+      ).run(diskCount, lastAt, diskTailHash);
+      db.exec('COMMIT');
+      return true;
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
+  }
 }

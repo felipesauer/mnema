@@ -80,7 +80,12 @@ export class AnchorScheduler {
     const last = this.anchors.latestForProvider(this.provider.name);
     if (last === null) return true;
     if (last.eventCountAt !== null && eventCount <= last.eventCountAt) return false;
-    if (events !== undefined && last.eventCountAt !== null) {
+    if (events !== undefined) {
+      // No by-events baseline (a legacy/failed row, or a time-only prior
+      // anchor): the events interval can't be measured against it, so treat
+      // the anchor as due rather than let an events-only interval wedge and
+      // never anchor again.
+      if (last.eventCountAt === null) return true;
       if (eventCount - last.eventCountAt >= events) return true;
     }
     if (seconds !== undefined) {
@@ -118,10 +123,14 @@ export class AnchorScheduler {
     const task = (async () => {
       try {
         const receipt = await this.provider.stamp(head);
+        // A provider that signals failure by RETURNING `failed` (rather than
+        // throwing) must stay retryable: persist it as `pending`, matching
+        // the throw path. Otherwise `listPending` (pending-only) would never
+        // pick it up and the anchor would be stuck forever.
         this.anchors.upsert({
           headHash: head,
           provider: this.provider.name,
-          status: receipt.status,
+          status: receipt.status === 'failed' ? 'pending' : receipt.status,
           receipt: receipt.blob === '' ? null : receipt.blob,
         });
       } catch {

@@ -6,6 +6,7 @@ import {
   verify as edVerify,
   generateKeyPairSync,
   type KeyObject,
+  randomBytes,
 } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -243,8 +244,11 @@ export class MachineKeyService {
     const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
     const file = this.privateKeyPath();
     mkdirSync(path.dirname(file), { recursive: true });
-    const tmp = `${file}.tmp`;
-    writeFileSync(tmp, pem, { mode: 0o600 });
+    // Randomized tmp + `wx` (O_EXCL): exclusive create fails rather than
+    // following a symlink pre-planted at a predictable path, so the private
+    // key is never written through an attacker-controlled link.
+    const tmp = `${file}.${randomBytes(8).toString('hex')}.tmp`;
+    writeFileSync(tmp, pem, { mode: 0o600, flag: 'wx' });
     chmodSync(tmp, 0o600);
     renameSync(tmp, file);
   }

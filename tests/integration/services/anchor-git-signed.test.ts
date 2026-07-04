@@ -17,25 +17,47 @@ const FAIL = (stderr: string): GitResult => ({ status: 1, stdout: '', stderr });
  * update-ref, push, cat-file, log, verify-commit. Commits are stored in a
  * map so verify can read back what stamp wrote — no real repo or signing key.
  */
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+interface FakeCommit {
+  subject: string;
+  tree: string;
+  parent: string | null;
+}
+
 function fakeGit(opts: { signing?: 'ok' | 'no-key'; push?: 'ok' | 'fail' | 'none' }): {
   run: GitCommandRunner;
-  commits: Map<string, string>;
+  commits: Map<string, FakeCommit>;
   pushed: string[];
+  refTip: () => string | null;
 } {
-  const commits = new Map<string, string>(); // sha -> subject
+  const commits = new Map<string, FakeCommit>();
   const pushed: string[] = [];
   let refTip: string | null = null;
   const signing = opts.signing ?? 'ok';
 
+  /** Is `sha` reachable from the ref tip via the parent chain? */
+  const isAncestor = (sha: string): boolean => {
+    let cur = refTip;
+    while (cur !== null) {
+      if (cur === sha) return true;
+      cur = commits.get(cur)?.parent ?? null;
+    }
+    return false;
+  };
+
   const run: GitCommandRunner = (args) => {
     const [cmd] = args;
-    if (cmd === 'hash-object') return OK('4b825dc642cb6eb9a060e54bf8d69288fbee4904'); // empty tree
+    if (cmd === 'hash-object') return OK(EMPTY_TREE);
     if (cmd === 'rev-parse') return refTip === null ? FAIL('') : OK(refTip);
     if (cmd === 'commit-tree') {
       if (signing === 'no-key') return FAIL('error: gpg failed to sign the data');
       const subject = args[args.indexOf('-m') + 1] as string;
-      const sha = createHash('sha1').update(subject).digest('hex');
-      commits.set(sha, subject);
+      const parentIdx = args.indexOf('-p');
+      const parent = parentIdx >= 0 ? (args[parentIdx + 1] as string) : null;
+      const tree = args[1] as string; // commit-tree <tree> ...
+      const sha = createHash('sha1').update(`${subject}|${parent}|${tree}`).digest('hex');
+      commits.set(sha, { subject, tree, parent });
       return OK(sha);
     }
     if (cmd === 'update-ref') {
@@ -52,8 +74,17 @@ function fakeGit(opts: { signing?: 'ok' | 'no-key'; push?: 'ok' | 'fail' | 'none
       return commits.has(sha) ? OK('commit') : FAIL('not found');
     }
     if (cmd === 'log') {
+      const fmt = args.find((a) => a.startsWith('--format='));
       const sha = args[args.length - 1] as string;
-      return OK(commits.get(sha) ?? '');
+      const c = commits.get(sha);
+      if (c === undefined) return OK('');
+      if (fmt === '--format=%T') return OK(c.tree);
+      return OK(c.subject); // %s
+    }
+    if (cmd === 'merge-base') {
+      // merge-base --is-ancestor <sha> <ref>
+      const sha = args[2] as string;
+      return isAncestor(sha) ? OK() : FAIL('');
     }
     if (cmd === 'verify-commit') {
       const sha = args[1] as string;
@@ -62,7 +93,7 @@ function fakeGit(opts: { signing?: 'ok' | 'no-key'; push?: 'ok' | 'fail' | 'none
     }
     return FAIL(`unexpected git ${args.join(' ')}`);
   };
-  return { run, commits, pushed };
+  return { run, commits, pushed, refTip: () => refTip };
 }
 
 describe('GitSignedAnchorProvider', () => {
@@ -73,8 +104,9 @@ describe('GitSignedAnchorProvider', () => {
     const receipt = await provider.stamp(head);
     expect(receipt.status).toBe('anchored');
     expect(receipt.blob).toBeTruthy();
-    // The committed subject carries the head.
-    expect(git.commits.get(receipt.blob)).toBe(`mnema-anchor: ${head}`);
+    // The committed subject carries the head, over the empty tree.
+    expect(git.commits.get(receipt.blob)?.subject).toBe(`mnema-anchor: ${head}`);
+    expect(git.commits.get(receipt.blob)?.tree).toBe(EMPTY_TREE);
 
     expect((await provider.verify(head, receipt)).state).toBe('anchored');
   });
@@ -115,7 +147,7 @@ describe('GitSignedAnchorProvider', () => {
     const receipt = await provider.stamp(head);
     // The local commit exists; only the push failed → pending for retry.
     expect(receipt.status).toBe('pending');
-    expect(git.commits.get(receipt.blob)).toBe(`mnema-anchor: ${head}`);
+    expect(git.commits.get(receipt.blob)?.subject).toBe(`mnema-anchor: ${head}`);
   });
 
   it('raises a clear error (not a crash) when no signing key is configured', async () => {
@@ -124,18 +156,51 @@ describe('GitSignedAnchorProvider', () => {
     await expect(provider.stamp(head)).rejects.toThrow(/signing key/i);
   });
 
-  it('verify() reports broken for a signed-but-unsigned commit', async () => {
-    // Stamp with a working key, then verify under a runner that reports the
-    // commit as unsigned — models a signature stripped after the fact.
+  it('verify() reports broken for a signed-then-unsigned commit', async () => {
+    // A runner where the commit exists, is reachable and has the empty tree,
+    // but verify-commit reports no signature (signature stripped after the
+    // fact). It must be broken, not cannot-verify.
+    const git = fakeGit({ signing: 'ok' });
+    const stampProvider = new GitSignedAnchorProvider('/repo', undefined, null, git.run);
+    const receipt = await stampProvider.stamp(head);
+    // Now verify with a runner that shares the same commit/ref state but
+    // reports the signature as absent.
+    const unsigned: GitCommandRunner = (args) =>
+      args[0] === 'verify-commit' ? FAIL('gpg: no signature') : git.run(args, '/repo');
+    const provider2 = new GitSignedAnchorProvider('/repo', undefined, null, unsigned);
+    expect((await provider2.verify(head, receipt)).state).toBe('broken');
+  });
+
+  it('verify() is broken when the anchor commit has a non-empty tree (content smuggling)', async () => {
     const git = fakeGit({ signing: 'ok' });
     const provider = new GitSignedAnchorProvider('/repo', undefined, null, git.run);
     const receipt = await provider.stamp(head);
+    // Tamper the recorded commit to carry a non-empty tree (a signed commit
+    // with arbitrary content but the right subject) — must be rejected.
+    const c = git.commits.get(receipt.blob);
+    if (c !== undefined) c.tree = 'ffffffffffffffffffffffffffffffffffffffff';
+    const r = await provider.verify(head, receipt);
+    expect(r.state).toBe('broken');
+    expect(r.detail).toMatch(/empty tree/i);
+  });
 
-    const stripped = fakeGit({ signing: 'no-key' });
-    // Seed the stripped runner's commit map with the same commit.
-    stripped.commits.set(receipt.blob, `mnema-anchor: ${head}`);
-    const provider2 = new GitSignedAnchorProvider('/repo', undefined, null, stripped.run);
-    expect((await provider2.verify(head, receipt)).state).toBe('broken');
+  it('verify() is broken for a signed commit NOT reachable from the anchor ref (dangling/planted)', async () => {
+    const git = fakeGit({ signing: 'ok' });
+    const provider = new GitSignedAnchorProvider('/repo', undefined, null, git.run);
+    const receipt = await provider.stamp(head);
+    // Advance the ref to a DIFFERENT commit so the anchor is no longer an
+    // ancestor of the ref tip (models a forged/dangling signed commit).
+    git.run(['commit-tree', EMPTY_TREE, '-S', '-m', 'unrelated'], '/repo');
+    const other = await provider.stamp('c'.repeat(64)); // advances the ref past `receipt`
+    // `receipt` is now behind, but is it still an ancestor? stamp chains, so
+    // it IS an ancestor. To make it dangling, point the ref elsewhere:
+    git.run(['update-ref', 'refs/mnema/anchors', other.blob], '/repo');
+    // Re-point ref to a fresh unrelated commit with no link to `receipt`.
+    const unrelated = git.run(['commit-tree', EMPTY_TREE, '-S', '-m', 'x'], '/repo');
+    git.run(['update-ref', 'refs/mnema/anchors', unrelated.stdout.trim()], '/repo');
+    const r = await provider.verify(head, receipt);
+    expect(r.state).toBe('broken');
+    expect(r.detail).toMatch(/not reachable/i);
   });
 
   it('verify() is cannot-verify (not broken) when git is unavailable', async () => {

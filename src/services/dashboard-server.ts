@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
+import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { CachedAuditIntegrity } from './audit-integrity.js';
 import { AuditTail } from './audit-tail.js';
 import {
@@ -11,6 +12,7 @@ import {
   toRecentEvent,
 } from './dashboard-data.js';
 import { renderEventRow, renderLiveShell, renderTabBody } from './dashboard-render.js';
+import { createAttestationSource } from './head-checkpoint.js';
 import { ProjectSecretService } from './project-secret.js';
 import type { ServiceContainer } from './service-container.js';
 
@@ -102,6 +104,11 @@ export async function createDashboardServer(
     container.adapter,
     auditDir,
     new ProjectSecretService(projectRoot, config.project.key),
+    // Attestation source so the dashboard runs the machine head-signature
+    // check too — otherwise a forged head signature is red in doctor/verify
+    // but invisible here. The cache key folds the signature identity so a
+    // signature change invalidates it.
+    createAttestationSource(projectRoot, new AuditHeadSignatureRepository(container.adapter)),
   );
 
   /** Composes a fresh snapshot for a request. */

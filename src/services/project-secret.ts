@@ -110,8 +110,12 @@ export class ProjectSecretService {
   private writeSecretAtomic(secret: Buffer): void {
     const file = this.secretPath();
     mkdirSync(path.dirname(file), { recursive: true });
-    const tmp = `${file}.tmp`;
-    writeFileSync(tmp, secret, { mode: 0o600 });
+    // Randomized tmp name + `wx` (O_CREAT|O_EXCL): the exclusive create fails
+    // rather than following a symlink pre-planted at a predictable path, so
+    // the secret can never be written through an attacker-controlled link on
+    // a shared host. Created 0600 atomically; chmod is belt-and-braces.
+    const tmp = `${file}.${randomBytes(8).toString('hex')}.tmp`;
+    writeFileSync(tmp, secret, { mode: 0o600, flag: 'wx' });
     chmodSync(tmp, 0o600);
     renameSync(tmp, file);
   }
