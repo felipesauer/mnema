@@ -10,6 +10,8 @@ coverage/
 docs/*
 !docs/quickstart.cast
 !docs/quickstart.gif
+!docs/logo.png
+!docs/logo-dark.png
 .plan/
 evaluations/
 

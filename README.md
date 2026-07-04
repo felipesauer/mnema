@@ -1,20 +1,35 @@
-# Mnema
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo.png" alt="Mnema" width="120" height="134">
+  </picture>
+</p>
 
-[![CI](https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@felipesauer/mnema/alpha?label=npm%20alpha&color=orange)](https://www.npmjs.com/package/@felipesauer/mnema)
-[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![node](https://img.shields.io/badge/node-%E2%89%A520-green)](./package.json)
+<h1 align="center">Mnema</h1>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@felipesauer/mnema"><img src="https://img.shields.io/npm/v/@felipesauer/mnema/alpha?style=flat-square&logo=npm&logoColor=white&label=npm%20alpha&color=cb3837" alt="npm alpha version"></a>
+  <a href="https://www.npmjs.com/package/@felipesauer/mnema"><img src="https://img.shields.io/npm/dm/@felipesauer/mnema?style=flat-square&logo=npm&logoColor=white&label=downloads&color=cb3837" alt="npm downloads per month"></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/platform-MCP-000000?style=flat-square&logo=anthropic&logoColor=white" alt="Model Context Protocol server"></a>
+  <a href="https://www.npmjs.com/package/@felipesauer/mnema"><img src="https://img.shields.io/npm/types/@felipesauer/mnema?style=flat-square&logo=typescript&logoColor=white" alt="bundled TypeScript types"></a>
+  <a href="./package.json"><img src="https://img.shields.io/node/v/@felipesauer/mnema?style=flat-square&logo=nodedotjs&logoColor=white&label=node&color=339933" alt="node engine"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license MIT"></a>
+</p>
 
 > A tamper-evident, local-first audit trail for AI-agent work.
 > *You drive, agents execute — every change stamped with who authorized it and which agent ran it, in a log you can prove wasn't altered.*
 
 Mnema is a local-first MCP server that gives external AI agents
 (Claude Code, Cursor, Aider, …) typed tools to do work behind
-workflow gates, while every action lands in a SHA-256 hash-chained
-audit log that records **who** coordinated, **which** agent executed,
-and in **which** run. Humans drive through the terminal and verify
-through the history. Mnema does not run agents — it makes their work
-accountable.
+workflow gates, while every action lands in a **cryptographically
+verifiable** audit log that records **who** coordinated, **which**
+agent executed, and in **which** run. The log is protected in depth: a
+hash chain catches accidental corruption, a keyed HMAC and per-machine
+signatures resist a real adversary, and an optional external anchor
+proves *when* the head existed (see
+[Integrity model](#integrity-model)). Humans drive through the
+terminal and verify through the history. Mnema does not run agents — it
+makes their work accountable.
 
 > **Not a semantic-memory layer.** Mnema does not do embeddings or
 > similarity recall — if you want an agent to *remember facts* across
@@ -28,6 +43,7 @@ accountable.
 - [Why Mnema](#why-mnema)
 - [Quickstart](#quickstart)
 - [What you get](#what-you-get)
+- [Integrity model](#integrity-model)
 - [Install](#install)
 - [Project layout after `mnema init`](#project-layout-after-mnema-init)
 - [Common CLI commands](#common-cli-commands)
@@ -47,9 +63,14 @@ supposed to follow, and can you trust the record after the fact?*
 Mnema answers all three.
 
 - **It makes agent work provable.** Every mutation appends to a
-  SHA-256 hash-chained audit log. Change one past entry and the chain
-  breaks — `mnema doctor` catches edits, truncation, replays, and
-  deletion. This is the part most agent tooling doesn't have.
+  hash-chained audit log that is protected in depth: the chain catches
+  accidental corruption, a keyed HMAC and per-machine Ed25519
+  signatures make a *deliberate* rewrite detectable (not just a broken
+  link an attacker could repair), and an optional external anchor
+  timestamps the head. `mnema doctor` verifies all of it — edits,
+  truncation, replays, deletion, and downgrade. This is the part most
+  agent tooling doesn't have; the exact guarantees and their limits are
+  spelled out in [Integrity model](#integrity-model).
 - **It keeps the human in the loop.** Agents move work through a
   workflow whose gates reject invalid transitions (no submitting a
   task with no acceptance criteria, no skipping review). You approve
@@ -63,7 +84,7 @@ Mnema answers all three.
 
 | Instead of… | …you get |
 |---|---|
-| A task tracker with no cryptographic guarantee the log is intact | A tamper-evident hash chain with `doctor` verification |
+| A task tracker with no cryptographic guarantee the log is intact | A keyed, signed audit chain that resists a deliberate rewrite, with `doctor` verification |
 | A semantic memory layer (Mem0, Cognee) that recalls facts | A provable record of *actions taken*, not facts remembered |
 | A heavyweight Jira/web UI | An MCP server + CLI that lives next to your code |
 | Free-form agent prose you have to trust | Typed tools behind workflow gates that reject bad input |
@@ -136,7 +157,7 @@ $ mnema doctor
 
 | Surface | What it does |
 |---|---|
-| **Audit log** | Every action appends to a SHA-256 hash-chained JSONL log (mirrored to SQLite). `mnema doctor` detects edits, truncation, replays, and deletion. |
+| **Audit log** | Every action appends to a hash-chained JSONL log (mirrored to SQLite), keyed with a per-project HMAC secret and periodically signed by a per-machine Ed25519 key, with optional external anchoring. `mnema doctor` detects edits, truncation, replays, deletion, and downgrade — see [Integrity model](#integrity-model). |
 | **Workflow gates** | A state machine per task; each transition declares required fields and Mnema rejects invalid moves. |
 | **Agent runs & plans** | Wrap every batch of mutations in a run (parent/child, max depth 5); inspect any run later via the CLI. |
 | **Dual identity** | Each event records the human actor, the agent that executed, and the run — a built-in chain of custody. |
@@ -150,7 +171,95 @@ $ mnema doctor
 | **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). A skill can be **invocable** with **dynamic context** — read-only `mnema` commands whose live output (e.g. `mnema tasks ready`) is embedded when the skill is shown. Memories can be **archived** when stale (hidden from listing and search, kept in the record). User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
 | **Slash commands** | Reusable command flows versioned under `.mnema/commands/*.md` — a named bundle of `mnema` calls (e.g. `/standup` = bootstrap + inbox + today's history), discovered and surfaced to your client through MCP tools and the CLI. |
 | **Workflows** | 4 presets (`default`, `lean`, `kanban`, `jira-classic`) plus custom JSON validated against a schema. |
-| **MCP tools** | 78 universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
+| **MCP tools** | A broad set of universal tools plus one per workflow action; `context_bootstrap` is the canonical session entry point. |
+
+## Integrity model
+
+"Tamper-evident" is a claim that deserves to be precise, so here is
+exactly what protects the log, what each layer buys you, and — just as
+important — what it does *not* defend against. The protection is
+layered: each one catches what the one below it can't.
+
+### The three layers
+
+**Layer 1 — hash chain (always on).** Every event carries the hash of
+the one before it, so the log is a chain. This catches **accidental**
+corruption, reordering, and truncation: flip a byte in a past line and
+the links stop matching. On its own a plain chain is *not* proof
+against a deliberate attacker — someone who edits a past line can also
+recompute every hash after it and hand you a chain that still links
+cleanly. That is what the next layers close.
+
+**Layer 2 — authenticity (keyed HMAC + machine signatures).** Two
+independent secrets an in-repo attacker doesn't have:
+
+- **Per-project HMAC secret.** Each event's hash is keyed with a secret
+  that lives **outside the repo** at
+  `~/.config/mnema/projects/<key>/hmac.key` (mode `0600`). Only a
+  non-secret fingerprint is committed. Recomputing the chain now
+  requires the secret, not just the algorithm — so an agent (or anyone)
+  with write access to the repo files cannot forge a valid rewrite.
+- **Per-machine Ed25519 signatures.** At a checkpoint interval the
+  chain *head* is signed by a per-machine private key (also `0600`,
+  outside the repo); the public key is committed as
+  `.mnema/keys/<actor>.<fingerprint>.pub` so any clone can verify. A
+  signed checkpoint pins the chain length: rolling the log *back* below
+  a signed checkpoint is detected as tampering, not mistaken for a
+  crash.
+
+The **v3→v2 downgrade** — stripping the keyed events to pass off an
+unkeyed chain — is closed by version monotonicity plus a
+fingerprint-implies-v3 rule, so an attacker can't quietly drop to the
+weaker format.
+
+**Layer 3 — temporal anchoring (opt-in, default `none`).** A pluggable
+provider stamps the signed head into an external, independently
+verifiable record, so you can prove the head *existed at a point in
+time* — defending against someone who controls the machine and its keys
+but can't rewrite external history. It runs **off the write path** and
+**fail-open** (a provider outage never blocks a mutation). The
+`git-signed` provider ships; network providers (`opentimestamps`,
+`rfc3161`) are deferred by design. See
+[Configuration](#configuration) to enable it.
+
+`mnema doctor` verifies layers 1 and 2 offline every run;
+`mnema audit verify --verify-anchors` additionally checks layer-3
+receipts against the provider.
+
+### Threat model
+
+**What Mnema detects:**
+
+| Attack | Caught by |
+|---|---|
+| Editing a past event | Layer 1 (chain) + Layer 2 (HMAC) |
+| Recomputing hashes to hide an edit | Layer 2 — no HMAC secret, so the recomputed chain fails |
+| Deleting or reordering events | Layer 1 |
+| Rolling the log back below a signed checkpoint | Layer 2 signatures |
+| Downgrading the keyed chain to the unkeyed format | Version monotonicity + fingerprint-implies-v3 |
+| Backdating a forged history | Layer 3 anchor (when enabled) |
+
+**What Mnema does *not* defend against (be honest about the edges):**
+
+- **A compromised machine that holds the private keys.** If an attacker
+  has both repo write access *and* the `0600` keys under
+  `~/.config/mnema`, they can produce a valid rewrite. The keys living
+  outside the repo raises the bar past "any agent with file access";
+  it does not survive full host compromise. Anchoring (layer 3) is what
+  narrows even this, by pinning the head to external history.
+- **Truncating events written *after* the last checkpoint.** Removing
+  the most recent, not-yet-signed tail is indistinguishable from a
+  recoverable crash — both look like a chain that stops early. The
+  checkpoint interval bounds this window; a shorter interval shrinks
+  it. This is a documented limitation, not a bug.
+- **A dishonest coordinator.** Mnema records *who authorized* and
+  *which agent executed*; it does not judge whether the human should
+  have. It is a chain of custody, not a policy engine.
+
+The honest one-line summary: the chain alone catches accident and the
+keyed, signed layers catch a deliberate in-repo rewrite; defeating all
+of it requires compromising the machine's out-of-repo keys, and even
+then an enabled anchor leaves a trace.
 
 ## Install
 
@@ -198,6 +307,9 @@ my-project/
     ├── mnema.config.json     # project configuration (versioned)
     ├── audit/                # append-only event log (versioned by default)
     │   └── current.jsonl
+    ├── keys/                 # committed public verification material only
+    │   ├── project.hmac-id   #   non-secret fingerprint of the HMAC secret
+    │   └── <actor>.<fp>.pub  #   per-machine Ed25519 public key
     ├── state/                # local cache — gitignored
     │   └── state.db          #   SQLite (FTS, tasks, runs, audit metadata)
     ├── backlog/              # one .md per task, foldered by workflow state
@@ -223,12 +335,23 @@ between the two decides what belongs in git:
   `sprints/`, `memory/`, `skills/` — and the `audit/` log are the
   version-controlled record of the work. They survive a fresh clone and
   are what a teammate (or another machine) reads. `mnema.config.json`
-  and the active `workflows/*.json` are versioned too.
+  and the active `workflows/*.json` are versioned too. So is
+  `.mnema/keys/` — but note it holds **only public verification
+  material** (the HMAC fingerprint and per-machine `.pub` files), never
+  a secret; committing it is what lets any clone *verify* the chain.
 - **Ignore it.** `.mnema/state/` is local: the SQLite cache, the sync
   buffer and attachment blobs — all *derived* and rebuilt from the
   markdown with `mnema sync`. The optional `.mnema/config.local.json`
   (per-repo personal overrides) is local too. `mnema init` pre-seeds the
   `.gitignore` lines for exactly these — nothing more.
+- **Never in the repo at all.** The integrity *secrets* — the
+  per-project HMAC key and the per-machine Ed25519 private key — live
+  outside the repo under `~/.config/mnema/` (mode `0600`) and are never
+  written into `.mnema/`. That out-of-repo placement is what puts them
+  beyond an in-repo agent's reach (see
+  [Integrity model](#integrity-model)); back that directory up
+  separately, because a lost private key means a new machine re-mints
+  its own (old signatures still verify from the committed `.pub`).
 
 Because the mirror is versioned, those `.md` files **do** change on
 every mutation and show up in `git status` — that is the trail, not
@@ -275,10 +398,10 @@ caught the same as tampering with `current.jsonl`.
 
 Growth is modest and bounded per month: one compact JSON line per
 mutation (JSONL compresses well under git's packing), and completed-task
-markdown stays as small per-task files. On a 600-task history, verifying
-the full chain (`mnema doctor`) takes single-digit milliseconds and a
-mirror rebuild (`mnema sync`) well under a second — measured by
-`pnpm bench:scale`. The `audit_strategy` and `audit_retention_months`
+markdown stays as small per-task files. Even on a large project history,
+verifying the full chain (`mnema doctor`) takes single-digit
+milliseconds and a mirror rebuild (`mnema sync`) well under a second —
+measured by `pnpm bench:scale`. The `audit_strategy` and `audit_retention_months`
 config keys are reserved for a future compaction pass (compressing or
 pruning old months); they are accepted today but not yet enforced.
 
@@ -329,7 +452,8 @@ MCP tools. The commands group by what you're doing — run
 
 | Command | What it does |
 |---|---|
-| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
+| `mnema doctor` | Read-only diagnostic — re-verifies the audit chain and machine attestation offline. Add `--rebuild-mirrors` to recreate missing `.md` from the database |
+| `mnema audit verify [--verify-anchors]` | Verify the chain + attestation; with `--verify-anchors`, also check the temporal anchors (layer 3) online |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations |
 | `mnema inbox` | Tasks awaiting your review or blocked, plus review-SLA breaches |
 | `mnema serve` | Live local dashboard on `localhost` — dark, tabbed (Overview / Flow / Activity / Graph), pushes each audit event over SSE as it lands. Loopback-only, read-only, zero external assets |
@@ -348,6 +472,7 @@ MCP tools. The commands group by what you're doing — run
 | Command | What it does |
 |---|---|
 | `mnema upgrade` | Detect everything out of date (pending migrations, stale AGENTS.md, missing mirrors, old `mnema_version`), show the plan, and apply it after confirmation (`--yes` to skip) |
+| `mnema update check` | Check the npm registry for a newer published Mnema (on demand, regardless of the `update_check` flag; fail-open when offline) |
 | `mnema agents sync` | Regenerate only the Mnema-managed block of AGENTS.md (with `@path` imports expanded, e.g. the live memory index), preserving your own content |
 
 **Integrate (MCP)**
@@ -387,11 +512,11 @@ graph TD
     H["Human<br/>drives via terminal"] -->|"approves via terminal"| G
     A["AI agent<br/>typed tool calls"] --> G["Workflow gate<br/>rejects invalid moves"]
     G -->|"stamps who + which agent + run"| E["Audit event<br/>dual-identity"]
-    E -->|"prev_hash link"| C["SHA-256 chain<br/>tamper-evident"]
+    E -->|"prev_hash + keyed HMAC"| C["Signed chain<br/>keyed + attested"]
     C --> M["Markdown mirror<br/>source of truth"]
     M -->|"mnema sync rebuilds"| S[("SQLite cache")]
     M --> R["Git<br/>trail travels with repo"]
-    C -.->|"mnema doctor"| V(["Verify chain intact"])
+    C -.->|"mnema doctor"| V(["Verify chain + attestation"])
     classDef climax fill:#1f2937,stroke:#f59e0b,stroke-width:2px,color:#fff;
     class E,C climax;
 ```
@@ -468,6 +593,55 @@ what a failed workflow gate means:
 
 `mnema doctor` prints the active mode so its effect is never a surprise.
 
+### Integrity: checkpoint & anchoring
+
+The [integrity model](#integrity-model) works out of the box with no
+configuration — the HMAC key and the per-machine signing key are minted
+on first use. Two optional `audit` blocks tune it, and both are safe to
+leave unset:
+
+```json
+{
+  "audit": {
+    "checkpoint": { "events": 100, "seconds": 3600 },
+    "anchor": {
+      "provider": "git-signed",
+      "interval": { "events": 500 },
+      "remote": "origin",
+      "ref": "refs/mnema/anchors"
+    }
+  }
+}
+```
+
+- **`audit.checkpoint`** — how often the chain head is signed (layer 2).
+  A checkpoint fires when *either* `events` new events accrue *or*
+  `seconds` elapse, whichever comes first (defaults `100` / `3600`). A
+  shorter interval shrinks the "truncate the unsigned tail" window
+  called out in the [threat model](#threat-model), at the cost of more
+  signatures.
+- **`audit.anchor`** — temporal anchoring (layer 3), `provider: "none"`
+  by default (nothing leaves your machine). Set `git-signed` to stamp
+  the signed head into a git object off the write path; add
+  `remote`/`ref` to push it, or omit them to keep it local-only. The
+  `rfc3161` provider additionally requires a `tsa` https URL. `interval`
+  sets the anchoring cadence and falls back to the checkpoint interval
+  when unset.
+
+### npm update check
+
+By default Mnema never phones home. If you *want* it to tell you when a
+newer version is published, opt in:
+
+```json
+{ "features": { "update_check": true } }
+```
+
+With it on, `mnema doctor` compares your installed version against the
+npm registry's latest and surfaces a hint (fail-open and cached, so an
+offline machine just skips it — no usage data is ever sent). Regardless
+of the flag, `mnema update check` runs the same check on demand.
+
 ### Audit-only profile
 
 If you only want the core thesis — a tamper-evident audit log, workflow
@@ -489,7 +663,7 @@ to a fuller workflow) to grow into the complete surface, and use
 them. The default profile (`full`) keeps every surface on.
 
 The MCP surface is organised into conceptual **layers** so an agent (and
-you) reason about a handful of buckets instead of a flat list of ~80
+you) reason about a handful of buckets instead of one flat list of
 tools. `context_bootstrap` returns the exact per-tool grouping for the
 project as `tool_groups`, each flagged enabled/disabled for the active
 profile:
@@ -586,18 +760,22 @@ To switch presets, edit `workflow` in `mnema.config.json` and run
 
 Mnema is **alpha** and published on npm. The accountability core —
 the part that's the actual differentiator — is in place and hardened:
-the SHA-256 hash chain, `doctor` tamper-detection, dual-identity
-capture, workflow gates, and optimistic-concurrency lost-write
-protection described in [Why Mnema](#why-mnema) and
-[What you get](#what-you-get). The work-tracking and traceability
-surface around it is built out; the remaining road to a stable `1.0`
-is hardening and ergonomics, not missing pillars.
+the hash chain, its keyed-HMAC and per-machine-signature layers,
+`doctor` tamper-detection, dual-identity capture, workflow gates, and
+optimistic-concurrency lost-write protection described in
+[Why Mnema](#why-mnema), [What you get](#what-you-get), and
+[Integrity model](#integrity-model). The work-tracking and
+traceability surface around it is built out; the remaining road to a
+stable `1.0` is hardening and ergonomics, not missing pillars.
 
-Confidence comes from how hard it's shaken out: **1083 tests, 0
-skipped, lint + build clean**, repeated adversarial review sweeps
-(audit immutability, multi-actor concurrency, custom-workflow
+Confidence comes from how hard it's shaken out: a **comprehensive test
+suite (0 skipped), lint + build clean**, repeated adversarial review
+sweeps (audit immutability, multi-actor concurrency, custom-workflow
 validation, input-validation parity, ReDoS, and command/path-injection
-on the newer surfaces), and a 13-check publish gate
+on the newer surfaces) plus two dedicated refute-first audits of the
+cryptographic layers — including canonicalisation proven byte-stable by
+fuzzing and an attack matrix (edit, delete, reorder, downgrade,
+rollback) run through the built binary — and a multi-check publish gate
 ([scripts/publish-check.sh](scripts/publish-check.sh)) plus an
 end-to-end smoke run before every tag. See
 [CHANGELOG.md](CHANGELOG.md) for the per-version history.
