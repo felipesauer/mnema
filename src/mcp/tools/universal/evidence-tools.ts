@@ -8,7 +8,12 @@ import type { IdentityService } from '../../../services/identity-service.js';
 import type { TaskEvidenceService } from '../../../services/task-evidence-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const evidenceKindValues = [
   'test',
@@ -31,7 +36,7 @@ export class EvidenceTools {
     private readonly evidence: TaskEvidenceService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
     private readonly agentRun: AgentRunService,
     private readonly commitVerifier: CommitVerifier,
     private readonly projectRoot: string,

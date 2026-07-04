@@ -86,6 +86,9 @@ describe('ConfigLoader', () => {
       expect(config.paths.backlog).toBe('.mnema/backlog');
       expect(config.sync.agent_buffer_flush_seconds).toBe(30);
       expect(config.features.fts_search).toBe(true);
+      // The npm update check is opt-in and OFF by default (ADR-40) — the
+      // offline / zero-telemetry default must hold without config.
+      expect(config.features.update_check).toBe(false);
     });
 
     describe('audit.anchor (layer 3)', () => {

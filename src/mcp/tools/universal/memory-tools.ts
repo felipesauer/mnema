@@ -5,7 +5,13 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 /**
  * Registers the memory-related MCP tools — `memory_record`,
@@ -20,7 +26,7 @@ export class MemoryTools {
     private readonly memories: MemoryService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**

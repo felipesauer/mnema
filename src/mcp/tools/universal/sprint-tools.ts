@@ -5,7 +5,13 @@ import type { Config } from '../../../config/config-schema.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { SprintService } from '../../../services/sprint-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun, requireFreshSchema } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 /**
  * Registers the sprint MCP tools. Reads (`sprint_show`, `sprints_list`)
@@ -21,7 +27,7 @@ export class SprintTools {
     private readonly identity: IdentityService,
     private readonly config: Config,
     private readonly session: McpSessionContext,
-    private readonly pendingMigrations: readonly string[],
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**

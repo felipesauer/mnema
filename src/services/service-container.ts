@@ -161,6 +161,14 @@ export interface ServiceContainer {
   readonly provenance: ProvenanceService;
   readonly transitions: TransitionRepository;
   readonly pendingMigrations: readonly AppliedMigration[];
+  /**
+   * Re-runs migration drift detection against the live DB. Unlike
+   * `pendingMigrations` (a boot-time snapshot), this reads `schema_migrations`
+   * fresh, so a long-lived process (the MCP server) sees a `mnema migrate`
+   * run by another process and unblocks without a restart. Cheap: one SELECT
+   * + one readdir per migrations dir.
+   */
+  readonly detectPendingMigrations: () => readonly AppliedMigration[];
   readonly close: () => void;
 }
 
@@ -215,6 +223,11 @@ export function createServiceContainer(
     runner.run(adapter, migrationSources);
   }
   const pendingMigrations = runner.detectDrift(adapter, migrationSources);
+  // Fresh re-check (not the boot snapshot) so a long-lived MCP server picks
+  // up a `mnema migrate` from another process without a restart. Re-detect
+  // only — never auto-applies DDL under a live connection.
+  const detectPendingMigrations = (): readonly AppliedMigration[] =>
+    runner.detectDrift(adapter, migrationSources);
   trace.mark('migrations checked');
 
   const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
@@ -620,6 +633,7 @@ export function createServiceContainer(
     provenance: provenanceService,
     transitions,
     pendingMigrations,
+    detectPendingMigrations,
     close: () => adapter.close(),
   };
 }
