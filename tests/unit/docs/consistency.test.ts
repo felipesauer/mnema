@@ -7,9 +7,9 @@ import { PACKAGE_ROOT } from '@/utils/asset-paths.js';
 
 /**
  * Guards against the doc/config drift found in the diagnostic: the README
- * example config trailed the real package version, README and CONTRIBUTING
- * quoted different test counts, and TECH_DEBT claimed coverage was not
- * enforced though publish-check.sh gates on it.
+ * example config trailed the real package version, the docs pinned
+ * hard-coded test counts that re-drifted on every change, and TECH_DEBT
+ * claimed coverage was not enforced though publish-check.sh gates on it.
  *
  * These are deliberately tolerant — they compare documents against each
  * other or against a computed source of truth (semver, gate presence),
@@ -42,14 +42,16 @@ describe('doc/config consistency', () => {
     ).toBe(true);
   });
 
-  it('README and CONTRIBUTING quote the same test count', () => {
-    const readmeCount = read('README.md').match(/\*\*(\d+) tests,/)?.[1];
-    const contributingCount = read('CONTRIBUTING.md').match(/vitest run[^\n]*?(\d+) tests/)?.[1];
-    expect(readmeCount, 'README should state a test count').toBeDefined();
-    expect(contributingCount, 'CONTRIBUTING should state a test count').toBeDefined();
-    // Matching numbers rather than a fixed literal: this fails only when the
-    // two docs disagree, not every time a test is added.
-    expect(readmeCount).toBe(contributingCount);
+  it('neither README nor CONTRIBUTING pins a hard-coded test count', () => {
+    // A fixed "NNNN tests" literal re-drifts on every added test and was a
+    // recurring source of stale docs. The docs now describe the suite in
+    // durable terms instead, so guard against a numeric count creeping back
+    // in — this fails if anyone reintroduces one.
+    const testCount = /(\d[\d,]*)\s+tests\b/;
+    expect(read('README.md'), 'README must not quote a fixed test count').not.toMatch(testCount);
+    expect(read('CONTRIBUTING.md'), 'CONTRIBUTING must not quote a fixed test count').not.toMatch(
+      testCount,
+    );
   });
 
   it.skipIf(!existsSync(path(TECH_DEBT)))(

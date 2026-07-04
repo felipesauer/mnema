@@ -16,7 +16,7 @@ cd mnema
 pnpm install
 pnpm build       # tsc + tsc-alias + copy-migrations
 pnpm lint        # biome check (zero warnings expected)
-pnpm test        # vitest run, ~30s, 1083 tests
+pnpm test        # vitest run, full suite (~30s)
 ```
 
 Optional, but useful:
