@@ -1,11 +1,10 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
-    <img src="docs/logo.png" alt="Mnema" width="120" height="134">
-  </picture>
-</p>
+<h1 align="center">
+  <br>
+  mnema
+  <br>
+</h1>
 
-<h1 align="center">Mnema</h1>
+<p align="center"><em>a tamper-evident audit chain for AI-agent work</em></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@felipesauer/mnema"><img src="https://img.shields.io/npm/v/@felipesauer/mnema/alpha?style=flat-square&logo=npm&logoColor=white&label=npm%20alpha&color=cb3837" alt="npm alpha version"></a>
