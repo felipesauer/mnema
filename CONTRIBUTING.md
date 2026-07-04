@@ -112,7 +112,7 @@ the repro too, so it's tracked even before a fix lands.
 Before any release tarball gets shipped, two gates run:
 
 ```bash
-pnpm publish:check           # 13 automated checks (build, lint, tests,
+pnpm publish:check           # automated gate (build, lint, tests,
                              # coverage, bench, MCP smoke, tarball shape)
 pnpm smoke:bootstrap         # wipes /tmp/mnema-smoke/, sets up a clean workdir
 ```
@@ -127,9 +127,12 @@ in the clean workdir, and files anything that breaks as an issue.
   Hardcoding states in services breaks `lean`/`kanban`/`jira-classic`.
   Schema refines and `mnema doctor` checks defend this invariant —
   extend both when adding workflow features.
-- **Audit log is tamper-evident.** Migration 011 added a SHA-256 hash
-  chain. Don't write to `.mnema/audit/*.jsonl` directly; use
-  `AuditWriter.write()` so the chain stays intact.
+- **Audit log is tamper-evident in layers.** A SHA-256 hash chain
+  (migration 011) is keyed with a per-project HMAC secret and signed by
+  a per-machine Ed25519 key, with optional external anchoring on top.
+  Don't write to `.mnema/audit/*.jsonl` directly; use
+  `AuditWriter.write()` so the chain, keying, and signatures stay
+  intact.
 - **Mutations require an active agent run via MCP.** `task_create`,
   `decision_record`, `memory_record` etc. all gate on
   `agent_run_start` having been called. CLI is more permissive (the
