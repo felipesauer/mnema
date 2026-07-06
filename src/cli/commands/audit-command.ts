@@ -15,12 +15,13 @@ import {
   writeArtifact,
 } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
-import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { inspectAuditIntegrity, reconcileAuditState } from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
+import { AuditStateRepository } from '../../storage/sqlite/repositories/audit-state-repository.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -243,6 +244,64 @@ export class AuditCommand {
           }
         });
         process.exit(failed ? 1 : 0);
+      });
+
+    group
+      .command('reconcile')
+      .description(
+        'Recover audit_state (the SQLite mirror) from a from-scratch walk of the on-disk ' +
+          'chain, for when they have drifted apart by more than one event — the shape a ' +
+          "pre-0.11 mnema's missing cross-process write lock could leave behind (two " +
+          'concurrent writers committing the mirror in one order but appending to disk in ' +
+          'another). Refuses when the on-disk chain itself shows signs of real tampering ' +
+          '(a broken prev_hash link, a hash mismatch, a version downgrade, or a malformed ' +
+          'line) — those are never fixed by reconciling, only laundered. Does NOT modify ' +
+          'the JSONL files; only the SQLite mirror is corrected.',
+      )
+      .option(
+        '--force',
+        'Apply the correction (without this flag, only reports what would change)',
+        false,
+      )
+      .action(async (options: { readonly force?: boolean }) => {
+        let hasError = false;
+        await withCliContext(async ({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, config.paths.audit);
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const state = new AuditStateRepository(container.adapter);
+          const signature = new AuditHeadSignatureRepository(container.adapter).read();
+          const apply = options.force === true;
+
+          const result = reconcileAuditState(
+            auditDir,
+            state,
+            secret.read(),
+            signature?.eventCountAt ?? null,
+            apply,
+          );
+          if (!result.ok) {
+            process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
+            hasError = true;
+            return;
+          }
+          if (!result.changed) {
+            process.stdout.write(
+              `${pc.green('✔')}  audit_state already matches disk — nothing to do\n`,
+            );
+            return;
+          }
+          if (result.applied) {
+            process.stdout.write(
+              `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
+            );
+          } else {
+            process.stdout.write(
+              `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
+                `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+            );
+          }
+        });
+        process.exit(hasError ? 1 : 0);
       });
   }
 }
