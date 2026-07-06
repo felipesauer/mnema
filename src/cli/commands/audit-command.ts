@@ -251,7 +251,7 @@ export class AuditCommand {
       .description(
         'Recover audit_state (the SQLite mirror) from a from-scratch walk of the on-disk ' +
           'chain, for when they have drifted apart by more than one event — the shape a ' +
-          "pre-0.11 mnema's missing cross-process write lock could leave behind (two " +
+          'missing cross-process write lock could leave behind (two ' +
           'concurrent writers committing the mirror in one order but appending to disk in ' +
           'another). Refuses when the on-disk chain itself shows signs of real tampering ' +
           '(a broken prev_hash link, a hash mismatch, a version downgrade, or a malformed ' +
