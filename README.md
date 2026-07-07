@@ -1,5 +1,7 @@
 <h1 align="center">
   <br>
+  <img src="./docs/assets/logo.png" alt="mnema logo" width="180">
+  <br>
   mnema
   <br>
 </h1>
