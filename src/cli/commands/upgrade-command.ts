@@ -5,7 +5,14 @@ import path from 'node:path';
 import type { Command } from 'commander';
 
 import type { Config } from '../../config/config-schema.js';
+import { autoAttest, chainHealthyForAttest } from '../../services/audit/attestation-cli.js';
+import { listArtifacts } from '../../services/audit/attestation-store.js';
+import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
+import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { MachineKeyService } from '../../services/machine-key.js';
+import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
@@ -185,8 +192,85 @@ export class UpgradeCommand {
       });
     }
 
+    // Unattested audit tail (ADR-41): a project that predates content
+    // attestation — or that just adopted this version — has chained events
+    // with no committed `.att`, so an anonymous clone cannot verify their
+    // authenticity. `upgrade` offers to emit the attestations once, so the
+    // feature reaches an EXISTING project without the user hunting for the
+    // command. Only surfaced when there is actually an unattested tail AND an
+    // identity to sign with; the emit itself reuses the same fail-closed
+    // policy as `mnema audit reattest`, so a tampered chain is refused, not
+    // papered over.
+    const attestStep = this.attestationStep(ctx);
+    if (attestStep !== null) steps.push(attestStep);
+
     return steps;
   }
+
+  /**
+   * The step that emits attestations for an unattested tail, or `null` when
+   * there is nothing to attest (already covered, empty chain) or no signing
+   * identity. Detection is cheap and read-only; the run delegates to
+   * {@link autoAttest}.
+   *
+   * @param ctx - Open CLI context
+   * @returns The step, or `null` when it would be a no-op
+   */
+  private attestationStep(ctx: CliContext): UpgradeStep | null {
+    const { config, projectRoot, container } = ctx;
+    const auditDir = path.join(projectRoot, config.paths.audit);
+
+    // Count events past the last committed `.att` — the unattested tail.
+    const total = walkChainedEvents(auditDir).chained.length;
+    const artifacts = listArtifacts(auditDir);
+    const attestedTo = artifacts.reduce((max, a) => Math.max(max, a.to), 0);
+    const tail = total - attestedTo;
+    if (tail <= 0) return null;
+
+    // Need a resolvable identity to sign; if none, skip silently (the user
+    // configures one, then re-runs) rather than surface an unusable step.
+    const actor = container.identity.resolveDefaultActor().actor;
+    if (actor === null) return null;
+
+    return {
+      label: `attest ${tail} unattested audit event(s) so an anonymous clone can verify them`,
+      run: () => {
+        const secret = new ProjectSecretService(projectRoot, config.project.key);
+        let signer: { machineKey: MachineKeyService; actor: string } | null = null;
+        try {
+          signer = { machineKey: new MachineKeyService(projectRoot, actor), actor };
+        } catch {
+          return 'skipped — actor handle is not valid for a signing key';
+        }
+        autoAttest({
+          projectRoot,
+          auditDir,
+          signer,
+          projectHmacId: secret.readFingerprint(),
+          chainHealthy: chainHealthyForAttest(
+            inspectAuditIntegrity(
+              container.adapter,
+              auditDir,
+              secret.read(),
+              secret.readFingerprint() !== null,
+            ),
+          ),
+          signedEventCountAt:
+            new AuditHeadSignatureRepository(container.adapter).read()?.eventCountAt ?? null,
+          batchSize: config.audit.checkpoint.events,
+        });
+        const remaining = walkChainedEvents(auditDir).chained.length - attestedToAfter(auditDir);
+        return remaining > 0
+          ? `attested up to the last checkpoint; ${remaining} tail event(s) remain (refused or below the interval)`
+          : 'all audit events attested — commit the new .att files with the .mnema/ trail';
+      },
+    };
+  }
+}
+
+/** Highest `to` across committed attestations (0 when none). */
+function attestedToAfter(auditDir: string): number {
+  return listArtifacts(auditDir).reduce((max, a) => Math.max(max, a.to), 0);
 }
 
 /**
