@@ -14,6 +14,8 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'task_create',
   'task_create_many',
   'task_assign',
+  'task_claim',
+  'task_release_claim',
   'tasks_list',
   'task_show',
   'task_actions',

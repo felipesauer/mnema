@@ -77,6 +77,15 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Terminal states cannot be transitioned out of`);
       break;
 
+    case ErrorCode.TaskAlreadyClaimed:
+      lines.push(
+        `Task ${error.taskKey} is already claimed by ${error.claimedBy} (lease expires ${error.leaseExpiresAt})`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} Wait for the lease to expire, or ask ${error.claimedBy} to release it`,
+      );
+      break;
+
     case ErrorCode.ProjectNotFound:
       lines.push(`Project ${error.projectKey} not found in the database`);
       lines.push(`${pc.dim('hint:')} Run \`mnema doctor\` to inspect the workspace`);
@@ -362,6 +371,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.InitConflict:
     case ErrorCode.ActiveSprintExists:
     case ErrorCode.StorageBusy:
+    case ErrorCode.TaskAlreadyClaimed:
       return ExitCode.Conflict;
 
     // State (3): the artefact exists but is in the wrong state for the action;

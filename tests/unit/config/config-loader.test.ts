@@ -404,6 +404,21 @@ describe('ConfigLoader', () => {
       expect(config.aging.sla_days?.BLOCKED).toBe(2); // …the project's other SLA survives
     });
 
+    it('deep-merges the claims block so a local override does not wipe project fields', () => {
+      // claims has a single field today, so this guards the merge PATH: a
+      // local override of lease_minutes wins, and claims is not replaced
+      // wholesale (which is what would silently drop a sibling field the day
+      // claims grows a second one — the reason it is in DEEP_MERGE_KEYS).
+      writeConfig(tempRoot, {
+        ...validConfig,
+        claims: { lease_minutes: 45 },
+      });
+      writeLocalConfig({ claims: { lease_minutes: 10 } });
+
+      const config = loader.load(tempRoot);
+      expect(config.claims.lease_minutes).toBe(10); // local wins
+    });
+
     it('sits on top of the whole stack: user < project < local', () => {
       // user says blocking, project says strict, local says advisory → advisory
       const fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-stack-'));

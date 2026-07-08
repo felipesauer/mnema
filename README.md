@@ -594,10 +594,12 @@ the hash-chained audit log, verifiable forever.
 ```
 
 Optional fields cover custom paths, audit retention, sync flush
-thresholds, feature flags, and an `aging` block — `stale_after_days`,
+thresholds, feature flags, an `aging` block — `stale_after_days`,
 per-state review SLAs (`sla_days`, e.g. `{ "IN_REVIEW": 2 }`), and
 `orphan_run_after_hours` — that drives what `mnema inbox` and
-`mnema doctor` flag. Run `mnema doctor` after editing — it re-validates
+`mnema doctor` flag, and a `claims` block (`lease_minutes`, default 30)
+that sets how long a `task_claim` reservation lasts before it
+self-expires. Run `mnema doctor` after editing — it re-validates
 the file against the schema and reports anything that drifted.
 
 One optional field worth calling out is `enforcement_mode`, which decides

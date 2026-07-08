@@ -56,6 +56,8 @@ interface TaskRow {
   readonly updated_at: string;
   readonly closed_at: string | null;
   readonly deleted_at: string | null;
+  readonly claimed_by: string | null;
+  readonly lease_expires_at: string | null;
 }
 
 /**
@@ -313,6 +315,10 @@ function rowToSprint(row: SprintRow): Sprint {
   };
 }
 
+// NOTE: this mirrors TaskRepository.rowToTask — the two must stay in sync
+// when the tasks table gains a column (claimed_by/lease_expires_at were the
+// last pair added). SprintRepository keeps its own copy so listing a
+// sprint's tasks doesn't pull in the task repository.
 function rowToTask(row: TaskRow): Task {
   return {
     id: row.id,
@@ -335,5 +341,7 @@ function rowToTask(row: TaskRow): Task {
     updatedAt: row.updated_at,
     closedAt: row.closed_at,
     deletedAt: row.deleted_at,
+    claimedBy: row.claimed_by,
+    leaseExpiresAt: row.lease_expires_at,
   };
 }

@@ -25,6 +25,8 @@ interface TaskRow {
   readonly updated_at: string;
   readonly closed_at: string | null;
   readonly deleted_at: string | null;
+  readonly claimed_by: string | null;
+  readonly lease_expires_at: string | null;
 }
 
 /**
@@ -47,6 +49,8 @@ export interface LeanTask {
   readonly sprintId: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly claimedBy: string | null;
+  readonly leaseExpiresAt: string | null;
 }
 
 /**
@@ -111,6 +115,24 @@ export type UpdateStateFailure =
 export type UpdateStateResult =
   | { readonly ok: true; readonly task: Task }
   | { readonly ok: false; readonly reason: UpdateStateFailure };
+
+/**
+ * Reason a `claim` call failed.
+ */
+export type ClaimFailure =
+  | { readonly kind: 'NOT_FOUND' }
+  | {
+      readonly kind: 'ALREADY_CLAIMED';
+      readonly claimedBy: string;
+      readonly leaseExpiresAt: string;
+    };
+
+/**
+ * Outcome of a claim attempt.
+ */
+export type ClaimResult =
+  | { readonly ok: true; readonly task: Task }
+  | { readonly ok: false; readonly reason: ClaimFailure };
 
 /**
  * Persistence for {@link Task}. Read/write only — no business rules.
@@ -216,7 +238,8 @@ export class TaskRepository {
       .getDatabase()
       .prepare(
         `SELECT id, key, title, description, state, priority,
-                assignee_id, epic_id, sprint_id, created_at, updated_at
+                assignee_id, epic_id, sprint_id, created_at, updated_at,
+                claimed_by, lease_expires_at
            FROM tasks
           WHERE ${clauses.join(' AND ')}
           ORDER BY key`,
@@ -350,6 +373,106 @@ export class TaskRepository {
       throw new Error('task disappeared after updateState');
     }
     return { ok: true, task: reloaded };
+  }
+
+  /**
+   * Claims a task for an actor, atomically, with a lease that expires on
+   * its own — no separate "release" is required for the claim to stop
+   * blocking other actors once `leaseExpiresAt` has passed.
+   *
+   * The `WHERE` clause folds the read-then-write into a single statement:
+   * two processes racing this call on the same row can both run the
+   * `SELECT` pre-check and see it unclaimed, but only one `UPDATE` can
+   * match the row (SQLite serialises writers on one file), so
+   * `result.changes` tells the loser it lost without a second round trip.
+   * The claim succeeds when the row is unclaimed, its lease has expired, OR
+   * the caller already holds it — so an actor still working can renew its
+   * own live lease, while a different actor is refused until it expires.
+   *
+   * Deliberately omits `updated_at` from the `SET` list so
+   * `trg_tasks_updated_at` (`WHEN OLD.updated_at = NEW.updated_at`) is the
+   * only thing that bumps it — a claim goes through the same stamping path
+   * as every other task write, instead of this method computing its own
+   * timestamp and risking it drift from the trigger's.
+   *
+   * @param taskId - Internal id of the task
+   * @param actorId - Internal id of the claiming actor
+   * @param leaseExpiresAt - ISO8601 timestamp the lease expires at
+   * @param now - ISO8601 timestamp to compare the current lease against
+   * @returns Result describing success or the reason it failed
+   */
+  claim(taskId: string, actorId: string, leaseExpiresAt: string, now: string): ClaimResult {
+    const db = this.adapter.getDatabase();
+    const current = db
+      .prepare('SELECT claimed_by, lease_expires_at FROM tasks WHERE id = ? AND deleted_at IS NULL')
+      .get(taskId) as { claimed_by: string | null; lease_expires_at: string | null } | undefined;
+    if (current === undefined) {
+      return { ok: false, reason: { kind: 'NOT_FOUND' } };
+    }
+
+    const result = db
+      .prepare(
+        `UPDATE tasks
+            SET claimed_by = ?, lease_expires_at = ?
+          WHERE id = ?
+            AND (claimed_by IS NULL OR lease_expires_at < ? OR claimed_by = ?)`,
+      )
+      .run(actorId, leaseExpiresAt, taskId, now, actorId);
+
+    if (result.changes === 0) {
+      // Lost the race between the SELECT and the UPDATE. Re-read to report
+      // WHO holds it — but the row may have changed again: the holder could
+      // have released concurrently, leaving claimed_by NULL. Type the reread
+      // honestly (nullable) and, when there is no live holder to name,
+      // surface NOT_FOUND rather than an ALREADY_CLAIMED that lies with a
+      // null holder. (A hard delete never happens — tasks are soft-deleted —
+      // so `undefined` is only defensive.)
+      const reread = db
+        .prepare(
+          'SELECT claimed_by, lease_expires_at FROM tasks WHERE id = ? AND deleted_at IS NULL',
+        )
+        .get(taskId) as { claimed_by: string | null; lease_expires_at: string | null } | undefined;
+      if (reread === undefined || reread.claimed_by === null || reread.lease_expires_at === null) {
+        return { ok: false, reason: { kind: 'NOT_FOUND' } };
+      }
+      return {
+        ok: false,
+        reason: {
+          kind: 'ALREADY_CLAIMED',
+          claimedBy: reread.claimed_by,
+          leaseExpiresAt: reread.lease_expires_at,
+        },
+      };
+    }
+
+    const reloaded = this.findById(taskId);
+    if (reloaded === null) {
+      throw new Error('task disappeared after claim');
+    }
+    return { ok: true, task: reloaded };
+  }
+
+  /**
+   * Releases a task's claim, but only when `actorId` currently holds it —
+   * an expired or foreign claim cannot be released by someone who doesn't
+   * hold it, so callers can't accidentally clear another actor's lease by
+   * calling release defensively.
+   *
+   * @param taskId - Internal id of the task
+   * @param actorId - Internal id of the actor releasing the claim
+   * @returns `true` when a row was updated, `false` when the id was
+   *   unknown or `actorId` does not hold the current claim
+   */
+  releaseClaim(taskId: string, actorId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `UPDATE tasks
+            SET claimed_by = NULL, lease_expires_at = NULL
+          WHERE id = ? AND claimed_by = ?`,
+      )
+      .run(taskId, actorId);
+    return result.changes > 0;
   }
 
   /**
@@ -551,6 +674,8 @@ function rowToTask(row: TaskRow): Task {
     updatedAt: row.updated_at,
     closedAt: row.closed_at,
     deletedAt: row.deleted_at,
+    claimedBy: row.claimed_by,
+    leaseExpiresAt: row.lease_expires_at,
   };
 }
 
@@ -567,6 +692,8 @@ interface LeanRow {
   readonly sprint_id: string | null;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly claimed_by: string | null;
+  readonly lease_expires_at: string | null;
 }
 
 /** Maps a projected row to {@link LeanTask} — no JSON.parse (that's the point). */
@@ -583,5 +710,7 @@ function rowToLeanTask(row: LeanRow): LeanTask {
     sprintId: row.sprint_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    claimedBy: row.claimed_by,
+    leaseExpiresAt: row.lease_expires_at,
   };
 }
