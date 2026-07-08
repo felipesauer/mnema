@@ -64,6 +64,12 @@ export function auditFilesSignature(auditDir: string): string {
  * in, or it would serve a stale content-attestation verdict after a `reattest`
  * (or a tamper of an `.att`) that left the JSONL untouched.
  *
+ * Same residual as {@link auditFilesSignature}: an in-place edit that keeps
+ * the size AND resets the mtime (`touch -m`) would not flip the key, so a
+ * cache could serve a pre-tamper verdict. This is an accepted property of a
+ * stat-based signature (a content hash would close it); the authoritative,
+ * non-cached path (`audit verify`, `doctor`) always recomputes and catches it.
+ *
  * @param auditDir - Directory holding the audit log files
  * @returns A signature string (`""` when the attest dir is absent/empty)
  */

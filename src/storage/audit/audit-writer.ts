@@ -303,8 +303,17 @@ export class AuditWriter {
     if (signedHead !== null && this.onCheckpoint !== null) {
       try {
         this.onCheckpoint(signedHead.hash, signedHead.eventCount);
-      } catch {
-        // Swallowed: attestation is a cold, recoverable side-channel.
+      } catch (error) {
+        // Fail-open: the write already stood, and `reattest` can backfill any
+        // batch this skipped. But do NOT swallow silently — the benign cases
+        // (no signer, unhealthy chain) already return WITHOUT throwing inside
+        // autoAttest, so anything reaching here is UNEXPECTED (a bug, ENOSPC,
+        // EACCES). A fully silent catch would let auto-attestation stop
+        // emitting forever with no signal, quietly eroding the very coverage
+        // this feature adds. Surface it on stderr so it is diagnosable.
+        process.stderr.write(
+          `mnema: auto-attestation skipped (write unaffected): ${(error as Error).message}\n`,
+        );
       }
     }
   }
