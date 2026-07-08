@@ -8,6 +8,7 @@ import {
 } from '../storage/audit/audit-files.js';
 import { hashEvent, hmacEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
+import type { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 
 /**
@@ -99,42 +100,36 @@ export interface IntegrityCheck {
  *   authenticity. `null` omits the check.
  * @returns Audit-integrity checks
  */
-export function inspectAuditIntegrity(
-  adapter: SqliteAdapter,
-  auditDir: string,
-  secret: Buffer | null = null,
-  hasFingerprint = false,
-  attestation: AttestationSource | null = null,
-  contentAttestation: IntegrityCheck | null = null,
-): IntegrityCheck[] {
-  const checks: IntegrityCheck[] = [];
-  if (!existsSync(auditDir)) {
-    checks.push({
-      name: 'audit integrity',
-      ok: true,
-      detail: 'no audit directory',
-      severity: 'warning',
-    });
-    return checks;
-  }
+/**
+ * Result of a single linear walk of every JSONL file under `auditDir`, in
+ * chain order. Shared by {@link inspectAuditIntegrity} (which turns it into
+ * report lines) and {@link reconcileAuditState} (which uses it to recompute
+ * a trustworthy mirror), so the two can never disagree on what is actually
+ * on disk.
+ */
+interface AuditChainWalk {
+  readonly chainedLines: number;
+  readonly legacyLines: number;
+  readonly malformedLines: number;
+  readonly v3Unverifiable: number;
+  readonly anyV3: boolean;
+  readonly chainBroken: boolean;
+  readonly chainBreakDetail: string;
+  readonly lastHash: string | null;
+  readonly lastAt: string | null;
+  readonly chainEverStarted: boolean;
+}
 
-  const stateRow = adapter
-    .getDatabase()
-    .prepare('SELECT event_count, last_event_at, chain_head_hash FROM audit_state WHERE id = 1')
-    .get() as
-    | { event_count: number; last_event_at: string | null; chain_head_hash: string | null }
-    | undefined;
-
-  if (stateRow === undefined) {
-    checks.push({
-      name: 'audit integrity',
-      ok: false,
-      detail: 'audit_state row missing — run `mnema migrate`',
-      severity: 'error',
-    });
-    return checks;
-  }
-
+/**
+ * Walks every audit JSONL file under `auditDir`, in chain order, verifying
+ * the per-line hash chain end to end (across rotated segments) and tallying
+ * the shape of what it finds. Pure and read-only.
+ *
+ * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @returns The walk result
+ */
+function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk {
   const files = orderedAuditFiles(auditDir);
 
   // Events that belong to the hash chain (v >= 2). `audit_state.event_count`
@@ -154,6 +149,7 @@ export function inspectAuditIntegrity(
   let chainBroken = false;
   let chainBreakDetail = '';
   let lastHash: string | null = null;
+  let lastAt: string | null = null;
   let chainEverStarted = false;
   // The running chain head, carried ACROSS files. The chain is a single
   // sequence even though rotation splits it into `YYYY-MM.jsonl` segments
@@ -220,6 +216,7 @@ export function inspectAuditIntegrity(
         }
         prevHash = hash;
         lastHash = hash;
+        lastAt = typeof event.at === 'string' ? event.at : lastAt;
       } else {
         // Legacy line: no per-line chain; counted separately so it does
         // not inflate the chain-count comparison below.
@@ -228,6 +225,69 @@ export function inspectAuditIntegrity(
       }
     }
   }
+
+  return {
+    chainedLines,
+    legacyLines,
+    malformedLines,
+    v3Unverifiable,
+    anyV3,
+    chainBroken,
+    chainBreakDetail,
+    lastHash,
+    lastAt,
+    chainEverStarted,
+  };
+}
+
+export function inspectAuditIntegrity(
+  adapter: SqliteAdapter,
+  auditDir: string,
+  secret: Buffer | null = null,
+  hasFingerprint = false,
+  attestation: AttestationSource | null = null,
+  contentAttestation: IntegrityCheck | null = null,
+): IntegrityCheck[] {
+  const checks: IntegrityCheck[] = [];
+  if (!existsSync(auditDir)) {
+    checks.push({
+      name: 'audit integrity',
+      ok: true,
+      detail: 'no audit directory',
+      severity: 'warning',
+    });
+    return checks;
+  }
+
+  const stateRow = adapter
+    .getDatabase()
+    .prepare('SELECT event_count, last_event_at, chain_head_hash FROM audit_state WHERE id = 1')
+    .get() as
+    | { event_count: number; last_event_at: string | null; chain_head_hash: string | null }
+    | undefined;
+
+  if (stateRow === undefined) {
+    checks.push({
+      name: 'audit integrity',
+      ok: false,
+      detail: 'audit_state row missing — run `mnema migrate`',
+      severity: 'error',
+    });
+    return checks;
+  }
+
+  const walk = walkAuditChain(auditDir, secret);
+  const {
+    chainedLines,
+    legacyLines,
+    malformedLines,
+    v3Unverifiable,
+    anyV3,
+    lastHash,
+    chainEverStarted,
+  } = walk;
+  let chainBroken = walk.chainBroken;
+  let chainBreakDetail = walk.chainBreakDetail;
 
   // Fingerprint implies v3: a committed HMAC fingerprint means the project
   // adopted keyed events, so a chain with chained lines but NO v3 line is a
@@ -394,6 +454,100 @@ export function inspectAuditIntegrity(
   }
 
   return checks;
+}
+
+/** Outcome of {@link reconcileAuditState}. */
+export type ReconcileResult =
+  | {
+      readonly ok: true;
+      readonly beforeEventCount: number;
+      readonly afterEventCount: number;
+      readonly changed: boolean;
+      readonly applied: boolean;
+    }
+  | { readonly ok: false; readonly reason: string };
+
+/**
+ * Recomputes what `audit_state` SHOULD hold from a from-scratch walk of the
+ * on-disk chain, and — when `apply` is true — writes it via
+ * {@link AuditStateRepository.forceReconcile}. With `apply: false` (the
+ * default, used for a dry-run preview) it computes the same verdict but
+ * never touches the database.
+ *
+ * This is the recovery path for the drift a pre-`43e7113` mnema (no
+ * cross-process write lock on the mirror+append pair) could leave behind:
+ * two concurrent writers commit the SQLite mirror in one order but append
+ * their JSONL lines in the other, so the mirror ends up counting more events
+ * than ever landed on disk. `AuditStateRepository.reconcileToDisk` only
+ * self-heals the narrow one-ahead crash shape; a multi-event drift like that
+ * is left for a human to resolve — this is that resolution, made safe by
+ * refusing whenever the disk chain shows signs of real tampering rather than
+ * mirror drift.
+ *
+ * Refuses (returns `{ ok: false }`) when:
+ * - the chain has no chained (v>=2) lines yet (nothing to reconcile against)
+ * - the on-disk chain is not internally consistent (a real `prev_hash`
+ *   break, a hash mismatch, or a version downgrade) — reconciling would
+ *   paper over genuine tampering rather than fix a benign mirror/disk split
+ * - any line failed to parse — same reasoning as above (a possible
+ *   smokescreen for a deleted line)
+ * - a signed checkpoint (layer-2 machine attestation) attests a higher
+ *   `event_count` than the walk found — reconciling down would silently
+ *   accept a truncation the attestation layer exists to catch
+ *
+ * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param state - The mirror repository to correct
+ * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @param signedEventCountAt - The highest `event_count` covered by a valid
+ *   head signature, or `null` when none is recorded
+ * @param apply - When true, persist the correction; when false, only compute
+ *   the verdict (dry run)
+ * @returns The outcome — on success, the event count before/after and
+ *   whether a correction was needed and applied
+ */
+export function reconcileAuditState(
+  auditDir: string,
+  state: AuditStateRepository,
+  secret: Buffer | null,
+  signedEventCountAt: number | null,
+  apply: boolean,
+): ReconcileResult {
+  const walk = walkAuditChain(auditDir, secret);
+
+  if (walk.malformedLines > 0) {
+    return {
+      ok: false,
+      reason: `${walk.malformedLines} unparseable line(s) on disk — resolve those before reconciling (possible tampering smokescreen)`,
+    };
+  }
+  if (walk.chainBroken) {
+    return {
+      ok: false,
+      reason: `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — this is tampering, not mirror drift; reconciling would hide it`,
+    };
+  }
+  if (!walk.chainEverStarted) {
+    return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to reconcile' };
+  }
+  if (signedEventCountAt !== null && walk.chainedLines < signedEventCountAt) {
+    return {
+      ok: false,
+      reason: `a signed checkpoint attests event ${signedEventCountAt}, but the disk chain only holds ${walk.chainedLines} — this looks like a truncation, not mirror drift`,
+    };
+  }
+
+  const before = state.read();
+  const changed = before.eventCount !== walk.chainedLines || before.chainHeadHash !== walk.lastHash;
+  if (changed && apply) {
+    state.forceReconcile(walk.chainedLines, walk.lastHash, walk.lastAt);
+  }
+  return {
+    ok: true,
+    beforeEventCount: before.eventCount,
+    afterEventCount: walk.chainedLines,
+    changed,
+    applied: changed && apply,
+  };
 }
 
 /**

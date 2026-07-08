@@ -192,4 +192,47 @@ export class AuditStateRepository {
       throw error;
     }
   }
+
+  /**
+   * Unconditionally overwrites the mirror with the given disk-derived
+   * values, regardless of how far it has diverged. Unlike
+   * {@link AuditStateRepository.reconcileToDisk} (which only ever rewinds
+   * the narrow, provably-safe one-ahead crash shape), this accepts any
+   * divergence — including the multi-event drift a pre-`43e7113` mnema
+   * (no cross-process write lock) could leave behind from two processes
+   * committing the mirror in one order but appending to disk in another.
+   *
+   * This is a blunt recovery tool, not a per-write invariant: callers (the
+   * `mnema audit reconcile` CLI command) are responsible for first proving
+   * the on-disk chain is itself internally consistent — no broken
+   * `prev_hash` links, no version downgrade, no malformed lines — so this
+   * only ever re-points the mirror at a disk state already known to be
+   * untampered. It must never be reached for a genuinely broken chain.
+   *
+   * @param eventCount - Chained (v>=2) line count actually on disk
+   * @param chainHeadHash - `hash` of the last chained line, or `null` if empty
+   * @param lastEventAt - `at` of the last chained line, or `null` if empty
+   */
+  forceReconcile(
+    eventCount: number,
+    chainHeadHash: string | null,
+    lastEventAt: string | null,
+  ): void {
+    const db = this.adapter.getDatabase();
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare(
+        `UPDATE audit_state
+            SET event_count = ?,
+                last_event_at = ?,
+                chain_head_hash = ?,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+          WHERE id = 1`,
+      ).run(eventCount, lastEventAt, chainHeadHash);
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
+  }
 }
