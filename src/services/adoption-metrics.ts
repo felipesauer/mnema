@@ -40,7 +40,7 @@ export interface AdoptionMetrics {
   readonly skillAdoption: FlowMetrics['skill_adoption'];
 }
 
-const TERMINAL_DONE_ACTIONS = new Set(['done', 'approve']);
+const TERMINAL_DONE_ACTIONS = new Set(['done', 'approve', 'complete']);
 
 /** The first event of a given kind, by `at` (events may be unsorted). */
 function earliest(

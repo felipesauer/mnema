@@ -223,6 +223,70 @@ describe('TaskService (integration)', () => {
       // reopen_count counter bumps on every `reopen` action.
       expect(reopened.value.reopenCount).toBe(1);
     });
+
+    it('completes a non-code task to DONE via `complete` without a pr_url', () => {
+      container.task.create({ projectKey: 'TEST', title: 'Ratify a decision', actor: 'daniel' });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit',
+        payload: {
+          title: 'Ratify a decision',
+          description: 'a decision to ratify, no code',
+          acceptance_criteria: ['decision recorded'],
+          estimate: 1,
+        },
+        actor: 'daniel',
+      });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'start',
+        payload: { assignee_id: 'daniel' },
+        actor: 'daniel',
+      });
+
+      const completed = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'complete',
+        payload: { completion_note: 'decision recorded in the ADR' },
+        actor: 'daniel',
+      });
+      expect(completed.ok).toBe(true);
+      if (!completed.ok) return;
+      expect(completed.value.state).toBe('DONE');
+    });
+
+    it('rejects `complete` when the completion_note is missing', () => {
+      container.task.create({ projectKey: 'TEST', title: 'No note', actor: 'daniel' });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit',
+        payload: {
+          title: 'No note',
+          description: 'will fail the complete gate',
+          acceptance_criteria: ['x'],
+          estimate: 1,
+        },
+        actor: 'daniel',
+      });
+      container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'start',
+        payload: { assignee_id: 'daniel' },
+        actor: 'daniel',
+      });
+
+      const result = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'complete',
+        payload: {},
+        actor: 'daniel',
+        // As an agent (`via` set), strict mode holds the gate — a human
+        // could override, but an agent cannot.
+        via: 'agent:test',
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.kind).toBe(ErrorCode.GateFailed);
+    });
   });
 
   describe('soft delete', () => {
