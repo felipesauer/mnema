@@ -43,9 +43,15 @@ scripts/record-quickstart.sh
 !.mnema/audit/
 .mnema/audit/*
 !.mnema/audit/attest/
-!.mnema/audit/attest/**
+.mnema/audit/attest/*
+!.mnema/audit/attest/*.att
 !.mnema/anchors/
-!.mnema/anchors/**
+.mnema/anchors/*
+!.mnema/anchors/*.receipt
+# The `dir/* then whitelist the leaf glob` shape (same as keys/*.pub above) is
+# deliberate: a bare `!attest/**` would re-include ANYTHING dropped in there —
+# an editor swapfile, a `.att.tmp`, a stray key — so only the exact artifact
+# suffix is tracked; everything else stays ignored (defence in depth).
 # NEVER un-ignore .mnema/state/ — the SQLite mirror (rebuildable cache, and
 # today the head-signature row) is not verification material.
 
