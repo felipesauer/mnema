@@ -40,6 +40,8 @@ import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
 import { buildAnchorScheduler } from './anchor/anchor-factory.js';
 import { AttachmentService } from './attachment-service.js';
+import { autoAttest, chainHealthyForAttest } from './audit/attestation-cli.js';
+import { inspectAuditIntegrity } from './audit-integrity.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { CommandDefinitionService } from './command-definition-service.js';
@@ -296,19 +298,30 @@ export function createServiceContainer(
   // never sits on the per-event cost. The MachineKeyService is memoised per
   // actor so repeated checkpoints don't rebuild it.
   let cachedSigner: { actor: string; machineKey: MachineKeyService } | null = null;
-  const headCheckpoint = new HeadCheckpointService(
-    new AuditHeadSignatureRepository(adapter),
-    () => {
-      const actor = identity.resolveDefaultActor().actor;
-      if (actor === null) return null;
-      if (cachedSigner === null || cachedSigner.actor !== actor) {
+  // Resolve the per-machine signer lazily, memoised per actor. Shared by the
+  // checkpoint (head signature) and the auto-attestation hook so both use the
+  // SAME keypair under the SAME secretUserDir — never a divergent key. A null
+  // or malformed actor is a clean null (never a throw): the MachineKeyService
+  // constructor rejects a bad handle, which must degrade to "no signer", not
+  // crash the write path.
+  const resolveSigner = (): { actor: string; machineKey: MachineKeyService } | null => {
+    const actor = identity.resolveDefaultActor().actor;
+    if (actor === null) return null;
+    if (cachedSigner === null || cachedSigner.actor !== actor) {
+      try {
         cachedSigner = {
           actor,
           machineKey: new MachineKeyService(projectRoot, actor, secretUserDir),
         };
+      } catch {
+        return null;
       }
-      return cachedSigner;
-    },
+    }
+    return cachedSigner;
+  };
+  const headCheckpoint = new HeadCheckpointService(
+    new AuditHeadSignatureRepository(adapter),
+    resolveSigner,
     config.audit.checkpoint,
   );
   // Temporal anchoring (ADR-37 layer 3): resolve the configured provider
@@ -319,6 +332,30 @@ export function createServiceContainer(
   const anchorRepository = new AnchorRepository(adapter);
   const anchorScheduler = buildAnchorScheduler(config, projectRoot, anchorRepository);
   if (pendingMigrations.length === 0) anchorScheduler.retryPending();
+  // Auto-attestation (ADR-41): when a checkpoint signs a new head, materialise
+  // the `.att` for the just-closed batch off the write lock, so the unattested
+  // tail does not grow between manual `reattest` runs. Resolves chain-health
+  // and the signer at call time and delegates to the same fail-closed policy
+  // the command uses; fail-open (the writer wraps it, `reattest` can backfill).
+  const headSignatures = new AuditHeadSignatureRepository(adapter);
+  const onCheckpoint = (_head: string, _eventCount: number): void => {
+    autoAttest({
+      projectRoot,
+      auditDir,
+      signer: resolveSigner(),
+      projectHmacId: projectSecretService.readFingerprint(),
+      chainHealthy: chainHealthyForAttest(
+        inspectAuditIntegrity(
+          adapter,
+          auditDir,
+          projectSecretService.read(),
+          projectSecretService.readFingerprint() !== null,
+        ),
+      ),
+      signedEventCountAt: headSignatures.read()?.eventCountAt ?? null,
+      batchSize: config.audit.checkpoint.events,
+    });
+  };
   const auditWriter = new AuditWriter(
     auditDir,
     auditStateRepository,
@@ -326,6 +363,7 @@ export function createServiceContainer(
     () => projectSecretService.getOrCreate(),
     headCheckpoint,
     anchorScheduler,
+    onCheckpoint,
   );
   const audit = new AuditService(auditWriter);
   const auditQuery = new AuditQuery(auditDir);

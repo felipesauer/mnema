@@ -1,5 +1,7 @@
 import type { IntegrityCheck } from '../audit-integrity.js';
-import { committedSignerResolver, listArtifacts } from './attestation-store.js';
+import type { AttestationSigner } from './attestation-emitter.js';
+import { planReattest } from './attestation-reattest.js';
+import { committedSignerResolver, listArtifacts, writeArtifact } from './attestation-store.js';
 import { contentAttestationCheck } from './attestation-verify.js';
 import { walkChainedEvents } from './audit-chain-walk.js';
 
@@ -62,4 +64,46 @@ export function chainHealthyForAttest(checks: readonly IntegrityCheck[]): boolea
     if (CHAIN_SOUNDNESS_WARNINGS.has(c.name)) return false;
   }
   return true;
+}
+
+/**
+ * Materialises the `.att` for the unattested tail off the write hot-path,
+ * invoked by the writer's checkpoint hook. Reuses the same fail-closed
+ * {@link planReattest} the manual `reattest` command runs, so auto and manual
+ * attestation share one policy — it refuses (writes nothing) on any tamper
+ * signal rather than papering over it. Best-effort by contract: the writer
+ * calls it inside a try/catch, and any batch it does not write is simply left
+ * for the next checkpoint or a manual `reattest`.
+ *
+ * @param opts.projectRoot - Absolute project root (holds `.mnema/keys/`)
+ * @param opts.auditDir - Absolute path to `.mnema/audit/`
+ * @param opts.signer - The machine key + actor for new batches, or `null`
+ * @param opts.projectHmacId - The committed `sha256(secret)` id, or `null`
+ * @param opts.chainHealthy - Whether the chain is sound enough to attest
+ *   (resolved by the caller via {@link chainHealthyForAttest})
+ * @param opts.signedEventCountAt - Highest event_count under a signed
+ *   checkpoint, for the truncation guard (or `null`)
+ * @param opts.batchSize - Backfill batch size (defaults inside planReattest)
+ */
+export function autoAttest(opts: {
+  projectRoot: string;
+  auditDir: string;
+  signer: AttestationSigner | null;
+  projectHmacId: string | null;
+  chainHealthy: boolean;
+  signedEventCountAt: number | null;
+  batchSize?: number;
+}): void {
+  const plan = planReattest({
+    walk: walkChainedEvents(opts.auditDir),
+    existing: listArtifacts(opts.auditDir),
+    resolvePublicKeyPem: committedSignerResolver(opts.projectRoot),
+    signer: opts.signer,
+    projectHmacId: opts.projectHmacId,
+    chainHealthy: opts.chainHealthy,
+    signedEventCountAt: opts.signedEventCountAt,
+    batchSize: opts.batchSize,
+  });
+  if (!plan.ok) return; // fail-closed: a refusal writes nothing
+  for (const artifact of plan.artifacts) writeArtifact(opts.auditDir, artifact);
 }
