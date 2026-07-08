@@ -97,6 +97,29 @@ describe('audit machine attestation verdict', () => {
     expect(verdict?.detail).toMatch(/does not verify|tamper/i);
   });
 
+  it('does not attest when the declared fingerprint diverges from the resolved key', () => {
+    writeSignedEvent();
+    // The .pub is resolved by a short prefix (<fp12>), so a signature row can
+    // name a full fingerprint that shares the prefix but diverges on the
+    // remaining bits — pointing verification at a key the row never named.
+    // Keep the real, VALID signature; only swap the declared full fingerprint
+    // to one that keeps the 12-char prefix (so the file still resolves) but
+    // differs beyond it. The bind must refuse to attest rather than verify
+    // against the mismatched key.
+    const real = signatures.read() as HeadSignatureView;
+    const divergent = `${real.signerFingerprint.slice(0, 12)}${'0'.repeat(52)}`;
+    expect(divergent).not.toBe(real.signerFingerprint);
+    const forged: AttestationSource = {
+      readHeadSignature: () => ({ ...real, signerFingerprint: divergent }),
+      verifyHeadSignature: (sig) => attestation().verifyHeadSignature(sig),
+    };
+    const verdict = attestationVerdict(forged);
+    // cannot attest (warning), never a green attestation on a mismatched key.
+    expect(verdict?.ok).toBe(false);
+    expect(verdict?.severity).toBe('warning');
+    expect(verdict?.detail).toMatch(/not present|cannot attest/i);
+  });
+
   it('warns (cannot attest), not tamper, when the signer public key is missing', () => {
     writeSignedEvent();
     // Remove the committed .pub so the signer's key cannot be resolved.

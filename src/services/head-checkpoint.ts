@@ -126,6 +126,14 @@ export function createAttestationSource(
         const pubPath = keyService.publicKeyPathFor(sig.signerFingerprint);
         if (!existsSync(pubPath)) return null;
         const record = MachineKeyService.parsePublicKey(readFileSync(pubPath, 'utf-8'));
+        // Bind the FULL fingerprint. The `.pub` is resolved by a short prefix
+        // (`<fp12>` names the file), so the resolved record could carry a key
+        // whose full fingerprint diverges from the one the signature row
+        // declared. Verifying against it would attest a signer the row never
+        // named. Require the recorded and declared fingerprints to match on all
+        // 256 bits before trusting the key — a divergence is "cannot attest"
+        // (null), not a tamper verdict, matching the rest of this method.
+        if (record.fingerprint !== sig.signerFingerprint) return null;
         return MachineKeyService.verify(
           Buffer.from(sig.coveredHeadHash, 'hex'),
           Buffer.from(sig.signature, 'base64'),
