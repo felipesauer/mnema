@@ -14,6 +14,7 @@ export enum ErrorCode {
   InvalidTransition = 'INVALID_TRANSITION',
   TaskKeyExists = 'TASK_KEY_EXISTS',
   TerminalState = 'TERMINAL_STATE',
+  TaskAlreadyClaimed = 'TASK_ALREADY_CLAIMED',
 
   ProjectNotFound = 'PROJECT_NOT_FOUND',
   WorkflowNotFound = 'WORKFLOW_NOT_FOUND',

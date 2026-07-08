@@ -179,7 +179,7 @@ export class ConfigLoader {
 }
 
 /** Sub-objects merged recursively instead of replaced wholesale. */
-const DEEP_MERGE_KEYS = ['sync', 'features', 'aging', 'github'] as const;
+const DEEP_MERGE_KEYS = ['sync', 'features', 'aging', 'github', 'claims'] as const;
 
 /** True for a plain object (mergeable), false for arrays / null / scalars. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {

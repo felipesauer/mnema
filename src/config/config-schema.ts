@@ -223,6 +223,19 @@ export const ConfigSchema = z.object({
       wip_limits: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
+  // A task_claim reserves a task for an actor BEFORE work starts, closing
+  // the window optimistic concurrency (updated_at CAS on transition) only
+  // catches after the fact: two sessions reading the same READY task can
+  // each decide "I'll take this" before either writes. The lease expires on
+  // its own — a session that dies without releasing (crash, killed
+  // subagent, dropped MCP connection) does not leave the task claimed
+  // forever, mirroring how aging.orphan_run_after_hours self-heals a run
+  // left running with no agent_run_end.
+  claims: z
+    .object({
+      lease_minutes: z.number().int().positive().default(30),
+    })
+    .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
   // `pr_url` is supplied on approve, `done_pr_policy` decides what to do
   // if that PR is not merged or its CI is red:
@@ -298,6 +311,12 @@ export const UserConfigSchema = z
         orphan_run_after_hours: z.number().int().positive().optional(),
         sla_days: z.record(z.string(), z.number().int().positive()).optional(),
         wip_limits: z.record(z.string(), z.number().int().positive()).optional(),
+      })
+      .strict()
+      .optional(),
+    claims: z
+      .object({
+        lease_minutes: z.number().int().positive().optional(),
       })
       .strict()
       .optional(),

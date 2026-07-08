@@ -42,6 +42,12 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.TaskKeyExists; readonly taskKey: string }
   | { readonly kind: ErrorCode.TerminalState; readonly taskKey: string; readonly state: string }
+  | {
+      readonly kind: ErrorCode.TaskAlreadyClaimed;
+      readonly taskKey: string;
+      readonly claimedBy: string;
+      readonly leaseExpiresAt: string;
+    }
   | { readonly kind: ErrorCode.ProjectNotFound; readonly projectKey: string }
   | { readonly kind: ErrorCode.WorkflowNotFound; readonly path: string }
   | {

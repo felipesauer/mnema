@@ -122,7 +122,7 @@ export class DependencyTools {
       'tasks_ready',
       {
         description:
-          'List tasks ready to be picked up: in the pickable state with every blocking dependency in a terminal state. Optionally scoped to one sprint. Read-only.',
+          'List tasks ready to be picked up: in the pickable state with every blocking dependency in a terminal state. Optionally scoped to one sprint. Each task carries claimed_by/lease_expires_at so a caller can see an existing reservation before attempting task_claim. Read-only.',
         inputSchema: {
           sprint_key: z
             .string()

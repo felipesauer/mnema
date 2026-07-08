@@ -179,6 +179,79 @@ export class TaskTools {
     );
 
     server.registerTool(
+      'task_claim',
+      {
+        description:
+          'Reserve a task for the calling actor with a lease that expires ' +
+          'on its own — use before starting work on a task two sessions ' +
+          'might both pick up, so the second one sees TASK_ALREADY_CLAIMED ' +
+          'instead of racing to task_start. Fails if another actor already ' +
+          'holds a live claim; re-claiming your own live claim extends it. ' +
+          'Requires an active agent run.',
+        inputSchema: {
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+          lease_minutes: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+            .describe(
+              `How long the claim lasts before it self-expires. Default: config claims.lease_minutes (${this.config.claims.lease_minutes}).`,
+            ),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.tasks.claim({
+          taskKey: input.task_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+          leaseMinutes: input.lease_minutes ?? this.config.claims.lease_minutes,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
+      'task_release_claim',
+      {
+        description:
+          'Release the calling actor’s claim on a task. A no-op (not an ' +
+          'error) if the task is unclaimed or held by someone else — safe ' +
+          'to call defensively when finishing or aborting work. Requires ' +
+          'an active agent run.',
+        inputSchema: {
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.tasks.releaseClaim({
+          taskKey: input.task_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
       'task_create_many',
       {
         description:

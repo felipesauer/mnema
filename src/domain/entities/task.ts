@@ -32,4 +32,8 @@ export interface Task {
   readonly updatedAt: string;
   readonly closedAt: string | null;
   readonly deletedAt: string | null;
+  /** Actor id holding the current claim lease, or null when unclaimed. */
+  readonly claimedBy: string | null;
+  /** ISO8601 timestamp the claim lease expires at; null when unclaimed. */
+  readonly leaseExpiresAt: string | null;
 }

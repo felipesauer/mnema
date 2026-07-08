@@ -239,6 +239,119 @@ export class TaskService {
   }
 
   /**
+   * Claims a task for an actor with a lease that expires on its own —
+   * closes the window between two sessions reading the same READY task
+   * and each deciding to work on it, which optimistic concurrency on
+   * `transition` only catches AFTER one of them has already written.
+   *
+   * Not a workflow action: claiming does not change `state`, so it is a
+   * first-class operation (mirroring {@link assign}) rather than a
+   * transition. A caller that wants to enforce "must hold a live claim to
+   * start work" checks the returned task's `claimedBy`/`leaseExpiresAt`
+   * before calling `transition` with the `start` action — this method
+   * only manages the lease itself.
+   *
+   * @param input - Task key, claiming actor, lease length in minutes
+   * @returns The claimed task, or {@link ErrorCode.TaskAlreadyClaimed} when
+   *   another actor already holds a live lease
+   */
+  claim(input: {
+    readonly taskKey: string;
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+    readonly leaseMinutes: number;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    const claimingActorId =
+      input.via !== undefined
+        ? this.identity.ensureActor(input.via, 'agent')
+        : this.identity.ensureActor(input.actor, 'human');
+
+    const now = new Date();
+    const leaseExpiresAt = new Date(now.getTime() + input.leaseMinutes * 60_000).toISOString();
+
+    const claimResult = tryMutation(() =>
+      this.tasks.claim(task.id, claimingActorId, leaseExpiresAt, now.toISOString()),
+    );
+    if (!claimResult.ok) return claimResult;
+    const outcome = claimResult.value;
+
+    if (!outcome.ok) {
+      if (outcome.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+      }
+      return Err({
+        kind: ErrorCode.TaskAlreadyClaimed,
+        taskKey: task.key,
+        claimedBy: outcome.reason.claimedBy,
+        leaseExpiresAt: outcome.reason.leaseExpiresAt,
+      });
+    }
+    const updated = outcome.task;
+
+    this.audit.write({
+      kind: 'task_claimed',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, claimed_by: claimingActorId, lease_expires_at: leaseExpiresAt },
+    });
+
+    return Ok(updated);
+  }
+
+  /**
+   * Releases a task's claim. Only the actor currently holding the lease
+   * can release it — a no-op (not an error) when the task is unclaimed or
+   * held by someone else, so a defensive "release on exit" call from a
+   * session that never held the lease (or whose lease already expired and
+   * was reclaimed) cannot clear another session's live claim.
+   *
+   * @param input - Task key + releasing actor
+   * @returns The task (claim cleared or left untouched) or a structured error
+   */
+  releaseClaim(input: {
+    readonly taskKey: string;
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    const releasingActorId =
+      input.via !== undefined
+        ? this.identity.ensureActor(input.via, 'agent')
+        : this.identity.ensureActor(input.actor, 'human');
+
+    const released = tryMutation(() => this.tasks.releaseClaim(task.id, releasingActorId));
+    if (!released.ok) return released;
+
+    if (released.value) {
+      this.audit.write({
+        kind: 'task_claim_released',
+        actor: input.actor,
+        via: input.via,
+        run: input.runId,
+        data: { key: task.key },
+      });
+    }
+
+    const reloaded = this.tasks.findByKey(input.taskKey);
+    if (reloaded === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+    return Ok(reloaded);
+  }
+
+  /**
    * Moves a task to a new state by executing a workflow action.
    *
    * Validates against the active workflow's gates and persists every
