@@ -4,8 +4,18 @@ import type { Command } from 'commander';
 
 import { buildAnchorRegistry } from '../../services/anchor/anchor-factory.js';
 import { inspectAnchors } from '../../services/anchor/anchor-inspect.js';
+import { chainHealthyForAttest } from '../../services/audit/attestation-cli.js';
+import { planReattest } from '../../services/audit/attestation-reattest.js';
+import {
+  committedSignerResolver,
+  listArtifacts,
+  writeArtifact,
+} from '../../services/audit/attestation-store.js';
+import { contentAttestationCheck } from '../../services/audit/attestation-verify.js';
+import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
+import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
@@ -111,6 +121,14 @@ export class AuditCommand {
         await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, config.paths.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
+          // Content attestation (ADR-41): committed .att coverage, verifiable
+          // with no secret. Computed here (owns the walk + attestation modules)
+          // and passed in, so inspectAuditIntegrity gains no new dependency.
+          const contentAttestation = contentAttestationCheck(
+            walkChainedEvents(auditDir),
+            listArtifacts(auditDir),
+            committedSignerResolver(projectRoot),
+          );
           const checks = inspectAuditIntegrity(
             container.adapter,
             auditDir,
@@ -120,6 +138,7 @@ export class AuditCommand {
               projectRoot,
               new AuditHeadSignatureRepository(container.adapter),
             ),
+            contentAttestation,
           );
           if (options.verifyAnchors === true) {
             const anchors = new AnchorRepository(container.adapter);
@@ -140,6 +159,84 @@ export class AuditCommand {
           }
         });
         process.exit(hasError ? 1 : 0);
+      });
+
+    group
+      .command('reattest')
+      .description(
+        'Emit committed attestations (.att) over the unattested tail of the audit chain, so an ' +
+          'anonymous clone can verify authenticity with no secret. Dry-run by default (shows the ' +
+          'plan); --write applies. Fail-closed: refuses on any tamper signal (broken chain, ' +
+          'truncation, a non-verifying existing .att, no identity).',
+      )
+      .option('--write', 'Apply the plan (write .att files); without it, only report', false)
+      .action(async (options: { readonly write?: boolean }) => {
+        let failed = false;
+        await withCliContext(async ({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, config.paths.audit);
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const walk = walkChainedEvents(auditDir);
+
+          // Chain soundness gate — treats truncation-shaped warnings as
+          // blocking (chainHealthyForAttest), not just errors.
+          const integrity = inspectAuditIntegrity(
+            container.adapter,
+            auditDir,
+            secret.read(),
+            secret.readFingerprint() !== null,
+          );
+          const headSig = new AuditHeadSignatureRepository(container.adapter).read();
+
+          // Resolve the signer; a null actor is a clean refusal, never a throw.
+          const actor = container.identity.resolveDefaultActor().actor;
+          const signer =
+            actor === null
+              ? null
+              : { machineKey: new MachineKeyService(projectRoot, actor), actor };
+
+          const plan = planReattest({
+            walk,
+            existing: listArtifacts(auditDir),
+            resolvePublicKeyPem: committedSignerResolver(projectRoot),
+            signer,
+            projectHmacId: secret.readFingerprint(),
+            chainHealthy: chainHealthyForAttest(integrity),
+            signedEventCountAt: headSig?.eventCountAt ?? null,
+            batchSize: config.audit.checkpoint.events,
+          });
+
+          if (!plan.ok) {
+            failed = true;
+            process.stdout.write(`${pc.red('✘')}  cannot reattest: ${plan.reason}\n`);
+            return;
+          }
+
+          const toEmit = plan.planned.filter((b) => b.action === 'emit');
+          const preserved = plan.planned.filter((b) => b.action === 'preserve');
+          for (const b of preserved) {
+            process.stdout.write(
+              `${pc.dim('•')}  preserve [${b.from}, ${b.to}) signed by ${b.signerActor}\n`,
+            );
+          }
+          if (toEmit.length === 0) {
+            process.stdout.write(`${pc.green('✔')}  fully attested — nothing to emit\n`);
+            return;
+          }
+          for (const b of toEmit) {
+            process.stdout.write(
+              `${pc.green('+')}  attest [${b.from}, ${b.to}) as ${b.signerActor}\n`,
+            );
+          }
+          if (options.write === true) {
+            for (const artifact of plan.artifacts) writeArtifact(auditDir, artifact);
+            process.stdout.write(
+              `${pc.green('✔')}  wrote ${plan.artifacts.length} attestation(s) — commit them with the .mnema/ trail\n`,
+            );
+          } else {
+            process.stdout.write(`${pc.dim('(dry run — re-run with --write to apply)')}\n`);
+          }
+        });
+        process.exit(failed ? 1 : 0);
       });
   }
 }
