@@ -141,4 +141,75 @@ describe('attestation artifact (mnema-attest/v1)', () => {
   it('buildArtifact refuses an empty or malformed range', () => {
     expect(() => emit(events(5), 3, 3)).toThrow(/malformed attestation range/i);
   });
+
+  it('buildArtifact refuses a negative from with a clean error, not a be64 RangeError', () => {
+    // from < 0 satisfies `to > from` but would throw a cryptic RangeError from
+    // writeBigUInt64BE; the range guard must reject it as a validation failure.
+    const evs = events(6);
+    const s = signer();
+    expect(() =>
+      buildArtifact({
+        events: evs.slice(0, 6),
+        from: -3,
+        to: 3,
+        signerActor: 'felipesauer',
+        signerFingerprint: s.fingerprint,
+        projectHmacId: hmacId,
+        sign: s.sign,
+      }),
+    ).toThrow(/malformed attestation range/i);
+  });
+
+  it('parseArtifact rejects an inverted or negative range', () => {
+    const base = {
+      version: 'mnema-attest/v1',
+      signerActor: 'a',
+      signerFingerprint: 'f',
+      projectHmacId: 'id',
+      coveredHeadHash: 'h',
+      contentRoot: 'r',
+      signature: 's',
+    };
+    expect(() => parseArtifact(JSON.stringify({ ...base, from: 10, to: 5 }))).toThrow(
+      /malformed attestation artifact/i,
+    );
+    expect(() => parseArtifact(JSON.stringify({ ...base, from: -1, to: 5 }))).toThrow(
+      /malformed attestation artifact/i,
+    );
+  });
+
+  it('verifyArtifact reports a negative from as malformed, never a crash', () => {
+    const evs = events(10);
+    const { artifact, resolve } = emit(evs, 0, 10);
+    const bad = { ...artifact, from: -1 };
+    expect(() => verifyArtifact(bad, evs.slice(0, 10), resolve)).not.toThrow();
+    const verdict = verifyArtifact(bad, evs.slice(0, 10), resolve);
+    expect(verdict.ok).toBe(false);
+    expect((verdict as { reason: string }).reason).toMatch(/malformed range/i);
+  });
+
+  it('golden vector: leaf and root bytes are stable (guards canonicalise drift)', () => {
+    // Pins the exact canonical bytes. canonicalise is JSON.stringify in
+    // insertion order; if a refactor ever reorders AuditEvent fields, the leaf
+    // an anonymous verifier recomputes would diverge from emit time and honest
+    // batches would flip to "content root mismatch". This vector fails loudly
+    // instead, before that ships.
+    const fixed: AuditEvent = {
+      v: 3,
+      at: '2026-07-07T00:00:00.000Z',
+      kind: 'task_created',
+      actor: 'felipesauer',
+      data: { id: 'T-0', title: 'task 0' },
+      prev_hash: null,
+      hash: 'ignored-by-canonicalise',
+    };
+    expect(computeLeaf(fixed).toString('hex')).toBe(
+      '10195ae1d19dd2bb2d3cd704622254f9ba9065895f281d360d09fe85347c58aa',
+    );
+    // The `hash` field must NOT affect the leaf (canonicalise strips it), so a
+    // different hash on the same content yields the same leaf.
+    const sameContent: AuditEvent = { ...fixed, hash: 'a-different-hash' };
+    expect(computeLeaf(sameContent).toString('hex')).toBe(computeLeaf(fixed).toString('hex'));
+    expect(computeRoot(0, 1, [computeLeaf(fixed)]).length).toBe(32);
+  });
 });

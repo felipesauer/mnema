@@ -60,6 +60,17 @@ export interface AttestationArtifact {
   readonly signature: string;
 }
 
+/**
+ * A well-formed batch range: both bounds are non-negative safe integers and
+ * `to` is strictly greater than `from`. Enforcing `from >= 0` matters because
+ * {@link be64} feeds `writeBigUInt64BE`, which THROWS on a negative value — a
+ * negative `from` that only satisfied `to > from` would surface as a cryptic
+ * `RangeError` from the encoder instead of a clean validation failure.
+ */
+function isValidRange(from: number, to: number): boolean {
+  return Number.isSafeInteger(from) && Number.isSafeInteger(to) && from >= 0 && to > from;
+}
+
 /** Big-endian unsigned 64-bit encoding of a batch index. */
 function be64(n: number): Buffer {
   const b = Buffer.alloc(8);
@@ -175,7 +186,7 @@ export function buildArtifact(params: {
   sign: (message: Buffer) => Buffer;
 }): AttestationArtifact {
   const { events, from, to, signerActor, signerFingerprint, projectHmacId, sign } = params;
-  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || to <= from) {
+  if (!isValidRange(from, to)) {
     throw new Error(`malformed attestation range [${from}, ${to})`);
   }
   if (events.length !== to - from) {
@@ -231,11 +242,7 @@ export function verifyArtifact(
     if (artifact.version !== ATTEST_VERSION) {
       return { ok: false, reason: `unknown attestation version ${artifact.version}` };
     }
-    if (
-      !Number.isSafeInteger(artifact.from) ||
-      !Number.isSafeInteger(artifact.to) ||
-      artifact.to <= artifact.from
-    ) {
+    if (!isValidRange(artifact.from, artifact.to)) {
       return { ok: false, reason: `malformed range [${artifact.from}, ${artifact.to})` };
     }
     if (events.length !== artifact.to - artifact.from) {
@@ -310,8 +317,7 @@ export function parseArtifact(json: string): AttestationArtifact {
     typeof raw.coveredHeadHash !== 'string' ||
     typeof raw.contentRoot !== 'string' ||
     typeof raw.signature !== 'string' ||
-    !Number.isSafeInteger(raw.from) ||
-    !Number.isSafeInteger(raw.to)
+    !isValidRange(raw.from as number, raw.to as number)
   ) {
     throw new Error('malformed attestation artifact');
   }
