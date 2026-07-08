@@ -11,7 +11,10 @@ export interface GitResult {
 /** Runs a git command in `cwd`. Injectable so tests avoid a real repo. */
 export type GitCommandRunner = (args: readonly string[], cwd: string) => GitResult;
 
-const defaultGitRunner: GitCommandRunner = (args, cwd) => {
+/** The real git runner (spawns an actual `git` process). Exported so other
+ * read-only git checks (e.g. {@link import('./audit/audit-diagnose.js').diagnoseAuditChain})
+ * reuse the same spawn/timeout discipline instead of re-implementing it. */
+export const defaultGitRunner: GitCommandRunner = (args, cwd) => {
   const result = spawnSync('git', [...args], { cwd, encoding: 'utf-8', timeout: 15_000 });
   return {
     status: result.status,
