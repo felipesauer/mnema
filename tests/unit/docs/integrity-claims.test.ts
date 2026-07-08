@@ -52,4 +52,15 @@ describe('integrity claims (ADR-37)', () => {
     const bothEvident = /tamper-evident/i.test(readme) && /tamper-evident/i.test(pkgDescription);
     expect(bothEvident).toBe(true);
   });
+
+  it('README documents content attestation as no-secret / anonymous-verifiable (ADR-41)', () => {
+    // Guard the ADR-41 promise against drift: the README must state that a
+    // clone WITHOUT the secret can verify content authenticity via the
+    // committed .att, and must keep the honest "never green beyond the last
+    // attestation" caveat about the unattested tail.
+    const readme = read('README.md');
+    expect(readme).toMatch(/content attestation/i);
+    expect(readme).toMatch(/no secret/i);
+    expect(readme).toMatch(/never shows green beyond the last\s+attestation/i);
+  });
 });

@@ -211,6 +211,20 @@ unkeyed chain — is closed by version monotonicity plus a
 fingerprint-implies-v3 rule, so an attacker can't quietly drop to the
 weaker format.
 
+**Content attestation — verifiable by anyone, no secret needed.** The
+HMAC proves authenticity only to a *secret-holder*; a **public clone or
+an outside reviewer** has no way to check it. So the per-machine Ed25519
+key also signs a **content-recomputable root** over each batch of
+events, committed as `.mnema/audit/attest/<to>.att`. A stranger
+recomputes that root from the events on disk and verifies the signature
+against the committed public key — with **no secret at all**. Editing
+any covered event changes the root and breaks the signature; without
+this, editing v3 content passed green for anyone lacking the project
+secret. Attestations are emitted automatically at each checkpoint;
+`mnema audit reattest` backfills or repairs them. `mnema audit verify`
+reports coverage per batch and **never shows green beyond the last
+attestation**.
+
 **Layer 3 — temporal anchoring (opt-in, default `none`).** A pluggable
 provider stamps the signed head into an external, independently
 verifiable record, so you can prove the head *existed at a point in
@@ -232,6 +246,7 @@ receipts against the provider.
 | Attack | Caught by |
 |---|---|
 | Editing a past event | Layer 1 (chain) + Layer 2 (HMAC) |
+| Editing a past event, checked by someone *without* the secret | Layer 2 content attestation — the committed `.att` breaks |
 | Recomputing hashes to hide an edit | Layer 2 — no HMAC secret, so the recomputed chain fails |
 | Deleting or reordering events | Layer 1 |
 | Rolling the log back below a signed checkpoint | Layer 2 signatures |
@@ -246,11 +261,13 @@ receipts against the provider.
   outside the repo raises the bar past "any agent with file access";
   it does not survive full host compromise. Anchoring (layer 3) is what
   narrows even this, by pinning the head to external history.
-- **Truncating events written *after* the last checkpoint.** Removing
-  the most recent, not-yet-signed tail is indistinguishable from a
-  recoverable crash — both look like a chain that stops early. The
-  checkpoint interval bounds this window; a shorter interval shrinks
-  it. This is a documented limitation, not a bug.
+- **Truncating events written *after* the last attestation.** Removing
+  the most recent, not-yet-attested tail is indistinguishable from a
+  recoverable crash — both look like a chain that stops early. Content
+  attestation bounds this to the window since the last `.att`, and
+  `verify` never shows green past it; closing the window entirely for a
+  public clone needs an enabled anchor (layer 3), which pins the head to
+  external history. This is a documented limitation, not a bug.
 - **A dishonest coordinator.** Mnema records *who authorized* and
   *which agent executed*; it does not judge whether the human should
   have. It is a chain of custody, not a policy engine.
