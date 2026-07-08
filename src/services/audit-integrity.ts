@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { auditFilesSignature, orderedAuditFiles } from '../storage/audit/audit-files.js';
+import {
+  attestFilesSignature,
+  auditFilesSignature,
+  orderedAuditFiles,
+} from '../storage/audit/audit-files.js';
 import { hashEvent, hmacEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -486,11 +490,19 @@ export class CachedAuditIntegrity {
    *   (not construction) so importing the secret during the dashboard's
    *   lifetime takes effect. `null` for a secret-less setup.
    */
+  /**
+   * @param buildContentAttestation - Recomputes the content-attestation
+   *   verdict on a cache miss. Injected as a function (not computed here) so
+   *   this module does not import the attestation layer — which imports
+   *   `IntegrityCheck` back from here — avoiding an import cycle. `null` omits
+   *   the verdict (e.g. a surface that does not show it).
+   */
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
     private readonly secrets: SecretSource | null = null,
     private readonly attestation: AttestationSource | null = null,
+    private readonly buildContentAttestation: (() => IntegrityCheck) | null = null,
   ) {}
 
   /**
@@ -513,7 +525,13 @@ export class CachedAuditIntegrity {
     const sig = this.attestation?.readHeadSignature() ?? null;
     const sigKey =
       sig === null ? 'none' : `${sig.coveredHeadHash}:${sig.signerFingerprint}:${sig.signature}`;
-    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}`;
+    // The content-attestation verdict depends on the committed `.att` files,
+    // which auditFilesSignature does NOT cover (it filters `.jsonl`). Fold the
+    // attest-dir signature in, or a `reattest` (or an `.att` tamper) that left
+    // the JSONL untouched would serve a stale verdict.
+    const attKey =
+      this.buildContentAttestation === null ? 'none' : attestFilesSignature(this.auditDir);
+    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}|c=${attKey}`;
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
@@ -523,6 +541,7 @@ export class CachedAuditIntegrity {
       secret,
       hasFingerprint,
       this.attestation,
+      this.buildContentAttestation?.() ?? null,
     );
     this.signature = signature;
     this.cached = checks;

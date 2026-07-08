@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
 import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
+import { buildContentAttestation } from './audit/attestation-cli.js';
 import { CachedAuditIntegrity } from './audit-integrity.js';
 import { AuditTail } from './audit-tail.js';
 import {
@@ -109,6 +110,11 @@ export async function createDashboardServer(
     // but invisible here. The cache key folds the signature identity so a
     // signature change invalidates it.
     createAttestationSource(projectRoot, new AuditHeadSignatureRepository(container.adapter)),
+    // Content attestation (ADR-41) so the dashboard shows the same
+    // anonymous-verifiability verdict as verify/doctor. Passed as a builder so
+    // audit-integrity does not import the attestation layer (cycle); the cache
+    // key folds the attest-dir signature so a new/edited .att invalidates it.
+    () => buildContentAttestation(projectRoot, auditDir),
   );
 
   /** Composes a fresh snapshot for a request. */

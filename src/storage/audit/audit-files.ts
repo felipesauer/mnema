@@ -55,3 +55,31 @@ export function auditFilesSignature(auditDir: string): string {
     })
     .join('|');
 }
+
+/**
+ * A `stat`-based change signature for the committed attestations under
+ * `<auditDir>/attest/*.att`. The counterpart to {@link auditFilesSignature},
+ * which covers only `*.jsonl` and so never flips when an `.att` is
+ * added/edited/removed. A cache keyed on the integrity verdict must fold this
+ * in, or it would serve a stale content-attestation verdict after a `reattest`
+ * (or a tamper of an `.att`) that left the JSONL untouched.
+ *
+ * @param auditDir - Directory holding the audit log files
+ * @returns A signature string (`""` when the attest dir is absent/empty)
+ */
+export function attestFilesSignature(auditDir: string): string {
+  const dir = path.join(auditDir, 'attest');
+  if (!existsSync(dir)) return '';
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.att'))
+    .sort()
+    .map((name) => {
+      try {
+        const s = statSync(path.join(dir, name));
+        return `${name}:${s.mtimeMs}:${s.size}`;
+      } catch {
+        return `${name}:gone`;
+      }
+    })
+    .join('|');
+}

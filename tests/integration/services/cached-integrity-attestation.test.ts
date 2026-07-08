@@ -96,4 +96,49 @@ describe('CachedAuditIntegrity with attestation', () => {
     const cache = new CachedAuditIntegrity(adapter, auditDir, null);
     expect(cache.get().find((c) => c.name === 'audit machine attestation')).toBeUndefined();
   });
+
+  it('shows the content-attestation verdict and invalidates when a .att is written', async () => {
+    // The dashboard must surface content attestation like verify/doctor, and
+    // its cache must flip when an .att appears — auditFilesSignature covers
+    // only .jsonl, so the attest-dir signature has to be folded in.
+    const { buildContentAttestation } = await import('@/services/audit/attestation-cli.js');
+    const { emitAttestation } = await import('@/services/audit/attestation-emitter.js');
+    const { writeArtifact } = await import('@/services/audit/attestation-store.js');
+    const { walkChainedEvents } = await import('@/services/audit/audit-chain-walk.js');
+
+    machineKey.getOrCreate();
+    writeSignedEvent();
+    const cache = new CachedAuditIntegrity(adapter, auditDir, null, attestation(), () =>
+      buildContentAttestation(projectRoot, auditDir),
+    );
+
+    // Before any .att: dormant (ok:true, warning — nudge to adopt).
+    const before = cache.get().find((c) => c.name === 'audit content attestation');
+    expect(before?.ok).toBe(true);
+    expect(before?.detail).toMatch(/not yet attested/i);
+
+    // Emit + commit an .att covering the one event.
+    const walk = walkChainedEvents(auditDir);
+    writeArtifact(
+      auditDir,
+      emitAttestation(
+        walk,
+        0,
+        walk.chained.length,
+        { machineKey, actor: 'felipesauer' },
+        'ab'.repeat(32),
+      ),
+    );
+
+    // The cache must recompute (not serve the dormant verdict) → fully attested.
+    const after = cache.get().find((c) => c.name === 'audit content attestation');
+    expect(after?.ok).toBe(true);
+    expect(after?.detail).toMatch(/all 1 chained events attested/i);
+  });
+
+  it('without a content-attestation builder, the content line is absent', () => {
+    writeSignedEvent();
+    const cache = new CachedAuditIntegrity(adapter, auditDir, null, attestation());
+    expect(cache.get().find((c) => c.name === 'audit content attestation')).toBeUndefined();
+  });
 });
