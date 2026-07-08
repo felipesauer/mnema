@@ -4,14 +4,16 @@ import type { Command } from 'commander';
 
 import { buildAnchorRegistry } from '../../services/anchor/anchor-factory.js';
 import { inspectAnchors } from '../../services/anchor/anchor-inspect.js';
-import { chainHealthyForAttest } from '../../services/audit/attestation-cli.js';
+import {
+  buildContentAttestation,
+  chainHealthyForAttest,
+} from '../../services/audit/attestation-cli.js';
 import { planReattest } from '../../services/audit/attestation-reattest.js';
 import {
   committedSignerResolver,
   listArtifacts,
   writeArtifact,
 } from '../../services/audit/attestation-store.js';
-import { contentAttestationCheck } from '../../services/audit/attestation-verify.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
@@ -122,13 +124,9 @@ export class AuditCommand {
           const auditDir = path.join(projectRoot, config.paths.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           // Content attestation (ADR-41): committed .att coverage, verifiable
-          // with no secret. Computed here (owns the walk + attestation modules)
-          // and passed in, so inspectAuditIntegrity gains no new dependency.
-          const contentAttestation = contentAttestationCheck(
-            walkChainedEvents(auditDir),
-            listArtifacts(auditDir),
-            committedSignerResolver(projectRoot),
-          );
+          // with no secret. The shared builder keeps this verdict identical
+          // across verify / doctor / the MCP tool.
+          const contentAttestation = buildContentAttestation(projectRoot, auditDir);
           const checks = inspectAuditIntegrity(
             container.adapter,
             auditDir,
@@ -187,12 +185,20 @@ export class AuditCommand {
           );
           const headSig = new AuditHeadSignatureRepository(container.adapter).read();
 
-          // Resolve the signer; a null actor is a clean refusal, never a throw.
+          // Resolve the signer; a null OR malformed actor is a clean refusal,
+          // never a throw. resolveDefaultActor returns MNEMA_ACTOR / config
+          // verbatim with only a non-empty check, so an invalid handle (e.g.
+          // `team/ci`) makes the MachineKeyService constructor throw — catch it
+          // and fall to `signer === null`, which planReattest refuses cleanly.
           const actor = container.identity.resolveDefaultActor().actor;
-          const signer =
-            actor === null
-              ? null
-              : { machineKey: new MachineKeyService(projectRoot, actor), actor };
+          let signer: { machineKey: MachineKeyService; actor: string } | null = null;
+          if (actor !== null) {
+            try {
+              signer = { machineKey: new MachineKeyService(projectRoot, actor), actor };
+            } catch {
+              signer = null;
+            }
+          }
 
           const plan = planReattest({
             walk,

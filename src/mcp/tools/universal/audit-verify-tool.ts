@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { buildContentAttestation } from '../../../services/audit/attestation-cli.js';
 import {
   type AttestationSource,
   inspectAuditIntegrity,
@@ -31,6 +32,7 @@ export class AuditVerifyTool {
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
+    private readonly projectRoot: string,
     private readonly secrets: ProjectSecretService | null = null,
     private readonly attestation: AttestationSource | null = null,
   ) {}
@@ -63,6 +65,7 @@ export class AuditVerifyTool {
           this.secrets?.read() ?? null,
           this.secrets?.readFingerprint() != null,
           this.attestation,
+          buildContentAttestation(this.projectRoot, this.auditDir),
         );
         const intact = checks.every((check) => check.ok);
         return ok({ intact, checks });

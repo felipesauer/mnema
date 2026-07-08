@@ -53,4 +53,15 @@ describe('chainHealthyForAttest', () => {
       ]),
     ).toBe(true);
   });
+
+  it('BLOCKS on an error whose name is outside the soundness set', () => {
+    // The audit_state-row-missing early return emits a lone 'audit integrity'
+    // error and returns before the count/hash checks run. A name-only allowlist
+    // would pass it (fail-open); blocking on any error catches it.
+    expect(chainHealthyForAttest([check('audit integrity', false, 'error')])).toBe(false);
+  });
+
+  it('does not block on a benign ok:true audit-integrity check (legacy/no-dir)', () => {
+    expect(chainHealthyForAttest([check('audit integrity', true, 'warning')])).toBe(true);
+  });
 });

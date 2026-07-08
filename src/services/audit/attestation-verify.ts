@@ -39,11 +39,19 @@ export function contentAttestationCheck(
   const total = walk.chained.length;
 
   if (artifacts.length === 0) {
+    // No .att at all is DORMANT, not a failure — content attestation (ADR-41)
+    // is opt-in, so a project that never ran `reattest` must not report "not
+    // intact" (that would train users to ignore the signal). `ok: true` with a
+    // warning that nudges adoption. Fail-closed kicks in the moment ANY .att
+    // exists: from there, partial coverage, a gap, a truncation, or a tamper
+    // is ok:false.
     return {
       name: CONTENT_ATTESTATION_CHECK,
-      ok: false,
+      ok: true,
       detail:
-        'no committed attestations yet — an anonymous clone cannot verify authenticity. Run `mnema audit reattest --write`.',
+        total === 0
+          ? 'no chained events yet — content attestation activates once events exist'
+          : `${total} event(s) not yet attested — an anonymous clone cannot verify authenticity. Run \`mnema audit reattest --write\` to enable it.`,
       severity: 'warning',
     };
   }

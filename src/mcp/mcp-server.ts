@@ -239,6 +239,7 @@ export class MnemaMcpServer {
     new AuditVerifyTool(
       this.services.adapter,
       path.join(this.projectRoot, this.config.paths.audit),
+      this.projectRoot,
       new ProjectSecretService(this.projectRoot, this.config.project.key),
       createAttestationSource(
         this.projectRoot,

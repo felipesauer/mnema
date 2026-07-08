@@ -76,12 +76,15 @@ describe('contentAttestationCheck (fail-closed verdict)', () => {
     expect(check.detail).toMatch(/10 tail event\(s\) unattested/i);
   });
 
-  it('warns when no attestations exist at all', () => {
+  it('is dormant (ok, warning) when no attestations exist — opt-in, not a failure', () => {
+    // No .att is non-adoption, not tampering; ok:true so a project that never
+    // ran reattest is not reported "not intact". Fail-closed starts once a
+    // .att exists (covered by the other cases).
     writeChain(10);
     const check = contentAttestationCheck(walkChainedEvents(auditDir), [], resolve());
-    expect(check.ok).toBe(false);
+    expect(check.ok).toBe(true);
     expect(check.severity).toBe('warning');
-    expect(check.detail).toMatch(/no committed attestations/i);
+    expect(check.detail).toMatch(/not yet attested/i);
   });
 
   it('errors on a .att whose content does not verify (tamper)', () => {

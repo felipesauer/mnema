@@ -14,6 +14,7 @@ import { printError } from '../../errors/error-printer.js';
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { anchorStatusCheck } from '../../services/anchor/anchor-inspect.js';
+import { buildContentAttestation } from '../../services/audit/attestation-cli.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { HookTrustService } from '../../services/hook-trust.js';
@@ -362,6 +363,10 @@ export class DoctorCommand {
               // against the committed public key. Offline (no network) — it
               // reads .mnema/keys and the local SQLite only.
               createAttestationSource(projectRoot, new AuditHeadSignatureRepository(adapter)),
+              // Content attestation (ADR-41): committed .att coverage, so
+              // doctor surfaces the same anonymous-verifiability verdict as
+              // `audit verify` rather than a false all-clear.
+              buildContentAttestation(projectRoot, path.join(projectRoot, config.paths.audit)),
             ),
           );
           // Temporal anchoring (layer 3): offline status only — how many

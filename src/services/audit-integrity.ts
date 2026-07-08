@@ -368,9 +368,10 @@ export function inspectAuditIntegrity(
 
   // Content attestation (ADR-41): committed `.att` coverage over the chained
   // events, verifiable by an anonymous clone with NO secret. Computed by the
-  // caller (it needs the attestation modules and a from-scratch walk) and
-  // passed in ready, so this function gains no new dependency and does not
-  // walk the log a second time. Fail-closed: an unattested tail is ok:false.
+  // caller (it needs the attestation modules) and passed in ready, so this
+  // function gains no new dependency. The caller's builder does its own walk,
+  // so a command pays one extra walk here; acceptable for a cold diagnostic
+  // path (not the write hot-path). Fail-closed: an unattested tail is ok:false.
   if (contentAttestation !== null) {
     checks.push(contentAttestation);
   }
