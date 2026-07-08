@@ -132,6 +132,12 @@ export class AuditWriter {
     private readonly secretProvider: (() => Buffer | null) | null = null,
     private readonly headCheckpoint: HeadCheckpointService | null = null,
     private readonly anchorScheduler: AnchorScheduler | null = null,
+    // Fire-and-forget hook invoked (outside the lock) when a checkpoint signs a
+    // new head, so the attestation layer can materialise the `.att` for the
+    // freshly-closed batch off the hot path. `null` disables auto-attestation
+    // (the `reattest` command remains the manual/repair path). Injected as a
+    // callback so the writer stays free of the attestation modules.
+    private readonly onCheckpoint: ((head: string, eventCount: number) => void) | null = null,
   ) {
     this.now = now;
     if (!existsSync(this.auditDir)) {
@@ -289,6 +295,26 @@ export class AuditWriter {
     // returned by the time any network I/O happens.
     if (signedHead !== null && this.anchorScheduler !== null) {
       this.anchorScheduler.onSignedHead(signedHead.hash, signedHead.eventCount);
+    }
+    // Auto-attestation (ADR-41): materialise the `.att` for the batch a
+    // checkpoint just closed, off the write lock. Same fire-and-forget,
+    // fail-open discipline as anchoring — a failure here must never surface to
+    // the write that already succeeded; `reattest` can always backfill.
+    if (signedHead !== null && this.onCheckpoint !== null) {
+      try {
+        this.onCheckpoint(signedHead.hash, signedHead.eventCount);
+      } catch (error) {
+        // Fail-open: the write already stood, and `reattest` can backfill any
+        // batch this skipped. But do NOT swallow silently — the benign cases
+        // (no signer, unhealthy chain) already return WITHOUT throwing inside
+        // autoAttest, so anything reaching here is UNEXPECTED (a bug, ENOSPC,
+        // EACCES). A fully silent catch would let auto-attestation stop
+        // emitting forever with no signal, quietly eroding the very coverage
+        // this feature adds. Surface it on stderr so it is diagnosable.
+        process.stderr.write(
+          `mnema: auto-attestation skipped (write unaffected): ${(error as Error).message}\n`,
+        );
+      }
     }
   }
 

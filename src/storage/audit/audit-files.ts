@@ -55,3 +55,37 @@ export function auditFilesSignature(auditDir: string): string {
     })
     .join('|');
 }
+
+/**
+ * A `stat`-based change signature for the committed attestations under
+ * `<auditDir>/attest/*.att`. The counterpart to {@link auditFilesSignature},
+ * which covers only `*.jsonl` and so never flips when an `.att` is
+ * added/edited/removed. A cache keyed on the integrity verdict must fold this
+ * in, or it would serve a stale content-attestation verdict after a `reattest`
+ * (or a tamper of an `.att`) that left the JSONL untouched.
+ *
+ * Same residual as {@link auditFilesSignature}: an in-place edit that keeps
+ * the size AND resets the mtime (`touch -m`) would not flip the key, so a
+ * cache could serve a pre-tamper verdict. This is an accepted property of a
+ * stat-based signature (a content hash would close it); the authoritative,
+ * non-cached path (`audit verify`, `doctor`) always recomputes and catches it.
+ *
+ * @param auditDir - Directory holding the audit log files
+ * @returns A signature string (`""` when the attest dir is absent/empty)
+ */
+export function attestFilesSignature(auditDir: string): string {
+  const dir = path.join(auditDir, 'attest');
+  if (!existsSync(dir)) return '';
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.att'))
+    .sort()
+    .map((name) => {
+      try {
+        const s = statSync(path.join(dir, name));
+        return `${name}:${s.mtimeMs}:${s.size}`;
+      } catch {
+        return `${name}:gone`;
+      }
+    })
+    .join('|');
+}

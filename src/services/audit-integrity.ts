@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { auditFilesSignature, orderedAuditFiles } from '../storage/audit/audit-files.js';
+import {
+  attestFilesSignature,
+  auditFilesSignature,
+  orderedAuditFiles,
+} from '../storage/audit/audit-files.js';
 import { hashEvent, hmacEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -101,6 +105,7 @@ export function inspectAuditIntegrity(
   secret: Buffer | null = null,
   hasFingerprint = false,
   attestation: AttestationSource | null = null,
+  contentAttestation: IntegrityCheck | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -365,6 +370,20 @@ export function inspectAuditIntegrity(
     checks.push(attestationCheck(attestation, stateRow.chain_head_hash, stateRow.event_count));
   }
 
+  // Content attestation (ADR-41): committed `.att` coverage over the chained
+  // events, verifiable by an anonymous clone with NO secret. Computed by the
+  // caller (it needs the attestation modules) and passed in ready, so this
+  // function gains no new dependency. The caller's builder does its OWN walk,
+  // separate from this function's chain walk — a diagnostic/off-path caller
+  // pays that second walk; acceptable off the write hot-path (a shared walk is
+  // a possible future optimisation). Fail-CLOSED where it counts: a tamper,
+  // gap, overlap, or truncation is ok:false/error; a merely-unattested tail or
+  // a project that never attested is ok:true/warning (adoption is opt-in, so
+  // it must not read as "chain not intact").
+  if (contentAttestation !== null) {
+    checks.push(contentAttestation);
+  }
+
   if (malformedLines > 0) {
     checks.push({
       name: 'audit lines parse',
@@ -475,11 +494,19 @@ export class CachedAuditIntegrity {
    *   (not construction) so importing the secret during the dashboard's
    *   lifetime takes effect. `null` for a secret-less setup.
    */
+  /**
+   * @param buildContentAttestation - Recomputes the content-attestation
+   *   verdict on a cache miss. Injected as a function (not computed here) so
+   *   this module does not import the attestation layer — which imports
+   *   `IntegrityCheck` back from here — avoiding an import cycle. `null` omits
+   *   the verdict (e.g. a surface that does not show it).
+   */
   constructor(
     private readonly adapter: SqliteAdapter,
     private readonly auditDir: string,
     private readonly secrets: SecretSource | null = null,
     private readonly attestation: AttestationSource | null = null,
+    private readonly buildContentAttestation: (() => IntegrityCheck) | null = null,
   ) {}
 
   /**
@@ -502,7 +529,13 @@ export class CachedAuditIntegrity {
     const sig = this.attestation?.readHeadSignature() ?? null;
     const sigKey =
       sig === null ? 'none' : `${sig.coveredHeadHash}:${sig.signerFingerprint}:${sig.signature}`;
-    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}`;
+    // The content-attestation verdict depends on the committed `.att` files,
+    // which auditFilesSignature does NOT cover (it filters `.jsonl`). Fold the
+    // attest-dir signature in, or a `reattest` (or an `.att` tamper) that left
+    // the JSONL untouched would serve a stale verdict.
+    const attKey =
+      this.buildContentAttestation === null ? 'none' : attestFilesSignature(this.auditDir);
+    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}|c=${attKey}`;
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
@@ -512,6 +545,7 @@ export class CachedAuditIntegrity {
       secret,
       hasFingerprint,
       this.attestation,
+      this.buildContentAttestation?.() ?? null,
     );
     this.signature = signature;
     this.cached = checks;
