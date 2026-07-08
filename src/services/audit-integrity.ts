@@ -101,6 +101,7 @@ export function inspectAuditIntegrity(
   secret: Buffer | null = null,
   hasFingerprint = false,
   attestation: AttestationSource | null = null,
+  contentAttestation: IntegrityCheck | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -363,6 +364,15 @@ export function inspectAuditIntegrity(
   // chain has started, so it is skipped for a legacy/empty log above.
   if (attestation !== null) {
     checks.push(attestationCheck(attestation, stateRow.chain_head_hash, stateRow.event_count));
+  }
+
+  // Content attestation (ADR-41): committed `.att` coverage over the chained
+  // events, verifiable by an anonymous clone with NO secret. Computed by the
+  // caller (it needs the attestation modules and a from-scratch walk) and
+  // passed in ready, so this function gains no new dependency and does not
+  // walk the log a second time. Fail-closed: an unattested tail is ok:false.
+  if (contentAttestation !== null) {
+    checks.push(contentAttestation);
   }
 
   if (malformedLines > 0) {
