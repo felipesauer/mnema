@@ -18,7 +18,7 @@ import type { AuditEvent } from './audit-writer.js';
  * @param event - Event in its pre-sealed form; any `hash` field is ignored
  * @returns The canonical JSON string
  */
-function canonicalise(event: AuditEvent): string {
+export function canonicalise(event: AuditEvent): string {
   const { hash: _omit, ...rest } = event;
   return JSON.stringify(rest);
 }
