@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-
 import {
   attestFilesSignature,
   auditFilesSignature,
@@ -10,6 +9,12 @@ import { hashEvent, hmacEvent } from '../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { AuditStateRepository } from '../storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import {
+  diagnoseAuditChain,
+  readLegacyBreaksWaiver,
+  writeLegacyBreaksWaiver,
+} from './audit/audit-diagnose.js';
+import { defaultGitRunner, type GitCommandRunner } from './git-commit-service.js';
 
 /**
  * Severity bucket for a check. `error` fails the doctor exit code;
@@ -118,6 +123,16 @@ interface AuditChainWalk {
   readonly lastHash: string | null;
   readonly lastAt: string | null;
   readonly chainEverStarted: boolean;
+  /**
+   * Count of version-downgrade lines found ACROSS THE WHOLE WALK (not just
+   * the last one `chainBreakDetail` names). A legacy-break recovery must
+   * refuse whenever this is nonzero even if the LAST break recorded was a
+   * plain `prev_hash` discontinuity — a downgrade earlier in the log is
+   * tampering, never a benign concurrent-writer artefact.
+   */
+  readonly versionDowngradeCount: number;
+  /** Count of content-hash mismatches found across the whole walk (same reasoning). */
+  readonly hashMismatchCount: number;
 }
 
 /**
@@ -148,6 +163,8 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
   let maxVersionSeen = 0;
   let chainBroken = false;
   let chainBreakDetail = '';
+  let versionDowngradeCount = 0;
+  let hashMismatchCount = 0;
   let lastHash: string | null = null;
   let lastAt: string | null = null;
   let chainEverStarted = false;
@@ -183,6 +200,7 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
         // only ever goes v2→v3, so a decrease is always tampering.
         if (v < maxVersionSeen) {
           chainBroken = true;
+          versionDowngradeCount += 1;
           chainBreakDetail = `version downgrade to v${v} on a line in ${path.basename(file)} (a v${maxVersionSeen} line preceded it) — the chain cannot regress`;
         }
         maxVersionSeen = Math.max(maxVersionSeen, v);
@@ -201,6 +219,7 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
               : hashEvent(event as unknown as AuditEvent);
           if (hash !== recomputed) {
             chainBroken = true;
+            hashMismatchCount += 1;
             chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
           }
         }
@@ -237,6 +256,8 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
     lastHash,
     lastAt,
     chainEverStarted,
+    versionDowngradeCount,
+    hashMismatchCount,
   };
 }
 
@@ -360,11 +381,28 @@ export function inspectAuditIntegrity(
   }
 
   if (chainBroken) {
+    // A committed waiver (`mnema audit reconcile --accept-legacy-breaks`)
+    // downgrades this to a warning ONLY when re-verified right now: same
+    // content-valid, same before-the-accepted-cutoff shape. A NEW break, a
+    // content edit, or a downgrade appearing after the waiver was written
+    // makes this re-check fail and the error stands — the waiver never
+    // blindly silences the check, it only covers the exact situation a
+    // human already reviewed at write time.
+    const waiver = readLegacyBreaksWaiver(auditDir);
+    const stillCovered =
+      waiver !== null && contentValidAndBeforeCutoff(auditDir, secret, waiver.acceptedCutoff).ok;
     checks.push({
-      name: 'audit hash chain',
+      // Deliberately a DIFFERENT name when waiver-covered: this is not the
+      // ambiguous "one-ahead" truncation shape `chainHealthyForAttest`
+      // treats warnings under 'audit hash chain' as blocking for reattest —
+      // it is a human-reviewed, content-reverified acceptance, a genuinely
+      // different guarantee that must not be caught by that name-keyed set.
+      name: stillCovered ? 'audit hash chain (legacy-accepted)' : 'audit hash chain',
       ok: false,
-      detail: chainBreakDetail,
-      severity: 'error',
+      detail: stillCovered
+        ? `${chainBreakDetail} — accepted as a legacy concurrent-writer artefact on ${waiver?.acceptedAt ?? 'unknown date'} (content re-verified authentic); see \`mnema audit diagnose\``
+        : chainBreakDetail,
+      severity: stillCovered ? 'warning' : 'error',
     });
   } else if (lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
     // The mirror head points one past the disk tail — the same ambiguous
@@ -502,15 +540,118 @@ export type ReconcileResult =
  *   head signature, or `null` when none is recorded
  * @param apply - When true, persist the correction; when false, only compute
  *   the verdict (dry run)
+ * @param acceptLegacyBreaks - Opt-in recovery for a chain corrupted by
+ *   concurrent writers racing to append without a cross-process lock: a
+ *   `prev_hash` break with fully authentic content on both
+ *   sides, no later than this ISO date. When provided, a `prev_hash`-only
+ *   break is not an automatic refusal PROVIDED {@link diagnoseAuditChain}
+ *   independently confirms EVERY break in the whole log (not just the last
+ *   one `walkAuditChain` tracks) is content-valid and at or before this
+ *   date, AND the audit files match the committed git `HEAD` (the anchor of
+ *   trust — if the disk diverges from what was committed, this path refuses
+ *   same as before). A hash mismatch or version downgrade ALWAYS refuses,
+ *   regardless of this option — it exists only for the sequence-only shape.
+ * @param gitCwd - Working directory for the git-anchor check (required to
+ *   accept legacy breaks; ignored otherwise)
+ * @param gitRunner - Injectable git runner (tests avoid a real repo)
  * @returns The outcome — on success, the event count before/after and
  *   whether a correction was needed and applied
  */
+/**
+ * The git-independent half of the legacy-break check: no version downgrade or
+ * content-hash mismatch ANYWHERE in the log ({@link walkAuditChain} only
+ * tracks the LAST break it saw, so this re-walks independently via
+ * {@link diagnoseAuditChain} rather than trusting that single detail string),
+ * every break's surrounding content authentic, and every break at or before
+ * `cutoffIso`. Shared by {@link evaluateLegacyBreaks} (which adds the git
+ * anchor check, run once when WRITING a waiver) and the read path in
+ * {@link inspectAuditIntegrity} (which re-verifies an EXISTING waiver on
+ * every call, deliberately WITHOUT re-running git each time — the git check
+ * already protected the waiver file itself at write time).
+ */
+function contentValidAndBeforeCutoff(
+  auditDir: string,
+  secret: Buffer | null,
+  cutoffIso: string,
+): { ok: true } | { ok: false; reason: string } {
+  const rewalk = walkAuditChain(auditDir, secret);
+  if (rewalk.versionDowngradeCount > 0) {
+    return { ok: false, reason: 'a version downgrade is present — never a legacy-break shape' };
+  }
+  if (rewalk.hashMismatchCount > 0) {
+    return { ok: false, reason: 'a content-hash mismatch is present — never a legacy-break shape' };
+  }
+  const diagnosis = diagnoseAuditChain(auditDir, secret, null);
+  if (diagnosis.breaks.length === 0) {
+    // walkAuditChain saw chainBroken from something diagnoseAuditChain does
+    // not model (it only tracks prev_hash breaks) — refuse rather than guess.
+    return { ok: false, reason: 'the break reported does not match a known legacy-break shape' };
+  }
+  const cutoff = Date.parse(cutoffIso);
+  if (Number.isNaN(cutoff)) {
+    return { ok: false, reason: `--accept-legacy-breaks date "${cutoffIso}" is not a valid date` };
+  }
+  for (const b of diagnosis.breaks) {
+    if (b.contentValidAroundBreak !== true) {
+      return {
+        ok: false,
+        reason: `break at ${b.file}:${b.line} has ${b.contentValidAroundBreak === null ? 'unverifiable (no secret)' : 'INVALID'} content around it — refusing`,
+      };
+    }
+    const at = b.at !== null ? Date.parse(b.at) : Number.NaN;
+    if (Number.isNaN(at) || at > cutoff) {
+      return {
+        ok: false,
+        reason: `break at ${b.file}:${b.line} (${b.at ?? 'unknown time'}) is after the cutoff ${cutoffIso}`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Decides whether every break in `auditDir` qualifies for the legacy-break
+ * recovery path, ADDING the git-anchor check on top of
+ * {@link contentValidAndBeforeCutoff}: the on-disk files must match the
+ * committed git `HEAD` — if the working tree has a local, uncommitted
+ * difference, a human could be looking at exactly the tampered state this
+ * whole gate exists to catch. Run once, when WRITING a new waiver.
+ */
+function evaluateLegacyBreaks(
+  auditDir: string,
+  secret: Buffer | null,
+  cutoffIso: string,
+  gitCwd: string | null,
+  gitRunner: GitCommandRunner,
+): { ok: true } | { ok: false; reason: string } {
+  if (gitCwd === null) {
+    return {
+      ok: false,
+      reason: '--accept-legacy-breaks requires running inside the project (no git directory given)',
+    };
+  }
+  const diagnosis = diagnoseAuditChain(auditDir, secret, gitCwd, gitRunner);
+  if (diagnosis.matchesCommittedHead !== true) {
+    return {
+      ok: false,
+      reason:
+        diagnosis.matchesCommittedHead === null
+          ? 'could not confirm the audit files match the committed git HEAD (not a git work tree, or no commits yet)'
+          : 'the audit files have local, uncommitted changes — the git anchor of trust does not hold',
+    };
+  }
+  return contentValidAndBeforeCutoff(auditDir, secret, cutoffIso);
+}
+
 export function reconcileAuditState(
   auditDir: string,
   state: AuditStateRepository,
   secret: Buffer | null,
   signedEventCountAt: number | null,
   apply: boolean,
+  acceptLegacyBreaks: string | null = null,
+  gitCwd: string | null = null,
+  gitRunner: GitCommandRunner = defaultGitRunner,
 ): ReconcileResult {
   const walk = walkAuditChain(auditDir, secret);
 
@@ -521,10 +662,29 @@ export function reconcileAuditState(
     };
   }
   if (walk.chainBroken) {
-    return {
-      ok: false,
-      reason: `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — this is tampering, not mirror drift; reconciling would hide it`,
-    };
+    const legacy =
+      acceptLegacyBreaks !== null
+        ? evaluateLegacyBreaks(auditDir, secret, acceptLegacyBreaks, gitCwd, gitRunner)
+        : null;
+    if (legacy === null || !legacy.ok) {
+      return {
+        ok: false,
+        reason:
+          legacy !== null
+            ? `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — ${legacy.reason}`
+            : `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — this is tampering, not mirror drift; reconciling would hide it. Run \`mnema audit diagnose\` for a full report, and \`--accept-legacy-breaks <date>\` if every break is content-valid and no later than that date.`,
+      };
+    }
+    // Every break is a sequence-only discontinuity (concurrent writers,
+    // pre-lock), content-authentic throughout, no later than the cutoff, and
+    // the disk matches what was committed — fall through and reconcile.
+    // Persist the acceptance so `doctor`/`verify`/`reattest` (which all read
+    // through inspectAuditIntegrity) stop reporting a hard error for this
+    // SAME, already-reviewed situation. Written on apply only, never on a
+    // dry-run preview. It is re-verified on every read, never trusted blindly.
+    if (apply && acceptLegacyBreaks !== null) {
+      writeLegacyBreaksWaiver(auditDir, acceptLegacyBreaks);
+    }
   }
   if (!walk.chainEverStarted) {
     return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to reconcile' };

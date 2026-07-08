@@ -263,45 +263,138 @@ export class AuditCommand {
         'Apply the correction (without this flag, only reports what would change)',
         false,
       )
-      .action(async (options: { readonly force?: boolean }) => {
-        let hasError = false;
-        await withCliContext(async ({ config, projectRoot, container }) => {
+      .option(
+        '--accept-legacy-breaks <date>',
+        'Accept a chain broken by concurrent writers racing without a lock — a sequence-only ' +
+          'discontinuity, PROVIDED every break in the log is content-authentic and no later than ' +
+          'this ISO date, and the audit files match the committed git HEAD. Run ' +
+          '`mnema audit diagnose` first to confirm the shape. A real content edit or version ' +
+          'downgrade ALWAYS refuses regardless of this flag.',
+      )
+      .action(
+        async (options: { readonly force?: boolean; readonly acceptLegacyBreaks?: string }) => {
+          let hasError = false;
+          await withCliContext(async ({ config, projectRoot, container }) => {
+            const auditDir = path.join(projectRoot, config.paths.audit);
+            const secret = new ProjectSecretService(projectRoot, config.project.key);
+            const state = new AuditStateRepository(container.adapter);
+            const signature = new AuditHeadSignatureRepository(container.adapter).read();
+            const apply = options.force === true;
+
+            const result = reconcileAuditState(
+              auditDir,
+              state,
+              secret.read(),
+              signature?.eventCountAt ?? null,
+              apply,
+              options.acceptLegacyBreaks ?? null,
+              projectRoot,
+            );
+            if (!result.ok) {
+              process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
+              hasError = true;
+              return;
+            }
+            if (!result.changed) {
+              process.stdout.write(
+                `${pc.green('✔')}  audit_state already matches disk — nothing to do\n`,
+              );
+              return;
+            }
+            if (result.applied) {
+              process.stdout.write(
+                `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
+              );
+            } else {
+              process.stdout.write(
+                `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
+                  `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+              );
+            }
+          });
+          process.exit(hasError ? 1 : 0);
+        },
+      );
+
+    group
+      .command('diagnose')
+      .description(
+        'Read-only forensic report on the audit chain: every prev_hash discontinuity found, ' +
+          'and — for each — whether the CONTENT of the events around it is authentic. ' +
+          'Distinguishes a chain broken by concurrent writers racing without a lock ' +
+          '(content-valid, sequence-only) from a real edit (content-invalid). Also checks ' +
+          'whether the audit files match the committed git HEAD. Never modifies anything.',
+      )
+      .action(async () => {
+        await withCliContext(async ({ config, projectRoot }) => {
+          const { diagnoseAuditChain } = await import('../../services/audit/audit-diagnose.js');
           const auditDir = path.join(projectRoot, config.paths.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
-          const state = new AuditStateRepository(container.adapter);
-          const signature = new AuditHeadSignatureRepository(container.adapter).read();
-          const apply = options.force === true;
+          const report = diagnoseAuditChain(auditDir, secret.read(), projectRoot);
 
-          const result = reconcileAuditState(
-            auditDir,
-            state,
-            secret.read(),
-            signature?.eventCountAt ?? null,
-            apply,
-          );
-          if (!result.ok) {
-            process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
-            hasError = true;
-            return;
-          }
-          if (!result.changed) {
+          process.stdout.write(`${pc.bold(`${report.totalChained} chained event(s) on disk`)}\n`);
+          if (report.malformedLines > 0) {
             process.stdout.write(
-              `${pc.green('✔')}  audit_state already matches disk — nothing to do\n`,
+              `${pc.yellow('⚠')}  ${report.malformedLines} unparseable line(s)\n`,
             );
-            return;
           }
-          if (result.applied) {
+          if (report.breaks.length === 0) {
             process.stdout.write(
-              `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
+              `${pc.green('✔')}  no prev_hash discontinuities — chain is clean\n`,
             );
           } else {
             process.stdout.write(
-              `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
-                `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+              `${pc.yellow('⚠')}  ${report.breaks.length} prev_hash discontinuit${report.breaks.length === 1 ? 'y' : 'ies'} found:\n`,
             );
+            for (const b of report.breaks) {
+              const mark =
+                b.contentValidAroundBreak === true
+                  ? pc.green('✔ content-valid')
+                  : b.contentValidAroundBreak === false
+                    ? pc.red('✘ CONTENT INVALID')
+                    : pc.yellow('? unverifiable (no secret)');
+              process.stdout.write(
+                `   ${mark}  ${b.file}:${b.line} (chained index ${b.chainedIndex}, ${b.at ?? 'unknown time'})\n`,
+              );
+            }
+          }
+          const headLine =
+            report.matchesCommittedHead === true
+              ? `${pc.green('✔')}  audit files match the committed git HEAD`
+              : report.matchesCommittedHead === false
+                ? `${pc.red('✘')}  audit files have LOCAL, uncommitted changes vs git HEAD`
+                : `${pc.dim('—')}  not a git work tree — could not check against a committed HEAD`;
+          process.stdout.write(`${headLine}\n`);
+
+          if (report.breaks.length > 0) {
+            if (report.allBreaksContentValid && report.matchesCommittedHead === true) {
+              const latest = report.breaks.reduce(
+                (max, b) => (b.at !== null && b.at > max ? b.at : max),
+                '',
+              );
+              // The cutoff is compared against the FULL timestamp of each
+              // break (Date.parse), so truncating to the calendar date of
+              // the latest break would make the suggestion reject that very
+              // break if it happened later that same day. Suggest the day
+              // AFTER the latest break instead, so the command it prints
+              // always actually works.
+              const latestParsed = latest !== '' ? new Date(latest) : null;
+              const suggestedCutoff =
+                latestParsed !== null && !Number.isNaN(latestParsed.getTime())
+                  ? new Date(latestParsed.getTime() + 24 * 60 * 60 * 1000)
+                      .toISOString()
+                      .slice(0, 10)
+                  : '<date>';
+              process.stdout.write(
+                `\n${pc.dim(`Every break is content-valid and the disk matches git HEAD — a candidate for:\n  mnema audit reconcile --force --accept-legacy-breaks ${suggestedCutoff}`)}\n`,
+              );
+            } else {
+              process.stdout.write(
+                `\n${pc.dim('Not a legacy-break recovery candidate — resolve the content/git issue above first.')}\n`,
+              );
+            }
           }
         });
-        process.exit(hasError ? 1 : 0);
       });
   }
 }
