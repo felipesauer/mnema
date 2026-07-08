@@ -101,6 +101,24 @@ describe('attestation emitter', () => {
     );
   });
 
+  it('an emitted artifact survives the full disk round-trip and still verifies', async () => {
+    // The path that actually ships: emit → writeArtifact → re-read → verify.
+    // Guards against a serialize/parse bug (base64, from/to coercion, key
+    // order) that would break real anonymous verification of a committed .att.
+    const store = await import('@/services/audit/attestation-store.js');
+    writeChain(10);
+    const walk = walkChainedEvents(auditDir);
+    const artifact = emitAttestation(walk, 0, 10, signer(), hmacId);
+    store.writeArtifact(auditDir, artifact);
+
+    const reread = store.listArtifacts(auditDir);
+    expect(reread).toHaveLength(1);
+    const events = walk.chained.slice(0, 10).map((c) => c.event);
+    expect(verifyArtifact(reread[0], events, committedSignerResolver(projectRoot))).toEqual({
+      ok: true,
+    });
+  });
+
   it('the committed .pub really carries no private key', () => {
     // Guard the invariant at the emission boundary: the file the verifier reads
     // is public-only.

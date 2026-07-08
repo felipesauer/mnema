@@ -1,12 +1,14 @@
-import type { MachineKeyService } from '../machine-key.js';
+import type { CheckpointSigner } from '../head-checkpoint.js';
 import { type AttestationArtifact, buildArtifact } from './attestation-artifact.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
 
-/** A resolved signer: the machine key plus the actor handle it belongs to. */
-export interface AttestationSigner {
-  readonly machineKey: MachineKeyService;
-  readonly actor: string;
-}
+/**
+ * A resolved signer: the machine key plus the actor handle it belongs to.
+ * Re-exported from {@link CheckpointSigner} — the checkpoint and attestation
+ * paths sign with the same per-machine key, so they share one signer type
+ * rather than drifting apart as two identical declarations.
+ */
+export type AttestationSigner = CheckpointSigner;
 
 /**
  * Materialises the signed attestation for the chained events in `[from, to)`,

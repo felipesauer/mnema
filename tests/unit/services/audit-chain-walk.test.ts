@@ -39,7 +39,26 @@ describe('walkChainedEvents', () => {
 
   it('returns an empty walk for an absent or empty audit dir', () => {
     rmSync(auditDir, { recursive: true, force: true });
-    expect(walkChainedEvents(auditDir)).toEqual({ chained: [], malformedLines: 0 });
+    expect(walkChainedEvents(auditDir)).toEqual({
+      chained: [],
+      malformedLines: 0,
+      unhashedLines: 0,
+    });
+  });
+
+  it('tallies a v>=2 line with no hash but still indexes it (keeps event_count alignment)', () => {
+    // A chained line without a `hash` must NOT shift the chained index (it is
+    // still a v>=2 event that event_count counts), but is tallied so the
+    // attestation planner can refuse a batch containing it.
+    const noHash = JSON.stringify({ v: 2, at: 't', kind: 'k', actor: 'a', data: { id: 'X' } });
+    writeFileSync(
+      path.join(auditDir, 'current.jsonl'),
+      `${ev(2, 'A')}\n${noHash}\n${ev(2, 'B')}\n`,
+      'utf-8',
+    );
+    const walk = walkChainedEvents(auditDir);
+    expect(walk.chained.map((c) => c.index)).toEqual([0, 1, 2]);
+    expect(walk.unhashedLines).toBe(1);
   });
 
   it('indexes only chained (v>=2) events, 0-based, in order', () => {

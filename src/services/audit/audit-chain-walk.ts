@@ -34,6 +34,14 @@ export interface AuditChainWalk {
   readonly chained: readonly ChainedEvent[];
   /** Count of unparseable lines encountered (skipped, not indexed). */
   readonly malformedLines: number;
+  /**
+   * Count of chained (v>=2) events that carry NO string `hash`. They are still
+   * indexed (so the chained index stays aligned with `event_count`, which
+   * counts every v>=2 line), but a batch containing one cannot be attested:
+   * its leaf/head derivation needs the `hash`. A caller (the reattest planner)
+   * refuses when this is non-zero rather than letting the emitter throw.
+   */
+  readonly unhashedLines: number;
 }
 
 /**
@@ -53,6 +61,7 @@ export interface AuditChainWalk {
 export function walkChainedEvents(auditDir: string): AuditChainWalk {
   const chained: ChainedEvent[] = [];
   let malformedLines = 0;
+  let unhashedLines = 0;
   let index = 0;
 
   for (const file of orderedAuditFiles(auditDir)) {
@@ -68,6 +77,11 @@ export function walkChainedEvents(auditDir: string): AuditChainWalk {
       }
       const v = typeof event.v === 'number' ? event.v : 1;
       if (v >= 2) {
+        // Index every v>=2 line so the chained index stays aligned with
+        // event_count (which counts them all). A v>=2 line with no string
+        // `hash` is still indexed but tallied: the attestation planner refuses
+        // a batch that contains one, instead of the emitter throwing on it.
+        if (typeof event.hash !== 'string') unhashedLines += 1;
         chained.push({ index, event: event as unknown as AuditEvent });
         index += 1;
       }
@@ -76,5 +90,5 @@ export function walkChainedEvents(auditDir: string): AuditChainWalk {
     }
   }
 
-  return { chained, malformedLines };
+  return { chained, malformedLines, unhashedLines };
 }

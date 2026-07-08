@@ -182,4 +182,57 @@ describe('planReattest (fail-closed)', () => {
       [200, 250],
     ]);
   });
+
+  it('honours a caller-supplied batchSize', () => {
+    writeChain(250);
+    const plan = planReattest(input({ batchSize: 100 })); // baseline 100 for contrast
+    const plan50 = planReattest(input({ batchSize: 50 }));
+    expect(plan.ok && plan50.ok).toBe(true);
+    if (!plan50.ok) return;
+    expect(plan50.artifacts.map((a) => a.to)).toEqual([50, 100, 150, 200, 250]);
+  });
+
+  it('preserves a .att signed by a DIFFERENT committed key while emitting the tail', () => {
+    // The reason committedSignerResolver keys by full fingerprint: machine B
+    // signs [0,10), machine A (current) backfills the tail. B's .att must
+    // preserve because B's .pub is committed and resolves.
+    writeChain(20);
+    const userDirB = path.join(tempRoot, 'home-b', '.config', 'mnema');
+    mkdirSync(userDirB, { recursive: true });
+    const keyB = new MachineKeyService(projectRoot, 'mallory-not', userDirB);
+    keyB.getOrCreate(); // commits B's .pub alongside A's
+    const bAtt = emitAttestation(
+      walkChainedEvents(auditDir),
+      0,
+      10,
+      { machineKey: keyB, actor: 'mallory-not' },
+      hmacId,
+    );
+    const plan = planReattest(input({ existing: [bAtt] }));
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    expect(plan.planned).toEqual([
+      { from: 0, to: 10, action: 'preserve', signerActor: 'mallory-not' },
+      { from: 10, to: 20, action: 'emit', signerActor: 'felipesauer' },
+    ]);
+  });
+
+  it('refuses (not throws) when a chained line has no hash', () => {
+    writeChain(5);
+    // Append a v2 line with no `hash` — the emitter would throw on it; the
+    // planner must return a structured refusal instead.
+    const noHash = JSON.stringify({ v: 2, at: 't', kind: 'k', actor: 'a', data: {} });
+    writeFileSync(path.join(auditDir, 'current.jsonl'), `${noHash}\n`, { flag: 'a' });
+    let threw = false;
+    let plan: ReturnType<typeof planReattest> | undefined;
+    try {
+      plan = planReattest(input());
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(false);
+    expect(plan?.ok).toBe(false);
+    if (plan?.ok) return;
+    expect(plan?.reason).toMatch(/no hash|malformed/i);
+  });
 });

@@ -3,7 +3,12 @@ import type { AttestationSigner } from './attestation-emitter.js';
 import { emitAttestation } from './attestation-emitter.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
 
-/** The batch size a fresh attestation covers when backfilling. */
+/**
+ * Default batch size a fresh attestation covers when backfilling, used when
+ * the caller does not pass one. Mirrors the `audit.checkpoint.events` default
+ * so a backfilled `.att` lines up with the checkpoint cadence; the caller
+ * should pass the RESOLVED config value via {@link ReattestInput.batchSize}.
+ */
 export const DEFAULT_BATCH = 100;
 
 /** One batch the plan would emit (a NEW `.att`) or preserve (an existing one). */
@@ -44,17 +49,28 @@ export interface ReattestInput {
   /** The committed `sha256(secret)` id, or `null` when not committed. */
   readonly projectHmacId: string | null;
   /**
-   * `true` when `inspectAuditIntegrity` reported NO error-severity check — the
-   * chain is internally consistent. `false` refuses the whole run.
+   * `true` only when the on-disk chain is sound ENOUGH to attest. The caller
+   * MUST treat the truncation-shaped warnings from `inspectAuditIntegrity`
+   * (the "mirror one ahead of disk / truncated last line" count and hash-chain
+   * checks) as BLOCKING here — a naive `every(c => c.severity !== 'error')`
+   * would pass a truncated tail and let this planner re-sign it. `false`
+   * refuses the whole run.
    */
   readonly chainHealthy: boolean;
   /**
    * Highest `event_count` covered by a valid signed checkpoint, or `null`.
-   * A disk chain SHORTER than this is a truncation and refuses the run.
+   * A disk chain SHORTER than this is a truncation and refuses the run. NOTE:
+   * this is `null` for an anonymous clone (the checkpoint lives in gitignored
+   * SQLite), so it defends the local machine, not the public verifier — tail
+   * truncation past the last committed `.att` is a known residual (ADR-41).
    */
   readonly signedEventCountAt: number | null;
-  /** When true, also fill interior gaps between/ before existing `.att`s. */
-  readonly all: boolean;
+  /**
+   * Batch size for backfilling the unattested tail. Should be the resolved
+   * `audit.checkpoint.events` so `.att` boundaries track the checkpoint
+   * cadence; defaults to {@link DEFAULT_BATCH} when omitted.
+   */
+  readonly batchSize?: number;
 }
 
 /**
@@ -81,7 +97,7 @@ export interface ReattestInput {
  * @returns The plan to apply, or a structured refusal
  */
 export function planReattest(input: ReattestInput): ReattestPlan {
-  const { walk, existing, resolvePublicKeyPem, signer, projectHmacId, all } = input;
+  const { walk, existing, resolvePublicKeyPem, signer, projectHmacId } = input;
 
   if (!input.chainHealthy) {
     return {
@@ -93,6 +109,14 @@ export function planReattest(input: ReattestInput): ReattestPlan {
     return {
       ok: false,
       reason: `${walk.malformedLines} unparseable line(s) on disk — resolve them before reattesting`,
+    };
+  }
+  if (walk.unhashedLines > 0) {
+    // A v>=2 line with no `hash` cannot be attested (its leaf/head derivation
+    // needs it). Refuse cleanly rather than let the emitter throw on it.
+    return {
+      ok: false,
+      reason: `${walk.unhashedLines} chained line(s) on disk have no hash — the chain is malformed; resolve before reattesting`,
     };
   }
 
@@ -146,12 +170,9 @@ export function planReattest(input: ReattestInput): ReattestPlan {
     coveredTo = art.to;
   }
 
-  // What is left to attest. Without --all we only extend the tail past the last
-  // covered event; with --all we would also fill any interior gap — but the
-  // contiguity check above already rejects interior gaps in the EXISTING set,
-  // so the only gap that can remain is the tail. `all` therefore currently
-  // differs only in intent for future multi-gap layouts; the tail is the gap.
-  void all;
+  // What is left to attest is the tail past the last covered event. Interior
+  // gaps cannot occur: the contiguity check above already rejected any
+  // existing set that was not a gap-free prefix.
   const toEmit: PlannedBatch[] = [];
   const artifacts: AttestationArtifact[] = [];
   if (coveredTo < total) {
@@ -169,12 +190,19 @@ export function planReattest(input: ReattestInput): ReattestPlan {
           'no committed project fingerprint (.mnema/keys/project.hmac-id) to bind the attestation to',
       };
     }
+    const batchSize = input.batchSize ?? DEFAULT_BATCH;
     // Emit the tail in fixed-size batches so a huge backlog does not become one
-    // giant artifact; the last batch is whatever remains.
-    for (let from = coveredTo; from < total; from += DEFAULT_BATCH) {
-      const to = Math.min(from + DEFAULT_BATCH, total);
-      artifacts.push(emitAttestation(walk, from, to, signer, projectHmacId));
-      toEmit.push({ from, to, action: 'emit', signerActor: signer.actor });
+    // giant artifact; the last batch is whatever remains. Wrap the emit in a
+    // guard so a signing failure surfaces as a structured refusal, never an
+    // uncaught throw out of this fail-closed planner.
+    try {
+      for (let from = coveredTo; from < total; from += batchSize) {
+        const to = Math.min(from + batchSize, total);
+        artifacts.push(emitAttestation(walk, from, to, signer, projectHmacId));
+        toEmit.push({ from, to, action: 'emit', signerActor: signer.actor });
+      }
+    } catch (error) {
+      return { ok: false, reason: `failed to emit attestation: ${(error as Error).message}` };
     }
   }
 
