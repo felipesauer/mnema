@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "actor": "felipesauer",
+  "algorithm": "ed25519",
+  "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAK3sszPdGFVVu3E5i0RdJcHKzg6jxxCEVTGtAjvlI9B4=\n-----END PUBLIC KEY-----\n",
+  "fingerprint": "cdfdcd2b9565ad92c65adb3a7992b34a71c8bb51a1843078993fe38c3ba53a12",
+  "createdAt": "2026-07-03T21:47:33.222Z"
+}
