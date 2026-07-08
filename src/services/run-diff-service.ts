@@ -48,6 +48,8 @@ const TRANSITION_KINDS = new Set([
   'task_created',
   'task_transitioned',
   'task_assigned',
+  'task_claimed',
+  'task_claim_released',
   'task_deleted',
   'task_restored',
   'task_labels_set',
@@ -156,6 +158,10 @@ function summarise(kind: string, data: Readonly<Record<string, unknown>>): strin
       return `${s('key') ?? 'task'}: ${s('from') ?? '?'} → ${s('to') ?? '?'}`;
     case 'task_assigned':
       return `assigned ${s('key') ?? 'task'}${s('assignee') !== undefined ? ` to ${s('assignee')}` : ''}`;
+    case 'task_claimed':
+      return `claimed ${s('key') ?? 'task'}${s('lease_expires_at') !== undefined ? ` (lease → ${s('lease_expires_at')})` : ''}`;
+    case 'task_claim_released':
+      return `released claim on ${s('key') ?? 'task'}`;
     case 'task_deleted':
       return `deleted ${s('key') ?? 'task'}`;
     case 'task_restored':

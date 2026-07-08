@@ -138,6 +138,37 @@ describe('run_diff MCP tool (MNEMA-91)', () => {
     expect(diff.counts.evidence).toBe(1);
   });
 
+  it('includes task_claim / task_release_claim in the transitions group', async () => {
+    // A claim is a work reservation the reviewer should see alongside
+    // assign — this pins that the run-diff surfaces it rather than silently
+    // dropping it (task_claimed/task_claim_released always carry a run id,
+    // so the categorizer would otherwise discard 100% of them).
+    const start = (await harness.client.callTool({
+      name: 'agent_run_start',
+      arguments: { goal: 'claim then release' },
+    })) as CallToolResult;
+    const runId = payload(start).run_id as string;
+
+    await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Claimable', acceptance_criteria: ['works'] },
+    });
+    await harness.client.callTool({ name: 'task_claim', arguments: { task_key: 'TEST-1' } });
+    await harness.client.callTool({
+      name: 'task_release_claim',
+      arguments: { task_key: 'TEST-1' },
+    });
+
+    const res = (await harness.client.callTool({
+      name: 'run_diff',
+      arguments: { run_id: runId },
+    })) as CallToolResult;
+    const diff = payload(res).diff as Diff;
+
+    expect(diff.transitions.some((c) => c.summary.startsWith('claimed TEST-1'))).toBe(true);
+    expect(diff.transitions.some((c) => c.summary === 'released claim on TEST-1')).toBe(true);
+  });
+
   it('errors on an unknown run id', async () => {
     const res = (await harness.client.callTool({
       name: 'run_diff',
