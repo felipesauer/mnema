@@ -602,6 +602,7 @@ export function createServiceContainer(
     audit,
     userDir,
     options.commitRunner,
+    provenanceLinkRepository,
   );
   const commandDefinitionService = new CommandDefinitionService(
     path.join(projectRoot, config.paths.commands),

@@ -46,7 +46,7 @@ describe('MigrationRunner', () => {
 
     expect(applied.map((a) => a.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27,
+      27, 28,
     ]);
 
     const versions = adapter
@@ -55,7 +55,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27,
+      27, 28,
     ]);
   });
 
@@ -72,7 +72,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27,
+      27, 28,
     ]);
   });
 
@@ -99,6 +99,41 @@ describe('MigrationRunner', () => {
     expect(names).toContain('notes_fts');
     expect(names).toContain('decisions_fts');
     expect(names).toContain('workspace_config');
+  });
+
+  it("migration 028 widens provenance_links CHECK to accept 'skill' and still rejects unknown kinds", () => {
+    new MigrationRunner().run(adapter, migrationsDir);
+    const db = adapter.getDatabase();
+
+    // A skill → skill edge is now accepted (was rejected before 028).
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO provenance_links (id, source_kind, source_ref, target_kind, target_ref)
+           VALUES ('p-skill', 'skill', 'old-id', 'skill', 'new-id')`,
+        )
+        .run(),
+    ).not.toThrow();
+
+    // An unknown kind is still refused by the recreated CHECK.
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO provenance_links (id, source_kind, source_ref, target_kind, target_ref)
+           VALUES ('p-bad', 'sprint', 'x', 'memory', 'y')`,
+        )
+        .run(),
+    ).toThrow();
+
+    // The unique index survived the recreate (a duplicate edge is rejected).
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO provenance_links (id, source_kind, source_ref, target_kind, target_ref)
+           VALUES ('p-dup', 'skill', 'old-id', 'skill', 'new-id')`,
+        )
+        .run(),
+    ).toThrow();
   });
 
   it('creates idx_tasks_title and uses it for the findByTitle lookup', () => {

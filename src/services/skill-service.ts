@@ -9,6 +9,7 @@ import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
+import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
@@ -190,6 +191,9 @@ export class SkillService {
     // GitHubPrService / CommitVerifier) so tests drive it with a mock;
     // the working directory is bound at call time.
     private readonly run: CommandRunner = defaultRunner,
+    // Optional: when set, `supersede` records a navigable skill → skill
+    // provenance edge (successor by row id). Absent in lint-only mode.
+    private readonly provenance: ProvenanceLinkRepository | null = null,
   ) {}
 
   private requireRecordDeps(): {
@@ -505,6 +509,13 @@ export class SkillService {
         run: runId,
         data: { slug, version: target.version, superseded_by: successor.id },
       });
+      // First-class, navigable edge: the superseded skill row → its successor
+      // row. Skill refs are row ids (not slugs), matching how the pointer
+      // stores the successor id and how decision stores a successor id.
+      this.provenance?.link(
+        { kind: 'skill', ref: target.id },
+        { kind: 'skill', ref: successor.id },
+      );
     }
     return Ok(successor);
   }
