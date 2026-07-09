@@ -36,4 +36,16 @@ describe('buildAnchorRegistry — git is opt-in', () => {
     // Resolving git-signed throws because it was never registered.
     expect(() => registry.resolve('git-signed')).toThrow(/unknown anchor provider/i);
   });
+
+  it('registers rfc3161 only when explicitly selected (with a tsa url)', () => {
+    const registry = buildAnchorRegistry(configWith('rfc3161'), '/repo');
+    expect(registry.has('none')).toBe(true);
+    expect(registry.has('rfc3161')).toBe(true);
+    expect(registry.resolve('rfc3161').name).toBe('rfc3161');
+  });
+
+  it('does not register rfc3161 on the default path — network is opt-in', () => {
+    const registry = buildAnchorRegistry(configWith('none'), '/repo');
+    expect(registry.has('rfc3161')).toBe(false);
+  });
 });
