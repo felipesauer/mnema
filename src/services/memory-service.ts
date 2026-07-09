@@ -26,6 +26,8 @@ export interface MemoryRecordInput {
   readonly runId?: string;
   /** Decision key this memory was derived from — records a provenance edge. */
   readonly derivedFromDecision?: string;
+  /** Observation id this memory was promoted from — records a provenance edge. */
+  readonly derivedFromObservation?: string;
 }
 
 /**
@@ -118,6 +120,15 @@ export class MemoryService {
     if (input.derivedFromDecision !== undefined && input.derivedFromDecision.length > 0) {
       this.provenance?.link(
         { kind: 'decision', ref: input.derivedFromDecision },
+        { kind: 'memory', ref: memory.slug },
+      );
+    }
+
+    // The observation-side parallel: observation → memory, when the memory
+    // was promoted from an observation.
+    if (input.derivedFromObservation !== undefined && input.derivedFromObservation.length > 0) {
+      this.provenance?.link(
+        { kind: 'observation', ref: input.derivedFromObservation },
         { kind: 'memory', ref: memory.slug },
       );
     }

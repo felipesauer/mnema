@@ -246,6 +246,7 @@ export class SearchService {
            FROM observations_fts
            JOIN observations o ON o.id = observations_fts.observation_id
           WHERE observations_fts MATCH ?
+            AND o.archived_at IS NULL
           ORDER BY rank
           LIMIT ?`,
       )

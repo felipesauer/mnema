@@ -167,4 +167,39 @@ describe('provenance chain (obs/note → decision → memory)', () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it('links observation → memory via derivedFromObservation', () => {
+    const obs = observations.insert({
+      content: 'a signal worth keeping',
+      topics: [],
+      relatedTaskId: null,
+      createdBy: actorId,
+    });
+
+    // Promote the observation into a durable memory.
+    memories.record({
+      slug: 'kept-fact',
+      title: 'Kept fact',
+      content: 'this signal became a durable fact',
+      actor: 'daniel',
+      derivedFromObservation: obs.id,
+    });
+
+    // Downstream from the observation: observation → memory.
+    const fromObs = provenance.chain({ kind: 'observation', ref: obs.id });
+    expect(fromObs.downstream).toEqual([
+      expect.objectContaining({
+        fromKind: 'observation',
+        fromRef: obs.id,
+        toKind: 'memory',
+        toRef: 'kept-fact',
+      }),
+    ]);
+
+    // Upstream from the memory points back to the observation.
+    const fromMemory = provenance.chain({ kind: 'memory', ref: 'kept-fact' });
+    expect(fromMemory.upstream).toEqual([
+      expect.objectContaining({ fromKind: 'observation', fromRef: obs.id, toRef: 'kept-fact' }),
+    ]);
+  });
 });

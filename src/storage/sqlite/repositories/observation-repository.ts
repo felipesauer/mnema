@@ -10,6 +10,7 @@ interface ObservationRow {
   readonly related_task_id: string | null;
   readonly created_by: string;
   readonly at: string;
+  readonly archived_at: string | null;
 }
 
 /**
@@ -30,10 +31,13 @@ export interface ObservationListFilters {
   readonly relatedTaskId?: string;
   readonly since?: string;
   readonly limit?: number;
+  /** Include archived observations (default false). */
+  readonly includeArchived?: boolean;
 }
 
 /**
- * Persistence for {@link Observation}. Append-only — no update or delete.
+ * Persistence for {@link Observation}. Append-only for content — the only
+ * mutation is a soft archive that sets `archived_at`.
  */
 export class ObservationRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
@@ -105,6 +109,12 @@ export class ObservationRepository {
       where.push('at >= ?');
       params.push(filters.since);
     }
+    // Archived observations drop out of the default listing. Filtered in
+    // SQL (not JS like memories) so `limit` counts active rows, not rows
+    // that would be discarded afterwards.
+    if (filters.includeArchived !== true) {
+      where.push('archived_at IS NULL');
+    }
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
     let limitClause = '';
@@ -122,6 +132,22 @@ export class ObservationRepository {
     if (filters.topic === undefined) return observations;
     return observations.filter((o) => o.topics.includes(filters.topic as string));
   }
+
+  /**
+   * Archives an observation by id (soft, one-way). Sets `archived_at`; the
+   * row and its audit trail survive. No-op returns `false` for an unknown
+   * or already-archived id.
+   *
+   * @param id - Observation id
+   * @returns `true` when a row transitioned to archived
+   */
+  archive(id: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE observations SET archived_at = ? WHERE id = ? AND archived_at IS NULL')
+      .run(isoNow(), id);
+    return result.changes > 0;
+  }
 }
 
 function rowToObservation(row: ObservationRow): Observation {
@@ -132,5 +158,6 @@ function rowToObservation(row: ObservationRow): Observation {
     relatedTaskId: row.related_task_id,
     createdBy: row.created_by,
     at: row.at,
+    archivedAt: row.archived_at ?? null,
   };
 }

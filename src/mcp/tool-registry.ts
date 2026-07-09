@@ -112,6 +112,7 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'memory_archive',
   'observation_record',
   'observations_list',
+  'observation_archive',
 ];
 
 /**
