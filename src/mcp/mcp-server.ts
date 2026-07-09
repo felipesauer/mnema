@@ -310,7 +310,7 @@ export class MnemaMcpServer {
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
     new PortfolioTool(this.services.portfolio).register(this.sdk);
     new PrStatusTool(this.services.githubPr).register(this.sdk);
-    new SearchTool(this.services.search).register(this.sdk);
+    new SearchTool(this.services.search, this.services.task).register(this.sdk);
     new HistoryTool(this.services.auditQuery).register(this.sdk);
     new CommandTools(this.services.commandDefinition).register(this.sdk);
     if (knowledgeEnabled) {
