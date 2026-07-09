@@ -68,12 +68,53 @@ describe('v3 HMAC audit chain', () => {
     expect(checks.find((c) => c.name === 'audit authenticity')).toBeUndefined();
   });
 
-  it('reports a hash-chain break when verified with the WRONG secret', () => {
+  it('adds a wrong-secret hint (without hiding the tamper error) with the WRONG secret', () => {
     writeV3();
     const checks = inspectAuditIntegrity(adapter, auditDir, wrong);
-    // The recomputed HMAC does not match, so the chain reads as broken —
-    // a different secret cannot verify a project's authentic v3 lines.
-    expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
+    // The hash-chain error is NOT suppressed — a wrong-secret shape is
+    // cryptographically indistinguishable from a full content forgery, so the
+    // integrity signal stays a hard error.
+    const chain = checks.find((c) => c.name === 'audit hash chain');
+    expect(chain?.ok).toBe(false);
+    // …and an ADDITIVE authenticity hint names the likely cause + the fix,
+    // as a warning (the blocking error is the hash-chain line, not this).
+    const auth = checks.find((c) => c.name === 'audit authenticity');
+    expect(auth?.ok).toBe(false);
+    expect(auth?.severity).toBe('warning');
+    expect(auth?.detail).toMatch(/wrong project secret/i);
+    expect(auth?.detail).toMatch(/cannot be distinguished from a content forgery/i);
+  });
+
+  it('distinguishes wrong-secret (all v3 fail) from a partial in-place forgery', () => {
+    // Wrong secret: hash-chain error PLUS the wrong-secret hint (all v3 fail).
+    writeV3();
+    const wrongChecks = inspectAuditIntegrity(adapter, auditDir, wrong);
+    expect(wrongChecks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
+    expect(
+      wrongChecks.find(
+        (c) => c.name === 'audit authenticity' && /wrong project secret/i.test(c.detail),
+      ),
+    ).toBeDefined();
+
+    // Genuine PARTIAL tamper (verified with the RIGHT secret): only some v3
+    // lines fail, so it is a hash-chain error WITHOUT the wrong-secret hint —
+    // the operator is not misdirected toward a key problem.
+    const file = path.join(auditDir, 'current.jsonl');
+    const lines = readFileSync(file, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    const first = JSON.parse(lines[0] as string) as Record<string, unknown>;
+    first.actor = 'mallory';
+    lines[0] = JSON.stringify(first);
+    writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
+    const tamperChecks = inspectAuditIntegrity(adapter, auditDir, secret);
+    expect(tamperChecks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
+    // NOT accompanied by the wrong-secret hint (only 1 of 3 v3 lines failed).
+    expect(
+      tamperChecks.find(
+        (c) => c.name === 'audit authenticity' && /wrong project secret/i.test(c.detail),
+      ),
+    ).toBeUndefined();
   });
 
   it('reports authenticity UNVERIFIABLE (not tampered) with no secret', () => {

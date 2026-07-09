@@ -133,6 +133,18 @@ interface AuditChainWalk {
   readonly versionDowngradeCount: number;
   /** Count of content-hash mismatches found across the whole walk (same reasoning). */
   readonly hashMismatchCount: number;
+  /**
+   * Count of prev_hash continuity breaks (a line whose prev_hash does not
+   * match the running head). Tracked apart from {@link hashMismatchCount} so
+   * the verdict can tell a WRONG-SECRET chain (every v3 line fails the HMAC
+   * but continuity is intact) from an in-place forgery (which breaks
+   * continuity or fails only some lines).
+   */
+  readonly prevHashBreakCount: number;
+  /** v3 lines that were HMAC-verified (secret present). */
+  readonly v3HmacChecked: number;
+  /** …of those, how many failed the HMAC recomputation. */
+  readonly v3HmacFailed: number;
 }
 
 /**
@@ -165,6 +177,9 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
   let chainBreakDetail = '';
   let versionDowngradeCount = 0;
   let hashMismatchCount = 0;
+  let prevHashBreakCount = 0;
+  let v3HmacChecked = 0;
+  let v3HmacFailed = 0;
   let lastHash: string | null = null;
   let lastAt: string | null = null;
   let chainEverStarted = false;
@@ -213,18 +228,21 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
         if (v >= 3 && secret === null) {
           v3Unverifiable += 1;
         } else {
-          const recomputed =
-            v >= 3
-              ? hmacEvent(event as unknown as AuditEvent, secret as Buffer)
-              : hashEvent(event as unknown as AuditEvent);
+          const isV3 = v >= 3;
+          if (isV3) v3HmacChecked += 1;
+          const recomputed = isV3
+            ? hmacEvent(event as unknown as AuditEvent, secret as Buffer)
+            : hashEvent(event as unknown as AuditEvent);
           if (hash !== recomputed) {
             chainBroken = true;
             hashMismatchCount += 1;
+            if (isV3) v3HmacFailed += 1;
             chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
           }
         }
         if (prev !== prevHash) {
           chainBroken = true;
+          prevHashBreakCount += 1;
           // A break on the first line of a rotated segment means the
           // previous segment's tail is missing or altered (e.g. a whole
           // archived month was deleted) — name that explicitly.
@@ -258,6 +276,9 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
     chainEverStarted,
     versionDowngradeCount,
     hashMismatchCount,
+    prevHashBreakCount,
+    v3HmacChecked,
+    v3HmacFailed,
   };
 }
 
@@ -309,6 +330,25 @@ export function inspectAuditIntegrity(
   } = walk;
   let chainBroken = walk.chainBroken;
   let chainBreakDetail = walk.chainBreakDetail;
+
+  // Wrong-secret HINT (additive, never suppresses the tamper verdict). When
+  // EVERY v3 line fails the HMAC while the on-disk chain is otherwise
+  // internally consistent (prev_hash continuity intact, no downgrade, and the
+  // only hash mismatches are those v3 HMAC failures), the most likely cause
+  // is the WRONG project secret — an operator who imported another project's
+  // key. BUT this shape is NOT cryptographically distinguishable from a
+  // content forgery of every v3 line whose stored hashes were left
+  // self-consistent (an attacker without the secret can produce exactly this).
+  // So we do NOT clear `chainBroken`: the `audit hash chain` verdict stays a
+  // hard error, and we ADD an authenticity line that names the wrong-secret
+  // possibility as the likely-but-unproven cause. Relabelling here is
+  // additive guidance, never a downgrade of the integrity signal.
+  const wrongSecretLikely =
+    walk.v3HmacChecked > 0 &&
+    walk.v3HmacFailed === walk.v3HmacChecked &&
+    walk.hashMismatchCount === walk.v3HmacFailed &&
+    walk.prevHashBreakCount === 0 &&
+    walk.versionDowngradeCount === 0;
 
   // Fingerprint implies v3: a committed HMAC fingerprint means the project
   // adopted keyed events, so a chain with chained lines but NO v3 line is a
@@ -427,6 +467,24 @@ export function inspectAuditIntegrity(
       name: 'audit hash chain',
       ok: true,
       detail: `verified up to ${lastHash?.slice(0, 12) ?? '(empty)'}…`,
+    });
+  }
+
+  // Wrong-secret hint: every v3 line failed the HMAC with intact continuity.
+  // The `audit hash chain` verdict above already carries the hard error; this
+  // ADDS the most likely explanation (wrong key) with its fix, WITHOUT
+  // claiming the chain is clean — because a content forgery of every v3 line
+  // is indistinguishable from a key mismatch by these counts. A warning, so
+  // it does not double-count as a second blocking error over the same lines
+  // (the hash-chain error is the blocking signal). Only meaningful when a
+  // secret was actually used (v3HmacChecked > 0), so it never fires for the
+  // no-secret unverifiable case below.
+  if (wrongSecretLikely) {
+    checks.push({
+      name: 'audit authenticity',
+      ok: false,
+      detail: `all ${walk.v3HmacChecked} HMAC-keyed (v3) line(s) failed verification while the chain is otherwise internally consistent — the LIKELY cause is the wrong project secret (e.g. another project's key was imported); verify you imported the correct secret (\`mnema project secret import\`). NOTE: this shape cannot be distinguished from a content forgery of every v3 line, so the hash-chain error above still stands until the correct secret verifies clean.`,
+      severity: 'warning',
     });
   }
 
