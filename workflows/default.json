@@ -87,6 +87,19 @@
           }
         }
       },
+      "complete": {
+        "to": "DONE",
+        "description": "Complete a task that has no code review (a decision, docs, or research)",
+        "use_when": "Work is done but produced no PR to review — e.g. ratifying a decision or writing docs. For code, use submit_review then approve.",
+        "requires": {
+          "completion_note": {
+            "type": "string",
+            "min": 5,
+            "field_kind": "validating",
+            "description": "What was completed and where the outcome lives (e.g. a link to the ADR or doc). One-shot annotation; doesn't persist on the task."
+          }
+        }
+      },
       "cancel": {
         "to": "CANCELED",
         "description": "Cancel in-progress task",
