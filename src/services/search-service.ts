@@ -37,13 +37,14 @@ export interface SearchFilter {
 }
 
 /**
- * Unified FTS5 search across tasks, notes and decisions.
+ * Unified FTS5 search across all six text-bearing entities: tasks,
+ * decisions, notes, skills, memories and observations.
  *
  * Each entity has its own virtual `*_fts` table with `unicode61
  * remove_diacritics 2`, so queries are case- and diacritic-insensitive.
- * The service queries each table in turn and concatenates the hits in
- * a deterministic order: tasks → decisions → notes (matches what the
- * default CLI rendering expects).
+ * The service queries each table in turn and concatenates the hits in a
+ * deterministic order: tasks → decisions → notes → skills → memories →
+ * observations (matches what the default CLI rendering expects).
  */
 export class SearchService {
   constructor(private readonly adapter: SqliteAdapter) {}
