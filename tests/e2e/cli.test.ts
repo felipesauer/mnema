@@ -1054,4 +1054,69 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const create2 = runCli(['task', 'create', '--title', 'Now OK'], projectRoot);
     expect(create2.status).toBe(0);
   });
+
+  it('memory record --derived-from-decision records a decision→memory provenance edge', async () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // Record an ADR to derive the memory from.
+    const dec = runCli(
+      ['decision', 'record', '--title', 'Adopt X', '--decision', 'use X'],
+      projectRoot,
+    );
+    expect(dec.status).toBe(0);
+    // Extract the ADR key from the success line (strip ANSI colour codes).
+    const decisionKey = dec.stdout.replace(/\[[0-9;]*m/g, '').match(/([A-Z]+-ADR-\d+)/)?.[1];
+    expect(decisionKey).toBeDefined();
+
+    // Record a memory derived from that decision via the new CLI flag.
+    const mem = runCli(
+      [
+        'memory',
+        'record',
+        'x-fact',
+        '--title',
+        'X fact',
+        '--content',
+        'X is now the standard',
+        '--derived-from-decision',
+        decisionKey as string,
+      ],
+      projectRoot,
+    );
+    expect(mem.status).toBe(0);
+
+    // The decision→memory edge exists in provenance_links.
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      const edge = db
+        .prepare(
+          'SELECT 1 FROM provenance_links WHERE source_kind = ? AND source_ref = ? AND target_kind = ? AND target_ref = ?',
+        )
+        .get('decision', decisionKey, 'memory', 'x-fact');
+      expect(edge).toBeDefined();
+    } finally {
+      db.close();
+    }
+  });
+
+  it('memory record WITHOUT the flag records no provenance edge', async () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    const mem = runCli(
+      ['memory', 'record', 'plain-fact', '--title', 'Plain', '--content', 'no provenance'],
+      projectRoot,
+    );
+    expect(mem.status).toBe(0);
+
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    try {
+      const edges = db
+        .prepare('SELECT COUNT(*) AS n FROM provenance_links WHERE target_ref = ?')
+        .get('plain-fact') as { n: number };
+      expect(edges.n).toBe(0);
+    } finally {
+      db.close();
+    }
+  });
 });
