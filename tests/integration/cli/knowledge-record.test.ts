@@ -147,6 +147,59 @@ describe.skipIf(!existsSync(DIST_ENTRY))(
       expect(run(['skill', 'show', 'proc'])).toContain('v2 body');
     });
 
+    it('memory supersede points the old memory at a successor and drops it from list', () => {
+      run(['memory', 'record', 'old-way', '--title', 'Old', '--content', 'the old approach']);
+      run(['memory', 'record', 'new-way', '--title', 'New', '--content', 'the new approach']);
+
+      const out = run(['memory', 'supersede', 'old-way', 'new-way']);
+      expect(out).toContain('superseded');
+      expect(out).toContain('old-way');
+      expect(out).toContain('new-way');
+
+      const listed = run(['memory', 'list']);
+      expect(listed).toContain('new-way');
+      expect(listed).not.toContain('old-way');
+      expect(auditLog()).toContain('"kind":"memory_superseded"');
+    });
+
+    it('memory supersede surfaces SELF_SUPERSEDE through the structured error', () => {
+      run(['memory', 'record', 's', '--title', 'S', '--content', 'x']);
+      let stderr = '';
+      let failed = false;
+      try {
+        run(['memory', 'supersede', 's', 's']);
+      } catch (error) {
+        failed = true;
+        const e = error as { stderr?: string; stdout?: string };
+        stderr = `${e.stderr ?? ''}${e.stdout ?? ''}`;
+      }
+      expect(failed).toBe(true);
+      expect(stderr).toContain('cannot supersede itself');
+    });
+
+    it('skill supersede drops the superseded slug from list; --version targets a row', () => {
+      run(['skill', 'record', 'old-flow', '--name', 'Old', '--description', 'd', '--content', 'A']);
+      run(['skill', 'record', 'new-flow', '--name', 'New', '--description', 'd', '--content', 'B']);
+
+      const out = run(['skill', 'supersede', 'old-flow', 'new-flow']);
+      expect(out).toContain('superseded');
+
+      const listed = run(['skill', 'list']);
+      expect(listed).toContain('new-flow');
+      expect(listed).not.toContain('old-flow');
+      expect(auditLog()).toContain('"kind":"skill_superseded"');
+
+      // --version selects an explicit target version.
+      const common = ['skill', 'record', 'ver', '--name', 'Ver', '--description', 'd'];
+      run([...common, '--content', 'v1']);
+      run([...common, '--content', 'v2', '--new-version']);
+      run(['skill', 'record', 'heir', '--name', 'Heir', '--description', 'd', '--content', 'x']);
+      const versioned = run(['skill', 'supersede', 'ver', 'heir', '--version', '1']);
+      expect(versioned).toContain('superseded');
+      // v2 is still the latest and active, so the slug remains listed.
+      expect(run(['skill', 'list'])).toContain('ver');
+    });
+
     it('memory record without an identity routes through the structured error', () => {
       // No MNEMA_ACTOR and an isolated HOME → resolveDefaultActor finds none,
       // so the mutation must surface IdentityNotConfigured, not a raw throw.
