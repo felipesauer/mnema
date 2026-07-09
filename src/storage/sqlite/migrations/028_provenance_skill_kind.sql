@@ -1,3 +1,4 @@
+-- mnema:disable-foreign-keys
 -- =============================================================================
 -- Migration 028: allow 'skill' as a provenance kind.
 --
@@ -16,10 +17,20 @@
 --
 -- ADDITIVE in effect: the constraint only widens; no row is dropped or altered.
 --
+-- The whole rebuild runs inside one transaction, and the header disables
+-- foreign keys for its duration — DROP TABLE provenance_links must not fail on,
+-- nor orphan, any row that references it, and the pragma cannot toggle inside a
+-- transaction. Every statement is idempotent (IF EXISTS / IF NOT EXISTS) so a
+-- run that crashed mid-migration — before the version stamp committed — is
+-- safe to retry rather than leaving a recreated-but-unstamped table that would
+-- brick every future migrate. Same recipe as migrations 004 and 006.
+--
 -- Forward-only (see forward-only-migrations memory).
 -- =============================================================================
 
-CREATE TABLE provenance_links_new (
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS provenance_links_new (
   id           TEXT PRIMARY KEY,
   source_kind  TEXT NOT NULL CHECK (source_kind IN ('observation', 'note', 'decision', 'memory', 'skill')),
   source_ref   TEXT NOT NULL,
@@ -36,8 +47,10 @@ SELECT id, source_kind, source_ref, target_kind, target_ref, created_at FROM pro
 DROP TABLE provenance_links;
 ALTER TABLE provenance_links_new RENAME TO provenance_links;
 
-CREATE INDEX idx_prov_source ON provenance_links(source_kind, source_ref);
-CREATE INDEX idx_prov_target ON provenance_links(target_kind, target_ref);
+CREATE INDEX IF NOT EXISTS idx_prov_source ON provenance_links(source_kind, source_ref);
+CREATE INDEX IF NOT EXISTS idx_prov_target ON provenance_links(target_kind, target_ref);
 
 INSERT INTO schema_migrations (version, applied_at)
 VALUES (28, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+
+COMMIT;
