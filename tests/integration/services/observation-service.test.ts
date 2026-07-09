@@ -7,7 +7,7 @@ import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { IdentityService } from '@/services/identity-service.js';
-import { ObservationService } from '@/services/observation-service.js';
+import { OBSERVATION_CONTENT_MAX, ObservationService } from '@/services/observation-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
@@ -88,6 +88,25 @@ describe('ObservationService', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
+  });
+
+  it('rejects content over the length cap in the service (CLI/MCP parity)', () => {
+    const over = 'x'.repeat(OBSERVATION_CONTENT_MAX + 1);
+    const result = service.record({ content: over, actor: 'daniel' });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    // The message names the exact overflow and points at the fix.
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.message).toMatch(/1 over the 2000 limit/);
+    // Nothing was persisted (validation precedes the insert + audit write).
+    expect(service.list()).toHaveLength(0);
+  });
+
+  it('accepts content exactly at the cap', () => {
+    const atCap = 'x'.repeat(OBSERVATION_CONTENT_MAX);
+    const result = service.record({ content: atCap, actor: 'daniel' });
+    expect(result.ok).toBe(true);
   });
 
   it('list filters by topic and respects limit', () => {
