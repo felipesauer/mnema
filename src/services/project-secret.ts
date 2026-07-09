@@ -16,6 +16,13 @@ import { userKnowledgeDir } from './user-knowledge.js';
 const SECRET_BYTES = 32;
 
 /**
+ * Label prefixing an export envelope. Versioned so a future format change is
+ * detectable; the project key follows it so an import into the wrong project
+ * is rejected rather than silently installed.
+ */
+const ENVELOPE_PREFIX = 'mnema-hmac-secret/v1';
+
+/**
  * Where the committed, NON-SECRET fingerprint of the project secret lives,
  * relative to the project root. A clone reads this to learn which secret
  * it should hold (ADR-37); it never contains the secret itself.
@@ -106,6 +113,106 @@ export class ProjectSecretService {
   /** The non-secret fingerprint of a secret: `sha256(secret)` hex. */
   static fingerprint(secret: Buffer): string {
     return createHash('sha256').update(secret).digest('hex');
+  }
+
+  /**
+   * Serializes the current secret into a labelled, single-line envelope for
+   * out-of-band transmission to a teammate (ADR-39: the HMAC secret is a
+   * shareable team credential). The envelope embeds the project key so an
+   * import into the wrong project is caught, not silently installed.
+   *
+   * Read-only: it NEVER mints a secret. A machine with no local secret
+   * cannot export one — that would either invent a competing secret (on a
+   * clone) or surprise the caller by writing state under an "export".
+   *
+   * @returns The envelope `mnema-hmac-secret/v1:<projectKey>:<base64>`
+   * @throws If no secret is present on this machine
+   */
+  exportEnvelope(): string {
+    const secret = this.read();
+    if (secret === null) {
+      throw new Error(
+        `no project secret on this machine for "${this.projectKey}" — ` +
+          `nothing to export (it is minted on the first audit write of a new project, ` +
+          `or imported from a teammate on a clone)`,
+      );
+    }
+    return `${ENVELOPE_PREFIX}:${this.projectKey}:${secret.toString('base64')}`;
+  }
+
+  /**
+   * Parses and validates an export envelope for THIS project. Checks the
+   * label, the embedded project key (catches a paste into the wrong
+   * project), the base64 payload, and the 32-byte length.
+   *
+   * @param envelope - A string produced by {@link exportEnvelope}
+   * @returns The decoded 32-byte secret
+   * @throws With a specific message on any structural or project-key mismatch
+   */
+  parseEnvelope(envelope: string): Buffer {
+    const trimmed = envelope.trim();
+    if (!trimmed.startsWith(`${ENVELOPE_PREFIX}:`)) {
+      throw new Error(
+        `not a mnema HMAC secret envelope (expected it to start with "${ENVELOPE_PREFIX}:")`,
+      );
+    }
+    // Split into exactly 3 fields: prefix, project key, payload. The base64
+    // payload has no ':' so a plain split is unambiguous.
+    const parts = trimmed.split(':');
+    if (parts.length !== 3) {
+      throw new Error('malformed HMAC secret envelope (expected prefix:project:payload)');
+    }
+    const [, envKey, payload] = parts;
+    if (envKey !== this.projectKey) {
+      throw new Error(
+        `envelope is for project "${envKey}", but this project is "${this.projectKey}" — refusing to import`,
+      );
+    }
+    let secret: Buffer;
+    try {
+      secret = Buffer.from(payload ?? '', 'base64');
+    } catch {
+      throw new Error('HMAC secret envelope payload is not valid base64');
+    }
+    // base64 decoding is lenient (it silently drops junk), so validate the
+    // decoded length rather than trust the decode. A short/long blob is a
+    // corrupted paste, not a usable secret.
+    if (secret.length !== SECRET_BYTES) {
+      throw new Error(
+        `HMAC secret must be ${SECRET_BYTES} bytes, got ${secret.length} — the blob is corrupted or truncated`,
+      );
+    }
+    return secret;
+  }
+
+  /**
+   * Installs an imported secret at {@link secretPath} (0600). Refuses when
+   * the secret contradicts the committed fingerprint (installing it would
+   * fork the chain under the wrong key), and refuses to overwrite an
+   * existing local secret unless `force` is set.
+   *
+   * @param secret - The 32-byte secret (already length-validated)
+   * @param options.force - Overwrite an existing local secret
+   * @throws On a fingerprint mismatch, or an existing secret without `force`
+   */
+  install(secret: Buffer, options: { force?: boolean } = {}): void {
+    const committed = this.readFingerprint();
+    if (committed !== null && ProjectSecretService.fingerprint(secret) !== committed) {
+      throw new Error(
+        `imported secret does not match the project's committed fingerprint ` +
+          `(${HMAC_ID_RELATIVE}) — it is for a different project or corrupted`,
+      );
+    }
+    if (this.read() !== null && options.force !== true) {
+      throw new Error(
+        `a project secret already exists on this machine — pass --force to overwrite it`,
+      );
+    }
+    this.writeSecretAtomic(secret);
+    // Self-heal a missing committed fingerprint (a clone importing before the
+    // fingerprint was ever committed): record it now so downgrade detection
+    // works. When it already exists we verified it matches above.
+    if (committed === null) this.writeFingerprint(secret);
   }
 
   /** Reads the committed fingerprint, or `null` when absent. */
