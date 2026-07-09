@@ -187,6 +187,31 @@ export class SkillCommand {
           process.stdout.write(`${files.map((f) => `  ${f}`).join('\n')}\n`);
         });
       });
+
+    group
+      .command('supersede <slug> <successor>')
+      .description('Supersede a skill: point a version at a successor that replaces it (one-way)')
+      .option(
+        '--version <n>',
+        'Version to supersede (default: latest); the successor resolves to its own latest',
+        (v) => Number.parseInt(v, 10),
+      )
+      .action(async (slug: string, successor: string, options: { readonly version?: number }) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.skill.supersede(
+            slug,
+            successor,
+            container.identity.getDefaultActor(),
+            options.version,
+          );
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(
+            `${pc.green('✓')} superseded ${pc.bold(slug)} → ${pc.bold(successor)}\n`,
+          );
+        });
+      });
   }
 }
 

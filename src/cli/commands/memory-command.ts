@@ -173,5 +173,24 @@ export class MemoryCommand {
           process.stdout.write(`${pc.green('✓')} archived ${pc.bold(slug)}\n`);
         });
       });
+
+    group
+      .command('supersede <slug> <successor>')
+      .description('Supersede a memory: point it at a successor that replaces it (one-way)')
+      .action(async (slug: string, successor: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.memory.supersede(
+            slug,
+            successor,
+            container.identity.getDefaultActor(),
+          );
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          process.stdout.write(
+            `${pc.green('✓')} superseded ${pc.bold(slug)} → ${pc.bold(successor)}\n`,
+          );
+        });
+      });
   }
 }
