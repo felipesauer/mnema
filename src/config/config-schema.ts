@@ -237,8 +237,9 @@ export const ConfigSchema = z.object({
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
-  // `pr_url` is supplied on approve, `done_pr_policy` decides what to do
-  // if that PR is not merged or its CI is red:
+  // `pr_url` is supplied on a terminal transition (approve, or any other
+  // transition into DONE), `done_pr_policy` decides what to do if that PR
+  // is not merged or its CI is red:
   //   - `off`   (default): never check — fully opt-in, zero network.
   //   - `warn`  : check and attach a `pr_warning`, but allow the move.
   //   - `block` : refuse the transition with PR_NOT_READY.

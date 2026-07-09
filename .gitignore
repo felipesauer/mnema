@@ -10,6 +10,7 @@ coverage/
 docs/*
 !docs/quickstart.cast
 !docs/quickstart.gif
+!docs/configuration.md
 !docs/assets/
 !docs/assets/**
 .plan/
