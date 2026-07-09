@@ -1,5 +1,5 @@
 /** The entity types a provenance edge can connect. */
-export type ProvenanceKind = 'observation' | 'note' | 'decision' | 'memory';
+export type ProvenanceKind = 'observation' | 'note' | 'decision' | 'memory' | 'skill';
 
 /** One directed provenance edge: `source → target`. */
 export interface ProvenanceLink {

@@ -10,6 +10,7 @@ import { DecisionService } from '@/services/decision-service.js';
 import { IdentityService } from '@/services/identity-service.js';
 import { MemoryService } from '@/services/memory-service.js';
 import { ProvenanceService } from '@/services/provenance-service.js';
+import { SkillService } from '@/services/skill-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
@@ -19,6 +20,7 @@ import { NoteRepository } from '@/storage/sqlite/repositories/note-repository.js
 import { ObservationRepository } from '@/storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { ProvenanceLinkRepository } from '@/storage/sqlite/repositories/provenance-link-repository.js';
+import { SkillRepository } from '@/storage/sqlite/repositories/skill-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -29,6 +31,7 @@ describe('provenance chain (obs/note → decision → memory)', () => {
   let adapter: SqliteAdapter;
   let decisions: DecisionService;
   let memories: MemoryService;
+  let skills: SkillService;
   let provenance: ProvenanceService;
   let notes: NoteRepository;
   let observations: ObservationRepository;
@@ -70,6 +73,16 @@ describe('provenance chain (obs/note → decision → memory)', () => {
       null,
       links,
       observations,
+    );
+    skills = new SkillService(
+      path.join(tempRoot, '.mnema', 'skills'),
+      new Set<string>(),
+      new SkillRepository(adapter),
+      identity,
+      audit,
+      null,
+      undefined,
+      links,
     );
     provenance = new ProvenanceService(links);
   });
@@ -272,6 +285,51 @@ describe('provenance chain (obs/note → decision → memory)', () => {
     const fromNew = provenance.chain({ kind: 'memory', ref: 'new-fact' });
     expect(fromNew.upstream).toEqual([
       expect.objectContaining({ fromKind: 'memory', fromRef: 'old-fact', toRef: 'new-fact' }),
+    ]);
+  });
+
+  it('skill supersede records a skill → skill provenance edge (by row id)', () => {
+    skills.record({
+      slug: 'old-skill',
+      name: 'Old',
+      description: 'd',
+      content: 'x',
+      actor: 'daniel',
+    });
+    skills.record({
+      slug: 'new-skill',
+      name: 'New',
+      description: 'd',
+      content: 'y',
+      actor: 'daniel',
+    });
+
+    const oldRow = skills.show('old-skill');
+    const newRow = skills.show('new-skill');
+    expect(oldRow.ok && newRow.ok).toBe(true);
+    if (!oldRow.ok || !newRow.ok) return;
+
+    const result = skills.supersede('old-skill', 'new-skill', 'daniel');
+    expect(result.ok).toBe(true);
+
+    // Skill refs are row ids, not slugs.
+    const fromOld = provenance.chain({ kind: 'skill', ref: oldRow.value.id });
+    expect(fromOld.downstream).toEqual([
+      expect.objectContaining({
+        fromKind: 'skill',
+        fromRef: oldRow.value.id,
+        toKind: 'skill',
+        toRef: newRow.value.id,
+      }),
+    ]);
+
+    const fromNew = provenance.chain({ kind: 'skill', ref: newRow.value.id });
+    expect(fromNew.upstream).toEqual([
+      expect.objectContaining({
+        fromKind: 'skill',
+        fromRef: oldRow.value.id,
+        toRef: newRow.value.id,
+      }),
     ]);
   });
 
