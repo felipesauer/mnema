@@ -161,6 +161,16 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.DependencySelf; readonly taskKey: string }
   | {
+      /**
+       * A memory or skill was asked to supersede itself — a self-referential
+       * `superseded_by` pointer (a node that is its own replacement). `ref`
+       * is the slug (memory) or slug/version label (skill) that collided.
+       */
+      readonly kind: ErrorCode.SelfSupersede;
+      readonly entity: 'memory' | 'skill';
+      readonly ref: string;
+    }
+  | {
       readonly kind: ErrorCode.EvidenceCriterionOutOfRange;
       readonly taskKey: string;
       readonly index: number;

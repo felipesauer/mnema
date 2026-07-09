@@ -257,6 +257,64 @@ export class MemoryService {
   }
 
   /**
+   * Supersedes a memory: points it at a successor memory that replaces it.
+   * One-way (unlike {@link archive}, which re-recording reverses): the
+   * superseded memory drops out of `list()` and search, its `.md` mirror is
+   * removed, and a navigable `memory → memory` provenance edge is recorded.
+   * Both memories must exist and differ; superseding a memory by itself is
+   * rejected with {@link ErrorCode.SelfSupersede}.
+   *
+   * @param slug - Slug of the memory being superseded
+   * @param successorSlug - Slug of the replacement memory
+   * @param actor - Identity tuple for audit
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns The successor memory, or a structured error
+   */
+  supersede(
+    slug: string,
+    successorSlug: string,
+    actor: string,
+    via?: string,
+    runId?: string,
+  ): Result<Memory, MnemaError> {
+    // A memory cannot supersede itself — that produces a self-referential
+    // pointer (a memory that is its own replacement). Guard before any lookup.
+    if (slug === successorSlug) {
+      return Err({ kind: ErrorCode.SelfSupersede, entity: 'memory', ref: slug });
+    }
+
+    const target = this.repo.findBySlug(slug);
+    if (target === null) return Err({ kind: ErrorCode.MemoryNotFound, slug });
+    const successor = this.repo.findBySlug(successorSlug);
+    if (successor === null) return Err({ kind: ErrorCode.MemoryNotFound, slug: successorSlug });
+
+    const superseded = this.repo.supersede(slug, successorSlug);
+    if (superseded) {
+      // Also retire the old row (archive it): a superseded memory is a
+      // retired one, so it carries the same `archived_at` stamp and is
+      // reported archived by `show()`. The `superseded_by` pointer is what
+      // keeps it out of listing/search one-way; the archive is the
+      // consistent retirement signal that rides along.
+      this.repo.archive(slug);
+      // Its `.md` must not linger on disk looking live — same reasoning as
+      // `archive`.
+      const mirrorPath = path.join(this.memoryDir, `${slug}.md`);
+      if (existsSync(mirrorPath)) unlinkSync(mirrorPath);
+      this.audit.write({
+        kind: 'memory_superseded',
+        actor,
+        via,
+        run: runId,
+        data: { slug, superseded_by: successorSlug },
+      });
+      // First-class, navigable edge: the old memory → its successor.
+      this.provenance?.link({ kind: 'memory', ref: slug }, { kind: 'memory', ref: successorSlug });
+    }
+    return Ok(successor);
+  }
+
+  /**
    * Regenerates missing `.md` mirror files from every SQLite row. The
    * existing mirror files are left alone (no overwrite) — this only
    * heals drift, it does not reformat content the human may have

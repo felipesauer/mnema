@@ -28,4 +28,12 @@ export interface Skill {
   readonly createdBy: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /**
+   * Id of the successor skill row that replaces this version, or `null`
+   * when this version has not been superseded. Because skill is keyed by
+   * (slug, version), the pointer is the successor row's `id` (as decision
+   * stores it), not a slug — see the supersede ADR. A superseded latest
+   * version drops out of the default listing and search; one-way.
+   */
+  readonly supersededBy: string | null;
 }

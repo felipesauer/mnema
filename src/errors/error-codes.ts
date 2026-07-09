@@ -66,6 +66,8 @@ export enum ErrorCode {
   DependencyDuplicate = 'DEPENDENCY_DUPLICATE',
   DependencySelf = 'DEPENDENCY_SELF',
 
+  SelfSupersede = 'SELF_SUPERSEDE',
+
   EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
   EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
 

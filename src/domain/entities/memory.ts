@@ -21,4 +21,11 @@ export interface Memory {
    * re-recording the same slug clears this.
    */
   readonly archivedAt: string | null;
+  /**
+   * Slug of the successor memory that replaces this one, or `null` when
+   * this memory has not been superseded. Superseded memories are excluded
+   * from the default listing and from search; unlike archival this is a
+   * one-way pointer (see the supersede ADR).
+   */
+  readonly supersededBy: string | null;
 }

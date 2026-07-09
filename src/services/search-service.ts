@@ -174,6 +174,7 @@ export class SearchService {
              SELECT slug, MAX(version) AS max_version FROM skills GROUP BY slug
            ) latest ON latest.slug = s.slug AND latest.max_version = s.version
           WHERE skills_fts MATCH ?
+            AND s.superseded_by IS NULL
           ORDER BY rank
           LIMIT ?`,
       )
@@ -217,6 +218,7 @@ export class SearchService {
            JOIN memories m ON m.id = memories_fts.memory_id
           WHERE memories_fts MATCH ?
             AND m.archived_at IS NULL
+            AND m.superseded_by IS NULL
           ORDER BY rank
           LIMIT ?`,
       )

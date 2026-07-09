@@ -174,5 +174,46 @@ export class SkillTools {
         return ok({ skills });
       },
     );
+
+    server.registerTool(
+      'skill_supersede',
+      {
+        description:
+          'Supersede a skill: point a version at a successor skill that replaces it. Targets the latest version of `slug` unless `version` is given; the successor resolves to the latest version of `superseded_by`. One-way — a superseded latest version drops out of the list and search. A skill cannot supersede itself. Requires an active agent run.',
+        inputSchema: {
+          slug: z.string().min(1).describe('Slug of the skill being superseded'),
+          superseded_by: z.string().min(1).describe('Slug of the replacement skill'),
+          version: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+            .describe('Specific version to supersede (default: latest)'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.skills.supersede(
+          input.slug,
+          input.superseded_by,
+          this.identity.getDefaultActor(),
+          input.version,
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!result.ok) return err(result.error);
+        return ok({
+          slug: input.slug,
+          superseded_by: input.superseded_by,
+          successor: result.value,
+        });
+      },
+    );
   }
 }

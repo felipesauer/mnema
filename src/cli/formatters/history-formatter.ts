@@ -126,6 +126,15 @@ function describe(event: AuditEvent): string {
           : '';
       return `decision ${stringify(data.key)} ${from} → ${pc.cyan(to)}${superseded}`;
     }
+    case 'memory_superseded':
+      return `memory ${stringify(data.slug)} superseded${pc.dim(` → ${stringify(data.superseded_by)}`)}`;
+    case 'skill_superseded': {
+      const version =
+        data.version !== undefined && data.version !== null
+          ? pc.dim(` [v${stringify(data.version)}]`)
+          : '';
+      return `skill ${stringify(data.slug)}${version} superseded`;
+    }
     case 'note_added':
       return `note on ${stringify(data.task_key)} ${pc.dim(`[${stringify(data.note_kind)}]`)}`;
     case 'attachment_added': {

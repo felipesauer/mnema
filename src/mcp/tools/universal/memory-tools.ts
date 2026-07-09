@@ -150,5 +150,39 @@ export class MemoryTools {
         return ok({ slug, archived: true });
       },
     );
+
+    server.registerTool(
+      'memory_supersede',
+      {
+        description:
+          'Supersede a memory: point it at a successor memory that replaces it. One-way (unlike archive) — the superseded memory drops out of the default list and search, and a navigable memory→memory provenance edge is recorded. Both memories must exist; a memory cannot supersede itself. Requires an active agent run.',
+        inputSchema: {
+          slug: z.string().min(1).describe('Slug of the memory being superseded'),
+          superseded_by: z.string().min(1).describe('Slug of the replacement memory'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.memories.supersede(
+          input.slug,
+          input.superseded_by,
+          this.identity.getDefaultActor(),
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!result.ok) return err(result.error);
+        return ok({
+          slug: input.slug,
+          superseded_by: input.superseded_by,
+          successor: result.value,
+        });
+      },
+    );
   }
 }

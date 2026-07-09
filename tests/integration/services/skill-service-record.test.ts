@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
+import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import type { CommandRunner } from '@/services/github-pr-service.js';
 import { IdentityService } from '@/services/identity-service.js';
@@ -286,6 +287,96 @@ describe('SkillService (record/show/use)', () => {
     const mirror = readFileSync(path.join(skillsDir, 'passive.md'), 'utf-8');
     expect(mirror).not.toContain('invocable');
     expect(mirror).not.toContain('dynamic_context');
+  });
+
+  it('supersede drops the superseded latest version from list() and search-facing surface', () => {
+    service.record({
+      slug: 'old-flow',
+      name: 'Old',
+      description: 'd',
+      content: 'A',
+      actor: 'daniel',
+    });
+    service.record({
+      slug: 'new-flow',
+      name: 'New',
+      description: 'd',
+      content: 'B',
+      actor: 'daniel',
+    });
+    expect(
+      service
+        .list()
+        .map((s) => s.slug)
+        .sort(),
+    ).toEqual(['new-flow', 'old-flow']);
+    const mirror = path.join(skillsDir, 'old-flow.md');
+    expect(existsSync(mirror)).toBe(true);
+
+    const result = service.supersede('old-flow', 'new-flow', 'daniel');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.slug).toBe('new-flow');
+
+    // The superseded slug drops out of the default listing…
+    expect(service.list().map((s) => s.slug)).toEqual(['new-flow']);
+    // …its row survives with the pointer set to the successor's row id…
+    const successor = service.show('new-flow');
+    const shown = service.show('old-flow');
+    expect(shown.ok).toBe(true);
+    if (shown.ok && successor.ok) {
+      expect(shown.value.supersededBy).toBe(successor.value.id);
+    }
+    // …and its mirror no longer lingers as a live-looking entry.
+    expect(existsSync(mirror)).toBe(false);
+  });
+
+  it('supersede targets a specific version when one is given', () => {
+    service.record({ slug: 's', name: 'S', description: 'd', content: 'v1', actor: 'daniel' });
+    service.record({
+      slug: 's',
+      name: 'S',
+      description: 'd',
+      content: 'v2',
+      mode: 'new_version',
+      actor: 'daniel',
+    });
+    service.record({ slug: 'heir', name: 'Heir', description: 'd', content: 'x', actor: 'daniel' });
+
+    const result = service.supersede('s', 'heir', 'daniel', 1);
+    expect(result.ok).toBe(true);
+    // v1 carries the pointer; the latest (v2) is untouched, so the slug stays.
+    const v1 = service.show('s', 1);
+    const v2 = service.show('s', 2);
+    if (v1.ok) expect(v1.value.supersededBy).not.toBeNull();
+    if (v2.ok) expect(v2.value.supersededBy).toBeNull();
+    expect(service.list().map((s) => s.slug)).toContain('s');
+  });
+
+  it('supersede rejects a skill superseding itself with SELF_SUPERSEDE', () => {
+    service.record({ slug: 's', name: 'S', description: 'd', content: 'x', actor: 'daniel' });
+    const result = service.supersede('s', 's', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SelfSupersede);
+      if (result.error.kind === ErrorCode.SelfSupersede) {
+        expect(result.error.entity).toBe('skill');
+        expect(result.error.ref).toBe('s@v1');
+      }
+    }
+    const shown = service.show('s');
+    if (shown.ok) expect(shown.value.supersededBy).toBeNull();
+  });
+
+  it('supersede errors when the target or successor slug is unknown', () => {
+    service.record({ slug: 'exists', name: 'E', description: 'd', content: 'x', actor: 'daniel' });
+
+    const unknownTarget = service.supersede('ghost', 'exists', 'daniel');
+    expect(unknownTarget.ok).toBe(false);
+    if (!unknownTarget.ok) expect(unknownTarget.error.kind).toBe(ErrorCode.SkillNotFound);
+
+    const unknownSuccessor = service.supersede('exists', 'ghost', 'daniel');
+    expect(unknownSuccessor.ok).toBe(false);
+    if (!unknownSuccessor.ok) expect(unknownSuccessor.error.kind).toBe(ErrorCode.SkillNotFound);
   });
 });
 

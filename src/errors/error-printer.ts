@@ -329,6 +329,9 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.DependencySelf:
       lines.push(`${error.taskKey} cannot depend on itself`);
       break;
+    case ErrorCode.SelfSupersede:
+      lines.push(`${error.entity} ${error.ref} cannot supersede itself`);
+      break;
     case ErrorCode.EvidenceCriterionOutOfRange:
       lines.push(
         `${error.taskKey} has ${error.criteriaCount} acceptance criteria; index ${error.index} is out of range`,
@@ -430,6 +433,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.NoteNotFound:
     case ErrorCode.ObservationNotFound:
     case ErrorCode.ObservationArchived:
+    case ErrorCode.SelfSupersede:
     case ErrorCode.EvidenceCriterionOutOfRange:
     case ErrorCode.ValidationFailed:
       return ExitCode.Usage;
