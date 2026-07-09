@@ -1,6 +1,7 @@
 import { ErrorCode, ExitCode, type ExitCodeValue } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import type { MnemaError } from '../errors/mnema-error.js';
+import { recordError } from '../services/error-log.js';
 import { pc } from '../utils/colors.js';
 
 const KNOWN_CODES = new Set<string>(Object.values(ErrorCode));
@@ -43,6 +44,12 @@ export function reportUncaught(
   if (isMnemaError(error)) {
     return printError(error);
   }
+
+  // Only genuinely unexpected crashes reach here (structured MnemaErrors
+  // returned above). Persist them to the local, never-transmitted error log
+  // so a bug report has something to attach — best-effort, never changes the
+  // exit code or masks the error (MNEMA-ADR-46).
+  recordError(error);
 
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`${pc.red('error:')} ${message}\n`);

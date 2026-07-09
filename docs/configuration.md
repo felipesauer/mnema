@@ -12,6 +12,12 @@ carry only the behaviour blocks (`audit_strategy`, `enforcement_mode`, `sync`,
 `features`, `aging`, `claims`, `github`) and are deep-merged on top of the
 project config, key by key.
 
+> **Zero telemetry.** Nothing here phones home. The only outbound request
+> Mnema ever makes is the opt-in `features.update_check` (default off). An
+> unhandled crash is recorded to a **local** `.mnema/state/errors.jsonl`
+> (gitignored, never transmitted) so a bug report can be assembled from it —
+> it stays on your machine until you choose to share a sanitised copy.
+
 ---
 
 ## Top level
