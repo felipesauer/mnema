@@ -121,6 +121,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/identity-command.js')).IdentityCommand(),
     description: 'Manage your default actor handle (set / whoami / unset / add / list)',
   },
+  project: {
+    load: async () => new (await import('./commands/project-command.js')).ProjectCommand(),
+    description: 'Manage project-scoped credentials (secret export / import)',
+  },
   history: {
     load: async () => new (await import('./commands/history-command.js')).HistoryCommand(),
     description: 'Show past activity from the audit log (formatted for humans)',

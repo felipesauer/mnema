@@ -89,4 +89,73 @@ describe('ProjectSecretService', () => {
     expect(ProjectSecretService.fingerprint(secret)).toBe(svc.readFingerprint());
     expect(secret.equals(svc.read() as Buffer)).toBe(true);
   });
+
+  describe('export / import (team credential sharing, ADR-39)', () => {
+    /** A second machine: same project root (the clone), a different user dir. */
+    function secondMachine(): ProjectSecretService {
+      const otherHome = path.join(root, 'home2', '.config', 'mnema');
+      mkdirSync(otherHome, { recursive: true });
+      return new ProjectSecretService(projectRoot, 'SMOKE', otherHome);
+    }
+
+    it('round-trips: export then import into a second home reproduces the same secret', () => {
+      const secret = svc.getOrCreate();
+      const envelope = svc.exportEnvelope();
+      expect(envelope).toMatch(/^mnema-hmac-secret\/v1:SMOKE:/);
+
+      const other = secondMachine();
+      expect(other.read()).toBeNull(); // clone-without-import starts empty
+      other.install(other.parseEnvelope(envelope));
+
+      const imported = other.read();
+      expect(imported).not.toBeNull();
+      expect((imported as Buffer).equals(secret)).toBe(true);
+      // The installed file is 0600.
+      expect(statSync(other.secretPath()).mode & 0o777).toBe(0o600);
+      // After import the fingerprint verifies for the clone.
+      expect(other.readFingerprint()).toBe(ProjectSecretService.fingerprint(secret));
+    });
+
+    it('export refuses (clear error) when no secret exists on this machine', () => {
+      // svc has not minted a secret yet.
+      expect(() => svc.exportEnvelope()).toThrow(/no project secret on this machine/i);
+    });
+
+    it('import rejects a secret whose fingerprint does not match the committed one', () => {
+      svc.getOrCreate(); // commits SMOKE's fingerprint
+      const other = secondMachine();
+      // An envelope for the right project label but a DIFFERENT (wrong) secret.
+      const wrong = Buffer.alloc(32, 7);
+      const forged = `mnema-hmac-secret/v1:SMOKE:${wrong.toString('base64')}`;
+      expect(() => other.install(other.parseEnvelope(forged))).toThrow(/committed fingerprint/i);
+    });
+
+    it('import refuses to overwrite an existing secret without force', () => {
+      svc.getOrCreate();
+      const envelope = svc.exportEnvelope();
+      // Re-importing over the SAME machine that already has the secret.
+      expect(() => svc.install(svc.parseEnvelope(envelope))).toThrow(/already exists.*--force/i);
+      // With force it succeeds (and stays the same secret).
+      expect(() => svc.install(svc.parseEnvelope(envelope), { force: true })).not.toThrow();
+    });
+
+    it('parseEnvelope rejects a wrong-project envelope', () => {
+      svc.getOrCreate();
+      const envelope = svc.exportEnvelope().replace('SMOKE', 'OTHER');
+      expect(() => svc.parseEnvelope(envelope)).toThrow(
+        /project "OTHER".*this project is "SMOKE"/i,
+      );
+    });
+
+    it('parseEnvelope rejects a corrupted/short blob', () => {
+      const shortBlob = `mnema-hmac-secret/v1:SMOKE:${Buffer.alloc(8).toString('base64')}`;
+      expect(() => svc.parseEnvelope(shortBlob)).toThrow(/32 bytes, got 8/i);
+    });
+
+    it('parseEnvelope rejects a non-envelope string', () => {
+      expect(() => svc.parseEnvelope('just some text')).toThrow(
+        /not a mnema HMAC secret envelope/i,
+      );
+    });
+  });
 });
