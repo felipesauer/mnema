@@ -9,6 +9,16 @@ import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
 
 /**
+ * Maximum length of an observation's content, in characters. Enforced here
+ * in the service so EVERY entry point (the CLI `mnema observation record`,
+ * which calls the service directly, and the MCP handler) rejects
+ * over-length content identically — a human and an agent recording the same
+ * long note get the same outcome. The MCP handler imports this constant so
+ * there is a single source of truth.
+ */
+export const OBSERVATION_CONTENT_MAX = 2000;
+
+/**
  * Input for {@link ObservationService.record}.
  */
 export interface ObservationRecordInput {
@@ -54,6 +64,22 @@ export class ObservationService {
    *   key is supplied but unknown
    */
   record(input: ObservationRecordInput): Result<Observation, MnemaError> {
+    // Enforce the content cap here (not only in the MCP handler) so the CLI
+    // path — which calls the service directly — rejects over-length content
+    // identically. Same actionable message naming the exact overflow.
+    if (input.content.length > OBSERVATION_CONTENT_MAX) {
+      const over = input.content.length - OBSERVATION_CONTENT_MAX;
+      return Err({
+        kind: ErrorCode.ValidationFailed,
+        issues: [
+          {
+            path: ['content'],
+            message: `content is ${input.content.length} characters — ${over} over the ${OBSERVATION_CONTENT_MAX} limit. Split it into two observations.`,
+          },
+        ],
+      });
+    }
+
     let relatedTaskId: string | null = null;
     if (input.relatedTaskKey !== undefined && input.relatedTaskKey.length > 0) {
       const task = this.tasks.findByKey(input.relatedTaskKey);

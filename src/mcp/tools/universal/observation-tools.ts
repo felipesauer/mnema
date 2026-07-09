@@ -3,7 +3,10 @@ import { z } from 'zod';
 
 import { ErrorCode } from '../../../errors/error-codes.js';
 import type { IdentityService } from '../../../services/identity-service.js';
-import type { ObservationService } from '../../../services/observation-service.js';
+import {
+  OBSERVATION_CONTENT_MAX,
+  type ObservationService,
+} from '../../../services/observation-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,
@@ -12,9 +15,6 @@ import {
   requireActiveRun,
   requireFreshSchema,
 } from '../../mcp-tool-result.js';
-
-/** Maximum length, in characters, of an observation's content. */
-const OBSERVATION_CONTENT_MAX = 2000;
 
 /**
  * Registers the observation-related MCP tools — `observation_record`,
