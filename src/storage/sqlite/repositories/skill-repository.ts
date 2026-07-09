@@ -18,6 +18,7 @@ interface SkillRow {
   readonly created_by: string;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly superseded_by: string | null;
 }
 
 /**
@@ -100,6 +101,7 @@ export class SkillRepository {
            FROM skills
            GROUP BY slug
          ) latest ON s.slug = latest.slug AND s.version = latest.max_version
+         WHERE s.superseded_by IS NULL
          ORDER BY s.usage_count DESC, s.updated_at DESC`,
       )
       .all() as SkillRow[];
@@ -191,6 +193,25 @@ export class SkillRepository {
   }
 
   /**
+   * Supersedes a skill row by id: points `superseded_by` at the successor
+   * row's id. Keyed by row id (not slug) because skill is `(slug, version)`
+   * — a specific version is superseded, mirroring how decisions store the
+   * successor's id. One-way. No-op returns `false` for an unknown or
+   * already-superseded id.
+   *
+   * @param id - Id of the skill row being superseded
+   * @param successorId - Id of the replacement skill row
+   * @returns `true` when a row transitioned to superseded
+   */
+  supersede(id: string, successorId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE skills SET superseded_by = ? WHERE id = ? AND superseded_by IS NULL')
+      .run(successorId, id);
+    return result.changes > 0;
+  }
+
+  /**
    * Increments `usage_count` and sets `last_used_at` for the latest
    * version of a slug.
    *
@@ -224,5 +245,6 @@ function rowToSkill(row: SkillRow): Skill {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    supersededBy: row.superseded_by ?? null,
   };
 }

@@ -13,6 +13,7 @@ interface MemoryRow {
   readonly created_at: string;
   readonly updated_at: string;
   readonly archived_at: string | null;
+  readonly superseded_by: string | null;
 }
 
 /**
@@ -62,6 +63,10 @@ export class MemoryRepository {
       .prepare('SELECT * FROM memories ORDER BY updated_at DESC')
       .all() as MemoryRow[];
     let memories = rows.map(rowToMemory);
+    // A superseded memory is always excluded from the default listing — it
+    // has been replaced by a successor (there is no `includeSuperseded`
+    // toggle, unlike archival, because supersede is one-way).
+    memories = memories.filter((m) => m.supersededBy === null);
     if (!includeArchived) memories = memories.filter((m) => m.archivedAt === null);
     if (topic === undefined) return memories;
     return memories.filter((m) => m.topics.includes(topic));
@@ -80,6 +85,24 @@ export class MemoryRepository {
       .getDatabase()
       .prepare('UPDATE memories SET archived_at = ? WHERE slug = ? AND archived_at IS NULL')
       .run(isoNow(), slug);
+    return result.changes > 0;
+  }
+
+  /**
+   * Supersedes a memory by slug: points `superseded_by` at the successor
+   * slug. One-way — a superseded memory is excluded from listing and
+   * search but the row and its audit trail survive. No-op returns `false`
+   * for an unknown or already-superseded slug.
+   *
+   * @param slug - Slug of the memory being superseded
+   * @param successorSlug - Slug of the replacement memory
+   * @returns `true` when a row transitioned to superseded
+   */
+  supersede(slug: string, successorSlug: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE memories SET superseded_by = ? WHERE slug = ? AND superseded_by IS NULL')
+      .run(successorSlug, slug);
     return result.changes > 0;
   }
 
@@ -157,5 +180,6 @@ function rowToMemory(row: MemoryRow): Memory {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archivedAt: row.archived_at ?? null,
+    supersededBy: row.superseded_by ?? null,
   };
 }

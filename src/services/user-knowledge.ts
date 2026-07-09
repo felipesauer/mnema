@@ -57,6 +57,8 @@ export function readUserSkills(userDir: string): SourcedSkill[] {
         createdBy: 'user',
         createdAt: readString(data, 'created_at') ?? '',
         updatedAt: readString(data, 'updated_at') ?? '',
+        // User-level skills live in markdown and have no supersede state.
+        supersededBy: null,
         source: 'user' as const,
       },
     ];
@@ -83,8 +85,10 @@ export function readUserMemories(userDir: string): SourcedMemory[] {
         createdBy: 'user',
         createdAt: readString(data, 'created_at') ?? '',
         updatedAt: readString(data, 'updated_at') ?? '',
-        // User-level memories live in markdown and have no archive state.
+        // User-level memories live in markdown and have no archive or
+        // supersede state.
         archivedAt: null,
+        supersededBy: null,
         source: 'user' as const,
       },
     ];

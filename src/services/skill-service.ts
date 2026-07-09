@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import { z } from 'zod';
@@ -416,6 +416,97 @@ export class SkillService {
       data: { slug, version: updated.version, usage_count: updated.usageCount },
     });
     return Ok(updated);
+  }
+
+  /**
+   * Supersedes a skill: points a version at a successor skill that
+   * replaces it. The target is the latest version of `slug` unless
+   * `version` is given; the successor resolves to the latest version of
+   * `successorSlug`. The pointer stored is the successor row's `id`
+   * (skill is keyed by `(slug, version)`, so the reference is a row id,
+   * not a slug — see the supersede ADR). One-way: a superseded latest
+   * version drops out of `list()` and search. Superseding a version by
+   * itself is rejected with {@link ErrorCode.SelfSupersede}. No provenance
+   * edge is recorded (the `'skill'` provenance kind is deferred — see the
+   * ADR); an audit event stands in.
+   *
+   * @param slug - Slug of the skill being superseded
+   * @param successorSlug - Slug of the replacement skill
+   * @param actor - Identity tuple for audit
+   * @param version - Optional specific version to supersede (default: latest)
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns The successor skill, or a structured error
+   */
+  supersede(
+    slug: string,
+    successorSlug: string,
+    actor: string,
+    version?: number,
+    via?: string,
+    runId?: string,
+  ): Result<Skill, MnemaError> {
+    const { repo, audit } = this.requireRecordDeps();
+
+    const target =
+      version !== undefined
+        ? repo.findBySlugAndVersion(slug, version)
+        : repo.findLatestBySlug(slug);
+    if (target === null) return Err({ kind: ErrorCode.SkillNotFound, slug });
+    // The target row must still be live: re-superseding an already-superseded
+    // version would otherwise no-op in the repo (WHERE superseded_by IS NULL)
+    // yet return Ok, silently leaving the pointer aimed at the first successor.
+    if (target.supersededBy !== null) {
+      return Err({
+        kind: ErrorCode.SupersededEntity,
+        entity: 'skill',
+        ref: `${slug}@v${target.version}`,
+      });
+    }
+
+    const successor = repo.findLatestBySlug(successorSlug);
+    if (successor === null) return Err({ kind: ErrorCode.SkillNotFound, slug: successorSlug });
+    // The successor's latest version must be live: `findLatestBySlug` does not
+    // filter superseded rows, so guard against pointing at an already-retired
+    // version (which would chain this skill to a dead one).
+    if (successor.supersededBy !== null) {
+      return Err({
+        kind: ErrorCode.SupersededEntity,
+        entity: 'skill',
+        ref: `${successorSlug}@v${successor.version}`,
+      });
+    }
+
+    // A skill row cannot supersede itself — a self-referential pointer.
+    // Compared by row id, since (slug, version) is the identity: superseding
+    // a slug by its own latest version, or a version by itself, is rejected.
+    if (target.id === successor.id) {
+      return Err({
+        kind: ErrorCode.SelfSupersede,
+        entity: 'skill',
+        ref: `${slug}@v${target.version}`,
+      });
+    }
+
+    const superseded = repo.supersede(target.id, successor.id);
+    if (superseded) {
+      // When the latest version is the one just superseded, the slug drops
+      // from `list()` (listLatest filters superseded), so its `.md` mirror
+      // must not linger looking live. `findLatestBySlug` does not filter, so
+      // it still returns that row — check its pointer, not for absence.
+      const latest = repo.findLatestBySlug(slug);
+      if (latest !== null && latest.supersededBy !== null && this.mirrorExists(latest)) {
+        unlinkSync(path.join(this.skillsDir, `${latest.slug}.md`));
+      }
+      audit.write({
+        kind: 'skill_superseded',
+        actor,
+        via,
+        run: runId,
+        data: { slug, version: target.version, superseded_by: successor.id },
+      });
+    }
+    return Ok(successor);
   }
 
   /**

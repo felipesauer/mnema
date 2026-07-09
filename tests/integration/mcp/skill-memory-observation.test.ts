@@ -104,10 +104,12 @@ describe('skill/memory/observation MCP tools', () => {
       'skill_show',
       'skill_use',
       'skills_list',
+      'skill_supersede',
       'memory_record',
       'memory_show',
       'memories_list',
       'memory_archive',
+      'memory_supersede',
       'observation_record',
       'observations_list',
       'observation_archive',
@@ -250,6 +252,101 @@ describe('skill/memory/observation MCP tools', () => {
     });
     const payload = parsePayload(result as CallToolResult);
     expect(payload.error).toBe('OBSERVATION_NOT_FOUND');
+  });
+
+  it('memory_supersede hides the old memory from the default list and returns the successor', async () => {
+    await harness.client.callTool({
+      name: 'memory_record',
+      arguments: { slug: 'old-way', title: 'Old', content: 'old approach' },
+    });
+    await harness.client.callTool({
+      name: 'memory_record',
+      arguments: { slug: 'new-way', title: 'New', content: 'new approach' },
+    });
+
+    const result = await harness.client.callTool({
+      name: 'memory_supersede',
+      arguments: { slug: 'old-way', superseded_by: 'new-way' },
+    });
+    const payload = parsePayload(result as CallToolResult);
+    expect(payload.ok).toBe(true);
+    expect(payload.superseded_by).toBe('new-way');
+    expect((payload.successor as { slug: string }).slug).toBe('new-way');
+
+    const listed = await harness.client.callTool({ name: 'memories_list', arguments: {} });
+    const slugs = (parsePayload(listed as CallToolResult).memories as Array<{ slug: string }>).map(
+      (m) => m.slug,
+    );
+    expect(slugs).toEqual(['new-way']);
+  });
+
+  it('memory_supersede returns MEMORY_NOT_FOUND for an unknown successor', async () => {
+    await harness.client.callTool({
+      name: 'memory_record',
+      arguments: { slug: 'exists', title: 'E', content: 'x' },
+    });
+    const result = await harness.client.callTool({
+      name: 'memory_supersede',
+      arguments: { slug: 'exists', superseded_by: 'ghost' },
+    });
+    expect(parsePayload(result as CallToolResult).error).toBe('MEMORY_NOT_FOUND');
+  });
+
+  it('memory_supersede rejects a memory superseding itself with SELF_SUPERSEDE', async () => {
+    await harness.client.callTool({
+      name: 'memory_record',
+      arguments: { slug: 's', title: 'S', content: 'x' },
+    });
+    const result = await harness.client.callTool({
+      name: 'memory_supersede',
+      arguments: { slug: 's', superseded_by: 's' },
+    });
+    expect(parsePayload(result as CallToolResult).error).toBe('SELF_SUPERSEDE');
+  });
+
+  it('skill_supersede drops the superseded latest version from the list', async () => {
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: { slug: 'old-flow', name: 'Old', description: 'd', content: 'A' },
+    });
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: { slug: 'new-flow', name: 'New', description: 'd', content: 'B' },
+    });
+
+    const result = await harness.client.callTool({
+      name: 'skill_supersede',
+      arguments: { slug: 'old-flow', superseded_by: 'new-flow' },
+    });
+    const payload = parsePayload(result as CallToolResult);
+    expect(payload.ok).toBe(true);
+    expect((payload.successor as { slug: string }).slug).toBe('new-flow');
+
+    const listed = await harness.client.callTool({ name: 'skills_list', arguments: {} });
+    const slugs = (parsePayload(listed as CallToolResult).skills as Array<{ slug: string }>).map(
+      (s) => s.slug,
+    );
+    expect(slugs).toEqual(['new-flow']);
+  });
+
+  it('skill_supersede returns SKILL_NOT_FOUND for an unknown target', async () => {
+    const result = await harness.client.callTool({
+      name: 'skill_supersede',
+      arguments: { slug: 'ghost', superseded_by: 'ghost2' },
+    });
+    expect(parsePayload(result as CallToolResult).error).toBe('SKILL_NOT_FOUND');
+  });
+
+  it('skill_supersede rejects a skill superseding itself with SELF_SUPERSEDE', async () => {
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: { slug: 's', name: 'S', description: 'd', content: 'x' },
+    });
+    const result = await harness.client.callTool({
+      name: 'skill_supersede',
+      arguments: { slug: 's', superseded_by: 's' },
+    });
+    expect(parsePayload(result as CallToolResult).error).toBe('SELF_SUPERSEDE');
   });
 
   it('memory_record refuses derived_from_observation pointing at an archived observation', async () => {

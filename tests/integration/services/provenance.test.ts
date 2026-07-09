@@ -250,6 +250,31 @@ describe('provenance chain (obs/note → decision → memory)', () => {
     expect(provenance.chain({ kind: 'observation', ref: obs.id }).downstream).toEqual([]);
   });
 
+  it('memory supersede records a memory → memory provenance edge', () => {
+    memories.record({ slug: 'old-fact', title: 'Old', content: 'the old truth', actor: 'daniel' });
+    memories.record({ slug: 'new-fact', title: 'New', content: 'the new truth', actor: 'daniel' });
+
+    const result = memories.supersede('old-fact', 'new-fact', 'daniel');
+    expect(result.ok).toBe(true);
+
+    // Downstream from the superseded memory: old → new.
+    const fromOld = provenance.chain({ kind: 'memory', ref: 'old-fact' });
+    expect(fromOld.downstream).toEqual([
+      expect.objectContaining({
+        fromKind: 'memory',
+        fromRef: 'old-fact',
+        toKind: 'memory',
+        toRef: 'new-fact',
+      }),
+    ]);
+
+    // Upstream from the successor points back to the superseded memory.
+    const fromNew = provenance.chain({ kind: 'memory', ref: 'new-fact' });
+    expect(fromNew.upstream).toEqual([
+      expect.objectContaining({ fromKind: 'memory', fromRef: 'old-fact', toRef: 'new-fact' }),
+    ]);
+  });
+
   it('refuses to derive a memory from an unknown observation', () => {
     const result = memories.record({
       slug: 'should-not-exist',

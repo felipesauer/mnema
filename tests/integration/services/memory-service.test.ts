@@ -202,4 +202,121 @@ describe('MemoryService', () => {
     if (shown.ok) expect(shown.value.archivedAt).toBeNull();
     expect(existsSync(mirror)).toBe(true);
   });
+
+  it('supersede points the old memory at its successor and drops it from listing', () => {
+    service.record({ slug: 'old-way', title: 'Old', content: 'the old approach', actor: 'daniel' });
+    service.record({ slug: 'new-way', title: 'New', content: 'the new approach', actor: 'daniel' });
+    const mirror = path.join(memoryDir, 'old-way.md');
+    expect(existsSync(mirror)).toBe(true);
+
+    const result = service.supersede('old-way', 'new-way', 'daniel');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.slug).toBe('new-way');
+
+    // The superseded memory drops from the default listing…
+    expect(service.list().map((m) => m.slug)).toEqual(['new-way']);
+    // …but the row survives, now carrying the pointer (and marked archived).
+    const shown = service.show('old-way');
+    expect(shown.ok).toBe(true);
+    if (shown.ok) {
+      expect(shown.value.supersededBy).toBe('new-way');
+      expect(shown.value.archivedAt).not.toBeNull();
+    }
+    // …and its mirror no longer lingers as a live-looking entry.
+    expect(existsSync(mirror)).toBe(false);
+  });
+
+  it('supersede rejects a memory superseding itself with SELF_SUPERSEDE', () => {
+    service.record({ slug: 's', title: 'S', content: 'x', actor: 'daniel' });
+    const result = service.supersede('s', 's', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SelfSupersede);
+      if (result.error.kind === ErrorCode.SelfSupersede) {
+        expect(result.error.entity).toBe('memory');
+        expect(result.error.ref).toBe('s');
+      }
+    }
+    // The row is untouched — still active, no pointer.
+    const shown = service.show('s');
+    if (shown.ok) expect(shown.value.supersededBy).toBeNull();
+  });
+
+  it('re-recording a superseded slug is rejected (supersede is one-way)', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true);
+
+    const result = service.record({ slug: 'a', title: 'A', content: 'revived', actor: 'daniel' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) {
+        expect(result.error.entity).toBe('memory');
+        expect(result.error.ref).toBe('a');
+      }
+    }
+    // The row stays superseded and out of the listing — no silent revival.
+    expect(service.list().map((m) => m.slug)).toEqual(['b']);
+    const shown = service.show('a');
+    if (shown.ok) expect(shown.value.supersededBy).toBe('b');
+  });
+
+  it('supersede rejects a target that is already superseded (no silent no-op)', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', title: 'C', content: 'z', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true);
+
+    // Re-superseding 'a' toward a different successor must not silently succeed.
+    const result = service.supersede('a', 'c', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) expect(result.error.ref).toBe('a');
+    }
+    // The pointer still aims at the original successor, unchanged.
+    const shown = service.show('a');
+    if (shown.ok) expect(shown.value.supersededBy).toBe('b');
+  });
+
+  it('supersede rejects a successor that is itself already superseded', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', title: 'C', content: 'z', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true); // a is now retired
+
+    // c cannot be superseded by a (a is dead).
+    const result = service.supersede('c', 'a', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) expect(result.error.ref).toBe('a');
+    }
+    // c is untouched — still active.
+    const shown = service.show('c');
+    if (shown.ok) expect(shown.value.supersededBy).toBeNull();
+  });
+
+  it('supersede errors when the target or the successor is unknown', () => {
+    service.record({ slug: 'exists', title: 'E', content: 'x', actor: 'daniel' });
+
+    const unknownTarget = service.supersede('ghost', 'exists', 'daniel');
+    expect(unknownTarget.ok).toBe(false);
+    if (!unknownTarget.ok) {
+      expect(unknownTarget.error.kind).toBe(ErrorCode.MemoryNotFound);
+      if (unknownTarget.error.kind === ErrorCode.MemoryNotFound) {
+        expect(unknownTarget.error.slug).toBe('ghost');
+      }
+    }
+
+    const unknownSuccessor = service.supersede('exists', 'ghost', 'daniel');
+    expect(unknownSuccessor.ok).toBe(false);
+    if (!unknownSuccessor.ok) {
+      expect(unknownSuccessor.error.kind).toBe(ErrorCode.MemoryNotFound);
+      if (unknownSuccessor.error.kind === ErrorCode.MemoryNotFound) {
+        expect(unknownSuccessor.error.slug).toBe('ghost');
+      }
+    }
+  });
 });

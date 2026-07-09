@@ -65,8 +65,10 @@ const KNOWLEDGE_KINDS = new Set([
   'memory_recorded',
   'memory_deleted',
   'memory_archived',
+  'memory_superseded',
   'skill_recorded',
   'skill_used',
+  'skill_superseded',
   'observation_recorded',
   'observation_archived',
   'note_added',
@@ -188,10 +190,14 @@ function summarise(kind: string, data: Readonly<Record<string, unknown>>): strin
       return `deleted memory ${s('slug') ?? ''}`.trim();
     case 'memory_archived':
       return `archived memory ${s('slug') ?? ''}`.trim();
+    case 'memory_superseded':
+      return `superseded memory ${s('slug') ?? ''} → ${s('superseded_by') ?? ''}`.trim();
     case 'skill_recorded':
       return `skill ${s('slug') ?? ''} (${s('action') ?? 'recorded'})`.trim();
     case 'skill_used':
       return `used skill ${s('slug') ?? ''}`.trim();
+    case 'skill_superseded':
+      return `superseded skill ${s('slug') ?? ''}`.trim();
     case 'observation_recorded':
       return `observation${s('related_task_key') !== undefined ? ` on ${s('related_task_key')}` : ''}`;
     case 'observation_archived':

@@ -155,6 +155,42 @@ describe('SearchService', () => {
     expect(hits.map((h) => h.key)).toEqual(['live-quux']);
   });
 
+  it('excludes a superseded memory from search results', () => {
+    const db = adapter.getDatabase();
+    // Two memories sharing a distinctive term; one is then superseded.
+    db.prepare(
+      `INSERT INTO memories (id, slug, title, content, topics, created_by)
+       VALUES
+         ('m1', 'live-quux', 'Live', 'the quuxtoken is documented here', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel')),
+         ('m2', 'old-quux', 'Old', 'the quuxtoken was documented here too', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    // Supersede points superseded_by at the successor slug; the FTS row is
+    // untouched, so the query itself must filter (like the archived case).
+    db.prepare("UPDATE memories SET superseded_by = 'live-quux' WHERE id = 'm2'").run();
+
+    const hits = hitsOrThrow('quuxtoken', { entities: ['memory'] });
+    expect(hits.map((h) => h.key)).toEqual(['live-quux']);
+  });
+
+  it('excludes a superseded skill from search results', () => {
+    const db = adapter.getDatabase();
+    // Two distinct skills sharing a distinctive term; one is then superseded.
+    db.prepare(
+      `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+       VALUES
+         ('s1', 'live-skill', 'Live', 1, 'd', 'the quuxtoken procedure', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel')),
+         ('s2', 'old-skill', 'Old', 1, 'd', 'the quuxtoken procedure too', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    db.prepare("UPDATE skills SET superseded_by = 's1' WHERE id = 's2'").run();
+
+    const hits = hitsOrThrow('quuxtoken', { entities: ['skill'] });
+    expect(hits.map((h) => h.key)).toEqual(['live-skill']);
+  });
+
   it('2.2: searches observations by content', () => {
     const db = adapter.getDatabase();
     db.prepare(
