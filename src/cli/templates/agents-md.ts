@@ -275,7 +275,8 @@ export function buildAgentsMd(config: Config): string {
         'fact (a smell, a surprise, a TODO-shaped signal)? Append an ' +
         '**observation** with `observation_record` — no slug, no upsert, ' +
         'fire-and-forget. It is the cheapest gateway: an observation can later ' +
-        'be consolidated into a memory or hardened into a skill.',
+        'be promoted into a memory with `memory_record(…, derived_from_observation)`, ' +
+        'or retired once stale with `observation_archive`.',
     );
     lines.push('');
     lines.push(

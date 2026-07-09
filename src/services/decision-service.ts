@@ -268,6 +268,11 @@ export class DecisionService {
     if (observation === null) {
       return Err({ kind: ErrorCode.ObservationNotFound, observationId: input.observationId });
     }
+    // An archived observation is retired from circulation — it must not seed
+    // a new decision. Promotion is only from a live signal.
+    if (observation.archivedAt !== null) {
+      return Err({ kind: ErrorCode.ObservationArchived, observationId: input.observationId });
+    }
 
     const recorded = this.record({
       projectKey: input.projectKey,

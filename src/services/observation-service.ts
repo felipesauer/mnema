@@ -28,6 +28,8 @@ export interface ObservationListInput {
   readonly relatedTaskKey?: string;
   readonly since?: string;
   readonly limit?: number;
+  /** Include archived observations (default false). */
+  readonly includeArchived?: boolean;
 }
 
 /**
@@ -102,6 +104,34 @@ export class ObservationService {
       relatedTaskId,
       since: input.since,
       limit: input.limit,
+      includeArchived: input.includeArchived,
     });
+  }
+
+  /**
+   * Archives an observation (soft, one-way retirement) — the row and its
+   * audit trail survive, but it drops out of the default listing and of
+   * search. Used to retire a stale or superseded signal without losing the
+   * record. Unlike a memory, an observation has no slug to re-record, so
+   * archival is not reversed by a later write.
+   *
+   * @param id - Observation id
+   * @param actor - Identity tuple for audit
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns `true` if archived, `false` if id was unknown or already archived
+   */
+  archive(id: string, actor: string, via?: string, runId?: string): boolean {
+    const archived = this.repo.archive(id);
+    if (archived) {
+      this.audit.write({
+        kind: 'observation_archived',
+        actor,
+        via,
+        run: runId,
+        data: { id },
+      });
+    }
+    return archived;
   }
 }

@@ -6,6 +6,7 @@ import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
+import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import type { AuditService } from './audit-service.js';
@@ -26,6 +27,8 @@ export interface MemoryRecordInput {
   readonly runId?: string;
   /** Decision key this memory was derived from — records a provenance edge. */
   readonly derivedFromDecision?: string;
+  /** Observation id this memory was promoted from — records a provenance edge. */
+  readonly derivedFromObservation?: string;
 }
 
 /**
@@ -59,6 +62,10 @@ export class MemoryService {
     // Optional: when set and a record supplies `derivedFromDecision`, a
     // navigable decision → memory provenance edge is recorded.
     private readonly provenance: ProvenanceLinkRepository | null = null,
+    // Optional: when set, a record supplying `derivedFromObservation` is
+    // validated against it — an archived (retired) or unknown observation
+    // cannot seed a memory.
+    private readonly observations: ObservationRepository | null = null,
   ) {}
 
   /**
@@ -68,7 +75,27 @@ export class MemoryService {
    * @param input - Memory fields + identity tuple
    * @returns Upserted memory and the action taken
    */
-  record(input: MemoryRecordInput): MemoryRecordResult {
+  record(input: MemoryRecordInput): Result<MemoryRecordResult, MnemaError> {
+    // Validate a promotion source BEFORE any write: an archived (retired) or
+    // unknown observation must not seed a memory or a provenance edge.
+    if (input.derivedFromObservation !== undefined && input.derivedFromObservation.length > 0) {
+      if (this.observations !== null) {
+        const source = this.observations.findById(input.derivedFromObservation);
+        if (source === null) {
+          return Err({
+            kind: ErrorCode.ObservationNotFound,
+            observationId: input.derivedFromObservation,
+          });
+        }
+        if (source.archivedAt !== null) {
+          return Err({
+            kind: ErrorCode.ObservationArchived,
+            observationId: input.derivedFromObservation,
+          });
+        }
+      }
+    }
+
     const createdBy = this.identity.ensureActor(input.actor, ActorKind.Human);
     const topics = input.topics ?? [];
     const existing = this.repo.findBySlug(input.slug);
@@ -122,7 +149,16 @@ export class MemoryService {
       );
     }
 
-    return { memory, action };
+    // The observation-side parallel: observation → memory, when the memory
+    // was promoted from an observation.
+    if (input.derivedFromObservation !== undefined && input.derivedFromObservation.length > 0) {
+      this.provenance?.link(
+        { kind: 'observation', ref: input.derivedFromObservation },
+        { kind: 'memory', ref: memory.slug },
+      );
+    }
+
+    return Ok({ memory, action });
   }
 
   /**

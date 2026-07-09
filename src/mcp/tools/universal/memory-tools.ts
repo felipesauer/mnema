@@ -56,6 +56,12 @@ export class MemoryTools {
             .string()
             .optional()
             .describe('Decision key this memory was derived from — records a provenance edge'),
+          derived_from_observation: z
+            .string()
+            .optional()
+            .describe(
+              'Observation id this memory was promoted from — records an observation→memory provenance edge',
+            ),
         },
       },
       (input) => {
@@ -72,11 +78,13 @@ export class MemoryTools {
           content: input.content,
           topics: input.topics,
           derivedFromDecision: input.derived_from_decision,
+          derivedFromObservation: input.derived_from_observation,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
         });
-        return ok({ memory: result.memory, action: result.action });
+        if (!result.ok) return err(result.error);
+        return ok({ memory: result.value.memory, action: result.value.action });
       },
     );
 

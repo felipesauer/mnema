@@ -12,4 +12,10 @@ export interface Observation {
   readonly relatedTaskId: string | null;
   readonly createdBy: string;
   readonly at: string;
+  /**
+   * When set, the observation was archived (soft, one-way retirement) — it
+   * is hidden from the default listing and from search, but the row and its
+   * audit trail survive. `null` for an active observation.
+   */
+  readonly archivedAt: string | null;
 }

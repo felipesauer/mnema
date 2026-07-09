@@ -96,6 +96,24 @@ describe.skipIf(!existsSync(DIST_ENTRY))(
       expect(auditLog()).toContain('"kind":"observation_recorded"');
     });
 
+    it('observation archive hides it from the default list; --include-archived reveals it', () => {
+      run(['observation', 'record', 'to be retired', '--topic', 'x']);
+      // The id is printed in the list output; grab it to archive.
+      const listed = run(['observation', 'list']);
+      const id = listed.match(/[0-9a-f-]{36}/)?.[0];
+      expect(id).toBeDefined();
+
+      expect(run(['observation', 'archive', id as string])).toContain('observation archived');
+      expect(auditLog()).toContain('"kind":"observation_archived"');
+
+      // Default list no longer shows it…
+      expect(run(['observation', 'list'])).not.toContain('to be retired');
+      // …but --include-archived does, flagged.
+      const withArchived = run(['observation', 'list', '--include-archived']);
+      expect(withArchived).toContain('to be retired');
+      expect(withArchived).toContain('(archived)');
+    });
+
     it('skill record persists, lists, shows, and emits skill_recorded', () => {
       const out = run([
         'skill',

@@ -168,4 +168,25 @@ describe('SearchService', () => {
     expect(hits[0]?.key).toBeNull();
     expect(hits[0]?.snippet.toLowerCase()).toContain('flaky');
   });
+
+  it('excludes an archived observation from search results', () => {
+    const db = adapter.getDatabase();
+    // Two observations sharing a distinctive term; one is then archived.
+    db.prepare(
+      `INSERT INTO observations (id, content, topics, created_by)
+       VALUES
+         ('o1', 'the quuxtoken appears here', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel')),
+         ('o2', 'the quuxtoken also appears here', '[]',
+          (SELECT id FROM actors WHERE handle = 'daniel'))`,
+    ).run();
+    // Archiving sets archived_at; the FTS row is untouched, so the query
+    // itself must filter (mirrors the archived-memory case above).
+    db.prepare(
+      "UPDATE observations SET archived_at = '2026-01-01T00:00:00.000Z' WHERE id = 'o2'",
+    ).run();
+
+    const hits = hitsOrThrow('quuxtoken', { entities: ['observation'] });
+    expect(hits.map((h) => h.id)).toEqual(['o1']);
+  });
 });

@@ -18,7 +18,7 @@ const OBSERVATION_CONTENT_MAX = 2000;
 
 /**
  * Registers the observation-related MCP tools — `observation_record`,
- * `observations_list`.
+ * `observations_list`, `observation_archive`.
  *
  * Observations are append-only contextual notes. They are SQLite-only
  * (no `.md` mirror) to keep ephemeral signals out of the working tree.
@@ -104,9 +104,19 @@ export class ObservationTools {
           related_task_key: z.string().min(1).optional(),
           since: z.string().optional().describe('ISO 8601 timestamp lower bound (inclusive)'),
           limit: z.number().int().positive().optional(),
+          include_archived: z
+            .boolean()
+            .optional()
+            .describe('Include archived observations, which are hidden by default'),
         },
       },
-      ({ topic, related_task_key: relatedTaskKey, since, limit }) => {
+      ({
+        topic,
+        related_task_key: relatedTaskKey,
+        since,
+        limit,
+        include_archived: includeArchived,
+      }) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
         const observations = this.observations.list({
@@ -114,8 +124,42 @@ export class ObservationTools {
           relatedTaskKey,
           since,
           limit,
+          includeArchived,
         });
         return ok({ observations });
+      },
+    );
+
+    server.registerTool(
+      'observation_archive',
+      {
+        description:
+          'Archive an observation by id (soft, one-way retirement) — the row and its audit trail survive, but it drops out of observations_list and search. Use to retire a stale or superseded signal without losing the record. Unlike a memory, an observation has no slug to re-record, so this is not reversible. Requires an active agent run.',
+        inputSchema: {
+          observation_id: z
+            .string()
+            .min(1)
+            .describe('Internal UUID of the observation (from `observation_record` response)'),
+        },
+      },
+      ({ observation_id: observationId }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const archived = this.observations.archive(
+          observationId,
+          this.identity.getDefaultActor(),
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!archived) {
+          return err({ kind: ErrorCode.ObservationNotFound, observationId });
+        }
+        return ok({ observation_id: observationId, archived: true });
       },
     );
   }

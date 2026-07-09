@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -97,5 +97,46 @@ describe('ObservationService', () => {
 
     expect(service.list({ topic: 'x' })).toHaveLength(2);
     expect(service.list({ limit: 2 })).toHaveLength(2);
+  });
+
+  it('archive hides an observation from the default listing but keeps it', () => {
+    const stale = service.record({ content: 'stale signal', actor: 'daniel' });
+    service.record({ content: 'live signal', actor: 'daniel' });
+    expect(stale.ok).toBe(true);
+    if (!stale.ok) return;
+
+    expect(service.archive(stale.value.id, 'daniel')).toBe(true);
+
+    // Default list excludes the archived one…
+    expect(service.list().map((o) => o.content)).toEqual(['live signal']);
+    // …but include_archived brings it back, marked archived.
+    const withArchived = service.list({ includeArchived: true });
+    expect(withArchived.map((o) => o.content).sort()).toEqual(['live signal', 'stale signal']);
+    const archived = withArchived.find((o) => o.id === stale.value.id);
+    expect(archived?.archivedAt).not.toBeNull();
+
+    // The archival was recorded in the audit log.
+    const events = readFileSync(path.join(tempRoot, '.audit', 'current.jsonl'), 'utf-8');
+    expect(events).toContain('"kind":"observation_archived"');
+  });
+
+  it('archive respects the limit against active rows only', () => {
+    const first = service.record({ content: 'first', actor: 'daniel' });
+    service.record({ content: 'second', actor: 'daniel' });
+    service.record({ content: 'third', actor: 'daniel' });
+    if (!first.ok) return;
+    service.archive(first.value.id, 'daniel');
+
+    // limit 2 must return two ACTIVE rows, not one active + a filtered-out
+    // archived row (the filter is applied in SQL, before the limit).
+    expect(service.list({ limit: 2 })).toHaveLength(2);
+  });
+
+  it('archive is a no-op (false) for an unknown or already-archived id', () => {
+    expect(service.archive('nope', 'daniel')).toBe(false);
+    const rec = service.record({ content: 'x', actor: 'daniel' });
+    if (!rec.ok) return;
+    expect(service.archive(rec.value.id, 'daniel')).toBe(true);
+    expect(service.archive(rec.value.id, 'daniel')).toBe(false); // already archived
   });
 });
