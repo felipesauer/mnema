@@ -453,6 +453,16 @@ export class SkillService {
         ? repo.findBySlugAndVersion(slug, version)
         : repo.findLatestBySlug(slug);
     if (target === null) return Err({ kind: ErrorCode.SkillNotFound, slug });
+    // The target row must still be live: re-superseding an already-superseded
+    // version would otherwise no-op in the repo (WHERE superseded_by IS NULL)
+    // yet return Ok, silently leaving the pointer aimed at the first successor.
+    if (target.supersededBy !== null) {
+      return Err({
+        kind: ErrorCode.SupersededEntity,
+        entity: 'skill',
+        ref: `${slug}@v${target.version}`,
+      });
+    }
 
     const successor = repo.findLatestBySlug(successorSlug);
     if (successor === null) return Err({ kind: ErrorCode.SkillNotFound, slug: successorSlug });

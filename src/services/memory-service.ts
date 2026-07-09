@@ -294,6 +294,12 @@ export class MemoryService {
 
     const target = this.repo.findBySlug(slug);
     if (target === null) return Err({ kind: ErrorCode.MemoryNotFound, slug });
+    // The target must still be live: re-superseding an already-superseded
+    // memory would otherwise no-op in the repo (WHERE superseded_by IS NULL)
+    // yet return Ok, silently leaving the pointer aimed at the first successor.
+    if (target.supersededBy !== null) {
+      return Err({ kind: ErrorCode.SupersededEntity, entity: 'memory', ref: slug });
+    }
     const successor = this.repo.findBySlug(successorSlug);
     if (successor === null) return Err({ kind: ErrorCode.MemoryNotFound, slug: successorSlug });
     // The successor must be live: pointing at an already-superseded memory

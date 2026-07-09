@@ -262,6 +262,24 @@ describe('MemoryService', () => {
     if (shown.ok) expect(shown.value.supersededBy).toBe('b');
   });
 
+  it('supersede rejects a target that is already superseded (no silent no-op)', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', title: 'C', content: 'z', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true);
+
+    // Re-superseding 'a' toward a different successor must not silently succeed.
+    const result = service.supersede('a', 'c', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) expect(result.error.ref).toBe('a');
+    }
+    // The pointer still aims at the original successor, unchanged.
+    const shown = service.show('a');
+    if (shown.ok) expect(shown.value.supersededBy).toBe('b');
+  });
+
   it('supersede rejects a successor that is itself already superseded', () => {
     service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
     service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });

@@ -367,6 +367,25 @@ describe('SkillService (record/show/use)', () => {
     if (shown.ok) expect(shown.value.supersededBy).toBeNull();
   });
 
+  it('supersede rejects a target that is already superseded (no silent no-op)', () => {
+    service.record({ slug: 'a', name: 'A', description: 'd', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', name: 'B', description: 'd', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', name: 'C', description: 'd', content: 'z', actor: 'daniel' });
+    const first = service.supersede('a', 'b', 'daniel');
+    expect(first.ok).toBe(true);
+    const bId = first.ok ? first.value.id : '';
+
+    const result = service.supersede('a', 'c', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) expect(result.error.ref).toBe('a@v1');
+    }
+    // The pointer still aims at the original successor's id, unchanged.
+    const shown = service.show('a', 1);
+    if (shown.ok) expect(shown.value.supersededBy).toBe(bId);
+  });
+
   it('supersede rejects a successor whose latest version is already superseded', () => {
     service.record({ slug: 'a', name: 'A', description: 'd', content: 'x', actor: 'daniel' });
     service.record({ slug: 'b', name: 'B', description: 'd', content: 'y', actor: 'daniel' });
