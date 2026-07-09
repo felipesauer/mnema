@@ -89,6 +89,10 @@
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@peculiar/asn1-cms": "^2.8.0",
+    "@peculiar/asn1-schema": "^2.8.0",
+    "@peculiar/asn1-tsp": "^2.8.0",
+    "@peculiar/asn1-x509": "^2.8.0",
     "better-sqlite3": "^12.9.0",
     "commander": "^14.0.3",
     "gray-matter": "^4.0.3",
