@@ -602,6 +602,9 @@ that sets how long a `task_claim` reservation lasts before it
 self-expires. Run `mnema doctor` after editing — it re-validates
 the file against the schema and reports anything that drifted.
 
+Every key — type, default, and why it exists — is documented in
+[docs/configuration.md](docs/configuration.md).
+
 One optional field worth calling out is `enforcement_mode`, which decides
 what a failed workflow gate means:
 
