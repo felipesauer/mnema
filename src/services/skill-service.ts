@@ -456,6 +456,16 @@ export class SkillService {
 
     const successor = repo.findLatestBySlug(successorSlug);
     if (successor === null) return Err({ kind: ErrorCode.SkillNotFound, slug: successorSlug });
+    // The successor's latest version must be live: `findLatestBySlug` does not
+    // filter superseded rows, so guard against pointing at an already-retired
+    // version (which would chain this skill to a dead one).
+    if (successor.supersededBy !== null) {
+      return Err({
+        kind: ErrorCode.SupersededEntity,
+        entity: 'skill',
+        ref: `${successorSlug}@v${successor.version}`,
+      });
+    }
 
     // A skill row cannot supersede itself — a self-referential pointer.
     // Compared by row id, since (slug, version) is the identity: superseding

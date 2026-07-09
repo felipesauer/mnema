@@ -367,6 +367,25 @@ describe('SkillService (record/show/use)', () => {
     if (shown.ok) expect(shown.value.supersededBy).toBeNull();
   });
 
+  it('supersede rejects a successor whose latest version is already superseded', () => {
+    service.record({ slug: 'a', name: 'A', description: 'd', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', name: 'B', description: 'd', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', name: 'C', description: 'd', content: 'z', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true); // a is retired
+
+    const result = service.supersede('c', 'a', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) {
+        expect(result.error.entity).toBe('skill');
+        expect(result.error.ref).toBe('a@v1');
+      }
+    }
+    const shown = service.show('c');
+    if (shown.ok) expect(shown.value.supersededBy).toBeNull();
+  });
+
   it('supersede errors when the target or successor slug is unknown', () => {
     service.record({ slug: 'exists', name: 'E', description: 'd', content: 'x', actor: 'daniel' });
 

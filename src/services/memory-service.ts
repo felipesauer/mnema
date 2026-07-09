@@ -100,6 +100,14 @@ export class MemoryService {
     const topics = input.topics ?? [];
     const existing = this.repo.findBySlug(input.slug);
 
+    // Supersede is one-way (unlike archive, which re-recording reverses): a
+    // superseded slug is retired for good. Reject a re-record before any write
+    // so the row can't be silently resurrected into a state that stays hidden
+    // from list()/search because `superseded_by` still points somewhere.
+    if (existing !== null && existing.supersededBy !== null) {
+      return Err({ kind: ErrorCode.SupersededEntity, entity: 'memory', ref: input.slug });
+    }
+
     const isNoOp =
       existing !== null &&
       existing.title === input.title &&
@@ -288,6 +296,11 @@ export class MemoryService {
     if (target === null) return Err({ kind: ErrorCode.MemoryNotFound, slug });
     const successor = this.repo.findBySlug(successorSlug);
     if (successor === null) return Err({ kind: ErrorCode.MemoryNotFound, slug: successorSlug });
+    // The successor must be live: pointing at an already-superseded memory
+    // would chain this row to a dead one (and hide the replacement too).
+    if (successor.supersededBy !== null) {
+      return Err({ kind: ErrorCode.SupersededEntity, entity: 'memory', ref: successorSlug });
+    }
 
     const superseded = this.repo.supersede(slug, successorSlug);
     if (superseded) {

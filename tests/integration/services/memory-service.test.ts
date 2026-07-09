@@ -242,6 +242,44 @@ describe('MemoryService', () => {
     if (shown.ok) expect(shown.value.supersededBy).toBeNull();
   });
 
+  it('re-recording a superseded slug is rejected (supersede is one-way)', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true);
+
+    const result = service.record({ slug: 'a', title: 'A', content: 'revived', actor: 'daniel' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) {
+        expect(result.error.entity).toBe('memory');
+        expect(result.error.ref).toBe('a');
+      }
+    }
+    // The row stays superseded and out of the listing — no silent revival.
+    expect(service.list().map((m) => m.slug)).toEqual(['b']);
+    const shown = service.show('a');
+    if (shown.ok) expect(shown.value.supersededBy).toBe('b');
+  });
+
+  it('supersede rejects a successor that is itself already superseded', () => {
+    service.record({ slug: 'a', title: 'A', content: 'x', actor: 'daniel' });
+    service.record({ slug: 'b', title: 'B', content: 'y', actor: 'daniel' });
+    service.record({ slug: 'c', title: 'C', content: 'z', actor: 'daniel' });
+    expect(service.supersede('a', 'b', 'daniel').ok).toBe(true); // a is now retired
+
+    // c cannot be superseded by a (a is dead).
+    const result = service.supersede('c', 'a', 'daniel');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe(ErrorCode.SupersededEntity);
+      if (result.error.kind === ErrorCode.SupersededEntity) expect(result.error.ref).toBe('a');
+    }
+    // c is untouched — still active.
+    const shown = service.show('c');
+    if (shown.ok) expect(shown.value.supersededBy).toBeNull();
+  });
+
   it('supersede errors when the target or the successor is unknown', () => {
     service.record({ slug: 'exists', title: 'E', content: 'x', actor: 'daniel' });
 
