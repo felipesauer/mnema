@@ -21,6 +21,7 @@ interface RecordOptions {
   readonly title: string;
   readonly content: string;
   readonly topic?: readonly string[];
+  readonly derivedFromDecision?: string;
 }
 
 /**
@@ -103,6 +104,10 @@ export class MemoryCommand {
       .requiredOption('--title <title>', 'Human-readable title')
       .requiredOption('--content <text>', 'Memory body')
       .option('--topic <topic>', 'Topic tag (repeatable)', collectRepeatable, [])
+      .option(
+        '--derived-from-decision <key>',
+        'Decision key (e.g. an ADR) this memory derives from — records a decision→memory provenance edge',
+      )
       .action(async (slug: string, options: RecordOptions) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.memory.record({
@@ -112,6 +117,9 @@ export class MemoryCommand {
             topics: options.topic,
             actor: container.identity.getDefaultActor(),
             via: 'cli',
+            ...(options.derivedFromDecision === undefined
+              ? {}
+              : { derivedFromDecision: options.derivedFromDecision }),
           });
           if (!result.ok) {
             process.exit(printError(result.error));
