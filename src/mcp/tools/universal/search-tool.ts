@@ -59,11 +59,16 @@ export class SearchTool {
   ) {}
 
   /**
-   * Attaches the tool to the server.
+   * Attaches the tool(s) to the server. `search` is always registered — it
+   * spans the whole index and is useful even in an audit-only profile.
+   * `skill_suggest` is registered only when `includeSkillSuggest` is true
+   * (the knowledge feature is on), since it points the agent at
+   * `skill_show`/`skill_use`, which don't exist without knowledge.
    *
    * @param server - MCP server instance to register against
+   * @param includeSkillSuggest - Register the skill_suggest tool too
    */
-  register(server: McpServer): void {
+  register(server: McpServer, includeSkillSuggest = true): void {
     server.registerTool(
       'search',
       {
@@ -84,6 +89,8 @@ export class SearchTool {
         return ok({ hits: result.value });
       },
     );
+
+    if (!includeSkillSuggest) return;
 
     server.registerTool(
       'skill_suggest',
@@ -107,9 +114,10 @@ export class SearchTool {
       (input) => {
         const task = this.tasks.findByKey(input.task_key);
         if (!task.ok) return err(task.error);
-        // Build an FTS query from the task's own words. Quote each token so
-        // punctuation in the title/description can't be read as FTS5 syntax,
-        // and OR them so any overlap surfaces a candidate.
+        // Build an FTS query from the task's own words. The split drops all
+        // punctuation, and each surviving token is quoted, so nothing in the
+        // task text can be read as FTS5 syntax; OR them so any overlap
+        // surfaces a candidate.
         const terms = `${task.value.title} ${task.value.description ?? ''}`
           .toLowerCase()
           .split(/[^\p{L}\p{N}]+/u)
