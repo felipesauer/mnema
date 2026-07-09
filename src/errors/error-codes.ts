@@ -60,6 +60,7 @@ export enum ErrorCode {
 
   NoteNotFound = 'NOTE_NOT_FOUND',
   ObservationNotFound = 'OBSERVATION_NOT_FOUND',
+  ObservationArchived = 'OBSERVATION_ARCHIVED',
 
   DependencyCycle = 'DEPENDENCY_CYCLE',
   DependencyDuplicate = 'DEPENDENCY_DUPLICATE',

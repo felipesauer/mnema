@@ -83,7 +83,8 @@ export class MemoryTools {
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
         });
-        return ok({ memory: result.memory, action: result.action });
+        if (!result.ok) return err(result.error);
+        return ok({ memory: result.value.memory, action: result.value.action });
       },
     );
 

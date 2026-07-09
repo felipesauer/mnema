@@ -96,7 +96,7 @@ describe('skill/memory/observation MCP tools', () => {
     delete process.env.MNEMA_ACTOR;
   });
 
-  it('exposes all 9 new tools alongside the existing ones', async () => {
+  it('exposes the knowledge tools alongside the existing ones', async () => {
     const list = await harness.client.listTools();
     const names = new Set(list.tools.map((t) => t.name));
     for (const expected of [
@@ -107,8 +107,10 @@ describe('skill/memory/observation MCP tools', () => {
       'memory_record',
       'memory_show',
       'memories_list',
+      'memory_archive',
       'observation_record',
       'observations_list',
+      'observation_archive',
     ]) {
       expect(names).toContain(expected);
     }
@@ -212,6 +214,66 @@ describe('skill/memory/observation MCP tools', () => {
     });
     const payload = parsePayload(listed as CallToolResult);
     expect((payload.observations as unknown[]).length).toBe(2);
+  });
+
+  it('observation_archive hides the row from the default list; include_archived reveals it', async () => {
+    const rec = await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'to be retired' },
+    });
+    const observation = parsePayload(rec as CallToolResult).observation as { id: string };
+
+    const archived = await harness.client.callTool({
+      name: 'observation_archive',
+      arguments: { observation_id: observation.id },
+    });
+    const archivedPayload = parsePayload(archived as CallToolResult);
+    expect(archivedPayload.ok).toBe(true);
+    expect(archivedPayload.archived).toBe(true);
+
+    // Default list excludes it.
+    const def = await harness.client.callTool({ name: 'observations_list', arguments: {} });
+    expect((parsePayload(def as CallToolResult).observations as unknown[]).length).toBe(0);
+
+    // include_archived reveals it (the snake_case→camelCase remap works).
+    const withArchived = await harness.client.callTool({
+      name: 'observations_list',
+      arguments: { include_archived: true },
+    });
+    expect((parsePayload(withArchived as CallToolResult).observations as unknown[]).length).toBe(1);
+  });
+
+  it('observation_archive returns OBSERVATION_NOT_FOUND for an unknown id', async () => {
+    const result = await harness.client.callTool({
+      name: 'observation_archive',
+      arguments: { observation_id: 'no-such-observation' },
+    });
+    const payload = parsePayload(result as CallToolResult);
+    expect(payload.error).toBe('OBSERVATION_NOT_FOUND');
+  });
+
+  it('memory_record refuses derived_from_observation pointing at an archived observation', async () => {
+    const rec = await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'retired source' },
+    });
+    const observation = parsePayload(rec as CallToolResult).observation as { id: string };
+    await harness.client.callTool({
+      name: 'observation_archive',
+      arguments: { observation_id: observation.id },
+    });
+
+    const result = await harness.client.callTool({
+      name: 'memory_record',
+      arguments: {
+        slug: 'from-archived',
+        title: 'nope',
+        content: 'should be rejected',
+        derived_from_observation: observation.id,
+      },
+    });
+    const payload = parsePayload(result as CallToolResult);
+    expect(payload.error).toBe('OBSERVATION_ARCHIVED');
   });
 
   it('context_bootstrap surfaces inventories and recent observations', async () => {

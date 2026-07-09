@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { pc } from '../../utils/colors.js';
 
@@ -10,6 +11,7 @@ interface ListOptions {
   readonly task?: string;
   readonly since?: string;
   readonly limit?: string;
+  readonly includeArchived?: boolean;
 }
 
 interface RecordOptions {
@@ -63,6 +65,7 @@ export class ObservationCommand {
       .option('--task <key>', 'Filter by related task key')
       .option('--since <iso>', 'Lower bound ISO 8601 timestamp')
       .option('--limit <n>', 'Maximum number of rows')
+      .option('--include-archived', 'Include archived observations, which are hidden by default')
       .action(async (options: ListOptions) => {
         await withCliContext(({ container }) => {
           const limit = options.limit !== undefined ? Number(options.limit) : undefined;
@@ -71,6 +74,7 @@ export class ObservationCommand {
             relatedTaskKey: options.task,
             since: options.since,
             limit: limit !== undefined && Number.isFinite(limit) && limit > 0 ? limit : undefined,
+            includeArchived: options.includeArchived,
           });
           if (observations.length === 0) {
             process.stdout.write(`${pc.dim('no observations recorded yet')}\n`);
@@ -78,8 +82,28 @@ export class ObservationCommand {
           }
           for (const o of observations) {
             const topics = o.topics.length > 0 ? `[${o.topics.join(', ')}]` : '';
-            process.stdout.write(`${pc.dim(o.at)} ${topics}\n  ${o.content}\n`);
+            const archived = o.archivedAt !== null ? ` ${pc.dim('(archived)')}` : '';
+            process.stdout.write(
+              `${pc.dim(o.at)} ${pc.dim(o.id)} ${topics}${archived}\n  ${o.content}\n`,
+            );
           }
+        });
+      });
+
+    group
+      .command('archive <id>')
+      .description('Archive an observation by id (soft, one-way — hidden from list and search)')
+      .action(async (id: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const archived = container.observation.archive(
+            id,
+            container.identity.getDefaultActor(),
+            'cli',
+          );
+          if (!archived) {
+            process.exit(printError({ kind: ErrorCode.ObservationNotFound, observationId: id }));
+          }
+          process.stdout.write(`${pc.green('✓')} observation archived\n`);
         });
       });
   }

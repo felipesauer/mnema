@@ -303,6 +303,10 @@ export function formatError(error: MnemaError): string {
       lines.push(`Observation ${error.observationId} not found`);
       break;
 
+    case ErrorCode.ObservationArchived:
+      lines.push(`Observation ${error.observationId} is archived and cannot be promoted`);
+      break;
+
     case ErrorCode.NoteNotFound:
       lines.push(`Note ${error.noteId} not found`);
       lines.push(
@@ -425,6 +429,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.FeatureNotAvailable:
     case ErrorCode.NoteNotFound:
     case ErrorCode.ObservationNotFound:
+    case ErrorCode.ObservationArchived:
     case ErrorCode.EvidenceCriterionOutOfRange:
     case ErrorCode.ValidationFailed:
       return ExitCode.Usage;

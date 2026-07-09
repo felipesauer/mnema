@@ -105,7 +105,7 @@ export class MemoryCommand {
       .option('--topic <topic>', 'Topic tag (repeatable)', collectRepeatable, [])
       .action(async (slug: string, options: RecordOptions) => {
         await withMutatingCliContext(({ container }) => {
-          const { memory, action } = container.memory.record({
+          const result = container.memory.record({
             slug,
             title: options.title,
             content: options.content,
@@ -113,6 +113,10 @@ export class MemoryCommand {
             actor: container.identity.getDefaultActor(),
             via: 'cli',
           });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const { memory, action } = result.value;
           const verb =
             action === 'no_op' ? 'unchanged' : action === 'created' ? 'recorded' : 'updated';
           process.stdout.write(`${pc.green('✓')} ${verb} ${pc.bold(memory.slug)}\n`);

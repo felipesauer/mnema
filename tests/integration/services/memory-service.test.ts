@@ -41,8 +41,15 @@ describe('MemoryService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
+  // record() returns a Result; these tests assert the happy path, so unwrap.
+  function recordOk(input: Parameters<MemoryService['record']>[0]) {
+    const result = service.record(input);
+    if (!result.ok) throw new Error(`expected ok, got ${JSON.stringify(result.error)}`);
+    return result.value;
+  }
+
   it('creates a memory on first record', () => {
-    const result = service.record({
+    const result = recordOk({
       slug: 'pci-compliance',
       title: 'Client requires PCI-DSS',
       content: 'Anything touching payment data needs an audit trail.',
@@ -61,7 +68,7 @@ describe('MemoryService', () => {
       content: 'first',
       actor: 'daniel',
     });
-    const updated = service.record({
+    const updated = recordOk({
       slug: 's',
       title: 'A',
       content: 'second',
@@ -73,27 +80,27 @@ describe('MemoryService', () => {
 
   it('no-ops when content is byte-equal', () => {
     service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
-    const again = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const again = recordOk({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
     expect(again.action).toBe('no_op');
   });
 
   it('no_op does NOT advance updated_at', async () => {
-    const first = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const first = recordOk({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
     // Sleep enough that a different millisecond would be visible if the
     // service still ran the UPDATE on no_op.
     await new Promise((resolve) => setTimeout(resolve, 30));
-    const again = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const again = recordOk({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
     expect(again.action).toBe('no_op');
     expect(again.memory.updatedAt).toBe(first.memory.updatedAt);
   });
 
   it('no_op regenerates the mirror when the file went missing', () => {
-    const r = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const r = recordOk({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
     const mirrorPath = path.join(memoryDir, 's.md');
     expect(existsSync(mirrorPath)).toBe(true);
     rmSync(mirrorPath);
 
-    const again = service.record({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
+    const again = recordOk({ slug: 's', title: 'A', content: 'x', actor: 'daniel' });
     expect(again.action).toBe('no_op');
     expect(again.memory.updatedAt).toBe(r.memory.updatedAt);
     expect(existsSync(mirrorPath)).toBe(true);

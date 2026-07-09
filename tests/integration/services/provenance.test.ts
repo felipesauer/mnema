@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
+import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { DecisionService } from '@/services/decision-service.js';
 import { IdentityService } from '@/services/identity-service.js';
@@ -68,6 +69,7 @@ describe('provenance chain (obs/note → decision → memory)', () => {
       audit,
       null,
       links,
+      observations,
     );
     provenance = new ProvenanceService(links);
   });
@@ -168,6 +170,28 @@ describe('provenance chain (obs/note → decision → memory)', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('promoteFromObservation refuses an archived observation', () => {
+    const obs = observations.insert({
+      content: 'a retired insight',
+      topics: [],
+      relatedTaskId: null,
+      createdBy: actorId,
+    });
+    observations.archive(obs.id);
+
+    const result = decisions.promoteFromObservation({
+      observationId: obs.id,
+      projectKey: 'TEST',
+      title: 'From a retired obs',
+      decision: 'do Z',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ObservationArchived);
+    expect(provenance.chain({ kind: 'observation', ref: obs.id }).downstream).toEqual([]);
+  });
+
   it('links observation → memory via derivedFromObservation', () => {
     const obs = observations.insert({
       content: 'a signal worth keeping',
@@ -201,5 +225,41 @@ describe('provenance chain (obs/note → decision → memory)', () => {
     expect(fromMemory.upstream).toEqual([
       expect.objectContaining({ fromKind: 'observation', fromRef: obs.id, toRef: 'kept-fact' }),
     ]);
+  });
+
+  it('refuses to derive a memory from an archived observation', () => {
+    const obs = observations.insert({
+      content: 'a retired signal',
+      topics: [],
+      relatedTaskId: null,
+      createdBy: actorId,
+    });
+    observations.archive(obs.id);
+
+    const result = memories.record({
+      slug: 'should-not-exist',
+      title: 'nope',
+      content: 'derived from a retired signal',
+      actor: 'daniel',
+      derivedFromObservation: obs.id,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ObservationArchived);
+    expect(memories.show('should-not-exist').ok).toBe(false);
+    expect(provenance.chain({ kind: 'observation', ref: obs.id }).downstream).toEqual([]);
+  });
+
+  it('refuses to derive a memory from an unknown observation', () => {
+    const result = memories.record({
+      slug: 'should-not-exist',
+      title: 'nope',
+      content: 'derived from a ghost',
+      actor: 'daniel',
+      derivedFromObservation: 'no-such-observation',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ObservationNotFound);
   });
 });

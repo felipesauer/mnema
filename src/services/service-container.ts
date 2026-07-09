@@ -613,6 +613,7 @@ export function createServiceContainer(
     audit,
     userDir,
     provenanceLinkRepository,
+    observationRepository,
   );
   const wikilinkLintService = new WikilinkLintService(
     skillsDir,
