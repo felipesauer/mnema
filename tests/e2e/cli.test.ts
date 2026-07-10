@@ -194,6 +194,46 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stderr).toContain('Cannot approve WEBAPP-1');
   });
 
+  it('mnema guard exits non-zero with no task in progress, zero once one is started', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // No task at all → untracked → non-zero, with an actionable message.
+    const idle = runCli(['guard'], projectRoot);
+    expect(idle.status).not.toBe(0);
+    expect(idle.stdout).toContain('no task in progress');
+
+    // Drive a task to IN_PROGRESS.
+    runCli(['task', 'create', '--title', 'Real work', '--acceptance', 'done'], projectRoot);
+    runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        '--field',
+        'title=Real work',
+        '--field',
+        'description=a real tracked task',
+        '--field',
+        'acceptance_criteria=done',
+        '--field',
+        'estimate=2',
+      ],
+      projectRoot,
+    );
+    runCli(['task', 'move', 'WEBAPP-1', 'start', '--field', 'assignee_id=me'], projectRoot);
+
+    // Now a task is in progress → guard passes.
+    const active = runCli(['guard'], projectRoot);
+    expect(active.status).toBe(0);
+    expect(active.stdout).toContain('WEBAPP-1');
+
+    // JSON form carries the machine-readable verdict.
+    const json = runCli(['guard', '--json'], projectRoot);
+    expect(json.status).toBe(0);
+    expect(JSON.parse(json.stdout)).toMatchObject({ ok: true, focus: 'resume' });
+  });
+
   it('mnema task list --state rejects a state foreign to the active workflow', () => {
     // lean has TODO | DOING | DONE — `DRAFT` is the default workflow's
     // initial state and must not silently return an empty list here.
