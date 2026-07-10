@@ -137,6 +137,22 @@ export class DecisionService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
+    // Enforce the title/decision bounds at the service so the CLI (and any
+    // non-MCP caller) is covered — not just the MCP schema (title 3..200,
+    // decision ≥ 1).
+    const shapeIssues: ErrorIssue[] = [];
+    if (input.title.length < 3) {
+      shapeIssues.push({ path: ['title'], message: 'must be at least 3 characters' });
+    } else if (input.title.length > 200) {
+      shapeIssues.push({ path: ['title'], message: 'must be at most 200 characters' });
+    }
+    if (input.decision.length < 1) {
+      shapeIssues.push({ path: ['decision'], message: 'must be at least 1 character' });
+    }
+    if (shapeIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: shapeIssues });
+    }
+
     // Reject tool-invocation markup leaking into any text field — a malformed
     // MCP call can spill `<parameter name=...>` / `</invoke>` into a value,
     // which would persist a garbage trailer and leave sibling fields empty.

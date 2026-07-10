@@ -7,7 +7,12 @@ import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { AuditQuery } from '../../../services/audit-query.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 /** Audit kinds that count as the agent having recorded something it learned. */
 const KNOWLEDGE_KINDS = ['skill_recorded', 'memory_recorded', 'observation_recorded'] as const;
@@ -30,6 +35,7 @@ export class AgentRunTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly auditQuery: AuditQuery,
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
@@ -53,6 +59,8 @@ export class AgentRunTools {
         },
       },
       ({ goal, parent_run_id: parentRunId }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const handle = this.session.getClientMetadata().agent_handle;
         if (handle === undefined || handle.length === 0) {
           return err({
@@ -93,6 +101,8 @@ export class AgentRunTools {
         },
       },
       ({ status, result: resultText, error: errorText }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         if (runId === null) return err({ kind: ErrorCode.NoActiveRun });
 
@@ -148,6 +158,8 @@ export class AgentRunTools {
         },
       },
       ({ run_id: runId }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const result = this.agentRun.resume({
           runId,
           actor: this.identity.getDefaultActor(),

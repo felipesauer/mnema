@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Memory } from '../domain/entities/memory.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { hasInvocationMarkup } from '../domain/invocation-markup.js';
+import { checkSlug } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
@@ -77,6 +78,20 @@ export class MemoryService {
    * @returns Upserted memory and the action taken
    */
   record(input: MemoryRecordInput): Result<MemoryRecordResult, MnemaError> {
+    // Enforce the slug shape and title/content bounds at the service so the
+    // CLI (and any non-MCP caller) is covered — not just the MCP schema.
+    // The slug becomes `<memoryDir>/<slug>.md` in writeMirror, so a value
+    // like `../../etc/x` would escape the project; reject it before any
+    // lookup or write. Bounds match the MCP schema (title 1..200, content
+    // ≥ 1).
+    const shapeIssues: ErrorIssue[] = [];
+    checkSlug(input.slug, shapeIssues);
+    checkStringLength(input.title, 'title', 1, 200, shapeIssues);
+    checkStringLength(input.content, 'content', 1, undefined, shapeIssues);
+    if (shapeIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: shapeIssues });
+    }
+
     // Reject tool-invocation markup leaking into a text field — a malformed
     // MCP call can spill `</content>\n<topics>[…]` / `<parameter name=...>`
     // into a value, which would persist a garbage trailer and leave sibling
@@ -391,6 +406,25 @@ export class MemoryService {
 
 function mirrorExists(dir: string, slug: string): boolean {
   return existsSync(path.join(dir, `${slug}.md`));
+}
+
+/**
+ * Pushes an issue when a string field is outside `[min, max]` characters.
+ * `max` is optional (a lower bound only). Gives the service the same
+ * length contract the MCP schema enforces so the CLI rejects identically.
+ */
+function checkStringLength(
+  value: string,
+  field: string,
+  min: number,
+  max: number | undefined,
+  issues: ErrorIssue[],
+): void {
+  if (value.length < min) {
+    issues.push({ path: [field], message: `must be at least ${min} character(s)` });
+  } else if (max !== undefined && value.length > max) {
+    issues.push({ path: [field], message: `must be at most ${max} characters` });
+  }
 }
 
 function topicsArraysEqual(a: readonly string[], b: readonly string[]): boolean {

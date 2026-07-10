@@ -93,8 +93,8 @@ describe('InboxService', () => {
   });
 
   it('lists proposed decisions under pendingDecisions and excludes accepted ones', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
-    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title B', decision: 'b', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,

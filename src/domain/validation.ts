@@ -84,6 +84,27 @@ export function checkRequiredFiniteNumber(
   }
 }
 
+/**
+ * The kebab-case ASCII shape a slug must take before it can become a file
+ * path (`<dir>/<slug>.md`). Anchored, so `../../etc/x`, `a/b`, `a.b`, an
+ * empty string, and a leading dash are all rejected — the same regex the
+ * MCP schemas enforce, lifted here so the service (and thus the CLI and
+ * any non-MCP caller) rejects a traversal attempt identically.
+ */
+const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+/**
+ * Pushes an issue when `slug` is not kebab-case ASCII. Guards every
+ * slug/key that becomes a file path (memory, skill) so a `../` traversal
+ * cannot write a mirror outside the project directory. The message
+ * mirrors the MCP schema's so the two producers reject identically.
+ */
+export function checkSlug(slug: string, issues: ErrorIssue[], field = 'slug'): void {
+  if (!SLUG_PATTERN.test(slug)) {
+    issues.push({ path: [field], message: 'slug must be kebab-case ASCII' });
+  }
+}
+
 function describe(value: number): string {
   return Number.isNaN(value) ? 'NaN' : String(value);
 }

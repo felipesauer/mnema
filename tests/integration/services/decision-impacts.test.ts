@@ -77,21 +77,21 @@ describe('DecisionService impacts', () => {
   it('impacting() returns decisions whose impacts contain the ref', () => {
     decisions.record({
       projectKey: 'TEST',
-      title: 'A',
+      title: 'Title A',
       decision: 'a',
       impacts: ['src/a.ts'],
       actor: 'daniel',
     });
     decisions.record({
       projectKey: 'TEST',
-      title: 'B',
+      title: 'Title B',
       decision: 'b',
       impacts: ['src/b.ts'],
       actor: 'daniel',
     });
     decisions.record({
       projectKey: 'TEST',
-      title: 'C',
+      title: 'Title C',
       decision: 'c',
       impacts: ['src/a.ts', 'src/c.ts'],
       actor: 'daniel',
@@ -99,11 +99,11 @@ describe('DecisionService impacts', () => {
 
     const hits = decisions.impacting('TEST', 'src/a.ts');
     expect(hits).toHaveLength(2);
-    expect(hits.map((d) => d.title).sort()).toEqual(['A', 'C']);
+    expect(hits.map((d) => d.title).sort()).toEqual(['Title A', 'Title C']);
   });
 
   it('impacting() returns empty when nothing matches', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     expect(decisions.impacting('TEST', 'nope.ts')).toEqual([]);
   });
 
@@ -159,7 +159,7 @@ describe('DecisionService impacts', () => {
   });
 
   it('rejects a decision superseding itself', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,
@@ -182,21 +182,21 @@ describe('DecisionService impacts', () => {
 
     decisions.record({
       projectKey: 'TEST',
-      title: 'A',
+      title: 'Title A',
       decision: 'a',
       impacts: ['src/x.ts'],
       actor: 'daniel',
     });
     decisions.record({
       projectKey: 'TEST',
-      title: 'B',
+      title: 'Title B',
       decision: 'b',
       impacts: ['src/x.ts'],
       actor: 'daniel',
     });
     decisions.record({
       projectKey: 'TEST',
-      title: 'C',
+      title: 'Title C',
       decision: 'c',
       impacts: ['src/x.ts'],
       actor: 'daniel',

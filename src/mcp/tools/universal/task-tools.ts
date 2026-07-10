@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Config } from '../../../config/config-schema.js';
 import type { StateMachine } from '../../../domain/state-machine/state-machine.js';
 import type { IdentityService } from '../../../services/identity-service.js';
-import type { LabelService } from '../../../services/label-service.js';
+import { type LabelService, validateLabelNames } from '../../../services/label-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -114,6 +114,17 @@ export class TaskTools {
 
         const handle = this.session.getClientMetadata().agent_handle;
         const via = handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined;
+
+        // Validate inline labels BEFORE the insert so a bad name refuses the
+        // whole call — otherwise the task would persist, the label apply would
+        // fail, and the tool would return an error with no key (the caller
+        // thinks it failed and duplicates on retry).
+        const hasLabels = input.labels !== undefined && input.labels.length > 0;
+        if (hasLabels) {
+          const validated = validateLabelNames(input.labels as readonly string[]);
+          if (!validated.ok) return err(validated.error);
+        }
+
         const result = this.tasks.create({
           projectKey: this.config.project.key,
           title: input.title,
@@ -129,10 +140,10 @@ export class TaskTools {
         });
         if (!result.ok) return err(result.error);
 
-        if (input.labels !== undefined && input.labels.length > 0) {
+        if (hasLabels) {
           const labelled = this.labels.setLabels({
             taskKey: result.value.key,
-            labels: input.labels,
+            labels: input.labels as readonly string[],
             actor: this.identity.getDefaultActor(),
             via,
             runId: runId ?? undefined,
@@ -284,6 +295,19 @@ export class TaskTools {
         const created: unknown[] = [];
         const failed: { index: number; error: unknown }[] = [];
         input.tasks.forEach((item, index) => {
+          // Validate this item's inline labels BEFORE inserting its task, so a
+          // bad name fails the item without ever persisting a task — otherwise
+          // the task would land yet be reported only in `failed`, mis-counting
+          // the batch and duplicating on retry.
+          const hasLabels = item.labels !== undefined && item.labels.length > 0;
+          if (hasLabels) {
+            const validated = validateLabelNames(item.labels as readonly string[]);
+            if (!validated.ok) {
+              failed.push({ index, error: validated.error });
+              return;
+            }
+          }
+
           const result = this.tasks.create({
             projectKey: this.config.project.key,
             title: item.title,
@@ -301,19 +325,21 @@ export class TaskTools {
             failed.push({ index, error: result.error });
             return;
           }
-          if (item.labels !== undefined && item.labels.length > 0) {
+          if (hasLabels) {
             const labelled = this.labels.setLabels({
               taskKey: result.value.key,
-              labels: item.labels,
+              labels: item.labels as readonly string[],
               actor: this.identity.getDefaultActor(),
               via,
               runId: runId ?? undefined,
             });
-            // The task itself was created; a bad label name is surfaced as
-            // this item's failure so the agent can fix and retry, rather
-            // than silently dropping the labels it asked for.
+            // Labels were pre-validated, so a failure here is not a bad name —
+            // the task IS persisted, so record it as created (with its key) and
+            // never let a persisted task land only in `failed`.
             if (!labelled.ok) {
-              failed.push({ index, error: labelled.error });
+              created.push(
+                input.verbosity === 'compact' ? toCompactTask(result.value) : result.value,
+              );
               return;
             }
           }

@@ -91,7 +91,8 @@ export class SkillTools {
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
         });
-        return ok({ skill: result.skill, action: result.action });
+        if (!result.ok) return err(result.error);
+        return ok({ skill: result.value.skill, action: result.value.action });
       },
     );
 

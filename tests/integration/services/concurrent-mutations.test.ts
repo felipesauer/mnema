@@ -139,7 +139,7 @@ describe('concurrent mutations (single-process simulation)', () => {
   it('decision transition: second writer with stale token refused (no lost-write)', () => {
     const recorded = container.decision.record({
       projectKey: 'CC',
-      title: 'D',
+      title: 'Title D',
       decision: 'd',
       actor: 'alice',
     });
@@ -177,7 +177,12 @@ describe('concurrent mutations (single-process simulation)', () => {
   });
 
   it('decision transition without explicit token also fails closed', () => {
-    container.decision.record({ projectKey: 'CC', title: 'D2', decision: 'd', actor: 'alice' });
+    container.decision.record({
+      projectKey: 'CC',
+      title: 'Title D2',
+      decision: 'd',
+      actor: 'alice',
+    });
 
     // First accept moves the row.
     container.decision.transition({
@@ -209,7 +214,7 @@ describe('concurrent mutations (single-process simulation)', () => {
   });
 
   it('Conflict error carries the entity field for the printer', () => {
-    container.task.create({ projectKey: 'CC', title: 'X', actor: 'alice' });
+    container.task.create({ projectKey: 'CC', title: 'Title X', actor: 'alice' });
     const seed = container.task.findByKey('CC-1');
     if (!seed.ok) return;
 

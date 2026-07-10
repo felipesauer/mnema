@@ -5,7 +5,13 @@ import type { NoteKind } from '../../../domain/entities/note.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { NoteService } from '../../../services/note-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const NOTE_KINDS: readonly NoteKind[] = [
   'comment',
@@ -35,6 +41,7 @@ export class NoteTools {
     private readonly notes: NoteService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
@@ -55,6 +62,8 @@ export class NoteTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;

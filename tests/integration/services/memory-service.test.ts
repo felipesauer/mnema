@@ -365,4 +365,36 @@ describe('MemoryService', () => {
       }
     }
   });
+
+  it('refuses a path-traversal slug and writes nothing outside the memory dir', () => {
+    const result = service.record({
+      slug: '../../etc/x',
+      title: 'Escaped',
+      content: 'should never land on disk',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['slug']);
+    // Nothing persisted, and no file escaped the project via the mirror.
+    expect(service.list()).toHaveLength(0);
+    expect(existsSync(path.join(memoryDir, '..', '..', 'etc', 'x.md'))).toBe(false);
+  });
+
+  it('refuses an over-long title via the service (CLI/MCP parity)', () => {
+    const result = service.record({
+      slug: 'too-long',
+      title: 'x'.repeat(201),
+      content: 'body',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['title']);
+    expect(service.list()).toHaveLength(0);
+  });
 });

@@ -128,6 +128,7 @@ export class TaskService {
     }
 
     const issues: ErrorIssue[] = [];
+    checkTitle(input.title, issues);
     checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
     checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
     checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
@@ -144,7 +145,9 @@ export class TaskService {
     const initialState = this.stateMachine.getWorkflow().initial as TaskState;
 
     const writeResult = tryMutation(() =>
-      this.tasks.runInTransaction(() => {
+      // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+      // two processes on one state.db cannot mint the same key.
+      this.tasks.runInTransactionImmediate(() => {
         const sequence = this.tasks.nextSequence(project.id);
         const key = generateTaskKey(project.key, sequence);
 
@@ -475,6 +478,16 @@ export class TaskService {
    * Validates against the active workflow's gates and persists every
    * change (state mutation + transition log) atomically.
    *
+   * DONE-gate (PR/CI policy) is intentionally NOT enforced here — it is an
+   * MCP-layer concern by design. The gate depends on a live GitHub PR-status
+   * client and `config.github.done_pr_policy`, neither of which the service
+   * owns, and the MCP transition handler already runs it *before* calling this
+   * method (see `transition-tools.ts`). Duplicating it here would double-apply
+   * on the MCP path (the check would fire twice) and pull a GitHub dependency
+   * into the service. The CLI move path does not carry a PR context, so it has
+   * nothing to gate on; keeping the policy at the MCP boundary keeps this method
+   * transport-agnostic.
+   *
    * @param input - Action, payload, and identity context
    * @returns The updated task or a structured error
    */
@@ -673,12 +686,13 @@ export class TaskService {
         let finalTask =
           persisted === null ? result.task : this.tasks.updateFields(task.id, persisted);
 
-        // The `reopen` action is the canonical signal across the
-        // shipping workflows (default, jira-classic) that work is
-        // being re-entered after reaching a terminal state — bump the
-        // counter on the task row so consumers can flag chronically
-        // reopened items.
-        if (input.action === 'reopen') {
+        // The `reopen` action bumps the counter only when work is genuinely
+        // re-entered from a TERMINAL state (the from-state) — the signal
+        // consumers use to flag chronically reopened items. A custom workflow
+        // could wire `reopen` between two non-terminal states; counting that
+        // would inflate the metric, so gate the bump on the from-state being
+        // terminal rather than on the action name alone.
+        if (input.action === 'reopen' && this.stateMachine.isTerminal(task.state)) {
           const bumped = this.tasks.incrementReopenCount(task.id);
           if (bumped !== null) finalTask = bumped;
         }
