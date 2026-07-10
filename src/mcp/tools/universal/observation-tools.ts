@@ -1,12 +1,15 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
+import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import {
   OBSERVATION_CONTENT_MAX,
   type ObservationService,
 } from '../../../services/observation-service.js';
+import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,
@@ -29,6 +32,7 @@ export class ObservationTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly agentRun: AgentRunService,
   ) {}
 
   /**
@@ -41,7 +45,7 @@ export class ObservationTools {
       'observation_record',
       {
         description:
-          'Record an append-only context note. Use this for short-lived signals that may inform a memory or skill later, but are not durable truths on their own. Requires an active agent run.',
+          'Record an append-only context note. Use this for short-lived signals that may inform a memory or skill later, but are not durable truths on their own. If no agent run is active, a short-lived system run is opened to attribute it, so you can jot a note without starting work.',
         inputSchema: {
           content: z
             .string()
@@ -60,37 +64,52 @@ export class ObservationTools {
       (input) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
-        const runId = this.session.getCurrentRunId();
-        const guard = requireActiveRun(runId);
-        if (guard !== null) return guard;
 
-        // Enforce the length cap in the handler (not via `.max()` on the
-        // schema) so the agent gets an actionable message with the exact
-        // overflow, rather than the SDK's raw "too big" rejection.
-        if (input.content.length > OBSERVATION_CONTENT_MAX) {
-          const over = input.content.length - OBSERVATION_CONTENT_MAX;
-          return err({
-            kind: ErrorCode.ValidationFailed,
-            issues: [
-              {
-                path: ['content'],
-                message: `content is ${input.content.length} characters — ${over} over the ${OBSERVATION_CONTENT_MAX} limit. Split it into two observations.`,
-              },
-            ],
+        // Recording a note should not require an execution run. If none is
+        // active, open a short-lived system run so provenance (actor / via /
+        // run) is still captured, then close it in the finally below.
+        const gov = resolveGovernanceRun(
+          this.session,
+          this.agentRun,
+          this.identity,
+          'observation_record',
+        );
+        // A transient system run must be recorded as completed only when the
+        // record actually lands. A failed record or a thrown handler closes it
+        // as aborted, so a refused record leaves no phantom completed run.
+        let proceeded = false;
+        try {
+          // Enforce the length cap in the handler (not via `.max()` on the
+          // schema) so the agent gets an actionable message with the exact
+          // overflow, rather than the SDK's raw "too big" rejection.
+          if (input.content.length > OBSERVATION_CONTENT_MAX) {
+            const over = input.content.length - OBSERVATION_CONTENT_MAX;
+            return err({
+              kind: ErrorCode.ValidationFailed,
+              issues: [
+                {
+                  path: ['content'],
+                  message: `content is ${input.content.length} characters — ${over} over the ${OBSERVATION_CONTENT_MAX} limit. Split it into two observations.`,
+                },
+              ],
+            });
+          }
+
+          const handle = this.session.getClientMetadata().agent_handle;
+          const result = this.observations.record({
+            content: input.content,
+            topics: input.topics,
+            relatedTaskKey: input.related_task_key,
+            actor: this.identity.getDefaultActor(),
+            via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+            runId: gov.runId,
           });
+          if (!result.ok) return err(result.error);
+          proceeded = true;
+          return ok({ observation: result.value });
+        } finally {
+          gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
         }
-
-        const handle = this.session.getClientMetadata().agent_handle;
-        const result = this.observations.record({
-          content: input.content,
-          topics: input.topics,
-          relatedTaskKey: input.related_task_key,
-          actor: this.identity.getDefaultActor(),
-          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-          runId: runId ?? undefined,
-        });
-        if (!result.ok) return err(result.error);
-        return ok({ observation: result.value });
       },
     );
 

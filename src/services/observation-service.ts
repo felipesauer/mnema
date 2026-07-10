@@ -1,7 +1,12 @@
+import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
+import path from 'node:path';
+
 import type { Observation } from '../domain/entities/observation.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
+import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
@@ -44,16 +49,21 @@ export interface ObservationListInput {
 
 /**
  * Append-only contextual notes recorded by agents. Lighter than memories
- * (no slug, no mirror file). Useful for ephemeral signals — they may
- * later inform a durable memory or skill, but on their own they're not
- * the truth of the project.
+ * (a UUID, no slug), but — like memories — each note is mirrored to
+ * `<observationsDir>/<id>.md` when recorded, so the signal survives a clone
+ * and {@link SyncRebuild} can re-import it after a state wipe. The `.md`
+ * carries the full content in a `mnema:` frontmatter block, the same shape
+ * the rebuild reads for tasks and decisions.
  */
 export class ObservationService {
+  private readonly markdownIo = new MarkdownIo();
+
   constructor(
     private readonly repo: ObservationRepository,
     private readonly tasks: TaskRepository,
     private readonly identity: IdentityService,
     private readonly audit: AuditService,
+    private readonly observationsDir: string,
   ) {}
 
   /**
@@ -64,6 +74,22 @@ export class ObservationService {
    *   key is supplied but unknown
    */
   record(input: ObservationRecordInput): Result<Observation, MnemaError> {
+    // Reject tool-invocation markup leaking into the note — a malformed MCP
+    // call can spill `</content>\n<topics>[…]` / `<parameter name=...>` into the
+    // value, which would persist a garbage trailer. Same screen and message as
+    // decision_record / memory_record.
+    if (hasInvocationMarkup(input.content)) {
+      return Err({
+        kind: ErrorCode.ValidationFailed,
+        issues: [
+          {
+            path: ['content'],
+            message: 'contains tool-invocation markup; pass each field as its own argument',
+          },
+        ],
+      });
+    }
+
     // Enforce the content cap here (not only in the MCP handler) so the CLI
     // path — which calls the service directly — rejects over-length content
     // identically. Same actionable message naming the exact overflow.
@@ -96,6 +122,8 @@ export class ObservationService {
       relatedTaskId,
       createdBy,
     });
+
+    this.writeMirror(observation, input.relatedTaskKey ?? null);
 
     this.audit.write({
       kind: 'observation_recorded',
@@ -150,6 +178,13 @@ export class ObservationService {
   archive(id: string, actor: string, via?: string, runId?: string): boolean {
     const archived = this.repo.archive(id);
     if (archived) {
+      // Unlink the mirror on archive (rather than tombstoning it in place):
+      // an archived observation is retired from circulation, so its `.md`
+      // must not linger on disk looking like a live entry — the same
+      // treatment an archived memory's mirror gets. `rebuildMirrors` skips
+      // archived rows, so it will not recreate the file.
+      const mirrorPath = this.mirrorPath(id);
+      if (existsSync(mirrorPath)) unlinkSync(mirrorPath);
       this.audit.write({
         kind: 'observation_archived',
         actor,
@@ -159,5 +194,67 @@ export class ObservationService {
       });
     }
     return archived;
+  }
+
+  /**
+   * Regenerates missing `.md` mirror files from every active SQLite row —
+   * the recovery path when a project gained observations before the mirror
+   * existed, or after a manual deletion. Archived rows are skipped (their
+   * mirror is intentionally absent) and present files are left untouched, so
+   * this only heals drift. Returns the ids whose mirror was just written.
+   *
+   * @returns Ids whose mirror file was created during this call
+   */
+  rebuildMirrors(): string[] {
+    const rebuilt: string[] = [];
+    for (const observation of this.repo.list({ includeArchived: false })) {
+      if (!existsSync(this.mirrorPath(observation.id))) {
+        this.writeMirror(observation, this.relatedTaskKey(observation));
+        rebuilt.push(observation.id);
+      }
+    }
+    return rebuilt;
+  }
+
+  /** Absolute path an observation's mirror lives at. */
+  private mirrorPath(id: string): string {
+    return path.join(this.observationsDir, `${id}.md`);
+  }
+
+  /**
+   * Resolves an observation's `relatedTaskId` back to the task's stable
+   * human key for the mirror. UUIDs are regenerated on a fresh clone, so
+   * only the key is a durable on-disk reference (as with a task's
+   * `epic_key`). Returns `null` when there is no link or the task is gone.
+   */
+  private relatedTaskKey(observation: Observation): string | null {
+    if (observation.relatedTaskId === null) return null;
+    return this.tasks.findById(observation.relatedTaskId)?.key ?? null;
+  }
+
+  /**
+   * Writes (or rewrites) the markdown mirror for an observation. The
+   * canonical content lives in the `mnema:` frontmatter — the shape
+   * {@link SyncRebuild} reads back, so the two must agree — since the
+   * serialiser normalises a trailing newline into the body and would not
+   * round-trip content byte-for-byte from there. The body carries the same
+   * text so the file is readable in a pull request.
+   */
+  private writeMirror(observation: Observation, relatedTaskKey: string | null): void {
+    mkdirSync(this.observationsDir, { recursive: true });
+    this.markdownIo.write(this.mirrorPath(observation.id), {
+      mnemaData: {
+        id: observation.id,
+        kind: 'observation',
+        content: observation.content,
+        topics: [...observation.topics],
+        related_task_key: relatedTaskKey,
+        created_by: observation.createdBy,
+        at: observation.at,
+        archived_at: observation.archivedAt,
+      },
+      otherFrontmatter: {},
+      content: observation.content,
+    });
   }
 }

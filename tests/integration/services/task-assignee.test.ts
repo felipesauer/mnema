@@ -189,4 +189,61 @@ describe('TaskService assignee resolution', () => {
     // The bogus handle must not have been created as a side effect.
     expect(container.identity.findActorIdByHandle('phantom')).toBeNull();
   });
+
+  describe('the `me` / `self` alias', () => {
+    beforeEach(() => {
+      process.env.MNEMA_ACTOR = 'daniel';
+    });
+    afterEach(() => {
+      delete process.env.MNEMA_ACTOR;
+    });
+
+    it('start with assignee `me` assigns the default actor', () => {
+      const key = readyTaskKey();
+
+      const moved = container.task.transition({
+        taskKey: key,
+        action: 'start',
+        payload: { assignee_id: 'me' },
+        actor: 'daniel',
+      });
+      expect(moved.ok).toBe(true);
+      if (!moved.ok) return;
+      expect(moved.value.state).toBe('IN_PROGRESS');
+      expect(moved.value.assigneeId).toBe(container.identity.findActorIdByHandle('daniel'));
+    });
+
+    it('an unknown real handle still fails closed even with the `me` alias in place', () => {
+      const key = readyTaskKey();
+
+      const moved = container.task.transition({
+        taskKey: key,
+        action: 'start',
+        payload: { assignee_id: 'not-a-real-handle' },
+        actor: 'daniel',
+      });
+      expect(moved.ok).toBe(false);
+      if (!moved.ok) expect(moved.error.kind).toBe(ErrorCode.UnknownAssignee);
+    });
+
+    it('assign() accepts `self` and resolves to the default actor', () => {
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Self-assign probe',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const assigned = container.task.assign({
+        taskKey: created.value.key,
+        assignee: 'self',
+        actor: 'daniel',
+      });
+      expect(assigned.ok).toBe(true);
+      if (assigned.ok) {
+        expect(assigned.value.assigneeId).toBe(container.identity.findActorIdByHandle('daniel'));
+      }
+    });
+  });
 });

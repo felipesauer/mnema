@@ -128,6 +128,12 @@ describe('MnemaMcpServer (in-memory)', () => {
     expect(names).toContain('task_approve');
   });
 
+  it('surfaces the compact verbosity option in a transition tool description', async () => {
+    const list = await harness.client.listTools();
+    const submit = list.tools.find((t) => t.name === 'task_submit');
+    expect(submit?.description).toContain('compact');
+  });
+
   it('registers exactly the tools the registry advertises (no orphans, none missing)', async () => {
     const list = await harness.client.listTools();
     const registered = new Set(list.tools.map((t) => t.name));

@@ -24,6 +24,21 @@ export interface ObservationInsertInput {
 }
 
 /**
+ * Input for {@link ObservationRepository.insertFromMirror} — a row rebuilt
+ * from its `.md` mirror, so the on-disk id / timestamps are preserved rather
+ * than regenerated.
+ */
+export interface ObservationMirrorInput {
+  readonly id: string;
+  readonly content: string;
+  readonly topics: readonly string[];
+  readonly relatedTaskId: string | null;
+  readonly createdBy: string;
+  readonly at: string;
+  readonly archivedAt: string | null;
+}
+
+/**
  * Filter set for {@link ObservationRepository.list}.
  */
 export interface ObservationListFilters {
@@ -75,6 +90,36 @@ export class ObservationRepository {
       throw new Error('observation insert succeeded but row not found');
     }
     return rowToObservation(row);
+  }
+
+  /**
+   * Inserts an observation rebuilt from its `.md` mirror, preserving the
+   * on-disk id, timestamps and archived state. Idempotent by id: a row that
+   * already exists is left untouched (the cache is the winner once present),
+   * so a rebuild over a populated database is a no-op. Returns `true` when a
+   * row was actually inserted.
+   *
+   * @param input - Mirror-sourced observation fields
+   * @returns `true` when a new row was inserted, `false` when the id existed
+   */
+  insertFromMirror(input: ObservationMirrorInput): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `INSERT OR IGNORE INTO observations (
+           id, content, topics, related_task_id, created_by, at, archived_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.id,
+        input.content,
+        JSON.stringify(input.topics),
+        input.relatedTaskId,
+        input.createdBy,
+        input.at,
+        input.archivedAt,
+      );
+    return result.changes > 0;
   }
 
   /**

@@ -4,7 +4,7 @@ import type { EpicLifecycle } from '../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../domain/enums/epic-state.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import type { MnemaError } from '../errors/mnema-error.js';
+import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -29,6 +29,30 @@ export interface CreateEpicInput {
  * Input for {@link EpicService.close}.
  */
 export interface CloseEpicInput {
+  readonly epicKey: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+}
+
+/**
+ * Input for {@link EpicService.update}. Every content field is optional —
+ * only the ones supplied are overwritten.
+ */
+export interface UpdateEpicInput {
+  readonly epicKey: string;
+  readonly title?: string;
+  readonly description?: string | null;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+}
+
+/**
+ * Input for {@link EpicService.delete}.
+ */
+export interface DeleteEpicInput {
   readonly epicKey: string;
   readonly actor: string;
   readonly via?: string;
@@ -160,6 +184,98 @@ export class EpicService {
   }
 
   /**
+   * Edits an epic's content (title / description / metadata) after
+   * creation. Only the supplied fields are overwritten; the rest are left
+   * as-is. The markdown mirror is rewritten so the versioned `.md`
+   * reflects the edit.
+   *
+   * The `epics` table carries no `updated_at`, so there is no
+   * optimistic-concurrency token to compare — edits are last-write-wins,
+   * the same contract sync rebuild already uses when it folds content
+   * drift back onto an epic row.
+   *
+   * @param input - Epic key + content fields + identity tuple
+   * @returns The updated epic or a structured error
+   */
+  update(input: UpdateEpicInput): Result<Epic, MnemaError> {
+    const epic = this.epics.findByKey(input.epicKey);
+    if (epic === null) {
+      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+    }
+
+    if (input.title !== undefined) {
+      const issues: ErrorIssue[] = [];
+      checkTitle(input.title, issues);
+      if (issues.length > 0) {
+        return Err({ kind: ErrorCode.ValidationFailed, issues });
+      }
+    }
+
+    const updated = this.epics.runInTransaction(() =>
+      this.epics.updateFields(epic.id, {
+        title: input.title,
+        description: input.description,
+        metadata: input.metadata,
+      }),
+    );
+
+    this.audit.write({
+      kind: 'epic_updated',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, title: updated.title },
+    });
+
+    this.mirror?.writeEpic(updated);
+
+    return Ok(updated);
+  }
+
+  /**
+   * Soft-deletes an epic and drops its markdown mirror. Refuses when the
+   * epic still has tasks attached — the same protective stance as
+   * {@link close}, so a stray delete can't strand tasks pointing at an
+   * epic that no longer resolves. Detach the tasks first (`epic remove`),
+   * then delete.
+   *
+   * @param input - Epic key + identity tuple
+   * @returns The soft-deleted epic or a structured error
+   */
+  delete(input: DeleteEpicInput): Result<Epic, MnemaError> {
+    const epic = this.epics.findByKey(input.epicKey);
+    if (epic === null) {
+      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+    }
+
+    const taskKeys = this.epics.listTaskKeys(epic.id);
+    if (taskKeys.length > 0) {
+      return Err({
+        kind: ErrorCode.EpicHasTasks,
+        epicKey: epic.key,
+        taskCount: taskKeys.length,
+      });
+    }
+
+    const deleted = this.epics.runInTransaction(() => this.epics.softDelete(epic.id));
+    if (!deleted) {
+      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+    }
+
+    this.audit.write({
+      kind: 'epic_deleted',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: epic.key },
+    });
+
+    this.mirror?.removeEpic(epic.key);
+
+    return Ok(epic);
+  }
+
+  /**
    * Attaches a task to an epic.
    *
    * @param input - Epic key + task key + identity tuple
@@ -286,5 +402,18 @@ export class EpicService {
       }
     }
     return rebuilt;
+  }
+}
+
+/**
+ * Pushes an issue when a title is outside the 3..200 length the create
+ * path enforces (via the MCP schema). Gives `update` the same contract at
+ * the service boundary so the CLI and MCP producers reject identically.
+ */
+function checkTitle(title: string, issues: ErrorIssue[]): void {
+  if (title.length < 3) {
+    issues.push({ path: ['title'], message: 'must be at least 3 characters' });
+  } else if (title.length > 200) {
+    issues.push({ path: ['title'], message: 'must be at most 200 characters' });
   }
 }

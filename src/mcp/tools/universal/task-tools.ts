@@ -324,6 +324,50 @@ export class TaskTools {
       },
     );
 
+    server.registerTool(
+      'task_update',
+      {
+        description:
+          'Edit a task’s content (title / description / acceptance ' +
+          'criteria) after creation, without a state change. Refused on a ' +
+          'task in a terminal state. Requires an active agent run.',
+        inputSchema: {
+          task_key: z.string().describe('Task key, e.g. WEBAPP-42'),
+          title: z.string().min(3).max(200).optional(),
+          description: z.string().nullable().optional(),
+          acceptance_criteria: z.array(z.string().min(1)).optional(),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe(
+              'Optimistic-concurrency token: the task’s current updatedAt. ' +
+                'When omitted, the last read wins.',
+            ),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.tasks.updateContent({
+          taskKey: input.task_key,
+          title: input.title,
+          description: input.description,
+          acceptanceCriteria: input.acceptance_criteria,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+          expectedUpdatedAt: input.expected_updated_at,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ task: result.value });
+      },
+    );
+
     // Derive the state enum from the *active* workflow so projects on
     // lean/kanban/jira-classic get the correct autocomplete values
     // (and tight validation) instead of the default workflow's literals.

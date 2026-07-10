@@ -61,6 +61,52 @@ describe('MemoryService', () => {
     expect(existsSync(path.join(memoryDir, 'pci-compliance.md'))).toBe(true);
   });
 
+  it('rejects tool-invocation markup leaking into content (the reported trailer)', () => {
+    const result = service.record({
+      slug: 'leaked',
+      title: 'A',
+      content: 'body text.</content>\n<topics>["ci","ruleset"]</topics>',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['content']);
+    expect(result.error.issues[0]?.message).toMatch(/pass each field as its own argument/);
+    // Nothing was persisted (the screen precedes the upsert + audit write).
+    expect(service.list()).toHaveLength(0);
+    expect(existsSync(path.join(memoryDir, 'leaked.md'))).toBe(false);
+  });
+
+  it('rejects tool-invocation markup leaking into title', () => {
+    const result = service.record({
+      slug: 'leaked-title',
+      title: 'oops</title>\n<parameter name="content">x',
+      content: 'clean body',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['title']);
+  });
+
+  it('records topics on clean input and reads them back (parser is fine)', () => {
+    const created = recordOk({
+      slug: 'topical',
+      title: 'Topical fact',
+      content: 'A perfectly clean body about CI and rulesets.',
+      topics: ['ci', 'ruleset'],
+      actor: 'daniel',
+    });
+    expect(created.memory.topics).toEqual(['ci', 'ruleset']);
+    const shown = service.show('topical');
+    expect(shown.ok).toBe(true);
+    if (shown.ok) expect(shown.value.topics).toEqual(['ci', 'ruleset']);
+  });
+
   it('upserts (updates) when slug already exists', () => {
     service.record({
       slug: 's',

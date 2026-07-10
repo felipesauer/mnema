@@ -46,6 +46,7 @@ export enum ErrorCode {
   DecisionInvalidStatus = 'DECISION_INVALID_STATUS',
   EpicNotFound = 'EPIC_NOT_FOUND',
   EpicInvalidState = 'EPIC_INVALID_STATE',
+  EpicHasTasks = 'EPIC_HAS_TASKS',
 
   SchemaOutOfDate = 'SCHEMA_OUT_OF_DATE',
 

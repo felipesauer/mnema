@@ -48,6 +48,21 @@ export class ActorRepository {
   }
 
   /**
+   * Lists every active (non-deleted) actor, ordered by handle. The roster
+   * an agent can read to learn which handles are valid assignees without
+   * running a CLI.
+   *
+   * @returns Active actors ordered by handle
+   */
+  listActive(): Actor[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT * FROM actors WHERE deleted_at IS NULL ORDER BY handle')
+      .all() as ActorRow[];
+    return rows.map(rowToActor);
+  }
+
+  /**
    * Inserts an actor or returns the existing one's id when the handle
    * is already known. Useful for the "ensure" pattern in IdentityService.
    *

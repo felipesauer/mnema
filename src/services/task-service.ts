@@ -22,6 +22,14 @@ import type { SyncService } from './sync-service.js';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Assignee references that mean "the caller" — resolved to the default
+ * actor's id rather than looked up as a handle. Lets an MCP agent that has
+ * no way to learn valid handles still assign work to itself without first
+ * running a CLI to register an actor.
+ */
+const SELF_REFERENCES: ReadonlySet<string> = new Set(['me', 'self']);
+
+/**
  * Input for creating a new task.
  *
  * Tasks always start in the workflow's initial state. Gates only
@@ -93,6 +101,7 @@ export class TaskService {
     private readonly identity: {
       ensureActor: (handle: string, kind: 'human' | 'agent') => string;
       findActorIdByHandle: (handle: string) => string | null;
+      getDefaultActor: () => string;
     },
     // How a failed gate is enforced. Defaults to Blocking — the historical
     // behaviour (a failed gate always blocks) — so callers that don't pass
@@ -185,18 +194,27 @@ export class TaskService {
   }
 
   /**
-   * Resolves an assignee reference (a handle like `maria` or a raw UUID)
-   * to an actor id, or `null` when unset. A handle is looked up — never
-   * created — so a typo surfaces as a clean {@link ErrorCode.UnknownAssignee}
-   * instead of the raw `FOREIGN KEY constraint failed` the database would
-   * throw on an unknown id. (The reporter, by contrast, is the active
-   * identity and is always ensured.)
+   * Resolves an assignee reference (a handle like `maria`, the literal
+   * `me`/`self`, or a raw UUID) to an actor id, or `null` when unset.
    *
-   * @param reference - Handle, UUID, or null
+   * `me`/`self` resolve to the default actor — the one the caller is
+   * already acting as — so an MCP agent with no way to learn valid handles
+   * can still assign work to itself. A real (non-self) handle is looked up
+   * and never created, so a typo surfaces as a clean
+   * {@link ErrorCode.UnknownAssignee} instead of the raw
+   * `FOREIGN KEY constraint failed` the database would throw on an unknown
+   * id. (The reporter, by contrast, is the active identity and is always
+   * ensured.)
+   *
+   * @param reference - Handle, `me`/`self`, UUID, or null
    * @returns The resolved actor id (or null) on success
    */
   private resolveAssignee(reference: string | null): Result<string | null, MnemaError> {
     if (reference === null || reference.length === 0) return Ok(null);
+    if (SELF_REFERENCES.has(reference.toLowerCase())) {
+      const handle = this.identity.getDefaultActor();
+      return Ok(this.identity.ensureActor(handle, 'human'));
+    }
     if (UUID_PATTERN.test(reference)) return Ok(reference);
     const id = this.identity.findActorIdByHandle(reference);
     if (id === null) return Err({ kind: ErrorCode.UnknownAssignee, handle: reference });
@@ -237,6 +255,100 @@ export class TaskService {
       via: input.via,
       run: input.runId,
       data: { key: updated.key, assignee_id: assignee.value },
+    });
+
+    this.sync.syncTask(updated.key);
+
+    return Ok(updated);
+  }
+
+  /**
+   * Edits a task's content (title / description / acceptance criteria)
+   * after creation, without a state change. Fills the gap the DRAFT →
+   * READY submit gate leaves: once a task is past DRAFT there was no way
+   * to correct its content.
+   *
+   * Refuses when the task sits in a terminal state — a completed or
+   * canceled task's content is part of the record and must not drift.
+   * Reuses the same optimistic-concurrency token as {@link transition}:
+   * `expectedUpdatedAt` defaults to the row we just read, so a concurrent
+   * edit surfaces a CONFLICT instead of a silent lost write.
+   *
+   * @param input - Task key + content fields + identity tuple
+   * @returns The updated task or a structured error
+   */
+  updateContent(input: {
+    readonly taskKey: string;
+    readonly title?: string;
+    readonly description?: string | null;
+    readonly acceptanceCriteria?: readonly string[];
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+    readonly expectedUpdatedAt?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    if (this.stateMachine.isTerminal(task.state)) {
+      return Err({
+        kind: ErrorCode.TerminalState,
+        taskKey: task.key,
+        state: task.state,
+      });
+    }
+
+    const issues: ErrorIssue[] = [];
+    if (input.title !== undefined) checkTitle(input.title, issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
+
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : task.updatedAt;
+
+    type UpdateOutcome =
+      | { readonly kind: 'ok'; readonly task: Task }
+      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
+
+    const outcomeResult = tryMutation(() =>
+      this.tasks.runInTransaction((): UpdateOutcome => {
+        const current = this.tasks.findById(task.id);
+        if (current === null || current.updatedAt !== expectedUpdatedAt) {
+          return {
+            kind: 'conflict',
+            currentUpdatedAt: current?.updatedAt ?? task.updatedAt,
+          };
+        }
+        const updated = this.tasks.updateFields(task.id, {
+          title: input.title,
+          description: input.description,
+          acceptanceCriteria: input.acceptanceCriteria,
+        });
+        return { kind: 'ok', task: updated };
+      }),
+    );
+    if (!outcomeResult.ok) return outcomeResult;
+    const outcome = outcomeResult.value;
+
+    if (outcome.kind === 'conflict') {
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'task',
+        taskKey: task.key,
+        currentUpdatedAt: outcome.currentUpdatedAt,
+      });
+    }
+    const updated = outcome.task;
+
+    this.audit.write({
+      kind: 'task_content_updated',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, state: updated.state },
     });
 
     this.sync.syncTask(updated.key);
@@ -775,6 +887,20 @@ export class TaskService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
     return Ok(restored);
+  }
+}
+
+/**
+ * Pushes an issue when a title is outside the 3..200 length the create
+ * path enforces (via the MCP schema). Gives content edits the same
+ * contract at the service boundary so the CLI and MCP producers reject
+ * identically.
+ */
+function checkTitle(title: string, issues: ErrorIssue[]): void {
+  if (title.length < 3) {
+    issues.push({ path: ['title'], message: 'must be at least 3 characters' });
+  } else if (title.length > 200) {
+    issues.push({ path: ['title'], message: 'must be at most 200 characters' });
   }
 }
 

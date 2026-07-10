@@ -175,6 +175,7 @@ export interface DestroyPaths {
   readonly sprints: string;
   readonly roadmap: string;
   readonly memory: string;
+  readonly observations: string;
   readonly skills: string;
   readonly commands: string;
   readonly workflow: string;
@@ -224,7 +225,13 @@ export function removeArtifacts(
   }
 
   if (!decision.keepMarkdown) {
-    for (const rel of [paths.backlog, paths.sprints, paths.roadmap, paths.memory]) {
+    for (const rel of [
+      paths.backlog,
+      paths.sprints,
+      paths.roadmap,
+      paths.memory,
+      paths.observations,
+    ]) {
       if (removeIfExists(projectRoot, rel)) removed.push(rel);
     }
   }

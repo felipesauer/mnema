@@ -99,6 +99,15 @@ export class TransitionToolsRegistrar {
         // A transition into a terminal state (e.g. approve → DONE) can be
         // gated on PR/CI status when `github.done_pr_policy` is enabled.
         const targetsTerminal = this.workflow.terminal.includes(transition.to);
+        // A transition may itself declare `pr_url` as a gate field (e.g.
+        // `complete` carrying merged-code PR evidence). When it does, that
+        // declaration is authoritative — we must not inject a synthetic
+        // `pr_url` (it would collide) nor strip the caller's value from the
+        // service payload, so the evidence reaches `transitions.payload`.
+        const declaresPrUrl = 'pr_url' in transition.requires.shape;
+        // Only inject the synthetic gate-only `pr_url` when the transition
+        // targets a terminal state AND does not already declare it.
+        const injectPrUrl = targetsTerminal && !declaresPrUrl;
 
         const inputSchema = {
           task_key: z.string().describe('Task key (e.g. WEBAPP-42)'),
@@ -113,7 +122,7 @@ export class TransitionToolsRegistrar {
               "Echo mode for the transitioned task. 'full' (default) returns the whole " +
                 "entity; 'compact' returns only { key, state, updatedAt } to save context.",
             ),
-          ...(targetsTerminal
+          ...(injectPrUrl
             ? {
                 pr_url: z
                   .string()
@@ -136,7 +145,7 @@ export class TransitionToolsRegistrar {
         server.registerTool(
           toolName,
           {
-            description: `${transition.description}\n\nUse when: ${transition.useWhen}${fieldsHint}`,
+            description: `${transition.description}\n\nUse when: ${transition.useWhen}${fieldsHint}\n\nPass verbosity: 'compact' to get back a lean { key, state, updatedAt } echo instead of the full task — ideal for batch or low-context transitions.`,
             inputSchema,
           },
           (input: Record<string, unknown>) => {
@@ -178,13 +187,14 @@ export class TransitionToolsRegistrar {
             };
 
             // `pr_url` is a workflow field for some transitions (e.g.
-            // submit_review requires it) and ALSO the gate's input on a
-            // terminal transition. Read it without removing it from
-            // `payload`; only strip it from the service payload when this
-            // transition is the terminal one we inject it on, so a
-            // required `pr_url` still reaches non-terminal transitions.
+            // submit_review requires it, complete accepts it as merged-code
+            // evidence) and ALSO the gate's input on a terminal transition.
+            // Read it without removing it from `payload`; only strip it when
+            // it was the synthetic gate-only field we injected, so a
+            // transition that declares `pr_url` (required or optional) still
+            // records it in `transitions.payload` as evidence.
             const prUrl = typeof input.pr_url === 'string' ? input.pr_url : undefined;
-            if (targetsTerminal) delete (payload as { pr_url?: unknown }).pr_url;
+            if (injectPrUrl) delete (payload as { pr_url?: unknown }).pr_url;
 
             const handle = this.session.getClientMetadata().agent_handle;
             // A transient governance run must be recorded as completed only
@@ -200,6 +210,13 @@ export class TransitionToolsRegistrar {
               // refuses with GATE_FAILED before any state change; `warn`
               // lets it through and attaches a warning. Unresolvable status
               // (offline/unauth) never blocks.
+              //
+              // This is the merged-code completion path: a `complete`
+              // transition that declares an optional `pr_url` lets an
+              // IN_PROGRESS task with merged code reach DONE in one hop,
+              // recording the PR in `transitions.payload` as evidence while
+              // this same gate still enforces the DONE PR/CI policy — so the
+              // one-hop path is never a way around the gate.
               let prWarning: string | undefined;
               const policy = this.config.github.done_pr_policy;
               if (targetsTerminal && policy !== 'off' && prUrl !== undefined && prUrl.length > 0) {

@@ -217,6 +217,7 @@ export class MnemaMcpServer {
       this.services.observation,
       this.services.memoryStaleness,
       this.services.inbox,
+      this.services.identity,
     ).register(this.sdk);
 
     new AgentRunTools(
@@ -326,12 +327,14 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.agentRun,
       ).register(this.sdk);
       new ObservationTools(
         this.services.observation,
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.agentRun,
       ).register(this.sdk);
     }
     new TransitionToolsRegistrar(

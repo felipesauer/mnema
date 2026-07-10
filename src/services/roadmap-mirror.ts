@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Decision } from '../domain/entities/decision.js';
@@ -52,6 +52,19 @@ export class RoadmapMirror {
   /** Writes (or rewrites) the markdown mirror for an epic. */
   writeEpic(epic: Epic): void {
     this.writeFile(this.epicPath(epic.key), serialiseEpic(epic), epic.title);
+  }
+
+  /**
+   * Removes an epic's markdown mirror, if it exists. Called when an epic
+   * is soft-deleted so the versioned `.md` doesn't linger as an inverse
+   * orphan (a file with no live row behind it). A no-op when the file is
+   * already absent.
+   */
+  removeEpic(key: string): void {
+    const target = this.epicPath(key);
+    if (existsSync(target)) {
+      unlinkSync(target);
+    }
   }
 
   /** Writes (or rewrites) the markdown mirror for a sprint. */

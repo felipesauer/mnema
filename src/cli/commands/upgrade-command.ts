@@ -147,12 +147,13 @@ export class UpgradeCommand {
     });
     if (mirrorChecks.some((c) => !c.ok && c.detail.includes('missing files'))) {
       steps.push({
-        label: 'rebuild missing markdown mirrors (tasks, skills, memories, roadmap)',
+        label: 'rebuild missing markdown mirrors (tasks, skills, memories, observations, roadmap)',
         run: () => {
           const written = [
             ...container.sync.rebuildMirrors(),
             ...container.skill.rebuildMirrors(),
             ...container.memory.rebuildMirrors(),
+            ...container.observation.rebuildMirrors(),
             ...container.epic.rebuildMirrors(config.project.key),
             ...container.sprint.rebuildMirrors(config.project.key),
             ...container.decision.rebuildMirrors(config.project.key),

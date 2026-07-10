@@ -430,6 +430,101 @@ describe('skill/memory/observation MCP tools', () => {
     expect(orphan?.related_task_key).toBeNull();
   });
 
+  it('observation_record with no active run succeeds and opens an attributed system run', async () => {
+    // End the run the beforeEach opened so this records run-less.
+    await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
+    expect(harness.server.getSession().getCurrentRunId()).toBeNull();
+
+    const rec = (await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'jotted without a run' },
+    })) as CallToolResult;
+    expect(rec.isError).toBeFalsy();
+    expect(parsePayload(rec).observation).toBeDefined();
+    // The transient system run must not linger as the active run.
+    expect(harness.server.getSession().getCurrentRunId()).toBeNull();
+
+    // A governance system run was opened, attributed the record, and closed
+    // completed — provenance was preserved, not dropped to null.
+    const started = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'run_started' },
+      })) as CallToolResult,
+    ).events as Array<{ run?: string | null; data?: { goal?: string } }>;
+    const govRun = started.find((e) => e.data?.goal === 'governance: observation_record');
+    expect(govRun?.run).toBeTruthy();
+
+    const recorded = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'observation_recorded' },
+      })) as CallToolResult,
+    ).events as Array<{ run?: string | null }>;
+    expect(recorded[0]?.run).toBe(govRun?.run);
+  });
+
+  it('memory_record with no active run succeeds and opens an attributed system run', async () => {
+    await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
+    expect(harness.server.getSession().getCurrentRunId()).toBeNull();
+
+    const rec = (await harness.client.callTool({
+      name: 'memory_record',
+      arguments: { slug: 'runless', title: 'T', content: 'recorded without a run' },
+    })) as CallToolResult;
+    expect(rec.isError).toBeFalsy();
+    expect(parsePayload(rec).action).toBe('created');
+    expect(harness.server.getSession().getCurrentRunId()).toBeNull();
+
+    const started = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'run_started' },
+      })) as CallToolResult,
+    ).events as Array<{ run?: string | null; data?: { goal?: string } }>;
+    const govRun = started.find((e) => e.data?.goal === 'governance: memory_record');
+    expect(govRun?.run).toBeTruthy();
+
+    const recorded = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'memory_recorded' },
+      })) as CallToolResult,
+    ).events as Array<{ run?: string | null }>;
+    expect(recorded[0]?.run).toBe(govRun?.run);
+  });
+
+  it('observation_record inside an active run uses that run, opening no system run', async () => {
+    // The beforeEach run is still active.
+    const activeRunId = harness.server.getSession().getCurrentRunId();
+    expect(activeRunId).not.toBeNull();
+
+    const rec = (await harness.client.callTool({
+      name: 'observation_record',
+      arguments: { content: 'inside the active run' },
+    })) as CallToolResult;
+    expect(rec.isError).toBeFalsy();
+    // The record joined the active run (unchanged), which is still current.
+    expect(harness.server.getSession().getCurrentRunId()).toBe(activeRunId);
+
+    const recorded = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'observation_recorded' },
+      })) as CallToolResult,
+    ).events as Array<{ run?: string | null }>;
+    expect(recorded[0]?.run).toBe(activeRunId);
+
+    // No transient governance run was opened.
+    const started = parsePayload(
+      (await harness.client.callTool({
+        name: 'audit_query',
+        arguments: { kind: 'run_started' },
+      })) as CallToolResult,
+    ).events as Array<{ data?: { goal?: string } }>;
+    expect(started.some((e) => (e.data?.goal ?? '').startsWith('governance:'))).toBe(false);
+  });
+
   it('skill_record without an active run returns NO_ACTIVE_RUN', async () => {
     await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
 

@@ -78,12 +78,29 @@ export class CommitVerifier {
     if (check.status === 0) {
       return { checked: true, found: true };
     }
+    // The ref did not resolve to a commit. Two very different causes look
+    // identical to git here, so split the advisory: a SHA-shaped ref that is
+    // simply absent (a typo or a commit from elsewhere) versus a ref that
+    // isn't a commit-ish at all — most often a file path attached under the
+    // wrong evidence kind.
     return {
       checked: true,
       found: false,
-      reason: `commit ${trimmed} not found in this repository`,
+      reason: looksLikeSha(trimmed)
+        ? `commit ${trimmed} not found in this repository`
+        : `"${trimmed}" is not a commit — it does not resolve to any commit in this repository (a file path or route? attach it with a different evidence kind)`,
     };
   }
+}
+
+/**
+ * True when `ref` has the shape of an abbreviated or full commit SHA:
+ * 7–40 hex characters and nothing else. A ref that fails this (a slash, a
+ * dot, an out-of-range length) cannot be a raw SHA and is almost certainly
+ * the wrong evidence kind — typically a file path.
+ */
+function looksLikeSha(ref: string): boolean {
+  return /^[0-9a-f]{7,40}$/i.test(ref);
 }
 
 /** True when a command actually ran and exited cleanly. */

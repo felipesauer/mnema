@@ -129,7 +129,9 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.UnknownAssignee:
       lines.push(`Unknown assignee: ${error.handle}`);
       lines.push(
-        `${pc.dim('hint:')} Register the actor with \`mnema identity add ${error.handle}\`, or pass a known handle`,
+        `${pc.dim('hint:')} Use \`me\` (or \`self\`) to assign to yourself, or pass a known handle — ` +
+          'the roster is in `context_bootstrap` under `actors.known`. ' +
+          `To register a new actor, run \`mnema identity add ${error.handle}\`.`,
       );
       break;
 
@@ -243,6 +245,13 @@ export function formatError(error: MnemaError): string {
       lines.push(`Epic ${error.epicKey} cannot move from ${error.fromState} to ${error.toState}`);
       lines.push(`${pc.dim('hint:')} Allowed transitions: OPEN → CLOSED`);
       break;
+
+    case ErrorCode.EpicHasTasks: {
+      const noun = error.taskCount === 1 ? 'task' : 'tasks';
+      lines.push(`Epic ${error.epicKey} still has ${error.taskCount} attached ${noun}`);
+      lines.push(`${pc.dim('hint:')} Detach them first with \`mnema epic remove <epic> <task>\``);
+      break;
+    }
 
     case ErrorCode.SchemaOutOfDate: {
       const count = error.pending.length;
@@ -409,6 +418,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.SprintInvalidState:
     case ErrorCode.DecisionInvalidStatus:
     case ErrorCode.EpicInvalidState:
+    case ErrorCode.EpicHasTasks:
     case ErrorCode.InvalidWorkflowState:
     case ErrorCode.AgentRunAlreadyEnded:
     case ErrorCode.AgentRunNotResumable:

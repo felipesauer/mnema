@@ -1,9 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
+import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
+import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,
@@ -27,6 +30,7 @@ export class MemoryTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly agentRun: AgentRunService,
   ) {}
 
   /**
@@ -40,7 +44,7 @@ export class MemoryTools {
       {
         description:
           'Record a durable project fact as a memory. Upsert by slug — calling twice with the same slug overwrites the prior content. ' +
-          'Returns the resulting memory and an `action` hint ("created" | "updated" | "no_op"). Requires an active agent run.',
+          'Returns the resulting memory and an `action` hint ("created" | "updated" | "no_op"). If no agent run is active, a short-lived system run is opened to attribute it.',
         inputSchema: {
           slug: z
             .string()
@@ -67,24 +71,39 @@ export class MemoryTools {
       (input) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
-        const runId = this.session.getCurrentRunId();
-        const guard = requireActiveRun(runId);
-        if (guard !== null) return guard;
 
-        const handle = this.session.getClientMetadata().agent_handle;
-        const result = this.memories.record({
-          slug: input.slug,
-          title: input.title,
-          content: input.content,
-          topics: input.topics,
-          derivedFromDecision: input.derived_from_decision,
-          derivedFromObservation: input.derived_from_observation,
-          actor: this.identity.getDefaultActor(),
-          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
-          runId: runId ?? undefined,
-        });
-        if (!result.ok) return err(result.error);
-        return ok({ memory: result.value.memory, action: result.value.action });
+        // Recording a memory should not require an execution run. If none is
+        // active, open a short-lived system run so provenance (actor / via /
+        // run) is still captured, then close it in the finally below.
+        const gov = resolveGovernanceRun(
+          this.session,
+          this.agentRun,
+          this.identity,
+          'memory_record',
+        );
+        // A transient system run must be recorded as completed only when the
+        // record actually lands. A failed record or a thrown handler closes it
+        // as aborted, so a refused record leaves no phantom completed run.
+        let proceeded = false;
+        try {
+          const handle = this.session.getClientMetadata().agent_handle;
+          const result = this.memories.record({
+            slug: input.slug,
+            title: input.title,
+            content: input.content,
+            topics: input.topics,
+            derivedFromDecision: input.derived_from_decision,
+            derivedFromObservation: input.derived_from_observation,
+            actor: this.identity.getDefaultActor(),
+            via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+            runId: gov.runId,
+          });
+          if (!result.ok) return err(result.error);
+          proceeded = true;
+          return ok({ memory: result.value.memory, action: result.value.action });
+        } finally {
+          gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
+        }
       },
     );
 

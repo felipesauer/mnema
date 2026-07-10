@@ -233,6 +233,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.sprints), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.roadmap), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.memory), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.observations), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
     }

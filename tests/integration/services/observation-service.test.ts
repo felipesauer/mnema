@@ -41,7 +41,13 @@ describe('ObservationService', () => {
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     projectId = project.id;
 
-    service = new ObservationService(repo, tasks, identity, audit);
+    service = new ObservationService(
+      repo,
+      tasks,
+      identity,
+      audit,
+      path.join(tempRoot, '.mnema', 'observations'),
+    );
   });
 
   afterEach(() => {
@@ -100,6 +106,21 @@ describe('ObservationService', () => {
     if (result.error.kind !== ErrorCode.ValidationFailed) return;
     expect(result.error.issues[0]?.message).toMatch(/1 over the 2000 limit/);
     // Nothing was persisted (validation precedes the insert + audit write).
+    expect(service.list()).toHaveLength(0);
+  });
+
+  it('rejects tool-invocation markup leaking into content (the reported trailer)', () => {
+    const result = service.record({
+      content: 'body text.</content>\n<topics>["ci","ruleset"]</topics>',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['content']);
+    expect(result.error.issues[0]?.message).toMatch(/pass each field as its own argument/);
+    // Nothing was persisted (the screen precedes the insert + audit write).
     expect(service.list()).toHaveLength(0);
   });
 
