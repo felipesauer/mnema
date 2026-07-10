@@ -51,6 +51,7 @@ import { DecisionService } from './decision-service.js';
 import { DependencyGraphService } from './dependency-graph-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
+import { DriftService } from './drift-service.js';
 import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
@@ -153,6 +154,7 @@ export interface ServiceContainer {
   readonly hookTrust: HookTrustService;
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
+  readonly drift: DriftService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -571,6 +573,7 @@ export function createServiceContainer(
   );
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);
+  const driftService = new DriftService(taskEvidenceRepository, options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -690,6 +693,7 @@ export function createServiceContainer(
     hookTrust,
     githubPr: githubPrService,
     commitVerifier,
+    drift: driftService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,

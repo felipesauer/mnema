@@ -166,6 +166,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/focus-command.js')).FocusCommand(),
     description: 'Print a one-line focus: the task to resume, or the next to start',
   },
+  drift: {
+    load: async () => new (await import('./commands/drift-command.js')).DriftCommand(),
+    description: 'List commits on this branch not tied to any task',
+  },
   agent: {
     load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
     description: 'Inspect agent activity (run inspect)',

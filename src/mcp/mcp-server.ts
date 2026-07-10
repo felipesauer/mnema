@@ -28,6 +28,7 @@ import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
+import { DriftTool } from './tools/universal/drift-tool.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
@@ -278,6 +279,7 @@ export class MnemaMcpServer {
     new FileCollisionTool(this.services.fileCollision).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
     new FocusTool(this.services.focus).register(this.sdk);
+    new DriftTool(this.services.drift, this.projectRoot).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
     if (knowledgeEnabled) {
       new ProvenanceTool(this.services.provenance).register(this.sdk);

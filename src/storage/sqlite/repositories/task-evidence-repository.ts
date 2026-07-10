@@ -67,6 +67,27 @@ export class TaskEvidenceRepository {
   }
 
   /**
+   * Every commit-kind evidence ref recorded across all tasks, each paired
+   * with the task key it belongs to. Used by drift detection to decide
+   * which branch commits are already tied to a task. Refs are stored as
+   * whatever was attached (usually a short or full SHA); the caller
+   * matches by prefix.
+   *
+   * @returns Rows of `{ ref, taskKey }` for kind `commit`
+   */
+  commitRefs(): { ref: string; taskKey: string }[] {
+    return this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT e.ref AS ref, t.key AS taskKey
+           FROM task_evidence e
+           JOIN tasks t ON t.id = e.task_id
+          WHERE e.kind = 'commit'`,
+      )
+      .all() as { ref: string; taskKey: string }[];
+  }
+
+  /**
    * Checks whether an identical evidence edge already exists.
    *
    * @param taskId - Task id

@@ -37,6 +37,7 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'file_collisions',
   'run_diff',
   'focus',
+  'drift_commits',
   'snapshot_generate',
   'task_attach_evidence',
   'task_evidence',
