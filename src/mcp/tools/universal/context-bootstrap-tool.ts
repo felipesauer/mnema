@@ -4,7 +4,9 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import type { Config } from '../../../config/config-schema.js';
+import type { Task } from '../../../domain/entities/task.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
+import type { DependencyService } from '../../../services/dependency-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { InboxService } from '../../../services/inbox-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
@@ -55,6 +57,7 @@ export class ContextBootstrapTool {
     private readonly memoryStaleness: MemoryStalenessService,
     private readonly inboxService: InboxService,
     private readonly identityService: IdentityService,
+    private readonly dependencyService: DependencyService,
   ) {}
 
   /**
@@ -143,6 +146,13 @@ export class ContextBootstrapTool {
       known: this.identityService.listActors(),
     };
 
+    const nextAction = this.buildNextAction(
+      all,
+      inProgressStateName,
+      defaultActor,
+      blockers.length,
+    );
+
     return ok({
       project: {
         key: this.config.project.key,
@@ -153,6 +163,11 @@ export class ContextBootstrapTool {
       // and `self` on task_start/task_assign resolve to `default`; any
       // handle under `known` is a valid assignee_id.
       actors,
+      // What to do NOW, not just what exists. The rest of this payload is
+      // state; this is direction. Focus rule: resume work already in
+      // progress before starting anything new; otherwise the top ready
+      // task; otherwise unblock a blocker; otherwise the backlog is idle.
+      next_action: nextAction,
       workflow: {
         name: this.workflow.name,
         description: this.workflow.description,
@@ -257,6 +272,99 @@ export class ContextBootstrapTool {
         at: o.at,
       })),
     });
+  }
+
+  /**
+   * Turns the aggregate state into a single recommended next step.
+   *
+   * The rest of the bootstrap payload answers "what exists"; this answers
+   * "what do I do now" — the thing an agent actually needs and today has
+   * to infer for itself. The rule, in order:
+   *
+   * 1. **Resume in-progress work.** If the session's actor already has a
+   *    task in progress, finishing it beats starting anything new; a fresh
+   *    READY pick would fragment the work. Falls back to any in-progress
+   *    task when none is assigned to this actor (still better to converge
+   *    than to open a new front).
+   * 2. **Start the top ready task.** Otherwise point at the highest-priority
+   *    task whose blockers are all terminal — computed by DependencyService
+   *    so a task blocked by an open dependency is never recommended.
+   * 3. **Unblock.** Otherwise, if something is blocked, that is the lever.
+   * 4. **Idle.** Otherwise the actionable backlog is empty.
+   *
+   * `recommended` is a human-readable one-liner; the structured fields let
+   * a caller act without parsing it.
+   */
+  private buildNextAction(
+    all: readonly Task[],
+    inProgressStateName: string | null,
+    defaultActor: string | null,
+    blockerCount: number,
+  ): {
+    focus: 'resume' | 'start' | 'unblock' | 'idle';
+    recommended: string;
+    ready_count: number;
+    top_ready_task: { key: string; title: string } | null;
+    in_progress_task: { key: string; title: string } | null;
+    blocker_count: number;
+  } {
+    // Ready tasks, honouring dependency gates. On the (unexpected) error
+    // path we degrade to an empty list rather than failing the bootstrap —
+    // direction is a convenience, never a reason to break session start.
+    const readyResult = this.dependencyService.ready();
+    const readyTasks = readyResult.ok ? readyResult.value : [];
+    const topReady = [...readyTasks].sort(
+      (a, b) => a.priority - b.priority || a.key.localeCompare(b.key),
+    )[0];
+    const topReadyTask =
+      topReady === undefined ? null : { key: topReady.key, title: topReady.title };
+
+    // In-progress work for this actor first, then anyone's. `defaultActor`
+    // is a handle; tasks store an actor id, so resolve before comparing.
+    const inProgress =
+      inProgressStateName === null ? [] : all.filter((t) => t.state === inProgressStateName);
+    const myActorId =
+      defaultActor === null ? null : this.identityService.findActorIdByHandle(defaultActor);
+    const mine = inProgress.filter((t) => t.assigneeId !== null && t.assigneeId === myActorId);
+    const activeTask = mine[0] ?? inProgress[0];
+
+    const base = {
+      ready_count: readyTasks.length,
+      top_ready_task: topReadyTask,
+      blocker_count: blockerCount,
+    };
+
+    if (activeTask !== undefined) {
+      return {
+        focus: 'resume',
+        recommended: `Resume ${activeTask.key} (${activeTask.title}) — it is in progress. Finish it before starting new work.`,
+        in_progress_task: { key: activeTask.key, title: activeTask.title },
+        ...base,
+      };
+    }
+    if (topReadyTask !== null) {
+      return {
+        focus: 'start',
+        recommended: `Start ${topReadyTask.key} (${topReadyTask.title}) — highest-priority ready task. task_start it before editing.`,
+        in_progress_task: null,
+        ...base,
+      };
+    }
+    if (blockerCount > 0) {
+      return {
+        focus: 'unblock',
+        recommended: `Nothing is ready to pick up, but ${String(blockerCount)} task(s) are blocked — resolve a blocker to unblock the queue.`,
+        in_progress_task: null,
+        ...base,
+      };
+    }
+    return {
+      focus: 'idle',
+      recommended:
+        'No ready or in-progress tasks and no blockers — the actionable backlog is empty. Plan work (task_create) or submit a DRAFT.',
+      in_progress_task: null,
+      ...base,
+    };
   }
 
   /** Reads a file relative to project root, truncated to maxBytes. */

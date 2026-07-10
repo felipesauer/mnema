@@ -218,6 +218,7 @@ export class MnemaMcpServer {
       this.services.memoryStaleness,
       this.services.inbox,
       this.services.identity,
+      this.services.dependency,
     ).register(this.sdk);
 
     new AgentRunTools(
