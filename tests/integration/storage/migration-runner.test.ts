@@ -12,6 +12,7 @@ import path from 'node:path';
 import type { Database as DatabaseType } from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { SearchService } from '@/services/search-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -21,6 +22,12 @@ function triggerExists(db: DatabaseType, name: string): boolean {
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = ?")
     .get(name);
   return row !== undefined;
+}
+
+/** Runs a search and returns the matched ids (empty on an error result). */
+function searchIds(search: SearchService, query: string): string[] {
+  const result = search.search(query);
+  return result.ok ? result.value.map((h) => h.id) : [];
 }
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -46,7 +53,7 @@ describe('MigrationRunner', () => {
 
     expect(applied.map((a) => a.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28,
+      27, 28, 29,
     ]);
 
     const versions = adapter
@@ -55,7 +62,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28,
+      27, 28, 29,
     ]);
   });
 
@@ -72,7 +79,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28,
+      27, 28, 29,
     ]);
   });
 
@@ -99,6 +106,73 @@ describe('MigrationRunner', () => {
     expect(names).toContain('notes_fts');
     expect(names).toContain('decisions_fts');
     expect(names).toContain('workspace_config');
+  });
+
+  it('migration 029 backfills FTS for skills/memories/observations left un-indexed before 009', () => {
+    // A DB upgraded across the 008 → 009 boundary has base rows the 009 FTS
+    // triggers never saw (they only fire on writes made after 009). Simulate
+    // that: apply everything, insert rows (triggers index them), then delete the
+    // FTS side to recreate the pre-009 un-indexed state. Re-running 029 must
+    // re-index them so search finds them again.
+    const runner = new MigrationRunner();
+    runner.run(adapter, migrationsDir);
+    const db = adapter.getDatabase();
+
+    db.prepare(`INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')`).run();
+    db.prepare(
+      `INSERT INTO skills (id, slug, name, description, content, created_by)
+       VALUES ('s1', 'deploy', 'Deploy', 'How to deploy', 'run the zephyr pipeline', 'a1')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO memories (id, slug, title, content, created_by)
+       VALUES ('m1', 'arch', 'Architecture', 'the zephyr module owns storage', 'a1')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO observations (id, content, created_by)
+       VALUES ('o1', 'noticed the zephyr flag was off', 'a1')`,
+    ).run();
+
+    // Drop the FTS rows to emulate a DB that carried these across 008 → 009.
+    db.prepare(`DELETE FROM skills_fts WHERE skill_id = 's1'`).run();
+    db.prepare(`DELETE FROM memories_fts WHERE memory_id = 'm1'`).run();
+    db.prepare(`DELETE FROM observations_fts WHERE observation_id = 'o1'`).run();
+
+    const search = new SearchService(adapter);
+    // Pre-backfill: the un-indexed rows are invisible to search.
+    expect(searchIds(search, 'zephyr')).toEqual([]);
+
+    // Apply the backfill (029 as a fresh migration against the pre-009 state).
+    const backfill = readFileSync(
+      path.join(migrationsDir, '029_backfill_fts_skills_memories_observations.sql'),
+      'utf-8',
+    ).replace(/INSERT INTO schema_migrations[\s\S]*$/m, '');
+    db.exec(backfill);
+
+    expect(searchIds(search, 'zephyr').sort()).toEqual(['m1', 'o1', 's1']);
+  });
+
+  it('migration 029 backfill is idempotent (re-running does not double-index)', () => {
+    // 029 guards each INSERT with `NOT IN (SELECT ... FROM *_fts)`, so running
+    // the backfill a second time over an already-indexed DB must be a no-op —
+    // never a duplicate FTS row that would surface a hit twice.
+    new MigrationRunner().run(adapter, migrationsDir);
+    const db = adapter.getDatabase();
+
+    db.prepare(`INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')`).run();
+    db.prepare(
+      `INSERT INTO memories (id, slug, title, content, created_by)
+       VALUES ('m1', 'arch', 'Architecture', 'the zephyr module owns storage', 'a1')`,
+    ).run();
+
+    const backfill = readFileSync(
+      path.join(migrationsDir, '029_backfill_fts_skills_memories_observations.sql'),
+      'utf-8',
+    ).replace(/INSERT INTO schema_migrations[\s\S]*$/m, '');
+    db.exec(backfill);
+    db.exec(backfill);
+
+    const hits = searchIds(new SearchService(adapter), 'zephyr').filter((id) => id === 'm1');
+    expect(hits).toHaveLength(1);
   });
 
   it("migration 028 widens provenance_links CHECK to accept 'skill' and still rejects unknown kinds", () => {

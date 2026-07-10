@@ -157,7 +157,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema task move accepts `--field name=value` flags with embedded spaces (H-1)', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'X'], projectRoot);
+    runCli(['task', 'create', '--title', 'Task X'], projectRoot);
 
     // The `--field` flag is the safe form: shell delivers the whole
     // `name=value with spaces` token intact, so parseFieldArgs sees
@@ -187,7 +187,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema task move on an invalid action returns a structured error', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'X'], projectRoot);
+    runCli(['task', 'create', '--title', 'Task X'], projectRoot);
 
     const result = runCli(['task', 'move', 'WEBAPP-1', 'approve'], projectRoot);
     expect(result.status).not.toBe(0);
@@ -498,7 +498,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema sync rebuilds the cache idempotently', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'A'], projectRoot);
+    runCli(['task', 'create', '--title', 'Task A'], projectRoot);
 
     const first = runCli(['sync'], projectRoot);
     expect(first.status).toBe(0);

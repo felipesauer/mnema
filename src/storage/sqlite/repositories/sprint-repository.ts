@@ -107,6 +107,18 @@ export class SprintRepository {
   }
 
   /**
+   * Runs `fn` inside a `BEGIN IMMEDIATE` transaction, taking the write lock
+   * up front so a `nextSequence` COUNT followed by an insert cannot race a
+   * second process into minting the same key.
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransactionImmediate<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn).immediate();
+  }
+
+  /**
    * Looks up a sprint by its human-readable key.
    *
    * @param key - Sprint key, e.g. `WEBAPP-SPRINT-3`

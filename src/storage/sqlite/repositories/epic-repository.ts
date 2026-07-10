@@ -244,6 +244,20 @@ export class EpicRepository {
   }
 
   /**
+   * Runs `fn` inside a `BEGIN IMMEDIATE` transaction, taking the write lock
+   * up front. The create path reads `nextSequence` (a `COUNT(*)`) then
+   * inserts the derived key; under the default `BEGIN DEFERRED` two processes
+   * sharing one `state.db` can both take the COUNT before either writes and
+   * mint the same key. `IMMEDIATE` serialises them.
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransactionImmediate<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn).immediate();
+  }
+
+  /**
    * Attaches a task to an epic by setting `tasks.epic_id`.
    *
    * @param epicId - Internal epic id

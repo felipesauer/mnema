@@ -60,8 +60,23 @@ describe('TaskService (integration)', () => {
     expect(container.task.list()).toHaveLength(1);
   });
 
+  it('refuses an over-long title via the service (CLI/MCP parity)', () => {
+    const result = container.task.create({
+      projectKey: 'TEST',
+      title: 'x'.repeat(201),
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['title']);
+    // Nothing persisted — the guard precedes the insert.
+    expect(container.task.list()).toHaveLength(0);
+  });
+
   it('writes the task markdown on the filesystem after creation', () => {
-    container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+    container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
 
     const file = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
     expect(existsSync(file)).toBe(true);
@@ -71,7 +86,7 @@ describe('TaskService (integration)', () => {
   });
 
   it('appends an audit event for task_created', () => {
-    container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+    container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
 
     const auditFile = path.join(projectRoot, '.mnema/audit', 'current.jsonl');
     expect(existsSync(auditFile)).toBe(true);
@@ -131,7 +146,7 @@ describe('TaskService (integration)', () => {
     });
 
     it('returns InvalidTransition when the action is not allowed', () => {
-      container.task.create({ projectKey: 'TEST', title: 'X', actor: 'daniel' });
+      container.task.create({ projectKey: 'TEST', title: 'Task X', actor: 'daniel' });
 
       const result = container.task.transition({
         taskKey: 'TEST-1',
@@ -146,7 +161,7 @@ describe('TaskService (integration)', () => {
     });
 
     it('returns GateFailed when the payload misses required fields', () => {
-      container.task.create({ projectKey: 'TEST', title: 'X', actor: 'daniel' });
+      container.task.create({ projectKey: 'TEST', title: 'Task X', actor: 'daniel' });
 
       const result = container.task.transition({
         taskKey: 'TEST-1',
@@ -291,7 +306,7 @@ describe('TaskService (integration)', () => {
 
   describe('soft delete', () => {
     it('soft-deletes a task, removing it from list() and the markdown', () => {
-      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
       const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
       expect(existsSync(md)).toBe(true);
 
@@ -304,7 +319,7 @@ describe('TaskService (integration)', () => {
     });
 
     it('restores a soft-deleted task and brings the markdown back', () => {
-      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
       container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
 
       const restored = container.task.restore({ taskKey: 'TEST-1', actor: 'daniel' });
@@ -317,7 +332,7 @@ describe('TaskService (integration)', () => {
     });
 
     it('softDelete on a deleted task returns TASK_NOT_FOUND', () => {
-      container.task.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
       container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
 
       const second = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
@@ -332,5 +347,87 @@ describe('TaskService (integration)', () => {
       if (result.ok) return;
       expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
     });
+  });
+});
+
+describe('TaskService reopen_count (jira-classic)', () => {
+  // jira-classic declares `reopen` from BOTH a non-terminal state (RESOLVED,
+  // which also has `close`) and a terminal one (CLOSED, whose only exit is
+  // `reopen`). The counter must bump only when work re-enters from a TERMINAL
+  // state — the from-non-terminal `reopen` is an ordinary move, not a reopen.
+  let projectRoot: string;
+  let container: ServiceContainer;
+
+  beforeEach(() => {
+    projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-task-reopen-'));
+    for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
+      mkdirSync(path.join(projectRoot, dir), { recursive: true });
+    }
+    copyFileSync(
+      path.join(workflowsSrc, 'jira-classic.json'),
+      path.join(projectRoot, '.mnema/workflows', 'jira-classic.json'),
+    );
+    const config = ConfigSchema.parse({
+      version: '1.0',
+      mnema_version: '^0.1.0',
+      project: { key: 'TEST', name: 'Test' },
+      workflow: 'jira-classic',
+    });
+    container = createServiceContainer(config, projectRoot, { migrationsDir });
+  });
+
+  afterEach(() => {
+    container.close();
+    rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it('does NOT bump reopen_count when `reopen` fires from a non-terminal state (RESOLVED)', () => {
+    container.task.create({ projectKey: 'TEST', title: 'Resolve then reopen', actor: 'daniel' });
+    container.task.transition({
+      taskKey: 'TEST-1',
+      action: 'start',
+      payload: { assignee_id: 'daniel' },
+      actor: 'daniel',
+    });
+    container.task.transition({
+      taskKey: 'TEST-1',
+      action: 'resolve',
+      payload: { resolution: 'fixed' },
+      actor: 'daniel',
+    });
+    // RESOLVED is non-terminal (it still has `close`), so this reopen is an
+    // ordinary move — the counter must stay at 0.
+    const reopened = container.task.transition({
+      taskKey: 'TEST-1',
+      action: 'reopen',
+      payload: { reason: 'not actually done' },
+      actor: 'daniel',
+    });
+    expect(reopened.ok).toBe(true);
+    if (!reopened.ok) return;
+    expect(reopened.value.state).toBe('REOPENED');
+    expect(reopened.value.reopenCount).toBe(0);
+  });
+
+  it('DOES bump reopen_count when `reopen` fires from a terminal state (CLOSED)', () => {
+    container.task.create({ projectKey: 'TEST', title: 'Close then reopen', actor: 'daniel' });
+    container.task.transition({
+      taskKey: 'TEST-1',
+      action: 'close',
+      payload: { reason: 'wont fix' },
+      actor: 'daniel',
+    });
+    // CLOSED's only exit is `reopen` → it is terminal, so this genuinely
+    // re-enters terminated work and the counter must bump.
+    const reopened = container.task.transition({
+      taskKey: 'TEST-1',
+      action: 'reopen',
+      payload: { reason: 'changed our mind' },
+      actor: 'daniel',
+    });
+    expect(reopened.ok).toBe(true);
+    if (!reopened.ok) return;
+    expect(reopened.value.state).toBe('REOPENED');
+    expect(reopened.value.reopenCount).toBe(1);
   });
 });

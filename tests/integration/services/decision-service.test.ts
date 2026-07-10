@@ -69,10 +69,10 @@ describe('DecisionService', () => {
   });
 
   it('increments the per-project sequence', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     const second = decisions.record({
       projectKey: 'TEST',
-      title: 'B',
+      title: 'Title B',
       decision: 'b',
       actor: 'daniel',
     });
@@ -82,7 +82,7 @@ describe('DecisionService', () => {
   });
 
   it('moves proposed → accepted', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     const accepted = decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,
@@ -94,7 +94,7 @@ describe('DecisionService', () => {
   });
 
   it('rejects accepted → proposed (illegal transition)', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,
@@ -134,8 +134,8 @@ describe('DecisionService', () => {
   });
 
   it('listPending returns only proposed decisions', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
-    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title B', decision: 'b', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,
@@ -156,7 +156,7 @@ describe('DecisionService', () => {
   it('transition succeeds when expectedUpdatedAt matches', () => {
     const recorded = decisions.record({
       projectKey: 'TEST',
-      title: 'A',
+      title: 'Title A',
       decision: 'a',
       actor: 'daniel',
     });
@@ -172,7 +172,7 @@ describe('DecisionService', () => {
   });
 
   it('transition returns Conflict when expectedUpdatedAt is stale', () => {
-    decisions.record({ projectKey: 'TEST', title: 'A', decision: 'a', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title A', decision: 'a', actor: 'daniel' });
     decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Accepted,
@@ -181,7 +181,7 @@ describe('DecisionService', () => {
     // A distinct successor — a decision cannot supersede itself, so this must
     // be a different ADR for the stale-token Conflict to be the failure mode
     // under test (not the self-supersede guard).
-    decisions.record({ projectKey: 'TEST', title: 'B', decision: 'b', actor: 'daniel' });
+    decisions.record({ projectKey: 'TEST', title: 'Title B', decision: 'b', actor: 'daniel' });
     const stale = decisions.transition({
       decisionKey: 'TEST-ADR-1',
       status: DecisionStatus.Superseded,
@@ -314,6 +314,38 @@ describe('DecisionService', () => {
         .prepare('SELECT decision FROM decisions WHERE key = ?')
         .get(key) as { decision: string };
       expect(stored.decision).toBe(dirty);
+    });
+  });
+
+  describe('length bounds', () => {
+    it('refuses an over-long title via the service (CLI/MCP parity)', () => {
+      const result = decisions.record({
+        projectKey: 'TEST',
+        title: 'x'.repeat(201),
+        decision: 'valid decision text',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+      if (result.error.kind !== ErrorCode.ValidationFailed) return;
+      expect(result.error.issues[0]?.path).toEqual(['title']);
+      expect(decisions.list('TEST')).toHaveLength(0);
+    });
+
+    it('refuses an empty decision body via the service', () => {
+      const result = decisions.record({
+        projectKey: 'TEST',
+        title: 'Valid title',
+        decision: '',
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+      if (result.error.kind !== ErrorCode.ValidationFailed) return;
+      expect(result.error.issues[0]?.path).toEqual(['decision']);
+      expect(decisions.list('TEST')).toHaveLength(0);
     });
   });
 });

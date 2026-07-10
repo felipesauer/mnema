@@ -6,8 +6,9 @@ import { z } from 'zod';
 
 import type { Skill } from '../domain/entities/skill.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import { checkSlug, checkStringLength } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import type { MnemaError } from '../errors/mnema-error.js';
+import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
@@ -249,9 +250,24 @@ export class SkillService {
    *   version = latest + 1 (even if content matches; the agent asked).
    *
    * @param input - Skill fields + identity tuple
-   * @returns Outcome describing the action taken
+   * @returns Outcome describing the action taken, or a structured error
    */
-  record(input: SkillRecordInput): SkillRecordResult {
+  record(input: SkillRecordInput): Result<SkillRecordResult, MnemaError> {
+    // Enforce the slug shape and field bounds at the service so the CLI
+    // (and any non-MCP caller) is covered — not just the MCP schema. The
+    // slug becomes `<skillsDir>/<slug>.md` in writeMirror, so a value like
+    // `../../etc/x` would escape the project; reject it before any write.
+    // Bounds match the MCP schema (name 1..120, description 1..500,
+    // content ≥ 1).
+    const shapeIssues: ErrorIssue[] = [];
+    checkSlug(input.slug, shapeIssues);
+    checkStringLength(input.name, 'name', 1, 120, shapeIssues);
+    checkStringLength(input.description, 'description', 1, 500, shapeIssues);
+    checkStringLength(input.content, 'content', 1, undefined, shapeIssues);
+    if (shapeIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: shapeIssues });
+    }
+
     const { repo, identity, audit } = this.requireRecordDeps();
     const createdBy = identity.ensureActor(input.actor, ActorKind.Human);
     const toolsUsed = input.toolsUsed ?? [];
@@ -339,7 +355,7 @@ export class SkillService {
       },
     });
 
-    return { skill: resulting, action };
+    return Ok({ skill: resulting, action });
   }
 
   /**

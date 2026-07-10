@@ -93,7 +93,7 @@ export class SkillCommand {
       .option('--new-version', 'Bump a new version instead of overwriting the latest in place')
       .action(async (slug: string, options: RecordOptions) => {
         await withMutatingCliContext(({ container }) => {
-          const { skill, action } = container.skill.record({
+          const result = container.skill.record({
             slug,
             name: options.name,
             description: options.description,
@@ -105,6 +105,10 @@ export class SkillCommand {
             actor: container.identity.getDefaultActor(),
             via: 'cli',
           });
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const { skill, action } = result.value;
           process.stdout.write(
             `${pc.green('✓')} ${action} ${pc.bold(skill.slug)} ${pc.dim(`v${skill.version}`)}\n`,
           );

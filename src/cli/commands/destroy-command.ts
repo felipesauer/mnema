@@ -135,7 +135,7 @@ async function resolveDecision(
     options.keepMarkdown === true
       ? true
       : await confirm({
-          message: 'Keep markdown trees (backlog/, sprints/, roadmap/, memory/)?',
+          message: 'Keep markdown trees (backlog/, sprints/, roadmap/, memory/, observations/)?',
           default: true,
         });
 
@@ -262,11 +262,18 @@ export function removeArtifacts(
   const agentsRel = stripManagedAgentsBlock(projectRoot);
   if (agentsRel !== null) removed.push(agentsRel);
 
-  // Strip the Mnema-managed `.gitignore` entry. Init writes
-  // `# mnema\n<paths.state>/\n`; we remove only that exact tuple, so
-  // any rule the user added on their own stays intact.
-  const gitignoreRel = stripGitignoreEntry(projectRoot, paths.state);
+  // Strip the Mnema-managed `.gitignore` block. Init writes a commented
+  // block that ignores the state dir, `config.local.json` and the audit
+  // write-lock; we remove only those Mnema-owned lines, so any rule the
+  // user added on their own stays intact.
+  const gitignoreRel = stripGitignoreEntry(projectRoot, paths.state, paths.audit);
   if (gitignoreRel !== null) removed.push(gitignoreRel);
+
+  // Strip the Mnema-managed `.gitattributes` block (the audit-log
+  // `merge=union` line and its comment). Same conservatism: only the
+  // exact lines init wrote are removed.
+  const gitattributesRel = stripGitattributesEntry(projectRoot, paths.audit);
+  if (gitattributesRel !== null) removed.push(gitattributesRel);
 
   return removed;
 }
@@ -355,30 +362,99 @@ function stripManagedAgentsBlock(projectRoot: string): string | null {
 }
 
 /**
- * Removes the `# mnema\n<paths.state>/\n` tuple that `init` writes
- * into `.gitignore`. Conservative: it only touches the exact pair —
- * a custom-edited gitignore, a different ignore rule, or a renamed
- * state path leaves the file alone. Returns `.gitignore` when the
- * file was modified or deleted, `null` otherwise.
+ * The exact `.gitignore` block `init` writes today. Kept in lock-step with
+ * init-command's `gitignoreBlock` so destroy strips precisely what init
+ * produced — a `# mnema:`-commented header plus three ignore lines (the state
+ * dir, `.mnema/config.local.json`, and the audit write-lock). An older init
+ * wrote a leaner `# mnema\n<state>/` tuple, which is also stripped as a
+ * fallback so a project created by a prior version still cleans up.
  */
-function stripGitignoreEntry(projectRoot: string, statePath: string): string | null {
-  const file = path.join(projectRoot, '.gitignore');
+function gitignoreBlocks(statePath: string, auditPath: string): string[] {
+  const stateEntry = `${statePath.replace(/\/$/, '')}/`;
+  const lockEntry = `${auditPath.replace(/\/$/, '')}/.audit.lock*`;
+  const current = [
+    '# mnema: ignore only the local cache (SQLite db, sync buffer,',
+    '# attachments) and the personal config.local.json override. The',
+    '# backlog/roadmap/sprint/memory/skill markdown and the audit log',
+    '# under .mnema/ are the source of truth — commit them. The cache is',
+    '# rebuildable from that markdown via `mnema sync`.',
+    stateEntry,
+    '.mnema/config.local.json',
+    lockEntry,
+  ].join('\n');
+  // Fallback: the legacy two-line tuple a prior init version wrote.
+  const legacy = `# mnema\n${stateEntry}`;
+  return [current, legacy];
+}
+
+/**
+ * The exact `.gitattributes` block `init` writes today (see init-command's
+ * `gitattributesLines`) — the audit-log `merge=union` line and its comment.
+ */
+function gitattributesBlock(auditPath: string): string {
+  const dir = auditPath.replace(/\/$/, '');
+  return [
+    '# mnema: the audit log is append-only; merge with union so parallel',
+    '# branches keep both sides instead of conflicting on the tail.',
+    `${dir}/*.jsonl merge=union`,
+  ].join('\n');
+}
+
+/**
+ * Removes a Mnema-managed block from a git dotfile. Conservative: it removes
+ * only a block byte-for-byte identical to one `init` writes (with an optional
+ * leading blank-line separator, which init prepends when extending an existing
+ * file), so any rule the user added on their own stays intact. Deletes the file
+ * when nothing but the managed block remained. Returns the relative filename
+ * when the file was modified or deleted, `null` when it held nothing Mnema
+ * wrote.
+ */
+function stripManagedGitFileBlock(
+  projectRoot: string,
+  relativeFile: string,
+  blocks: readonly string[],
+): string | null {
+  const file = path.join(projectRoot, relativeFile);
   if (!existsSync(file)) return null;
-  const previous = readFileSync(file, 'utf-8');
+  let content = readFileSync(file, 'utf-8');
 
-  const entry = `${statePath.replace(/\/$/, '')}/`;
-  const block = `# mnema\n${entry}\n`;
-  if (!previous.includes(block)) return null;
+  let removedAny = false;
+  for (const block of blocks) {
+    if (!content.includes(block)) continue;
+    // Drop the block plus an optional leading blank-line separator.
+    content = content.replace(`\n${block}`, '').replace(block, '');
+    removedAny = true;
+  }
+  if (!removedAny) return null;
 
-  // Strip the block plus an optional leading blank-line separator
-  // (init prepends `\n# mnema\n...` when extending an existing file).
-  const next = previous.replace(`\n${block}`, '').replace(block, '');
-  const trimmed = next.trim();
-
+  const trimmed = content.trim();
   if (trimmed.length === 0) {
     rmSync(file);
   } else {
     writeFileSync(file, `${trimmed}\n`, 'utf-8');
   }
-  return '.gitignore';
+  return relativeFile;
+}
+
+/**
+ * Removes the Mnema-managed block(s) `init` writes into `.gitignore`.
+ * Returns `.gitignore` when the file was modified or deleted, `null` when
+ * it held nothing Mnema wrote.
+ */
+function stripGitignoreEntry(
+  projectRoot: string,
+  statePath: string,
+  auditPath: string,
+): string | null {
+  return stripManagedGitFileBlock(projectRoot, '.gitignore', gitignoreBlocks(statePath, auditPath));
+}
+
+/**
+ * Removes the Mnema-managed block `init` writes into `.gitattributes` (the
+ * audit-log `merge=union` line and its comment). Returns `.gitattributes`
+ * when the file was modified or deleted, `null` when it held nothing Mnema
+ * wrote.
+ */
+function stripGitattributesEntry(projectRoot: string, auditPath: string): string | null {
+  return stripManagedGitFileBlock(projectRoot, '.gitattributes', [gitattributesBlock(auditPath)]);
 }

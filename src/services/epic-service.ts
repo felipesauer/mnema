@@ -123,14 +123,23 @@ export class EpicService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
-    const sequence = this.epics.nextSequence(project.id);
-    const key = `${project.key}-EPIC-${sequence}`;
+    const issues: ErrorIssue[] = [];
+    checkTitle(input.title, issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
 
-    const epic = this.epics.insert({
-      key,
-      projectId: project.id,
-      title: input.title,
-      description: input.description ?? null,
+    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+    // two processes on one state.db cannot mint the same key.
+    const epic = this.epics.runInTransactionImmediate(() => {
+      const sequence = this.epics.nextSequence(project.id);
+      const key = `${project.key}-EPIC-${sequence}`;
+      return this.epics.insert({
+        key,
+        projectId: project.id,
+        title: input.title,
+        description: input.description ?? null,
+      });
     });
 
     this.audit.write({
@@ -257,6 +266,17 @@ export class EpicService {
       });
     }
 
+    // Unlink the mirror BEFORE the soft-delete commit. A filesystem unlink
+    // can't join the SQLite transaction, so the two steps can't be atomic —
+    // the order is chosen so a crash between them leaves a self-healing
+    // state rather than an orphan. Removing the `.md` first means a crash
+    // leaves a live row with no mirror, which `rebuildMirrors` re-creates
+    // (benign). The reverse order would leave a soft-deleted row with a live
+    // `.md`, and a rebuild would re-insert the deleted epic as live — an
+    // orphan that reads as live. This matches how task soft-delete drops the
+    // markdown for a row it is about to remove from the active set.
+    this.mirror?.removeEpic(epic.key);
+
     const deleted = this.epics.runInTransaction(() => this.epics.softDelete(epic.id));
     if (!deleted) {
       return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
@@ -269,8 +289,6 @@ export class EpicService {
       run: input.runId,
       data: { key: epic.key },
     });
-
-    this.mirror?.removeEpic(epic.key);
 
     return Ok(epic);
   }

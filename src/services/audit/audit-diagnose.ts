@@ -229,9 +229,17 @@ export function diagnoseAuditChain(
     const isRepo = gitRunner(['rev-parse', '--is-inside-work-tree'], gitCwd);
     if (isRepo.status === 0 && isRepo.stdout.trim() === 'true') {
       matchesCommittedHead = files.every((file) => {
+        // The file must actually be TRACKED in HEAD first. `git diff --quiet
+        // HEAD -- <file>` exits 0 for an UNTRACKED file too (git has nothing
+        // to compare), and the audit `.jsonl` files are commonly gitignored —
+        // so a clean diff alone would let an untracked head masquerade as a
+        // committed one. `ls-files --error-unmatch` exits non-zero unless the
+        // path is in the index/HEAD, closing that hole.
+        const tracked = gitRunner(['ls-files', '--error-unmatch', '--', file], gitCwd);
+        if (tracked.status !== 0) return false;
         const diff = gitRunner(['diff', '--quiet', 'HEAD', '--', file], gitCwd);
         // `git diff --quiet` exits 0 (no diff) or 1 (diff); any other status
-        // (untracked file, no HEAD yet) is NOT a confirmed match.
+        // (no HEAD yet) is NOT a confirmed match.
         return diff.status === 0;
       });
     }

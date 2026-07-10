@@ -25,6 +25,24 @@ const LABEL_NAME = z
 
 const LABELS_INPUT = z.array(LABEL_NAME);
 
+/**
+ * Validates a set of label names against the same rules {@link LabelService.setLabels}
+ * enforces, WITHOUT touching a task or writing anything. Callers that apply
+ * labels only after another insert (e.g. `task_create` folding inline labels
+ * onto a freshly-inserted task) use this to reject a bad name up front, so the
+ * insert never lands only to have the label application fail afterwards.
+ *
+ * @param labels - The candidate label names
+ * @returns Ok with the normalized names, or a structured ValidationFailed error
+ */
+export function validateLabelNames(labels: readonly string[]): Result<string[], MnemaError> {
+  const parsed = LABELS_INPUT.safeParse(labels);
+  if (!parsed.success) {
+    return Err({ kind: ErrorCode.ValidationFailed, issues: fromZodIssues(parsed.error.issues) });
+  }
+  return Ok(parsed.data);
+}
+
 /** Input for {@link LabelService.setLabels}. */
 export interface SetLabelsInput {
   readonly taskKey: string;

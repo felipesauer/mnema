@@ -167,10 +167,27 @@ describe('removeArtifacts', () => {
     expect(existsSync(path.join(projectRoot, PATHS.backlog))).toBe(true);
   });
 
-  it('strips the managed `.gitignore` entry and leaves user lines intact', () => {
+  // The exact block `init` writes today (must match init-command's
+  // `gitignoreBlock`). The destroy strip has to recognise THIS format, not the
+  // stale `# mnema\n<state>/` tuple an older init used.
+  const currentGitignoreBlock = [
+    '# mnema: ignore only the local cache (SQLite db, sync buffer,',
+    '# attachments) and the personal config.local.json override. The',
+    '# backlog/roadmap/sprint/memory/skill markdown and the audit log',
+    '# under .mnema/ are the source of truth — commit them. The cache is',
+    '# rebuildable from that markdown via `mnema sync`.',
+    `${PATHS.state}/`,
+    '.mnema/config.local.json',
+    `${PATHS.audit}/.audit.lock*`,
+  ].join('\n');
+
+  it('strips the managed `.gitignore` block (current format) and leaves user lines intact', () => {
     const userPrefix = 'node_modules/\ndist/\n';
-    const managed = `# mnema\n${PATHS.state}/\n`;
-    writeFileSync(path.join(projectRoot, '.gitignore'), `${userPrefix}\n${managed}`, 'utf-8');
+    writeFileSync(
+      path.join(projectRoot, '.gitignore'),
+      `${userPrefix}\n${currentGitignoreBlock}\n`,
+      'utf-8',
+    );
 
     const removed = removeArtifacts(projectRoot, PATHS, {
       keepMarkdown: true,
@@ -182,14 +199,49 @@ describe('removeArtifacts', () => {
     expect(remaining).toContain('dist/');
     expect(remaining).not.toContain('# mnema');
     expect(remaining).not.toContain(`${PATHS.state}/`);
+    expect(remaining).not.toContain('.mnema/config.local.json');
+    expect(remaining).not.toContain('.audit.lock');
   });
 
-  it('deletes `.gitignore` when only the managed entry remained', () => {
-    writeFileSync(path.join(projectRoot, '.gitignore'), `# mnema\n${PATHS.state}/\n`, 'utf-8');
+  it('deletes `.gitignore` when only the managed block (current format) remained', () => {
+    writeFileSync(path.join(projectRoot, '.gitignore'), `${currentGitignoreBlock}\n`, 'utf-8');
 
     removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: true });
 
     expect(existsSync(path.join(projectRoot, '.gitignore'))).toBe(false);
+  });
+
+  it('strips the managed `.gitattributes` block (current format) and leaves user lines intact', () => {
+    const userLine = '*.png binary\n';
+    const managed = [
+      '# mnema: the audit log is append-only; merge with union so parallel',
+      '# branches keep both sides instead of conflicting on the tail.',
+      `${PATHS.audit}/*.jsonl merge=union`,
+    ].join('\n');
+    writeFileSync(path.join(projectRoot, '.gitattributes'), `${userLine}\n${managed}\n`, 'utf-8');
+
+    const removed = removeArtifacts(projectRoot, PATHS, {
+      keepMarkdown: true,
+      keepAudit: true,
+    });
+    expect(removed).toContain('.gitattributes');
+    const remaining = readFileSync(path.join(projectRoot, '.gitattributes'), 'utf-8');
+    expect(remaining).toContain('*.png binary');
+    expect(remaining).not.toContain('# mnema');
+    expect(remaining).not.toContain('merge=union');
+  });
+
+  it('deletes `.gitattributes` when only the managed block remained', () => {
+    const managed = [
+      '# mnema: the audit log is append-only; merge with union so parallel',
+      '# branches keep both sides instead of conflicting on the tail.',
+      `${PATHS.audit}/*.jsonl merge=union`,
+    ].join('\n');
+    writeFileSync(path.join(projectRoot, '.gitattributes'), `${managed}\n`, 'utf-8');
+
+    removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: true });
+
+    expect(existsSync(path.join(projectRoot, '.gitattributes'))).toBe(false);
   });
 
   it('skips paths that do not exist without raising', () => {

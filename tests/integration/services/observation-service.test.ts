@@ -139,6 +139,24 @@ describe('ObservationService', () => {
     expect(service.list({ limit: 2 })).toHaveLength(2);
   });
 
+  it('topic + limit returns all matches when limit >= matching count (limit bounds the filtered set)', () => {
+    // 3 rows match topic `x`, mixed among 3 rows that do not. With the topic
+    // filter applied in SQL, LIMIT bounds the FILTERED set, so a limit >= the
+    // matching count returns every match. The old code applied LIMIT before the
+    // in-JS topic filter, so the non-matching rows consumed the budget and the
+    // caller under-reported the matches.
+    service.record({ content: 'm1', topics: ['x'], actor: 'daniel' });
+    service.record({ content: 'n1', topics: ['y'], actor: 'daniel' });
+    service.record({ content: 'm2', topics: ['x'], actor: 'daniel' });
+    service.record({ content: 'n2', topics: ['z'], actor: 'daniel' });
+    service.record({ content: 'm3', topics: ['x'], actor: 'daniel' });
+    service.record({ content: 'n3', topics: ['y'], actor: 'daniel' });
+
+    const matches = service.list({ topic: 'x', limit: 3 });
+    expect(matches).toHaveLength(3);
+    expect(matches.map((o) => o.content).sort()).toEqual(['m1', 'm2', 'm3']);
+  });
+
   it('archive hides an observation from the default listing but keeps it', () => {
     const stale = service.record({ content: 'stale signal', actor: 'daniel' });
     service.record({ content: 'live signal', actor: 'daniel' });

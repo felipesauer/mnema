@@ -97,6 +97,16 @@ export type MnemaError =
       readonly currentUpdatedAt: string;
       readonly entity?: 'task' | 'decision' | 'sprint';
     }
+  | {
+      readonly kind: ErrorCode.KeyCollision;
+      /**
+       * The table whose `key` UNIQUE constraint was violated, e.g. `tasks`.
+       * Two writers sharing one `state.db` each minted the same sequential
+       * key (the COUNT(*)-based `nextSequence` is check-then-act). Retryable:
+       * a re-run re-reads the now-higher count and gets a fresh key.
+       */
+      readonly table: string;
+    }
   | { readonly kind: ErrorCode.SprintNotFound; readonly sprintKey: string }
   | {
       readonly kind: ErrorCode.ActiveSprintExists;

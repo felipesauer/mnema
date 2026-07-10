@@ -69,7 +69,7 @@ describe('EpicService', () => {
   });
 
   it('closes an OPEN epic and stamps closedAt', () => {
-    epics.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+    epics.create({ projectKey: 'TEST', title: 'Title A', actor: 'daniel' });
 
     const closed = epics.close({ epicKey: 'TEST-EPIC-1', actor: 'daniel' });
     expect(closed.ok).toBe(true);
@@ -79,7 +79,7 @@ describe('EpicService', () => {
   });
 
   it('rejects close on a CLOSED epic', () => {
-    epics.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
+    epics.create({ projectKey: 'TEST', title: 'Title A', actor: 'daniel' });
     epics.close({ epicKey: 'TEST-EPIC-1', actor: 'daniel' });
 
     const second = epics.close({ epicKey: 'TEST-EPIC-1', actor: 'daniel' });
@@ -124,8 +124,8 @@ describe('EpicService', () => {
   });
 
   it('list filters by state when provided', () => {
-    epics.create({ projectKey: 'TEST', title: 'A', actor: 'daniel' });
-    epics.create({ projectKey: 'TEST', title: 'B', actor: 'daniel' });
+    epics.create({ projectKey: 'TEST', title: 'Title A', actor: 'daniel' });
+    epics.create({ projectKey: 'TEST', title: 'Title B', actor: 'daniel' });
     epics.close({ epicKey: 'TEST-EPIC-1', actor: 'daniel' });
 
     const open = epics.list('TEST', EpicState.Open);
@@ -159,5 +159,20 @@ describe('EpicService', () => {
     if (result.error.kind !== ErrorCode.FeatureNotAvailable) return;
     expect(result.error.feature).toBe('epics');
     expect(result.error.workflow).toBe('lean');
+  });
+
+  it('refuses an over-long title via the service (CLI/MCP parity)', () => {
+    const result = epics.create({
+      projectKey: 'TEST',
+      title: 'x'.repeat(201),
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['title']);
+    // Nothing persisted — the guard precedes the insert.
+    expect(epics.list('TEST')).toHaveLength(0);
   });
 });

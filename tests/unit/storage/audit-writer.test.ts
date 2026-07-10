@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { type AuditEvent, AuditWriter } from '@/storage/audit/audit-writer.js';
+import { type AuditEvent, AuditWriter, LOCK_STALE_MS } from '@/storage/audit/audit-writer.js';
+import { SQLITE_BUSY_TIMEOUT_MS } from '@/storage/sqlite/sqlite-adapter.js';
 
 function makeEvent(kind: string): AuditEvent {
   return {
@@ -80,5 +81,14 @@ describe('AuditWriter', () => {
 
     const files = readdirSync(dir).sort();
     expect(files).toEqual(['current.jsonl']);
+  });
+
+  it('holds the audit lock stale threshold strictly above the SQLite busy_timeout', () => {
+    // A write can block on the WAL writer for up to busy_timeout; if the lock
+    // could be judged stale before then, a peer could steal it mid-write and
+    // let two writers into the critical section. The stale threshold must stay
+    // strictly greater than busy_timeout — this pins that ordering so a change
+    // to either constant that reopened the overlap fails here.
+    expect(LOCK_STALE_MS).toBeGreaterThan(SQLITE_BUSY_TIMEOUT_MS);
   });
 });

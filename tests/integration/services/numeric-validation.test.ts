@@ -53,7 +53,7 @@ describe('service-level numeric validation', () => {
     it('rejects a negative context_budget', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         contextBudget: -10,
         actor: 'daniel',
       });
@@ -64,7 +64,7 @@ describe('service-level numeric validation', () => {
     it('rejects a non-integer (float) context_budget', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         contextBudget: 3.7,
         actor: 'daniel',
       });
@@ -75,7 +75,7 @@ describe('service-level numeric validation', () => {
     it('rejects NaN context_budget (the silent-NULL case)', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         contextBudget: Number('abc'),
         actor: 'daniel',
       });
@@ -86,7 +86,7 @@ describe('service-level numeric validation', () => {
     it('rejects priority out of the 1..5 range', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         priority: 99,
         actor: 'daniel',
       });
@@ -97,7 +97,7 @@ describe('service-level numeric validation', () => {
     it('rejects a NaN priority instead of crashing on NOT NULL', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         priority: Number('abc'),
         actor: 'daniel',
       });
@@ -108,7 +108,7 @@ describe('service-level numeric validation', () => {
     it('still accepts valid values (0 budget is distinct from unset)', () => {
       const r = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         contextBudget: 0,
         estimate: 5,
         priority: 2,
@@ -169,7 +169,7 @@ describe('service-level numeric validation', () => {
     beforeEach(() => {
       const t = container.task.create({
         projectKey: 'TEST',
-        title: 'X',
+        title: 'Title X',
         acceptanceCriteria: ['a', 'b'],
         actor: 'daniel',
       });

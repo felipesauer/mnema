@@ -19,6 +19,13 @@ const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
 const KNOWN_TOOLS = new Set(['task_create', 'tasks_list']);
 
+// record() returns a Result; these suites assert the happy path, so unwrap.
+function recordOk(service: SkillService, input: Parameters<SkillService['record']>[0]) {
+  const result = service.record(input);
+  if (!result.ok) throw new Error(`expected ok, got ${JSON.stringify(result.error)}`);
+  return result.value;
+}
+
 describe('SkillService (record/show/use)', () => {
   let tempRoot: string;
   let skillsDir: string;
@@ -45,7 +52,7 @@ describe('SkillService (record/show/use)', () => {
   });
 
   it('creates v1 when slug is unknown', () => {
-    const result = service.record({
+    const result = recordOk(service, {
       slug: 'safe-migration',
       name: 'Safe migration rollout',
       description: 'How to roll a migration safely under load',
@@ -65,7 +72,7 @@ describe('SkillService (record/show/use)', () => {
       content: 'A',
       actor: 'daniel',
     });
-    const updated = service.record({
+    const updated = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -85,7 +92,7 @@ describe('SkillService (record/show/use)', () => {
       content: 'A',
       actor: 'daniel',
     });
-    const again = service.record({
+    const again = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -97,7 +104,7 @@ describe('SkillService (record/show/use)', () => {
   });
 
   it('no_op does NOT advance updated_at', async () => {
-    const first = service.record({
+    const first = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -105,7 +112,7 @@ describe('SkillService (record/show/use)', () => {
       actor: 'daniel',
     });
     await new Promise((resolve) => setTimeout(resolve, 30));
-    const again = service.record({
+    const again = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -117,7 +124,7 @@ describe('SkillService (record/show/use)', () => {
   });
 
   it('no_op regenerates the mirror when the file went missing', () => {
-    const first = service.record({
+    const first = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -128,7 +135,7 @@ describe('SkillService (record/show/use)', () => {
     expect(existsSync(mirror)).toBe(true);
     rmSync(mirror);
 
-    const again = service.record({
+    const again = recordOk(service, {
       slug: 's',
       name: 'Skill',
       description: 'd',
@@ -148,7 +155,7 @@ describe('SkillService (record/show/use)', () => {
       content: 'A',
       actor: 'daniel',
     });
-    const bumped = service.record({
+    const bumped = recordOk(service, {
       slug: 's',
       name: 'Skill v2',
       description: 'd',
@@ -244,7 +251,7 @@ describe('SkillService (record/show/use)', () => {
   });
 
   it('records an invocable skill with dynamic context (trigger flag persisted)', () => {
-    const result = service.record({
+    const result = recordOk(service, {
       slug: 'pick-next',
       name: 'Pick next task',
       description: 'Choose what to work on next',
@@ -416,6 +423,24 @@ describe('SkillService (record/show/use)', () => {
     expect(unknownSuccessor.ok).toBe(false);
     if (!unknownSuccessor.ok) expect(unknownSuccessor.error.kind).toBe(ErrorCode.SkillNotFound);
   });
+
+  it('refuses a path-traversal slug and writes nothing outside the skills dir', () => {
+    const result = service.record({
+      slug: '../../etc/x',
+      name: 'Escaped',
+      description: 'd',
+      content: 'should never land on disk',
+      actor: 'daniel',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
+    if (result.error.kind !== ErrorCode.ValidationFailed) return;
+    expect(result.error.issues[0]?.path).toEqual(['slug']);
+    // Nothing persisted, and no file escaped the project via the mirror.
+    expect(service.list()).toHaveLength(0);
+    expect(existsSync(path.join(skillsDir, '..', '..', 'etc', 'x.md'))).toBe(false);
+  });
 });
 
 describe('SkillService.resolveDynamicContext', () => {
@@ -452,7 +477,7 @@ describe('SkillService.resolveDynamicContext', () => {
 
   /** Records and returns an invocable skill carrying the given commands. */
   function invocableSkill(service: SkillService, commands: string[]) {
-    return service.record({
+    return recordOk(service, {
       slug: 'dyn',
       name: 'Dyn',
       description: 'd',

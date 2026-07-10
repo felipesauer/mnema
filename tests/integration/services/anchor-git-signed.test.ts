@@ -5,6 +5,7 @@ import {
   type GitCommandRunner,
   type GitResult,
   GitSignedAnchorProvider,
+  isSafeAnchorRemote,
 } from '@/services/anchor/git-signed-anchor-provider.js';
 
 const head = 'a'.repeat(64);
@@ -61,12 +62,15 @@ function fakeGit(opts: { signing?: 'ok' | 'no-key'; push?: 'ok' | 'fail' | 'none
       return OK(sha);
     }
     if (cmd === 'update-ref') {
-      refTip = args[2] as string;
+      // Positionals only — the provider passes `--end-of-options` before them.
+      const positional = args.slice(1).filter((a) => a !== '--end-of-options');
+      refTip = positional[1] as string;
       return OK();
     }
     if (cmd === 'push') {
       if (opts.push === 'fail') return FAIL('remote rejected');
-      pushed.push(args[2] as string);
+      const positional = args.slice(1).filter((a) => a !== '--end-of-options');
+      pushed.push(positional[0] as string); // the remote
       return OK();
     }
     if (cmd === 'cat-file') {
@@ -201,6 +205,58 @@ describe('GitSignedAnchorProvider', () => {
     const r = await provider.verify(head, receipt);
     expect(r.state).toBe('broken');
     expect(r.detail).toMatch(/not reachable/i);
+  });
+
+  it('refuses an ext:: remote-helper transport and never spawns git push', async () => {
+    // `git push 'ext::sh -c <payload>'` runs an arbitrary command; the
+    // provider must reject it before it reaches git.
+    const git = fakeGit({ signing: 'ok', push: 'ok' });
+    const provider = new GitSignedAnchorProvider(
+      '/repo',
+      'refs/mnema/anchors',
+      "ext::sh -c 'touch /tmp/pwned'",
+      git.run,
+    );
+    await expect(provider.stamp(head)).rejects.toThrow(/unsafe push remote/i);
+    // The dangerous remote never reached `git push`.
+    expect(git.pushed).toHaveLength(0);
+  });
+
+  it('accepts a plain remote name and an https URL as push remotes', async () => {
+    const named = fakeGit({ signing: 'ok', push: 'ok' });
+    const namedProvider = new GitSignedAnchorProvider(
+      '/repo',
+      'refs/mnema/anchors',
+      'origin',
+      named.run,
+    );
+    expect((await namedProvider.stamp(head)).status).toBe('anchored');
+    expect(named.pushed).toEqual(['origin']);
+
+    const url = fakeGit({ signing: 'ok', push: 'ok' });
+    const urlProvider = new GitSignedAnchorProvider(
+      '/repo',
+      'refs/mnema/anchors',
+      'https://example.com/r.git',
+      url.run,
+    );
+    expect((await urlProvider.stamp(head)).status).toBe('anchored');
+    expect(url.pushed).toEqual(['https://example.com/r.git']);
+  });
+
+  it('isSafeAnchorRemote accepts names/safe URLs, rejects helper transports and flags', () => {
+    expect(isSafeAnchorRemote('origin')).toBe(true);
+    expect(isSafeAnchorRemote('upstream-2')).toBe(true);
+    expect(isSafeAnchorRemote('https://example.com/r.git')).toBe(true);
+    expect(isSafeAnchorRemote('ssh://git@host/r.git')).toBe(true);
+    expect(isSafeAnchorRemote('git://host/r.git')).toBe(true);
+    expect(isSafeAnchorRemote('file:///srv/r.git')).toBe(true);
+    expect(isSafeAnchorRemote("ext::sh -c 'id'")).toBe(false);
+    expect(isSafeAnchorRemote('fd::17')).toBe(false);
+    expect(isSafeAnchorRemote('--upload-pack=touch /tmp/x')).toBe(false);
+    expect(isSafeAnchorRemote('-oProxyCommand=id')).toBe(false);
+    expect(isSafeAnchorRemote('http://169.254.169.254/')).toBe(false);
+    expect(isSafeAnchorRemote('')).toBe(false);
   });
 
   it('verify() is cannot-verify (not broken) when git is unavailable', async () => {

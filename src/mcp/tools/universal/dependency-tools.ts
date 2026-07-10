@@ -5,7 +5,13 @@ import type { DependencyKind } from '../../../domain/entities/dependency.js';
 import type { DependencyService } from '../../../services/dependency-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const dependencyKindValues = [
   'blocks',
@@ -29,6 +35,7 @@ export class DependencyTools {
     private readonly dependencies: DependencyService,
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
@@ -52,6 +59,8 @@ export class DependencyTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -92,6 +101,8 @@ export class DependencyTools {
         },
       },
       (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;

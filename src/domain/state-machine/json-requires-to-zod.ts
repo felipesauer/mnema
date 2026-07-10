@@ -6,9 +6,10 @@ import type { FieldSpec } from './workflow-meta-schema.js';
  * Defensive upper bound on the length of a pattern-validated string field
  * when the spec declares no explicit `max`. ReDoS needs a long input to
  * blow up; the pattern screen ({@link screenRegexPattern}) is the first
- * line of defence, and this cap is the second — even a pattern that slips
- * through cannot be handed an unbounded payload. 4096 is far above any
- * legitimate gate value (keys, handles, short identifiers).
+ * line of defence, and this cap is the second — enforced BEFORE the regex
+ * runs (see {@link buildPatternString}), so a pattern that slips the
+ * screen still cannot be handed an unbounded payload. 4096 is far above
+ * any legitimate gate value (keys, handles, short identifiers).
  */
 const PATTERN_FIELD_MAX_LENGTH = 4096;
 
@@ -47,6 +48,13 @@ function buildBase(spec: FieldSpec): z.ZodType {
 }
 
 function buildString(spec: Extract<FieldSpec, { type: 'string' }>): z.ZodType {
+  // A pattern field enforces its length bound inside an ordered check
+  // (length before regex), so it must NOT also carry Zod's own `.min`/
+  // `.max` — those run in the same pass and would neither gate the regex
+  // nor avoid duplicate issues. Handle it before applying min/max.
+  if (spec.pattern !== undefined) {
+    return buildPatternString(spec);
+  }
   let s: z.ZodString = z.string();
   if (spec.min !== undefined) s = s.min(spec.min);
   if (spec.max !== undefined) s = s.max(spec.max);
@@ -55,15 +63,6 @@ function buildString(spec: Extract<FieldSpec, { type: 'string' }>): z.ZodType {
   if (spec.format === 'uuid') return s.pipe(z.uuid());
   if (spec.format === 'iso8601') return s.pipe(z.iso.datetime());
   if (spec.format === 'task_key') return s.regex(/^[A-Z][A-Z0-9]*-\d+$/);
-  if (spec.pattern !== undefined) {
-    // Cap the matched length before the regex runs. The pattern is
-    // already screened for catastrophic backtracking, but a length bound
-    // is the second line of defence: a ReDoS needs a long input, so an
-    // explicit `max` (or this default) keeps the engine's work bounded
-    // even if a pathological pattern ever slips the screen.
-    if (spec.max === undefined) s = s.max(PATTERN_FIELD_MAX_LENGTH);
-    return s.regex(new RegExp(spec.pattern));
-  }
   if (spec.enum !== undefined && spec.enum.length > 0) {
     const allowed = [...spec.enum];
     return s.refine((v) => allowed.includes(v), {
@@ -71,6 +70,36 @@ function buildString(spec: Extract<FieldSpec, { type: 'string' }>): z.ZodType {
     });
   }
   return s;
+}
+
+/**
+ * Builds the schema for a pattern-validated string, enforcing the length
+ * bound BEFORE the regex runs.
+ *
+ * Zod does not short-circuit `.max(n).regex(re)`: it runs `re` even when
+ * the value exceeds `n`, so chaining is not a defence against a ReDoS
+ * pattern. Instead a single check does length first and returns early when
+ * the value is out of bounds — an over-long payload never reaches the
+ * regex engine, keeping its work bounded even if a pathological pattern
+ * ever slips {@link screenRegexPattern}.
+ */
+function buildPatternString(spec: Extract<FieldSpec, { type: 'string' }>): z.ZodType {
+  const max = spec.max ?? PATTERN_FIELD_MAX_LENGTH;
+  const min = spec.min;
+  const re = new RegExp(spec.pattern as string);
+  return z.string().superRefine((value, ctx) => {
+    if (min !== undefined && value.length < min) {
+      ctx.addIssue({ code: 'too_small', minimum: min, origin: 'string', inclusive: true });
+      return; // length out of bounds — do not run the regex
+    }
+    if (value.length > max) {
+      ctx.addIssue({ code: 'too_big', maximum: max, origin: 'string', inclusive: true });
+      return; // length out of bounds — do not run the regex
+    }
+    if (!re.test(value)) {
+      ctx.addIssue({ code: 'invalid_format', format: 'regex', pattern: re.source });
+    }
+  });
 }
 
 function buildNumber(spec: Extract<FieldSpec, { type: 'number' }>): z.ZodType {

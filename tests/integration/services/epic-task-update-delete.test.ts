@@ -203,4 +203,45 @@ describe('epic/task content edit + epic delete', () => {
     expect(container.epic.show(epic.value.key).ok).toBe(true);
     expect(existsSync(epicPath(epic.value.key))).toBe(true);
   });
+
+  it('leaves no live orphan when a crash interrupts delete between the two steps', () => {
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Crash epic',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    expect(existsSync(epicPath(key))).toBe(true);
+
+    // Simulate a crash in the window between the two non-atomic steps: the
+    // mirror unlink runs, then the process dies before the soft-delete
+    // commits. With the mirror-first order this leaves a live row with a
+    // missing `.md` (benign) — never a deleted row with a live `.md`, which a
+    // rebuild would re-materialise as a live epic (the orphan this guards).
+    const repo = container.epic as unknown as {
+      epics: { softDelete: (id: string) => boolean };
+    };
+    const original = repo.epics.softDelete.bind(repo.epics);
+    repo.epics.softDelete = () => {
+      throw new Error('injected crash before soft-delete commit');
+    };
+
+    expect(() => container.epic.delete({ epicKey: key, actor: 'daniel' })).toThrow(
+      /injected crash/,
+    );
+    repo.epics.softDelete = original;
+
+    // The recoverable state is benign: the epic is still live and readable
+    // (not a deleted row masquerading behind a stale mirror).
+    const show = container.epic.show(key);
+    expect(show.ok).toBe(true);
+
+    // The mirror is gone, but rebuildMirrors heals it — self-healing.
+    expect(existsSync(epicPath(key))).toBe(false);
+    const rebuilt = container.epic.rebuildMirrors('TEST');
+    expect(rebuilt).toContain(key);
+    expect(existsSync(epicPath(key))).toBe(true);
+  });
 });

@@ -137,6 +137,22 @@ export class DecisionService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
+    // Enforce the title/decision bounds at the service so the CLI (and any
+    // non-MCP caller) is covered — not just the MCP schema (title 3..200,
+    // decision ≥ 1).
+    const shapeIssues: ErrorIssue[] = [];
+    if (input.title.length < 3) {
+      shapeIssues.push({ path: ['title'], message: 'must be at least 3 characters' });
+    } else if (input.title.length > 200) {
+      shapeIssues.push({ path: ['title'], message: 'must be at most 200 characters' });
+    }
+    if (input.decision.length < 1) {
+      shapeIssues.push({ path: ['decision'], message: 'must be at least 1 character' });
+    }
+    if (shapeIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: shapeIssues });
+    }
+
     // Reject tool-invocation markup leaking into any text field — a malformed
     // MCP call can spill `<parameter name=...>` / `</invoke>` into a value,
     // which would persist a garbage trailer and leave sibling fields empty.
@@ -159,20 +175,24 @@ export class DecisionService {
       return Err({ kind: ErrorCode.ValidationFailed, issues: markupIssues });
     }
 
-    const sequence = this.decisions.nextSequence(project.id);
-    const key = `${project.key}-ADR-${sequence}`;
     const authoredBy = this.identity.ensureActor(input.actor, ActorKind.Human);
 
-    const decision = this.decisions.insert({
-      key,
-      projectId: project.id,
-      title: input.title,
-      decision: input.decision,
-      context: input.context ?? null,
-      rationale: input.rationale ?? null,
-      consequences: input.consequences ?? null,
-      impacts: input.impacts ?? [],
-      authoredBy,
+    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+    // two processes on one state.db cannot mint the same key.
+    const decision = this.decisions.runInTransactionImmediate(() => {
+      const sequence = this.decisions.nextSequence(project.id);
+      const key = `${project.key}-ADR-${sequence}`;
+      return this.decisions.insert({
+        key,
+        projectId: project.id,
+        title: input.title,
+        decision: input.decision,
+        context: input.context ?? null,
+        rationale: input.rationale ?? null,
+        consequences: input.consequences ?? null,
+        impacts: input.impacts ?? [],
+        authoredBy,
+      });
     });
 
     this.audit.write({

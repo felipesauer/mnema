@@ -4,7 +4,13 @@ import { z } from 'zod';
 import { AgentPlanState } from '../../../domain/enums/agent-plan-state.js';
 import type { AgentPlanService } from '../../../services/agent-plan-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
-import { err, ok, requireActiveRun } from '../../mcp-tool-result.js';
+import {
+  err,
+  ok,
+  type PendingMigrationsSource,
+  requireActiveRun,
+  requireFreshSchema,
+} from '../../mcp-tool-result.js';
 
 const planStateValues = Object.values(AgentPlanState) as [AgentPlanState, ...AgentPlanState[]];
 
@@ -22,6 +28,7 @@ export class AgentPlanTools {
   constructor(
     private readonly plans: AgentPlanService,
     private readonly session: McpSessionContext,
+    private readonly pendingMigrations: PendingMigrationsSource,
   ) {}
 
   /**
@@ -55,6 +62,8 @@ export class AgentPlanTools {
         },
       },
       ({ content, task_key: taskKey, parent_plan_id: parentPlanId, position }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -98,6 +107,8 @@ export class AgentPlanTools {
         },
       },
       ({ plan_id: planId, run_id: runId, position, state, result: resultText }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
         const guard = requireActiveRun(this.session.getCurrentRunId());
         if (guard !== null) return guard;
 

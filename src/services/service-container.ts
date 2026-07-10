@@ -417,6 +417,17 @@ export function createServiceContainer(
     }),
     // Resolve a task's labels for the frontmatter `labels:` list.
     (task) => labelRepository.findNamesByTask(task.id),
+    // Resolve the keys of the tasks this one is blocked by for the
+    // frontmatter `depends_on:` list. Edges live in the git-ignored
+    // dependencies table, so only their serialised blocker keys survive a
+    // clone. Only `blocks`-kind edges gate readiness, so only they are
+    // mirrored; a blocker whose row is gone resolves to nothing.
+    (task) =>
+      dependencyRepository
+        .findByTask(task.id)
+        .filter((dep) => dep.kind === 'blocks')
+        .map((dep) => tasks.findById(dep.blocksTaskId)?.key ?? null)
+        .filter((key): key is string => key !== null),
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
@@ -431,6 +442,7 @@ export function createServiceContainer(
     epicRepository,
     sprintRepository,
     decisionRepository,
+    dependencyRepository,
     labelRepository,
     observationRepository,
     {

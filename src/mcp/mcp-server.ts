@@ -225,6 +225,7 @@ export class MnemaMcpServer {
       this.services.identity,
       this.session,
       this.services.auditQuery,
+      pendingFiles,
     ).register(this.sdk);
     new TaskTools(
       this.services.task,
@@ -235,7 +236,7 @@ export class MnemaMcpServer {
       pendingFiles,
       this.services.label,
     ).register(this.sdk);
-    new AgentPlanTools(this.services.agentPlan, this.session).register(this.sdk);
+    new AgentPlanTools(this.services.agentPlan, this.session, pendingFiles).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
     new AuditVerifyTool(
       this.services.adapter,
@@ -256,10 +257,15 @@ export class MnemaMcpServer {
         pendingFiles,
       ).register(this.sdk);
     }
-    new NoteTools(this.services.note, this.services.identity, this.session).register(this.sdk);
-    new DependencyTools(this.services.dependency, this.services.identity, this.session).register(
+    new NoteTools(this.services.note, this.services.identity, this.session, pendingFiles).register(
       this.sdk,
     );
+    new DependencyTools(
+      this.services.dependency,
+      this.services.identity,
+      this.session,
+      pendingFiles,
+    ).register(this.sdk);
     new LabelTools(
       this.services.label,
       this.services.identity,

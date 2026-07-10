@@ -98,11 +98,19 @@ describe('inspectMirrorDrift', () => {
   let roadmapDir: string;
   let sprintsDir: string;
   let backlogDir: string;
+  let observationsDir: string;
   let adapter: SqliteAdapter;
 
   // Injects every mirror dir so each test only passes the adapter.
   const drift = () =>
-    inspectMirrorDrift(adapter, { skillsDir, memoryDir, roadmapDir, sprintsDir, backlogDir });
+    inspectMirrorDrift(adapter, {
+      skillsDir,
+      memoryDir,
+      roadmapDir,
+      sprintsDir,
+      backlogDir,
+      observationsDir,
+    });
 
   beforeEach(() => {
     work = mkdtempSync(path.join(tmpdir(), 'mnema-doctor-mirror-'));
@@ -111,11 +119,13 @@ describe('inspectMirrorDrift', () => {
     roadmapDir = path.join(work, 'roadmap');
     sprintsDir = path.join(work, 'sprints');
     backlogDir = path.join(work, 'backlog');
+    observationsDir = path.join(work, 'observations');
     mkdirSync(skillsDir, { recursive: true });
     mkdirSync(memoryDir, { recursive: true });
     mkdirSync(roadmapDir, { recursive: true });
     mkdirSync(sprintsDir, { recursive: true });
     mkdirSync(backlogDir, { recursive: true });
+    mkdirSync(observationsDir, { recursive: true });
     adapter = new SqliteAdapter(path.join(work, 'state.db'));
     new MigrationRunner().run(adapter, realMigrationsDir);
     // Seed one actor for FK constraints.
@@ -178,13 +188,55 @@ describe('inspectMirrorDrift', () => {
     expect(mem?.severity).toBe('warning');
   });
 
+  it('detects a missing observation mirror (keyed by id) and clears once the .md exists', () => {
+    // Observation mirrors are named `<id>.md`, not `<slug>.md`.
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO observations (id, content, topics, created_by)
+         VALUES ('o1', 'a signal', '["ci"]', 'a1')`,
+      )
+      .run();
+
+    // No mirror on disk → doctor flags the row as missing.
+    const missing = drift().find((c) => c.name === 'observations mirrored');
+    expect(missing?.ok).toBe(false);
+    expect(missing?.severity).toBe('warning');
+    expect(missing?.detail).toContain('missing files: o1');
+
+    // Once the mirror exists (as the rebuild path writes it), it clears.
+    writeFileSync(path.join(observationsDir, 'o1.md'), '---\nid: o1\n---\na signal', 'utf-8');
+    const healed = drift().find((c) => c.name === 'observations mirrored');
+    expect(healed?.ok).toBe(true);
+  });
+
+  it('an archived observation is neither missing nor an orphan (its mirror is intentionally gone)', () => {
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO observations (id, content, topics, created_by, archived_at)
+         VALUES ('o-archived', 'stale', '[]', 'a1', '2026-01-01T00:00:00.000Z')`,
+      )
+      .run();
+    // No mirror on disk for the archived row — and that is correct.
+    const obs = drift().find((c) => c.name === 'observations mirrored');
+    expect(obs?.ok).toBe(true);
+  });
+
+  it('detects an orphan observation mirror (FS→DB drift)', () => {
+    writeFileSync(path.join(observationsDir, 'ghost-id.md'), '---\n---\nstray', 'utf-8');
+    const obs = drift().find((c) => c.name === 'observations mirrored');
+    expect(obs?.ok).toBe(false);
+    expect(obs?.detail).toContain('orphan files: ghost-id');
+  });
+
   // readdirSync used implicitly to confirm the suite compiles when the
   // import is touched — harmless.
   it('respects empty state without errors', () => {
     expect(readdirSync(skillsDir)).toEqual([]);
     const checks = drift();
-    // skills, memories, epics, decisions, sprints, tasks
-    expect(checks).toHaveLength(6);
+    // skills, memories, observations, epics, decisions, sprints, tasks
+    expect(checks).toHaveLength(7);
     expect(checks.every((c) => c.ok)).toBe(true);
   });
 

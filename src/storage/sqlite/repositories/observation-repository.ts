@@ -154,6 +154,14 @@ export class ObservationRepository {
       where.push('at >= ?');
       params.push(filters.since);
     }
+    // Topic is matched in SQL against the JSON `topics` array (not in JS after
+    // the fact) so `limit` bounds the rows that actually match. Filtering in JS
+    // post-LIMIT under-reported: a query for topic X with limit N could return
+    // fewer than N X-rows because non-X rows consumed the LIMIT budget first.
+    if (filters.topic !== undefined) {
+      where.push('EXISTS (SELECT 1 FROM json_each(topics) WHERE value = ?)');
+      params.push(filters.topic);
+    }
     // Archived observations drop out of the default listing. Filtered in
     // SQL (not JS like memories) so `limit` counts active rows, not rows
     // that would be discarded afterwards.
@@ -173,9 +181,7 @@ export class ObservationRepository {
       .prepare(`SELECT * FROM observations ${whereClause} ORDER BY at DESC ${limitClause}`)
       .all(...params) as ObservationRow[];
 
-    const observations = rows.map(rowToObservation);
-    if (filters.topic === undefined) return observations;
-    return observations.filter((o) => o.topics.includes(filters.topic as string));
+    return rows.map(rowToObservation);
   }
 
   /**

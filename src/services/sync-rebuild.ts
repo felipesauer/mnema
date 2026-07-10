@@ -17,6 +17,7 @@ import type {
   DecisionFieldUpdates,
   DecisionRepository,
 } from '../storage/sqlite/repositories/decision-repository.js';
+import type { DependencyRepository } from '../storage/sqlite/repositories/dependency-repository.js';
 import type {
   EpicFieldUpdates,
   EpicRepository,
@@ -88,6 +89,7 @@ export class SyncRebuild {
     private readonly epics: EpicRepository,
     private readonly sprints: SprintRepository,
     private readonly decisions: DecisionRepository,
+    private readonly dependencies: DependencyRepository,
     private readonly labels: LabelRepository,
     private readonly observations: ObservationRepository,
     private readonly paths: {
@@ -167,6 +169,11 @@ export class SyncRebuild {
     // second pass, once every decision row exists.
     this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
     const tasks = this.rebuildTasks(project.id, project.key, skipped);
+    // A task's `depends_on` list points at its blockers by key. Those
+    // blocker rows may be walked after the dependent (directory order is
+    // not guaranteed), so the edges are recreated in a second pass, once
+    // every task row exists.
+    this.relinkTaskDependencies(project.key);
     // Observations are rebuilt after tasks so a note's `related_task_key`
     // resolves to a freshly-inserted task row.
     const observations = this.rebuildObservations(skipped);
@@ -535,6 +542,7 @@ export class SyncRebuild {
         rationale: readString(data, 'rationale'),
         consequences: readString(data, 'consequences'),
         impacts: readStringArray(data, 'impacts'),
+        metadata: readRecord(data, 'metadata'),
         authoredBy,
       });
       if (status !== DecisionStatus.Proposed) {
@@ -591,6 +599,55 @@ export class SyncRebuild {
       this.decisions.updateStatus(decision.id, status, supersededById);
     }
   }
+
+  /**
+   * Second pass over the backlog tasks: recreates each `blocks` dependency
+   * edge declared by a task's `depends_on` frontmatter. Runs after every
+   * task row exists so a blocker walked after the dependent still resolves.
+   * Edges live only in the git-ignored `dependencies` table, so this is the
+   * only thing that restores them on a fresh clone — without it a blocked
+   * task would read as ready. Resolves each key to its id, skips a dangling
+   * reference (blocker absent) rather than crashing, and is idempotent: an
+   * edge already present is left untouched.
+   */
+  private relinkTaskDependencies(projectKey: string): void {
+    const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
+    if (!existsSync(root)) return;
+
+    for (const stateDir of listDirs(root)) {
+      if (!this.validStates.has(stateDir)) continue;
+      const stateRoot = path.join(root, stateDir);
+
+      for (const fileName of listMarkdownFiles(stateRoot)) {
+        const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
+
+        const key = readString(data, 'key');
+        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+
+        const dependsOn = readStringArray(data, 'depends_on');
+        if (dependsOn.length === 0) continue;
+
+        const parsedKey = parseTaskKey(key);
+        if (parsedKey === null || parsedKey.projectKey !== projectKey) continue;
+
+        const task = this.tasks.findByKey(key);
+        if (task === null) continue;
+
+        for (const blockerKey of dependsOn) {
+          const blocker = this.tasks.findByKey(blockerKey);
+          // A dangling reference (blocker absent, or the task blocking
+          // itself) is skipped rather than crashing the rebuild.
+          if (blocker === null || blocker.id === task.id) continue;
+          if (this.dependencies.exists(task.id, blocker.id, 'blocks')) continue;
+          this.dependencies.insert({
+            taskId: task.id,
+            blocksTaskId: blocker.id,
+            kind: 'blocks',
+          });
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -645,6 +702,12 @@ function collectTaskContentDrift(
 
   if (assigneeId !== existing.assigneeId) {
     updates.assigneeId = assigneeId;
+    changed = true;
+  }
+
+  const metadata = readRecord(data, 'metadata');
+  if (!sameRecord(metadata, existing.metadata)) {
+    updates.metadata = metadata;
     changed = true;
   }
 
