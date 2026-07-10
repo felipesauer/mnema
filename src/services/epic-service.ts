@@ -129,14 +129,17 @@ export class EpicService {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
 
-    const sequence = this.epics.nextSequence(project.id);
-    const key = `${project.key}-EPIC-${sequence}`;
-
-    const epic = this.epics.insert({
-      key,
-      projectId: project.id,
-      title: input.title,
-      description: input.description ?? null,
+    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+    // two processes on one state.db cannot mint the same key.
+    const epic = this.epics.runInTransactionImmediate(() => {
+      const sequence = this.epics.nextSequence(project.id);
+      const key = `${project.key}-EPIC-${sequence}`;
+      return this.epics.insert({
+        key,
+        projectId: project.id,
+        title: input.title,
+        description: input.description ?? null,
+      });
     });
 
     this.audit.write({

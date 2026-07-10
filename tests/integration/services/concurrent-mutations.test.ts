@@ -213,6 +213,53 @@ describe('concurrent mutations (single-process simulation)', () => {
     expect(events).toHaveLength(1);
   });
 
+  it('epic/sprint/decision creation mints distinct sequential keys under the immediate-transaction path', () => {
+    // The create path for each of these runs nextSequence (a COUNT) + insert
+    // inside runInTransactionImmediate, matching the task fix — so rapid
+    // sequential creates never collide on a key. (Cross-process serialisation
+    // is covered by task-create-concurrent-processes; this pins that the same
+    // immediate-transaction path is wired for the other three entities.)
+    const epicKeys: string[] = [];
+    const sprintKeys: string[] = [];
+    const decisionKeys: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const e = container.epic.create({
+        projectKey: 'CC',
+        title: `Epic number ${i}`,
+        actor: 'alice',
+      });
+      expect(e.ok).toBe(true);
+      if (e.ok) epicKeys.push(e.value.key);
+
+      const s = container.sprint.plan({
+        projectKey: 'CC',
+        name: `Sprint number ${i}`,
+        actor: 'alice',
+      });
+      expect(s.ok).toBe(true);
+      if (s.ok) sprintKeys.push(s.value.key);
+
+      const d = container.decision.record({
+        projectKey: 'CC',
+        title: `Decision number ${i}`,
+        decision: 'do the thing',
+        actor: 'alice',
+      });
+      expect(d.ok).toBe(true);
+      if (d.ok) decisionKeys.push(d.value.key);
+    }
+
+    expect(new Set(epicKeys).size).toBe(5);
+    expect(new Set(sprintKeys).size).toBe(5);
+    expect(new Set(decisionKeys).size).toBe(5);
+    expect([...epicKeys].sort()).toEqual(
+      Array.from({ length: 5 }, (_, i) => `CC-EPIC-${i + 1}`).sort(),
+    );
+    expect([...decisionKeys].sort()).toEqual(
+      Array.from({ length: 5 }, (_, i) => `CC-ADR-${i + 1}`).sort(),
+    );
+  });
+
   it('Conflict error carries the entity field for the printer', () => {
     container.task.create({ projectKey: 'CC', title: 'Title X', actor: 'alice' });
     const seed = container.task.findByKey('CC-1');

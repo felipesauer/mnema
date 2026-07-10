@@ -105,6 +105,26 @@ export function checkSlug(slug: string, issues: ErrorIssue[], field = 'slug'): v
   }
 }
 
+/**
+ * Pushes an issue when a string field is outside `[min, max]` characters.
+ * `max` is optional (a lower bound only). Gives a service the same length
+ * contract the MCP schema enforces, so a non-MCP caller (the CLI) rejects
+ * identically.
+ */
+export function checkStringLength(
+  value: string,
+  field: string,
+  min: number,
+  max: number | undefined,
+  issues: ErrorIssue[],
+): void {
+  if (value.length < min) {
+    issues.push({ path: [field], message: `must be at least ${min} character(s)` });
+  } else if (max !== undefined && value.length > max) {
+    issues.push({ path: [field], message: `must be at most ${max} characters` });
+  }
+}
+
 function describe(value: number): string {
   return Number.isNaN(value) ? 'NaN' : String(value);
 }

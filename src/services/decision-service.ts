@@ -175,20 +175,24 @@ export class DecisionService {
       return Err({ kind: ErrorCode.ValidationFailed, issues: markupIssues });
     }
 
-    const sequence = this.decisions.nextSequence(project.id);
-    const key = `${project.key}-ADR-${sequence}`;
     const authoredBy = this.identity.ensureActor(input.actor, ActorKind.Human);
 
-    const decision = this.decisions.insert({
-      key,
-      projectId: project.id,
-      title: input.title,
-      decision: input.decision,
-      context: input.context ?? null,
-      rationale: input.rationale ?? null,
-      consequences: input.consequences ?? null,
-      impacts: input.impacts ?? [],
-      authoredBy,
+    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+    // two processes on one state.db cannot mint the same key.
+    const decision = this.decisions.runInTransactionImmediate(() => {
+      const sequence = this.decisions.nextSequence(project.id);
+      const key = `${project.key}-ADR-${sequence}`;
+      return this.decisions.insert({
+        key,
+        projectId: project.id,
+        title: input.title,
+        decision: input.decision,
+        context: input.context ?? null,
+        rationale: input.rationale ?? null,
+        consequences: input.consequences ?? null,
+        impacts: input.impacts ?? [],
+        authoredBy,
+      });
     });
 
     this.audit.write({

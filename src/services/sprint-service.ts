@@ -145,18 +145,21 @@ export class SprintService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
-    const sequence = this.sprints.nextSequence(project.id);
-    const key = `${project.key}-SPRINT-${sequence}`;
-
+    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
+    // two processes on one state.db cannot mint the same key.
     const sprintResult = tryMutation(() =>
-      this.sprints.insert({
-        key,
-        projectId: project.id,
-        name: input.name,
-        goal: input.goal ?? null,
-        startsAt: input.startsAt ?? null,
-        endsAt: input.endsAt ?? null,
-        capacity: input.capacity ?? null,
+      this.sprints.runInTransactionImmediate(() => {
+        const sequence = this.sprints.nextSequence(project.id);
+        const key = `${project.key}-SPRINT-${sequence}`;
+        return this.sprints.insert({
+          key,
+          projectId: project.id,
+          name: input.name,
+          goal: input.goal ?? null,
+          startsAt: input.startsAt ?? null,
+          endsAt: input.endsAt ?? null,
+          capacity: input.capacity ?? null,
+        });
       }),
     );
     if (!sprintResult.ok) return sprintResult;

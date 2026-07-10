@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import type { Skill } from '../domain/entities/skill.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
-import { checkSlug } from '../domain/validation.js';
+import { checkSlug, checkStringLength } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
@@ -694,25 +694,6 @@ export class SkillService {
 
 function hasExample(body: string): boolean {
   return /^##\s+example\b/im.test(body);
-}
-
-/**
- * Pushes an issue when a string field is outside `[min, max]` characters.
- * `max` is optional (a lower bound only). Gives the service the same
- * length contract the MCP schema enforces so the CLI rejects identically.
- */
-function checkStringLength(
-  value: string,
-  field: string,
-  min: number,
-  max: number | undefined,
-  issues: ErrorIssue[],
-): void {
-  if (value.length < min) {
-    issues.push({ path: [field], message: `must be at least ${min} character(s)` });
-  } else if (max !== undefined && value.length > max) {
-    issues.push({ path: [field], message: `must be at most ${max} characters` });
-  }
 }
 
 function toolsArraysEqual(a: readonly string[], b: readonly string[]): boolean {
