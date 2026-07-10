@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
+import type { Task } from '../domain/entities/task.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { DecisionStatus } from '../domain/enums/decision-status.js';
 import { EpicState } from '../domain/enums/epic-state.js';
@@ -14,7 +15,10 @@ import type { EpicRepository } from '../storage/sqlite/repositories/epic-reposit
 import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
-import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import type {
+  TaskFieldUpdates,
+  TaskRepository,
+} from '../storage/sqlite/repositories/task-repository.js';
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -49,6 +53,12 @@ export interface RebuildSummary {
  *
  * Order matters. Epics and sprints are rebuilt before tasks so a task's
  * `epic_key` / `sprint_key` can be resolved to a freshly-inserted row.
+ *
+ * Upsert-only: it inserts or realigns a row for every markdown it finds,
+ * but never deletes. Removing a `.md` is therefore not a delete signal —
+ * the row survives, and `SyncService.rebuildMirrors` re-materialises the
+ * file from it. Retiring an entity is a domain action (a task is
+ * soft-deleted by `cancel`), not a file deletion.
  *
  * Idempotent: rerunning produces the same final state when the markdown
  * has not changed.
@@ -133,6 +143,11 @@ export class SyncRebuild {
       'decision',
       skipped,
     );
+    // A superseded decision's `superseded_by` points at its successor by
+    // key. That successor may be walked after the superseded row (the
+    // directory order is not guaranteed), so the link is resolved in a
+    // second pass, once every decision row exists.
+    this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
     const tasks = this.rebuildTasks(project.id, project.key, skipped);
 
     return {
@@ -245,10 +260,27 @@ export class SyncRebuild {
           upserted += 1;
         } else {
           taskId = existing.id;
+          // The committed markdown is authoritative on rebuild: any field
+          // that drifted on disk (state, links, or the content columns
+          // below) is written back into the cache, and the file counts as
+          // one upsert even when only its content changed.
+          let changed = false;
+
           if (existing.state !== stateName) {
             this.tasks.updateState(existing.id, stateName, null);
-            upserted += 1;
+            changed = true;
           }
+
+          // Fold the content columns serialiseTask round-trips back onto the
+          // row when they diverge from the cache, so a merged edit to a
+          // committed task (title, description, acceptance_criteria,
+          // estimate, priority, assignee) is no longer silently dropped.
+          const contentDrift = collectTaskContentDrift(existing, data, assigneeId);
+          if (contentDrift !== null) {
+            this.tasks.updateFields(existing.id, contentDrift);
+            changed = true;
+          }
+
           // Relink an existing row when its disk link drifted from the cache.
           if (existing.epicId !== epicId) {
             if (epicId !== null) this.epics.addTask(epicId, existing.id);
@@ -258,6 +290,8 @@ export class SyncRebuild {
             if (sprintId !== null) this.sprints.addTask(sprintId, existing.id);
             else this.sprints.removeTask(existing.id);
           }
+
+          if (changed) upserted += 1;
         }
 
         // Mirror the frontmatter `labels:` list back into the join table.
@@ -375,7 +409,13 @@ export class SyncRebuild {
     return false;
   }
 
-  /** Inserts a decision when absent, or realigns its status when it drifted. */
+  /**
+   * Inserts a decision when absent, or realigns its status when it
+   * drifted. The `superseded_by` link is deliberately left for
+   * {@link relinkSupersededDecisions}: the successor may not be walked yet
+   * when this row is upserted, so resolving it here would drop a forward
+   * reference.
+   */
   private upsertDecision(projectId: string, key: string, data: Record<string, unknown>): boolean {
     const status = readEnum(data, 'status', DecisionStatus, DecisionStatus.Proposed);
     const decisionText = readString(data, 'decision');
@@ -397,23 +437,113 @@ export class SyncRebuild {
         authoredBy,
       });
       if (status !== DecisionStatus.Proposed) {
-        // supersededBy is a key on disk; resolve it to an id when present.
-        const supersededByKey = readString(data, 'superseded_by');
-        const supersededById =
-          supersededByKey !== null ? (this.decisions.findByKey(supersededByKey)?.id ?? null) : null;
-        this.decisions.updateStatus(decision.id, status, supersededById);
+        this.decisions.updateStatus(decision.id, status, null);
       }
       return true;
     }
     if (existing.status !== status) {
-      const supersededByKey = readString(data, 'superseded_by');
-      const supersededById =
-        supersededByKey !== null ? (this.decisions.findByKey(supersededByKey)?.id ?? null) : null;
-      this.decisions.updateStatus(existing.id, status, supersededById);
+      this.decisions.updateStatus(existing.id, status, null);
       return true;
     }
     return false;
   }
+
+  /**
+   * Second pass over the roadmap decisions: resolves each superseded
+   * decision's `superseded_by` key to the successor's freshly-inserted id
+   * and writes the pointer. Runs after every decision row exists so a
+   * forward reference (successor walked after the row that points at it)
+   * survives, and re-applies the link even when {@link upsertDecision}
+   * left the status unchanged.
+   */
+  private relinkSupersededDecisions(dir: string, projectKey: string): void {
+    const root = path.join(this.paths.projectRoot, dir);
+    if (!existsSync(root)) return;
+
+    for (const fileName of listMarkdownFiles(root)) {
+      const data = this.markdownIo.read(path.join(root, fileName)).mnemaData;
+      if (readString(data, 'kind') !== 'decision') continue;
+
+      const status = readEnum(data, 'status', DecisionStatus, DecisionStatus.Proposed);
+      if (status !== DecisionStatus.Superseded) continue;
+
+      const key = readString(data, 'key');
+      if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+      if (!key.startsWith(`${projectKey}-`)) continue;
+
+      const decision = this.decisions.findByKey(key);
+      if (decision === null) continue;
+
+      const supersededByKey = readString(data, 'superseded_by');
+      const supersededById =
+        supersededByKey !== null ? (this.decisions.findByKey(supersededByKey)?.id ?? null) : null;
+      if (decision.supersededBy === supersededById) continue;
+
+      this.decisions.updateStatus(decision.id, status, supersededById);
+    }
+  }
+}
+
+/**
+ * Compares a cached task row against its committed frontmatter and returns
+ * only the content columns that drifted, shaped for
+ * {@link TaskRepository.updateFields}. Returns `null` when nothing changed
+ * so the caller can skip the write and leave `updated_at` truthful.
+ *
+ * Mirrors the fields {@link serialiseTask} round-trips and the insert
+ * path's fallbacks (title/priority default the same way) so a freshly
+ * written mirror reports no drift. `assigneeId` is passed in already
+ * resolved from the `assignee` handle, matching how the insert branch
+ * derives it.
+ */
+function collectTaskContentDrift(
+  existing: Task,
+  data: Record<string, unknown>,
+  assigneeId: string | null,
+): TaskFieldUpdates | null {
+  const updates: { -readonly [K in keyof TaskFieldUpdates]: TaskFieldUpdates[K] } = {};
+  let changed = false;
+
+  const title = readString(data, 'title');
+  if (title !== null && title !== existing.title) {
+    updates.title = title;
+    changed = true;
+  }
+
+  const description = readString(data, 'description');
+  if (description !== existing.description) {
+    updates.description = description;
+    changed = true;
+  }
+
+  const acceptanceCriteria = readStringArray(data, 'acceptance_criteria');
+  if (!sameStringArray(acceptanceCriteria, existing.acceptanceCriteria)) {
+    updates.acceptanceCriteria = acceptanceCriteria;
+    changed = true;
+  }
+
+  const estimate = readNumber(data, 'estimate');
+  if (estimate !== existing.estimate) {
+    updates.estimate = estimate;
+    changed = true;
+  }
+
+  const priority = readNumber(data, 'priority') ?? 3;
+  if (priority !== existing.priority) {
+    updates.priority = priority;
+    changed = true;
+  }
+
+  if (assigneeId !== existing.assigneeId) {
+    updates.assigneeId = assigneeId;
+    changed = true;
+  }
+
+  return changed ? updates : null;
+}
+
+function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
 function listDirs(root: string): string[] {

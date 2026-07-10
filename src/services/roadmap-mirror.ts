@@ -59,9 +59,21 @@ export class RoadmapMirror {
     this.writeFile(this.sprintPath(sprint.key), serialiseSprint(sprint), sprint.name);
   }
 
-  /** Writes (or rewrites) the markdown mirror for a decision. */
-  writeDecision(decision: Decision): void {
-    this.writeFile(this.decisionPath(decision.key), serialiseDecision(decision), decision.title);
+  /**
+   * Writes (or rewrites) the markdown mirror for a decision.
+   *
+   * `supersededByKey` is the successor's human key. The database stores
+   * that link as an internal UUID, but UUIDs are regenerated on a fresh
+   * clone — the stable, version-controlled reference is the key (as with
+   * a task's `epic_key`/`sprint_key`). The caller resolves the id to a key
+   * so this module stays decoupled from the decision repository.
+   */
+  writeDecision(decision: Decision, supersededByKey: string | null = null): void {
+    this.writeFile(
+      this.decisionPath(decision.key),
+      serialiseDecision(decision, supersededByKey),
+      decision.title,
+    );
   }
 
   /** True when an epic already has a markdown mirror on disk. */
@@ -122,7 +134,10 @@ function serialiseSprint(sprint: Sprint): Record<string, unknown> {
 }
 
 /** Serialises a decision to its `mnema:` frontmatter shape. */
-function serialiseDecision(decision: Decision): Record<string, unknown> {
+function serialiseDecision(
+  decision: Decision,
+  supersededByKey: string | null,
+): Record<string, unknown> {
   return {
     key: decision.key,
     kind: 'decision',
@@ -132,7 +147,7 @@ function serialiseDecision(decision: Decision): Record<string, unknown> {
     decision: decision.decision,
     rationale: decision.rationale,
     consequences: decision.consequences,
-    superseded_by: decision.supersededBy,
+    superseded_by: supersededByKey,
     authored_by: decision.authoredBy,
     impacts: [...decision.impacts],
     metadata: { ...decision.metadata },
