@@ -175,8 +175,19 @@ export class AgentRunTools {
           depth: result.value.depth,
           ...(summary.ok
             ? {
+                // What to pick up first, in prose — the headline of a resume.
+                resume_hint: summary.value.resumeHint,
                 mutation_count: summary.value.mutationCount,
                 plan_count: summary.value.planCount,
+                // Tasks this run left mid-flight (non-terminal), newest first.
+                active_tasks: summary.value.activeTasks.map((t) => ({
+                  key: t.key,
+                  state: t.state,
+                  last_action: t.lastAction,
+                  at: t.at,
+                })),
+                // Compact stand-in for run_diff: the last few moves, newest first.
+                recent_changes: summary.value.recentChanges,
                 open_items: summary.value.openItems.map((item) => ({
                   kind: item.kind,
                   id: item.id,

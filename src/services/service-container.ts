@@ -480,6 +480,8 @@ export function createServiceContainer(
     audit,
     agentPlans,
     transitions,
+    tasks,
+    stateMachine,
     () => {
       sync.flushAll();
     },

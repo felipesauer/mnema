@@ -4,6 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentRunStatus } from '@/domain/enums/agent-run-status.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AGENT_RUN_DEPTH_LIMIT, AgentRunService } from '@/services/agent-run-service.js';
 import { AuditService } from '@/services/audit-service.js';
@@ -13,6 +15,7 @@ import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repository.js';
+import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -24,6 +27,7 @@ describe('AgentRunService', () => {
   let runs: AgentRunRepository;
   let plans: AgentPlanRepository;
   let transitions: TransitionRepository;
+  let stateMachine: StateMachine;
   let service: AgentRunService;
 
   beforeEach(() => {
@@ -38,7 +42,20 @@ describe('AgentRunService', () => {
     const identity = new IdentityService(actors);
     const auditDir = path.join(tempRoot, '.audit');
     const audit = new AuditService(new AuditWriter(auditDir));
-    service = new AgentRunService(runs, actors, identity, audit, plans, transitions);
+    stateMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/default.json')),
+    );
+    const tasks = new TaskRepository(adapter);
+    service = new AgentRunService(
+      runs,
+      actors,
+      identity,
+      audit,
+      plans,
+      transitions,
+      tasks,
+      stateMachine,
+    );
   });
 
   afterEach(() => {
@@ -150,6 +167,8 @@ describe('AgentRunService', () => {
       audit,
       plans,
       transitions,
+      new TaskRepository(adapter),
+      stateMachine,
       (run) => calls.push(run.id),
     );
 

@@ -4,6 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentRunStatus } from '@/domain/enums/agent-run-status.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { AgentRunService } from '@/services/agent-run-service.js';
 import { AuditService } from '@/services/audit-service.js';
 import { IdentityService } from '@/services/identity-service.js';
@@ -13,6 +15,7 @@ import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repository.js';
+import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -43,6 +46,8 @@ describe('OrphanRunService', () => {
       audit,
       new AgentPlanRepository(adapter),
       new TransitionRepository(adapter),
+      new TaskRepository(adapter),
+      new StateMachine(new WorkflowLoader().load(path.resolve('workflows/default.json'))),
     );
     orphan = new OrphanRunService(runs, agentRun);
   });

@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentPlanState } from '@/domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '@/domain/enums/agent-run-status.js';
+import { StateMachine } from '@/domain/state-machine/state-machine.js';
+import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AGENT_PLAN_DEPTH_LIMIT, AgentPlanService } from '@/services/agent-plan-service.js';
 import { AgentRunService } from '@/services/agent-run-service.js';
@@ -16,6 +18,7 @@ import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.
 import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
 import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
+import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -38,8 +41,21 @@ describe('AgentPlanService', () => {
     const runRepo = new AgentRunRepository(adapter);
     const planRepo = new AgentPlanRepository(adapter);
     const taskRepo = new TaskRepository(adapter);
+    const transitionRepo = new TransitionRepository(adapter);
+    const stateMachine = new StateMachine(
+      new WorkflowLoader().load(path.resolve('workflows/default.json')),
+    );
 
-    runs = new AgentRunService(runRepo, actors, identity, audit);
+    runs = new AgentRunService(
+      runRepo,
+      actors,
+      identity,
+      audit,
+      planRepo,
+      transitionRepo,
+      taskRepo,
+      stateMachine,
+    );
     plans = new AgentPlanService(planRepo, runRepo, taskRepo);
 
     const start = runs.start({ goal: 'g', actor: 'daniel', agentHandle: 'cc' });
