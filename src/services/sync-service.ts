@@ -48,6 +48,17 @@ export type TaskLinkResolver = (task: Task) => {
 export type TaskLabelResolver = (task: Task) => readonly string[];
 
 /**
+ * Resolves the keys of the tasks a task is blocked by, for the markdown
+ * frontmatter `depends_on:` list. Edges live in the `dependencies` table
+ * (git-ignored, keyed by regenerated UUIDs), so serialising them by the
+ * stable blocker key is the only way they survive a fresh clone. The
+ * resolver keeps the sync service decoupled from the dependency repository
+ * (mirroring {@link TaskLinkResolver}). Returns `[]` when the task depends
+ * on nothing.
+ */
+export type TaskDependencyResolver = (task: Task) => readonly string[];
+
+/**
  * Auto-flush thresholds. The MCP server overrides these from
  * `mnema.config.json`.
  */
@@ -87,6 +98,8 @@ export class SyncService {
     private readonly resolveLinks: TaskLinkResolver | null = null,
     // Optional for the same reason; when absent no `labels` key is written.
     private readonly resolveLabels: TaskLabelResolver | null = null,
+    // Optional for the same reason; when absent `depends_on` is written as [].
+    private readonly resolveDependencies: TaskDependencyResolver | null = null,
   ) {}
 
   /**
@@ -272,8 +285,9 @@ export class SyncService {
     const existing = this.markdownIo.read(targetPath);
     const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
     const labels = this.resolveLabels?.(task) ?? [];
+    const dependsOn = this.resolveDependencies?.(task) ?? [];
     this.markdownIo.write(targetPath, {
-      mnemaData: serialiseTask(task, links, labels),
+      mnemaData: serialiseTask(task, links, labels, dependsOn),
       otherFrontmatter: existing.otherFrontmatter,
       content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
     });
@@ -332,6 +346,7 @@ function serialiseTask(
   task: Task,
   links: { readonly epicKey: string | null; readonly sprintKey: string | null },
   labels: readonly string[],
+  dependsOn: readonly string[],
 ): Record<string, unknown> {
   return {
     key: task.key,
@@ -340,6 +355,7 @@ function serialiseTask(
     description: task.description,
     acceptance_criteria: [...task.acceptanceCriteria],
     labels: [...labels],
+    depends_on: [...dependsOn],
     estimate: task.estimate,
     priority: task.priority,
     assignee: task.assigneeId,
