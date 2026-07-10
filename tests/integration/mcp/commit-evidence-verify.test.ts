@@ -105,6 +105,37 @@ describe('commit evidence verification (MNEMA-89)', () => {
     expect(body.warning).toContain('deadbeef');
   });
 
+  it('sharpens the warning for a file path vs a missing SHA (both still save)', async () => {
+    process.env.MNEMA_ACTOR = 'daniel';
+    // Runner reports "not found" for either ref; the verifier tells the two
+    // cases apart from the ref shape, not from git.
+    harness = await setup(gitRunner(false));
+    await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'commit ev' } });
+
+    const shaKey = await seedTask(harness.client);
+    const shaRes = (await harness.client.callTool({
+      name: 'task_attach_evidence',
+      arguments: { task_key: shaKey, criterion_index: 0, kind: 'commit', ref: 'deadbeef' },
+    })) as CallToolResult;
+    const shaBody = payload(shaRes);
+    expect(shaRes.isError).toBeFalsy();
+    expect(shaBody.evidence).toBeDefined();
+    expect(String(shaBody.warning)).toContain('not found in this repository');
+
+    const pathKey = await seedTask(harness.client);
+    const pathRes = (await harness.client.callTool({
+      name: 'task_attach_evidence',
+      arguments: { task_key: pathKey, criterion_index: 0, kind: 'commit', ref: 'src/foo.ts' },
+    })) as CallToolResult;
+    const pathBody = payload(pathRes);
+    // Still advisory: the attach lands, only the wording changes.
+    expect(pathRes.isError).toBeFalsy();
+    expect(pathBody.evidence).toBeDefined();
+    expect(String(pathBody.warning)).toContain('is not a commit');
+    // The two advisories must not read the same.
+    expect(pathBody.warning).not.toBe(shaBody.warning);
+  });
+
   it('attaches without a warning when the commit ref is found', async () => {
     process.env.MNEMA_ACTOR = 'daniel';
     harness = await setup(gitRunner(true));

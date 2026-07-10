@@ -701,6 +701,13 @@ profile:
 The audit-only profile leaves only **Core** and **Workflow transitions**
 on.
 
+Every workflow-transition tool (`task_submit`, `task_approve`, …) accepts
+an optional `verbosity: 'compact'`. It returns a lean
+`{ key, state, updatedAt }` echo instead of the full task entity — useful
+for batch or low-context transitions where the long description and
+acceptance-criteria arrays would only inflate the agent's context. The
+default stays `full`.
+
 ### User-level defaults
 
 A `~/.config/mnema/config.json` lets you set **behavior preferences once**

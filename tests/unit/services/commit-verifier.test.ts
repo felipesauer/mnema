@@ -36,6 +36,24 @@ describe('CommitVerifier', () => {
     expect(result.reason).toContain('deadbeef');
   });
 
+  it('distinguishes a missing SHA from a ref that is not a commit at all', () => {
+    const v = new CommitVerifier(runner({ inRepo: true, catFileStatus: 1 }));
+
+    // A SHA-shaped ref that git cannot resolve is a genuine miss.
+    const missingSha = v.verify('deadbeef', ROOT);
+    expect(missingSha.found).toBe(false);
+    expect(missingSha.reason).toContain('not found in this repository');
+    expect(missingSha.reason).not.toContain('not a commit');
+
+    // A file path is not a commit-ish — the advisory must say so, and it
+    // must differ from the missing-SHA message.
+    const filePath = v.verify('src/foo.ts', ROOT);
+    expect(filePath.checked).toBe(true); // still non-blocking, still checked
+    expect(filePath.found).toBe(false);
+    expect(filePath.reason).toContain('is not a commit');
+    expect(filePath.reason).not.toBe(missingSha.reason);
+  });
+
   it('degrades to unchecked outside a git repository', () => {
     const v = new CommitVerifier(runner({ inRepo: false }));
     const result = v.verify('abc1234', ROOT);
