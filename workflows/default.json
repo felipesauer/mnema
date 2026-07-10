@@ -89,14 +89,21 @@
       },
       "complete": {
         "to": "DONE",
-        "description": "Complete a task that has no code review (a decision, docs, or research)",
-        "use_when": "Work is done but produced no PR to review — e.g. ratifying a decision or writing docs. For code, use submit_review then approve.",
+        "description": "Complete a task directly, whether or not it went through review",
+        "use_when": "Work is done and merged. For non-code work (a decision, docs, research) pass completion_note only. For merged code with no separate review step, pass pr_url too — it is recorded as evidence and, when github.done_pr_policy is on, gated on the PR being merged with green CI, so you don't need submit_review then approve.",
         "requires": {
           "completion_note": {
             "type": "string",
             "min": 5,
             "field_kind": "validating",
             "description": "What was completed and where the outcome lives (e.g. a link to the ADR or doc). One-shot annotation; doesn't persist on the task."
+          },
+          "pr_url": {
+            "type": "string",
+            "format": "url",
+            "optional": true,
+            "field_kind": "validating",
+            "description": "Optional. URL of the merged pull request for code work. Recorded as evidence in the transition payload; validated for URL format only. When github.done_pr_policy is on, the move is warned/refused if the PR is not merged or CI is red."
           }
         }
       },

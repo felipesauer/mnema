@@ -129,7 +129,9 @@ export function formatError(error: MnemaError): string {
     case ErrorCode.UnknownAssignee:
       lines.push(`Unknown assignee: ${error.handle}`);
       lines.push(
-        `${pc.dim('hint:')} Register the actor with \`mnema identity add ${error.handle}\`, or pass a known handle`,
+        `${pc.dim('hint:')} Use \`me\` (or \`self\`) to assign to yourself, or pass a known handle — ` +
+          'the roster is in `context_bootstrap` under `actors.known`. ' +
+          `To register a new actor, run \`mnema identity add ${error.handle}\`.`,
       );
       break;
 

@@ -336,6 +336,22 @@ export class IdentityService {
     const actor = this.actorRepository.findByHandle(handle);
     return actor === null ? null : actor.id;
   }
+
+  /**
+   * Lists every known actor recorded in the database, ordered by handle.
+   * The roster an agent can read (via `context_bootstrap`) to discover
+   * valid assignee handles without running a CLI. The display name is
+   * enriched from local config when present, falling back to the handle.
+   *
+   * @returns Active actors with handle, kind and display name
+   */
+  listActors(): ReadonlyArray<{ handle: string; kind: ActorKind; display: string }> {
+    return this.actorRepository.listActive().map((actor) => ({
+      handle: actor.handle,
+      kind: actor.kind,
+      display: this.getDisplayFor(actor.handle),
+    }));
+  }
 }
 
 const HANDLE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;

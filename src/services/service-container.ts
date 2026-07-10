@@ -454,6 +454,7 @@ export function createServiceContainer(
       ensureActor: (handle, kind) =>
         identity.ensureActor(handle, kind === 'human' ? ActorKind.Human : ActorKind.Agent),
       findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
+      getDefaultActor: () => identity.getDefaultActor(),
     },
     config.enforcement_mode as EnforcementMode,
     config.claims.require_to_start,

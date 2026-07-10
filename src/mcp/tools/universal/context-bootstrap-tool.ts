@@ -5,6 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import type { Config } from '../../../config/config-schema.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
+import type { IdentityService } from '../../../services/identity-service.js';
 import type { InboxService } from '../../../services/inbox-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { MemoryStalenessService } from '../../../services/memory-staleness.js';
@@ -53,6 +54,7 @@ export class ContextBootstrapTool {
     private readonly observationService: ObservationService,
     private readonly memoryStaleness: MemoryStalenessService,
     private readonly inboxService: InboxService,
+    private readonly identityService: IdentityService,
   ) {}
 
   /**
@@ -130,12 +132,27 @@ export class ContextBootstrapTool {
     const taskKeyById = new Map<string, string>();
     for (const task of all) taskKeyById.set(task.id, task.key);
 
+    // The actor roster an agent can read to learn valid assignee handles
+    // without running a CLI. `default` is the handle the session acts as —
+    // and the one `me`/`self` resolve to on task_start/task_assign. Never
+    // throws: an unconfigured identity reports a null default rather than
+    // failing the whole bootstrap.
+    const defaultActor = this.identityService.resolveDefaultActor().actor;
+    const actors = {
+      default: defaultActor,
+      known: this.identityService.listActors(),
+    };
+
     return ok({
       project: {
         key: this.config.project.key,
         name: this.config.project.name,
         description: this.config.project.description ?? null,
       },
+      // Who this session acts as, plus the roster of known actors. `me`
+      // and `self` on task_start/task_assign resolve to `default`; any
+      // handle under `known` is a valid assignee_id.
+      actors,
       workflow: {
         name: this.workflow.name,
         description: this.workflow.description,

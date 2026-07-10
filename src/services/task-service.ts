@@ -22,6 +22,14 @@ import type { SyncService } from './sync-service.js';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Assignee references that mean "the caller" — resolved to the default
+ * actor's id rather than looked up as a handle. Lets an MCP agent that has
+ * no way to learn valid handles still assign work to itself without first
+ * running a CLI to register an actor.
+ */
+const SELF_REFERENCES: ReadonlySet<string> = new Set(['me', 'self']);
+
+/**
  * Input for creating a new task.
  *
  * Tasks always start in the workflow's initial state. Gates only
@@ -93,6 +101,7 @@ export class TaskService {
     private readonly identity: {
       ensureActor: (handle: string, kind: 'human' | 'agent') => string;
       findActorIdByHandle: (handle: string) => string | null;
+      getDefaultActor: () => string;
     },
     // How a failed gate is enforced. Defaults to Blocking — the historical
     // behaviour (a failed gate always blocks) — so callers that don't pass
@@ -185,18 +194,27 @@ export class TaskService {
   }
 
   /**
-   * Resolves an assignee reference (a handle like `maria` or a raw UUID)
-   * to an actor id, or `null` when unset. A handle is looked up — never
-   * created — so a typo surfaces as a clean {@link ErrorCode.UnknownAssignee}
-   * instead of the raw `FOREIGN KEY constraint failed` the database would
-   * throw on an unknown id. (The reporter, by contrast, is the active
-   * identity and is always ensured.)
+   * Resolves an assignee reference (a handle like `maria`, the literal
+   * `me`/`self`, or a raw UUID) to an actor id, or `null` when unset.
    *
-   * @param reference - Handle, UUID, or null
+   * `me`/`self` resolve to the default actor — the one the caller is
+   * already acting as — so an MCP agent with no way to learn valid handles
+   * can still assign work to itself. A real (non-self) handle is looked up
+   * and never created, so a typo surfaces as a clean
+   * {@link ErrorCode.UnknownAssignee} instead of the raw
+   * `FOREIGN KEY constraint failed` the database would throw on an unknown
+   * id. (The reporter, by contrast, is the active identity and is always
+   * ensured.)
+   *
+   * @param reference - Handle, `me`/`self`, UUID, or null
    * @returns The resolved actor id (or null) on success
    */
   private resolveAssignee(reference: string | null): Result<string | null, MnemaError> {
     if (reference === null || reference.length === 0) return Ok(null);
+    if (SELF_REFERENCES.has(reference.toLowerCase())) {
+      const handle = this.identity.getDefaultActor();
+      return Ok(this.identity.ensureActor(handle, 'human'));
+    }
     if (UUID_PATTERN.test(reference)) return Ok(reference);
     const id = this.identity.findActorIdByHandle(reference);
     if (id === null) return Err({ kind: ErrorCode.UnknownAssignee, handle: reference });
