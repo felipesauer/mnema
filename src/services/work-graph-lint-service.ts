@@ -5,6 +5,7 @@ import type { MnemaError } from '../errors/mnema-error.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
+import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 import type { AuditQuery } from './audit-query.js';
@@ -57,6 +58,10 @@ interface BrokenDependencyRow {
  * - `subagent-bypass` (warning): a DONE task whose transitions were never
  *   recorded under an agent run (`run` absent on every audit event for
  *   the task) — i.e. it was moved outside a tracked agent run.
+ * - `missing-evidence` (warning): a task in a terminal state with no
+ *   attached evidence of any kind — done on paper, unproven in fact. The
+ *   inverse of subagent-bypass: that checks *who* moved it, this checks
+ *   *whether the work was shown*.
  * - `broken-dependency` (error): a dependency edge pointing at a task
  *   that no longer exists (soft-deleted or gone).
  */
@@ -68,6 +73,7 @@ export class WorkGraphLintService {
     private readonly stateMachine: StateMachine,
     private readonly auditQuery: AuditQuery,
     private readonly adapter: SqliteAdapter,
+    private readonly evidence: TaskEvidenceRepository,
   ) {}
 
   /**
@@ -161,6 +167,25 @@ export class WorkGraphLintService {
           severity: 'warning',
           rule: 'subagent-bypass',
           message: `${task.key} reached a terminal state with no transition recorded under an agent run`,
+        });
+      }
+    }
+
+    // missing-evidence: a task finished "done" but showed no proof. A
+    // canceled task legitimately has none, so exclude the abandon terminal
+    // (CANCELED across the shipped workflows) — only completion terminals
+    // are expected to carry evidence.
+    for (const task of tasks) {
+      if (
+        this.stateMachine.isTerminal(task.state) &&
+        task.state !== 'CANCELED' &&
+        this.evidence.findByTask(task.id).length === 0
+      ) {
+        diagnostics.push({
+          scope,
+          severity: 'warning',
+          rule: 'missing-evidence',
+          message: `${task.key} reached ${task.state} with no attached evidence`,
         });
       }
     }

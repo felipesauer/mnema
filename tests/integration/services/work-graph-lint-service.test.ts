@@ -15,6 +15,7 @@ import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
+import { TaskEvidenceRepository } from '@/storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
@@ -29,6 +30,7 @@ describe('WorkGraphLintService', () => {
   let sprints: SprintRepository;
   let epics: EpicRepository;
   let tasks: TaskRepository;
+  let evidence: TaskEvidenceRepository;
   let projectId: string;
   let actorId: string;
 
@@ -52,10 +54,19 @@ describe('WorkGraphLintService', () => {
     sprints = new SprintRepository(adapter);
     epics = new EpicRepository(adapter);
     tasks = new TaskRepository(adapter);
+    evidence = new TaskEvidenceRepository(adapter);
     const stateMachine = new StateMachine(
       new WorkflowLoader().load(path.resolve('workflows/default.json')),
     );
-    lint = new WorkGraphLintService(sprints, epics, tasks, stateMachine, auditQuery, adapter);
+    lint = new WorkGraphLintService(
+      sprints,
+      epics,
+      tasks,
+      stateMachine,
+      auditQuery,
+      adapter,
+      evidence,
+    );
   });
 
   afterEach(() => {
@@ -69,9 +80,21 @@ describe('WorkGraphLintService', () => {
     return task.id;
   }
 
-  it('reports clean for a sprint whose tasks are all terminal (with an agent run)', () => {
+  /** Attach one piece of evidence so a terminal task is not flagged missing-evidence. */
+  function attachEvidence(taskId: string): void {
+    evidence.insert({
+      taskId,
+      criterionIndex: 0,
+      criterionText: null,
+      kind: 'commit',
+      ref: 'abc123',
+      note: null,
+    });
+  }
+
+  it('reports clean for a sprint whose tasks are all terminal (with an agent run + evidence)', () => {
     const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
     // a transition recorded under an agent run → not a bypass
     audit.write({
       kind: 'task_transitioned',
@@ -79,6 +102,8 @@ describe('WorkGraphLintService', () => {
       run: generateUuid(),
       data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
+    // evidence attached → not missing-evidence
+    attachEvidence(id);
 
     const result = lint.lintSprint('TEST-SPRINT-1');
     expect(result.ok).toBe(true);
@@ -129,6 +154,37 @@ describe('WorkGraphLintService', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
+  });
+
+  it('flags missing-evidence: a DONE task with no attached evidence', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    makeTask('TEST-1', 'DONE', sprint.id);
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const d = result.value.diagnostics.find((x) => x.rule === 'missing-evidence');
+    expect(d).toBeDefined();
+    expect(d?.severity).toBe('warning');
+    expect(d?.message).toContain('TEST-1');
+  });
+
+  it('does not flag missing-evidence once evidence is attached', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
+    attachEvidence(id);
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'missing-evidence')).toBe(false);
+  });
+
+  it('does not flag missing-evidence for a CANCELED task (abandon terminal is exempt)', () => {
+    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    makeTask('TEST-1', 'CANCELED', sprint.id);
+    const result = lint.lintSprint('TEST-SPRINT-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.diagnostics.some((d) => d.rule === 'missing-evidence')).toBe(false);
   });
 
   it('flags a broken dependency (blocker soft-deleted)', () => {

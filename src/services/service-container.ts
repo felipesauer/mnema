@@ -581,6 +581,7 @@ export function createServiceContainer(
     stateMachine,
     auditQuery,
     adapter,
+    taskEvidenceRepository,
   );
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine, {
     staleAfterDays: config.aging.stale_after_days,
