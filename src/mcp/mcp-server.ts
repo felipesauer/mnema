@@ -32,6 +32,7 @@ import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
+import { FocusTool } from './tools/universal/focus-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { LabelTools } from './tools/universal/label-tools.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
@@ -276,6 +277,7 @@ export class MnemaMcpServer {
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
     new FileCollisionTool(this.services.fileCollision).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
+    new FocusTool(this.services.focus).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
     if (knowledgeEnabled) {
       new ProvenanceTool(this.services.provenance).register(this.sdk);

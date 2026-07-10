@@ -54,6 +54,7 @@ import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
+import { FocusService } from './focus-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { HeadCheckpointService } from './head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from './hook-trust.js';
@@ -146,6 +147,7 @@ export interface ServiceContainer {
   readonly fileCollision: FileCollisionService;
   readonly snapshot: SnapshotService;
   readonly runDiff: RunDiffService;
+  readonly focus: FocusService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly hookTrust: HookTrustService;
@@ -544,6 +546,7 @@ export function createServiceContainer(
     stateMachine,
   );
   const runDiffService = new RunDiffService(agentRuns, auditQuery);
+  const focusService = new FocusService(taskService, dependencyService, identity, stateMachine);
   const fileCollisionService = new FileCollisionService(
     tasks,
     taskEvidenceRepository,
@@ -681,6 +684,7 @@ export function createServiceContainer(
     fileCollision: fileCollisionService,
     snapshot: snapshotService,
     runDiff: runDiffService,
+    focus: focusService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     hookTrust,

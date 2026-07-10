@@ -36,6 +36,7 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'graph_dependencies',
   'file_collisions',
   'run_diff',
+  'focus',
   'snapshot_generate',
   'task_attach_evidence',
   'task_evidence',

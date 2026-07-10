@@ -162,6 +162,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/inbox-command.js')).InboxCommand(),
     description: 'Show tasks that need human attention (review, blocked)',
   },
+  focus: {
+    load: async () => new (await import('./commands/focus-command.js')).FocusCommand(),
+    description: 'Print a one-line focus: the task to resume, or the next to start',
+  },
   agent: {
     load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
     description: 'Inspect agent activity (run inspect)',
