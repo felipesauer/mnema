@@ -183,5 +183,36 @@ describe('diagnoseAuditChain', () => {
       const dirty = diagnoseAuditChain(auditDir, null, tempRoot, dirtyRunner);
       expect(dirty.matchesCommittedHead).toBe(false);
     });
+
+    it('is false for an UNTRACKED audit file even though git diff --quiet exits 0', () => {
+      // The audit .jsonl files are commonly gitignored/untracked. `git diff
+      // --quiet HEAD -- <file>` exits 0 for an untracked file (nothing to
+      // diff), so without the tracked check a never-committed head would be
+      // trusted as committed — the anchor-of-trust false match.
+      const events = buildChain(3);
+      writeLines(path.join(auditDir, 'current.jsonl'), events);
+      const untrackedRunner: GitCommandRunner = (args) => {
+        if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
+        // Untracked: ls-files --error-unmatch fails, but diff --quiet is 0.
+        if (args[0] === 'ls-files') {
+          return { status: 1, stdout: '', stderr: 'did not match any file(s) known to git' };
+        }
+        return { status: 0, stdout: '', stderr: '' };
+      };
+      const report = diagnoseAuditChain(auditDir, null, tempRoot, untrackedRunner);
+      expect(report.matchesCommittedHead).toBe(false);
+    });
+
+    it('is true for a TRACKED, unmodified audit file', () => {
+      const events = buildChain(3);
+      writeLines(path.join(auditDir, 'current.jsonl'), events);
+      const trackedCleanRunner: GitCommandRunner = (args) => {
+        if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
+        // Tracked (ls-files ok) and no diff (diff --quiet 0).
+        return { status: 0, stdout: '', stderr: '' };
+      };
+      const report = diagnoseAuditChain(auditDir, null, tempRoot, trackedCleanRunner);
+      expect(report.matchesCommittedHead).toBe(true);
+    });
   });
 });

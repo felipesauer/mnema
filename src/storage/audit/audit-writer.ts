@@ -14,6 +14,7 @@ import lockfile from 'proper-lockfile';
 import type { AnchorScheduler } from '../../services/anchor/anchor-scheduler.js';
 import type { HeadCheckpointService } from '../../services/head-checkpoint.js';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
+import { SQLITE_BUSY_TIMEOUT_MS } from '../sqlite/sqlite-adapter.js';
 import { orderedAuditFiles } from './audit-files.js';
 import { hashEvent, hmacEvent } from './audit-hash.js';
 
@@ -27,14 +28,18 @@ const LOCK_MAX_ATTEMPTS = 10;
 const LOCK_BACKOFF_MS = 50;
 
 /**
- * The `stale` of 2000ms is `proper-lockfile`'s enforced minimum; since
- * `lockSync` runs no async mtime auto-update, a long hold could otherwise
- * be judged stale and stolen. The section here is far shorter than 2s, so
- * this is ample while keeping a genuinely orphaned lock recoverable.
+ * The critical section holds this lock across a SQLite write, and that write
+ * can itself block on the WAL writer for up to {@link SQLITE_BUSY_TIMEOUT_MS}.
+ * `lockSync` runs no async mtime auto-update, so the stale threshold must sit
+ * ABOVE the longest legitimate hold — otherwise a process legitimately waiting
+ * out `busy_timeout` could have its lock judged stale and stolen by a peer,
+ * letting two writers into the section at once. Derive it from the busy timeout
+ * (plus headroom) so the two constants can never drift into that overlap.
  * `onCompromised` must not throw — contention is handled by the retry loop.
  */
+export const LOCK_STALE_MS = SQLITE_BUSY_TIMEOUT_MS + 3000;
 const LOCK_OPTIONS = {
-  stale: 2000,
+  stale: LOCK_STALE_MS,
   realpath: false,
   onCompromised: () => {
     /* handled cooperatively by the acquire retry loop; do not throw */

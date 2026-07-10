@@ -2,6 +2,8 @@ import path from 'node:path';
 
 import { z } from 'zod';
 
+import { isSafeAnchorRemote } from '../services/anchor/git-signed-anchor-provider.js';
+
 /**
  * A path entry under `paths.*`. Every Mnema artefact directory is
  * resolved relative to the project root, so an entry with a `..` segment
@@ -152,7 +154,20 @@ export const ConfigSchema = z.object({
               message: 'audit.anchor.tsa must be an https:// URL',
             })
             .optional(),
-          remote: z.string().min(1).optional(),
+          // `remote` is fed to `git push`. Left unconstrained, a value like
+          // `ext::sh -c '<payload>'` executes an arbitrary command via git's
+          // remote-helper transports — command execution from a repo-writable
+          // config. Lock it to a plain remote name or a safe transport URL at
+          // the schema layer (fail closed at load), mirroring the git-signed
+          // provider's own guard so a bad value can never reach `git push`.
+          remote: z
+            .string()
+            .min(1)
+            .refine(isSafeAnchorRemote, {
+              message:
+                'audit.anchor.remote must be a remote name or an https/ssh/git/file URL (a remote-helper transport like "ext::" is refused)',
+            })
+            .optional(),
           ref: z.string().min(1).optional(),
         })
         .prefault({})

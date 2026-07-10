@@ -166,6 +166,39 @@ describe('ConfigLoader', () => {
         });
         expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
       });
+
+      it('rejects an ext:: remote (git remote-helper command execution)', () => {
+        // `git push 'ext::sh -c <payload>'` runs an arbitrary command; the
+        // schema must fail closed at load, never handing it to git.
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: {
+            anchor: { provider: 'git-signed', remote: "ext::sh -c 'touch /tmp/pwned'" },
+          },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
+
+      it('rejects a remote starting with "-" (arg parsed as a flag)', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: {
+            anchor: { provider: 'git-signed', remote: '--upload-pack=touch /tmp/x' },
+          },
+        });
+        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
+      });
+
+      it('accepts an https remote URL for git-signed', () => {
+        writeConfig(tempRoot, {
+          ...validConfig,
+          audit: {
+            anchor: { provider: 'git-signed', remote: 'https://example.com/r.git' },
+          },
+        });
+        const config = loader.load(tempRoot);
+        expect(config.audit.anchor.remote).toBe('https://example.com/r.git');
+      });
     });
 
     it('throws ConfigNotFoundError when no config exists', () => {
