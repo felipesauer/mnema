@@ -60,6 +60,54 @@ describe('screenRegexPattern', () => {
   });
 });
 
+describe('screenRegexPattern adjacent-quantifier detection', () => {
+  // Two repeatable quantifiers over an overlapping class let a shared run
+  // be split between them in quadratically many ways. There is no
+  // quantified GROUP here, so a group-only screen admits every one of
+  // these and the regex then runs super-linearly at match time.
+  const DANGEROUS_ADJACENT = [
+    '^\\w*\\w*\\w*$', // the empirically-slow case (11s+ before the fix)
+    '^.*.*.*a$',
+    'a+a+',
+    '\\w*\\w*',
+    '.*.*',
+    '\\d+\\d+',
+    '[a-z]*[a-z]*x',
+    '[a-z]*[a-z]+',
+    'a*a*',
+    '.*\\w*', // `.` overlaps `\w`
+    '[0-9]*\\d*', // a range overlaps the `\d` class it covers
+  ];
+
+  it('rejects adjacent repeatable quantifiers over overlapping classes', () => {
+    for (const bad of DANGEROUS_ADJACENT) {
+      expect(screenRegexPattern(bad), `should reject ${bad}`).not.toBeNull();
+    }
+  });
+
+  it('still accepts legitimate patterns the stricter screen must not flag', () => {
+    // Adjacent quantifiers are only dangerous when their classes overlap
+    // AND both can repeat: disjoint classes, a separating literal, or a
+    // fixed/optional quantifier all break the quadratic split.
+    for (const ok of [
+      '\\w+', // a single quantifier
+      '\\d+-\\d+', // separated by a literal `-`
+      '\\d*[a-z]*', // digits then letters: disjoint classes
+      '[a-f]*[g-z]*', // disjoint ranges
+      'a+b+', // disjoint literals
+      '\\d+\\D+', // a class and its complement: disjoint
+      '\\s+\\S+', // whitespace and non-whitespace: disjoint
+      '^\\w+$', // anchored single quantifier
+      'a{2}b{3}', // fixed repetition counts cannot split
+      '[A-Z]{2,4}', // one bounded quantifier
+      '\\d{4}-\\d{2}-\\d{2}', // an ISO-like date
+      'x?y?', // optional atoms are not repeatable
+    ]) {
+      expect(screenRegexPattern(ok), `should accept ${ok}`).toBeNull();
+    }
+  });
+});
+
 describe('WorkflowMetaSchema pattern screening', () => {
   /** A minimal valid workflow carrying a field with the given pattern. */
   function specWithPattern(pattern: string) {
@@ -87,6 +135,10 @@ describe('WorkflowMetaSchema pattern screening', () => {
     // this is the case that slipped through before the screen was hardened.
     expect(WorkflowMetaSchema.safeParse(specWithPattern('(a|a)*')).success).toBe(false);
     expect(WorkflowMetaSchema.safeParse(specWithPattern('(a+)+$')).success).toBe(false);
+    // The adjacent-quantifier family, which has no quantified group at all
+    // and slipped a group-only screen.
+    expect(WorkflowMetaSchema.safeParse(specWithPattern('^\\w*\\w*\\w*$')).success).toBe(false);
+    expect(WorkflowMetaSchema.safeParse(specWithPattern('a+a+')).success).toBe(false);
   });
 
   it('accepts a workflow with a safe field pattern', () => {
@@ -117,5 +169,33 @@ describe('pattern-field input length cap (defence in depth)', () => {
     const schema = fieldSpecToZod({ type: 'string', pattern: '^a+$', max: 3 });
     expect(schema.safeParse('aaa').success).toBe(true);
     expect(schema.safeParse('aaaa').success).toBe(false);
+  });
+
+  it('enforces the length cap BEFORE the regex, so an over-max payload against a pathological pattern returns fast', () => {
+    // Directly exercise the ReDoS shape `(a+)+`, bypassing the load-time
+    // screen (this constructs the schema, not a workflow). If the regex
+    // ran on the over-max input this backtracks for many seconds; the
+    // length gate must reject the input before the engine is invoked.
+    const schema = fieldSpecToZod({ type: 'string', pattern: '^(a+)+$', max: 20 });
+
+    // A payload well over max, ending in a non-match to force backtracking.
+    const attack = `${'a'.repeat(46)}!`;
+
+    const start = performance.now();
+    const result = schema.safeParse(attack);
+    const elapsed = performance.now() - start;
+
+    expect(result.success).toBe(false);
+    // Bounded: the regex never ran. Generous ceiling; the real number is
+    // sub-millisecond, whereas the regex would take seconds on this input.
+    expect(elapsed).toBeLessThan(100);
+  });
+
+  it('gates on the min length too, so an under-min payload skips the regex', () => {
+    const schema = fieldSpecToZod({ type: 'string', pattern: '^(a+)+$', min: 10 });
+    const start = performance.now();
+    const result = schema.safeParse('aaa'); // 3 < 10 — never reaches the regex
+    expect(result.success).toBe(false);
+    expect(performance.now() - start).toBeLessThan(100);
   });
 });
