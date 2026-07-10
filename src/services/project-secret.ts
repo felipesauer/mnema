@@ -30,6 +30,22 @@ const ENVELOPE_PREFIX = 'mnema-hmac-secret/v1';
 export const HMAC_ID_RELATIVE = path.join('.mnema', 'keys', 'project.hmac-id');
 
 /**
+ * Reads the committed project HMAC fingerprint straight from the repo, with no
+ * project key or user dir needed — the anonymous-verify view of it. The
+ * fingerprint lives at a fixed committed path under the project root, so a
+ * clone with no secret still reads exactly the value it should bind an
+ * attestation's `projectHmacId` to. Returns `null` when it was never committed.
+ *
+ * @param projectRoot - Absolute project root (holds `.mnema/`)
+ * @returns The committed `sha256(secret)` hex, or `null` when absent
+ */
+export function readCommittedProjectHmacId(projectRoot: string): string | null {
+  const file = path.join(projectRoot, HMAC_ID_RELATIVE);
+  if (!existsSync(file)) return null;
+  return readFileSync(file, 'utf-8').trim();
+}
+
+/**
  * Manages the per-project HMAC secret that keys the audit chain's v3
  * events (ADR-37 layer 2; shareable as a team credential per ADR-39).
  *
@@ -217,9 +233,7 @@ export class ProjectSecretService {
 
   /** Reads the committed fingerprint, or `null` when absent. */
   readFingerprint(): string | null {
-    const file = this.fingerprintPath();
-    if (!existsSync(file)) return null;
-    return readFileSync(file, 'utf-8').trim();
+    return readCommittedProjectHmacId(this.projectRoot);
   }
 
   private writeSecretAtomic(secret: Buffer): void {
