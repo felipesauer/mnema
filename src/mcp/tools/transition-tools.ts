@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { Config } from '../../config/config-schema.js';
+import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import type { Workflow } from '../../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { AgentRunService } from '../../services/agent-run-service.js';
@@ -17,6 +18,7 @@ import {
   type PendingMigrationsSource,
   requireActiveRun,
   requireFreshSchema,
+  toCompactTask,
   type Verbosity,
 } from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
@@ -185,6 +187,11 @@ export class TransitionToolsRegistrar {
             if (targetsTerminal) delete (payload as { pr_url?: unknown }).pr_url;
 
             const handle = this.session.getClientMetadata().agent_handle;
+            // A transient governance run must be recorded as completed only
+            // when the act actually proceeds. A refusal (blocked gate, failed
+            // transition) or a thrown handler closes it as aborted instead, so
+            // a refused sign-off leaves no phantom completed run in the trail.
+            let proceeded = false;
             // try/finally so any system run resolveGovernanceRun opened is
             // always closed — even on a gate refusal or a thrown transition.
             try {
@@ -220,12 +227,17 @@ export class TransitionToolsRegistrar {
                 expectedUpdatedAt,
               });
               if (!result.ok) return err(result.error);
+              proceeded = true;
               if (prWarning !== undefined) {
-                return ok({ task: result.value, pr_warning: prWarning });
+                // Honour `verbosity` on the warn echo too — the pr_warning
+                // branch must not silently return the full entity when the
+                // caller asked for the compact shape.
+                const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                return ok({ task, pr_warning: prWarning });
               }
               return okTask(result.value, verbosity);
             } finally {
-              gov.finalize();
+              gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
             }
           },
         );

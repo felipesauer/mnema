@@ -10,10 +10,16 @@ import type { McpSessionContext } from './mcp-session-context.js';
  * opened (no agent handle on the session) — the caller then proceeds
  * run-less, exactly as before. `finalize` is a no-op unless this call
  * opened a transient run, in which case it ends it.
+ *
+ * `finalize` takes the terminal status to close a transient run with. The
+ * default is `Completed` — the governance act proceeded. A caller that
+ * refuses or errors out of the act (a blocked gate, a failed transition, a
+ * thrown handler) must pass `Aborted` so the system run is not recorded as
+ * a completed governance act that never happened.
  */
 export interface GovernanceRun {
   readonly runId: string | undefined;
-  readonly finalize: () => void;
+  readonly finalize: (status?: AgentRunStatus) => void;
 }
 
 /**
@@ -69,8 +75,8 @@ export function resolveGovernanceRun(
   const runId = started.value.id;
   return {
     runId,
-    finalize: () => {
-      agentRun.end({ runId, status: AgentRunStatus.Completed });
+    finalize: (status: AgentRunStatus = AgentRunStatus.Completed) => {
+      agentRun.end({ runId, status });
     },
   };
 }

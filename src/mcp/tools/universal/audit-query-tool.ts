@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import type { AuditQuery } from '../../../services/audit-query.js';
 import { ok } from '../../mcp-tool-result.js';
+import { timeBoundSchema } from '../../time-bound-schema.js';
 
 /**
  * Registers the `audit_query` MCP tool — read-only search over the
@@ -31,8 +32,8 @@ export class AuditQueryTool {
           actor: z.string().optional(),
           via: z.string().optional(),
           run: z.string().optional(),
-          since: z.string().optional().describe('ISO8601 or relative duration (e.g. 24h)'),
-          until: z.string().optional(),
+          since: timeBoundSchema('ISO8601 or relative duration (e.g. 24h)'),
+          until: timeBoundSchema('ISO8601 or relative duration (e.g. 24h)'),
           limit: z.number().int().positive().optional(),
         },
       },

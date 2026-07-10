@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { EvidenceKind } from '../../../domain/entities/task-evidence.js';
+import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { CommitVerifier } from '../../../services/commit-verifier.js';
 import type { IdentityService } from '../../../services/identity-service.js';
@@ -82,6 +83,11 @@ export class EvidenceTools {
           'task_attach_evidence',
         );
         const handle = this.session.getClientMetadata().agent_handle;
+        // A transient governance run must be recorded as completed only when
+        // the attach actually lands. A failed attach or a thrown handler
+        // closes it as aborted instead, so a refused attach leaves no phantom
+        // completed run in the trail.
+        let proceeded = false;
         // try/finally so a thrown attach still closes any system run the
         // governance resolver opened — no dangling run on error.
         try {
@@ -96,6 +102,7 @@ export class EvidenceTools {
             runId: gov.runId,
           });
           if (!result.ok) return err(result.error);
+          proceeded = true;
 
           // Opt-in integrity signal: for a commit ref, check it actually
           // names a commit in the repo. This is advisory only — the
@@ -113,7 +120,7 @@ export class EvidenceTools {
           }
           return ok({ evidence: result.value });
         } finally {
-          gov.finalize();
+          gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
         }
       },
     );

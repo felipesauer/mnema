@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import type { AuditQuery } from '../../../services/audit-query.js';
 import { ok } from '../../mcp-tool-result.js';
+import { timeBoundSchema } from '../../time-bound-schema.js';
 
 /**
  * Registers the `history_get` MCP tool — a curated, human-friendly view
@@ -29,10 +30,7 @@ export class HistoryTool {
         description:
           'Recent activity overview. Optionally scoped to a single agent run or a time window.',
         inputSchema: {
-          since: z
-            .string()
-            .optional()
-            .describe('ISO8601 or relative duration (e.g. 24h). Defaults to 24h.'),
+          since: timeBoundSchema('ISO8601 or relative duration (e.g. 24h). Defaults to 24h.'),
           run: z.string().optional().describe('Filter by agent run id'),
           limit: z.number().int().positive().max(100).optional(),
         },
