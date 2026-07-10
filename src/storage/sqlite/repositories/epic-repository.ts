@@ -28,6 +28,13 @@ export interface EpicInsertInput {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
+/** Content columns of an epic that sync rebuild can reconcile from markdown. */
+export interface EpicFieldUpdates {
+  readonly title?: string;
+  readonly description?: string | null;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
 /**
  * Persistence for {@link Epic}.
  */
@@ -159,6 +166,47 @@ export class EpicRepository {
       stmt.run(state, epicId);
     }
     return this.findById(epicId);
+  }
+
+  /**
+   * Overwrites an epic's content columns from the given fields, skipping
+   * any left `undefined`. Used by sync rebuild to fold content drift from
+   * the committed markdown back onto an existing row. `epics` carries no
+   * `updated_at`, so none is stamped.
+   *
+   * @param epicId - Internal epic id
+   * @param fields - Content columns to overwrite
+   * @returns The reloaded epic
+   */
+  updateFields(epicId: string, fields: EpicFieldUpdates): Epic {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (fields.title !== undefined) {
+      sets.push('title = ?');
+      values.push(fields.title);
+    }
+    if (fields.description !== undefined) {
+      sets.push('description = ?');
+      values.push(fields.description);
+    }
+    if (fields.metadata !== undefined) {
+      sets.push('metadata = ?');
+      values.push(JSON.stringify(fields.metadata));
+    }
+
+    if (sets.length > 0) {
+      values.push(epicId);
+      this.adapter
+        .getDatabase()
+        .prepare(`UPDATE epics SET ${sets.join(', ')} WHERE id = ?`)
+        .run(...values);
+    }
+
+    const reloaded = this.findById(epicId);
+    if (reloaded === null) {
+      throw new Error(`updateFields: epic ${epicId} not found`);
+    }
+    return reloaded;
   }
 
   /**
