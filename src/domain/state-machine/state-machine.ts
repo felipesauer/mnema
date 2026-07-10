@@ -228,6 +228,26 @@ export class StateMachine {
   terminalStates(): readonly string[] {
     return this.workflow.terminal;
   }
+
+  /**
+   * The name of the action that picks a task up for work — the canonical
+   * `start` transition (READY → IN_PROGRESS in the default workflow, but
+   * the target state is workflow-defined and never assumed). Every shipped
+   * workflow names this action `start`; a workflow without one has no
+   * pickable-entry transition and this returns `null`, which the claim
+   * gate reads as "nothing to guard".
+   *
+   * Used by the transition path to decide when `claims.require_to_start`
+   * applies, without hardcoding a state name.
+   *
+   * @returns The start action's name, or `null` when the workflow has none
+   */
+  startAction(): string | null {
+    for (const actions of Object.values(this.workflow.transitions)) {
+      if (actions.start !== undefined) return 'start';
+    }
+    return null;
+  }
 }
 
 /**

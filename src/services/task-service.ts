@@ -98,6 +98,12 @@ export class TaskService {
     // behaviour (a failed gate always blocks) — so callers that don't pass
     // it keep working; the container supplies the configured value.
     private readonly enforcementMode: EnforcementMode = EnforcementMode.Blocking,
+    // When true, the start action (picking a task up for work) requires the
+    // acting actor to hold a live claim on the task. Defaults to false —
+    // the historical behaviour (no claim required to start) — so callers
+    // that don't pass it, and every single-agent flow, keep working; the
+    // container supplies the configured `claims.require_to_start`.
+    private readonly requireClaimToStart: boolean = false,
   ) {}
 
   /**
@@ -246,10 +252,10 @@ export class TaskService {
    *
    * Not a workflow action: claiming does not change `state`, so it is a
    * first-class operation (mirroring {@link assign}) rather than a
-   * transition. A caller that wants to enforce "must hold a live claim to
-   * start work" checks the returned task's `claimedBy`/`leaseExpiresAt`
-   * before calling `transition` with the `start` action — this method
-   * only manages the lease itself.
+   * transition. This method only manages the lease itself; whether the
+   * `start` action then requires a live claim by the acting actor is
+   * governed by the `claims.require_to_start` flag (default off), enforced
+   * in {@link transition}.
    *
    * @param input - Task key, claiming actor, lease length in minutes
    * @returns The claimed task, or {@link ErrorCode.TaskAlreadyClaimed} when
@@ -479,11 +485,25 @@ export class TaskService {
     const actorId = this.identity.ensureActor(input.actor, 'human');
     const viaActorId =
       input.via !== undefined ? this.identity.ensureActor(input.via, 'agent') : null;
+    // The actor a claim is attributed to mirrors `claim`: the agent when a
+    // `via` handle drove this, otherwise the human. The start-time claim
+    // gate must compare against the SAME identity that would have claimed.
+    const claimActorId = viaActorId !== null ? viaActorId : actorId;
+
+    // The start-time claim gate (`claims.require_to_start`) applies only to
+    // the workflow's pickable-entry transition — the `start` action — never
+    // to re-entries like `unblock`/`request_changes` that also land in the
+    // in-progress state. Resolved from the workflow so no state is assumed.
+    const startAction = this.stateMachine.startAction();
+    const gateClaimOnStart =
+      this.requireClaimToStart && startAction !== null && input.action === startAction;
+    const enteringTerminal = this.stateMachine.isTerminal(to);
 
     type TransitionOutcome =
       | { readonly kind: 'ok'; readonly task: Task }
       | { readonly kind: 'not_found' }
-      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
+      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string }
+      | { readonly kind: 'not_claimed'; readonly claimedBy: string | null };
 
     // Default the optimistic-concurrency token to whatever we just
     // read so concurrent transitions can't lose-write each other.
@@ -495,6 +515,28 @@ export class TaskService {
 
     const outcomeResult = tryMutation(() =>
       this.tasks.runInTransaction((): TransitionOutcome => {
+        // Start-time claim gate. Read the claim fresh inside the transaction
+        // so it is consistent with the state write that follows: the acting
+        // actor must hold a live, non-expired lease. A foreign live lease or
+        // no lease at all refuses the start; an expired lease counts as
+        // unclaimed. Off by default — this whole block is skipped unless the
+        // flag is on AND this is the start action.
+        if (gateClaimOnStart) {
+          const claim = this.tasks.findClaim(task.id);
+          if (claim === null) {
+            return { kind: 'not_found' };
+          }
+          const held =
+            claim.claimedBy !== null &&
+            claim.leaseExpiresAt !== null &&
+            Date.parse(claim.leaseExpiresAt) > Date.now();
+          if (!held || claim.claimedBy !== claimActorId) {
+            // Name a foreign live holder; a stale/expired or absent claim
+            // reports null so the caller knows it just needs to claim.
+            return { kind: 'not_claimed', claimedBy: held ? claim.claimedBy : null };
+          }
+        }
+
         const result = this.tasks.updateState(task.id, to as TaskState, expectedUpdatedAt);
         if (!result.ok) {
           if (result.reason.kind === 'CONFLICT') {
@@ -529,6 +571,16 @@ export class TaskService {
           if (bumped !== null) finalTask = bumped;
         }
 
+        // Reaching a terminal state retires any dangling claim, in the
+        // same transaction as the state change. Unlike a release, this
+        // does not require the actor to hold the lease — a completed or
+        // canceled task must never carry a stale claimed_by. Reload so the
+        // returned task reflects the cleared lease.
+        if (enteringTerminal && this.tasks.clearClaim(task.id)) {
+          const reloaded = this.tasks.findById(task.id);
+          if (reloaded !== null) finalTask = reloaded;
+        }
+
         this.transitions.record({
           taskId: task.id,
           fromState: task.state,
@@ -555,6 +607,13 @@ export class TaskService {
         entity: 'task',
         taskKey: task.key,
         currentUpdatedAt: outcome.currentUpdatedAt,
+      });
+    }
+    if (outcome.kind === 'not_claimed') {
+      return Err({
+        kind: ErrorCode.TaskNotClaimed,
+        taskKey: task.key,
+        claimedBy: outcome.claimedBy,
       });
     }
     const updated = outcome.task;

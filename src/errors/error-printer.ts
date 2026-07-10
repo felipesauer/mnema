@@ -86,6 +86,17 @@ export function formatError(error: MnemaError): string {
       );
       break;
 
+    case ErrorCode.TaskNotClaimed:
+      lines.push(
+        error.claimedBy === null
+          ? `Task ${error.taskKey} must be claimed before it can be started`
+          : `Task ${error.taskKey} is claimed by ${error.claimedBy}, not you`,
+      );
+      lines.push(
+        `${pc.dim('hint:')} Claim the task first with \`mnema task claim ${error.taskKey}\``,
+      );
+      break;
+
     case ErrorCode.ProjectNotFound:
       lines.push(`Project ${error.projectKey} not found in the database`);
       lines.push(`${pc.dim('hint:')} Run \`mnema doctor\` to inspect the workspace`);
@@ -385,6 +396,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.ActiveSprintExists:
     case ErrorCode.StorageBusy:
     case ErrorCode.TaskAlreadyClaimed:
+    case ErrorCode.TaskNotClaimed:
       return ExitCode.Conflict;
 
     // State (3): the artefact exists but is in the wrong state for the action;

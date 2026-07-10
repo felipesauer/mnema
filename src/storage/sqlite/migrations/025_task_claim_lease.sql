@@ -5,8 +5,11 @@
 -- both sides already decided to act. Two sessions reading the same READY
 -- task can each conclude "I'll take this" before either writes — the CAS
 -- then picks a winner, but the loser already spent the decision. A lease
--- claimed BEFORE work starts closes that window: task_start can require an
--- active, non-expired claim by the calling actor.
+-- claimed BEFORE work starts closes that window. Whether the start action
+-- actually requires an active, non-expired claim by the calling actor is
+-- opt-in via the `claims.require_to_start` config flag (default off, so a
+-- single-agent flow starts work without claiming first); the flag is
+-- enforced in TaskService.transition.
 --
 -- lease_expires_at makes the lease self-healing: a session that dies without
 -- releasing (crash, killed subagent, dropped MCP connection) does not leave

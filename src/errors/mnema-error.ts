@@ -48,6 +48,12 @@ export type MnemaError =
       readonly claimedBy: string;
       readonly leaseExpiresAt: string;
     }
+  | {
+      readonly kind: ErrorCode.TaskNotClaimed;
+      readonly taskKey: string;
+      /** Actor holding a live lease, when a *different* actor holds one; null when the task is simply unclaimed. */
+      readonly claimedBy: string | null;
+    }
   | { readonly kind: ErrorCode.ProjectNotFound; readonly projectKey: string }
   | { readonly kind: ErrorCode.WorkflowNotFound; readonly path: string }
   | {

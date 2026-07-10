@@ -454,6 +454,7 @@ export function createServiceContainer(
       findActorIdByHandle: (handle) => identity.findActorIdByHandle(handle),
     },
     config.enforcement_mode as EnforcementMode,
+    config.claims.require_to_start,
   );
   trace.mark('services instantiated');
 
