@@ -2,6 +2,7 @@ import type { Task } from '../domain/entities/task.js';
 import { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
+import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../domain/state-machine/workflow-meta-schema.js';
 import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../domain/validation.js';
@@ -129,6 +130,7 @@ export class TaskService {
 
     const issues: ErrorIssue[] = [];
     checkTitle(input.title, issues);
+    checkNoInvocationMarkup(input, issues);
     checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
     checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
     checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
@@ -305,6 +307,7 @@ export class TaskService {
 
     const issues: ErrorIssue[] = [];
     if (input.title !== undefined) checkTitle(input.title, issues);
+    checkNoInvocationMarkup(input, issues);
     if (issues.length > 0) {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
@@ -592,6 +595,20 @@ export class TaskService {
       if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
         checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
       }
+      // Free-text fields that fold onto columns (e.g. submit's title /
+      // description / acceptance_criteria) get the same markup screen as
+      // create()/update(), so a garbled tool call cannot spill invocation
+      // markup into a task via a transition payload either.
+      checkNoInvocationMarkup(
+        {
+          title: typeof payload.title === 'string' ? payload.title : undefined,
+          description: typeof payload.description === 'string' ? payload.description : undefined,
+          acceptanceCriteria: Array.isArray(payload.acceptance_criteria)
+            ? (payload.acceptance_criteria.filter((v) => typeof v === 'string') as string[])
+            : undefined,
+        },
+        foldIssues,
+      );
       if (foldIssues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
       }
@@ -916,6 +933,46 @@ function checkTitle(title: string, issues: ErrorIssue[]): void {
   } else if (title.length > 200) {
     issues.push({ path: ['title'], message: 'must be at most 200 characters' });
   }
+}
+
+/**
+ * Rejects tool-invocation markup in a task's free-text fields. A garbled
+ * MCP call can spill `<invoke>` / `<parameter name=…>` / a `</field>` envelope
+ * into a value; persisting it leaves a garbage trailer and empty siblings.
+ * decision/observation/memory already screen their content this way — this
+ * gives task fields the same contract at the service boundary, so the CLI
+ * and MCP producers reject identically. Each acceptance-criterion line is
+ * screened under an indexed path so the offender is pinpointed.
+ */
+function checkNoInvocationMarkup(
+  fields: {
+    readonly title?: string;
+    readonly description?: string | null;
+    readonly acceptanceCriteria?: readonly string[];
+  },
+  issues: ErrorIssue[],
+): void {
+  const scalar: [string, string | null | undefined][] = [
+    ['title', fields.title],
+    ['description', fields.description],
+  ];
+  for (const [field, value] of scalar) {
+    if (typeof value === 'string' && hasInvocationMarkup(value)) {
+      issues.push({
+        path: [field],
+        message: 'contains tool-invocation markup; pass each field as its own argument',
+      });
+    }
+  }
+  const criteria = fields.acceptanceCriteria ?? [];
+  criteria.forEach((line, i) => {
+    if (hasInvocationMarkup(line)) {
+      issues.push({
+        path: ['acceptance_criteria', String(i)],
+        message: 'contains tool-invocation markup; pass each field as its own argument',
+      });
+    }
+  });
 }
 
 /**
