@@ -1,6 +1,9 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
+import type { Decision } from '../domain/entities/decision.js';
+import type { Epic } from '../domain/entities/epic.js';
+import type { Sprint } from '../domain/entities/sprint.js';
 import type { Task } from '../domain/entities/task.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { DecisionStatus } from '../domain/enums/decision-status.js';
@@ -10,11 +13,20 @@ import type { TaskState } from '../domain/enums/task-state.js';
 import { parseTaskKey } from '../domain/id-generator.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
-import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
-import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
+import type {
+  DecisionFieldUpdates,
+  DecisionRepository,
+} from '../storage/sqlite/repositories/decision-repository.js';
+import type {
+  EpicFieldUpdates,
+  EpicRepository,
+} from '../storage/sqlite/repositories/epic-repository.js';
 import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
-import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
+import type {
+  SprintFieldUpdates,
+  SprintRepository,
+} from '../storage/sqlite/repositories/sprint-repository.js';
 import type {
   TaskFieldUpdates,
   TaskRepository,
@@ -377,11 +389,17 @@ export class SyncRebuild {
       if (state !== EpicState.Open) this.epics.updateState(epic.id, state);
       return true;
     }
+    let changed = false;
     if (existing.state !== state) {
       this.epics.updateState(existing.id, state);
-      return true;
+      changed = true;
     }
-    return false;
+    const drift = collectEpicContentDrift(existing, data);
+    if (drift !== null) {
+      this.epics.updateFields(existing.id, drift);
+      changed = true;
+    }
+    return changed;
   }
 
   /** Inserts a sprint when absent, or realigns its state when it drifted. */
@@ -402,11 +420,17 @@ export class SyncRebuild {
       if (state !== SprintState.Planned) this.sprints.updateState(sprint.id, state);
       return true;
     }
+    let changed = false;
     if (existing.state !== state) {
       this.sprints.updateState(existing.id, state);
-      return true;
+      changed = true;
     }
-    return false;
+    const drift = collectSprintContentDrift(existing, data);
+    if (drift !== null) {
+      this.sprints.updateFields(existing.id, drift);
+      changed = true;
+    }
+    return changed;
   }
 
   /**
@@ -441,11 +465,19 @@ export class SyncRebuild {
       }
       return true;
     }
+    let changed = false;
     if (existing.status !== status) {
       this.decisions.updateStatus(existing.id, status, null);
-      return true;
+      changed = true;
     }
-    return false;
+    // Content only — status and superseded_by are owned by updateStatus and
+    // the relinkSupersededDecisions second pass, never touched here.
+    const drift = collectDecisionContentDrift(existing, data);
+    if (drift !== null) {
+      this.decisions.updateFields(existing.id, drift);
+      changed = true;
+    }
+    return changed;
   }
 
   /**
@@ -542,8 +574,161 @@ function collectTaskContentDrift(
   return changed ? updates : null;
 }
 
+/**
+ * Content drift for an existing epic, shaped for {@link EpicRepository.updateFields}.
+ * Returns `null` when nothing changed. Mirrors {@link serialiseEpic}'s fields and
+ * the insert path's fallbacks (title defaults to the key), so a freshly written
+ * mirror reports no drift.
+ */
+function collectEpicContentDrift(
+  existing: Epic,
+  data: Record<string, unknown>,
+): EpicFieldUpdates | null {
+  const updates: { -readonly [K in keyof EpicFieldUpdates]: EpicFieldUpdates[K] } = {};
+  let changed = false;
+
+  const title = readString(data, 'title');
+  if (title !== null && title !== existing.title) {
+    updates.title = title;
+    changed = true;
+  }
+
+  const description = readString(data, 'description');
+  if (description !== existing.description) {
+    updates.description = description;
+    changed = true;
+  }
+
+  const metadata = readRecord(data, 'metadata');
+  if (!sameRecord(metadata, existing.metadata)) {
+    updates.metadata = metadata;
+    changed = true;
+  }
+
+  return changed ? updates : null;
+}
+
+/**
+ * Content drift for an existing sprint, shaped for {@link SprintRepository.updateFields}.
+ * Returns `null` when nothing changed.
+ */
+function collectSprintContentDrift(
+  existing: Sprint,
+  data: Record<string, unknown>,
+): SprintFieldUpdates | null {
+  const updates: { -readonly [K in keyof SprintFieldUpdates]: SprintFieldUpdates[K] } = {};
+  let changed = false;
+
+  const name = readString(data, 'name');
+  if (name !== null && name !== existing.name) {
+    updates.name = name;
+    changed = true;
+  }
+
+  const goal = readString(data, 'goal');
+  if (goal !== existing.goal) {
+    updates.goal = goal;
+    changed = true;
+  }
+
+  const startsAt = readString(data, 'starts_at');
+  if (startsAt !== existing.startsAt) {
+    updates.startsAt = startsAt;
+    changed = true;
+  }
+
+  const endsAt = readString(data, 'ends_at');
+  if (endsAt !== existing.endsAt) {
+    updates.endsAt = endsAt;
+    changed = true;
+  }
+
+  const capacity = readNumber(data, 'capacity');
+  if (capacity !== existing.capacity) {
+    updates.capacity = capacity;
+    changed = true;
+  }
+
+  const metadata = readRecord(data, 'metadata');
+  if (!sameRecord(metadata, existing.metadata)) {
+    updates.metadata = metadata;
+    changed = true;
+  }
+
+  return changed ? updates : null;
+}
+
+/**
+ * Content drift for an existing decision, shaped for {@link DecisionRepository.updateFields}.
+ * Returns `null` when nothing changed. `status` and `superseded_by` are owned by the
+ * status path and are never included here.
+ */
+function collectDecisionContentDrift(
+  existing: Decision,
+  data: Record<string, unknown>,
+): DecisionFieldUpdates | null {
+  const updates: { -readonly [K in keyof DecisionFieldUpdates]: DecisionFieldUpdates[K] } = {};
+  let changed = false;
+
+  const title = readString(data, 'title');
+  if (title !== null && title !== existing.title) {
+    updates.title = title;
+    changed = true;
+  }
+
+  const decision = readString(data, 'decision');
+  if (decision !== null && decision !== existing.decision) {
+    updates.decision = decision;
+    changed = true;
+  }
+
+  const context = readString(data, 'context');
+  if (context !== existing.context) {
+    updates.context = context;
+    changed = true;
+  }
+
+  const rationale = readString(data, 'rationale');
+  if (rationale !== existing.rationale) {
+    updates.rationale = rationale;
+    changed = true;
+  }
+
+  const consequences = readString(data, 'consequences');
+  if (consequences !== existing.consequences) {
+    updates.consequences = consequences;
+    changed = true;
+  }
+
+  const impacts = readStringArray(data, 'impacts');
+  if (!sameStringArray(impacts, existing.impacts)) {
+    updates.impacts = impacts;
+    changed = true;
+  }
+
+  const metadata = readRecord(data, 'metadata');
+  if (!sameRecord(metadata, existing.metadata)) {
+    updates.metadata = metadata;
+    changed = true;
+  }
+
+  return changed ? updates : null;
+}
+
 function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/**
+ * Order-insensitive equality for two frontmatter records, compared by their
+ * canonical JSON. Good enough to decide whether metadata drifted — both sides
+ * come from the same serialiser, so key order is stable in practice.
+ */
+function sameRecord(
+  a: Readonly<Record<string, unknown>>,
+  b: Readonly<Record<string, unknown>>,
+): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function listDirs(root: string): string[] {

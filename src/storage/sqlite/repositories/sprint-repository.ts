@@ -74,6 +74,16 @@ export interface SprintInsertInput {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
+/** Content columns of a sprint that sync rebuild can reconcile from markdown. */
+export interface SprintFieldUpdates {
+  readonly name?: string;
+  readonly goal?: string | null;
+  readonly startsAt?: string | null;
+  readonly endsAt?: string | null;
+  readonly capacity?: number | null;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
 /**
  * Persistence for {@link Sprint}. The unique partial index on
  * `(project_id) WHERE state='ACTIVE'` enforces the "one active sprint
@@ -250,6 +260,60 @@ export class SprintRepository {
       throw new Error('sprint disappeared after updateState');
     }
     return { ok: true, sprint: reloaded };
+  }
+
+  /**
+   * Overwrites a sprint's content columns from the given fields, skipping
+   * any left `undefined`, and stamps `updated_at`. Used by sync rebuild to
+   * fold content drift from the committed markdown back onto an existing row.
+   *
+   * @param sprintId - Internal sprint id
+   * @param fields - Content columns to overwrite
+   * @returns The reloaded sprint
+   */
+  updateFields(sprintId: string, fields: SprintFieldUpdates): Sprint {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (fields.name !== undefined) {
+      sets.push('name = ?');
+      values.push(fields.name);
+    }
+    if (fields.goal !== undefined) {
+      sets.push('goal = ?');
+      values.push(fields.goal);
+    }
+    if (fields.startsAt !== undefined) {
+      sets.push('starts_at = ?');
+      values.push(fields.startsAt);
+    }
+    if (fields.endsAt !== undefined) {
+      sets.push('ends_at = ?');
+      values.push(fields.endsAt);
+    }
+    if (fields.capacity !== undefined) {
+      sets.push('capacity = ?');
+      values.push(fields.capacity);
+    }
+    if (fields.metadata !== undefined) {
+      sets.push('metadata = ?');
+      values.push(JSON.stringify(fields.metadata));
+    }
+
+    if (sets.length > 0) {
+      sets.push('updated_at = ?');
+      values.push(isoNow());
+      values.push(sprintId);
+      this.adapter
+        .getDatabase()
+        .prepare(`UPDATE sprints SET ${sets.join(', ')} WHERE id = ?`)
+        .run(...values);
+    }
+
+    const reloaded = this.findById(sprintId);
+    if (reloaded === null) {
+      throw new Error(`updateFields: sprint ${sprintId} not found`);
+    }
+    return reloaded;
   }
 
   /**

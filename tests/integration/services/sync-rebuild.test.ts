@@ -162,6 +162,102 @@ mnema:
     expect(reloaded.value.acceptanceCriteria).toEqual(['a newly added criterion']);
   });
 
+  it('applies epic content drift (title/description) from the committed markdown', () => {
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Epic original',
+      description: 'epic original description',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    // Row already exists in the cache; a merged PR edits the committed markdown.
+    const markdownIo = new MarkdownIo();
+    const file = path.join(root, '.mnema/roadmap', `${created.value.key}.md`);
+    const parsed = markdownIo.read(file);
+    markdownIo.write(file, {
+      ...parsed,
+      mnemaData: {
+        ...parsed.mnemaData,
+        title: 'Epic EDITED',
+        description: 'epic EDITED description',
+      },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.epics.upserted).toBe(1);
+
+    const reloaded = container.epic.show(created.value.key);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.epic.title).toBe('Epic EDITED');
+    expect(reloaded.value.epic.description).toBe('epic EDITED description');
+  });
+
+  it('applies sprint content drift (name/goal/capacity) from the committed markdown', () => {
+    const planned = container.sprint.plan({
+      projectKey: 'TEST',
+      name: 'Sprint original',
+      goal: 'ship the original',
+      capacity: 10,
+      actor: 'daniel',
+    });
+    expect(planned.ok).toBe(true);
+    if (!planned.ok) return;
+
+    const markdownIo = new MarkdownIo();
+    const file = path.join(root, '.mnema/sprints', `${planned.value.key}.md`);
+    const parsed = markdownIo.read(file);
+    markdownIo.write(file, {
+      ...parsed,
+      mnemaData: {
+        ...parsed.mnemaData,
+        name: 'Sprint EDITED',
+        goal: 'ship the EDITED',
+        capacity: 20,
+      },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.sprints.upserted).toBe(1);
+
+    const reloaded = container.sprint.show(planned.value.key);
+    expect(reloaded).not.toBeNull();
+    expect(reloaded?.sprint.name).toBe('Sprint EDITED');
+    expect(reloaded?.sprint.goal).toBe('ship the EDITED');
+    expect(reloaded?.sprint.capacity).toBe(20);
+  });
+
+  it('applies decision content drift (title/rationale) from the committed markdown', () => {
+    const recorded = container.decision.record({
+      projectKey: 'TEST',
+      title: 'Decision original',
+      decision: 'the decision body',
+      rationale: 'original rationale',
+      actor: 'daniel',
+    });
+    expect(recorded.ok).toBe(true);
+    if (!recorded.ok) return;
+
+    const markdownIo = new MarkdownIo();
+    const file = path.join(root, '.mnema/roadmap', `${recorded.value.key}.md`);
+    const parsed = markdownIo.read(file);
+    markdownIo.write(file, {
+      ...parsed,
+      mnemaData: { ...parsed.mnemaData, title: 'Decision EDITED', rationale: 'EDITED rationale' },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.decisions.upserted).toBe(1);
+
+    const reloaded = container.decision.show(recorded.value.key);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.title).toBe('Decision EDITED');
+    expect(reloaded.value.rationale).toBe('EDITED rationale');
+  });
+
   it('skips files whose mnema.key does not match the filename', () => {
     const dir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(dir, { recursive: true });

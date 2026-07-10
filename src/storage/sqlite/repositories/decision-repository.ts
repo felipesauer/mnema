@@ -58,6 +58,17 @@ export interface DecisionInsertInput {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
+/** Content columns of a decision that sync rebuild can reconcile from markdown. */
+export interface DecisionFieldUpdates {
+  readonly title?: string;
+  readonly decision?: string;
+  readonly context?: string | null;
+  readonly rationale?: string | null;
+  readonly consequences?: string | null;
+  readonly impacts?: readonly string[];
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
 /**
  * Persistence for {@link Decision} (Architecture Decision Records).
  *
@@ -225,6 +236,66 @@ export class DecisionRepository {
       throw new Error('decision disappeared after updateStatus');
     }
     return { ok: true, decision: reloaded };
+  }
+
+  /**
+   * Overwrites a decision's content columns from the given fields, skipping
+   * any left `undefined`, and stamps `updated_at`. Used by sync rebuild to
+   * fold content drift from the committed markdown back onto an existing
+   * row. `status` and `superseded_by` are owned by {@link updateStatus} and
+   * are never touched here.
+   *
+   * @param decisionId - Internal decision id
+   * @param fields - Content columns to overwrite
+   * @returns The reloaded decision
+   */
+  updateFields(decisionId: string, fields: DecisionFieldUpdates): Decision {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (fields.title !== undefined) {
+      sets.push('title = ?');
+      values.push(fields.title);
+    }
+    if (fields.decision !== undefined) {
+      sets.push('decision = ?');
+      values.push(fields.decision);
+    }
+    if (fields.context !== undefined) {
+      sets.push('context = ?');
+      values.push(fields.context);
+    }
+    if (fields.rationale !== undefined) {
+      sets.push('rationale = ?');
+      values.push(fields.rationale);
+    }
+    if (fields.consequences !== undefined) {
+      sets.push('consequences = ?');
+      values.push(fields.consequences);
+    }
+    if (fields.impacts !== undefined) {
+      sets.push('impacts = ?');
+      values.push(JSON.stringify(fields.impacts));
+    }
+    if (fields.metadata !== undefined) {
+      sets.push('metadata = ?');
+      values.push(JSON.stringify(fields.metadata));
+    }
+
+    if (sets.length > 0) {
+      sets.push('updated_at = ?');
+      values.push(isoNow());
+      values.push(decisionId);
+      this.adapter
+        .getDatabase()
+        .prepare(`UPDATE decisions SET ${sets.join(', ')} WHERE id = ?`)
+        .run(...values);
+    }
+
+    const reloaded = this.findById(decisionId);
+    if (reloaded === null) {
+      throw new Error(`updateFields: decision ${decisionId} not found`);
+    }
+    return reloaded;
   }
 
   /**
