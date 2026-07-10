@@ -132,6 +132,7 @@ export class DoctorCommand {
       const decisions = container.decision.rebuildMirrors(config.project.key);
       let prunedSkills: string[] = [];
       let prunedMemories: string[] = [];
+      let prunedObservations: string[] = [];
       let prunedTasks: string[] = [];
 
       if (pruneOrphans) {
@@ -165,6 +166,22 @@ export class DoctorCommand {
           memorySlugs,
           fsMod,
         );
+        // Observation mirrors are keyed by row id; only ACTIVE rows keep one,
+        // so an archived observation's already-unlinked file is not resurrected
+        // and an orphan (deleted/archived row) is pruned.
+        const observationIds = new Set(
+          (
+            adapter
+              .getDatabase()
+              .prepare('SELECT id FROM observations WHERE archived_at IS NULL')
+              .all() as Array<{ id: string }>
+          ).map((r) => r.id),
+        );
+        prunedObservations = pruneOrphanMirrors(
+          pathMod.join(projectRoot, config.paths.observations),
+          observationIds,
+          fsMod,
+        );
         const taskKeys = new Set(
           (
             adapter
@@ -190,7 +207,8 @@ export class DoctorCommand {
         decisions.length === 0 &&
         prunedTasks.length === 0 &&
         prunedSkills.length === 0 &&
-        prunedMemories.length === 0
+        prunedMemories.length === 0 &&
+        prunedObservations.length === 0
       ) {
         process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
         return;
@@ -228,6 +246,11 @@ export class DoctorCommand {
       if (prunedMemories.length > 0) {
         process.stdout.write(
           `✗ memories pruned: ${prunedMemories.length} — ${prunedMemories.join(', ')}\n`,
+        );
+      }
+      if (prunedObservations.length > 0) {
+        process.stdout.write(
+          `✗ observations pruned: ${prunedObservations.length} — ${prunedObservations.join(', ')}\n`,
         );
       }
       if (prunedTasks.length > 0) {
@@ -355,6 +378,7 @@ export class DoctorCommand {
               roadmapDir: path.join(projectRoot, config.paths.roadmap),
               sprintsDir: path.join(projectRoot, config.paths.sprints),
               backlogDir: path.join(projectRoot, config.paths.backlog),
+              observationsDir: path.join(projectRoot, config.paths.observations),
             }),
           );
           // read() not getOrCreate(): doctor verifies, it never mints a
@@ -489,6 +513,7 @@ export function inspectMirrorDrift(
     readonly roadmapDir: string;
     readonly sprintsDir: string;
     readonly backlogDir: string;
+    readonly observationsDir: string;
   },
 ): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
@@ -535,6 +560,29 @@ export function inspectMirrorDrift(
       memoryRows.length,
       memoryMissing.map((r) => r.slug),
       memoryOrphans,
+    ),
+  });
+
+  // Observation mirrors are flat files keyed by the row id (not a slug), and
+  // only ACTIVE rows carry one — an archived observation's mirror is unlinked
+  // on archive, so it must not read as either missing or orphan here.
+  const observationRows = adapter
+    .getDatabase()
+    .prepare('SELECT id FROM observations WHERE archived_at IS NULL')
+    .all() as Array<{ id: string }>;
+  const observationIds = new Set(observationRows.map((r) => r.id));
+  const observationMissing = observationRows.filter(
+    (r) => !existsSync(path.join(dirs.observationsDir, `${r.id}.md`)),
+  );
+  const observationOrphans = listMirrorOrphans(dirs.observationsDir, observationIds);
+  checks.push({
+    name: 'observations mirrored',
+    ok: observationMissing.length === 0 && observationOrphans.length === 0,
+    severity: 'warning',
+    detail: mirrorDetail(
+      observationRows.length,
+      observationMissing.map((r) => r.id),
+      observationOrphans,
     ),
   });
 

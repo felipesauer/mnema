@@ -144,6 +144,7 @@ export class UpgradeCommand {
       roadmapDir: path.join(projectRoot, config.paths.roadmap),
       sprintsDir: path.join(projectRoot, config.paths.sprints),
       backlogDir: path.join(projectRoot, config.paths.backlog),
+      observationsDir: path.join(projectRoot, config.paths.observations),
     });
     if (mirrorChecks.some((c) => !c.ok && c.detail.includes('missing files'))) {
       steps.push({
@@ -390,11 +391,20 @@ function pruneAllOrphanMirrors(
       db.prepare('SELECT key FROM tasks WHERE deleted_at IS NULL').all() as Array<{ key: string }>
     ).map((r) => r.key),
   );
+  // Observation mirrors are keyed by row id; only active rows carry one.
+  const observationIds = new Set(
+    (
+      db.prepare('SELECT id FROM observations WHERE archived_at IS NULL').all() as Array<{
+        id: string;
+      }>
+    ).map((r) => r.id),
+  );
 
   const join = (relative: string) => path.join(projectRoot, relative);
   const removed = [
     ...pruneOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
     ...pruneOrphanMirrors(join(config.paths.memory), memorySlugs, fs),
+    ...pruneOrphanMirrors(join(config.paths.observations), observationIds, fs),
     // Epics and decisions share the roadmap dir; a file is an orphan
     // only when it belongs to neither set.
     ...pruneOrphanMirrors(join(config.paths.roadmap), new Set([...epicKeys, ...decisionKeys]), fs),

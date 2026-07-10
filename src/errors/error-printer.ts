@@ -190,6 +190,11 @@ export function formatError(error: MnemaError): string {
       break;
     }
 
+    case ErrorCode.KeyCollision:
+      lines.push(`Key collision minting a new ${error.table} key — another writer raced you`);
+      lines.push(`${pc.dim('hint:')} Retry the command; the next attempt gets a fresh key`);
+      break;
+
     case ErrorCode.SprintNotFound:
       lines.push(`Sprint ${error.sprintKey} not found`);
       lines.push(`${pc.dim('hint:')} List sprints with \`mnema sprint list\``);
@@ -381,9 +386,27 @@ export function formatError(error: MnemaError): string {
         lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
       }
       break;
+
+    default:
+      // Compile-time exhaustiveness guard (matches `exitCodeFor`). A new
+      // MnemaError variant with no `formatError` case here stops the build,
+      // rather than silently rendering nothing. At runtime it degrades to the
+      // raw code so the user still sees something.
+      lines.push(assertUnreachable(error));
+      break;
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Compile-time exhaustiveness guard for {@link formatError}. If a new
+ * {@link MnemaError} variant is added without a matching `formatError` case,
+ * this stops compiling. At runtime (should it ever be reached via an untyped
+ * error) it returns the raw `kind` rather than throwing.
+ */
+function assertUnreachable(error: never): string {
+  return `Unhandled error: ${(error as MnemaError).kind}`;
 }
 
 /**
@@ -401,6 +424,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     // (DependencyDuplicate/EvidenceDuplicate/SprintMetricDuplicate) are NOT
     // retryable — they live under Usage with TaskKeyExists.
     case ErrorCode.Conflict:
+    case ErrorCode.KeyCollision:
     case ErrorCode.InitConflict:
     case ErrorCode.ActiveSprintExists:
     case ErrorCode.StorageBusy:

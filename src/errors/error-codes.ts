@@ -36,6 +36,7 @@ export enum ErrorCode {
 
   NoActiveRun = 'NO_ACTIVE_RUN',
   Conflict = 'CONFLICT',
+  KeyCollision = 'KEY_COLLISION',
 
   SprintNotFound = 'SPRINT_NOT_FOUND',
   ActiveSprintExists = 'ACTIVE_SPRINT_EXISTS',

@@ -100,6 +100,7 @@ export interface TaskFieldUpdates {
   readonly estimate?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -577,6 +578,10 @@ export class TaskRepository {
       sets.push('assignee_id = ?');
       values.push(fields.assigneeId);
     }
+    if (fields.metadata !== undefined) {
+      sets.push('metadata = ?');
+      values.push(JSON.stringify(fields.metadata));
+    }
 
     if (sets.length === 0) {
       const reloaded = this.findById(taskId);
@@ -677,6 +682,23 @@ export class TaskRepository {
    */
   runInTransaction<T>(fn: () => T): T {
     return this.adapter.getDatabase().transaction(fn)();
+  }
+
+  /**
+   * Runs the given function inside a `BEGIN IMMEDIATE` transaction, taking
+   * the write lock up front rather than lazily on first write.
+   *
+   * The create path reads `nextSequence` (a `COUNT(*)`) and then inserts the
+   * derived key. Under the default `BEGIN DEFERRED`, two processes sharing one
+   * `state.db` can both take that COUNT before either writes and mint the same
+   * key. `BEGIN IMMEDIATE` serialises them: the second writer blocks on the
+   * lock until the first commits, so its COUNT already sees the new row.
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransactionImmediate<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn).immediate();
   }
 
   /**
