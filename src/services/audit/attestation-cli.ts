@@ -1,4 +1,5 @@
 import type { IntegrityCheck } from '../audit-integrity.js';
+import { readCommittedProjectHmacId } from '../project-secret.js';
 import type { AttestationSigner } from './attestation-emitter.js';
 import { planReattest } from './attestation-reattest.js';
 import { committedSignerResolver, listArtifacts, writeArtifact } from './attestation-store.js';
@@ -51,6 +52,7 @@ export function buildContentAttestation(projectRoot: string, auditDir: string): 
     walkChainedEvents(auditDir),
     listArtifacts(auditDir),
     committedSignerResolver(projectRoot),
+    readCommittedProjectHmacId(projectRoot),
   );
 }
 

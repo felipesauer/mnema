@@ -234,6 +234,14 @@ export const ConfigSchema = z.object({
   claims: z
     .object({
       lease_minutes: z.number().int().positive().default(30),
+      // When true, the transition that picks a task up for work (the
+      // workflow's `start` action, e.g. READY → IN_PROGRESS) requires the
+      // acting actor to already hold a live, non-expired claim on the task
+      // — refused with TASK_NOT_CLAIMED otherwise. Default OFF so a
+      // single-agent flow keeps starting work without a prior claim; turn
+      // it on for a team where two sessions might both pick up the same
+      // ready task and you want the claim to be the gate, not a convention.
+      require_to_start: z.boolean().default(false),
     })
     .prefault({}),
   // GitHub integration policy for the terminal (DONE) transition. When a
@@ -318,6 +326,7 @@ export const UserConfigSchema = z
     claims: z
       .object({
         lease_minutes: z.number().int().positive().optional(),
+        require_to_start: z.boolean().optional(),
       })
       .strict()
       .optional(),

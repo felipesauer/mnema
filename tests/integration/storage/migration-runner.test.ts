@@ -136,6 +136,62 @@ describe('MigrationRunner', () => {
     ).toThrow();
   });
 
+  it('migration 028 is wrapped in a transaction with FK disabled (atomicity guard)', () => {
+    // 028 rebuilds provenance_links (CREATE_new / INSERT / DROP / RENAME). If it
+    // is not atomic, a crash between the DROP and the version stamp leaves a
+    // recreated-but-unstamped table that bricks every future migrate. Pin the
+    // wrapping and the FK-disable header so they cannot be silently removed.
+    const sql = readFileSync(path.join(migrationsDir, '028_provenance_skill_kind.sql'), 'utf-8');
+    expect(sql).toMatch(/^\s*--\s*mnema:disable-foreign-keys/m);
+    expect(sql).toMatch(/^\s*BEGIN\s*;/m);
+    expect(sql).toMatch(/^\s*COMMIT\s*;/m);
+  });
+
+  it('rolls back the whole of 028 on a mid-migration failure (no recreated-but-unstamped brick)', () => {
+    // Build a migrations dir with the real 001..027 plus a 028 that fails right
+    // after it drops the old provenance_links. Without the transaction the DROP
+    // auto-commits and the table is gone while v28 is never stamped — the next
+    // migrate re-runs 028 and dies on the existing _new table. With the wrapping
+    // (BEGIN/COMMIT + the runner's rollback on error) the whole 028 rolls back:
+    // provenance_links survives and v28 is not recorded, so the DB is cleanly at
+    // v27 and a retry succeeds.
+    const brokenDir = mkdtempSync(path.join(tmpdir(), 'mnema-mig-broken-028-'));
+    for (const file of readdirSync(migrationsDir).filter((f) =>
+      /^0(0\d|1\d|2[0-7])_.*\.sql$/.test(f),
+    )) {
+      copyFileSync(path.join(migrationsDir, file), path.join(brokenDir, file));
+    }
+    const real028 = readFileSync(
+      path.join(migrationsDir, '028_provenance_skill_kind.sql'),
+      'utf-8',
+    );
+    const broken028 = real028.replace(
+      'DROP TABLE provenance_links;',
+      'DROP TABLE provenance_links;\nINSERT INTO no_such_table VALUES (1);',
+    );
+    // Guard: the marker we edit must actually be present, or the test is a no-op.
+    expect(broken028).not.toBe(real028);
+    writeFileSync(path.join(brokenDir, '028_provenance_skill_kind.sql'), broken028, 'utf-8');
+
+    const runner = new MigrationRunner();
+    // The failing migration surfaces as a thrown error.
+    expect(() => runner.run(adapter, brokenDir)).toThrow();
+
+    const db = adapter.getDatabase();
+    // The DROP was rolled back with the rest of 028: the table still exists.
+    const table = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'provenance_links'")
+      .get();
+    expect(table).not.toBeUndefined();
+    // v28 was never stamped — the DB is cleanly at v27, not a half-migrated brick.
+    const has28 = db.prepare('SELECT 1 FROM schema_migrations WHERE version = 28').get();
+    expect(has28).toBeUndefined();
+    // No transaction is left dangling for whatever runs next.
+    expect(db.inTransaction).toBe(false);
+
+    rmSync(brokenDir, { recursive: true, force: true });
+  });
+
   it('creates idx_tasks_title and uses it for the findByTitle lookup', () => {
     new MigrationRunner().run(adapter, migrationsDir);
     const db = adapter.getDatabase();

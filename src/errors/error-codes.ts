@@ -15,6 +15,7 @@ export enum ErrorCode {
   TaskKeyExists = 'TASK_KEY_EXISTS',
   TerminalState = 'TERMINAL_STATE',
   TaskAlreadyClaimed = 'TASK_ALREADY_CLAIMED',
+  TaskNotClaimed = 'TASK_NOT_CLAIMED',
 
   ProjectNotFound = 'PROJECT_NOT_FOUND',
   WorkflowNotFound = 'WORKFLOW_NOT_FOUND',

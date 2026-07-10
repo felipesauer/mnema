@@ -145,6 +145,14 @@ interface AuditChainWalk {
   readonly v3HmacChecked: number;
   /** …of those, how many failed the HMAC recomputation. */
   readonly v3HmacFailed: number;
+  /**
+   * Every chained line's own `hash`, in chain order. Each entry is the chain
+   * head AS OF that event, so the set doubles as the ancestry oracle for a
+   * signed head: a head signature covers a genuine earlier checkpoint iff its
+   * `coveredHeadHash` appears here. Collected during the single walk so the
+   * attestation check needs no second pass.
+   */
+  readonly chainedHashes: readonly string[];
 }
 
 /**
@@ -183,6 +191,9 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
   let lastHash: string | null = null;
   let lastAt: string | null = null;
   let chainEverStarted = false;
+  // Every chained line's own hash, in order — the ancestry oracle a head
+  // signature is checked against (its coveredHeadHash must be one of these).
+  const chainedHashes: string[] = [];
   // The running chain head, carried ACROSS files. The chain is a single
   // sequence even though rotation splits it into `YYYY-MM.jsonl` segments
   // plus `current.jsonl`, so the first line of one file links to the tail
@@ -251,6 +262,7 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
               ? `prev_hash break at the start of ${path.basename(file)} (a prior segment may be missing)`
               : `prev_hash break on a line in ${path.basename(file)}`;
         }
+        if (hash !== null) chainedHashes.push(hash);
         prevHash = hash;
         lastHash = hash;
         lastAt = typeof event.at === 'string' ? event.at : lastAt;
@@ -279,6 +291,7 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
     prevHashBreakCount,
     v3HmacChecked,
     v3HmacFailed,
+    chainedHashes,
   };
 }
 
@@ -523,7 +536,14 @@ export function inspectAuditIntegrity(
   // — it attests WHICH machine advanced the head. Only meaningful once the
   // chain has started, so it is skipped for a legacy/empty log above.
   if (attestation !== null) {
-    checks.push(attestationCheck(attestation, stateRow.chain_head_hash, stateRow.event_count));
+    checks.push(
+      attestationCheck(
+        attestation,
+        stateRow.chain_head_hash,
+        stateRow.event_count,
+        walk.chainedHashes,
+      ),
+    );
   }
 
   // Content attestation (ADR-41): committed `.att` coverage over the chained
@@ -777,14 +797,25 @@ export function reconcileAuditState(
  * - signature does not verify (ERROR — the head or the signature was
  *   forged);
  * - verifies and covers the current head (ok);
- * - verifies but the head has advanced past the last signed checkpoint (ok
- *   — the signature is valid for the head it covered; the next checkpoint
- *   will re-attest).
+ * - verifies and covers a genuine earlier checkpoint of the current chain
+ *   (ok — the signature is valid for the head it covered; the next
+ *   checkpoint will re-attest);
+ * - verifies but the signed head is NOT on the current chain (ERROR — a
+ *   valid signature over a head that lives nowhere in the on-disk chain,
+ *   e.g. a fork/replay of another chain's signed head, or the events under
+ *   it were rewritten out from under it while event_count held; distinct
+ *   from a bad signature so the operator knows the SIGNATURE is genuine but
+ *   points off-chain).
+ *
+ * @param chainedHashes - Every on-disk chained line's own hash, in order.
+ *   The ancestry oracle: a signed head that is not the current head is only
+ *   accepted when its `coveredHeadHash` appears here (a real prior checkpoint).
  */
 function attestationCheck(
   attestation: AttestationSource,
   currentHead: string | null,
   currentEventCount: number,
+  chainedHashes: readonly string[],
 ): IntegrityCheck {
   const sig = attestation.readHeadSignature();
   if (sig === null) {
@@ -831,13 +862,37 @@ function attestationCheck(
     };
   }
 
-  const coversCurrent = sig.coveredHeadHash === currentHead;
+  if (sig.coveredHeadHash === currentHead) {
+    return {
+      name: 'audit machine attestation',
+      ok: true,
+      detail: `head signed by ${sig.signerActor} (…${sig.signerFingerprint.slice(0, 12)})`,
+    };
+  }
+
+  // The signature is valid and event_count has not retreated, but it covers a
+  // head OTHER than the current one. That is legitimate ONLY when it covers a
+  // genuine earlier checkpoint of THIS chain — the head has since advanced and
+  // the next checkpoint will re-attest. A verifying signature whose covered
+  // head is absent from the on-disk chain is NOT that: the signature is
+  // authentic (the machine key made it) but points at a head this chain never
+  // held — a fork/replay of another chain's signed head, or the events beneath
+  // it rewritten while the count was kept level. Accepting it (the old
+  // behaviour) let a signed-but-off-chain head read green. Only a hash present
+  // in the walk is a real ancestor, so gate on membership.
+  const isEarlierCheckpoint = chainedHashes.includes(sig.coveredHeadHash);
+  if (isEarlierCheckpoint) {
+    return {
+      name: 'audit machine attestation',
+      ok: true,
+      detail: `head signed by ${sig.signerActor} up to an earlier checkpoint (…${sig.coveredHeadHash.slice(0, 12)}); re-attests next checkpoint`,
+    };
+  }
   return {
     name: 'audit machine attestation',
-    ok: true,
-    detail: coversCurrent
-      ? `head signed by ${sig.signerActor} (…${sig.signerFingerprint.slice(0, 12)})`
-      : `head signed by ${sig.signerActor} up to an earlier checkpoint (…${sig.coveredHeadHash.slice(0, 12)}); re-attests next checkpoint`,
+    ok: false,
+    detail: `a valid signature by ${sig.signerActor} covers head …${sig.coveredHeadHash.slice(0, 12)}, which is not on the current chain — the signature is authentic but its head is absent from the on-disk log (a fork/replay, or the events under it were rewritten)`,
+    severity: 'error',
   };
 }
 

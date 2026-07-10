@@ -12,10 +12,21 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
+import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
+import { MarkdownIo } from '@/storage/markdown/markdown-io.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('workflows');
+
+function makeConfig() {
+  return ConfigSchema.parse({
+    version: '1.0',
+    mnema_version: '^0.1.0',
+    project: { key: 'TEST', name: 'Test' },
+    workflow: 'default',
+  });
+}
 
 function setupProject(): { root: string; container: ServiceContainer } {
   const root = mkdtempSync(path.join(tmpdir(), 'mnema-rebuild-'));
@@ -27,13 +38,7 @@ function setupProject(): { root: string; container: ServiceContainer } {
     path.join(root, '.mnema/workflows', 'default.json'),
   );
 
-  const config = ConfigSchema.parse({
-    version: '1.0',
-    mnema_version: '^0.1.0',
-    project: { key: 'TEST', name: 'Test' },
-    workflow: 'default',
-  });
-  const container = createServiceContainer(config, root, { migrationsDir });
+  const container = createServiceContainer(makeConfig(), root, { migrationsDir });
 
   return { root, container };
 }
@@ -120,6 +125,43 @@ mnema:
     expect(reloaded.value.state).toBe('READY');
   });
 
+  it('applies content drift (title/priority/acceptance_criteria) from the committed markdown', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Original title',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    // The create wrote the mirror; edit the committed markdown the way a
+    // merged PR would — new title, new priority, a new acceptance criterion.
+    const markdownIo = new MarkdownIo();
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.key}.md`);
+    const parsed = markdownIo.read(draftFile);
+    markdownIo.write(draftFile, {
+      ...parsed,
+      mnemaData: {
+        ...parsed.mnemaData,
+        title: 'Edited by a merged PR',
+        priority: 1,
+        acceptance_criteria: ['a newly added criterion'],
+      },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+
+    // Content-only drift must count as an upsert (not 0).
+    expect(summary.tasksUpserted).toBe(1);
+
+    const reloaded = container.task.findByKey(created.value.key);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.title).toBe('Edited by a merged PR');
+    expect(reloaded.value.priority).toBe(1);
+    expect(reloaded.value.acceptanceCriteria).toEqual(['a newly added criterion']);
+  });
+
   it('skips files whose mnema.key does not match the filename', () => {
     const dir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(dir, { recursive: true });
@@ -186,5 +228,59 @@ mnema:
 
     // No row anywhere carries the invalid state.
     expect(container.task.list().some((t) => t.state === 'NOTASTATE')).toBe(false);
+  });
+
+  it('preserves a decision supersede link across a rebuild from disk', () => {
+    // Record two decisions and supersede the first with the second. The
+    // real mirror is what lands on disk, so this exercises the exact
+    // serialised shape the rebuild reads back.
+    const first = container.decision.record({
+      projectKey: 'TEST',
+      title: 'Original approach',
+      decision: 'do it the old way',
+      actor: 'daniel',
+    });
+    const second = container.decision.record({
+      projectKey: 'TEST',
+      title: 'Replacement approach',
+      decision: 'do it the new way',
+      actor: 'daniel',
+    });
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+
+    const superseded = container.decision.transition({
+      decisionKey: first.value.key,
+      status: DecisionStatus.Superseded,
+      supersededBy: second.value.key,
+      actor: 'daniel',
+    });
+    expect(superseded.ok).toBe(true);
+
+    // Simulate a fresh clone: the roadmap markdown is version-controlled
+    // and present, but the git-ignored state DB is gone. The rebuild is
+    // the only thing that repopulates the cache — and it walks the
+    // superseded decision (ADR-1) before its successor (ADR-2).
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      rebuilt.syncRebuild.run('TEST');
+
+      const one = rebuilt.decision.show(first.value.key);
+      const two = rebuilt.decision.show(second.value.key);
+      expect(one.ok && two.ok).toBe(true);
+      if (!one.ok || !two.ok) return;
+
+      // Status survives today; the successor pointer must too. The DB
+      // stores it as the successor's regenerated id, so resolve through
+      // the successor row rather than comparing the pre-rebuild id.
+      expect(one.value.status).toBe(DecisionStatus.Superseded);
+      expect(one.value.supersededBy).toBe(two.value.id);
+    } finally {
+      rebuilt.close();
+      // Hand a live container back so the shared afterEach can close it.
+      container = createServiceContainer(makeConfig(), root, { migrationsDir });
+    }
   });
 });

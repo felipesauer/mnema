@@ -147,4 +147,166 @@ describe('TaskService claim/releaseClaim', () => {
     const events = container.auditQuery.run({ taskKey: key, kind: 'task_claim_released' });
     expect(events).toHaveLength(1);
   });
+
+  it('reaching a terminal state clears a dangling claim', () => {
+    const key = makeTask();
+    // Claim the task, then drive it all the way to DONE. The holder never
+    // releases; the terminal transition must clear the lease on its own.
+    const claimed = container.task.claim({ taskKey: key, actor: 'alice', leaseMinutes: 30 });
+    expect(claimed.ok).toBe(true);
+
+    container.task.transition({
+      taskKey: key,
+      action: 'submit',
+      payload: {
+        title: 'A well-formed title',
+        description: 'A description long enough to pass the gate',
+        acceptance_criteria: ['works'],
+        estimate: 1,
+      },
+      actor: 'alice',
+    });
+    container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'alice' },
+      actor: 'alice',
+    });
+    const done = container.task.transition({
+      taskKey: key,
+      action: 'complete',
+      payload: { completion_note: 'shipped it' },
+      actor: 'alice',
+    });
+
+    expect(done.ok).toBe(true);
+    if (!done.ok) return;
+    expect(done.value.state).toBe('DONE');
+    // The whole point: a completed task keeps no stale claim.
+    expect(done.value.claimedBy).toBeNull();
+    expect(done.value.leaseExpiresAt).toBeNull();
+  });
+});
+
+/**
+ * Covers the opt-in start-time claim gate (`claims.require_to_start`). With
+ * the flag on, the `start` action requires the acting actor to hold a live
+ * claim: two actors cannot both pull the same ready task into progress. The
+ * default-off behaviour (no claim needed) is asserted alongside so the two
+ * cannot drift.
+ */
+describe('TaskService start-time claim gate (claims.require_to_start)', () => {
+  let projectRoot: string;
+  let container: ServiceContainer;
+
+  function setup(requireToStart: boolean): void {
+    projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-claim-gate-'));
+    for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
+      mkdirSync(path.join(projectRoot, dir), { recursive: true });
+    }
+    copyFileSync(
+      path.join(workflowsSrc, 'default.json'),
+      path.join(projectRoot, '.mnema/workflows', 'default.json'),
+    );
+    const config = ConfigSchema.parse({
+      version: '1.0',
+      mnema_version: '^0.1.0',
+      project: { key: 'TEST', name: 'Test' },
+      workflow: 'default',
+      claims: { require_to_start: requireToStart },
+    });
+    container = createServiceContainer(config, projectRoot, { migrationsDir });
+  }
+
+  afterEach(() => {
+    container.close();
+    rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  /** Creates a task and drives it to READY so `start` is the next move. */
+  function makeReadyTask(): string {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Pickable',
+      actor: 'alice',
+    });
+    if (!created.ok) throw new Error('setup: create failed');
+    const key = created.value.key;
+    const submitted = container.task.transition({
+      taskKey: key,
+      action: 'submit',
+      payload: {
+        title: 'A well-formed title',
+        description: 'A description long enough to pass the gate',
+        acceptance_criteria: ['works'],
+        estimate: 1,
+      },
+      actor: 'alice',
+    });
+    if (!submitted.ok) throw new Error('setup: submit failed');
+    return key;
+  }
+
+  it('flag ON: two actors cannot both start the same ready task — one wins, the other is refused', () => {
+    setup(true);
+    const key = makeReadyTask();
+
+    // Alice claims the ready task; bob does not hold a claim.
+    const claimed = container.task.claim({ taskKey: key, actor: 'alice', leaseMinutes: 30 });
+    expect(claimed.ok).toBe(true);
+
+    // Bob (no live claim) is refused with TASK_NOT_CLAIMED. The assignee
+    // is a known handle so assignee resolution passes and the claim gate
+    // is what refuses — the acting actor (bob) is not the claim holder.
+    const bob = container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'alice' },
+      actor: 'bob',
+    });
+    expect(bob.ok).toBe(false);
+    if (bob.ok) return;
+    expect(bob.error.kind).toBe(ErrorCode.TaskNotClaimed);
+
+    // Alice, who holds the live lease, succeeds.
+    const alice = container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'alice' },
+      actor: 'alice',
+    });
+    expect(alice.ok).toBe(true);
+    if (!alice.ok) return;
+    expect(alice.value.state).toBe('IN_PROGRESS');
+  });
+
+  it('flag ON: starting with no claim at all is refused with TASK_NOT_CLAIMED', () => {
+    setup(true);
+    const key = makeReadyTask();
+
+    const started = container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'alice' },
+      actor: 'alice',
+    });
+    expect(started.ok).toBe(false);
+    if (started.ok) return;
+    expect(started.error.kind).toBe(ErrorCode.TaskNotClaimed);
+  });
+
+  it('flag OFF (default): start needs no claim — unchanged behaviour', () => {
+    setup(false);
+    const key = makeReadyTask();
+
+    const started = container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'alice' },
+      actor: 'alice',
+    });
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    expect(started.value.state).toBe('IN_PROGRESS');
+  });
 });

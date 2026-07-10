@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 
 import type { FlowMetricsService } from '../../../services/flow-metrics-service.js';
 import { ok } from '../../mcp-tool-result.js';
+import { timeBoundSchema } from '../../time-bound-schema.js';
 
 /**
  * Registers the `metrics_flow` MCP tool — derived flow metrics (lead
@@ -32,10 +32,9 @@ export class FlowMetricsTool {
           'hours. Read-only; requires no active run. Pass `since` (ISO-8601 or a relative ' +
           'duration like "30d") to bound the window.',
         inputSchema: {
-          since: z
-            .string()
-            .optional()
-            .describe('Lower time bound — ISO-8601 or a relative duration (e.g. "7d", "30d")'),
+          since: timeBoundSchema(
+            'Lower time bound — ISO-8601 or a relative duration (e.g. "7d", "30d")',
+          ),
         },
       },
       (input) => {

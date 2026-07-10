@@ -453,6 +453,48 @@ export class TaskRepository {
   }
 
   /**
+   * Reads just the claim columns for a task, without loading the full
+   * row. Used by the transition path to enforce a start-time claim gate
+   * (`claims.require_to_start`) inside the same transaction as the state
+   * change, so the check sees a value consistent with the write.
+   *
+   * @param taskId - Internal id of the task
+   * @returns The claim holder + lease, or `null` when the id is unknown
+   */
+  findClaim(taskId: string): { claimedBy: string | null; leaseExpiresAt: string | null } | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT claimed_by, lease_expires_at FROM tasks WHERE id = ? AND deleted_at IS NULL')
+      .get(taskId) as { claimed_by: string | null; lease_expires_at: string | null } | undefined;
+    if (row === undefined) return null;
+    return { claimedBy: row.claimed_by, leaseExpiresAt: row.lease_expires_at };
+  }
+
+  /**
+   * Clears a task's claim unconditionally (both `claimed_by` and
+   * `lease_expires_at`), regardless of who holds it. Reaching a terminal
+   * state retires any dangling lease — unlike {@link releaseClaim}, which
+   * only the holder may call — so a completed or canceled task never keeps
+   * a stale claim. Bumps `updated_at` via the trigger like every other
+   * write. Idempotent: a no-op on an already-unclaimed task.
+   *
+   * @param taskId - Internal id of the task
+   * @returns `true` when a row's claim was cleared, `false` when the id
+   *   was unknown or the task was already unclaimed
+   */
+  clearClaim(taskId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `UPDATE tasks
+            SET claimed_by = NULL, lease_expires_at = NULL
+          WHERE id = ? AND claimed_by IS NOT NULL`,
+      )
+      .run(taskId);
+    return result.changes > 0;
+  }
+
+  /**
    * Releases a task's claim, but only when `actorId` currently holds it —
    * an expired or foreign claim cannot be released by someone who doesn't
    * hold it, so callers can't accidentally clear another actor's lease by

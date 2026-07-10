@@ -189,6 +189,17 @@ export class DecisionService {
   }
 
   /**
+   * Resolves a decision's `supersededBy` (stored as the successor's
+   * internal UUID) back to the successor's human key for the markdown
+   * mirror. UUIDs are regenerated on a fresh clone, so only the key is a
+   * stable on-disk reference. Returns `null` when there is no link.
+   */
+  private supersededByKey(decision: Decision): string | null {
+    if (decision.supersededBy === null) return null;
+    return this.decisions.findById(decision.supersededBy)?.key ?? null;
+  }
+
+  /**
    * Records a new decision and links it to an existing note via an
    * extra audit event. The note itself stays put — promotion is a
    * provenance marker, not a content transform: the caller still has
@@ -392,7 +403,7 @@ export class DecisionService {
       },
     });
 
-    this.mirror?.writeDecision(updated);
+    this.mirror?.writeDecision(updated, this.supersededByKey(updated));
 
     return Ok(updated);
   }
@@ -449,7 +460,7 @@ export class DecisionService {
     const rebuilt: string[] = [];
     for (const decision of this.list(projectKey)) {
       if (!this.mirror.hasDecision(decision.key)) {
-        this.mirror.writeDecision(decision);
+        this.mirror.writeDecision(decision, this.supersededByKey(decision));
         rebuilt.push(decision.key);
       }
     }

@@ -29,12 +29,21 @@ export const CONTENT_ATTESTATION_CHECK = 'audit content attestation';
  * @param walk - The chained events on disk, indexed
  * @param artifacts - The committed `.att` records (any order)
  * @param resolvePublicKeyPem - Resolves a signer's PEM by FULL fingerprint
+ * @param expectedProjectHmacId - The project's OWN committed HMAC fingerprint
+ *   (`sha256(secret)` hex). Every artifact's `projectHmacId` must equal it —
+ *   a mismatch means the `.att` belongs to a DIFFERENT project (or its
+ *   `projectHmacId` was swapped), which the signature check alone cannot catch
+ *   (the foreign signature verifies against its own committed key). Reported
+ *   with a distinct wrong-project verdict, NOT generic tamper. `null` when the
+ *   project committed no fingerprint (nothing to bind against — the missing
+ *   downgrade anchor is warned separately), in which case binding is skipped.
  * @returns One integrity check line
  */
 export function contentAttestationCheck(
   walk: AuditChainWalk,
   artifacts: readonly AttestationArtifact[],
   resolvePublicKeyPem: (fingerprint: string) => string | null,
+  expectedProjectHmacId: string | null = null,
 ): IntegrityCheck {
   const total = walk.chained.length;
 
@@ -79,6 +88,22 @@ export function contentAttestationCheck(
         name: CONTENT_ATTESTATION_CHECK,
         ok: false,
         detail: `attestation covers event ${art.to} but the chain holds only ${total} — the log was truncated below attested history`,
+        severity: 'error',
+      };
+    }
+    // Project binding: the artifact must carry THIS project's committed HMAC
+    // fingerprint. A foreign .att (swapped in, or from another project) has a
+    // signature that verifies against ITS OWN committed key, so verifyArtifact
+    // below would pass it — projectHmacId is the only thing tying the batch to
+    // this project. A mismatch is wrong-project, a distinct verdict from a
+    // tampered batch, so the operator is not sent hunting for a forgery that
+    // is not there. Skipped when the project committed no fingerprint (there is
+    // nothing to bind against; the missing anchor is warned elsewhere).
+    if (expectedProjectHmacId != null && art.projectHmacId !== expectedProjectHmacId) {
+      return {
+        name: CONTENT_ATTESTATION_CHECK,
+        ok: false,
+        detail: `attestation [${art.from}, ${art.to}) by ${art.signerActor} carries project id …${art.projectHmacId.slice(0, 12)}, but this project's committed fingerprint is …${expectedProjectHmacId.slice(0, 12)} — the .att is for a different project (wrong project secret), not this one`,
         severity: 'error',
       };
     }
