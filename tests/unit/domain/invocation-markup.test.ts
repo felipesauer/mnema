@@ -29,6 +29,14 @@ describe('hasInvocationMarkup', () => {
     expect(hasInvocationMarkup(`x ${P_OPEN} name="y">`)).toBe(true);
   });
 
+  it('detects the strong-token-less envelope spill (content close + topics open)', () => {
+    // The real reported shape from an observation/memory record: a field-close
+    // directly followed by another field tag, carrying no invoke/parameter
+    // token at all.
+    const body = 'body text.</content>\n<topics>["ci","ruleset"]</topics>';
+    expect(hasInvocationMarkup(body)).toBe(true);
+  });
+
   it('detects namespace-prefixed invocation tokens', () => {
     expect(hasInvocationMarkup('foo </ns:invoke>')).toBe(true);
     expect(hasInvocationMarkup(`x <ns:${'parameter'} name="y">`)).toBe(true);

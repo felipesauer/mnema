@@ -432,11 +432,13 @@ export function createServiceContainer(
     sprintRepository,
     decisionRepository,
     labelRepository,
+    observationRepository,
     {
       projectRoot,
       backlogDir: config.paths.backlog,
       roadmapDir: config.paths.roadmap,
       sprintsDir: config.paths.sprints,
+      observationsDir: config.paths.observations,
     },
     new Set(stateMachine.getWorkflow().states),
   );
@@ -627,7 +629,14 @@ export function createServiceContainer(
     tasks,
     projects,
   );
-  const observationService = new ObservationService(observationRepository, tasks, identity, audit);
+  const observationsDir = path.join(projectRoot, config.paths.observations);
+  const observationService = new ObservationService(
+    observationRepository,
+    tasks,
+    identity,
+    audit,
+    observationsDir,
+  );
   const memoryStalenessService = new MemoryStalenessService(projectRoot);
   trace.mark('all services wired');
   trace.end();

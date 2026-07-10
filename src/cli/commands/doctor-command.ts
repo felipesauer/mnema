@@ -121,10 +121,12 @@ export class DoctorCommand {
       fsMod.mkdirSync(pathMod.join(memoryRoot, 'decisions'), { recursive: true });
       fsMod.mkdirSync(pathMod.join(memoryRoot, 'notes'), { recursive: true });
       fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.skills), { recursive: true });
+      fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.observations), { recursive: true });
 
       const tasks = container.sync.rebuildMirrors();
       const skills = container.skill.rebuildMirrors();
       const memories = container.memory.rebuildMirrors();
+      const observations = container.observation.rebuildMirrors();
       const epics = container.epic.rebuildMirrors(config.project.key);
       const sprints = container.sprint.rebuildMirrors(config.project.key);
       const decisions = container.decision.rebuildMirrors(config.project.key);
@@ -182,6 +184,7 @@ export class DoctorCommand {
         tasks.length === 0 &&
         skills.length === 0 &&
         memories.length === 0 &&
+        observations.length === 0 &&
         epics.length === 0 &&
         sprints.length === 0 &&
         decisions.length === 0 &&
@@ -200,6 +203,11 @@ export class DoctorCommand {
       }
       if (memories.length > 0) {
         process.stdout.write(`↻ memories mirrored: ${memories.length} — ${memories.join(', ')}\n`);
+      }
+      if (observations.length > 0) {
+        process.stdout.write(
+          `↻ observations mirrored: ${observations.length} — ${observations.join(', ')}\n`,
+        );
       }
       if (epics.length > 0) {
         process.stdout.write(`↻ epics mirrored: ${epics.length} — ${epics.join(', ')}\n`);

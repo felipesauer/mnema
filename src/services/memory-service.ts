@@ -3,8 +3,9 @@ import path from 'node:path';
 
 import type { Memory } from '../domain/entities/memory.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
+import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import type { MnemaError } from '../errors/mnema-error.js';
+import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
@@ -76,6 +77,26 @@ export class MemoryService {
    * @returns Upserted memory and the action taken
    */
   record(input: MemoryRecordInput): Result<MemoryRecordResult, MnemaError> {
+    // Reject tool-invocation markup leaking into a text field — a malformed
+    // MCP call can spill `</content>\n<topics>[…]` / `<parameter name=...>`
+    // into a value, which would persist a garbage trailer and leave sibling
+    // fields empty. Same screen and message as decision_record.
+    const markupIssues: ErrorIssue[] = [];
+    for (const [field, value] of [
+      ['title', input.title],
+      ['content', input.content],
+    ] as const) {
+      if (hasInvocationMarkup(value)) {
+        markupIssues.push({
+          path: [field],
+          message: 'contains tool-invocation markup; pass each field as its own argument',
+        });
+      }
+    }
+    if (markupIssues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues: markupIssues });
+    }
+
     // Validate a promotion source BEFORE any write: an archived (retired) or
     // unknown observation must not seed a memory or a provenance edge.
     if (input.derivedFromObservation !== undefined && input.derivedFromObservation.length > 0) {

@@ -379,4 +379,68 @@ mnema:
       container = createServiceContainer(makeConfig(), root, { migrationsDir });
     }
   });
+
+  it('restores an observation from its .md mirror after a state wipe', () => {
+    const rec = container.observation.record({
+      content: 'Build is flaky on Fridays',
+      topics: ['ci', 'flaky'],
+      actor: 'daniel',
+    });
+    expect(rec.ok).toBe(true);
+    if (!rec.ok) return;
+    const id = rec.value.id;
+
+    // The record wrote a mirror carrying the full content.
+    const mirrorPath = path.join(root, '.mnema/observations', `${id}.md`);
+    expect(existsSync(mirrorPath)).toBe(true);
+    expect(readFileSync(mirrorPath, 'utf-8')).toContain('Build is flaky on Fridays');
+
+    // Wipe the cache DB — the mirror on disk is the only surviving copy.
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      const summary = rebuilt.syncRebuild.run('TEST');
+      expect(summary.observations.scanned).toBe(1);
+      expect(summary.observations.upserted).toBe(1);
+
+      const restored = rebuilt.observation.list();
+      expect(restored).toHaveLength(1);
+      expect(restored[0]?.id).toBe(id);
+      expect(restored[0]?.content).toBe('Build is flaky on Fridays');
+      expect([...(restored[0]?.topics ?? [])]).toEqual(['ci', 'flaky']);
+
+      // A second rebuild is a no-op — the row already exists.
+      expect(rebuilt.syncRebuild.run('TEST').observations.upserted).toBe(0);
+    } finally {
+      rebuilt.close();
+      container = createServiceContainer(makeConfig(), root, { migrationsDir });
+    }
+  });
+
+  it('restores an observation linked to a task from disk', () => {
+    const task = container.task.create({ projectKey: 'TEST', title: 'Linkable', actor: 'daniel' });
+    expect(task.ok).toBe(true);
+    if (!task.ok) return;
+    const rec = container.observation.record({
+      content: 'linked note',
+      relatedTaskKey: task.value.key,
+      actor: 'daniel',
+    });
+    expect(rec.ok).toBe(true);
+    if (!rec.ok) return;
+
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      rebuilt.syncRebuild.run('TEST');
+      // The note is re-linked to the freshly-inserted task by its stable key.
+      const scoped = rebuilt.observation.list({ relatedTaskKey: task.value.key });
+      expect(scoped.map((o) => o.content)).toEqual(['linked note']);
+    } finally {
+      rebuilt.close();
+      container = createServiceContainer(makeConfig(), root, { migrationsDir });
+    }
+  });
 });

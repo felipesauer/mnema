@@ -22,6 +22,7 @@ import type {
   EpicRepository,
 } from '../storage/sqlite/repositories/epic-repository.js';
 import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
+import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type {
   SprintFieldUpdates,
@@ -31,6 +32,7 @@ import type {
   TaskFieldUpdates,
   TaskRepository,
 } from '../storage/sqlite/repositories/task-repository.js';
+import { isoNow } from '../utils/iso-now.js';
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -49,6 +51,7 @@ export interface RebuildSummary {
   readonly epics: RebuildCounts;
   readonly sprints: RebuildCounts;
   readonly decisions: RebuildCounts;
+  readonly observations: RebuildCounts;
   readonly skipped: readonly { readonly file: string; readonly reason: string }[];
 }
 
@@ -86,11 +89,13 @@ export class SyncRebuild {
     private readonly sprints: SprintRepository,
     private readonly decisions: DecisionRepository,
     private readonly labels: LabelRepository,
+    private readonly observations: ObservationRepository,
     private readonly paths: {
       readonly projectRoot: string;
       readonly backlogDir: string;
       readonly roadmapDir: string;
       readonly sprintsDir: string;
+      readonly observationsDir: string;
     },
     /**
      * The states declared by the active workflow. A `backlog/<STATE>/`
@@ -123,6 +128,7 @@ export class SyncRebuild {
       epics: { scanned: 0, upserted: 0 },
       sprints: { scanned: 0, upserted: 0 },
       decisions: { scanned: 0, upserted: 0 },
+      observations: { scanned: 0, upserted: 0 },
       skipped: [],
     };
 
@@ -161,6 +167,9 @@ export class SyncRebuild {
     // second pass, once every decision row exists.
     this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
     const tasks = this.rebuildTasks(project.id, project.key, skipped);
+    // Observations are rebuilt after tasks so a note's `related_task_key`
+    // resolves to a freshly-inserted task row.
+    const observations = this.rebuildObservations(skipped);
 
     return {
       tasksScanned: tasks.scanned,
@@ -168,6 +177,7 @@ export class SyncRebuild {
       epics,
       sprints,
       decisions,
+      observations,
       skipped,
     };
   }
@@ -312,6 +322,73 @@ export class SyncRebuild {
         // the markdown is unchanged.
         this.labels.setForTask(taskId, readStringArray(data, 'labels'));
       }
+    }
+
+    return { scanned, upserted };
+  }
+
+  /**
+   * Walks `observations/<id>.md` and re-imports each note into the cache,
+   * preserving its on-disk id / timestamps / archived state. Unlike a task
+   * or decision the id is the filename (observations have no human key), and
+   * a `related_task_key` is resolved to the freshly-inserted task row. The
+   * insert is idempotent by id — a note already present in the cache is left
+   * untouched — so a rebuild over a populated database is a no-op.
+   */
+  private rebuildObservations(skipped: { file: string; reason: string }[]): RebuildCounts {
+    const root = path.join(this.paths.projectRoot, this.paths.observationsDir);
+    if (!existsSync(root)) return { scanned: 0, upserted: 0 };
+
+    let scanned = 0;
+    let upserted = 0;
+
+    for (const fileName of listMarkdownFiles(root)) {
+      const filePath = path.join(root, fileName);
+      const data = this.markdownIo.read(filePath).mnemaData;
+
+      if (readString(data, 'kind') !== 'observation') continue;
+      scanned += 1;
+
+      const id = readString(data, 'id');
+      if (id === null) {
+        skipped.push({ file: filePath, reason: 'missing mnema.id' });
+        continue;
+      }
+      const expectedId = fileName.replace(/\.md$/, '');
+      if (id !== expectedId) {
+        skipped.push({
+          file: filePath,
+          reason: `mnema.id (${id}) does not match filename (${expectedId})`,
+        });
+        continue;
+      }
+      const content = readString(data, 'content');
+      if (content === null) {
+        skipped.push({ file: filePath, reason: 'missing mnema.content' });
+        continue;
+      }
+
+      // The frontmatter is the source of truth (as with tasks/decisions); the
+      // body is only a readable copy. `related_task_key` resolves to the
+      // freshly-inserted task row by its stable key.
+      const relatedTaskKey = readString(data, 'related_task_key');
+      const relatedTaskId =
+        relatedTaskKey !== null ? (this.tasks.findByKey(relatedTaskKey)?.id ?? null) : null;
+      const createdBy = this.actors.upsert(
+        readString(data, 'created_by') ?? 'unknown',
+        ActorKind.Human,
+      );
+
+      const inserted = this.observations.insertFromMirror({
+        id,
+        content,
+        topics: readStringArray(data, 'topics'),
+        relatedTaskId,
+        createdBy,
+        at: readString(data, 'at') ?? isoNow(),
+        archivedAt: readString(data, 'archived_at'),
+      });
+      if (inserted) upserted += 1;
     }
 
     return { scanned, upserted };

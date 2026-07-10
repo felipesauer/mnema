@@ -22,6 +22,7 @@ const PATHS: DestroyPaths = {
   sprints: '.mnema/sprints',
   roadmap: '.mnema/roadmap',
   memory: '.mnema/memory',
+  observations: '.mnema/observations',
   skills: '.mnema/skills',
   commands: '.mnema/commands',
   workflow: 'default',
@@ -44,6 +45,7 @@ describe('removeArtifacts', () => {
       PATHS.sprints,
       PATHS.roadmap,
       PATHS.memory,
+      PATHS.observations,
       PATHS.skills,
       PATHS.commands,
     ]) {
@@ -155,6 +157,7 @@ describe('removeArtifacts', () => {
     expect(existsSync(path.join(projectRoot, PATHS.sprints))).toBe(false);
     expect(existsSync(path.join(projectRoot, PATHS.roadmap))).toBe(false);
     expect(existsSync(path.join(projectRoot, PATHS.memory))).toBe(false);
+    expect(existsSync(path.join(projectRoot, PATHS.observations))).toBe(false);
     expect(existsSync(path.join(projectRoot, PATHS.audit))).toBe(true);
   });
 

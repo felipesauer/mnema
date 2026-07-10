@@ -16,7 +16,10 @@
  * A bare field-closing tag like `</decision>` is deliberately NOT treated as a
  * leak on its own — an ADR may legitimately discuss `</title>` or quote an XML
  * snippet. It only counts when it directly precedes an invocation token (the
- * real spill shape: `…body</decision>\n<parameter name="context">…`).
+ * real spill shape: `…body</decision>\n<parameter name="context">…`) OR another
+ * field tag (the strong-token-less spill a knowledge tool produces:
+ * `…body</content>\n<topics>[…]`). A single field tag mentioned in prose,
+ * with no adjacent second field tag, still passes.
  */
 
 // A STRONG token unambiguously signals an invocation leak on its own:
@@ -40,13 +43,32 @@
 // tag fails in O(1) locally.
 const STRONG_TOKEN = String.raw`<(?:[\w.-]+:)?invoke\b[^<>\n]*>?|<\/(?:[\w.-]+:)?invoke\s*>|<(?:[\w.-]+:)?function_calls\b[^<>\n]*>|<\/(?:[\w.-]+:)?function_calls\s*>|<(?:[\w.-]+:)?parameter\b[^<>\n]*\bname\s*=`;
 
+// The set of field tags an MCP tool spills — every argument name a knowledge
+// tool accepts as free text. `content` and `topics` cover the observation /
+// memory record shapes (`…body</content>\n<topics>[…]`), the rest cover the
+// decision shapes. Shared by the weak introducer and the envelope-pair form.
+const FIELD_TAG = String.raw`(?:decision|context|rationale|consequences|title|parameter|content|topics|observation|slug)`;
+
 // A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
 // `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it
 // only counts as a leak when it directly precedes (optional whitespace) a
 // strong token. That preserves the ADR-28/29 shapes while letting prose that
 // merely mentions `</title>` or `</parameter>` pass.
-const WEAK_INTRODUCER = String.raw`<\/(?:[\w.-]+:)?(?:decision|context|rationale|consequences|title|parameter)>`;
-const LEAK_RE = new RegExp(`(?:${WEAK_INTRODUCER}\\s*)?(?:${STRONG_TOKEN})`, 'i');
+const WEAK_INTRODUCER = String.raw`<\/(?:[\w.-]+:)?${FIELD_TAG}>`;
+
+// An ENVELOPE PAIR — a field-closing tag directly followed (optional
+// whitespace) by another field tag, opening or closing — is a leak on its own.
+// This is the multi-field spill shape a knowledge tool produces without any
+// invoke/parameter strong token: `…body</content>\n<topics>[…]</topics>`. A
+// single field tag in prose still passes (there is no adjacent second field
+// tag), so mentioning `</title>` or `<decision>…</decision>.` is not flagged.
+// No greedy run spans the two tags, so matching stays linear.
+const ENVELOPE_PAIR = String.raw`<\/(?:[\w.-]+:)?${FIELD_TAG}>\s*<\/?(?:[\w.-]+:)?${FIELD_TAG}\b`;
+
+const LEAK_RE = new RegExp(
+  `(?:${ENVELOPE_PAIR})|(?:${WEAK_INTRODUCER}\\s*)?(?:${STRONG_TOKEN})`,
+  'i',
+);
 
 /**
  * True when `text` contains a tool-invocation markup leak.

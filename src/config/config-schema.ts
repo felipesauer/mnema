@@ -94,6 +94,7 @@ export const ConfigSchema = z.object({
       sprints: relativePathField('.mnema/sprints'),
       roadmap: relativePathField('.mnema/roadmap'),
       memory: relativePathField('.mnema/memory'),
+      observations: relativePathField('.mnema/observations'),
       skills: relativePathField('.mnema/skills'),
       commands: relativePathField('.mnema/commands'),
       workflows: relativePathField('.mnema/workflows'),

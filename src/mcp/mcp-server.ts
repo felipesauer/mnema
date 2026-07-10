@@ -326,12 +326,14 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.agentRun,
       ).register(this.sdk);
       new ObservationTools(
         this.services.observation,
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.agentRun,
       ).register(this.sdk);
     }
     new TransitionToolsRegistrar(
