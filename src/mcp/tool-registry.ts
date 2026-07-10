@@ -13,6 +13,7 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'agent_run_show',
   'task_create',
   'task_create_many',
+  'task_update',
   'task_assign',
   'task_claim',
   'task_release_claim',
@@ -52,9 +53,11 @@ export const EPIC_TOOL_NAMES: readonly string[] = [
   'epic_show',
   'epics_list',
   'epic_create',
+  'epic_update',
   'epic_add_task',
   'epic_close',
   'epic_remove',
+  'epic_delete',
 ];
 
 /** Sprint tools — registered only when the workflow enables sprints. */

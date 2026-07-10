@@ -210,6 +210,40 @@ export class EpicRepository {
   }
 
   /**
+   * Soft-deletes an epic by stamping `deleted_at`. The row stays in
+   * SQLite so it can still be audited; every read filters
+   * `deleted_at IS NULL`, so the epic disappears from the API.
+   *
+   * @param epicId - Internal epic id
+   * @returns `true` when a row was updated, `false` when the id was
+   *   either unknown or already deleted
+   */
+  softDelete(epicId: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `UPDATE epics
+            SET deleted_at = ?
+          WHERE id = ? AND deleted_at IS NULL`,
+      )
+      .run(isoNow(), epicId);
+    return result.changes > 0;
+  }
+
+  /**
+   * Runs the given function inside a SQLite transaction.
+   *
+   * Mirrors `Database.transaction()` from better-sqlite3 but exposes
+   * a typed signature that propagates the function's return value.
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransaction<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn)();
+  }
+
+  /**
    * Attaches a task to an epic by setting `tasks.epic_id`.
    *
    * @param epicId - Internal epic id

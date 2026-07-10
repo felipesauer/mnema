@@ -245,6 +245,100 @@ export class TaskService {
   }
 
   /**
+   * Edits a task's content (title / description / acceptance criteria)
+   * after creation, without a state change. Fills the gap the DRAFT →
+   * READY submit gate leaves: once a task is past DRAFT there was no way
+   * to correct its content.
+   *
+   * Refuses when the task sits in a terminal state — a completed or
+   * canceled task's content is part of the record and must not drift.
+   * Reuses the same optimistic-concurrency token as {@link transition}:
+   * `expectedUpdatedAt` defaults to the row we just read, so a concurrent
+   * edit surfaces a CONFLICT instead of a silent lost write.
+   *
+   * @param input - Task key + content fields + identity tuple
+   * @returns The updated task or a structured error
+   */
+  updateContent(input: {
+    readonly taskKey: string;
+    readonly title?: string;
+    readonly description?: string | null;
+    readonly acceptanceCriteria?: readonly string[];
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+    readonly expectedUpdatedAt?: string;
+  }): Result<Task, MnemaError> {
+    const task = this.tasks.findByKey(input.taskKey);
+    if (task === null) {
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
+    }
+
+    if (this.stateMachine.isTerminal(task.state)) {
+      return Err({
+        kind: ErrorCode.TerminalState,
+        taskKey: task.key,
+        state: task.state,
+      });
+    }
+
+    const issues: ErrorIssue[] = [];
+    if (input.title !== undefined) checkTitle(input.title, issues);
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
+
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : task.updatedAt;
+
+    type UpdateOutcome =
+      | { readonly kind: 'ok'; readonly task: Task }
+      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
+
+    const outcomeResult = tryMutation(() =>
+      this.tasks.runInTransaction((): UpdateOutcome => {
+        const current = this.tasks.findById(task.id);
+        if (current === null || current.updatedAt !== expectedUpdatedAt) {
+          return {
+            kind: 'conflict',
+            currentUpdatedAt: current?.updatedAt ?? task.updatedAt,
+          };
+        }
+        const updated = this.tasks.updateFields(task.id, {
+          title: input.title,
+          description: input.description,
+          acceptanceCriteria: input.acceptanceCriteria,
+        });
+        return { kind: 'ok', task: updated };
+      }),
+    );
+    if (!outcomeResult.ok) return outcomeResult;
+    const outcome = outcomeResult.value;
+
+    if (outcome.kind === 'conflict') {
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'task',
+        taskKey: task.key,
+        currentUpdatedAt: outcome.currentUpdatedAt,
+      });
+    }
+    const updated = outcome.task;
+
+    this.audit.write({
+      kind: 'task_content_updated',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, state: updated.state },
+    });
+
+    this.sync.syncTask(updated.key);
+
+    return Ok(updated);
+  }
+
+  /**
    * Claims a task for an actor with a lease that expires on its own —
    * closes the window between two sessions reading the same READY task
    * and each deciding to work on it, which optimistic concurrency on
@@ -775,6 +869,20 @@ export class TaskService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
     return Ok(restored);
+  }
+}
+
+/**
+ * Pushes an issue when a title is outside the 3..200 length the create
+ * path enforces (via the MCP schema). Gives content edits the same
+ * contract at the service boundary so the CLI and MCP producers reject
+ * identically.
+ */
+function checkTitle(title: string, issues: ErrorIssue[]): void {
+  if (title.length < 3) {
+    issues.push({ path: ['title'], message: 'must be at least 3 characters' });
+  } else if (title.length > 200) {
+    issues.push({ path: ['title'], message: 'must be at most 200 characters' });
   }
 }
 

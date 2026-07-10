@@ -31,6 +31,12 @@ interface ListOptions {
   readonly state?: string;
 }
 
+interface UpdateOptions {
+  readonly title?: string;
+  readonly description?: string;
+  readonly acceptance?: string[];
+}
+
 interface DeleteOptions {
   readonly restore?: boolean;
 }
@@ -127,6 +133,25 @@ export class TaskCommand {
           const result = container.task.assign({
             taskKey: key,
             assignee: options.clear === true ? null : (options.to ?? null),
+            actor: container.identity.getDefaultActor(),
+          });
+          renderTaskResult(result, (id) => container.identity.resolveHandle(id));
+        });
+      });
+
+    group
+      .command('update <key>')
+      .description('Edit a task title, description and/or acceptance criteria (no state change)')
+      .option('--title <text>', 'New task title')
+      .option('--description <text>', 'New task description')
+      .option('--acceptance <criterion...>', 'Acceptance criterion (repeat; replaces all)')
+      .action(async (key: string, options: UpdateOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.task.updateContent({
+            taskKey: key,
+            title: options.title,
+            description: options.description,
+            acceptanceCriteria: options.acceptance,
             actor: container.identity.getDefaultActor(),
           });
           renderTaskResult(result, (id) => container.identity.resolveHandle(id));

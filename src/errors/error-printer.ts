@@ -244,6 +244,13 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} Allowed transitions: OPEN → CLOSED`);
       break;
 
+    case ErrorCode.EpicHasTasks: {
+      const noun = error.taskCount === 1 ? 'task' : 'tasks';
+      lines.push(`Epic ${error.epicKey} still has ${error.taskCount} attached ${noun}`);
+      lines.push(`${pc.dim('hint:')} Detach them first with \`mnema epic remove <epic> <task>\``);
+      break;
+    }
+
     case ErrorCode.SchemaOutOfDate: {
       const count = error.pending.length;
       const noun = count === 1 ? 'migration' : 'migrations';
@@ -409,6 +416,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.SprintInvalidState:
     case ErrorCode.DecisionInvalidStatus:
     case ErrorCode.EpicInvalidState:
+    case ErrorCode.EpicHasTasks:
     case ErrorCode.InvalidWorkflowState:
     case ErrorCode.AgentRunAlreadyEnded:
     case ErrorCode.AgentRunNotResumable:

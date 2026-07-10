@@ -13,6 +13,11 @@ interface CreateOptions {
   readonly description?: string;
 }
 
+interface UpdateOptions {
+  readonly title?: string;
+  readonly description?: string;
+}
+
 interface ListOptions {
   readonly state?: string;
 }
@@ -24,9 +29,11 @@ interface ListOptions {
  * - `epic create --title=...`           → create an OPEN epic
  * - `epic show <key>`                   → render the epic + its task keys
  * - `epic list [--state=OPEN|CLOSED]`   → list epics
+ * - `epic update <key> [--title ...]`   → edit an epic's content
  * - `epic close <key>`                  → close an OPEN epic
  * - `epic add <epicKey> <taskKey>`      → attach a task to an epic
  * - `epic remove <epicKey> <taskKey>`   → detach a task from an epic
+ * - `epic delete <key>`                 → soft-delete an epic + drop its mirror
  */
 export class EpicCommand {
   /**
@@ -86,6 +93,23 @@ export class EpicCommand {
       });
 
     group
+      .command('update <key>')
+      .description('Edit an epic title and/or description')
+      .option('--title <title>', 'New epic title')
+      .option('--description <text>', 'New epic description')
+      .action(async (key: string, options: UpdateOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.epic.update({
+            epicKey: key,
+            title: options.title,
+            description: options.description,
+            actor: container.identity.getDefaultActor(),
+          });
+          renderEpic(result, 'updated');
+        });
+      });
+
+    group
       .command('close <key>')
       .description('Close an OPEN epic')
       .action(async (key: string) => {
@@ -129,6 +153,19 @@ export class EpicCommand {
             process.exit(printError(result.error));
           }
           process.stdout.write(`${pc.green('✓')} ${taskKey} removed from epic\n`);
+        });
+      });
+
+    group
+      .command('delete <key>')
+      .description('Soft-delete an epic and drop its roadmap mirror (refused if it has tasks)')
+      .action(async (key: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.epic.delete({
+            epicKey: key,
+            actor: container.identity.getDefaultActor(),
+          });
+          renderEpic(result, 'deleted');
         });
       });
 

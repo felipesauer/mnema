@@ -101,6 +101,39 @@ export class EpicTools {
     );
 
     server.registerTool(
+      'epic_update',
+      {
+        description:
+          'Edit an epic’s content (title / description) after creation. ' +
+          'Only the supplied fields change. Requires an active agent run.',
+        inputSchema: {
+          epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+          title: z.string().min(3).max(200).optional(),
+          description: z.string().nullable().optional(),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.epics.update({
+          epicKey: input.epic_key,
+          title: input.title,
+          description: input.description,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ epic: result.value });
+      },
+    );
+
+    server.registerTool(
       'epic_add_task',
       {
         description: 'Attach an existing task to an epic. Requires an active agent run.',
@@ -182,6 +215,36 @@ export class EpicTools {
         });
         if (!result.ok) return err(result.error);
         return ok({ task: result.value });
+      },
+    );
+
+    server.registerTool(
+      'epic_delete',
+      {
+        description:
+          'Soft-delete an epic and drop its roadmap mirror. Refused if the ' +
+          'epic still has tasks attached — detach them first. Requires an ' +
+          'active agent run.',
+        inputSchema: {
+          epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.epics.delete({
+          epicKey: input.epic_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ epic: result.value });
       },
     );
   }

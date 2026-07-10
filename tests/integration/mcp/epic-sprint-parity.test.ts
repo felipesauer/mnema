@@ -217,4 +217,46 @@ describe('epic/sprint lifecycle MCP parity', () => {
     expect(dup.isError).toBe(true);
     expect(parsePayload(dup).error).toBe('SPRINT_METRIC_DUPLICATE');
   });
+
+  it('epic_update edits an epic description via MCP', async () => {
+    const epic = parsePayload(
+      await call(harness.client, 'epic_create', { title: 'Editable epic', description: 'before' }),
+    ).epic as { key: string };
+    const updated = await call(harness.client, 'epic_update', {
+      epic_key: epic.key,
+      description: 'after',
+    });
+    expect(updated.isError).toBeFalsy();
+    expect((parsePayload(updated).epic as { description: string }).description).toBe('after');
+  });
+
+  it('task_update edits a task title via MCP', async () => {
+    const task = parsePayload(await call(harness.client, 'task_create', { title: 'Before title' }))
+      .task as { key: string };
+    const updated = await call(harness.client, 'task_update', {
+      task_key: task.key,
+      title: 'After title',
+    });
+    expect(updated.isError).toBeFalsy();
+    expect((parsePayload(updated).task as { title: string }).title).toBe('After title');
+  });
+
+  it('epic_delete removes an epic; deleting one with a task returns EPIC_HAS_TASKS', async () => {
+    const empty = parsePayload(await call(harness.client, 'epic_create', { title: 'Empty epic' }))
+      .epic as { key: string };
+    const gone = await call(harness.client, 'epic_delete', { epic_key: empty.key });
+    expect(gone.isError).toBeFalsy();
+    const shown = await call(harness.client, 'epic_show', { epic_key: empty.key });
+    expect(shown.isError).toBe(true);
+    expect(parsePayload(shown).error).toBe('EPIC_NOT_FOUND');
+
+    const held = parsePayload(await call(harness.client, 'epic_create', { title: 'Held epic' }))
+      .epic as { key: string };
+    const task = parsePayload(await call(harness.client, 'task_create', { title: 'Held task' }))
+      .task as { key: string };
+    await call(harness.client, 'epic_add_task', { epic_key: held.key, task_key: task.key });
+    const refused = await call(harness.client, 'epic_delete', { epic_key: held.key });
+    expect(refused.isError).toBe(true);
+    expect(parsePayload(refused).error).toBe('EPIC_HAS_TASKS');
+  });
 });

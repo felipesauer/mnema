@@ -129,6 +129,11 @@ export type MnemaError =
       readonly toState: string;
     }
   | {
+      readonly kind: ErrorCode.EpicHasTasks;
+      readonly epicKey: string;
+      readonly taskCount: number;
+    }
+  | {
       readonly kind: ErrorCode.SchemaOutOfDate;
       readonly pending: readonly string[];
     }
