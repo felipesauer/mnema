@@ -211,6 +211,25 @@ export class StateMachine {
   }
 
   /**
+   * The distinct target states any transition named `action` leads to,
+   * across every source state. Used to recognise an idempotent retry: if a
+   * task is already in the state its requested action targets, re-issuing
+   * the action is a no-op rather than an error. Usually a singleton (an
+   * action means one thing), but a workflow could reuse a name.
+   *
+   * @param action - The action name to look up
+   * @returns The set of target state names (empty if the action is unknown)
+   */
+  actionTargets(action: string): ReadonlySet<string> {
+    const targets = new Set<string>();
+    for (const actions of Object.values(this.workflow.transitions)) {
+      const transition = actions[action];
+      if (transition !== undefined) targets.add(transition.to);
+    }
+    return targets;
+  }
+
+  /**
    * Checks if a state is terminal (no outgoing transitions).
    *
    * @param state - State to check

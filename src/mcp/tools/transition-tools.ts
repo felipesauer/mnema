@@ -234,6 +234,17 @@ export class TransitionToolsRegistrar {
                 }
               }
 
+              // Detect an idempotent retry BEFORE the call, while the task is
+              // still in its pre-state: the service will no-op it, and we
+              // annotate the echo so the agent sees "already there" rather
+              // than mistaking an unchanged response for a fresh transition.
+              const noOp = this.tasks.wouldBeNoOp(
+                taskKey,
+                action,
+                this.identity.getDefaultActor(),
+                handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+              );
+
               const result = this.tasks.transition({
                 taskKey,
                 action,
@@ -251,6 +262,14 @@ export class TransitionToolsRegistrar {
                 // caller asked for the compact shape.
                 const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
                 return ok({ task, pr_warning: prWarning });
+              }
+              if (noOp) {
+                const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                return ok({
+                  task,
+                  no_op: true,
+                  note: `${taskKey} is already ${result.value.state} — no change (idempotent retry)`,
+                });
               }
               return okTask(result.value, verbosity);
             } finally {

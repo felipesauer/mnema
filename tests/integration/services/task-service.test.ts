@@ -222,6 +222,58 @@ describe('TaskService (integration)', () => {
       expect(result.error.kind).toBe(ErrorCode.InvalidTransition);
     });
 
+    it('is idempotent: re-issuing an action whose target is the current state is a no-op success', () => {
+      container.task.create({ projectKey: 'TEST', title: 'Retry me', actor: 'daniel' });
+      const submitPayload = {
+        title: 'Retry me',
+        description: 'a task to retry the submit on',
+        acceptance_criteria: ['done'],
+        estimate: 2,
+      };
+      // First submit: DRAFT → READY.
+      const first = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit',
+        payload: submitPayload,
+        actor: 'daniel',
+      });
+      expect(first.ok).toBe(true);
+      if (!first.ok) return;
+      expect(first.value.state).toBe('READY');
+      const afterFirst = first.value.updatedAt;
+
+      // The service flags it as a would-be no-op now.
+      expect(container.task.wouldBeNoOp('TEST-1', 'submit', 'daniel')).toBe(true);
+
+      // Second submit: already READY → no-op success, not an error, and no
+      // new write (updatedAt unchanged → no duplicate transition/audit).
+      const second = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'submit',
+        payload: submitPayload,
+        actor: 'daniel',
+      });
+      expect(second.ok).toBe(true);
+      if (!second.ok) return;
+      expect(second.value.state).toBe('READY');
+      expect(second.value.updatedAt).toBe(afterFirst);
+    });
+
+    it('still errors on a genuinely invalid action (not a same-state retry)', () => {
+      container.task.create({ projectKey: 'TEST', title: 'Task Z', actor: 'daniel' });
+      // DRAFT → approve is invalid AND approve does not target DRAFT → real error.
+      const result = container.task.transition({
+        taskKey: 'TEST-1',
+        action: 'approve',
+        payload: { approval_note: 'lgtm' },
+        actor: 'daniel',
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe(ErrorCode.InvalidTransition);
+      expect(container.task.wouldBeNoOp('TEST-1', 'approve', 'daniel')).toBe(false);
+    });
+
     it('returns GateFailed when the payload misses required fields', () => {
       container.task.create({ projectKey: 'TEST', title: 'Task X', actor: 'daniel' });
 

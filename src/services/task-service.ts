@@ -494,6 +494,54 @@ export class TaskService {
    * @param input - Action, payload, and identity context
    * @returns The updated task or a structured error
    */
+  /**
+   * Whether calling `action` on the task with `taskKey` would be an
+   * idempotent no-op — the action targets the state the task is already in,
+   * the action is not otherwise valid from that state (so it is a retry, not
+   * a real re-entry), AND the caller is the actor who last moved the task
+   * there (so a late different actor is not mistaken for a retry). Mirrors
+   * the guard in {@link transition} so the surface annotation matches actual
+   * behaviour. Surfaces use it to add an "already there" indicator. Returns
+   * false for an unknown task.
+   */
+  wouldBeNoOp(taskKey: string, action: string, actor: string, via?: string): boolean {
+    const task = this.tasks.findByKey(taskKey);
+    if (task === null) return false;
+    // A genuinely valid action from here is not a no-op even if it loops back
+    // to the same state — only a retry (invalid-from-here + targets current).
+    const validHere = this.stateMachine
+      .listActionsFrom(task.state)
+      .some((a) => a.action === action);
+    if (validHere) return false;
+    if (!this.stateMachine.actionTargets(action).has(task.state)) return false;
+    return this.lastMoverMatches(task.id, { actor, via });
+  }
+
+  /**
+   * Whether the last transition on this task was recorded by the same
+   * identity now retrying — the "same actor" half of the idempotency
+   * guard. A genuine retry re-issues its own prior move; a different actor
+   * arriving after the state already changed is a lost-write attempt, not a
+   * retry. Matches on either the human actor or the driving agent (`via`),
+   * since a retry can come back through either. No prior transition (should
+   * not happen for a non-initial state) is treated as "not a match" — fail
+   * closed toward the error rather than a spurious no-op.
+   */
+  private lastMoverMatches(
+    taskId: string,
+    input: { readonly actor: string; readonly via?: string },
+  ): boolean {
+    const history = this.transitions.findByTask(taskId);
+    const last = history[history.length - 1];
+    if (last === undefined) return false;
+    const actorId = this.identity.findActorIdByHandle(input.actor);
+    const viaId = input.via !== undefined ? this.identity.findActorIdByHandle(input.via) : null;
+    return (
+      (actorId !== null && (last.actorId === actorId || last.viaActorId === actorId)) ||
+      (viaId !== null && last.viaActorId === viaId)
+    );
+  }
+
   transition(input: TransitionInput): Result<Task, MnemaError> {
     const task = this.tasks.findByKey(input.taskKey);
     if (task === null) {
@@ -530,6 +578,33 @@ export class TaskService {
 
     // An unknown action is never negotiable — there is nothing to enforce.
     if (!resolution.ok) {
+      // Idempotent-by-intent: a dropped AI session retries. If the action
+      // the caller asked for targets the state the task is ALREADY in, the
+      // earlier attempt succeeded and this is a retry — return the task as a
+      // no-op success rather than INVALID_TRANSITION, so the agent does not
+      // burn context handling a non-error. No write, no gate, no audit event.
+      //
+      // But "already in the target state" is ALSO what a stale concurrent
+      // writer sees after SOMEONE ELSE moved the row (the lost-write race).
+      // Two guards keep the no-op from masking that:
+      //   1. A stale optimistic-concurrency token (an OLD updatedAt) means a
+      //      concurrent writer — never a no-op.
+      //   2. The retry must come from the actor who LAST moved the task into
+      //      its current state. A genuine retry re-issues its own prior move;
+      //      a different actor arriving late (bob after alice) is a lost-write
+      //      attempt, not a retry, and must still be refused. This is the
+      //      "same actor" condition the idempotency contract calls for.
+      const carriesStaleToken =
+        input.expectedUpdatedAt !== undefined &&
+        input.expectedUpdatedAt.length > 0 &&
+        input.expectedUpdatedAt !== task.updatedAt;
+      if (
+        !carriesStaleToken &&
+        this.stateMachine.actionTargets(input.action).has(task.state) &&
+        this.lastMoverMatches(task.id, input)
+      ) {
+        return Ok(task);
+      }
       const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
       return Err({
         kind: ErrorCode.InvalidTransition,
