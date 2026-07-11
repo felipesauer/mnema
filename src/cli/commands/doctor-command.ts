@@ -30,6 +30,7 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
+import { findMirror, listMirrorEntries } from '../../utils/mirror-layout.js';
 import { checkForUpdate, checkVersion, fetchLatestVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -156,12 +157,14 @@ export class DoctorCommand {
             }>
           ).map((r) => r.slug),
         );
-        prunedSkills = pruneOrphanMirrors(
+        // Foldered layout (MNEMA-ADR-51): skills and memories live under one
+        // level of subfolders, so prune recursively.
+        prunedSkills = pruneFolderedOrphanMirrors(
           pathMod.join(projectRoot, config.paths.skills),
           skillSlugs,
           fsMod,
         );
-        prunedMemories = pruneOrphanMirrors(
+        prunedMemories = pruneFolderedOrphanMirrors(
           pathMod.join(projectRoot, config.paths.memory),
           memorySlugs,
           fsMod,
@@ -529,10 +532,10 @@ export function inspectMirrorDrift(
     )
     .all() as Array<{ slug: string }>;
   const skillSlugs = new Set(skillRows.map((r) => r.slug));
-  const skillMissing = skillRows.filter(
-    (r) => !existsSync(path.join(dirs.skillsDir, `${r.slug}.md`)),
-  );
-  const skillOrphans = listMirrorOrphans(dirs.skillsDir, skillSlugs);
+  // Foldered layout (MNEMA-ADR-51): a mirror may live under default/ or
+  // authored/ (or flat, pre-migration) — resolve by slug, recursively.
+  const skillMissing = skillRows.filter((r) => findMirror(dirs.skillsDir, r.slug) === null);
+  const skillOrphans = listFolderedMirrorOrphans(dirs.skillsDir, skillSlugs);
   checks.push({
     name: 'skills mirrored',
     ok: skillMissing.length === 0 && skillOrphans.length === 0,
@@ -548,10 +551,10 @@ export function inspectMirrorDrift(
     slug: string;
   }>;
   const memorySlugs = new Set(memoryRows.map((r) => r.slug));
-  const memoryMissing = memoryRows.filter(
-    (r) => !existsSync(path.join(dirs.memoryDir, `${r.slug}.md`)),
-  );
-  const memoryOrphans = listMirrorOrphans(dirs.memoryDir, memorySlugs);
+  // Foldered layout (MNEMA-ADR-51): a mirror may live under a scope folder (or
+  // flat, pre-migration) — resolve by slug, recursively.
+  const memoryMissing = memoryRows.filter((r) => findMirror(dirs.memoryDir, r.slug) === null);
+  const memoryOrphans = listFolderedMirrorOrphans(dirs.memoryDir, memorySlugs);
   checks.push({
     name: 'memories mirrored',
     ok: memoryMissing.length === 0 && memoryOrphans.length === 0,
@@ -722,6 +725,19 @@ function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string
   return orphans.sort();
 }
 
+/**
+ * Like {@link listMirrorOrphans} but for the foldered memory/skill layout
+ * (MNEMA-ADR-51): walks one level of subfolders (scope folders, or
+ * default/authored) plus any flat files, matching each `.md` basename to a
+ * known slug. Indexes and dotfiles are excluded by the shared scan.
+ */
+function listFolderedMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
+  return listMirrorEntries(dir)
+    .map((e) => e.slug)
+    .filter((slug) => !knownSlugs.has(slug))
+    .sort();
+}
+
 function mirrorDetail(
   rowCount: number,
   missing: readonly string[],
@@ -765,6 +781,39 @@ export function pruneOrphanMirrors(
       fs.rmSync(path.join(dir, entry.name));
       removed.push(slug);
     }
+  }
+  return removed.sort();
+}
+
+/**
+ * Like {@link pruneOrphanMirrors} but for the foldered memory/skill layout
+ * (MNEMA-ADR-51): deletes every `.md` under one level of subfolders (or flat)
+ * whose slug has no SQLite row, then removes any subfolder left empty. Returns
+ * the orphan slugs whose mirror was deleted.
+ *
+ * @param dir - Memory or skills root (no-op if it does not exist)
+ * @param knownSlugs - Authoritative slug set from SQLite
+ * @param fs - `node:fs` namespace (injected for testability + lazy load)
+ * @returns Slug list (alphabetical) of the files that were deleted
+ */
+export function pruneFolderedOrphanMirrors(
+  dir: string,
+  knownSlugs: ReadonlySet<string>,
+  fs: typeof import('node:fs'),
+): string[] {
+  if (!fs.existsSync(dir)) return [];
+  const removed: string[] = [];
+  for (const { slug, filePath } of listMirrorEntries(dir)) {
+    if (!knownSlugs.has(slug)) {
+      fs.rmSync(filePath);
+      removed.push(slug);
+    }
+  }
+  // Sweep now-empty scope/origin subfolders so a pruned tree is tidy.
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const sub = path.join(dir, entry.name);
+    if (fs.readdirSync(sub).length === 0) fs.rmdirSync(sub);
   }
   return removed.sort();
 }

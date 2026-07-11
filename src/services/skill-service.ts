@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
+import { findMirror, listMirrorEntries, skillOriginDir } from '../utils/mirror-layout.js';
 import type { AuditService } from './audit-service.js';
 import { type CommandRunner, defaultRunner } from './github-pr-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -247,14 +248,11 @@ export class SkillService {
     }
 
     const diagnostics: SkillDiagnostic[] = [];
-    const files = readdirSync(this.skillsDir, { withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .filter((name) => name.endsWith('.md') || name.endsWith('.markdown'))
-      .filter((name) => name !== SkillService.INDEX_FILE);
+    // Foldered layout (MNEMA-ADR-51): lint default/ and authored/ plus any
+    // flat files, indexes excluded by the shared scan.
+    const files = listMirrorEntries(this.skillsDir);
 
-    for (const filename of files) {
-      const filePath = path.join(this.skillsDir, filename);
+    for (const { filePath } of files) {
       diagnostics.push(...this.lintFile(filePath));
     }
 
@@ -280,15 +278,13 @@ export class SkillService {
   importSeeds(actor: string, via?: string, runId?: string): string[] {
     if (!existsSync(this.skillsDir)) return [];
     const imported: string[] = [];
-    const files = readdirSync(this.skillsDir, { withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .filter((name) => name.endsWith('.md') || name.endsWith('.markdown'))
-      .filter((name) => name !== SkillService.INDEX_FILE);
+    // Foldered layout (MNEMA-ADR-51): scan default/ and authored/ as well as
+    // any flat pre-migration files. Slug is the basename; the folder is
+    // presentational and does not affect the recorded row.
+    const files = listMirrorEntries(this.skillsDir);
 
-    for (const filename of files) {
-      const slug = filename.replace(/\.(md|markdown)$/, '');
-      const parsed = parseFrontmatter(readFileSync(path.join(this.skillsDir, filename), 'utf-8'));
+    for (const { slug, filePath } of files) {
+      const parsed = parseFrontmatter(readFileSync(filePath, 'utf-8'));
       const fm = SkillFrontmatterSchema.safeParse(parsed.data);
       if (!fm.success) continue; // malformed frontmatter — skip, don't crash init
       const result = this.record({
@@ -649,8 +645,9 @@ export class SkillService {
       // must not linger looking live. `findLatestBySlug` does not filter, so
       // it still returns that row — check its pointer, not for absence.
       const latest = repo.findLatestBySlug(slug);
-      if (latest !== null && latest.supersededBy !== null && this.mirrorExists(latest)) {
-        unlinkSync(path.join(this.skillsDir, `${latest.slug}.md`));
+      if (latest !== null && latest.supersededBy !== null) {
+        const mirror = findMirror(this.skillsDir, latest.slug);
+        if (mirror !== null) unlinkSync(mirror);
       }
       audit.write({
         kind: 'skill_superseded',
@@ -682,7 +679,10 @@ export class SkillService {
     const { repo } = this.requireRecordDeps();
     const rebuilt: string[] = [];
     for (const skill of repo.listLatest()) {
-      if (!this.mirrorExists(skill)) {
+      // Rewrite when missing OR mislocated — the latter migrates a flat
+      // pre-ADR-51 file into default/ or authored/. writeMirror unlinks the
+      // old one.
+      if (findMirror(this.skillsDir, skill.slug) !== this.canonicalMirrorPath(skill)) {
         this.writeMirror(skill);
         rebuilt.push(skill.slug);
       }
@@ -691,7 +691,13 @@ export class SkillService {
   }
 
   private mirrorExists(skill: Skill): boolean {
-    return existsSync(path.join(this.skillsDir, `${skill.slug}.md`));
+    return findMirror(this.skillsDir, skill.slug) !== null;
+  }
+
+  /** The canonical foldered path a skill's mirror belongs at (MNEMA-ADR-51). */
+  private canonicalMirrorPath(skill: Skill): string {
+    const handle = this.identity?.resolveHandle(skill.createdBy) ?? '';
+    return path.join(this.skillsDir, skillOriginDir(handle), `${skill.slug}.md`);
   }
 
   /**
@@ -747,7 +753,15 @@ export class SkillService {
   }
 
   private writeMirror(skill: Skill): void {
-    const filePath = path.join(this.skillsDir, `${skill.slug}.md`);
+    // Foldered layout (MNEMA-ADR-51): seeds authored by the reserved `system`
+    // handle mirror under `default/`, everything else under `authored/` (see
+    // canonicalMirrorPath). Remove any existing mirror elsewhere in the tree
+    // first so a row keeps exactly one mirror (e.g. a pre-migration flat file,
+    // or an origin that changed).
+    const targetPath = this.canonicalMirrorPath(skill);
+    const stale = findMirror(this.skillsDir, skill.slug);
+    if (stale !== null && stale !== targetPath) unlinkSync(stale);
+    mkdirSync(path.dirname(targetPath), { recursive: true });
     const frontmatter = [
       '---',
       `name: ${quoteYaml(skill.name)}`,
@@ -769,7 +783,7 @@ export class SkillService {
     ]
       .filter((line) => line !== null)
       .join('\n');
-    writeFileAtomic(filePath, `${frontmatter + skill.content}\n`);
+    writeFileAtomic(targetPath, `${frontmatter + skill.content}\n`);
   }
 
   private lintFile(filePath: string): SkillDiagnostic[] {

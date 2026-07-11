@@ -61,7 +61,8 @@ describe('SkillService (record/show/use)', () => {
     });
     expect(result.action).toBe('created');
     expect(result.skill.version).toBe(1);
-    expect(existsSync(path.join(skillsDir, 'safe-migration.md'))).toBe(true);
+    // ADR-51: a human/AI-authored skill mirrors under authored/.
+    expect(existsSync(path.join(skillsDir, 'authored', 'safe-migration.md'))).toBe(true);
   });
 
   it('updates in place when mode=update and content differs', () => {
@@ -188,7 +189,7 @@ describe('SkillService (record/show/use)', () => {
       content: 'A',
       actor: 'daniel',
     });
-    const mirror = path.join(skillsDir, 's.md');
+    const mirror = path.join(skillsDir, 'authored', 's.md');
     expect(existsSync(mirror)).toBe(true);
     rmSync(mirror);
 
@@ -290,7 +291,7 @@ describe('SkillService (record/show/use)', () => {
       content: '## Hello world',
       actor: 'daniel',
     });
-    const mirror = readFileSync(path.join(skillsDir, 's.md'), 'utf-8');
+    const mirror = readFileSync(path.join(skillsDir, 'authored', 's.md'), 'utf-8');
     expect(mirror).toContain('## Hello world');
     expect(mirror).toContain('name: Skill');
   });
@@ -310,8 +311,8 @@ describe('SkillService (record/show/use)', () => {
     // Create 2 slugs, then delete one mirror by hand.
     service.record({ slug: 'a', name: 'A', description: 'd', content: 'x', actor: 'daniel' });
     service.record({ slug: 'b', name: 'B', description: 'd', content: 'y', actor: 'daniel' });
-    const mirrorA = path.join(skillsDir, 'a.md');
-    const mirrorB = path.join(skillsDir, 'b.md');
+    const mirrorA = path.join(skillsDir, 'authored', 'a.md');
+    const mirrorB = path.join(skillsDir, 'authored', 'b.md');
     expect(existsSync(mirrorA) && existsSync(mirrorB)).toBe(true);
 
     rmSync(mirrorA);
@@ -322,6 +323,43 @@ describe('SkillService (record/show/use)', () => {
     expect(existsSync(mirrorA)).toBe(true);
     // Untouched mirror stays byte-identical.
     expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
+
+  it('ADR-51: a seed authored by `system` mirrors under default/, authored elsewhere', () => {
+    // `system` is the reserved seed author.
+    recordOk(service, {
+      slug: 'seeded',
+      name: 'S',
+      description: 'd',
+      content: 'x',
+      actor: 'system',
+    });
+    recordOk(service, { slug: 'mine', name: 'M', description: 'd', content: 'y', actor: 'daniel' });
+    expect(existsSync(path.join(skillsDir, 'default', 'seeded.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'authored', 'mine.md'))).toBe(true);
+    // Not the other way around.
+    expect(existsSync(path.join(skillsDir, 'authored', 'seeded.md'))).toBe(false);
+    expect(existsSync(path.join(skillsDir, 'default', 'mine.md'))).toBe(false);
+  });
+
+  it('ADR-51: rebuildMirrors migrates a flat pre-layout skill into authored/', () => {
+    recordOk(service, {
+      slug: 'legacy',
+      name: 'L',
+      description: 'd',
+      content: 'z',
+      actor: 'daniel',
+    });
+    const canonical = path.join(skillsDir, 'authored', 'legacy.md');
+    const flat = path.join(skillsDir, 'legacy.md');
+    // Simulate a pre-ADR-51 flat mirror.
+    rmSync(canonical);
+    writeFileSync(flat, '# stale flat\n', 'utf-8');
+
+    const rebuilt = service.rebuildMirrors();
+    expect(rebuilt).toContain('legacy');
+    expect(existsSync(canonical)).toBe(true);
+    expect(existsSync(flat)).toBe(false);
   });
 
   it('records an invocable skill with dynamic context (trigger flag persisted)', () => {
@@ -345,7 +383,7 @@ describe('SkillService (record/show/use)', () => {
       expect(shown.value.dynamicContext).toEqual(['mnema tasks ready']);
     }
     // …and into the mirror frontmatter.
-    const mirror = readFileSync(path.join(skillsDir, 'pick-next.md'), 'utf-8');
+    const mirror = readFileSync(path.join(skillsDir, 'authored', 'pick-next.md'), 'utf-8');
     expect(mirror).toContain('invocable: true');
     expect(mirror).toContain('dynamic_context: ["mnema tasks ready"]');
   });
@@ -365,7 +403,7 @@ describe('SkillService (record/show/use)', () => {
     }
     // Byte-level: the mirror carries neither field, so existing skills are
     // unchanged by this feature.
-    const mirror = readFileSync(path.join(skillsDir, 'passive.md'), 'utf-8');
+    const mirror = readFileSync(path.join(skillsDir, 'authored', 'passive.md'), 'utf-8');
     expect(mirror).not.toContain('invocable');
     expect(mirror).not.toContain('dynamic_context');
   });
@@ -391,7 +429,7 @@ describe('SkillService (record/show/use)', () => {
         .map((s) => s.slug)
         .sort(),
     ).toEqual(['new-flow', 'old-flow']);
-    const mirror = path.join(skillsDir, 'old-flow.md');
+    const mirror = path.join(skillsDir, 'authored', 'old-flow.md');
     expect(existsSync(mirror)).toBe(true);
 
     const result = service.supersede('old-flow', 'new-flow', 'daniel');

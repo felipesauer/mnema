@@ -131,9 +131,10 @@ describe('skill/memory/observation MCP tools', () => {
     const payload = parsePayload(result as CallToolResult);
     expect(payload.ok).toBe(true);
     expect(payload.action).toBe('created');
-    expect(existsSync(path.join(harness.projectRoot, '.mnema/skills/safe-migration.md'))).toBe(
-      true,
-    );
+    // ADR-51: an agent/human-authored skill mirrors under authored/.
+    expect(
+      existsSync(path.join(harness.projectRoot, '.mnema/skills/authored/safe-migration.md')),
+    ).toBe(true);
   });
 
   it('skill_record mode=new_version bumps the version', async () => {

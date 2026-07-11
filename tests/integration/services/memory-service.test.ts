@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -204,6 +204,63 @@ describe('MemoryService', () => {
     expect(rebuilt).toEqual(['a']);
     expect(existsSync(mirrorA)).toBe(true);
     expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
+
+  it('ADR-51: a scoped memory mirrors under a scope folder, scopeless at root', () => {
+    service.record({ slug: 'global', title: 'G', content: 'x', actor: 'daniel' });
+    service.record({
+      slug: 'notifier-rate',
+      title: 'N',
+      content: 'y',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    // Scopeless → root; scoped → flattened scope folder.
+    expect(existsSync(path.join(memoryDir, 'global.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'packages-notifier', 'notifier-rate.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'notifier-rate.md'))).toBe(false);
+  });
+
+  it('ADR-51: changing scope relocates the mirror (one mirror per row)', () => {
+    service.record({
+      slug: 'moving',
+      title: 'M',
+      content: 'v1',
+      scope: 'area-a',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'area-a', 'moving.md'))).toBe(true);
+    // Re-record with a new scope + changed content.
+    service.record({
+      slug: 'moving',
+      title: 'M',
+      content: 'v2',
+      scope: 'area-b',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'area-b', 'moving.md'))).toBe(true);
+    // The old location is gone — never two mirrors for one row.
+    expect(existsSync(path.join(memoryDir, 'area-a', 'moving.md'))).toBe(false);
+  });
+
+  it('ADR-51: rebuildMirrors migrates a flat pre-layout file into its scope folder', () => {
+    service.record({
+      slug: 'legacy',
+      title: 'L',
+      content: 'z',
+      scope: 'legacy-area',
+      actor: 'daniel',
+    });
+    const canonical = path.join(memoryDir, 'legacy-area', 'legacy.md');
+    const flat = path.join(memoryDir, 'legacy.md');
+    // Simulate a pre-ADR-51 flat mirror: move the file to the root.
+    rmSync(canonical);
+    writeFileSync(flat, '# stale flat\n', 'utf-8');
+
+    const rebuilt = service.rebuildMirrors();
+    expect(rebuilt).toContain('legacy');
+    expect(existsSync(canonical)).toBe(true); // migrated into the folder
+    expect(existsSync(flat)).toBe(false); // flat leftover removed
   });
 
   it('archive hides a memory from the default listing but keeps it', () => {
