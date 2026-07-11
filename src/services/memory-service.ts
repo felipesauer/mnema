@@ -11,7 +11,11 @@ import type { MemoryRepository } from '../storage/sqlite/repositories/memory-rep
 import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
-import { findMirror, scopeFolder } from '../utils/mirror-layout.js';
+import {
+  canonicalMirrorPath as buildMirrorPath,
+  findMirror,
+  scopeFolder,
+} from '../utils/mirror-layout.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
@@ -487,10 +491,7 @@ export class MemoryService {
 
   /** The canonical foldered path a memory's mirror belongs at (MNEMA-ADR-51). */
   private canonicalMirrorPath(memory: Memory): string {
-    const folder = scopeFolder(memory.scope);
-    return folder === null
-      ? path.join(this.memoryDir, `${memory.slug}.md`)
-      : path.join(this.memoryDir, folder, `${memory.slug}.md`);
+    return buildMirrorPath(this.memoryDir, memory.slug, scopeFolder(memory.scope));
   }
 
   private writeMirror(memory: Memory): void {

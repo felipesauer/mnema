@@ -100,6 +100,18 @@ export function listMirrorEntries(
 }
 
 /**
+ * The canonical `.md` path a mirror belongs at under `root`: inside `subfolder`
+ * when given, at the root when `subfolder` is null. The single place that
+ * builds a foldered mirror path, so writers and the drift check agree on where
+ * a mirror SHOULD live (and thus what counts as "mislocated").
+ */
+export function canonicalMirrorPath(root: string, slug: string, subfolder: string | null): string {
+  return subfolder === null
+    ? path.join(root, `${slug}.md`)
+    : path.join(root, subfolder, `${slug}.md`);
+}
+
+/**
  * Finds the mirror file for `slug` anywhere in the foldered layout under
  * `root`, or `null` when absent. Matches on the file basename, so it locates a
  * mirror regardless of which subfolder it sits in (or if it is still flat).

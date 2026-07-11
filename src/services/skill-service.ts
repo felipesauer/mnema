@@ -13,7 +13,12 @@ import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import { writeFileAtomic } from '../utils/atomic-write.js';
-import { findMirror, listMirrorEntries, skillOriginDir } from '../utils/mirror-layout.js';
+import {
+  canonicalMirrorPath as buildMirrorPath,
+  findMirror,
+  listMirrorEntries,
+  skillOriginDir,
+} from '../utils/mirror-layout.js';
 import type { AuditService } from './audit-service.js';
 import { type CommandRunner, defaultRunner } from './github-pr-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -697,7 +702,7 @@ export class SkillService {
   /** The canonical foldered path a skill's mirror belongs at (MNEMA-ADR-51). */
   private canonicalMirrorPath(skill: Skill): string {
     const handle = this.identity?.resolveHandle(skill.createdBy) ?? '';
-    return path.join(this.skillsDir, skillOriginDir(handle), `${skill.slug}.md`);
+    return buildMirrorPath(this.skillsDir, skill.slug, skillOriginDir(handle));
   }
 
   /**

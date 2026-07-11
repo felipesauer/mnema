@@ -28,6 +28,7 @@ import {
 } from '../templates/agents-md.js';
 import {
   inspectMirrorDrift,
+  pruneFolderedOrphanMirrors,
   pruneNestedOrphanMirrors,
   pruneOrphanMirrors,
 } from './doctor-command.js';
@@ -402,8 +403,9 @@ function pruneAllOrphanMirrors(
 
   const join = (relative: string) => path.join(projectRoot, relative);
   const removed = [
-    ...pruneOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
-    ...pruneOrphanMirrors(join(config.paths.memory), memorySlugs, fs),
+    // Skills and memories are foldered (MNEMA-ADR-51) — prune recursively.
+    ...pruneFolderedOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
+    ...pruneFolderedOrphanMirrors(join(config.paths.memory), memorySlugs, fs),
     ...pruneOrphanMirrors(join(config.paths.observations), observationIds, fs),
     // Epics and decisions share the roadmap dir; a file is an orphan
     // only when it belongs to neither set.

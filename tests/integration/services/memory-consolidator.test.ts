@@ -35,6 +35,30 @@ describe('MemoryConsolidator', () => {
     expect(indexBody).toContain('<!-- MNEMA: managed section');
   });
 
+  it('ADR-51: indexes scoped memory mirrors from their scope folder, linking correctly', () => {
+    // A scopeless mirror at the root and a scoped one under its folder.
+    writeFileSync(path.join(memoryDir, 'global.md'), '# Global fact\n', 'utf-8');
+    mkdirSync(path.join(memoryDir, 'packages-notifier'), { recursive: true });
+    writeFileSync(
+      path.join(memoryDir, 'packages-notifier', 'rate-limit.md'),
+      '# Rate limit\n',
+      'utf-8',
+    );
+    // Curated subfolders must NOT be swept into the root index.
+    writeFileSync(path.join(memoryDir, 'decisions', 'some-adr.md'), '# ADR\n', 'utf-8');
+
+    const summary = new MemoryConsolidator(memoryDir).run();
+    const titles = summary.memory?.entries.map((e) => e.title).sort();
+    expect(titles).toEqual(['Global fact', 'Rate limit']); // scoped memory included, ADR excluded
+
+    const indexBody = readFileSync(path.join(memoryDir, 'INDEX.md'), 'utf-8');
+    // The scoped memory links through its folder so the path resolves.
+    expect(indexBody).toContain('[Rate limit](packages-notifier/rate-limit.md)');
+    expect(indexBody).toContain('[Global fact](global.md)');
+    // The ADR is not double-listed in the root index (it has its own section).
+    expect(indexBody).not.toContain('some-adr.md');
+  });
+
   it('preserves human-authored content outside the managed block', () => {
     writeFileSync(
       path.join(memoryDir, 'INDEX.md'),

@@ -30,7 +30,13 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
-import { findMirror, listMirrorEntries } from '../../utils/mirror-layout.js';
+import {
+  canonicalMirrorPath as buildMirrorPath,
+  findMirror,
+  listMirrorEntries,
+  scopeFolder,
+  skillOriginDir,
+} from '../../utils/mirror-layout.js';
 import { checkForUpdate, checkVersion, fetchLatestVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -521,20 +527,29 @@ export function inspectMirrorDrift(
 ): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
 
+  // Foldered layout (MNEMA-ADR-51): the latest of every skill, with the author
+  // handle so we know whether its canonical home is default/ or authored/.
   const skillRows = adapter
     .getDatabase()
     .prepare(
-      `SELECT s.slug FROM skills s
+      `SELECT s.slug AS slug, a.handle AS handle FROM skills s
        INNER JOIN (
          SELECT slug, MAX(version) AS max_version
          FROM skills GROUP BY slug
-       ) latest ON s.slug = latest.slug AND s.version = latest.max_version`,
+       ) latest ON s.slug = latest.slug AND s.version = latest.max_version
+       LEFT JOIN actors a ON a.id = s.created_by`,
     )
-    .all() as Array<{ slug: string }>;
+    .all() as Array<{ slug: string; handle: string | null }>;
   const skillSlugs = new Set(skillRows.map((r) => r.slug));
-  // Foldered layout (MNEMA-ADR-51): a mirror may live under default/ or
-  // authored/ (or flat, pre-migration) — resolve by slug, recursively.
-  const skillMissing = skillRows.filter((r) => findMirror(dirs.skillsDir, r.slug) === null);
+  // A mirror is "missing" when it is absent OR sits somewhere other than its
+  // canonical foldered path — the latter is a flat pre-migration file that a
+  // rebuild must relocate. Both must surface here so `mnema upgrade` (which
+  // gates its rebuild step on this signal) migrates an existing project.
+  const skillMissing = skillRows.filter(
+    (r) =>
+      findMirror(dirs.skillsDir, r.slug) !==
+      buildMirrorPath(dirs.skillsDir, r.slug, skillOriginDir(r.handle ?? '')),
+  );
   const skillOrphans = listFolderedMirrorOrphans(dirs.skillsDir, skillSlugs);
   checks.push({
     name: 'skills mirrored',
@@ -547,13 +562,18 @@ export function inspectMirrorDrift(
     ),
   });
 
-  const memoryRows = adapter.getDatabase().prepare('SELECT slug FROM memories').all() as Array<{
-    slug: string;
-  }>;
+  const memoryRows = adapter
+    .getDatabase()
+    .prepare('SELECT slug, scope FROM memories')
+    .all() as Array<{ slug: string; scope: string | null }>;
   const memorySlugs = new Set(memoryRows.map((r) => r.slug));
-  // Foldered layout (MNEMA-ADR-51): a mirror may live under a scope folder (or
-  // flat, pre-migration) — resolve by slug, recursively.
-  const memoryMissing = memoryRows.filter((r) => findMirror(dirs.memoryDir, r.slug) === null);
+  // Same missing-or-mislocated rule as skills: a flat file that should live
+  // under its scope folder counts as needing a rebuild.
+  const memoryMissing = memoryRows.filter(
+    (r) =>
+      findMirror(dirs.memoryDir, r.slug) !==
+      buildMirrorPath(dirs.memoryDir, r.slug, scopeFolder(r.scope)),
+  );
   const memoryOrphans = listFolderedMirrorOrphans(dirs.memoryDir, memorySlugs);
   checks.push({
     name: 'memories mirrored',
