@@ -264,6 +264,51 @@ export class SkillService {
   }
 
   /**
+   * Records every well-formed skill `.md` in `skillsDir` as a SQLite row
+   * (the missing file→DB direction). Seed/adopted skills are written as
+   * files only; without a row they are indistinguishable from an orphan
+   * and get pruned by the next `mnema upgrade`. Importing them as rows
+   * makes them first-class — they survive rebuild, list in `skills_list`,
+   * and are injectable — and is idempotent (record no-ops on byte-equal
+   * content). Files with unparseable frontmatter are skipped, not fatal.
+   *
+   * @param actor - Identity tuple for the audit trail
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns The slugs that now have a row (created or already present)
+   */
+  importSeeds(actor: string, via?: string, runId?: string): string[] {
+    if (!existsSync(this.skillsDir)) return [];
+    const imported: string[] = [];
+    const files = readdirSync(this.skillsDir, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .filter((name) => name.endsWith('.md') || name.endsWith('.markdown'))
+      .filter((name) => name !== SkillService.INDEX_FILE);
+
+    for (const filename of files) {
+      const slug = filename.replace(/\.(md|markdown)$/, '');
+      const parsed = parseFrontmatter(readFileSync(path.join(this.skillsDir, filename), 'utf-8'));
+      const fm = SkillFrontmatterSchema.safeParse(parsed.data);
+      if (!fm.success) continue; // malformed frontmatter — skip, don't crash init
+      const result = this.record({
+        slug,
+        name: fm.data.name,
+        description: fm.data.description,
+        content: parsed.content,
+        toolsUsed: fm.data.tools_used,
+        invocable: fm.data.invocable,
+        dynamicContext: fm.data.dynamic_context,
+        actor,
+        via,
+        runId,
+      });
+      if (result.ok) imported.push(slug);
+    }
+    return imported;
+  }
+
+  /**
    * Records a skill. Three paths:
    *
    * - slug unknown → creates v1, regardless of `mode`.

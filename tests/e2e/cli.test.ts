@@ -89,6 +89,31 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(gitignore).toContain('.mnema/state/');
   });
 
+  it('mnema init seeds the example skills as rows, not just files (non-minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // The example skills land at init, not only via `mnema adopt skills`.
+    const skillsDir = path.join(projectRoot, '.mnema/skills');
+    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'SKILL.md'))).toBe(true);
+
+    // Crucially they are SQLite ROWS, so `skill list` shows them and a later
+    // `mnema upgrade` will not prune them as orphan mirrors.
+    const list = runCli(['skill', 'list'], projectRoot);
+    expect(list.stdout).toContain('creating-tasks');
+    expect(list.stdout).toContain('transitioning-tasks');
+
+    // Prove survival: an upgrade must not prune the seeded skills.
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgrade.status).toBe(0);
+    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+  });
+
+  it('mnema init --minimal leaves skills/ absent (seeding is opt-out via --minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'], projectRoot);
+    expect(existsSync(path.join(projectRoot, '.mnema/skills'))).toBe(false);
+  });
+
   it('mnema init --force overwrites an existing config', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
