@@ -6,6 +6,7 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
+import type { WikilinkLintService } from '../../../services/wikilink-lint-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -31,6 +32,7 @@ export class MemoryTools {
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
     private readonly agentRun: AgentRunService,
+    private readonly wikilinks: WikilinkLintService,
   ) {}
 
   /**
@@ -144,14 +146,29 @@ export class MemoryTools {
       'memory_archive',
       {
         description:
-          'Archive a memory (soft, reversible retirement) — the row and its audit trail survive, and re-recording the slug reactivates it. Use to retire a memory flagged stale/obsolete without losing the record. Requires an active agent run.',
+          'Archive a memory (soft, reversible retirement) — the row and its audit trail survive, and re-recording the slug reactivates it. Use to retire a memory flagged stale/obsolete without losing the record. Pass preview:true for a non-destructive intent diff (which knowledge files still link to this slug and would be left dangling) without archiving. Requires an active agent run.',
         inputSchema: {
           slug: z.string().min(1).describe('Memory slug to archive'),
+          preview: z.boolean().optional().describe('Return the projected impact without archiving'),
         },
       },
-      ({ slug }) => {
+      ({ slug, preview }) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
+
+        if (preview === true) {
+          const danglingFiles = this.wikilinks.referencesTo(slug);
+          return ok({
+            preview: true,
+            op: 'archive',
+            impact: { slug, dangling_reference_files: danglingFiles },
+            summary:
+              danglingFiles.length > 0
+                ? `${String(danglingFiles.length)} knowledge file(s) link to [[${slug}]] and would dangle after archive`
+                : `no wikilink references — safe to archive`,
+          });
+        }
+
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;

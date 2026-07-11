@@ -5,6 +5,7 @@ import type { Config } from '../../../config/config-schema.js';
 import { EpicState } from '../../../domain/enums/epic-state.js';
 import type { EpicService } from '../../../services/epic-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
+import type { WikilinkLintService } from '../../../services/wikilink-lint-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,
@@ -29,6 +30,7 @@ export class EpicTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly wikilinks: WikilinkLintService,
   ) {}
 
   /**
@@ -165,14 +167,23 @@ export class EpicTools {
     server.registerTool(
       'epic_close',
       {
-        description: 'Close an OPEN epic. Requires an active agent run.',
+        description:
+          'Close an OPEN epic. Pass preview:true for a non-destructive intent diff ' +
+          '(attached tasks, non-terminal tasks a close would strand, referencing ' +
+          'memories/skills) without closing. Requires an active agent run.',
         inputSchema: {
           epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+          preview: z.boolean().optional().describe('Return the projected impact without closing'),
         },
       },
       (input) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
+
+        if (input.preview === true) {
+          return this.previewImpact(input.epic_key, 'close');
+        }
+
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -223,15 +234,23 @@ export class EpicTools {
       {
         description:
           'Soft-delete an epic and drop its roadmap mirror. Refused if the ' +
-          'epic still has tasks attached — detach them first. Requires an ' +
+          'epic still has tasks attached — detach them first. Pass preview:true ' +
+          'for a non-destructive intent diff (how many tasks are attached and ' +
+          'whether the delete would be refused) without deleting. Requires an ' +
           'active agent run.',
         inputSchema: {
           epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+          preview: z.boolean().optional().describe('Return the projected impact without deleting'),
         },
       },
       (input) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
+
+        if (input.preview === true) {
+          return this.previewImpact(input.epic_key, 'delete');
+        }
+
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -247,5 +266,47 @@ export class EpicTools {
         return ok({ epic: result.value });
       },
     );
+  }
+
+  /**
+   * Builds the non-destructive intent diff for a close/delete. Combines the
+   * task-attachment impact (from the service) with the knowledge that links
+   * to this epic by wikilink, and a human-readable `summary` so the agent
+   * can reason about the side effects before committing. Mutates nothing.
+   */
+  private previewImpact(epicKey: string, op: 'close' | 'delete'): ReturnType<typeof ok> {
+    const impact = this.epics.impact(epicKey);
+    if (!impact.ok) return err(impact.error);
+    const i = impact.value;
+    const referencingFiles = this.wikilinks.referencesTo(epicKey);
+    const parts: string[] = [];
+    if (op === 'delete' && i.deleteWouldBeRefused) {
+      parts.push(
+        `delete would be REFUSED — ${String(i.attachedTaskCount)} task(s) still attached (detach first)`,
+      );
+    }
+    if (op === 'close' && i.nonTerminalTaskKeys.length > 0) {
+      parts.push(
+        `close would strand ${String(i.nonTerminalTaskKeys.length)} non-terminal task(s): ${i.nonTerminalTaskKeys.join(', ')}`,
+      );
+    }
+    if (referencingFiles.length > 0) {
+      parts.push(`${String(referencingFiles.length)} knowledge file(s) link to ${epicKey}`);
+    }
+    if (parts.length === 0) parts.push(`no side effects — safe to ${op}`);
+    return ok({
+      preview: true,
+      op,
+      impact: {
+        epic_key: i.epicKey,
+        state: i.state,
+        attached_task_count: i.attachedTaskCount,
+        attached_task_keys: i.attachedTaskKeys,
+        non_terminal_task_keys: i.nonTerminalTaskKeys,
+        delete_would_be_refused: i.deleteWouldBeRefused,
+        referencing_files: referencingFiles,
+      },
+      summary: parts.join('; '),
+    });
   }
 }

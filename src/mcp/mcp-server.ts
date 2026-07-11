@@ -300,6 +300,7 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.wikilinkLint,
       ).register(this.sdk);
     }
     if (workflow.features.sprints) {
@@ -339,6 +340,7 @@ export class MnemaMcpServer {
         this.session,
         pendingFiles,
         this.services.agentRun,
+        this.services.wikilinkLint,
       ).register(this.sdk);
       new ObservationTools(
         this.services.observation,
