@@ -28,4 +28,18 @@ export interface Memory {
    * one-way pointer (see the supersede ADR).
    */
   readonly supersededBy: string | null;
+  /**
+   * Slug of a newer memory that *contradicts* (obsoletes) this one, or
+   * `null` when nothing contradicts it. Unlike {@link supersededBy}, an
+   * obsoleted memory stays visible — the contradiction is informative — but
+   * is annotated obsolete and de-ranked so the current truth is unambiguous.
+   */
+  readonly obsoletedBy: string | null;
+  /**
+   * Area this memory belongs to — a path or package like
+   * `packages/notifier`, or `null` for project-global. A scope narrows what
+   * the bootstrap and search surface for a given area; it never hides the
+   * memory outright (see {@link SkillService}/bootstrap scoping).
+   */
+  readonly scope: string | null;
 }

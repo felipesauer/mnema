@@ -15,6 +15,7 @@ import { ConfigSchema } from '@/config/config-schema.js';
 import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 import { MarkdownIo } from '@/storage/markdown/markdown-io.js';
+import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('workflows');
@@ -438,6 +439,50 @@ mnema:
       // The note is re-linked to the freshly-inserted task by its stable key.
       const scoped = rebuilt.observation.list({ relatedTaskKey: task.value.key });
       expect(scoped.map((o) => o.content)).toEqual(['linked note']);
+    } finally {
+      rebuilt.close();
+      container = createServiceContainer(makeConfig(), root, { migrationsDir });
+    }
+  });
+
+  it('preserves the git branch + PR link across a rebuild from disk (ADR-49)', () => {
+    // Audit finding: the git link was cache-only and lost on a fresh clone.
+    // Branch + PR are now serialized to the task markdown and restored on
+    // rebuild; the volatile commit list is intentionally re-derived by the
+    // observer, so it does not survive (and must not fabricate a stale list).
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Git linked',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+
+    new TaskRepository(container.adapter).setGitLink(created.value.id, {
+      branch: 'feat/linked',
+      commits: [{ sha: 'aaaaaaa', subject: 'do it' }],
+      pr: { url: 'https://example.com/pr/7', state: 'open' },
+    });
+    // The observer enqueues a sync on a real link change (watch-command);
+    // mirror that, then flush the buffer so the markdown carries the link.
+    container.sync.syncTask(created.value.key, { action: 'git_observed' });
+    container.sync.flushAll();
+
+    // Simulate a fresh clone: version-controlled markdown present, state DB gone.
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      rebuilt.syncRebuild.run('TEST');
+      const reloaded = rebuilt.task.findByKey(key);
+      expect(reloaded.ok).toBe(true);
+      if (!reloaded.ok) return;
+      // Stable identifiers survive the clone.
+      expect(reloaded.value.gitBranch).toBe('feat/linked');
+      expect(reloaded.value.gitPr).toEqual({ url: 'https://example.com/pr/7', state: 'open' });
+      // Commits are re-derived by the observer, not serialized — no stale list.
+      expect(reloaded.value.gitCommits).toHaveLength(0);
     } finally {
       rebuilt.close();
       container = createServiceContainer(makeConfig(), root, { migrationsDir });

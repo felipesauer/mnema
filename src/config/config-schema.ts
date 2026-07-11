@@ -99,6 +99,7 @@ export const ConfigSchema = z.object({
       observations: relativePathField('.mnema/observations'),
       skills: relativePathField('.mnema/skills'),
       commands: relativePathField('.mnema/commands'),
+      templates: relativePathField('.mnema/templates'),
       workflows: relativePathField('.mnema/workflows'),
     })
     .prefault({}),
@@ -188,6 +189,16 @@ export const ConfigSchema = z.object({
   // it preserves the protection that matters without locking humans out.
   // `blocking` blocks everyone; `advisory` only warns.
   enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
+  // Per-gate-field severity, layered on top of `enforcement_mode` (see
+  // MNEMA-ADR-48). Maps a required gate FIELD name to how a *failure of that
+  // field* is treated: `block` always refuses, `warn` lets the transition
+  // proceed with an advisory, `off` ignores the field entirely. A transition
+  // blocks iff at least one failing field resolves to `block`; absent fields
+  // fall back to the global `enforcement_mode` for the acting actor. Lets a
+  // ceremony gate (e.g. `estimate`) be warn-only while a safety gate
+  // (`approval_note`, `pr_url`) stays blocking on the same transition. Empty
+  // (the default) reproduces the pure global behaviour exactly.
+  enforcement_field_severity: z.record(z.string(), z.enum(['off', 'warn', 'block'])).prefault({}),
   sync: z
     .object({
       mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),
@@ -272,6 +283,16 @@ export const ConfigSchema = z.object({
   github: z
     .object({
       done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
+    })
+    .prefault({}),
+  // Git-observer settings (MNEMA-ADR-49). `watch` turns on the opt-in
+  // git-observing mode of `mnema watch` persistently (same as passing
+  // `--git`): while watching, the unambiguous in-progress task is linked to
+  // the current branch + commits, read-only, never touching `.git`. Off by
+  // default — a passive-ledger user is never surprised by git ingestion.
+  git: z
+    .object({
+      watch: z.boolean().default(false),
     })
     .prefault({}),
   // Hooks run a command when a curated domain event fires (a task

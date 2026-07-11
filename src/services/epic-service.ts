@@ -80,6 +80,18 @@ export interface EpicView {
   readonly lifecycle: EpicLifecycle;
 }
 
+/** Projected side effects of closing or deleting an epic — see {@link EpicService.impact}. */
+export interface EpicImpact {
+  readonly epicKey: string;
+  readonly state: string;
+  readonly attachedTaskKeys: readonly string[];
+  readonly attachedTaskCount: number;
+  /** Attached tasks not in a terminal state — a close would strand these. */
+  readonly nonTerminalTaskKeys: readonly string[];
+  /** True when a delete would be refused because tasks are still attached. */
+  readonly deleteWouldBeRefused: boolean;
+}
+
 /**
  * Manages epics — long-lived containers that group tasks under a theme
  * or feature. Lifecycle is intentionally minimal: `OPEN → CLOSED`,
@@ -372,6 +384,40 @@ export class EpicService {
     }
     const taskKeys = this.epics.listTaskKeys(epic.id);
     return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskKeys) });
+  }
+
+  /**
+   * Projects the blast radius of closing or deleting an epic, without
+   * mutating anything. Callers surface this as a pre-flight "intent diff"
+   * so an agent sees the side effects before committing to a destructive
+   * op. Reports the attached tasks (all of them, plus the non-terminal
+   * subset that a close would strand mid-flight) so the caller can warn
+   * about work that is not finished, and whether a delete would be refused
+   * (delete requires zero attached tasks).
+   *
+   * @param epicKey - Epic key
+   * @returns The impact view or `EpicNotFound`
+   */
+  impact(epicKey: string): Result<EpicImpact, MnemaError> {
+    const epic = this.epics.findByKey(epicKey);
+    if (epic === null) {
+      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
+    }
+    const taskKeys = this.epics.listTaskKeys(epic.id);
+    const nonTerminal = taskKeys
+      .map((key) => this.tasks.findByKey(key))
+      .filter((t): t is Task => t !== null && !this.stateMachine.isTerminal(t.state))
+      .map((t) => t.key);
+    return Ok({
+      epicKey: epic.key,
+      state: epic.state,
+      attachedTaskKeys: taskKeys,
+      attachedTaskCount: taskKeys.length,
+      nonTerminalTaskKeys: nonTerminal,
+      // delete() refuses while any task is attached; close() is always allowed
+      // but strands non-terminal tasks under a closed epic.
+      deleteWouldBeRefused: taskKeys.length > 0,
+    });
   }
 
   /**

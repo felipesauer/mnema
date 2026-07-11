@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { IdentityService } from '../../../services/identity-service.js';
+import type { SkillQualityService } from '../../../services/skill-quality-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -25,6 +26,7 @@ export class SkillTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly skillQuality: SkillQualityService,
   ) {}
 
   /**
@@ -68,6 +70,20 @@ export class SkillTools {
               'Commands whose output is embedded when the skill is shown, e.g. ["mnema tasks ready"]. Only `mnema …` commands are run.',
             ),
           mode: z.enum(['update', 'new_version']).optional(),
+          change_rationale: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Why this version changed — stored on the resulting version and shown in `skill_diff`. Most useful with mode:"new_version".',
+            ),
+          scope: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Area this skill belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows bootstrap relevance for a given area.',
+            ),
         },
       },
       (input) => {
@@ -87,6 +103,8 @@ export class SkillTools {
           invocable: input.invocable,
           dynamicContext: input.dynamic_context,
           mode: input.mode,
+          changeRationale: input.change_rationale,
+          scope: input.scope,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
@@ -121,6 +139,35 @@ export class SkillTools {
             ? this.skills.resolveDynamicContext(skill)
             : undefined;
         return ok({ skill, dynamic_context });
+      },
+    );
+
+    server.registerTool(
+      'skill_diff',
+      {
+        description:
+          'Show the line-level diff between two versions of a skill, plus the newer ' +
+          "version's change rationale (the why). Omit `from`/`to` to diff the two most " +
+          'recent versions; a skill with a single version diffs against an empty base. Read-only.',
+        inputSchema: {
+          slug: z.string().min(1),
+          from: z.number().int().positive().optional().describe('Older version number'),
+          to: z.number().int().positive().optional().describe('Newer version number'),
+        },
+      },
+      ({ slug, from, to }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const result = this.skills.diff(slug, from, to);
+        if (!result.ok) return err(result.error);
+        const d = result.value;
+        return ok({
+          slug: d.slug,
+          from_version: d.fromVersion,
+          to_version: d.toVersion,
+          change_rationale: d.changeRationale,
+          hunks: d.hunks,
+        });
       },
     );
 
@@ -165,14 +212,19 @@ export class SkillTools {
       'skills_list',
       {
         description:
-          'List every recorded skill (latest version only). Ordered by usage_count desc, then recency.',
+          'List every recorded skill (latest version only). Ordered by usage_count desc, then recency. ' +
+          'Each carries `review_flag`: true when the skill was applied in a run that touched a task ' +
+          'which later reopened — a signal its guidance may need revisiting.',
         inputSchema: {},
       },
       () => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
         const skills = this.skills.list();
-        return ok({ skills });
+        const flagged = this.skillQuality.flaggedForReview();
+        return ok({
+          skills: skills.map((s) => ({ ...s, review_flag: flagged.has(s.slug) })),
+        });
       },
     );
 

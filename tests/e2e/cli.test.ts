@@ -89,6 +89,31 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(gitignore).toContain('.mnema/state/');
   });
 
+  it('mnema init seeds the example skills as rows, not just files (non-minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // The example skills land at init, not only via `mnema adopt skills`.
+    const skillsDir = path.join(projectRoot, '.mnema/skills');
+    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'SKILL.md'))).toBe(true);
+
+    // Crucially they are SQLite ROWS, so `skill list` shows them and a later
+    // `mnema upgrade` will not prune them as orphan mirrors.
+    const list = runCli(['skill', 'list'], projectRoot);
+    expect(list.stdout).toContain('creating-tasks');
+    expect(list.stdout).toContain('transitioning-tasks');
+
+    // Prove survival: an upgrade must not prune the seeded skills.
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgrade.status).toBe(0);
+    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+  });
+
+  it('mnema init --minimal leaves skills/ absent (seeding is opt-out via --minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'], projectRoot);
+    expect(existsSync(path.join(projectRoot, '.mnema/skills'))).toBe(false);
+  });
+
   it('mnema init --force overwrites an existing config', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
@@ -192,6 +217,46 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const result = runCli(['task', 'move', 'WEBAPP-1', 'approve'], projectRoot);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('Cannot approve WEBAPP-1');
+  });
+
+  it('mnema guard exits non-zero with no task in progress, zero once one is started', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+
+    // No task at all → untracked → non-zero, with an actionable message.
+    const idle = runCli(['guard'], projectRoot);
+    expect(idle.status).not.toBe(0);
+    expect(idle.stdout).toContain('no task in progress');
+
+    // Drive a task to IN_PROGRESS.
+    runCli(['task', 'create', '--title', 'Real work', '--acceptance', 'done'], projectRoot);
+    runCli(
+      [
+        'task',
+        'move',
+        'WEBAPP-1',
+        'submit',
+        '--field',
+        'title=Real work',
+        '--field',
+        'description=a real tracked task',
+        '--field',
+        'acceptance_criteria=done',
+        '--field',
+        'estimate=2',
+      ],
+      projectRoot,
+    );
+    runCli(['task', 'move', 'WEBAPP-1', 'start', '--field', 'assignee_id=me'], projectRoot);
+
+    // Now a task is in progress → guard passes.
+    const active = runCli(['guard'], projectRoot);
+    expect(active.status).toBe(0);
+    expect(active.stdout).toContain('WEBAPP-1');
+
+    // JSON form carries the machine-readable verdict.
+    const json = runCli(['guard', '--json'], projectRoot);
+    expect(json.status).toBe(0);
+    expect(JSON.parse(json.stdout)).toMatchObject({ ok: true, focus: 'resume' });
   });
 
   it('mnema task list --state rejects a state foreign to the active workflow', () => {
@@ -445,6 +510,25 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
   it('mnema init scaffolds the .mnema/commands directory', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     expect(existsSync(path.join(projectRoot, '.mnema/commands'))).toBe(true);
+  });
+
+  it('mnema init seeds the example slash commands (non-minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    const list = runCli(['commands', 'list'], projectRoot);
+    expect(list.status).toBe(0);
+    // The three seed commands ship with the install, not an empty folder.
+    expect(list.stdout).toContain('standup');
+    expect(list.stdout).toContain('close');
+    expect(list.stdout).toContain('audit');
+  });
+
+  it('mnema adopt commands seeds them onto a --minimal project', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'], projectRoot);
+    // Minimal has no commands yet.
+    expect(existsSync(path.join(projectRoot, '.mnema/commands', 'standup.md'))).toBe(false);
+    const adopt = runCli(['adopt', 'commands'], projectRoot);
+    expect(adopt.status).toBe(0);
+    expect(existsSync(path.join(projectRoot, '.mnema/commands', 'standup.md'))).toBe(true);
   });
 
   it('mnema commands list discovers a versioned command', () => {

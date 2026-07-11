@@ -5,6 +5,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
 import { AdoptionService } from '@/services/adoption-service.js';
+import { AuditService } from '@/services/audit-service.js';
+import { IdentityService } from '@/services/identity-service.js';
+import { SkillService } from '@/services/skill-service.js';
+import { AuditWriter } from '@/storage/audit/audit-writer.js';
+import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
+import { SkillRepository } from '@/storage/sqlite/repositories/skill-repository.js';
+import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const config = ConfigSchema.parse({
   version: '1.0',
@@ -66,9 +74,62 @@ describe('AdoptionService', () => {
     expect(readFileSync(file, 'utf-8')).toBe('# customised');
   });
 
+  it('adopt-installed skills become first-class rows via importSeeds (not orphans)', () => {
+    // Regression: `adopt skills` writes files only; without recording them as
+    // rows they read as orphan mirrors that `mnema upgrade` prunes. The CLI
+    // adopt path now runs the same importSeeds('system') step as init — this
+    // asserts the mechanism it leans on: adopted files → rows.
+    service.adopt('skills');
+
+    const dbPath = path.join(projectRoot, 'state.db');
+    const adapter = new SqliteAdapter(dbPath);
+    try {
+      new MigrationRunner().run(adapter, path.resolve('src/storage/sqlite/migrations'));
+      const repo = new SkillRepository(adapter);
+      const identity = new IdentityService(new ActorRepository(adapter));
+      const audit = new AuditService(new AuditWriter(path.join(projectRoot, config.paths.audit)));
+      const skills = new SkillService(
+        path.join(projectRoot, config.paths.skills),
+        new Set(),
+        repo,
+        identity,
+        audit,
+      );
+
+      const imported = skills.importSeeds('system');
+      // The 5 real skills, never the SKILL.md index.
+      expect(imported.sort()).toEqual(
+        [
+          'creating-tasks',
+          'handling-blockers',
+          'recording-decisions',
+          'report-issue',
+          'transitioning-tasks',
+        ].sort(),
+      );
+      expect(imported).not.toContain('SKILL');
+
+      const rows = repo.listLatest().map((s) => s.slug);
+      expect(rows).toContain('creating-tasks');
+      expect(rows).not.toContain('SKILL');
+
+      // Idempotent: a second import creates no duplicate versions.
+      const again = skills.importSeeds('system');
+      expect(again.sort()).toEqual(imported.sort());
+    } finally {
+      adapter.close();
+    }
+  });
+
   it('adoptAll touches every component once', () => {
     const summary = service.adoptAll();
-    expect(summary.results.map((r) => r.component)).toEqual(['skills', 'memory', 'roadmap']);
+    expect(summary.results.map((r) => r.component)).toEqual([
+      'skills',
+      'memory',
+      'roadmap',
+      'commands',
+      'templates',
+    ]);
     expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/roadmap', 'README.md'))).toBe(true);

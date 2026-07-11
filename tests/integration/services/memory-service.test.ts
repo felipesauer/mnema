@@ -397,4 +397,81 @@ describe('MemoryService', () => {
     expect(result.error.issues[0]?.path).toEqual(['title']);
     expect(service.list()).toHaveLength(0);
   });
+
+  it('a re-record that changes ONLY the scope is not swallowed as a no-op', () => {
+    // Audit MEDIUM: scope was omitted from the no-op comparison, so setting a
+    // scope on an existing memory (same title/content) silently dropped it.
+    recordOk({ slug: 'scoped', title: 'T', content: 'body', actor: 'daniel' });
+    const second = recordOk({
+      slug: 'scoped',
+      title: 'T',
+      content: 'body',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    expect(second.action).toBe('updated');
+    expect(second.memory.scope).toBe('packages/notifier');
+    // And an identical re-record (scope unchanged) IS still a no-op.
+    const third = recordOk({
+      slug: 'scoped',
+      title: 'T',
+      content: 'body',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    expect(third.action).toBe('no_op');
+  });
+
+  describe('contradict (typed obsoletes relation)', () => {
+    function seed(slug: string) {
+      recordOk({ slug, title: slug, content: `body of ${slug}`, actor: 'daniel' });
+    }
+    function obsoletedBy(slug: string): string | null {
+      const r = service.show(slug);
+      if (!r.ok) throw new Error(`memory ${slug} not found`);
+      return r.value.obsoletedBy;
+    }
+
+    it('records the relation and de-ranks the obsoleted memory', () => {
+      seed('old-truth');
+      seed('new-truth');
+      const r = service.contradict('new-truth', 'old-truth', 'daniel');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.value.obsoletedBy).toBe('new-truth');
+    });
+
+    it('rejects an archived contradictor instead of leaving a dangling reference', () => {
+      seed('retired');
+      seed('current');
+      expect(service.archive('retired', 'daniel')).toBe(true);
+      const r = service.contradict('retired', 'current', 'daniel');
+      expect(r.ok).toBe(false);
+      if (r.ok) return;
+      expect(r.error.kind).toBe(ErrorCode.SupersededEntity);
+      // `current` was NOT de-ranked in favour of an invisible memory.
+      expect(obsoletedBy('current')).toBeNull();
+    });
+
+    it('contradicting an already-obsoleted memory errors instead of a silent success', () => {
+      seed('a');
+      seed('b');
+      seed('target');
+      expect(service.contradict('a', 'target', 'daniel').ok).toBe(true);
+      const second = service.contradict('b', 'target', 'daniel');
+      expect(second.ok).toBe(false);
+      if (second.ok) return;
+      expect(second.error.kind).toBe(ErrorCode.AlreadyObsoleted);
+      // The pointer stays on the first contradictor, not silently overwritten.
+      expect(obsoletedBy('target')).toBe('a');
+    });
+
+    it('re-issuing the SAME contradiction is an idempotent success', () => {
+      seed('x');
+      seed('y');
+      expect(service.contradict('x', 'y', 'daniel').ok).toBe(true);
+      const again = service.contradict('x', 'y', 'daniel');
+      expect(again.ok).toBe(true);
+    });
+  });
 });

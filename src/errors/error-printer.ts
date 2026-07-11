@@ -363,6 +363,12 @@ export function formatError(error: MnemaError): string {
         `${pc.dim('hint:')} supersede is one-way — record under a new slug instead of reviving a superseded one`,
       );
       break;
+    case ErrorCode.AlreadyObsoleted:
+      lines.push(`memory ${error.ref} is already obsoleted by ${error.obsoletedBy}`);
+      lines.push(
+        `${pc.dim('hint:')} a memory carries one contradictor — supersede or archive it instead of contradicting it twice`,
+      );
+      break;
     case ErrorCode.EvidenceCriterionOutOfRange:
       lines.push(
         `${error.taskKey} has ${error.criteriaCount} acceptance criteria; index ${error.index} is out of range`,
@@ -487,6 +493,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.ObservationArchived:
     case ErrorCode.SelfSupersede:
     case ErrorCode.SupersededEntity:
+    case ErrorCode.AlreadyObsoleted:
     case ErrorCode.EvidenceCriterionOutOfRange:
     case ErrorCode.ValidationFailed:
       return ExitCode.Usage;

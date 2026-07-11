@@ -6,6 +6,7 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type { AgentRunService } from '../../../services/agent-run-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
+import type { WikilinkLintService } from '../../../services/wikilink-lint-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -31,6 +32,7 @@ export class MemoryTools {
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
     private readonly agentRun: AgentRunService,
+    private readonly wikilinks: WikilinkLintService,
   ) {}
 
   /**
@@ -56,6 +58,13 @@ export class MemoryTools {
             .array(z.string().min(1))
             .optional()
             .describe('Free-form tags for filtering, e.g. ["compliance", "estimation"]'),
+          scope: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Area this memory belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows what the bootstrap surfaces for a given area.',
+            ),
           derived_from_decision: z
             .string()
             .optional()
@@ -92,6 +101,7 @@ export class MemoryTools {
             title: input.title,
             content: input.content,
             topics: input.topics,
+            scope: input.scope,
             derivedFromDecision: input.derived_from_decision,
             derivedFromObservation: input.derived_from_observation,
             actor: this.identity.getDefaultActor(),
@@ -144,14 +154,29 @@ export class MemoryTools {
       'memory_archive',
       {
         description:
-          'Archive a memory (soft, reversible retirement) — the row and its audit trail survive, and re-recording the slug reactivates it. Use to retire a memory flagged stale/obsolete without losing the record. Requires an active agent run.',
+          'Archive a memory (soft, reversible retirement) — the row and its audit trail survive, and re-recording the slug reactivates it. Use to retire a memory flagged stale/obsolete without losing the record. Pass preview:true for a non-destructive intent diff (which knowledge files still link to this slug and would be left dangling) without archiving. Requires an active agent run.',
         inputSchema: {
           slug: z.string().min(1).describe('Memory slug to archive'),
+          preview: z.boolean().optional().describe('Return the projected impact without archiving'),
         },
       },
-      ({ slug }) => {
+      ({ slug, preview }) => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
+
+        if (preview === true) {
+          const danglingFiles = this.wikilinks.referencesTo(slug);
+          return ok({
+            preview: true,
+            op: 'archive',
+            impact: { slug, dangling_reference_files: danglingFiles },
+            summary:
+              danglingFiles.length > 0
+                ? `${String(danglingFiles.length)} knowledge file(s) link to [[${slug}]] and would dangle after archive`
+                : `no wikilink references — safe to archive`,
+          });
+        }
+
         const runId = this.session.getCurrentRunId();
         const guard = requireActiveRun(runId);
         if (guard !== null) return guard;
@@ -200,6 +225,40 @@ export class MemoryTools {
           slug: input.slug,
           superseded_by: input.superseded_by,
           successor: result.value,
+        });
+      },
+    );
+
+    server.registerTool(
+      'memory_contradict',
+      {
+        description:
+          'Record that THIS memory contradicts (obsoletes) another. Softer than supersede: the contradicted memory stays listed and searchable — the contradiction is informative — but is annotated obsolete and de-ranked so the current truth is unambiguous. Records a navigable memory→memory provenance edge. Both memories must exist; a memory cannot contradict itself. Requires an active agent run.',
+        inputSchema: {
+          slug: z.string().min(1).describe('Slug of the newer memory doing the contradicting'),
+          obsoletes: z.string().min(1).describe('Slug of the memory being marked obsolete'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.memories.contradict(
+          input.slug,
+          input.obsoletes,
+          this.identity.getDefaultActor(),
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!result.ok) return err(result.error);
+        return ok({
+          slug: input.slug,
+          obsoletes: input.obsoletes,
+          obsoleted: result.value,
         });
       },
     );

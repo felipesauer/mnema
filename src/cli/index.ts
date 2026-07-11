@@ -162,6 +162,18 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/inbox-command.js')).InboxCommand(),
     description: 'Show tasks that need human attention (review, blocked)',
   },
+  focus: {
+    load: async () => new (await import('./commands/focus-command.js')).FocusCommand(),
+    description: 'Print a one-line focus: the task to resume, or the next to start',
+  },
+  drift: {
+    load: async () => new (await import('./commands/drift-command.js')).DriftCommand(),
+    description: 'List commits on this branch not tied to any task',
+  },
+  guard: {
+    load: async () => new (await import('./commands/guard-command.js')).GuardCommand(),
+    description: 'Exit 0 if a task is in progress, non-zero otherwise (for a PreToolUse hook)',
+  },
   agent: {
     load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
     description: 'Inspect agent activity (run inspect)',

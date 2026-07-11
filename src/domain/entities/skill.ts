@@ -23,6 +23,19 @@ export interface Skill {
    * a skill with no dynamic context.
    */
   readonly dynamicContext: readonly string[];
+  /**
+   * Why this version changed from the previous one — free text captured on
+   * a `new_version` (or update) record. `null` on version 1 and on any
+   * version recorded without a reason. The "why" that teaches the next
+   * agent what shifted, shown alongside the version diff.
+   */
+  readonly changeRationale: string | null;
+  /**
+   * Area this skill belongs to — a path or package like `packages/notifier`,
+   * or `null` for project-global. Narrows bootstrap/search relevance for a
+   * given area without hiding the skill outright.
+   */
+  readonly scope: string | null;
   readonly usageCount: number;
   readonly lastUsedAt: string | null;
   readonly createdBy: string;

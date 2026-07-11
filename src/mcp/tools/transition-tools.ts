@@ -8,6 +8,7 @@ import { ErrorCode } from '../../errors/error-codes.js';
 import type { AgentRunService } from '../../services/agent-run-service.js';
 import type { GitHubPrService, PrStatus } from '../../services/github-pr-service.js';
 import type { IdentityService } from '../../services/identity-service.js';
+import type { LabelService } from '../../services/label-service.js';
 import type { TaskService } from '../../services/task-service.js';
 import { resolveGovernanceRun } from '../governance-run.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
@@ -60,6 +61,7 @@ export class TransitionToolsRegistrar {
     private readonly config: Config,
     private readonly githubPr: GitHubPrService,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly labels: LabelService,
   ) {}
 
   /**
@@ -234,6 +236,17 @@ export class TransitionToolsRegistrar {
                 }
               }
 
+              // Detect an idempotent retry BEFORE the call, while the task is
+              // still in its pre-state: the service will no-op it, and we
+              // annotate the echo so the agent sees "already there" rather
+              // than mistaking an unchanged response for a fresh transition.
+              const noOp = this.tasks.wouldBeNoOp(
+                taskKey,
+                action,
+                this.identity.getDefaultActor(),
+                handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+              );
+
               const result = this.tasks.transition({
                 taskKey,
                 action,
@@ -252,6 +265,26 @@ export class TransitionToolsRegistrar {
                 const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
                 return ok({ task, pr_warning: prWarning });
               }
+              if (noOp) {
+                const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                return ok({
+                  task,
+                  no_op: true,
+                  note: `${taskKey} is already ${result.value.state} — no change (idempotent retry)`,
+                });
+              }
+
+              // Capture gate: a non-trivial task reaching a terminal state is
+              // the moment its learning is freshest. Emit an advisory prompt
+              // (never a block at default enforcement) nudging a memory/decision
+              // so the lesson is not lost.
+              if (this.workflow.terminal.includes(result.value.state)) {
+                const advice = this.captureAdvisory(result.value);
+                if (advice !== null) {
+                  const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                  return ok({ task, capture_prompt: advice });
+                }
+              }
               return okTask(result.value, verbosity);
             } finally {
               gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
@@ -264,7 +297,48 @@ export class TransitionToolsRegistrar {
 
     return registered;
   }
+
+  /**
+   * An advisory nudge to capture what was learned, when a task reaching a
+   * terminal state was non-trivial — or `null` when it was routine (no
+   * prompt). Non-trivial means the task carried rework (`reopenCount > 0`)
+   * or an architecture-signal label; those are the tasks whose lesson is
+   * worth a memory/decision. Advisory only: it never blocks the transition,
+   * so the DONE still lands — the report's "gentle by default" rule.
+   */
+  private captureAdvisory(task: {
+    readonly key: string;
+    readonly reopenCount: number;
+  }): string | null {
+    const reasons: string[] = [];
+    if (task.reopenCount > 0) {
+      reasons.push(`it was reopened ${String(task.reopenCount)}×`);
+    }
+    const labels = this.labels.listForTask(task.key);
+    if (labels.ok) {
+      const arch = labels.value.filter((l) => ARCHITECTURE_LABELS.has(l.toLowerCase()));
+      if (arch.length > 0) reasons.push(`it is labelled ${arch.join(', ')}`);
+    }
+    if (reasons.length === 0) return null;
+    return (
+      `${task.key} was non-trivial (${reasons.join('; ')}) — capture what you learned now, ` +
+      `while it is fresh: \`memory_record\` a durable fact, or \`decision_record\` if it was ` +
+      `a choice the team should be able to contest. Advisory — the task is already done.`
+    );
+  }
 }
+
+/**
+ * Labels that mark a task as architecture-significant — a terminal task
+ * carrying one of these is worth a captured lesson. Lowercased for a
+ * case-insensitive match.
+ */
+const ARCHITECTURE_LABELS: ReadonlySet<string> = new Set([
+  'architecture',
+  'adr',
+  'design',
+  'security',
+]);
 
 /**
  * Returns a human reason the PR is not ready to close the task, or null

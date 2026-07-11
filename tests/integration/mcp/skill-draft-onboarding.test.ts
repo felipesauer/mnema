@@ -85,7 +85,7 @@ describe('run-end skill draft onboarding', () => {
     delete process.env.MNEMA_ACTOR;
   });
 
-  it('offers a pre-filled skill draft when a completed run recorded nothing', async () => {
+  it('offers a skill draft whose steps come from the run’s real actions', async () => {
     await harness.client.callTool({
       name: 'agent_run_start',
       arguments: { goal: 'Add the audit verify tool' },
@@ -104,14 +104,59 @@ describe('run-end skill draft onboarding', () => {
 
     // The reminder still fires...
     expect(payload.reminder).toBeDefined();
-    // ...and now carries a concrete, editable starting point.
+    // ...and now carries a concrete draft whose steps are the run's real
+    // actions (creating that task), not placeholders.
     const draft = payload.skill_draft as SkillDraft;
     expect(draft).toBeDefined();
     expect(draft.name).toBe('Add the audit verify tool');
     expect(draft.slug).toBe('add-the-audit-verify-tool');
-    // The touched task is referenced so the agent recalls what it did.
-    expect(draft.description).toContain(key);
+    expect(draft.steps).toContain(`create task ${key}`);
+    // No misleading placeholder from the old template.
+    expect(draft.steps).not.toContain('first step you took');
     expect(draft.steps).toContain('skill_record');
+  });
+
+  it('generalises a repeated per-task cycle into one skill draft', async () => {
+    await harness.client.callTool({
+      name: 'agent_run_start',
+      arguments: { goal: 'Ship two small tasks the same way' },
+    });
+    // Drive TWO tasks through the same submit → start cycle.
+    for (const title of ['First', 'Second']) {
+      const created = parsePayload(
+        (await harness.client.callTool({
+          name: 'task_create',
+          arguments: { title, acceptance_criteria: ['done'] },
+        })) as CallToolResult,
+      );
+      const key = (created.task as { key: string }).key;
+      await harness.client.callTool({
+        name: 'task_submit',
+        arguments: {
+          task_key: key,
+          title,
+          description: `${title} — ready`,
+          acceptance_criteria: ['done'],
+          estimate: 1,
+        },
+      });
+      await harness.client.callTool({
+        name: 'task_start',
+        arguments: { task_key: key, assignee_id: 'daniel' },
+      });
+    }
+
+    const ended = await harness.client.callTool({
+      name: 'agent_run_end',
+      arguments: { status: 'completed' },
+    });
+    const draft = parsePayload(ended as CallToolResult).skill_draft as SkillDraft;
+    expect(draft).toBeDefined();
+    // The repeated cycle is recognised and generalised, not listed twice.
+    expect(draft.description).toContain('cycle');
+    expect(draft.description).toContain('2');
+    expect(draft.steps).toContain('submit');
+    expect(draft.steps).toContain('start');
   });
 
   it('does not offer a skill draft when the run recorded a skill', async () => {

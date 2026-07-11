@@ -88,6 +88,8 @@ async function setup(): Promise<Harness> {
     session,
     container.stateMachine,
     PENDING,
+    container.label,
+    container.taskTemplate,
   ).register(sdkServer);
   new EvidenceTools(container.taskEvidence, container.identity, session, PENDING).register(
     sdkServer,
@@ -106,6 +108,7 @@ async function setup(): Promise<Harness> {
     config,
     new GitHubPrService(),
     PENDING,
+    container.label,
   ).register(sdkServer);
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();

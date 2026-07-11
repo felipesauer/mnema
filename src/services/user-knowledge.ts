@@ -52,6 +52,8 @@ export function readUserSkills(userDir: string): SourcedSkill[] {
         toolsUsed: readStringArray(data, 'tools_used'),
         invocable: data.invocable === true,
         dynamicContext: readStringArray(data, 'dynamic_context'),
+        changeRationale: null,
+        scope: null,
         usageCount: readNumber(data, 'usage_count') ?? 0,
         lastUsedAt: readString(data, 'last_used_at'),
         createdBy: 'user',
@@ -59,6 +61,7 @@ export function readUserSkills(userDir: string): SourcedSkill[] {
         updatedAt: readString(data, 'updated_at') ?? '',
         // User-level skills live in markdown and have no supersede state.
         supersededBy: null,
+        obsoletedBy: null,
         source: 'user' as const,
       },
     ];
@@ -89,6 +92,8 @@ export function readUserMemories(userDir: string): SourcedMemory[] {
         // supersede state.
         archivedAt: null,
         supersededBy: null,
+        obsoletedBy: null,
+        scope: null,
         source: 'user' as const,
       },
     ];

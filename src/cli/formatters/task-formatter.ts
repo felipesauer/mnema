@@ -86,6 +86,24 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
     }
   }
 
+  // Git link (ADR-49), surfaced only when the opt-in observer has populated
+  // it — an untracked task renders exactly as before.
+  if (task.gitBranch !== null || task.gitCommits.length > 0 || task.gitPr !== null) {
+    const git: string[] = [];
+    if (task.gitBranch !== null) git.push(`branch: ${task.gitBranch}`);
+    if (task.gitCommits.length > 0) git.push(`commits: ${task.gitCommits.length}`);
+    if (task.gitPr !== null) git.push(`pr: ${task.gitPr.url} (${task.gitPr.state})`);
+    lines.push(`  ${pc.dim(`git · ${git.join(' · ')}`)}`);
+    if (task.gitCommits.length > 0) {
+      for (const c of task.gitCommits.slice(0, 5)) {
+        lines.push(`    ${pc.dim(`${c.sha}`)} ${c.subject}`);
+      }
+      if (task.gitCommits.length > 5) {
+        lines.push(`    ${pc.dim(`… ${task.gitCommits.length - 5} more`)}`);
+      }
+    }
+  }
+
   const timestamps: string[] = [];
   timestamps.push(`created: ${formatTimestamp(task.createdAt, timestampMode)}`);
   if (task.updatedAt !== task.createdAt) {

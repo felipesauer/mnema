@@ -9,7 +9,14 @@ import {
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 
-const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = ['skills', 'memory', 'roadmap', 'all'];
+const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = [
+  'skills',
+  'memory',
+  'roadmap',
+  'commands',
+  'templates',
+  'all',
+];
 
 /**
  * Registers `mnema adopt`, the gradual-adoption entry point.
@@ -19,8 +26,14 @@ const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = ['skills', 'memory'
  * never overwrites pre-existing content.
  *
  * Targeted at projects initialised with `--minimal` (or projects that
- * never had Mnema content folders). The service does not touch the
- * SQLite cache or audit log.
+ * never had Mnema content folders).
+ *
+ * Adopting `skills` (directly or via `all`) also records the freshly
+ * written seed skills as SQLite rows — the same `importSeeds('system')`
+ * step `mnema init` runs. Without it the files would read as orphan
+ * mirrors and the next `mnema upgrade` would prune them, so the adopt
+ * path must reach the DB, not just the filesystem. Every other component
+ * is pure files and needs no import.
  */
 export class AdoptCommand {
   /**
@@ -31,7 +44,9 @@ export class AdoptCommand {
   register(program: Command): void {
     program
       .command('adopt <component>')
-      .description('Add an optional layout component (skills, memory, roadmap, all). Idempotent.')
+      .description(
+        'Add an optional layout component (skills, memory, roadmap, commands, templates, all). Idempotent.',
+      )
       .action(async (component: string) => {
         if (!SUPPORTED.includes(component as AdoptableComponent | 'all')) {
           process.stderr.write(
@@ -40,12 +55,20 @@ export class AdoptCommand {
           process.exit(2);
         }
 
-        await withCliContext(({ config, projectRoot }) => {
+        await withCliContext(({ config, projectRoot, container }) => {
           const service = new AdoptionService(projectRoot, config);
           const results: AdoptionResult[] =
             component === 'all'
               ? [...service.adoptAll().results]
               : [service.adopt(component as AdoptableComponent)];
+
+          // Skills need a matching DB row per file, or `upgrade` prunes them
+          // as orphans. Record the seeds as `system` — the tool is the author,
+          // never the human — mirroring `mnema init`. Files already present
+          // are no-ops (content-equal), so re-running adopt stays idempotent.
+          if (results.some((r) => r.component === 'skills')) {
+            container.skill.importSeeds('system');
+          }
 
           for (const result of results) {
             const created = result.created.length;

@@ -84,6 +84,63 @@ describe('SkillService (record/show/use)', () => {
     expect(updated.skill.content).toBe('B');
   });
 
+  it('a re-record that changes ONLY the scope is not swallowed as a no-op', () => {
+    // Audit MEDIUM: scope was omitted from the sameContent check.
+    recordOk(service, { slug: 'sc', name: 'S', description: 'd', content: 'A', actor: 'daniel' });
+    const updated = recordOk(service, {
+      slug: 'sc',
+      name: 'S',
+      description: 'd',
+      content: 'A',
+      scope: 'packages/x',
+      actor: 'daniel',
+    });
+    expect(updated.action).toBe('updated');
+    expect(updated.skill.scope).toBe('packages/x');
+    // Identical re-record (scope unchanged) is still a no-op.
+    const again = recordOk(service, {
+      slug: 'sc',
+      name: 'S',
+      description: 'd',
+      content: 'A',
+      scope: 'packages/x',
+      actor: 'daniel',
+    });
+    expect(again.action).toBe('no_op');
+  });
+
+  it('an in-place update without a new rationale preserves the existing one', () => {
+    // Audit MEDIUM: update mode nulled change_rationale when none was supplied.
+    recordOk(service, {
+      slug: 'r',
+      name: 'R',
+      description: 'd',
+      content: 'v1',
+      actor: 'daniel',
+    });
+    // Bump to v2 WITH a rationale.
+    const v2 = recordOk(service, {
+      slug: 'r',
+      name: 'R',
+      description: 'd',
+      content: 'v2',
+      mode: 'new_version',
+      changeRationale: 'switched to the async API',
+      actor: 'daniel',
+    });
+    expect(v2.skill.changeRationale).toBe('switched to the async API');
+    // Edit v2 in place (default update mode), no rationale supplied.
+    const edited = recordOk(service, {
+      slug: 'r',
+      name: 'R',
+      description: 'd',
+      content: 'v2-fixed',
+      actor: 'daniel',
+    });
+    expect(edited.action).toBe('updated');
+    expect(edited.skill.changeRationale).toBe('switched to the async API');
+  });
+
   it('no-ops when content is byte-equal under mode=update', () => {
     service.record({
       slug: 's',

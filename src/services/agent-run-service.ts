@@ -2,11 +2,13 @@ import type { AgentRun } from '../domain/entities/agent-run.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { AgentPlanState } from '../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../domain/enums/agent-run-status.js';
+import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import type { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import type { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
+import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
@@ -66,16 +68,38 @@ export interface OpenItem {
 }
 
 /**
+ * A task the run drove into a non-terminal state and never moved out of —
+ * the concrete "what I was in the middle of" a resumed session needs.
+ * `state` is where this run last left it; a later run could have moved it,
+ * but for resuming *this* run its own last move is the honest stop point.
+ */
+export interface ActiveTask {
+  readonly key: string;
+  readonly state: string;
+  readonly lastAction: string;
+  readonly at: string;
+}
+
+/**
  * A read-only digest of what a run did and what it left open. Reuses
  * the same data `mnema agent inspect` renders, condensed into counts
  * plus the list of still-open threads so a resumed session knows where
  * to pick up.
+ *
+ * Beyond counts and open plans, it reconstructs *focus*: the tasks the
+ * run left mid-flight (`activeTasks`), the last few moves it made
+ * (`recentChanges`), and a one-line `resumeHint` that says, in prose,
+ * where to pick up — so a dropped session does not have to re-derive its
+ * own state from raw counts.
  */
 export interface RunSummary {
   readonly run: AgentRun;
   readonly mutationCount: number;
   readonly planCount: number;
   readonly openItems: readonly OpenItem[];
+  readonly activeTasks: readonly ActiveTask[];
+  readonly recentChanges: readonly string[];
+  readonly resumeHint: string;
 }
 
 /**
@@ -94,6 +118,8 @@ export class AgentRunService {
     private readonly audit: AuditService,
     private readonly plans: AgentPlanRepository,
     private readonly transitions: TransitionRepository,
+    private readonly tasks: TaskRepository,
+    private readonly stateMachine: StateMachine,
     private readonly onRunEnd: RunEndHook = () => {},
   ) {}
 
@@ -304,11 +330,39 @@ export class AgentRunService {
       }
     }
 
+    // Focus reconstruction. Group the run's transitions by task and keep
+    // the last one (for the "what did I last do to it" context), but decide
+    // whether it is still in flight from the task's *current* state, not the
+    // transition's — the task may have moved since, and same-millisecond
+    // transitions make transition order an unreliable tiebreaker. A task
+    // that is currently non-terminal is work a resumed session picks up.
+    const lastByTask = new Map<string, (typeof transitions)[number]>();
+    for (const t of transitions) lastByTask.set(t.taskKey, t);
+    const activeTasks: ActiveTask[] = [];
+    for (const t of lastByTask.values()) {
+      const task = this.tasks.findById(t.taskId);
+      if (task === null) continue; // deleted since — nothing to resume
+      if (!this.stateMachine.isTerminal(task.state)) {
+        activeTasks.push({ key: t.taskKey, state: task.state, lastAction: t.action, at: t.at });
+      }
+    }
+    activeTasks.sort((a, b) => b.at.localeCompare(a.at));
+
+    // The last few moves, newest first — a compact timeline standing in for
+    // the full run_diff so the summary is self-contained without a second call.
+    const recentChanges = [...transitions]
+      .reverse()
+      .slice(0, 5)
+      .map((t) => `${t.taskKey}: ${t.fromState ?? '—'} → ${t.toState}`);
+
     return Ok({
       run,
       mutationCount: transitions.length,
       planCount: plans.length,
       openItems,
+      activeTasks,
+      recentChanges,
+      resumeHint: buildResumeHint({ activeTasks, openItems, mutationCount: transitions.length }),
     });
   }
 
@@ -336,4 +390,32 @@ export class AgentRunService {
   findChildren(parentRunId: string): readonly AgentRun[] {
     return this.runs.findChildren(parentRunId);
   }
+}
+
+/**
+ * Turns the reconstructed focus into one actionable sentence. The order
+ * mirrors what a resuming session should do first: finish a task left
+ * mid-flight, then work an open plan step, else acknowledge a bookkeeping
+ * run with nothing outstanding, else a run that did nothing at all.
+ */
+function buildResumeHint(input: {
+  readonly activeTasks: readonly ActiveTask[];
+  readonly openItems: readonly OpenItem[];
+  readonly mutationCount: number;
+}): string {
+  const { activeTasks, openItems, mutationCount } = input;
+  const first = activeTasks[0];
+  if (first !== undefined) {
+    const more =
+      activeTasks.length > 1 ? ` (+${String(activeTasks.length - 1)} more mid-flight)` : '';
+    return `You were on ${first.key}, left ${first.state} after \`${first.lastAction}\`${more}. Resume it before starting new work.`;
+  }
+  const openPlans = openItems.filter((i) => i.kind === 'plan');
+  if (openPlans.length > 0) {
+    return `No task left in progress, but ${String(openPlans.length)} plan step(s) are still open — continue with: ${openPlans[0]?.label ?? ''}.`;
+  }
+  if (mutationCount > 0) {
+    return 'This run finished every task it touched and left no open plans — nothing to resume; pick up new work.';
+  }
+  return 'This run recorded no task mutations — nothing to resume; start the work its goal describes.';
 }

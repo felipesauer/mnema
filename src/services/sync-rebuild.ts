@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { Decision } from '../domain/entities/decision.js';
 import type { Epic } from '../domain/entities/epic.js';
 import type { Sprint } from '../domain/entities/sprint.js';
-import type { Task } from '../domain/entities/task.js';
+import type { GitPrRef, Task } from '../domain/entities/task.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { DecisionStatus } from '../domain/enums/decision-status.js';
 import { EpicState } from '../domain/enums/epic-state.js';
@@ -321,6 +321,23 @@ export class SyncRebuild {
           }
 
           if (changed) upserted += 1;
+        }
+
+        // Restore the serialized git link (ADR-49): branch + PR are stable and
+        // committed to the markdown, so a fresh clone keeps them across a
+        // rebuild. Commits are NOT serialized (volatile) — preserve whatever
+        // the cache already holds so a rebuild does not wipe the observer's
+        // work, and let `mnema watch --git` re-derive them. setGitLink is a
+        // no-op when nothing changed, so an unlinked task stays untouched.
+        const gitBranch = readString(data, 'git_branch');
+        const gitPr = readGitPr(data);
+        if (gitBranch !== null || gitPr !== null) {
+          const currentTask = this.tasks.findByKey(key);
+          this.tasks.setGitLink(taskId, {
+            branch: gitBranch,
+            commits: currentTask?.gitCommits ?? [],
+            pr: gitPr,
+          });
         }
 
         // Mirror the frontmatter `labels:` list back into the join table.
@@ -892,6 +909,19 @@ function readString(data: Record<string, unknown>, key: string): string | null {
 function readNumber(data: Record<string, unknown>, key: string): number | null {
   const value = data[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Reads the serialized `git_pr` frontmatter ({url, state}) back into a
+ * {@link GitPrRef}, or null when absent/malformed — a garbled value never
+ * fails the whole rebuild.
+ */
+function readGitPr(data: Record<string, unknown>): GitPrRef | null {
+  const value = data.git_pr;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const { url, state } = value as Record<string, unknown>;
+  if (typeof url !== 'string' || url.length === 0 || typeof state !== 'string') return null;
+  return { url, state };
 }
 
 function readStringArray(data: Record<string, unknown>, key: string): string[] {

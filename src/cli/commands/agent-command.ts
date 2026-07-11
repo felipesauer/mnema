@@ -157,9 +157,19 @@ function formatResume(
   }
   const summary = summaryResult.value;
   lines.push('');
+  lines.push(`${pc.bold('Pick up:')} ${summary.resumeHint}`);
+  lines.push('');
   lines.push(
     `${pc.bold('So far:')} ${summary.mutationCount} mutation(s), ${summary.planCount} plan(s)`,
   );
+
+  if (summary.activeTasks.length > 0) {
+    lines.push('');
+    lines.push(`${pc.bold(`In flight (${summary.activeTasks.length}):`)}`);
+    for (const t of summary.activeTasks) {
+      lines.push(`  ${pc.yellow(`[${t.state}]`)} ${t.key} ${pc.dim(`(last: ${t.lastAction})`)}`);
+    }
+  }
 
   lines.push('');
   lines.push(`${pc.bold(`Open items (${summary.openItems.length}):`)}`);

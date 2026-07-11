@@ -699,8 +699,8 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
  * — these are orphans: the SQLite row was deleted or renamed but the
  * mirror file lingers. Returns the slugs (filename minus `.md`).
  *
- * Files starting with `.` (like `.gitkeep`) and the catalogue
- * `INDEX.md` are excluded so they do not show up as orphans.
+ * Files starting with `.` (like `.gitkeep`) and the catalogue indexes
+ * (`INDEX.md`, `SKILL.md`) are excluded so they do not show up as orphans.
  *
  * @param dir - Directory to scan (returns empty if it does not exist)
  * @param knownSlugs - Authoritative set of slugs from SQLite
@@ -712,7 +712,9 @@ function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     if (entry.name.startsWith('.')) continue;
-    if (entry.name === 'INDEX.md') continue;
+    // Curated indexes (INDEX.md for memory, SKILL.md for skills) are not
+    // entity mirrors and have no row — never orphans.
+    if (entry.name === 'INDEX.md' || entry.name === 'SKILL.md') continue;
     if (!entry.name.endsWith('.md')) continue;
     const slug = entry.name.slice(0, -3);
     if (!knownSlugs.has(slug)) orphans.push(slug);
@@ -753,7 +755,10 @@ export function pruneOrphanMirrors(
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     if (entry.name.startsWith('.')) continue;
-    if (entry.name === 'INDEX.md') continue;
+    // Curated index files are not entity mirrors and never have a row:
+    // INDEX.md (memory) and SKILL.md (skills). Excluding them keeps the
+    // prune from deleting a legitimate catalogue as a phantom orphan.
+    if (entry.name === 'INDEX.md' || entry.name === 'SKILL.md') continue;
     if (!entry.name.endsWith('.md')) continue;
     const slug = entry.name.slice(0, -3);
     if (!knownSlugs.has(slug)) {

@@ -2,6 +2,7 @@ import type { Task } from '../domain/entities/task.js';
 import { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { generateTaskKey } from '../domain/id-generator.js';
+import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../domain/state-machine/workflow-meta-schema.js';
 import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../domain/validation.js';
@@ -113,6 +114,10 @@ export class TaskService {
     // that don't pass it, and every single-agent flow, keep working; the
     // container supplies the configured `claims.require_to_start`.
     private readonly requireClaimToStart: boolean = false,
+    // Per-gate-field severity (MNEMA-ADR-48), layered on `enforcementMode`.
+    // Maps a required gate field name to `off` | `warn` | `block`. Empty
+    // (the default) reproduces the pure global behaviour.
+    private readonly fieldSeverity: Readonly<Record<string, 'off' | 'warn' | 'block'>> = {},
   ) {}
 
   /**
@@ -129,6 +134,7 @@ export class TaskService {
 
     const issues: ErrorIssue[] = [];
     checkTitle(input.title, issues);
+    checkNoInvocationMarkup(input, issues);
     checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
     checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
     checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
@@ -305,6 +311,7 @@ export class TaskService {
 
     const issues: ErrorIssue[] = [];
     if (input.title !== undefined) checkTitle(input.title, issues);
+    checkNoInvocationMarkup(input, issues);
     if (issues.length > 0) {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
@@ -491,6 +498,64 @@ export class TaskService {
    * @param input - Action, payload, and identity context
    * @returns The updated task or a structured error
    */
+  /**
+   * Whether calling `action` on the task with `taskKey` would be an
+   * idempotent no-op — the action targets the state the task is already in,
+   * the action is not otherwise valid from that state (so it is a retry, not
+   * a real re-entry), AND the caller is the actor who last moved the task
+   * there (so a late different actor is not mistaken for a retry). Mirrors
+   * the guard in {@link transition} so the surface annotation matches actual
+   * behaviour. Surfaces use it to add an "already there" indicator. Returns
+   * false for an unknown task.
+   */
+  wouldBeNoOp(taskKey: string, action: string, actor: string, via?: string): boolean {
+    const task = this.tasks.findByKey(taskKey);
+    if (task === null) return false;
+    // A genuinely valid action from here is not a no-op even if it loops back
+    // to the same state — only a retry (invalid-from-here + targets current).
+    const validHere = this.stateMachine
+      .listActionsFrom(task.state)
+      .some((a) => a.action === action);
+    if (validHere) return false;
+    if (!this.stateMachine.actionTargets(action).has(task.state)) return false;
+    return this.lastMoverMatches(task.id, { actor, via });
+  }
+
+  /**
+   * Whether the last transition on this task was recorded by the same
+   * MOVER now retrying — the "same actor" half of the idempotency guard. A
+   * genuine retry re-issues its own prior move; a different mover arriving
+   * after the state already changed is a lost-write attempt, not a retry.
+   *
+   * The mover identity is the DRIVING AGENT (`via`) whenever there is one.
+   * mnema's real deployment is one shared human identity with many agent
+   * sessions distinguished only by `via`, so matching on the human `actor`
+   * would treat EVERY prior move by that human as a retry — agent B stalely
+   * re-issuing a move agent A already made would be silently swallowed
+   * (lost write). So: with a `via`, require the last move to be from the SAME
+   * `via`. Only a call with no `via` (pure-human CLI, where the human is the
+   * mover) matches on `actor`. No prior transition is treated as "not a
+   * match" — fail closed toward the error rather than a spurious no-op.
+   */
+  private lastMoverMatches(
+    taskId: string,
+    input: { readonly actor: string; readonly via?: string },
+  ): boolean {
+    const history = this.transitions.findByTask(taskId);
+    const last = history[history.length - 1];
+    if (last === undefined) return false;
+    const viaId = input.via !== undefined ? this.identity.findActorIdByHandle(input.via) : null;
+    if (viaId !== null) {
+      // Agent-driven: the retry must come from the same agent session.
+      return last.viaActorId === viaId;
+    }
+    // Pure-human (no via): the human actor is the mover. Match only a prior
+    // move that was ALSO human-only (no via) by the same actor — an agent's
+    // prior move is not a human's retry.
+    const actorId = this.identity.findActorIdByHandle(input.actor);
+    return actorId !== null && last.actorId === actorId && last.viaActorId === null;
+  }
+
   transition(input: TransitionInput): Result<Task, MnemaError> {
     const task = this.tasks.findByKey(input.taskKey);
     if (task === null) {
@@ -527,6 +592,33 @@ export class TaskService {
 
     // An unknown action is never negotiable — there is nothing to enforce.
     if (!resolution.ok) {
+      // Idempotent-by-intent: a dropped AI session retries. If the action
+      // the caller asked for targets the state the task is ALREADY in, the
+      // earlier attempt succeeded and this is a retry — return the task as a
+      // no-op success rather than INVALID_TRANSITION, so the agent does not
+      // burn context handling a non-error. No write, no gate, no audit event.
+      //
+      // But "already in the target state" is ALSO what a stale concurrent
+      // writer sees after SOMEONE ELSE moved the row (the lost-write race).
+      // Two guards keep the no-op from masking that:
+      //   1. A stale optimistic-concurrency token (an OLD updatedAt) means a
+      //      concurrent writer — never a no-op.
+      //   2. The retry must come from the actor who LAST moved the task into
+      //      its current state. A genuine retry re-issues its own prior move;
+      //      a different actor arriving late (bob after alice) is a lost-write
+      //      attempt, not a retry, and must still be refused. This is the
+      //      "same actor" condition the idempotency contract calls for.
+      const carriesStaleToken =
+        input.expectedUpdatedAt !== undefined &&
+        input.expectedUpdatedAt.length > 0 &&
+        input.expectedUpdatedAt !== task.updatedAt;
+      if (
+        !carriesStaleToken &&
+        this.stateMachine.actionTargets(input.action).has(task.state) &&
+        this.lastMoverMatches(task.id, input)
+      ) {
+        return Ok(task);
+      }
       const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
       return Err({
         kind: ErrorCode.InvalidTransition,
@@ -537,17 +629,37 @@ export class TaskService {
       });
     }
 
-    // Apply `enforcement_mode` when required fields are missing. The actor
-    // matters: `via` present means an agent drove this, and `strict` holds
-    // agents to the gate while letting a human force the transition.
+    // Apply enforcement when required fields are missing. Two layers
+    // (MNEMA-ADR-48): the global `enforcement_mode` decides the default for
+    // the acting actor (`via` present ⇒ an agent drove this; `strict` holds
+    // agents but lets a human force it), and an optional per-field severity
+    // overrides that PER failing field. A transition blocks iff at least one
+    // failing field resolves to `block`; fields that resolve to `warn`/`off`
+    // let the transition proceed (recorded as an advisory override).
     const isAgent = input.via !== undefined;
     let gateOverride: ErrorIssue[] | null = null;
     if (!resolution.value.gate.ok) {
       const issues = fromZodIssues(resolution.value.gate.issues);
-      const blocked =
+      const globalBlocks =
         this.enforcementMode === EnforcementMode.Blocking ||
         (this.enforcementMode === EnforcementMode.Strict && isAgent);
-      if (blocked) {
+
+      // Resolve each failing field to an effective severity. `off` drops the
+      // issue entirely; an explicit `warn`/`block` overrides the global mode;
+      // absent falls back to the global block decision.
+      const blocking: ErrorIssue[] = [];
+      const warned: ErrorIssue[] = [];
+      for (const issue of issues) {
+        const field = issue.path[0];
+        const severity = typeof field === 'string' ? this.fieldSeverity[field] : undefined;
+        if (severity === 'off') continue;
+        if (severity === 'block') blocking.push(issue);
+        else if (severity === 'warn') warned.push(issue);
+        else if (globalBlocks) blocking.push(issue);
+        else warned.push(issue);
+      }
+
+      if (blocking.length > 0) {
         this.audit.write({
           kind: 'transition_blocked',
           actor: input.actor,
@@ -557,19 +669,20 @@ export class TaskService {
             key: task.key,
             action: input.action,
             mode: this.enforcementMode,
-            missing: issues.map((i) => i.path.join('.') || '(root)'),
+            missing: blocking.map((i) => i.path.join('.') || '(root)'),
           },
         });
         return Err({
           kind: ErrorCode.GateFailed,
           taskKey: task.key,
           action: input.action,
-          issues,
+          issues: blocking,
         });
       }
-      // Allowed despite the failed gate (advisory, or strict + human).
-      // Remember it so the post-commit audit records the override.
-      gateOverride = issues;
+      // Nothing blocked: the transition proceeds. Remember any warned issues
+      // so the post-commit audit records the override (advisory, or a
+      // per-field warn/off, or strict + human).
+      if (warned.length > 0) gateOverride = warned;
     }
 
     const { to, data } = resolution.value;
@@ -591,6 +704,33 @@ export class TaskService {
       }
       if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
         checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
+      }
+      // Free-text fields that fold onto columns (e.g. submit's title /
+      // description / acceptance_criteria) get the same markup screen as
+      // create()/update(), so a garbled tool call cannot spill invocation
+      // markup into a task via a transition payload either.
+      checkNoInvocationMarkup(
+        {
+          title: typeof payload.title === 'string' ? payload.title : undefined,
+          description: typeof payload.description === 'string' ? payload.description : undefined,
+          acceptanceCriteria: Array.isArray(payload.acceptance_criteria)
+            ? (payload.acceptance_criteria.filter((v) => typeof v === 'string') as string[])
+            : undefined,
+        },
+        foldIssues,
+      );
+      // Annotation-only free-text (completion_note, approval_note, feedback,
+      // reason, note) never folds onto a column, so it escapes the check
+      // above — yet it lands verbatim in transitions.payload/audit, the exact
+      // spill this screen prevents. Screen it here too.
+      for (const field of ANNOTATION_TEXT_FIELDS) {
+        const value = payload[field];
+        if (typeof value === 'string' && hasInvocationMarkup(value)) {
+          foldIssues.push({
+            path: [field],
+            message: 'contains tool-invocation markup; pass each field as its own argument',
+          });
+        }
       }
       if (foldIssues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
@@ -916,6 +1056,60 @@ function checkTitle(title: string, issues: ErrorIssue[]): void {
   } else if (title.length > 200) {
     issues.push({ path: ['title'], message: 'must be at most 200 characters' });
   }
+}
+
+/**
+ * Rejects tool-invocation markup in a task's free-text fields. A garbled
+ * MCP call can spill `<invoke>` / `<parameter name=…>` / a `</field>` envelope
+ * into a value; persisting it leaves a garbage trailer and empty siblings.
+ * decision/observation/memory already screen their content this way — this
+ * gives task fields the same contract at the service boundary, so the CLI
+ * and MCP producers reject identically. Each acceptance-criterion line is
+ * screened under an indexed path so the offender is pinpointed.
+ */
+/**
+ * Annotation-only gate fields that are free text: they live in
+ * `transitions.payload`/audit and never fold onto a task column, so the
+ * column-shaped {@link checkNoInvocationMarkup} does not see them. The
+ * transition guard screens them separately.
+ */
+const ANNOTATION_TEXT_FIELDS = [
+  'completion_note',
+  'approval_note',
+  'feedback',
+  'reason',
+  'note',
+] as const;
+
+function checkNoInvocationMarkup(
+  fields: {
+    readonly title?: string;
+    readonly description?: string | null;
+    readonly acceptanceCriteria?: readonly string[];
+  },
+  issues: ErrorIssue[],
+): void {
+  const scalar: [string, string | null | undefined][] = [
+    ['title', fields.title],
+    ['description', fields.description],
+  ];
+  for (const [field, value] of scalar) {
+    if (typeof value === 'string' && hasInvocationMarkup(value)) {
+      issues.push({
+        path: [field],
+        message: 'contains tool-invocation markup; pass each field as its own argument',
+      });
+    }
+  }
+  const criteria = fields.acceptanceCriteria ?? [];
+  criteria.forEach((line, i) => {
+    if (hasInvocationMarkup(line)) {
+      issues.push({
+        path: ['acceptance_criteria', String(i)],
+        message: 'contains tool-invocation markup; pass each field as its own argument',
+      });
+    }
+  });
 }
 
 /**

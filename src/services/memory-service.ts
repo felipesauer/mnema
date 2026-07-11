@@ -24,6 +24,8 @@ export interface MemoryRecordInput {
   readonly title: string;
   readonly content: string;
   readonly topics?: readonly string[];
+  /** Optional area (path/package) this memory belongs to; omit for global. */
+  readonly scope?: string | null;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -144,11 +146,18 @@ export class MemoryService {
       return Err({ kind: ErrorCode.SupersededEntity, entity: 'memory', ref: input.slug });
     }
 
+    // Scope participates in the no-op test the same way upsert persists it:
+    // an omitted scope (`undefined`) preserves the existing one, so it is a
+    // no-op; an explicit scope that differs is a real change and must NOT be
+    // swallowed (that silently drops the new scope, telling the caller it was
+    // set when it wasn't).
+    const scopeUnchanged = input.scope === undefined || input.scope === existing?.scope;
     const isNoOp =
       existing !== null &&
       existing.title === input.title &&
       existing.content === input.content &&
-      topicsArraysEqual(existing.topics, topics);
+      topicsArraysEqual(existing.topics, topics) &&
+      scopeUnchanged;
 
     const action: MemoryRecordResult['action'] = isNoOp
       ? 'no_op'
@@ -171,6 +180,7 @@ export class MemoryService {
         title: input.title,
         content: input.content,
         topics,
+        scope: input.scope,
         createdBy,
       });
       this.writeMirror(memory);
@@ -367,6 +377,87 @@ export class MemoryService {
       this.provenance?.link({ kind: 'memory', ref: slug }, { kind: 'memory', ref: successorSlug });
     }
     return Ok(successor);
+  }
+
+  /**
+   * Records that one memory *contradicts* (obsoletes) another. Softer than
+   * {@link supersede}: the contradicted memory stays listed and searchable
+   * — the contradiction is informative — but is annotated obsolete and
+   * de-ranked so the current truth is unambiguous. A navigable
+   * `contradictor → obsoleted` provenance edge is recorded.
+   *
+   * @param slug - Slug of the NEWER memory doing the contradicting
+   * @param obsoletesSlug - Slug of the memory being marked obsolete
+   * @param actor - Identity tuple for audit
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns The obsoleted memory (with its new pointer), or a structured error
+   */
+  contradict(
+    slug: string,
+    obsoletesSlug: string,
+    actor: string,
+    via?: string,
+    runId?: string,
+  ): Result<Memory, MnemaError> {
+    // A memory cannot contradict itself — that is a self-referential obsolete
+    // pointer. Reuse the SelfSupersede code (same shape of self-reference).
+    if (slug === obsoletesSlug) {
+      return Err({ kind: ErrorCode.SelfSupersede, entity: 'memory', ref: slug });
+    }
+    const contradictor = this.repo.findBySlug(slug);
+    if (contradictor === null) return Err({ kind: ErrorCode.MemoryNotFound, slug });
+    const target = this.repo.findBySlug(obsoletesSlug);
+    if (target === null) return Err({ kind: ErrorCode.MemoryNotFound, slug: obsoletesSlug });
+
+    // Both endpoints must be live, mirroring supersede: a retired memory on
+    // either side leaves a dangling relation — the target gets de-ranked in
+    // favour of a contradictor nobody can see, or a hidden memory is annotated
+    // as contradicting a live one. A superseded/archived memory is retired.
+    for (const [end, ref] of [
+      [contradictor, slug],
+      [target, obsoletesSlug],
+    ] as const) {
+      if (end.supersededBy !== null || end.archivedAt !== null) {
+        return Err({ kind: ErrorCode.SupersededEntity, entity: 'memory', ref });
+      }
+    }
+
+    // A memory carries exactly one contradictor. If it already has one, a
+    // second (different) contradict is not an idempotent replay — it is a
+    // conflicting claim the caller must see, not a silent success. markObsolete
+    // only writes WHERE obsoleted_by IS NULL, so without this the second call
+    // would return Ok while recording nothing.
+    if (target.obsoletedBy !== null) {
+      if (target.obsoletedBy === slug) return Ok(target); // genuine idempotent replay
+      return Err({
+        kind: ErrorCode.AlreadyObsoleted,
+        ref: obsoletesSlug,
+        obsoletedBy: target.obsoletedBy,
+      });
+    }
+
+    const marked = this.repo.markObsolete(obsoletesSlug, slug);
+    if (!marked) {
+      // Lost a race to another writer between the read above and here.
+      const now = this.repo.findBySlug(obsoletesSlug);
+      return Err({
+        kind: ErrorCode.AlreadyObsoleted,
+        ref: obsoletesSlug,
+        obsoletedBy: now?.obsoletedBy ?? slug,
+      });
+    }
+    this.audit.write({
+      kind: 'memory_obsoleted',
+      actor,
+      via,
+      run: runId,
+      data: { slug: obsoletesSlug, obsoleted_by: slug },
+    });
+    // First-class, navigable edge: the contradictor → the obsoleted memory.
+    this.provenance?.link({ kind: 'memory', ref: slug }, { kind: 'memory', ref: obsoletesSlug });
+    const reloaded = this.repo.findBySlug(obsoletesSlug);
+    return Ok(reloaded ?? target);
   }
 
   /**

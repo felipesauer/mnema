@@ -1,4 +1,4 @@
-import type { Task } from '../../../domain/entities/task.js';
+import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
@@ -27,6 +27,9 @@ interface TaskRow {
   readonly deleted_at: string | null;
   readonly claimed_by: string | null;
   readonly lease_expires_at: string | null;
+  readonly git_branch: string | null;
+  readonly git_commits: string;
+  readonly git_pr: string | null;
 }
 
 /**
@@ -536,6 +539,50 @@ export class TaskRepository {
   }
 
   /**
+   * Sets the first-class git link on a task (MNEMA-ADR-49). Written only by
+   * the opt-in git observer, never the hot path.
+   *
+   * NOTE on `updated_at`: any UPDATE to a task bumps `updated_at` via
+   * `trg_tasks_updated_at` (whose guard `OLD.updated_at = NEW.updated_at`
+   * fires on exactly a column-only write), the same as `incrementReopenCount`
+   * / `clearClaim`. So a git-link write DOES advance the timestamp. To keep
+   * the opt-in observer from churning the optimistic-concurrency token and
+   * the aging clock on every audit event, this is a NO-OP when the stored
+   * link already equals `link` — the UPDATE (and its trigger) only runs on a
+   * genuine change. A caller holding an explicit `expected_updated_at` from
+   * before an observer pass could still see it advance on a real link change;
+   * that is the same contract as any other task write.
+   *
+   * @param taskId - Internal task id
+   * @param link - The branch, commits and PR to store
+   * @returns The reloaded task, or null if the id is unknown (unchanged when
+   *   the link already matches)
+   */
+  setGitLink(
+    taskId: string,
+    link: { branch: string | null; commits: readonly GitCommitRef[]; pr: GitPrRef | null },
+  ): Task | null {
+    const current = this.findById(taskId);
+    if (current === null) return null;
+    // Idempotent: skip the write (and the updated_at trigger) when nothing
+    // changed, so re-running the observer on every audit event is inert.
+    const nextCommits = JSON.stringify(link.commits);
+    const nextPr = link.pr === null ? null : JSON.stringify(link.pr);
+    if (
+      current.gitBranch === link.branch &&
+      JSON.stringify(current.gitCommits) === nextCommits &&
+      (current.gitPr === null ? null : JSON.stringify(current.gitPr)) === nextPr
+    ) {
+      return current;
+    }
+    this.adapter
+      .getDatabase()
+      .prepare('UPDATE tasks SET git_branch = ?, git_commits = ?, git_pr = ? WHERE id = ?')
+      .run(link.branch, nextCommits, nextPr, taskId);
+    return this.findById(taskId);
+  }
+
+  /**
    * Applies a partial update to a task's persisted fields. Only the
    * keys present in `fields` are touched; missing keys leave the
    * existing column value alone. Always bumps `updated_at`.
@@ -740,6 +787,9 @@ function rowToTask(row: TaskRow): Task {
     deletedAt: row.deleted_at,
     claimedBy: row.claimed_by,
     leaseExpiresAt: row.lease_expires_at,
+    gitBranch: row.git_branch,
+    gitCommits: JSON.parse(row.git_commits) as GitCommitRef[],
+    gitPr: row.git_pr === null ? null : (JSON.parse(row.git_pr) as GitPrRef),
   };
 }
 

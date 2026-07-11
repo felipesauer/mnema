@@ -22,11 +22,16 @@ import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
+import { AdoptionService } from '../../services/adoption-service.js';
+import { AuditService } from '../../services/audit-service.js';
 import { IdentityService } from '../../services/identity-service.js';
 import { Err, Ok, type Result } from '../../services/result.js';
+import { SkillService } from '../../services/skill-service.js';
+import { AuditWriter } from '../../storage/audit/audit-writer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
+import { SkillRepository } from '../../storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
 import { VERSION } from '../../utils/version.js';
@@ -236,6 +241,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.observations), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.templates), { recursive: true });
     }
 
     appendGitignore(cwd, config.paths.state, config.paths.audit);
@@ -256,6 +262,20 @@ export class InitCommand {
 
     if (!minimal) {
       createBacklogStateDirs(cwd, config, workflowDestFile);
+      // Seed the example skills at init, not only via `mnema adopt skills`
+      // (which agents skip — the report's "skills born empty, stay empty").
+      // Reuses the exact adopt content, so there is a single source and the
+      // write is idempotent. --minimal skips this and keeps skills/ empty.
+      const adoption = new AdoptionService(cwd, config);
+      adoption.adopt('skills');
+      // Seed the slash commands too, so `.mnema/commands/` is not born empty
+      // (the shortcut that makes the tool get used). Commands are pure files
+      // with no SQLite row, so — unlike skills — they need no import step.
+      adoption.adopt('commands');
+      // Seed the task templates so `templates/<kind>.md` exist and are
+      // overridable; task_create --template falls back to the built-ins when
+      // a file is absent, so this is discoverability, not a hard dependency.
+      adoption.adopt('templates');
     }
 
     const dbPath = path.join(stateDir, 'state.db');
@@ -274,8 +294,25 @@ export class InitCommand {
       // resolveDefaultActor never throws and reads only env + the user
       // identity file, so it is safe to probe here purely to decide
       // whether init should nudge the user to set their identity.
-      identityConfigured =
-        new IdentityService(new ActorRepository(adapter)).resolveDefaultActor().actor !== null;
+      const identity = new IdentityService(new ActorRepository(adapter));
+      identityConfigured = identity.resolveDefaultActor().actor !== null;
+
+      // Record the seed skills as SQLite rows (the files were written above).
+      // Without rows they read as orphan mirrors and `mnema upgrade` would
+      // prune them — so seeding must reach the DB, not just the filesystem.
+      // Attributed to a fixed `system` actor, never the human's identity:
+      // these skills are shipped by the tool, not authored by the user, so
+      // the trail should say so (and init must not create a user actor row
+      // as a side effect).
+      if (!minimal) {
+        new SkillService(
+          path.join(cwd, config.paths.skills),
+          new Set(),
+          new SkillRepository(adapter),
+          identity,
+          new AuditService(new AuditWriter(auditDir)),
+        ).importSeeds('system');
+      }
     } finally {
       adapter.close();
     }

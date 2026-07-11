@@ -28,10 +28,12 @@ import { CoverageTools } from './tools/universal/coverage-tools.js';
 import { DecisionTools } from './tools/universal/decision-tools.js';
 import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js';
 import { DependencyTools } from './tools/universal/dependency-tools.js';
+import { DriftTool } from './tools/universal/drift-tool.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
+import { FocusTool } from './tools/universal/focus-tool.js';
 import { HistoryTool } from './tools/universal/history-tool.js';
 import { LabelTools } from './tools/universal/label-tools.js';
 import { MemoryTools } from './tools/universal/memory-tools.js';
@@ -218,6 +220,9 @@ export class MnemaMcpServer {
       this.services.memoryStaleness,
       this.services.inbox,
       this.services.identity,
+      this.services.dependency,
+      this.services.search,
+      this.services.label,
     ).register(this.sdk);
 
     new AgentRunTools(
@@ -235,6 +240,7 @@ export class MnemaMcpServer {
       this.services.stateMachine,
       pendingFiles,
       this.services.label,
+      this.services.taskTemplate,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session, pendingFiles).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
@@ -275,6 +281,8 @@ export class MnemaMcpServer {
     new DependencyGraphTool(this.services.dependencyGraph).register(this.sdk);
     new FileCollisionTool(this.services.fileCollision).register(this.sdk);
     new RunDiffTool(this.services.runDiff).register(this.sdk);
+    new FocusTool(this.services.focus).register(this.sdk);
+    new DriftTool(this.services.drift, this.projectRoot).register(this.sdk);
     new SnapshotTool(this.services.snapshot).register(this.sdk);
     if (knowledgeEnabled) {
       new ProvenanceTool(this.services.provenance).register(this.sdk);
@@ -295,6 +303,7 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.wikilinkLint,
       ).register(this.sdk);
     }
     if (workflow.features.sprints) {
@@ -326,6 +335,7 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.skillQuality,
       ).register(this.sdk);
       new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
       new MemoryTools(
@@ -334,6 +344,7 @@ export class MnemaMcpServer {
         this.session,
         pendingFiles,
         this.services.agentRun,
+        this.services.wikilinkLint,
       ).register(this.sdk);
       new ObservationTools(
         this.services.observation,
@@ -352,6 +363,7 @@ export class MnemaMcpServer {
       this.config,
       this.services.githubPr,
       pendingFiles,
+      this.services.label,
     ).register(this.sdk);
   }
 

@@ -51,9 +51,12 @@ import { DecisionService } from './decision-service.js';
 import { DependencyGraphService } from './dependency-graph-service.js';
 import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
+import { DriftService } from './drift-service.js';
 import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
+import { FocusService } from './focus-service.js';
+import { GitObserverService } from './git-observer-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { HeadCheckpointService } from './head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from './hook-trust.js';
@@ -72,6 +75,7 @@ import { ProvenanceService } from './provenance-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
 import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
+import { SkillQualityService } from './skill-quality-service.js';
 import { SkillService } from './skill-service.js';
 import { SnapshotService } from './snapshot-service.js';
 import { SprintService } from './sprint-service.js';
@@ -79,6 +83,7 @@ import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
+import { TaskTemplateService } from './task-template-service.js';
 import { userKnowledgeDir } from './user-knowledge.js';
 import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
@@ -146,16 +151,21 @@ export interface ServiceContainer {
   readonly fileCollision: FileCollisionService;
   readonly snapshot: SnapshotService;
   readonly runDiff: RunDiffService;
+  readonly focus: FocusService;
+  readonly skillQuality: SkillQualityService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly hookTrust: HookTrustService;
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
+  readonly drift: DriftService;
+  readonly gitObserver: GitObserverService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
   readonly skill: SkillService;
   readonly commandDefinition: CommandDefinitionService;
+  readonly taskTemplate: TaskTemplateService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly memoryStaleness: MemoryStalenessService;
@@ -470,6 +480,7 @@ export function createServiceContainer(
     },
     config.enforcement_mode as EnforcementMode,
     config.claims.require_to_start,
+    config.enforcement_field_severity,
   );
   trace.mark('services instantiated');
 
@@ -480,6 +491,8 @@ export function createServiceContainer(
     audit,
     agentPlans,
     transitions,
+    tasks,
+    stateMachine,
     () => {
       sync.flushAll();
     },
@@ -542,6 +555,8 @@ export function createServiceContainer(
     stateMachine,
   );
   const runDiffService = new RunDiffService(agentRuns, auditQuery);
+  const focusService = new FocusService(taskService, dependencyService, identity, stateMachine);
+  const skillQualityService = new SkillQualityService(auditQuery, tasks);
   const fileCollisionService = new FileCollisionService(
     tasks,
     taskEvidenceRepository,
@@ -566,6 +581,8 @@ export function createServiceContainer(
   );
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);
+  const driftService = new DriftService(taskEvidenceRepository, options.commitRunner);
+  const gitObserverService = new GitObserverService(tasks, identity, options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -573,6 +590,7 @@ export function createServiceContainer(
     stateMachine,
     auditQuery,
     adapter,
+    taskEvidenceRepository,
   );
   const inboxService = new InboxService(tasks, decisionService, config.project.key, stateMachine, {
     staleAfterDays: config.aging.stale_after_days,
@@ -622,6 +640,9 @@ export function createServiceContainer(
   );
   const commandDefinitionService = new CommandDefinitionService(
     path.join(projectRoot, config.paths.commands),
+  );
+  const taskTemplateService = new TaskTemplateService(
+    path.join(projectRoot, config.paths.templates),
   );
   const memoryService = new MemoryService(
     memoryDir,
@@ -679,16 +700,21 @@ export function createServiceContainer(
     fileCollision: fileCollisionService,
     snapshot: snapshotService,
     runDiff: runDiffService,
+    focus: focusService,
+    skillQuality: skillQualityService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     hookTrust,
     githubPr: githubPrService,
     commitVerifier,
+    drift: driftService,
+    gitObserver: gitObserverService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,
     skill: skillService,
     commandDefinition: commandDefinitionService,
+    taskTemplate: taskTemplateService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
     memoryStaleness: memoryStalenessService,

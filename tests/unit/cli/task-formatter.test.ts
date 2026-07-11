@@ -24,6 +24,9 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     reporterId: REPORTER_ID,
     reopenCount: 0,
     metadata: {},
+    gitBranch: null,
+    gitCommits: [],
+    gitPr: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     closedAt: null,
@@ -62,5 +65,26 @@ describe('formatTaskBlock', () => {
   it('still works without a resolver — uses truncated ids', () => {
     const out = strip(formatTaskBlock(makeTask()));
     expect(out).toContain('reporter: 11111111');
+  });
+
+  it('surfaces the git link when populated (ADR-49 read surface)', () => {
+    const out = strip(
+      formatTaskBlock(
+        makeTask({
+          gitBranch: 'feat/x',
+          gitCommits: [{ sha: 'aaaaaaa', subject: 'do the thing' }],
+          gitPr: { url: 'https://example.com/pr/3', state: 'open' },
+        }),
+      ),
+    );
+    expect(out).toContain('branch: feat/x');
+    expect(out).toContain('pr: https://example.com/pr/3 (open)');
+    expect(out).toContain('aaaaaaa do the thing');
+  });
+
+  it('renders no git section for an unlinked task', () => {
+    const out = strip(formatTaskBlock(makeTask()));
+    expect(out).not.toContain('git ·');
+    expect(out).not.toContain('branch:');
   });
 });
