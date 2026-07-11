@@ -362,6 +362,7 @@ export class MnemaMcpServer {
       this.config,
       this.services.githubPr,
       pendingFiles,
+      this.services.label,
     ).register(this.sdk);
   }
 

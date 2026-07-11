@@ -106,6 +106,7 @@ async function setup(): Promise<Harness> {
     config,
     new GitHubPrService(),
     PENDING,
+    container.label,
   ).register(sdkServer);
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
