@@ -14,6 +14,7 @@ interface MemoryRow {
   readonly updated_at: string;
   readonly archived_at: string | null;
   readonly superseded_by: string | null;
+  readonly obsoleted_by: string | null;
 }
 
 /**
@@ -68,8 +69,13 @@ export class MemoryRepository {
     // toggle, unlike archival, because supersede is one-way).
     memories = memories.filter((m) => m.supersededBy === null);
     if (!includeArchived) memories = memories.filter((m) => m.archivedAt === null);
-    if (topic === undefined) return memories;
-    return memories.filter((m) => m.topics.includes(topic));
+    if (topic !== undefined) memories = memories.filter((m) => m.topics.includes(topic));
+    // De-rank contradicted memories: they stay listed (the contradiction is
+    // informative) but sink below the current truth, preserving the existing
+    // updated_at DESC order within each group. Stable partition.
+    const live = memories.filter((m) => m.obsoletedBy === null);
+    const obsolete = memories.filter((m) => m.obsoletedBy !== null);
+    return [...live, ...obsolete];
   }
 
   /**
@@ -103,6 +109,24 @@ export class MemoryRepository {
       .getDatabase()
       .prepare('UPDATE memories SET superseded_by = ? WHERE slug = ? AND superseded_by IS NULL')
       .run(successorSlug, slug);
+    return result.changes > 0;
+  }
+
+  /**
+   * Marks a memory obsolete by pointing `obsoleted_by` at the memory that
+   * contradicts it. Softer than supersede: the row stays listed (annotated
+   * and de-ranked), so the contradiction remains visible. Only sets it when
+   * currently null, so a second contradiction does not silently repoint.
+   *
+   * @param slug - Slug of the memory being contradicted
+   * @param bySlug - Slug of the memory that contradicts it
+   * @returns `true` when a row transitioned to obsolete
+   */
+  markObsolete(slug: string, bySlug: string): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare('UPDATE memories SET obsoleted_by = ? WHERE slug = ? AND obsoleted_by IS NULL')
+      .run(bySlug, slug);
     return result.changes > 0;
   }
 
@@ -181,5 +205,6 @@ function rowToMemory(row: MemoryRow): Memory {
     updatedAt: row.updated_at,
     archivedAt: row.archived_at ?? null,
     supersededBy: row.superseded_by ?? null,
+    obsoletedBy: row.obsoleted_by ?? null,
   };
 }

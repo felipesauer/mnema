@@ -370,6 +370,53 @@ export class MemoryService {
   }
 
   /**
+   * Records that one memory *contradicts* (obsoletes) another. Softer than
+   * {@link supersede}: the contradicted memory stays listed and searchable
+   * — the contradiction is informative — but is annotated obsolete and
+   * de-ranked so the current truth is unambiguous. A navigable
+   * `contradictor → obsoleted` provenance edge is recorded.
+   *
+   * @param slug - Slug of the NEWER memory doing the contradicting
+   * @param obsoletesSlug - Slug of the memory being marked obsolete
+   * @param actor - Identity tuple for audit
+   * @param via - Optional client annotation
+   * @param runId - Optional run id
+   * @returns The obsoleted memory (with its new pointer), or a structured error
+   */
+  contradict(
+    slug: string,
+    obsoletesSlug: string,
+    actor: string,
+    via?: string,
+    runId?: string,
+  ): Result<Memory, MnemaError> {
+    // A memory cannot contradict itself — that is a self-referential obsolete
+    // pointer. Reuse the SelfSupersede code (same shape of self-reference).
+    if (slug === obsoletesSlug) {
+      return Err({ kind: ErrorCode.SelfSupersede, entity: 'memory', ref: slug });
+    }
+    const contradictor = this.repo.findBySlug(slug);
+    if (contradictor === null) return Err({ kind: ErrorCode.MemoryNotFound, slug });
+    const target = this.repo.findBySlug(obsoletesSlug);
+    if (target === null) return Err({ kind: ErrorCode.MemoryNotFound, slug: obsoletesSlug });
+
+    const marked = this.repo.markObsolete(obsoletesSlug, slug);
+    if (marked) {
+      this.audit.write({
+        kind: 'memory_obsoleted',
+        actor,
+        via,
+        run: runId,
+        data: { slug: obsoletesSlug, obsoleted_by: slug },
+      });
+      // First-class, navigable edge: the contradictor → the obsoleted memory.
+      this.provenance?.link({ kind: 'memory', ref: slug }, { kind: 'memory', ref: obsoletesSlug });
+    }
+    const reloaded = this.repo.findBySlug(obsoletesSlug);
+    return Ok(reloaded ?? target);
+  }
+
+  /**
    * Regenerates missing `.md` mirror files from every SQLite row. The
    * existing mirror files are left alone (no overwrite) — this only
    * heals drift, it does not reformat content the human may have

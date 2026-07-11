@@ -266,6 +266,10 @@ export class ContextBootstrapTool {
           topics: m.topics,
           source: m.source,
           stale: staleness.stale,
+          // Contradicted memories stay listed but are marked so the agent
+          // knows they are no longer the current truth (see the memory that
+          // obsoleted them via provenance / memory_show).
+          ...(m.obsoletedBy !== null ? { obsolete: true, obsoleted_by: m.obsoletedBy } : {}),
           ...(staleness.stale
             ? {
                 stale_files: staleness.cited_files.filter((c) => c.changedSince).map((c) => c.path),

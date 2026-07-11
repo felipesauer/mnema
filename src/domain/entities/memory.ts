@@ -28,4 +28,11 @@ export interface Memory {
    * one-way pointer (see the supersede ADR).
    */
   readonly supersededBy: string | null;
+  /**
+   * Slug of a newer memory that *contradicts* (obsoletes) this one, or
+   * `null` when nothing contradicts it. Unlike {@link supersededBy}, an
+   * obsoleted memory stays visible — the contradiction is informative — but
+   * is annotated obsolete and de-ranked so the current truth is unambiguous.
+   */
+  readonly obsoletedBy: string | null;
 }

@@ -220,5 +220,39 @@ export class MemoryTools {
         });
       },
     );
+
+    server.registerTool(
+      'memory_contradict',
+      {
+        description:
+          'Record that THIS memory contradicts (obsoletes) another. Softer than supersede: the contradicted memory stays listed and searchable — the contradiction is informative — but is annotated obsolete and de-ranked so the current truth is unambiguous. Records a navigable memory→memory provenance edge. Both memories must exist; a memory cannot contradict itself. Requires an active agent run.',
+        inputSchema: {
+          slug: z.string().min(1).describe('Slug of the newer memory doing the contradicting'),
+          obsoletes: z.string().min(1).describe('Slug of the memory being marked obsolete'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.memories.contradict(
+          input.slug,
+          input.obsoletes,
+          this.identity.getDefaultActor(),
+          handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId ?? undefined,
+        );
+        if (!result.ok) return err(result.error);
+        return ok({
+          slug: input.slug,
+          obsoletes: input.obsoletes,
+          obsoleted: result.value,
+        });
+      },
+    );
   }
 }

@@ -66,6 +66,7 @@ const KNOWLEDGE_KINDS = new Set([
   'memory_deleted',
   'memory_archived',
   'memory_superseded',
+  'memory_obsoleted',
   'skill_recorded',
   'skill_used',
   'skill_superseded',
@@ -192,6 +193,8 @@ function summarise(kind: string, data: Readonly<Record<string, unknown>>): strin
       return `archived memory ${s('slug') ?? ''}`.trim();
     case 'memory_superseded':
       return `superseded memory ${s('slug') ?? ''} → ${s('superseded_by') ?? ''}`.trim();
+    case 'memory_obsoleted':
+      return `obsoleted memory ${s('slug') ?? ''} (contradicted by ${s('obsoleted_by') ?? ''})`.trim();
     case 'skill_recorded':
       return `skill ${s('slug') ?? ''} (${s('action') ?? 'recorded'})`.trim();
     case 'skill_used':

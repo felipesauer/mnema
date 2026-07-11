@@ -118,6 +118,7 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'memories_list',
   'memory_archive',
   'memory_supersede',
+  'memory_contradict',
   'observation_record',
   'observations_list',
   'observation_archive',
