@@ -1,5 +1,5 @@
 import type { Sprint } from '../../../domain/entities/sprint.js';
-import type { Task } from '../../../domain/entities/task.js';
+import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
 import { SprintState } from '../../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
@@ -58,6 +58,9 @@ interface TaskRow {
   readonly deleted_at: string | null;
   readonly claimed_by: string | null;
   readonly lease_expires_at: string | null;
+  readonly git_branch: string | null;
+  readonly git_commits: string;
+  readonly git_pr: string | null;
 }
 
 /**
@@ -419,5 +422,8 @@ function rowToTask(row: TaskRow): Task {
     deletedAt: row.deleted_at,
     claimedBy: row.claimed_by,
     leaseExpiresAt: row.lease_expires_at,
+    gitBranch: row.git_branch,
+    gitCommits: JSON.parse(row.git_commits) as GitCommitRef[],
+    gitPr: row.git_pr === null ? null : (JSON.parse(row.git_pr) as GitPrRef),
   };
 }

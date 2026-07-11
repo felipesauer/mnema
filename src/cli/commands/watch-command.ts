@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Command } from 'commander';
 import { parseTimeBound } from '../../services/audit-query.js';
 import { AuditTail } from '../../services/audit-tail.js';
+import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatEvent, type HistoryFormat } from '../formatters/history-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -16,6 +17,7 @@ interface WatchOptions {
   readonly table?: boolean;
   readonly json?: boolean;
   readonly iso?: boolean;
+  readonly git?: boolean;
 }
 
 /**
@@ -47,6 +49,11 @@ export class WatchCommand {
       .option('--table', 'Render as an aligned table', false)
       .option('--json', 'Render as JSONL (one event per line)', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
+      .option(
+        '--git',
+        'Also observe git (MNEMA-ADR-49): read-only, link the unambiguous in-progress task to the current branch + commits. Off by default; never writes .git.',
+        false,
+      )
       .action(async (options: WatchOptions) => {
         await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, config.paths.audit);
@@ -54,10 +61,29 @@ export class WatchCommand {
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           const display = (handle: string): string => container.identity.getDisplayFor(handle);
 
+          // Opt-in git observer. Runs once on start and after each audit
+          // event (the moments the link could change — a task started, a
+          // commit noted). Read-only and idempotent, so re-running is cheap;
+          // fail-open, so a git hiccup never disturbs the tail.
+          const gitEnabled = options.git === true || config.git?.watch === true;
+          const observeGit = (): void => {
+            if (!gitEnabled) return;
+            const actor = container.identity.resolveDefaultActor().actor;
+            if (actor === null) return;
+            const result = container.gitObserver.observe(projectRoot, actor);
+            if (result.linkedTaskKey !== null) {
+              process.stdout.write(
+                `${pc.dim(`  git: linked ${result.linkedTaskKey} → this branch`)}\n`,
+              );
+            }
+          };
+          observeGit();
+
           const tail = new AuditTail(
             auditDir,
             (event) => {
               process.stdout.write(`${formatEvent(event, format, mode, display)}\n`);
+              observeGit();
             },
             {
               kind: options.kind,

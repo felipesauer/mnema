@@ -1,4 +1,4 @@
-import type { Task } from '../../../domain/entities/task.js';
+import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
@@ -27,6 +27,9 @@ interface TaskRow {
   readonly deleted_at: string | null;
   readonly claimed_by: string | null;
   readonly lease_expires_at: string | null;
+  readonly git_branch: string | null;
+  readonly git_commits: string;
+  readonly git_pr: string | null;
 }
 
 /**
@@ -536,6 +539,33 @@ export class TaskRepository {
   }
 
   /**
+   * Sets the first-class git link on a task (MNEMA-ADR-49). Written only by
+   * the opt-in git observer, never the hot path. `updated_at` is left
+   * untouched so populating the link does not read as a task mutation to the
+   * optimistic-concurrency token or the aging clock — it is derived metadata,
+   * not a state change.
+   *
+   * @param taskId - Internal task id
+   * @param link - The branch, commits and PR to store
+   * @returns The reloaded task, or null if the id is unknown
+   */
+  setGitLink(
+    taskId: string,
+    link: { branch: string | null; commits: readonly GitCommitRef[]; pr: GitPrRef | null },
+  ): Task | null {
+    this.adapter
+      .getDatabase()
+      .prepare('UPDATE tasks SET git_branch = ?, git_commits = ?, git_pr = ? WHERE id = ?')
+      .run(
+        link.branch,
+        JSON.stringify(link.commits),
+        link.pr === null ? null : JSON.stringify(link.pr),
+        taskId,
+      );
+    return this.findById(taskId);
+  }
+
+  /**
    * Applies a partial update to a task's persisted fields. Only the
    * keys present in `fields` are touched; missing keys leave the
    * existing column value alone. Always bumps `updated_at`.
@@ -740,6 +770,9 @@ function rowToTask(row: TaskRow): Task {
     deletedAt: row.deleted_at,
     claimedBy: row.claimed_by,
     leaseExpiresAt: row.lease_expires_at,
+    gitBranch: row.git_branch,
+    gitCommits: JSON.parse(row.git_commits) as GitCommitRef[],
+    gitPr: row.git_pr === null ? null : (JSON.parse(row.git_pr) as GitPrRef),
   };
 }
 

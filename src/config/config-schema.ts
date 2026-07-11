@@ -285,6 +285,16 @@ export const ConfigSchema = z.object({
       done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
     })
     .prefault({}),
+  // Git-observer settings (MNEMA-ADR-49). `watch` turns on the opt-in
+  // git-observing mode of `mnema watch` persistently (same as passing
+  // `--git`): while watching, the unambiguous in-progress task is linked to
+  // the current branch + commits, read-only, never touching `.git`. Off by
+  // default — a passive-ledger user is never surprised by git ingestion.
+  git: z
+    .object({
+      watch: z.boolean().default(false),
+    })
+    .prefault({}),
   // Hooks run a command when a curated domain event fires (a task
   // reaching done, a decision accepted, …). Each key is a domain-event
   // name; the value is the list of hooks to run, in order. A hook is an

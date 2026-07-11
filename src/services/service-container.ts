@@ -56,6 +56,7 @@ import { EpicService } from './epic-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { FocusService } from './focus-service.js';
+import { GitObserverService } from './git-observer-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
 import { HeadCheckpointService } from './head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from './hook-trust.js';
@@ -158,6 +159,7 @@ export interface ServiceContainer {
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
   readonly drift: DriftService;
+  readonly gitObserver: GitObserverService;
   readonly workGraphLint: WorkGraphLintService;
   readonly attachment: AttachmentService;
   readonly search: SearchService;
@@ -580,6 +582,7 @@ export function createServiceContainer(
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);
   const driftService = new DriftService(taskEvidenceRepository, options.commitRunner);
+  const gitObserverService = new GitObserverService(tasks, identity, options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,
     epicRepository,
@@ -705,6 +708,7 @@ export function createServiceContainer(
     githubPr: githubPrService,
     commitVerifier,
     drift: driftService,
+    gitObserver: gitObserverService,
     workGraphLint: workGraphLintService,
     attachment: attachmentService,
     search: searchService,

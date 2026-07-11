@@ -36,4 +36,25 @@ export interface Task {
   readonly claimedBy: string | null;
   /** ISO8601 timestamp the claim lease expires at; null when unclaimed. */
   readonly leaseExpiresAt: string | null;
+  /**
+   * Git link (MNEMA-ADR-49), populated only by the opt-in `mnema watch
+   * --git` observer. `gitBranch` is the branch this task's work lives on;
+   * `gitCommits` the commits linked to it; `gitPr` its pull request. All
+   * empty/null until the observer runs, and never written by the hot path.
+   */
+  readonly gitBranch: string | null;
+  readonly gitCommits: readonly GitCommitRef[];
+  readonly gitPr: GitPrRef | null;
+}
+
+/** A commit linked to a task — see {@link Task.gitCommits}. */
+export interface GitCommitRef {
+  readonly sha: string;
+  readonly subject: string;
+}
+
+/** A task's pull request — see {@link Task.gitPr}. */
+export interface GitPrRef {
+  readonly url: string;
+  readonly state: string;
 }
