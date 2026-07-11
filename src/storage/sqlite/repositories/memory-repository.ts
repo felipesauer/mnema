@@ -15,6 +15,7 @@ interface MemoryRow {
   readonly archived_at: string | null;
   readonly superseded_by: string | null;
   readonly obsoleted_by: string | null;
+  readonly scope: string | null;
 }
 
 /**
@@ -26,6 +27,8 @@ export interface MemoryUpsertInput {
   readonly content: string;
   readonly topics: readonly string[];
   readonly createdBy: string;
+  /** Optional area (path/package) this memory belongs to; null = global. */
+  readonly scope?: string | null;
 }
 
 /**
@@ -145,8 +148,8 @@ export class MemoryRepository {
         .getDatabase()
         .prepare(
           `INSERT INTO memories (
-             id, slug, title, content, topics, created_by, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             id, slug, title, content, topics, scope, created_by, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           id,
@@ -154,6 +157,7 @@ export class MemoryRepository {
           input.title,
           input.content,
           JSON.stringify(input.topics),
+          input.scope ?? null,
           input.createdBy,
           now,
           now,
@@ -161,14 +165,23 @@ export class MemoryRepository {
     } else {
       // Re-recording a slug reactivates it: clear any archived_at so an
       // archived memory brought back with fresh content is active again.
+      // Scope is only overwritten when the caller supplies one, so a plain
+      // content refresh keeps the existing scope.
       this.adapter
         .getDatabase()
         .prepare(
           `UPDATE memories
-              SET title = ?, content = ?, topics = ?, updated_at = ?, archived_at = NULL
+              SET title = ?, content = ?, topics = ?, scope = ?, updated_at = ?, archived_at = NULL
             WHERE slug = ?`,
         )
-        .run(input.title, input.content, JSON.stringify(input.topics), now, input.slug);
+        .run(
+          input.title,
+          input.content,
+          JSON.stringify(input.topics),
+          input.scope ?? existing.scope,
+          now,
+          input.slug,
+        );
     }
 
     const upserted = this.findBySlug(input.slug);
@@ -206,5 +219,6 @@ function rowToMemory(row: MemoryRow): Memory {
     archivedAt: row.archived_at ?? null,
     supersededBy: row.superseded_by ?? null,
     obsoletedBy: row.obsoleted_by ?? null,
+    scope: row.scope ?? null,
   };
 }

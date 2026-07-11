@@ -400,28 +400,49 @@ export class ContextBootstrapTool {
     const task = this.taskService.list().find((t) => t.key === taskKey);
     if (task === undefined) return [];
     const labels = this.labelService.listForTask(taskKey);
-    const labelWords = labels.ok ? labels.value.join(' ') : '';
+    const labelList = labels.ok ? labels.value : [];
+    const labelWords = labelList.join(' ');
 
-    // Build an FTS query from the task's own words + its labels. Quote each
-    // token so nothing in the text is read as FTS5 syntax; OR them so any
-    // overlap surfaces a candidate. Mirrors skill_suggest's tokenisation.
+    const out: { slug: string; name: string | null; snippet: string }[] = [];
+    const seen = new Set<string>();
+
+    // Scope-matched skills lead: a skill whose `scope` equals one of the
+    // task's labels is a deliberate, precise area match — a stronger signal
+    // than a fuzzy full-text hit, so it is surfaced first and unconditionally.
+    if (labelList.length > 0) {
+      const scopes = new Set(labelList);
+      for (const skill of this.skillService.list()) {
+        if (skill.scope !== null && scopes.has(skill.scope) && !seen.has(skill.slug)) {
+          seen.add(skill.slug);
+          out.push({ slug: skill.slug, name: skill.name, snippet: skill.description });
+        }
+      }
+    }
+
+    // Then full-text matches on the task's words + labels. Quote each token so
+    // nothing is read as FTS5 syntax; OR them so any overlap surfaces a
+    // candidate. Mirrors skill_suggest's tokenisation.
     const terms = `${task.title} ${task.description ?? ''} ${labelWords}`
       .toLowerCase()
       .split(/[^\p{L}\p{N}]+/u)
       .filter((t) => t.length >= 4)
       .map((t) => `"${t}"`);
-    if (terms.length === 0) return [];
-
-    const result = this.searchService.search(terms.join(' OR '), {
-      entities: ['skill'],
-      perEntityLimit: 3,
-    });
-    if (!result.ok) return [];
-    return result.value.map((hit) => ({
-      slug: hit.key ?? '',
-      name: hit.title,
-      snippet: hit.snippet,
-    }));
+    if (terms.length > 0) {
+      const result = this.searchService.search(terms.join(' OR '), {
+        entities: ['skill'],
+        perEntityLimit: 3,
+      });
+      if (result.ok) {
+        for (const hit of result.value) {
+          const slug = hit.key ?? '';
+          if (!seen.has(slug)) {
+            seen.add(slug);
+            out.push({ slug, name: hit.title, snippet: hit.snippet });
+          }
+        }
+      }
+    }
+    return out;
   }
 
   /** Reads a file relative to project root, truncated to maxBytes. */

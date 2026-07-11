@@ -30,6 +30,12 @@ export interface Skill {
    * agent what shifted, shown alongside the version diff.
    */
   readonly changeRationale: string | null;
+  /**
+   * Area this skill belongs to — a path or package like `packages/notifier`,
+   * or `null` for project-global. Narrows bootstrap/search relevance for a
+   * given area without hiding the skill outright.
+   */
+  readonly scope: string | null;
   readonly usageCount: number;
   readonly lastUsedAt: string | null;
   readonly createdBy: string;

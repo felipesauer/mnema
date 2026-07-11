@@ -24,6 +24,8 @@ export interface MemoryRecordInput {
   readonly title: string;
   readonly content: string;
   readonly topics?: readonly string[];
+  /** Optional area (path/package) this memory belongs to; omit for global. */
+  readonly scope?: string | null;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -171,6 +173,7 @@ export class MemoryService {
         title: input.title,
         content: input.content,
         topics,
+        scope: input.scope,
         createdBy,
       });
       this.writeMirror(memory);

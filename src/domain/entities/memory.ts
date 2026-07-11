@@ -35,4 +35,11 @@ export interface Memory {
    * is annotated obsolete and de-ranked so the current truth is unambiguous.
    */
   readonly obsoletedBy: string | null;
+  /**
+   * Area this memory belongs to — a path or package like
+   * `packages/notifier`, or `null` for project-global. A scope narrows what
+   * the bootstrap and search surface for a given area; it never hides the
+   * memory outright (see {@link SkillService}/bootstrap scoping).
+   */
+  readonly scope: string | null;
 }

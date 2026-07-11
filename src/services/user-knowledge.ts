@@ -53,6 +53,7 @@ export function readUserSkills(userDir: string): SourcedSkill[] {
         invocable: data.invocable === true,
         dynamicContext: readStringArray(data, 'dynamic_context'),
         changeRationale: null,
+        scope: null,
         usageCount: readNumber(data, 'usage_count') ?? 0,
         lastUsedAt: readString(data, 'last_used_at'),
         createdBy: 'user',
@@ -92,6 +93,7 @@ export function readUserMemories(userDir: string): SourcedMemory[] {
         archivedAt: null,
         supersededBy: null,
         obsoletedBy: null,
+        scope: null,
         source: 'user' as const,
       },
     ];

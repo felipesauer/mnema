@@ -77,6 +77,13 @@ export class SkillTools {
             .describe(
               'Why this version changed — stored on the resulting version and shown in `skill_diff`. Most useful with mode:"new_version".',
             ),
+          scope: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Area this skill belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows bootstrap relevance for a given area.',
+            ),
         },
       },
       (input) => {
@@ -97,6 +104,7 @@ export class SkillTools {
           dynamicContext: input.dynamic_context,
           mode: input.mode,
           changeRationale: input.change_rationale,
+          scope: input.scope,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,

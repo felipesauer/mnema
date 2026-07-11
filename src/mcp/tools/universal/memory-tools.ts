@@ -58,6 +58,13 @@ export class MemoryTools {
             .array(z.string().min(1))
             .optional()
             .describe('Free-form tags for filtering, e.g. ["compliance", "estimation"]'),
+          scope: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Area this memory belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows what the bootstrap surfaces for a given area.',
+            ),
           derived_from_decision: z
             .string()
             .optional()
@@ -94,6 +101,7 @@ export class MemoryTools {
             title: input.title,
             content: input.content,
             topics: input.topics,
+            scope: input.scope,
             derivedFromDecision: input.derived_from_decision,
             derivedFromObservation: input.derived_from_observation,
             actor: this.identity.getDefaultActor(),

@@ -93,6 +93,8 @@ export interface SkillRecordInput {
    * ignored (kept null) when creating version 1.
    */
   readonly changeRationale?: string | null;
+  /** Optional area (path/package) this skill belongs to; omit for global. */
+  readonly scope?: string | null;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -311,6 +313,7 @@ export class SkillService {
         toolsUsed,
         invocable,
         dynamicContext,
+        scope: input.scope ?? null,
         createdBy,
       });
       action = 'created';
@@ -325,6 +328,8 @@ export class SkillService {
         invocable,
         dynamicContext,
         changeRationale: input.changeRationale ?? null,
+        // A new version keeps the prior scope unless a new one is supplied.
+        scope: input.scope ?? latest.scope,
         createdBy,
       });
       action = 'new_version';
@@ -348,6 +353,8 @@ export class SkillService {
           invocable,
           dynamicContext,
           changeRationale: input.changeRationale ?? null,
+          // Keep the prior scope unless a new one is supplied.
+          scope: input.scope ?? latest.scope,
         });
         if (updated === null) {
           throw new Error('skill update returned null after a known row');
