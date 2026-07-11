@@ -93,8 +93,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
     // The example skills land at init, not only via `mnema adopt skills`.
+    // ADR-51: tool-shipped seeds mirror under default/; SKILL.md index at root.
     const skillsDir = path.join(projectRoot, '.mnema/skills');
-    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'default', 'creating-tasks.md'))).toBe(true);
     expect(existsSync(path.join(skillsDir, 'SKILL.md'))).toBe(true);
 
     // Crucially they are SQLite ROWS, so `skill list` shows them and a later
@@ -103,10 +104,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(list.stdout).toContain('creating-tasks');
     expect(list.stdout).toContain('transitioning-tasks');
 
-    // Prove survival: an upgrade must not prune the seeded skills.
+    // Prove survival: an upgrade must not prune the seeded skills, and it
+    // keeps them at their canonical default/ path (ADR-51).
     const upgrade = runCli(['upgrade', '--yes'], projectRoot);
     expect(upgrade.status).toBe(0);
-    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'default', 'creating-tasks.md'))).toBe(true);
   });
 
   it('mnema init --minimal leaves skills/ absent (seeding is opt-out via --minimal)', () => {
