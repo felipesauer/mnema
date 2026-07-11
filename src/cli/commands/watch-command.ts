@@ -68,13 +68,28 @@ export class WatchCommand {
           const gitEnabled = options.git === true || config.git?.watch === true;
           const observeGit = (): void => {
             if (!gitEnabled) return;
-            const actor = container.identity.resolveDefaultActor().actor;
-            if (actor === null) return;
-            const result = container.gitObserver.observe(projectRoot, actor);
-            if (result.linkedTaskKey !== null) {
-              process.stdout.write(
-                `${pc.dim(`  git: linked ${result.linkedTaskKey} → this branch`)}\n`,
-              );
+            // Fail-open, as the docstring promises: this runs inside the audit
+            // handler, so an uncaught throw (a SQLite write error, a corrupt
+            // git_commits column in rowToTask) would surface as an unhandled
+            // rejection and could tear down the tail. Swallow it — a git hiccup
+            // must never disturb the live tail.
+            try {
+              const actor = container.identity.resolveDefaultActor().actor;
+              if (actor === null) return;
+              const result = container.gitObserver.observe(projectRoot, actor);
+              if (result.linkedTaskKey !== null) {
+                // Persist the branch/pr to the task markdown ONLY when the link
+                // actually changed, so it survives a fresh clone (ADR-49)
+                // without churning the file on every idle observer pass.
+                if (result.changed) {
+                  container.sync.syncTask(result.linkedTaskKey, { action: 'git_observed' });
+                }
+                process.stdout.write(
+                  `${pc.dim(`  git: linked ${result.linkedTaskKey} → this branch`)}\n`,
+                );
+              }
+            } catch {
+              // Intentionally silent: the observer is best-effort metadata.
             }
           };
           observeGit();

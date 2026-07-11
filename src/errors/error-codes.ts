@@ -71,6 +71,7 @@ export enum ErrorCode {
 
   SelfSupersede = 'SELF_SUPERSEDE',
   SupersededEntity = 'SUPERSEDED_ENTITY',
+  AlreadyObsoleted = 'ALREADY_OBSOLETED',
 
   EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
   EvidenceDuplicate = 'EVIDENCE_DUPLICATE',

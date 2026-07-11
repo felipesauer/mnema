@@ -523,13 +523,19 @@ export class TaskService {
 
   /**
    * Whether the last transition on this task was recorded by the same
-   * identity now retrying — the "same actor" half of the idempotency
-   * guard. A genuine retry re-issues its own prior move; a different actor
-   * arriving after the state already changed is a lost-write attempt, not a
-   * retry. Matches on either the human actor or the driving agent (`via`),
-   * since a retry can come back through either. No prior transition (should
-   * not happen for a non-initial state) is treated as "not a match" — fail
-   * closed toward the error rather than a spurious no-op.
+   * MOVER now retrying — the "same actor" half of the idempotency guard. A
+   * genuine retry re-issues its own prior move; a different mover arriving
+   * after the state already changed is a lost-write attempt, not a retry.
+   *
+   * The mover identity is the DRIVING AGENT (`via`) whenever there is one.
+   * mnema's real deployment is one shared human identity with many agent
+   * sessions distinguished only by `via`, so matching on the human `actor`
+   * would treat EVERY prior move by that human as a retry — agent B stalely
+   * re-issuing a move agent A already made would be silently swallowed
+   * (lost write). So: with a `via`, require the last move to be from the SAME
+   * `via`. Only a call with no `via` (pure-human CLI, where the human is the
+   * mover) matches on `actor`. No prior transition is treated as "not a
+   * match" — fail closed toward the error rather than a spurious no-op.
    */
   private lastMoverMatches(
     taskId: string,
@@ -538,12 +544,16 @@ export class TaskService {
     const history = this.transitions.findByTask(taskId);
     const last = history[history.length - 1];
     if (last === undefined) return false;
-    const actorId = this.identity.findActorIdByHandle(input.actor);
     const viaId = input.via !== undefined ? this.identity.findActorIdByHandle(input.via) : null;
-    return (
-      (actorId !== null && (last.actorId === actorId || last.viaActorId === actorId)) ||
-      (viaId !== null && last.viaActorId === viaId)
-    );
+    if (viaId !== null) {
+      // Agent-driven: the retry must come from the same agent session.
+      return last.viaActorId === viaId;
+    }
+    // Pure-human (no via): the human actor is the mover. Match only a prior
+    // move that was ALSO human-only (no via) by the same actor — an agent's
+    // prior move is not a human's retry.
+    const actorId = this.identity.findActorIdByHandle(input.actor);
+    return actorId !== null && last.actorId === actorId && last.viaActorId === null;
   }
 
   transition(input: TransitionInput): Result<Task, MnemaError> {
@@ -709,6 +719,19 @@ export class TaskService {
         },
         foldIssues,
       );
+      // Annotation-only free-text (completion_note, approval_note, feedback,
+      // reason, note) never folds onto a column, so it escapes the check
+      // above — yet it lands verbatim in transitions.payload/audit, the exact
+      // spill this screen prevents. Screen it here too.
+      for (const field of ANNOTATION_TEXT_FIELDS) {
+        const value = payload[field];
+        if (typeof value === 'string' && hasInvocationMarkup(value)) {
+          foldIssues.push({
+            path: [field],
+            message: 'contains tool-invocation markup; pass each field as its own argument',
+          });
+        }
+      }
       if (foldIssues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues: foldIssues });
       }
@@ -1044,6 +1067,20 @@ function checkTitle(title: string, issues: ErrorIssue[]): void {
  * and MCP producers reject identically. Each acceptance-criterion line is
  * screened under an indexed path so the offender is pinpointed.
  */
+/**
+ * Annotation-only gate fields that are free text: they live in
+ * `transitions.payload`/audit and never fold onto a task column, so the
+ * column-shaped {@link checkNoInvocationMarkup} does not see them. The
+ * transition guard screens them separately.
+ */
+const ANNOTATION_TEXT_FIELDS = [
+  'completion_note',
+  'approval_note',
+  'feedback',
+  'reason',
+  'note',
+] as const;
+
 function checkNoInvocationMarkup(
   fields: {
     readonly title?: string;

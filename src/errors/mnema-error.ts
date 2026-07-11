@@ -204,6 +204,12 @@ export type MnemaError =
       readonly ref: string;
     }
   | {
+      readonly kind: ErrorCode.AlreadyObsoleted;
+      readonly ref: string;
+      /** The slug already recorded as the contradictor of `ref`. */
+      readonly obsoletedBy: string;
+    }
+  | {
       readonly kind: ErrorCode.EvidenceCriterionOutOfRange;
       readonly taskKey: string;
       readonly index: number;

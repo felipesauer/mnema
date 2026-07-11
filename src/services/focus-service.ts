@@ -13,6 +13,13 @@ export interface Focus {
   readonly nextTask: { readonly key: string; readonly title: string } | null;
   /** Machine-readable disposition, mirroring context_bootstrap.next_action. */
   readonly focus: 'resume' | 'start' | 'idle';
+  /**
+   * Whether `activeTask` is assigned to the querying actor (vs. a fallback to
+   * ANY actor's in-progress task). The generic focus line resumes whatever is
+   * in progress, but an authorization gate like `mnema guard` must not pass on
+   * someone else's task — it reads this to scope the pass to the actor's own.
+   */
+  readonly activeIsMine: boolean;
 }
 
 /**
@@ -60,13 +67,15 @@ export class FocusService {
 
     const myActorId = handle === null ? null : this.identity.findActorIdByHandle(handle);
     const mine = inProgress.filter((t) => t.assigneeId !== null && t.assigneeId === myActorId);
-    const active = mine[0] ?? inProgress[0];
+    const ownActive = mine[0];
+    const active = ownActive ?? inProgress[0];
 
     if (active !== undefined) {
       return {
         focus: 'resume',
         activeTask: { key: active.key, title: active.title },
         nextTask: null,
+        activeIsMine: ownActive !== undefined,
         line: `active: ${active.key} (${active.title}) — resume it; finish before starting new work`,
       };
     }
@@ -79,6 +88,7 @@ export class FocusService {
         focus: 'start',
         activeTask: null,
         nextTask: { key: top.key, title: top.title },
+        activeIsMine: false,
         line: `no task in progress — next: task_start ${top.key} (${top.title})`,
       };
     }
@@ -87,6 +97,7 @@ export class FocusService {
       focus: 'idle',
       activeTask: null,
       nextTask: null,
+      activeIsMine: false,
       line: 'no task in progress and nothing ready — plan work or submit a DRAFT',
     };
   }

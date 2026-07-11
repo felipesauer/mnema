@@ -15,16 +15,28 @@ const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('workflows');
 
 /** A git runner scripted for the observer's calls. */
-function fakeGit(script: { branch?: string; log?: string; inWorkTree?: boolean }): CommandRunner {
+function fakeGit(script: {
+  branch?: string;
+  log?: string;
+  inWorkTree?: boolean;
+  /** Simulate a detached HEAD: `symbolic-ref` exits non-zero. */
+  detached?: boolean;
+  /** Simulate a transient `git log` failure (index lock, gc). */
+  logFails?: boolean;
+}): CommandRunner {
   return (command, args): CommandResult => {
     expect(command).toBe('git');
     if (args.includes('rev-parse') && args.includes('--is-inside-work-tree')) {
       return { status: 0, stdout: script.inWorkTree === false ? 'false' : 'true' };
     }
-    if (args.includes('rev-parse') && args.includes('--abbrev-ref')) {
+    // The observer reads the branch via `symbolic-ref --short -q HEAD`, which
+    // exits non-zero on a detached HEAD.
+    if (args.includes('symbolic-ref')) {
+      if (script.detached === true) return { status: 1, stdout: '' };
       return { status: 0, stdout: script.branch ?? 'main' };
     }
     if (args.includes('log')) {
+      if (script.logFails === true) return { status: 128, stdout: '', stderr: 'index locked' };
       return { status: 0, stdout: script.log ?? '' };
     }
     return { status: 0, stdout: '' };
@@ -99,6 +111,7 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
     }).observe(projectRoot, 'daniel');
     expect(r.checked).toBe(true);
     expect(r.linkedTaskKey).toBe(key);
+    expect(r.changed).toBe(true); // first link — branch moved from null
 
     const task = container.task.findByKey(key);
     if (!task.ok) throw new Error('reload failed');
@@ -120,6 +133,40 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
     const r = observer({ inWorkTree: false }).observe(projectRoot, 'daniel');
     expect(r.checked).toBe(false);
     expect(r.linkedTaskKey).toBeNull();
+  });
+
+  it('a transient git-log failure does NOT clobber previously-linked commits', () => {
+    // Regression (audit HIGH): a failed `git log` must not overwrite the
+    // stored commits with an empty list and still report success.
+    const key = inProgressTask('Steady');
+    // Pass 1: real commits linked.
+    observer({ branch: 'feat/s', log: 'aaaaaaa\x1fone\nbbbbbbb\x1ftwo' }).observe(
+      projectRoot,
+      'daniel',
+    );
+    const afterFirst = container.task.findByKey(key);
+    if (!afterFirst.ok) throw new Error('reload');
+    expect(afterFirst.value.gitCommits).toHaveLength(2);
+
+    // Pass 2: log fails transiently.
+    const r = observer({ branch: 'feat/s', logFails: true }).observe(projectRoot, 'daniel');
+    expect(r.checked).toBe(false);
+    expect(r.linkedTaskKey).toBeNull();
+    const afterFail = container.task.findByKey(key);
+    if (!afterFail.ok) throw new Error('reload');
+    // The 2 commits survive — not wiped to [].
+    expect(afterFail.value.gitCommits).toHaveLength(2);
+  });
+
+  it('links no branch on a detached HEAD (never persists the literal "HEAD")', () => {
+    const key = inProgressTask('Detached work');
+    const r = observer({ detached: true, log: 'aaaaaaa\x1fx' }).observe(projectRoot, 'daniel');
+    expect(r.checked).toBe(true);
+    expect(r.linkedTaskKey).toBe(key);
+    const task = container.task.findByKey(key);
+    if (!task.ok) throw new Error('reload');
+    expect(task.value.gitBranch).toBeNull(); // not "HEAD"
+    expect(task.value.gitCommits).toHaveLength(1); // commits still link
   });
 
   it('works against a REAL git repo (default runner), end-to-end', () => {
@@ -159,6 +206,7 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
     const obs = observer({ branch: 'feat/steady', log: 'aaaaaaa\x1fone' });
     const first = obs.observe(projectRoot, 'daniel');
     expect(first.linkedTaskKey).toBe(key);
+    expect(first.changed).toBe(true);
     const afterFirst = container.task.findByKey(key);
     if (!afterFirst.ok) throw new Error('reload');
     const stamp = afterFirst.value.updatedAt;
@@ -168,7 +216,8 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
     while (Date.now() - t0 < 10) {
       /* advance the clock */
     }
-    obs.observe(projectRoot, 'daniel'); // identical link — must be inert
+    const second = obs.observe(projectRoot, 'daniel'); // identical link — must be inert
+    expect(second.changed).toBe(false); // no branch move → no sync enqueued
     const afterSecond = container.task.findByKey(key);
     if (!afterSecond.ok) throw new Error('reload');
     expect(afterSecond.value.updatedAt).toBe(stamp);

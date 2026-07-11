@@ -364,6 +364,13 @@ function serialiseTask(
     sprint_key: links.sprintKey,
     reopen_count: task.reopenCount,
     metadata: { ...task.metadata },
+    // Git link (ADR-49): persist the STABLE identifiers — branch and PR — so a
+    // fresh clone keeps them across a `sync` rebuild. The commit list is
+    // volatile (it would churn the markdown on every observer pass) and is
+    // re-derived by `mnema watch --git`, so it is intentionally NOT serialized.
+    // `!= null` guards both null and undefined (a partial task shape).
+    ...(task.gitBranch != null ? { git_branch: task.gitBranch } : {}),
+    ...(task.gitPr != null ? { git_pr: { url: task.gitPr.url, state: task.gitPr.state } } : {}),
     updated_at: task.updatedAt,
   };
 }

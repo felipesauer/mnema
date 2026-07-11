@@ -8,6 +8,13 @@ export interface GitObserveResult {
   readonly checked: boolean;
   /** The task key that was linked, or null when nothing unambiguous applied. */
   readonly linkedTaskKey: string | null;
+  /**
+   * Whether this pass actually CHANGED the stored link (vs. re-affirming an
+   * identical one). The caller uses it to enqueue a markdown sync only on a
+   * real change, so an idle observer running after every audit event does not
+   * churn the version-controlled task file.
+   */
+  readonly changed: boolean;
   /** Why nothing was linked / the scan was skipped. */
   readonly reason?: string;
 }
@@ -45,26 +52,28 @@ export class GitObserverService {
   observe(cwd: string, actorHandle: string): GitObserveResult {
     const inRepo = this.run('git', ['-C', cwd, 'rev-parse', '--is-inside-work-tree']);
     if (!ranOk(inRepo) || inRepo.stdout.trim() !== 'true') {
-      return { checked: false, linkedTaskKey: null, reason: skipReason(inRepo) };
+      return { checked: false, linkedTaskKey: null, changed: false, reason: skipReason(inRepo) };
     }
 
-    const branchOut = this.run('git', ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD']);
-    if (!ranOk(branchOut)) {
-      return { checked: false, linkedTaskKey: null, reason: skipReason(branchOut) };
-    }
-    const branch = branchOut.stdout.trim();
+    // `symbolic-ref --short -q HEAD` prints the branch and exits non-zero on a
+    // detached HEAD (bisect, tag/sha checkout, CI). `rev-parse --abbrev-ref`
+    // would instead print the literal "HEAD", which we would persist as a bogus
+    // branch name. On detached HEAD we link no branch (commits still link).
+    const branchOut = this.run('git', ['-C', cwd, 'symbolic-ref', '--short', '-q', 'HEAD']);
+    const branch = ranOk(branchOut) ? branchOut.stdout.trim() || null : null;
 
     // The unambiguous owner: exactly one IN_PROGRESS task assigned to this
     // actor. Zero or many → link nothing (leave it for `mnema drift`).
     const actorId = this.identity.findActorIdByHandle(actorHandle);
     if (actorId === null) {
-      return { checked: true, linkedTaskKey: null, reason: 'unknown actor' };
+      return { checked: true, linkedTaskKey: null, changed: false, reason: 'unknown actor' };
     }
     const mine = this.tasks.findByState('IN_PROGRESS').filter((t) => t.assigneeId === actorId);
     if (mine.length !== 1) {
       return {
         checked: true,
         linkedTaskKey: null,
+        changed: false,
         reason:
           mine.length === 0
             ? 'no in-progress task for this actor'
@@ -72,7 +81,7 @@ export class GitObserverService {
       };
     }
     const task = mine[0];
-    if (task === undefined) return { checked: true, linkedTaskKey: null };
+    if (task === undefined) return { checked: true, linkedTaskKey: null, changed: false };
 
     // Read recent commits on the branch (read-only).
     const log = this.run('git', [
@@ -83,21 +92,32 @@ export class GitObserverService {
       String(COMMIT_SCAN_LIMIT),
       '--pretty=format:%h\x1f%s',
     ]);
-    const commits: GitCommitRef[] = ranOk(log)
-      ? log.stdout
-          .split('\n')
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0)
-          .map((line) => {
-            const sep = line.indexOf('\x1f');
-            return sep === -1
-              ? { sha: line, subject: '' }
-              : { sha: line.slice(0, sep), subject: line.slice(sep + 1) };
-          })
-      : [];
+    // A transient log failure (index lock, concurrent gc) must NOT clobber the
+    // commits already linked with an empty list — that would silently discard
+    // real history and still report success. Leave the stored link untouched
+    // and report the honest `checked: false`, the same contract as a git-absent
+    // pass. (An empty stdout on success is a real branch with no commits yet.)
+    if (!ranOk(log)) {
+      return { checked: false, linkedTaskKey: null, changed: false, reason: skipReason(log) };
+    }
+    const commits: GitCommitRef[] = log.stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const sep = line.indexOf('\x1f');
+        return sep === -1
+          ? { sha: line, subject: '' }
+          : { sha: line.slice(0, sep), subject: line.slice(sep + 1) };
+      });
 
+    // `changed` reflects whether the STABLE, serialized identifiers (branch,
+    // pr) moved — those are what a markdown sync needs to persist. A pure
+    // commit-list refresh does not warrant rewriting the version-controlled
+    // file (commits are re-derived), so it does not flip `changed`.
+    const branchOrPrChanged = task.gitBranch !== branch;
     this.tasks.setGitLink(task.id, { branch, commits, pr: task.gitPr });
-    return { checked: true, linkedTaskKey: task.key };
+    return { checked: true, linkedTaskKey: task.key, changed: branchOrPrChanged };
   }
 }
 

@@ -34,10 +34,14 @@ export class GuardCommand {
         let code = 1;
         await withCliContext(({ container }) => {
           const focus = container.focus.current(options.actor);
-          // A task in progress is the pass condition. Anything else — a
-          // ready task waiting, or nothing at all — means the current work
-          // is untracked, which is exactly what the guard is meant to catch.
-          const ok = focus.focus === 'resume';
+          // The pass condition is a task in progress ASSIGNED TO THIS ACTOR.
+          // `focus.current` falls back to any actor's in-progress task for the
+          // generic "resume" line, but a gate must not authorise Alice's edit
+          // just because Bob has a task open — scope the pass to her own work.
+          // Anything else — a ready task waiting, someone else's task, or
+          // nothing — means the current work is untracked, which the guard
+          // exists to catch.
+          const ok = focus.focus === 'resume' && focus.activeIsMine;
           code = ok ? 0 : 1;
           if (options.json === true) {
             process.stdout.write(

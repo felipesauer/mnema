@@ -70,11 +70,21 @@ const LEAK_RE = new RegExp(
   'i',
 );
 
+// Inline code spans and fenced blocks are DELIBERATE quoting, not a spill.
+// mnema's own backlog legitimately documents these very tokens as code —
+// `<parameter name="x">`, ```</title><title>```, a fenced transcript. A real
+// malformed-tool-call spill is never wrapped in backticks (it is raw trailing
+// garbage). Blanking code spans before the leak test keeps the spill defense
+// intact while letting a dev tool write about the markup it guards against.
+// Fenced blocks first (```…```), then inline spans (`…`); non-greedy, linear.
+const CODE_SPAN_RE = /```[\s\S]*?```|`[^`]*`/g;
+
 /**
- * True when `text` contains a tool-invocation markup leak.
+ * True when `text` contains a tool-invocation markup leak, ignoring any tokens
+ * that appear inside inline-code or fenced-code spans (deliberate quoting).
  */
 export function hasInvocationMarkup(text: string): boolean {
-  return LEAK_RE.test(text);
+  return LEAK_RE.test(text.replace(CODE_SPAN_RE, ''));
 }
 
 /**

@@ -345,6 +345,13 @@ export class SkillService {
     const latest = repo.findLatestBySlug(input.slug);
     const mode: SkillRecordMode = input.mode ?? 'update';
 
+    // The `new_version` path below is read-then-write (latest.version + 1).
+    // mnema runs a single synchronous better-sqlite3 connection, so two
+    // records cannot interleave between the read and the insert. Even if they
+    // could, the `(slug, version)` UNIQUE constraint (skill-repository insert)
+    // makes a collision fail LOUD rather than silently duplicate or lose a
+    // version — so no explicit transaction is layered here.
+
     let action: SkillRecordResult['action'];
     let resulting: Skill;
 
@@ -379,13 +386,20 @@ export class SkillService {
       });
       action = 'new_version';
     } else {
+      // `scope` is part of the record's identity: a re-record that changes
+      // ONLY the scope must not be swallowed as a no-op (that silently drops
+      // the new scope). `changeRationale` is intentionally excluded — an
+      // in-place edit that resupplies the same body is a no-op even without a
+      // fresh rationale, and the rationale is preserved below.
+      const nextScope = input.scope ?? latest.scope;
       const sameContent =
         latest.content === input.content &&
         latest.name === input.name &&
         latest.description === input.description &&
         toolsArraysEqual(latest.toolsUsed, toolsUsed) &&
         latest.invocable === invocable &&
-        toolsArraysEqual(latest.dynamicContext, dynamicContext);
+        toolsArraysEqual(latest.dynamicContext, dynamicContext) &&
+        latest.scope === nextScope;
       if (sameContent) {
         resulting = latest;
         action = 'no_op';
@@ -397,9 +411,11 @@ export class SkillService {
           toolsUsed,
           invocable,
           dynamicContext,
-          changeRationale: input.changeRationale ?? null,
+          // Keep the prior rationale unless a new one is supplied — an
+          // in-place fix must not erase the "why" a past version recorded.
+          changeRationale: input.changeRationale ?? latest.changeRationale,
           // Keep the prior scope unless a new one is supplied.
-          scope: input.scope ?? latest.scope,
+          scope: nextScope,
         });
         if (updated === null) {
           throw new Error('skill update returned null after a known row');

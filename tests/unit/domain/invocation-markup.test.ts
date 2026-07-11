@@ -79,6 +79,25 @@ describe('hasInvocationMarkup', () => {
     const prose = `fires on </${'invoke'} without a bracket. Later we show <b>bold</b> markup.`;
     expect(hasInvocationMarkup(prose)).toBe(false);
   });
+
+  it('does NOT flag invocation tokens quoted inside backticks (a dev tool documenting its own markup)', () => {
+    // mnema's own backlog legitimately writes about these tokens as code.
+    // A real spill is raw trailing garbage, never backtick-wrapped.
+    const tick = '`';
+    const p = 'parameter';
+    expect(hasInvocationMarkup(`refactor the ${tick}<${p} name="x">${tick} handling`)).toBe(false);
+    expect(hasInvocationMarkup(`support the ${tick}<${'function_calls'}>${tick} block`)).toBe(
+      false,
+    );
+    expect(hasInvocationMarkup(`fix the ${tick}</title><title>${tick} nesting bug`)).toBe(false);
+  });
+
+  it('still flags a real spill even when the body ALSO has a legit code span', () => {
+    // Blanking code spans must not blind the detector to a genuine raw trailer.
+    const tick = '`';
+    const body = `See ${tick}arr.map${tick} then a spill.</decision>\n<${'parameter'} name="context">leak`;
+    expect(hasInvocationMarkup(body)).toBe(true);
+  });
 });
 
 describe('stripInvocationMarkup', () => {
