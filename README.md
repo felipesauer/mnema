@@ -339,8 +339,14 @@ my-project/
     │   └── …
     ├── sprints/              # one .md per sprint, mirrored from the DB
     ├── roadmap/              # one .md per epic and per decision (ADR)
-    ├── memory/               # agent/human-recorded facts, mirrored to .md
-    ├── skills/               # agent-recorded skills, mirrored to .md
+    ├── memory/               # recorded facts, mirrored to .md
+    │   ├── <slug>.md         #   project-global memories at the root
+    │   ├── <scope>/<slug>.md #   scoped memories under a scope folder
+    │   ├── decisions/        #   human-curated ADR notes (own INDEX)
+    │   └── notes/            #   human-curated free-form notes (own INDEX)
+    ├── skills/               # recorded skills, mirrored to .md
+    │   ├── default/          #   tool-shipped seed skills
+    │   └── authored/         #   human/AI-authored skills
     ├── commands/             # versioned slash-command definitions (.md)
     ├── config.local.json     # optional personal overrides — gitignored
     └── workflows/
