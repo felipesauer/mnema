@@ -9,9 +9,11 @@ import type { Workflow } from '../../../domain/state-machine/state-machine.js';
 import type { DependencyService } from '../../../services/dependency-service.js';
 import type { IdentityService } from '../../../services/identity-service.js';
 import type { InboxService } from '../../../services/inbox-service.js';
+import type { LabelService } from '../../../services/label-service.js';
 import type { MemoryService } from '../../../services/memory-service.js';
 import type { MemoryStalenessService } from '../../../services/memory-staleness.js';
 import type { ObservationService } from '../../../services/observation-service.js';
+import type { SearchService } from '../../../services/search-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import { ok } from '../../mcp-tool-result.js';
@@ -58,6 +60,8 @@ export class ContextBootstrapTool {
     private readonly inboxService: InboxService,
     private readonly identityService: IdentityService,
     private readonly dependencyService: DependencyService,
+    private readonly searchService: SearchService,
+    private readonly labelService: LabelService,
   ) {}
 
   /**
@@ -153,6 +157,12 @@ export class ContextBootstrapTool {
       blockers.length,
     );
 
+    // Skills relevant to whatever the agent is about to work on, surfaced up
+    // front so it does not have to go fetch them. Keyed on the focus task
+    // (the in-progress one to resume, else the top ready one).
+    const focusKey = nextAction.in_progress_task?.key ?? nextAction.top_ready_task?.key ?? null;
+    const relevantSkills = focusKey === null ? [] : this.relevantSkillsFor(focusKey);
+
     return ok({
       project: {
         key: this.config.project.key,
@@ -164,6 +174,11 @@ export class ContextBootstrapTool {
       // handle under `known` is a valid assignee_id.
       actors,
       // What to do NOW, not just what exists. The rest of this payload is
+      // Skills matching the focus task (labels + title/description), so the
+      // relevant procedure arrives before the work starts, not as a list to
+      // fetch. Compact: slug + one-line description; pull the body with
+      // skill_show. Empty when nothing is in focus or nothing matches.
+      relevant_skills: relevantSkills,
       // state; this is direction. Focus rule: resume work already in
       // progress before starting anything new; otherwise the top ready
       // task; otherwise unblock a blocker; otherwise the backlog is idle.
@@ -365,6 +380,44 @@ export class ContextBootstrapTool {
       in_progress_task: null,
       ...base,
     };
+  }
+
+  /**
+   * Skills whose text matches the focus task — its title, description and
+   * labels — via the same FTS the `skill_suggest` tool uses, so the agent
+   * gets the relevant procedure before it starts rather than a list to go
+   * fetch. Compact (slug + one-liner); the body is pulled with skill_show.
+   * Degrades to an empty list on any lookup/search error — this is a
+   * convenience, never a reason to fail the bootstrap.
+   */
+  private relevantSkillsFor(
+    taskKey: string,
+  ): { slug: string; name: string | null; snippet: string }[] {
+    const task = this.taskService.list().find((t) => t.key === taskKey);
+    if (task === undefined) return [];
+    const labels = this.labelService.listForTask(taskKey);
+    const labelWords = labels.ok ? labels.value.join(' ') : '';
+
+    // Build an FTS query from the task's own words + its labels. Quote each
+    // token so nothing in the text is read as FTS5 syntax; OR them so any
+    // overlap surfaces a candidate. Mirrors skill_suggest's tokenisation.
+    const terms = `${task.title} ${task.description ?? ''} ${labelWords}`
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((t) => t.length >= 4)
+      .map((t) => `"${t}"`);
+    if (terms.length === 0) return [];
+
+    const result = this.searchService.search(terms.join(' OR '), {
+      entities: ['skill'],
+      perEntityLimit: 3,
+    });
+    if (!result.ok) return [];
+    return result.value.map((hit) => ({
+      slug: hit.key ?? '',
+      name: hit.title,
+      snippet: hit.snippet,
+    }));
   }
 
   /** Reads a file relative to project root, truncated to maxBytes. */

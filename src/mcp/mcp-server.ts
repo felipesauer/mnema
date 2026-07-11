@@ -221,6 +221,8 @@ export class MnemaMcpServer {
       this.services.inbox,
       this.services.identity,
       this.services.dependency,
+      this.services.search,
+      this.services.label,
     ).register(this.sdk);
 
     new AgentRunTools(
