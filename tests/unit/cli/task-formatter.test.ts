@@ -87,4 +87,20 @@ describe('formatTaskBlock', () => {
     expect(out).not.toContain('git ·');
     expect(out).not.toContain('branch:');
   });
+
+  it('hints that commits are derived when a cloned link has branch/pr but no commits', () => {
+    // ADR-49: branch/pr survive a clone via the markdown; commits are derived
+    // and repopulate under `watch --git`. Show that, not a bare "no commits".
+    const out = strip(
+      formatTaskBlock(
+        makeTask({
+          gitBranch: 'feat/x',
+          gitCommits: [],
+          gitPr: { url: 'https://example.com/pr/3', state: 'open' },
+        }),
+      ),
+    );
+    expect(out).toContain('branch: feat/x');
+    expect(out).toContain('commits derived on');
+  });
 });

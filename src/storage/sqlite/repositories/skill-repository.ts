@@ -48,6 +48,21 @@ export class SkillRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
+   * Runs `fn` inside a SQLite transaction, propagating its return value.
+   * Used to make a read-then-write atomic — e.g. computing the next version
+   * number from the latest row and inserting it as one unit, so two
+   * concurrent `new_version` records cannot both read the same latest and
+   * collide (better-sqlite3 is synchronous, but this keeps the invariant
+   * explicit and correct rather than relying on the runtime).
+   *
+   * @param fn - Synchronous callback executed inside the transaction
+   * @returns Whatever `fn` returns
+   */
+  runInTransaction<T>(fn: () => T): T {
+    return this.adapter.getDatabase().transaction(fn)();
+  }
+
+  /**
    * Finds the latest version row for a given slug.
    *
    * @param slug - Skill slug

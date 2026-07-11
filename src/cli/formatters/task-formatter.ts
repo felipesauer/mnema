@@ -101,6 +101,12 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
       if (task.gitCommits.length > 5) {
         lines.push(`    ${pc.dim(`… ${task.gitCommits.length - 5} more`)}`);
       }
+    } else if (task.gitBranch !== null) {
+      // Branch/PR are serialized to the markdown and survive a clone; the
+      // commit list is derived, not stored, so on a fresh clone it is empty
+      // until the observer repopulates it. Say so rather than read as "no
+      // commits" — this is by design (ADR-49), not a lost link.
+      lines.push(`    ${pc.dim('commits derived on `mnema watch --git`')}`);
     }
   }
 

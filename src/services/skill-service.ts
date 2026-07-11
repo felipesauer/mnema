@@ -345,13 +345,6 @@ export class SkillService {
     const latest = repo.findLatestBySlug(input.slug);
     const mode: SkillRecordMode = input.mode ?? 'update';
 
-    // The `new_version` path below is read-then-write (latest.version + 1).
-    // mnema runs a single synchronous better-sqlite3 connection, so two
-    // records cannot interleave between the read and the insert. Even if they
-    // could, the `(slug, version)` UNIQUE constraint (skill-repository insert)
-    // makes a collision fail LOUD rather than silently duplicate or lose a
-    // version — so no explicit transaction is layered here.
-
     let action: SkillRecordResult['action'];
     let resulting: Skill;
 
@@ -370,19 +363,28 @@ export class SkillService {
       });
       action = 'created';
     } else if (mode === 'new_version') {
-      resulting = repo.insert({
-        slug: input.slug,
-        name: input.name,
-        version: latest.version + 1,
-        description: input.description,
-        content: input.content,
-        toolsUsed,
-        invocable,
-        dynamicContext,
-        changeRationale: input.changeRationale ?? null,
-        // A new version keeps the prior scope unless a new one is supplied.
-        scope: input.scope ?? latest.scope,
-        createdBy,
+      // Read-then-write: the next version number is derived from the latest
+      // row. Do the re-read and the insert inside ONE transaction so two
+      // concurrent `new_version` records cannot both read the same latest and
+      // collide on the `(slug, version)` UNIQUE constraint. (better-sqlite3 is
+      // synchronous today, but this keeps the invariant correct by
+      // construction rather than by runtime coincidence.)
+      resulting = repo.runInTransaction(() => {
+        const current = repo.findLatestBySlug(input.slug) ?? latest;
+        return repo.insert({
+          slug: input.slug,
+          name: input.name,
+          version: current.version + 1,
+          description: input.description,
+          content: input.content,
+          toolsUsed,
+          invocable,
+          dynamicContext,
+          changeRationale: input.changeRationale ?? null,
+          // A new version keeps the prior scope unless a new one is supplied.
+          scope: input.scope ?? current.scope,
+          createdBy,
+        });
       });
       action = 'new_version';
     } else {

@@ -225,6 +225,23 @@ describe('SkillService (record/show/use)', () => {
     expect(service.listVersions('s')).toHaveLength(2);
   });
 
+  it('successive new_version records get distinct sequential versions (atomic bump)', () => {
+    service.record({ slug: 's', name: 'S', description: 'd', content: 'v1', actor: 'daniel' });
+    const versions = [2, 3, 4].map((_, i) => {
+      const r = recordOk(service, {
+        slug: 's',
+        name: 'S',
+        description: 'd',
+        content: `body-${i}`,
+        mode: 'new_version',
+        actor: 'daniel',
+      });
+      return r.skill.version;
+    });
+    expect(versions).toEqual([2, 3, 4]);
+    expect(service.listVersions('s')).toHaveLength(4);
+  });
+
   it('records use, incrementing usage_count', () => {
     service.record({
       slug: 's',
