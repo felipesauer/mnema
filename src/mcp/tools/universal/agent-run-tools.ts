@@ -135,7 +135,7 @@ export class AgentRunTools {
         // had near-zero adoption when the nudge was only a reminder; a
         // concrete starting point lowers the cost of recording one.
         const skillDraft = shouldNudge
-          ? buildSkillDraft(ended.value.goal, this.touchedTaskKeys(runId))
+          ? buildSkillDraft(ended.value.goal, this.runSteps(runId))
           : undefined;
 
         return ok({
@@ -216,20 +216,30 @@ export class AgentRunTools {
     );
   }
 
-  /** Distinct task keys this run created or transitioned, in first-seen order. */
-  private touchedTaskKeys(runId: string): string[] {
-    const keys: string[] = [];
-    const seen = new Set<string>();
+  /**
+   * The run's substantive actions, in order, each rendered as one imperative
+   * step. Bookkeeping events (run start/end, syncs) are skipped so the list
+   * reads as a procedure, not a log. Feeds {@link buildSkillDraft} so the
+   * draft's steps are what the agent actually did, not a placeholder.
+   */
+  private runSteps(runId: string): RunStep[] {
+    const steps: RunStep[] = [];
     for (const event of this.auditQuery.run({ run: runId })) {
-      if (event.kind !== 'task_created' && event.kind !== 'task_transitioned') continue;
-      const key = (event.data as { key?: string }).key;
-      if (typeof key === 'string' && !seen.has(key)) {
-        seen.add(key);
-        keys.push(key);
-      }
+      const step = stepForEvent(event.kind, event.data as Record<string, unknown>);
+      if (step !== null) steps.push(step);
     }
-    return keys;
+    return steps;
   }
+}
+
+/** One derived procedure step: the action verb and the task it acted on (if any). */
+interface RunStep {
+  /** Imperative line, e.g. "submit_review MONITOR-4". */
+  readonly text: string;
+  /** The task key this step acted on, when applicable — used to detect a repeated cycle. */
+  readonly taskKey: string | null;
+  /** The bare action/verb, used to describe a repeated cycle compactly. */
+  readonly verb: string;
 }
 
 /** A pre-filled skill_record draft an agent can accept or edit. */
@@ -241,25 +251,164 @@ export interface SkillDraft {
 }
 
 /**
- * Builds a skill_record draft from a run's goal and the tasks it touched,
- * turning the "record something" nudge into a concrete starting point.
- * The agent is expected to refine it before calling skill_record.
+ * Builds a skill_record draft from a run's goal and the steps it actually
+ * performed (derived from the audit), turning the "record something" nudge
+ * into a concrete starting point rather than a placeholder form.
+ *
+ * Three shapes, in order of usefulness:
+ * 1. A repeated per-task cycle (the same verb sequence applied to ≥2 tasks)
+ *    — captured as one generalised cycle, which is exactly the reusable
+ *    procedure worth a skill.
+ * 2. Otherwise, the run's steps verbatim as a numbered list.
+ * 3. Nothing substantive happened — a short honest note, NOT fake
+ *    placeholder steps that read as if a procedure existed.
  *
  * @param goal - The run's goal text
- * @param taskKeys - Task keys the run created or transitioned
+ * @param steps - The run's substantive steps, in order (see runSteps)
  * @returns A {@link SkillDraft}
  */
-export function buildSkillDraft(goal: string, taskKeys: readonly string[]): SkillDraft {
+export function buildSkillDraft(goal: string, steps: readonly RunStep[]): SkillDraft {
   const name = goal.trim().length > 0 ? goal.trim() : 'Procedure from this run';
-  const tasksNote = taskKeys.length > 0 ? ` (touched ${taskKeys.join(', ')})` : '';
+  const base = { slug: slugify(name), name };
+
+  if (steps.length === 0) {
+    return {
+      ...base,
+      description:
+        'This run recorded no task/knowledge actions, so there is no procedure to distill. ' +
+        'Write the steps yourself if you did something repeatable, then call skill_record.',
+      steps: '(no steps captured — this run made no auditable changes)',
+    };
+  }
+
+  const cycle = detectRepeatedCycle(steps);
+  if (cycle !== null) {
+    const numbered = cycle.verbs.map((v, i) => `${String(i + 1)}. ${describeVerb(v)}`).join('\n');
+    return {
+      ...base,
+      description:
+        `Repeatable cycle distilled from this run — applied to ${String(cycle.taskCount)} ` +
+        `task(s) (${cycle.sampleTasks.join(', ')}). Edit before recording.`,
+      steps: `${numbered}\n\n(derived from the run's audit; refine wording, then call skill_record)`,
+    };
+  }
+
+  const numbered = steps.map((s, i) => `${String(i + 1)}. ${s.text}`).join('\n');
   return {
-    slug: slugify(name),
-    name,
-    description: `Repeatable procedure distilled from this run${tasksNote}. Edit before recording.`,
-    steps:
-      '1. <first step you took>\n2. <next step>\n3. <how you verified it>\n' +
-      '— replace these with the actual procedure, then call skill_record.',
+    ...base,
+    description: 'Procedure distilled from this run’s actual actions. Edit before recording.',
+    steps: `${numbered}\n\n(derived from the run's audit; refine wording, then call skill_record)`,
   };
+}
+
+/**
+ * Maps one audit event to a procedure step, or `null` for bookkeeping
+ * events that should not appear in a skill (run lifecycle, syncs). The
+ * `verb` is the action name so a repeated cycle can be recognised; the
+ * `text` is the human line for the numbered list.
+ */
+function stepForEvent(kind: string, data: Record<string, unknown>): RunStep | null {
+  const s = (key: string): string | undefined =>
+    typeof data[key] === 'string' ? (data[key] as string) : undefined;
+  switch (kind) {
+    case 'task_created':
+      return {
+        text: `create task ${s('key') ?? ''}`.trim(),
+        taskKey: s('key') ?? null,
+        verb: 'create',
+      };
+    case 'task_transitioned': {
+      const action = s('action') ?? 'transition';
+      return {
+        text: `${action} ${s('key') ?? 'task'} (${s('from') ?? '?'} → ${s('to') ?? '?'})`,
+        taskKey: s('key') ?? null,
+        verb: action,
+      };
+    }
+    case 'evidence_attached':
+      return {
+        text: `attach ${s('evidence_kind') ?? 'other'} evidence to ${s('task_key') ?? 'task'}`,
+        taskKey: s('task_key') ?? null,
+        verb: 'attach_evidence',
+      };
+    case 'decision_recorded':
+      return { text: `record decision ${s('key') ?? ''}`.trim(), taskKey: null, verb: 'decision' };
+    case 'memory_recorded':
+      return { text: `record memory ${s('slug') ?? ''}`.trim(), taskKey: null, verb: 'memory' };
+    case 'skill_recorded':
+      return { text: `record skill ${s('slug') ?? ''}`.trim(), taskKey: null, verb: 'skill' };
+    case 'observation_recorded':
+      return { text: 'record an observation', taskKey: null, verb: 'observation' };
+    case 'note_added':
+      return {
+        text: `add a note to ${s('task_key') ?? s('key') ?? 'task'}`,
+        taskKey: null,
+        verb: 'note',
+      };
+    default:
+      return null; // run_started/ended, task_synced, claims, etc. — not procedure steps
+  }
+}
+
+/** A repeated per-task cycle detected across a run's steps. */
+interface RepeatedCycle {
+  readonly verbs: readonly string[];
+  readonly taskCount: number;
+  readonly sampleTasks: readonly string[];
+}
+
+/**
+ * Detects a procedure the run repeated across tasks: if ≥2 task keys each
+ * went through the same ordered sequence of verbs, that sequence is the
+ * reusable skill. Returns null when there is no such repetition (a one-off
+ * run has nothing to generalise).
+ */
+function detectRepeatedCycle(steps: readonly RunStep[]): RepeatedCycle | null {
+  const byTask = new Map<string, string[]>();
+  for (const step of steps) {
+    if (step.taskKey === null) continue;
+    const list = byTask.get(step.taskKey);
+    if (list === undefined) byTask.set(step.taskKey, [step.verb]);
+    else list.push(step.verb);
+  }
+  if (byTask.size < 2) return null;
+
+  // Group task keys by their verb-sequence signature; a signature shared by
+  // ≥2 tasks (and with ≥2 steps, so it is a real cycle not a single move) wins.
+  const bySignature = new Map<string, string[]>();
+  for (const [taskKey, verbs] of byTask) {
+    if (verbs.length < 2) continue;
+    const sig = verbs.join('>');
+    const tasks = bySignature.get(sig);
+    if (tasks === undefined) bySignature.set(sig, [taskKey]);
+    else tasks.push(taskKey);
+  }
+  for (const [sig, tasks] of bySignature) {
+    if (tasks.length >= 2) {
+      return { verbs: sig.split('>'), taskCount: tasks.length, sampleTasks: tasks.slice(0, 3) };
+    }
+  }
+  return null;
+}
+
+/** A short imperative gloss for a verb in a generalised cycle. */
+function describeVerb(verb: string): string {
+  switch (verb) {
+    case 'create':
+      return 'create the task';
+    case 'submit':
+      return 'submit it (define title/description/criteria/estimate)';
+    case 'start':
+      return 'start it (assign yourself)';
+    case 'submit_review':
+      return 'submit for review with the PR url';
+    case 'approve':
+      return 'approve it';
+    case 'attach_evidence':
+      return 'attach evidence to a criterion';
+    default:
+      return `${verb} it`;
+  }
 }
 
 /** Lowercase kebab-case slug, trimmed to a sane length. */
