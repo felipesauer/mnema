@@ -188,6 +188,16 @@ export const ConfigSchema = z.object({
   // it preserves the protection that matters without locking humans out.
   // `blocking` blocks everyone; `advisory` only warns.
   enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
+  // Per-gate-field severity, layered on top of `enforcement_mode` (see
+  // MNEMA-ADR-48). Maps a required gate FIELD name to how a *failure of that
+  // field* is treated: `block` always refuses, `warn` lets the transition
+  // proceed with an advisory, `off` ignores the field entirely. A transition
+  // blocks iff at least one failing field resolves to `block`; absent fields
+  // fall back to the global `enforcement_mode` for the acting actor. Lets a
+  // ceremony gate (e.g. `estimate`) be warn-only while a safety gate
+  // (`approval_note`, `pr_url`) stays blocking on the same transition. Empty
+  // (the default) reproduces the pure global behaviour exactly.
+  enforcement_field_severity: z.record(z.string(), z.enum(['off', 'warn', 'block'])).prefault({}),
   sync: z
     .object({
       mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),

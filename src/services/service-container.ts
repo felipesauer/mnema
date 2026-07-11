@@ -476,6 +476,7 @@ export function createServiceContainer(
     },
     config.enforcement_mode as EnforcementMode,
     config.claims.require_to_start,
+    config.enforcement_field_severity,
   );
   trace.mark('services instantiated');
 

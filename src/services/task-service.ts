@@ -114,6 +114,10 @@ export class TaskService {
     // that don't pass it, and every single-agent flow, keep working; the
     // container supplies the configured `claims.require_to_start`.
     private readonly requireClaimToStart: boolean = false,
+    // Per-gate-field severity (MNEMA-ADR-48), layered on `enforcementMode`.
+    // Maps a required gate field name to `off` | `warn` | `block`. Empty
+    // (the default) reproduces the pure global behaviour.
+    private readonly fieldSeverity: Readonly<Record<string, 'off' | 'warn' | 'block'>> = {},
   ) {}
 
   /**
@@ -615,17 +619,37 @@ export class TaskService {
       });
     }
 
-    // Apply `enforcement_mode` when required fields are missing. The actor
-    // matters: `via` present means an agent drove this, and `strict` holds
-    // agents to the gate while letting a human force the transition.
+    // Apply enforcement when required fields are missing. Two layers
+    // (MNEMA-ADR-48): the global `enforcement_mode` decides the default for
+    // the acting actor (`via` present ⇒ an agent drove this; `strict` holds
+    // agents but lets a human force it), and an optional per-field severity
+    // overrides that PER failing field. A transition blocks iff at least one
+    // failing field resolves to `block`; fields that resolve to `warn`/`off`
+    // let the transition proceed (recorded as an advisory override).
     const isAgent = input.via !== undefined;
     let gateOverride: ErrorIssue[] | null = null;
     if (!resolution.value.gate.ok) {
       const issues = fromZodIssues(resolution.value.gate.issues);
-      const blocked =
+      const globalBlocks =
         this.enforcementMode === EnforcementMode.Blocking ||
         (this.enforcementMode === EnforcementMode.Strict && isAgent);
-      if (blocked) {
+
+      // Resolve each failing field to an effective severity. `off` drops the
+      // issue entirely; an explicit `warn`/`block` overrides the global mode;
+      // absent falls back to the global block decision.
+      const blocking: ErrorIssue[] = [];
+      const warned: ErrorIssue[] = [];
+      for (const issue of issues) {
+        const field = issue.path[0];
+        const severity = typeof field === 'string' ? this.fieldSeverity[field] : undefined;
+        if (severity === 'off') continue;
+        if (severity === 'block') blocking.push(issue);
+        else if (severity === 'warn') warned.push(issue);
+        else if (globalBlocks) blocking.push(issue);
+        else warned.push(issue);
+      }
+
+      if (blocking.length > 0) {
         this.audit.write({
           kind: 'transition_blocked',
           actor: input.actor,
@@ -635,19 +659,20 @@ export class TaskService {
             key: task.key,
             action: input.action,
             mode: this.enforcementMode,
-            missing: issues.map((i) => i.path.join('.') || '(root)'),
+            missing: blocking.map((i) => i.path.join('.') || '(root)'),
           },
         });
         return Err({
           kind: ErrorCode.GateFailed,
           taskKey: task.key,
           action: input.action,
-          issues,
+          issues: blocking,
         });
       }
-      // Allowed despite the failed gate (advisory, or strict + human).
-      // Remember it so the post-commit audit records the override.
-      gateOverride = issues;
+      // Nothing blocked: the transition proceeds. Remember any warned issues
+      // so the post-commit audit records the override (advisory, or a
+      // per-field warn/off, or strict + human).
+      if (warned.length > 0) gateOverride = warned;
     }
 
     const { to, data } = resolution.value;
