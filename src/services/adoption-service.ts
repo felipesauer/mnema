@@ -8,7 +8,7 @@ import type { Config } from '../config/config-schema.js';
  *
  * Aligned with the `mnema adopt <component>` table in DESIGN.md §7.3.
  */
-export type AdoptableComponent = 'skills' | 'memory' | 'roadmap';
+export type AdoptableComponent = 'skills' | 'memory' | 'roadmap' | 'commands';
 
 /**
  * Per-component summary of what an adoption call did.
@@ -60,6 +60,8 @@ export class AdoptionService {
         return this.installMemory();
       case 'roadmap':
         return this.installRoadmap();
+      case 'commands':
+        return this.installCommands();
     }
   }
 
@@ -71,7 +73,7 @@ export class AdoptionService {
    * @returns Per-component summaries
    */
   adoptAll(): AdoptionSummary {
-    const components: AdoptableComponent[] = ['skills', 'memory', 'roadmap'];
+    const components: AdoptableComponent[] = ['skills', 'memory', 'roadmap', 'commands'];
     return { results: components.map((c) => this.adopt(c)) };
   }
 
@@ -88,6 +90,11 @@ export class AdoptionService {
   private installRoadmap(): AdoptionResult {
     const dir = path.join(this.projectRoot, this.config.paths.roadmap);
     return this.writeTemplates(dir, 'roadmap', roadmapTemplates());
+  }
+
+  private installCommands(): AdoptionResult {
+    const dir = path.join(this.projectRoot, this.config.paths.commands);
+    return this.writeTemplates(dir, 'commands', commandsTemplates());
   }
 
   private writeTemplates(
@@ -430,6 +437,93 @@ function roadmapTemplates(): Map<string, string> {
         'High-level objectives that span more than one sprint. Drop one',
         'file per quarter or theme, e.g. `2026-Q2.md`. Use the `epics/`',
         'subfolder for grouped task collections.',
+        '',
+      ].join('\n'),
+    ],
+  ]);
+}
+
+/**
+ * The seed slash commands planted at init (and by `mnema adopt commands`).
+ * Each is a `.md` whose frontmatter declares a `description` and an ordered
+ * `steps` list of read-only `mnema` invocations (written without the leading
+ * `mnema`), matching {@link CommandDefinitionService}. They exist so the
+ * `.mnema/commands/` folder is not born empty — the shortcut that makes the
+ * tool get used ships with the install. Commands are pure files (no SQLite
+ * row), so unlike skills they need no import step.
+ */
+function commandsTemplates(): Map<string, string> {
+  return new Map([
+    [
+      'INDEX.md',
+      [
+        '# Commands',
+        '',
+        'Slash commands bundle a repeatable read-only flow behind one name,',
+        'committed with the project so the whole team shares it. Each command',
+        'is a `<name>.md` with `description` + `steps` frontmatter; the body is',
+        'notes for humans. List them with `mnema commands list`, inspect one',
+        'with `mnema command show <name>`.',
+        '',
+        '- [standup.md](standup.md)',
+        '- [close.md](close.md)',
+        '- [audit.md](audit.md)',
+        '',
+      ].join('\n'),
+    ],
+    [
+      'standup.md',
+      [
+        '---',
+        'description: What is on your plate — active focus, your inbox, and what happened today.',
+        'steps:',
+        '  - context_bootstrap',
+        '  - inbox',
+        '  - history --since=today',
+        '---',
+        '',
+        '# /standup',
+        '',
+        'Run at the start of a session to reorient: the bootstrap gives the',
+        'active focus and next action, the inbox shows what waits on you, and',
+        "today's history recaps recent movement. All read-only.",
+        '',
+      ].join('\n'),
+    ],
+    [
+      'close.md',
+      [
+        '---',
+        'description: Review a task before closing it — its evidence and current state.',
+        'steps:',
+        '  - task show',
+        '  - task evidence',
+        '---',
+        '',
+        '# /close',
+        '',
+        'Before moving a task to done, confirm it carries the evidence that',
+        'proves each acceptance criterion. Pass the task key to each step,',
+        'e.g. `mnema task show WEBAPP-4`. Then approve it with a note via',
+        '`mnema task move <key> approve --field approval_note="..."`.',
+        '',
+      ].join('\n'),
+    ],
+    [
+      'audit.md',
+      [
+        '---',
+        'description: Audit the current change — commits with no task, and the audit-chain integrity.',
+        'steps:',
+        '  - drift',
+        '  - audit verify',
+        '---',
+        '',
+        '# /audit',
+        '',
+        'Check that the work is on the rails: `drift` lists commits on this',
+        'branch not tied to any task, and `audit verify` confirms the',
+        'hash-chained log is intact. Both read-only.',
         '',
       ].join('\n'),
     ],

@@ -9,7 +9,13 @@ import {
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 
-const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = ['skills', 'memory', 'roadmap', 'all'];
+const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = [
+  'skills',
+  'memory',
+  'roadmap',
+  'commands',
+  'all',
+];
 
 /**
  * Registers `mnema adopt`, the gradual-adoption entry point.
@@ -31,7 +37,9 @@ export class AdoptCommand {
   register(program: Command): void {
     program
       .command('adopt <component>')
-      .description('Add an optional layout component (skills, memory, roadmap, all). Idempotent.')
+      .description(
+        'Add an optional layout component (skills, memory, roadmap, commands, all). Idempotent.',
+      )
       .action(async (component: string) => {
         if (!SUPPORTED.includes(component as AdoptableComponent | 'all')) {
           process.stderr.write(

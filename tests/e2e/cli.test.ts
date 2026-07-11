@@ -512,6 +512,25 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(existsSync(path.join(projectRoot, '.mnema/commands'))).toBe(true);
   });
 
+  it('mnema init seeds the example slash commands (non-minimal)', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    const list = runCli(['commands', 'list'], projectRoot);
+    expect(list.status).toBe(0);
+    // The three seed commands ship with the install, not an empty folder.
+    expect(list.stdout).toContain('standup');
+    expect(list.stdout).toContain('close');
+    expect(list.stdout).toContain('audit');
+  });
+
+  it('mnema adopt commands seeds them onto a --minimal project', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP', '--minimal'], projectRoot);
+    // Minimal has no commands yet.
+    expect(existsSync(path.join(projectRoot, '.mnema/commands', 'standup.md'))).toBe(false);
+    const adopt = runCli(['adopt', 'commands'], projectRoot);
+    expect(adopt.status).toBe(0);
+    expect(existsSync(path.join(projectRoot, '.mnema/commands', 'standup.md'))).toBe(true);
+  });
+
   it('mnema commands list discovers a versioned command', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
     writeFileSync(

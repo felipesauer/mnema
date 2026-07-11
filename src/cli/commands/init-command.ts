@@ -265,7 +265,12 @@ export class InitCommand {
       // (which agents skip — the report's "skills born empty, stay empty").
       // Reuses the exact adopt content, so there is a single source and the
       // write is idempotent. --minimal skips this and keeps skills/ empty.
-      new AdoptionService(cwd, config).adopt('skills');
+      const adoption = new AdoptionService(cwd, config);
+      adoption.adopt('skills');
+      // Seed the slash commands too, so `.mnema/commands/` is not born empty
+      // (the shortcut that makes the tool get used). Commands are pure files
+      // with no SQLite row, so — unlike skills — they need no import step.
+      adoption.adopt('commands');
     }
 
     const dbPath = path.join(stateDir, 'state.db');

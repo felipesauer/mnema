@@ -68,7 +68,12 @@ describe('AdoptionService', () => {
 
   it('adoptAll touches every component once', () => {
     const summary = service.adoptAll();
-    expect(summary.results.map((r) => r.component)).toEqual(['skills', 'memory', 'roadmap']);
+    expect(summary.results.map((r) => r.component)).toEqual([
+      'skills',
+      'memory',
+      'roadmap',
+      'commands',
+    ]);
     expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/roadmap', 'README.md'))).toBe(true);
