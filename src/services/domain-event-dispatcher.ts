@@ -81,6 +81,8 @@ export function resolveDomainEvents(
       return event.data.to === 'accepted' ? [DomainEvent.DecisionAccepted] : [];
     case 'sprint_closed':
       return [DomainEvent.SprintClosed];
+    case 'sprint_canceled':
+      return [DomainEvent.SprintCanceled];
     case 'epic_closed':
       return [DomainEvent.EpicClosed];
     default:

@@ -71,6 +71,7 @@ export const SPRINT_TOOL_NAMES: readonly string[] = [
   'sprint_create',
   'sprint_start',
   'sprint_close',
+  'sprint_cancel',
   'sprint_remove',
   'sprint_metric',
 ];

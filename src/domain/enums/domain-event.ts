@@ -15,6 +15,8 @@ export enum DomainEvent {
   DecisionAccepted = 'on_decision_accepted',
   /** A sprint was closed. */
   SprintClosed = 'on_sprint_closed',
+  /** A sprint was canceled (retired without completing). */
+  SprintCanceled = 'on_sprint_canceled',
   /** An epic was closed. */
   EpicClosed = 'on_epic_closed',
 }

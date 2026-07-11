@@ -255,8 +255,10 @@ export class SprintRepository {
     }
 
     const now = isoNow();
-    const isClosing = state === SprintState.Closed;
-    if (isClosing) {
+    // Both terminal states stamp closed_at — a canceled sprint is retired,
+    // not left open-ended.
+    const isTerminal = state === SprintState.Closed || state === SprintState.Canceled;
+    if (isTerminal) {
       db.prepare(`UPDATE sprints SET state = ?, closed_at = ?, updated_at = ? WHERE id = ?`).run(
         state,
         now,

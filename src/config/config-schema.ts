@@ -65,6 +65,7 @@ export const HooksSchema = z
     on_task_transitioned: z.array(HookCommandSchema).default([]),
     on_decision_accepted: z.array(HookCommandSchema).default([]),
     on_sprint_closed: z.array(HookCommandSchema).default([]),
+    on_sprint_canceled: z.array(HookCommandSchema).default([]),
     on_epic_closed: z.array(HookCommandSchema).default([]),
   })
   .prefault({});

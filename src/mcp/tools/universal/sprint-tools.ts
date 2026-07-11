@@ -237,6 +237,41 @@ export class SprintTools {
     );
 
     server.registerTool(
+      'sprint_cancel',
+      {
+        description:
+          'Cancel a PLANNED or ACTIVE sprint — retire it without completing (e.g. a plan superseded by other work). Requires a reason and an active agent run. Attached tasks are left untouched.',
+        inputSchema: {
+          sprint_key: z.string().describe('Sprint key, e.g. WEBAPP-SPRINT-3'),
+          reason: z.string().min(1).describe('Why the sprint is being retired'),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe('Optimistic concurrency token from a previous read'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.sprints.cancel({
+          sprintKey: input.sprint_key,
+          reason: input.reason,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+          expectedUpdatedAt: input.expected_updated_at,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ sprint: result.value });
+      },
+    );
+
+    server.registerTool(
       'sprint_remove',
       {
         description: 'Remove a task from its sprint. Requires an active agent run.',

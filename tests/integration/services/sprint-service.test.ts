@@ -117,6 +117,57 @@ describe('SprintService', () => {
     expect(closed.error.kind).toBe(ErrorCode.SprintInvalidState);
   });
 
+  it('cancels a planned sprint (retire without completing) and stamps closed_at', () => {
+    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+
+    const canceled = sprints.cancel({
+      sprintKey: 'TEST-SPRINT-1',
+      reason: 'superseded; tasks delivered elsewhere',
+      actor: 'daniel',
+    });
+    expect(canceled.ok).toBe(true);
+    if (!canceled.ok) return;
+    expect(canceled.value.state).toBe(SprintState.Canceled);
+    expect(canceled.value.closedAt).not.toBeNull();
+  });
+
+  it('cancels an active sprint too', () => {
+    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const canceled = sprints.cancel({
+      sprintKey: 'TEST-SPRINT-1',
+      reason: 'abandoned',
+      actor: 'daniel',
+    });
+    expect(canceled.ok).toBe(true);
+    if (!canceled.ok) return;
+    expect(canceled.value.state).toBe(SprintState.Canceled);
+    // A canceled sprint is not the active one — a new sprint can start.
+    sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    expect(sprints.start({ sprintKey: 'TEST-SPRINT-2', actor: 'daniel' }).ok).toBe(true);
+  });
+
+  it('rejects cancel on a closed sprint and requires a reason', () => {
+    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    sprints.close({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+
+    const onClosed = sprints.cancel({
+      sprintKey: 'TEST-SPRINT-1',
+      reason: 'too late',
+      actor: 'daniel',
+    });
+    expect(onClosed.ok).toBe(false);
+    if (onClosed.ok) return;
+    expect(onClosed.error.kind).toBe(ErrorCode.SprintInvalidState);
+
+    sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    const noReason = sprints.cancel({ sprintKey: 'TEST-SPRINT-2', reason: '  ', actor: 'daniel' });
+    expect(noReason.ok).toBe(false);
+    if (noReason.ok) return;
+    expect(noReason.error.kind).toBe(ErrorCode.ValidationFailed);
+  });
+
   it('attaches and removes tasks from a sprint', () => {
     const project = projects.findByKey('TEST');
     if (project === null) throw new Error('precondition: project exists');

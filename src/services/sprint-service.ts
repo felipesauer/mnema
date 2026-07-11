@@ -57,6 +57,14 @@ export interface SprintTransitionInput {
 }
 
 /**
+ * Input for {@link SprintService.cancel} — a transition that also records why.
+ */
+export interface SprintCancelInput extends SprintTransitionInput {
+  /** Why the sprint is being retired (e.g. "superseded; tasks delivered elsewhere"). */
+  readonly reason: string;
+}
+
+/**
  * Input for {@link SprintService.addTask} / {@link SprintService.removeTask}.
  */
 export interface SprintTaskInput {
@@ -308,6 +316,67 @@ export class SprintService {
       via: input.via,
       run: input.runId,
       data: { key: updated.key },
+    });
+
+    this.mirror?.writeSprint(updated);
+
+    return Ok(updated);
+  }
+
+  /**
+   * Cancels a sprint — retires it without completing. Valid from `PLANNED`
+   * (a plan that was superseded) or `ACTIVE` (work abandoned); a `CLOSED` or
+   * already-`CANCELED` sprint is refused. Records the reason on the audit
+   * event so the trail says why it was dropped. Tasks attached to the sprint
+   * are left untouched — cancelling the plan is not cancelling the work.
+   *
+   * @param input - Sprint key + reason + identity tuple
+   * @returns The updated sprint or a structured error
+   */
+  cancel(input: SprintCancelInput): Result<Sprint, MnemaError> {
+    const reason = input.reason.trim();
+    if (reason.length === 0) {
+      return Err({
+        kind: ErrorCode.ValidationFailed,
+        issues: [{ path: ['reason'], message: 'a cancel reason is required' }],
+      });
+    }
+    const sprint = this.sprints.findByKey(input.sprintKey);
+    if (sprint === null) {
+      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+    }
+    if (sprint.state !== SprintState.Planned && sprint.state !== SprintState.Active) {
+      return Err({
+        kind: ErrorCode.SprintInvalidState,
+        sprintKey: sprint.key,
+        fromState: sprint.state,
+        toState: SprintState.Canceled,
+      });
+    }
+
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : sprint.updatedAt;
+
+    const result = this.sprints.updateState(sprint.id, SprintState.Canceled, expectedUpdatedAt);
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'sprint',
+        taskKey: sprint.key,
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
+    }
+    const updated = result.sprint;
+
+    this.audit.write({
+      kind: 'sprint_canceled',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key, reason },
     });
 
     this.mirror?.writeSprint(updated);

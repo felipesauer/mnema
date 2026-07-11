@@ -53,7 +53,7 @@ describe('MigrationRunner', () => {
 
     expect(applied.map((a) => a.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33,
+      27, 28, 29, 30, 31, 32, 33, 34,
     ]);
 
     const versions = adapter
@@ -62,7 +62,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33,
+      27, 28, 29, 30, 31, 32, 33, 34,
     ]);
   });
 
@@ -79,7 +79,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33,
+      27, 28, 29, 30, 31, 32, 33, 34,
     ]);
   });
 
@@ -208,6 +208,53 @@ describe('MigrationRunner', () => {
         )
         .run(),
     ).toThrow();
+  });
+
+  it("migration 034 widens sprints.state CHECK to accept 'CANCELED' and still rejects unknown states", () => {
+    new MigrationRunner().run(adapter, migrationsDir);
+    const db = adapter.getDatabase();
+    db.prepare(`INSERT INTO projects (id, key, name) VALUES ('proj-1', 'TEST', 'Test')`).run();
+
+    // A canceled sprint is now accepted (was rejected before 034).
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO sprints (id, key, project_id, name, state)
+           VALUES ('s-cancel', 'TEST-SPRINT-1', 'proj-1', 'A', 'CANCELED')`,
+        )
+        .run(),
+    ).not.toThrow();
+
+    // An unknown state is still refused by the recreated CHECK.
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO sprints (id, key, project_id, name, state)
+           VALUES ('s-bad', 'TEST-SPRINT-2', 'proj-1', 'B', 'WOBBLY')`,
+        )
+        .run(),
+    ).toThrow();
+
+    // The partial-unique "one ACTIVE per project" index survived the recreate.
+    db.prepare(
+      `INSERT INTO sprints (id, key, project_id, name, state)
+       VALUES ('s-active', 'TEST-SPRINT-3', 'proj-1', 'C', 'ACTIVE')`,
+    ).run();
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO sprints (id, key, project_id, name, state)
+           VALUES ('s-active-2', 'TEST-SPRINT-4', 'proj-1', 'D', 'ACTIVE')`,
+        )
+        .run(),
+    ).toThrow();
+  });
+
+  it('migration 034 is wrapped in a transaction with FK disabled (atomicity guard)', () => {
+    const sql = readFileSync(path.join(migrationsDir, '034_sprint_canceled_state.sql'), 'utf-8');
+    expect(sql).toMatch(/^\s*--\s*mnema:disable-foreign-keys/m);
+    expect(sql).toMatch(/^\s*BEGIN\s*;/m);
+    expect(sql).toMatch(/^\s*COMMIT\s*;/m);
   });
 
   it('migration 028 is wrapped in a transaction with FK disabled (atomicity guard)', () => {

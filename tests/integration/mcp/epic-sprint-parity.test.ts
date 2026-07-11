@@ -90,11 +90,23 @@ describe('epic/sprint lifecycle MCP parity', () => {
       'epic_remove',
       'sprint_start',
       'sprint_close',
+      'sprint_cancel',
       'sprint_remove',
       'sprint_metric',
     ]) {
       expect(names, `expected ${n} to be registered`).toContain(n);
     }
+  });
+
+  it('sprint_cancel retires a planned sprint via MCP', async () => {
+    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'To cancel' }))
+      .sprint as { key: string };
+    const canceled = await call(harness.client, 'sprint_cancel', {
+      sprint_key: sprint.key,
+      reason: 'superseded',
+    });
+    expect(canceled.isError).toBeFalsy();
+    expect((parsePayload(canceled).sprint as { state: string }).state).toBe('CANCELED');
   });
 
   it('epic_add_task → epic_remove → epic_close round-trips via MCP', async () => {

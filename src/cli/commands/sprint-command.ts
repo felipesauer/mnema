@@ -106,6 +106,31 @@ export class SprintCommand {
       });
 
     group
+      .command('cancel <key>')
+      .description('Cancel a planned or active sprint (retire without completing)')
+      .requiredOption('--reason <text>', 'Why the sprint is being retired')
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the sprint's current `updatedAt` or the transition is rejected with CONFLICT",
+      )
+      .action(
+        async (
+          key: string,
+          options: { readonly reason: string; readonly expectedUpdatedAt?: string },
+        ) => {
+          await withMutatingCliContext(({ container }) => {
+            const result = container.sprint.cancel({
+              sprintKey: key,
+              reason: options.reason,
+              actor: container.identity.getDefaultActor(),
+              expectedUpdatedAt: options.expectedUpdatedAt,
+            });
+            renderSprint(result, 'canceled');
+          });
+        },
+      );
+
+    group
       .command('show <key>')
       .description('Show a sprint together with its tasks')
       .action(async (key: string) => {
