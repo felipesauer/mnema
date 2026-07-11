@@ -540,28 +540,45 @@ export class TaskRepository {
 
   /**
    * Sets the first-class git link on a task (MNEMA-ADR-49). Written only by
-   * the opt-in git observer, never the hot path. `updated_at` is left
-   * untouched so populating the link does not read as a task mutation to the
-   * optimistic-concurrency token or the aging clock — it is derived metadata,
-   * not a state change.
+   * the opt-in git observer, never the hot path.
+   *
+   * NOTE on `updated_at`: any UPDATE to a task bumps `updated_at` via
+   * `trg_tasks_updated_at` (whose guard `OLD.updated_at = NEW.updated_at`
+   * fires on exactly a column-only write), the same as `incrementReopenCount`
+   * / `clearClaim`. So a git-link write DOES advance the timestamp. To keep
+   * the opt-in observer from churning the optimistic-concurrency token and
+   * the aging clock on every audit event, this is a NO-OP when the stored
+   * link already equals `link` — the UPDATE (and its trigger) only runs on a
+   * genuine change. A caller holding an explicit `expected_updated_at` from
+   * before an observer pass could still see it advance on a real link change;
+   * that is the same contract as any other task write.
    *
    * @param taskId - Internal task id
    * @param link - The branch, commits and PR to store
-   * @returns The reloaded task, or null if the id is unknown
+   * @returns The reloaded task, or null if the id is unknown (unchanged when
+   *   the link already matches)
    */
   setGitLink(
     taskId: string,
     link: { branch: string | null; commits: readonly GitCommitRef[]; pr: GitPrRef | null },
   ): Task | null {
+    const current = this.findById(taskId);
+    if (current === null) return null;
+    // Idempotent: skip the write (and the updated_at trigger) when nothing
+    // changed, so re-running the observer on every audit event is inert.
+    const nextCommits = JSON.stringify(link.commits);
+    const nextPr = link.pr === null ? null : JSON.stringify(link.pr);
+    if (
+      current.gitBranch === link.branch &&
+      JSON.stringify(current.gitCommits) === nextCommits &&
+      (current.gitPr === null ? null : JSON.stringify(current.gitPr)) === nextPr
+    ) {
+      return current;
+    }
     this.adapter
       .getDatabase()
       .prepare('UPDATE tasks SET git_branch = ?, git_commits = ?, git_pr = ? WHERE id = ?')
-      .run(
-        link.branch,
-        JSON.stringify(link.commits),
-        link.pr === null ? null : JSON.stringify(link.pr),
-        taskId,
-      );
+      .run(link.branch, nextCommits, nextPr, taskId);
     return this.findById(taskId);
   }
 

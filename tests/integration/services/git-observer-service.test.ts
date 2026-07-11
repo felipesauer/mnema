@@ -149,4 +149,28 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
     expect(task.value.gitCommits.length).toBeGreaterThanOrEqual(2);
     expect(task.value.gitCommits.some((c) => c.subject === 'real two')).toBe(true);
   });
+
+  it('a repeated identical observe is a no-op — does not churn updated_at', () => {
+    // The observer runs after every audit event under `watch --git`; an
+    // unchanged link must not keep bumping updated_at (which is the
+    // optimistic-concurrency token and the aging clock). Regression for the
+    // audit's HIGH finding: setGitLink now skips the write when nothing changed.
+    const key = inProgressTask('Steady work');
+    const obs = observer({ branch: 'feat/steady', log: 'aaaaaaa\x1fone' });
+    const first = obs.observe(projectRoot, 'daniel');
+    expect(first.linkedTaskKey).toBe(key);
+    const afterFirst = container.task.findByKey(key);
+    if (!afterFirst.ok) throw new Error('reload');
+    const stamp = afterFirst.value.updatedAt;
+
+    // Spin so wall-clock advances; a real UPDATE would move updated_at.
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10) {
+      /* advance the clock */
+    }
+    obs.observe(projectRoot, 'daniel'); // identical link — must be inert
+    const afterSecond = container.task.findByKey(key);
+    if (!afterSecond.ok) throw new Error('reload');
+    expect(afterSecond.value.updatedAt).toBe(stamp);
+  });
 });

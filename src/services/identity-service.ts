@@ -343,16 +343,32 @@ export class IdentityService {
    * valid assignee handles without running a CLI. The display name is
    * enriched from local config when present, falling back to the handle.
    *
+   * Reserved provenance handles ({@link RESERVED_ROSTER_HANDLES}) are
+   * omitted: `system` authors the shipped seed skills at init, so it is a
+   * legitimate audit-trail author, but it is not a person and must never be
+   * offered as a task assignee. Its audit rows stay intact — this only
+   * shapes the *discoverable* roster, not what can be referenced.
+   *
    * @returns Active actors with handle, kind and display name
    */
   listActors(): ReadonlyArray<{ handle: string; kind: ActorKind; display: string }> {
-    return this.actorRepository.listActive().map((actor) => ({
-      handle: actor.handle,
-      kind: actor.kind,
-      display: this.getDisplayFor(actor.handle),
-    }));
+    return this.actorRepository
+      .listActive()
+      .filter((actor) => !RESERVED_ROSTER_HANDLES.has(actor.handle))
+      .map((actor) => ({
+        handle: actor.handle,
+        kind: actor.kind,
+        display: this.getDisplayFor(actor.handle),
+      }));
   }
 }
+
+/**
+ * Handles that exist for provenance but are not selectable assignees, so
+ * they are hidden from the discoverable roster {@link IdentityService.listActors}
+ * surfaces to agents. `system` is the fixed author of the shipped seed skills.
+ */
+const RESERVED_ROSTER_HANDLES: ReadonlySet<string> = new Set(['system']);
 
 const HANDLE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;
 

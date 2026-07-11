@@ -208,6 +208,34 @@ describe('IdentityService', () => {
     });
   });
 
+  describe('listActors', () => {
+    it('lists ordinary actors', () => {
+      service.ensureActor('daniel', ActorKind.Human);
+      service.ensureActor('agent:claude-code', ActorKind.Agent);
+      const handles = service.listActors().map((a) => a.handle);
+      expect(handles).toContain('daniel');
+      expect(handles).toContain('agent:claude-code');
+    });
+
+    it('omits the reserved `system` seed-author from the discoverable roster', () => {
+      // `system` authors the shipped seed skills at init, so it exists in the
+      // actors table — but it is not a person and must never be offered as an
+      // assignee. It stays out of the roster context_bootstrap surfaces.
+      service.ensureActor('system', ActorKind.Human);
+      service.ensureActor('daniel', ActorKind.Human);
+      const handles = service.listActors().map((a) => a.handle);
+      expect(handles).not.toContain('system');
+      expect(handles).toContain('daniel');
+    });
+
+    it('still resolves the reserved handle when referenced directly', () => {
+      // Hidden from the roster ≠ unreferenceable: findActorIdByHandle bypasses
+      // listActors, so audit rows authored by `system` still resolve.
+      service.ensureActor('system', ActorKind.Human);
+      expect(service.findActorIdByHandle('system')).not.toBeNull();
+    });
+  });
+
   describe('addKnownActor / listKnownActors / getDisplayFor', () => {
     it('starts with an empty known-actors map', () => {
       expect(service.listKnownActors()).toEqual({});
