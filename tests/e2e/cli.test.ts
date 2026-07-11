@@ -93,8 +93,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
     // The example skills land at init, not only via `mnema adopt skills`.
+    // ADR-51: tool-shipped seeds mirror under default/; SKILL.md index at root.
     const skillsDir = path.join(projectRoot, '.mnema/skills');
-    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'default', 'creating-tasks.md'))).toBe(true);
     expect(existsSync(path.join(skillsDir, 'SKILL.md'))).toBe(true);
 
     // Crucially they are SQLite ROWS, so `skill list` shows them and a later
@@ -103,10 +104,35 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(list.stdout).toContain('creating-tasks');
     expect(list.stdout).toContain('transitioning-tasks');
 
-    // Prove survival: an upgrade must not prune the seeded skills.
+    // Prove survival: an upgrade must not prune the seeded skills, and it
+    // keeps them at their canonical default/ path (ADR-51).
     const upgrade = runCli(['upgrade', '--yes'], projectRoot);
     expect(upgrade.status).toBe(0);
-    expect(existsSync(path.join(skillsDir, 'creating-tasks.md'))).toBe(true);
+    expect(existsSync(path.join(skillsDir, 'default', 'creating-tasks.md'))).toBe(true);
+  });
+
+  it('mnema upgrade MIGRATES a flat pre-ADR-51 skill mirror into default/ and prunes the leftover', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    const skillsDir = path.join(projectRoot, '.mnema/skills');
+    const foldered = path.join(skillsDir, 'default', 'creating-tasks.md');
+    expect(existsSync(foldered)).toBe(true);
+
+    // Simulate a project created before ADR-51: the skill's mirror sits FLAT
+    // at the skills root, not under default/. (The SQLite row is unchanged.)
+    const flat = path.join(skillsDir, 'creating-tasks.md');
+    writeFileSync(flat, readFileSync(foldered, 'utf-8'), 'utf-8');
+    rmSync(foldered);
+    expect(existsSync(flat)).toBe(true);
+    expect(existsSync(foldered)).toBe(false);
+
+    // The documented migration path: upgrade detects the mislocated mirror,
+    // rebuilds it into default/, and prunes the flat leftover.
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgrade.status).toBe(0);
+    expect(existsSync(foldered)).toBe(true); // migrated into place
+    expect(existsSync(flat)).toBe(false); // flat leftover removed
+    // The seed is still a live row (not pruned).
+    expect(runCli(['skill', 'list'], projectRoot).stdout).toContain('creating-tasks');
   });
 
   it('mnema init --minimal leaves skills/ absent (seeding is opt-out via --minimal)', () => {

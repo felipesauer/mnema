@@ -34,19 +34,24 @@ describe('AdoptionService', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it('installs skills with the canonical template files', () => {
+  it('installs skills: SKILL.md index at root, seed skills under default/ (ADR-51)', () => {
     const result = service.adopt('skills');
     expect(result.created.length).toBeGreaterThanOrEqual(2);
     expect(result.skipped).toHaveLength(0);
+    // The catalogue index stays at the root.
+    expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
+    // The tool-shipped seeds land under default/.
     for (const expected of [
-      'SKILL.md',
       'creating-tasks.md',
       'transitioning-tasks.md',
       'handling-blockers.md',
       'recording-decisions.md',
+      'report-issue.md',
     ]) {
-      expect(existsSync(path.join(projectRoot, '.mnema/skills', expected))).toBe(true);
+      expect(existsSync(path.join(projectRoot, '.mnema/skills', 'default', expected))).toBe(true);
     }
+    // ...and NOT flat at the skills root.
+    expect(existsSync(path.join(projectRoot, '.mnema/skills', 'creating-tasks.md'))).toBe(false);
   });
 
   it('installs memory with INDEX, context and decisions/notes subfolders', () => {

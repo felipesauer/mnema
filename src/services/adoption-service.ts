@@ -174,11 +174,11 @@ function skillsTemplates(): Map<string, string> {
         '',
         '## Available skills',
         '',
-        '- [creating-tasks.md](creating-tasks.md)',
-        '- [transitioning-tasks.md](transitioning-tasks.md)',
-        '- [handling-blockers.md](handling-blockers.md)',
-        '- [recording-decisions.md](recording-decisions.md)',
-        '- [report-issue.md](report-issue.md)',
+        '- [creating-tasks.md](default/creating-tasks.md)',
+        '- [transitioning-tasks.md](default/transitioning-tasks.md)',
+        '- [handling-blockers.md](default/handling-blockers.md)',
+        '- [recording-decisions.md](default/recording-decisions.md)',
+        '- [report-issue.md](default/report-issue.md)',
         '',
         '## Conventions',
         '',
@@ -190,7 +190,7 @@ function skillsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
     [
-      'creating-tasks.md',
+      'default/creating-tasks.md',
       [
         '---',
         'name: creating-tasks',
@@ -227,7 +227,7 @@ function skillsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
     [
-      'transitioning-tasks.md',
+      'default/transitioning-tasks.md',
       [
         '---',
         'name: transitioning-tasks',
@@ -261,7 +261,7 @@ function skillsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
     [
-      'handling-blockers.md',
+      'default/handling-blockers.md',
       [
         '---',
         'name: handling-blockers',
@@ -292,7 +292,7 @@ function skillsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
     [
-      'recording-decisions.md',
+      'default/recording-decisions.md',
       [
         '---',
         'name: recording-decisions',
@@ -337,7 +337,7 @@ function skillsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
     [
-      'report-issue.md',
+      'default/report-issue.md',
       [
         '---',
         'name: report-issue',

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
+import { CURATED_MEMORY_SUBFOLDERS, listMirrorEntries } from '../utils/mirror-layout.js';
 
 /**
  * One entry rendered in a regenerated `INDEX.md`.
@@ -71,14 +72,37 @@ export class MemoryConsolidator {
       return { memory: null, decisions: null, notes: null };
     }
     return {
-      memory: this.consolidateFolder(this.memoryDir, [
-        // Top-level INDEX.md skips meta files plus the per-subfolder
-        // indices (they have their own entry below).
-        'INDEX.md',
-      ]),
+      memory: this.consolidateMemoryRoot(),
       decisions: this.consolidateSubfolder('decisions'),
       notes: this.consolidateSubfolder('notes'),
     };
+  }
+
+  /**
+   * The top-level `memory/INDEX.md`. Since MNEMA-ADR-51 a scoped memory-row
+   * mirror lives under `memory/<scope>/<slug>.md`, so the root index walks one
+   * level of scope subfolders (via {@link listMirrorEntries}) in addition to
+   * the scopeless files at the root — otherwise scoped memories silently drop
+   * out of the index (and thus out of `context_bootstrap`). The curated
+   * `decisions/` and `notes/` subfolders are their OWN sections and are
+   * excluded here so they are not double-listed.
+   */
+  private consolidateMemoryRoot(): ConsolidatedSection {
+    const entries = listMirrorEntries(this.memoryDir)
+      .filter((e) => {
+        const top = path.relative(this.memoryDir, e.filePath).split(path.sep)[0];
+        return top === undefined || !CURATED_MEMORY_SUBFOLDERS.has(top);
+      })
+      .map((e) => {
+        // Link target relative to memory/INDEX.md, POSIX-style for markdown.
+        const rel = path.relative(this.memoryDir, e.filePath).split(path.sep).join('/');
+        return extractEntry(e.filePath, rel);
+      })
+      .sort((a, b) => a.file.localeCompare(b.file));
+
+    const indexPath = path.join(this.memoryDir, 'INDEX.md');
+    writeIndex(indexPath, 'Memory index', entries);
+    return { indexPath, entries };
   }
 
   private consolidateSubfolder(name: string): ConsolidatedSection | null {
@@ -162,14 +186,19 @@ function mergePreservingFreeSections(previous: string, heading: string, managed:
   return `${trimmed}\n${managed}\n`;
 }
 
-function extractEntry(filePath: string): IndexEntry {
+// `displayPath` is the link target written into the INDEX (relative to the
+// index's own directory). It defaults to the basename for a flat file; the
+// memory root passes a scope-relative path (e.g. `scope-x/foo.md`) so a scoped
+// mirror's link resolves from `memory/INDEX.md`.
+function extractEntry(filePath: string, displayPath?: string): IndexEntry {
+  const file = displayPath ?? path.basename(filePath);
   const raw = readFileSync(filePath, 'utf-8');
   let parsed: ReturnType<typeof parseFrontmatter>;
   try {
     parsed = parseFrontmatter(raw);
   } catch {
     return {
-      file: path.basename(filePath),
+      file,
       title: stripExtension(path.basename(filePath)),
       status: null,
       tags: [],
@@ -187,7 +216,7 @@ function extractEntry(filePath: string): IndexEntry {
     : [];
 
   return {
-    file: path.basename(filePath),
+    file,
     title,
     status,
     tags,

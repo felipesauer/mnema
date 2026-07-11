@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -204,6 +204,100 @@ describe('MemoryService', () => {
     expect(rebuilt).toEqual(['a']);
     expect(existsSync(mirrorA)).toBe(true);
     expect(readFileSync(mirrorB, 'utf-8')).toBe(before);
+  });
+
+  it('ADR-51: a scoped memory mirrors under a scope folder, scopeless at root', () => {
+    service.record({ slug: 'global', title: 'G', content: 'x', actor: 'daniel' });
+    service.record({
+      slug: 'notifier-rate',
+      title: 'N',
+      content: 'y',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    // Scopeless → root; scoped → flattened scope folder.
+    expect(existsSync(path.join(memoryDir, 'global.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'packages-notifier', 'notifier-rate.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'notifier-rate.md'))).toBe(false);
+  });
+
+  it('ADR-51: a scope of "decisions"/"notes" does NOT land in the curated folders', () => {
+    // Regression: scopeFolder must suffix a reserved name so a scoped memory
+    // never mixes into the human-curated decisions/notes trees.
+    service.record({
+      slug: 'reserved-a',
+      title: 'A',
+      content: 'x',
+      scope: 'decisions',
+      actor: 'daniel',
+    });
+    service.record({
+      slug: 'reserved-b',
+      title: 'B',
+      content: 'y',
+      scope: 'Notes',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'decisions-scope', 'reserved-a.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'notes-scope', 'reserved-b.md'))).toBe(true);
+    // NOT inside the curated folders.
+    expect(existsSync(path.join(memoryDir, 'decisions', 'reserved-a.md'))).toBe(false);
+    expect(existsSync(path.join(memoryDir, 'notes', 'reserved-b.md'))).toBe(false);
+  });
+
+  it('ADR-51: an interrupted migration leaving two mirrors is reconciled to one', () => {
+    // BUG3: writeMirror must remove ALL stale copies, not just the first found.
+    service.record({ slug: 'dup', title: 'D', content: 'v1', scope: 'area-a', actor: 'daniel' });
+    const canonical = path.join(memoryDir, 'area-a', 'dup.md');
+    // Simulate a leftover flat copy from a crashed migration.
+    writeFileSync(path.join(memoryDir, 'dup.md'), '# stale flat\n', 'utf-8');
+    expect(existsSync(canonical) && existsSync(path.join(memoryDir, 'dup.md'))).toBe(true);
+    // A real re-record must collapse to exactly one mirror (the canonical one).
+    service.record({ slug: 'dup', title: 'D', content: 'v2', scope: 'area-a', actor: 'daniel' });
+    expect(existsSync(canonical)).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'dup.md'))).toBe(false);
+  });
+
+  it('ADR-51: changing scope relocates the mirror (one mirror per row)', () => {
+    service.record({
+      slug: 'moving',
+      title: 'M',
+      content: 'v1',
+      scope: 'area-a',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'area-a', 'moving.md'))).toBe(true);
+    // Re-record with a new scope + changed content.
+    service.record({
+      slug: 'moving',
+      title: 'M',
+      content: 'v2',
+      scope: 'area-b',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'area-b', 'moving.md'))).toBe(true);
+    // The old location is gone — never two mirrors for one row.
+    expect(existsSync(path.join(memoryDir, 'area-a', 'moving.md'))).toBe(false);
+  });
+
+  it('ADR-51: rebuildMirrors migrates a flat pre-layout file into its scope folder', () => {
+    service.record({
+      slug: 'legacy',
+      title: 'L',
+      content: 'z',
+      scope: 'legacy-area',
+      actor: 'daniel',
+    });
+    const canonical = path.join(memoryDir, 'legacy-area', 'legacy.md');
+    const flat = path.join(memoryDir, 'legacy.md');
+    // Simulate a pre-ADR-51 flat mirror: move the file to the root.
+    rmSync(canonical);
+    writeFileSync(flat, '# stale flat\n', 'utf-8');
+
+    const rebuilt = service.rebuildMirrors();
+    expect(rebuilt).toContain('legacy');
+    expect(existsSync(canonical)).toBe(true); // migrated into the folder
+    expect(existsSync(flat)).toBe(false); // flat leftover removed
   });
 
   it('archive hides a memory from the default listing but keeps it', () => {

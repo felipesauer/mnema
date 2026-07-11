@@ -1,5 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
 
 import { extractWikilinks } from '../domain/wikilink.js';
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
@@ -8,6 +7,7 @@ import type { MemoryRepository } from '../storage/sqlite/repositories/memory-rep
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import { listMirrorEntries } from '../utils/mirror-layout.js';
 
 /** Severity of a wikilink diagnostic — mirrors the skill-lint vocabulary. */
 export type WikilinkSeverity = 'error' | 'warning';
@@ -122,13 +122,11 @@ export class WikilinkLintService {
   }
 
   private readDir(dir: string): SourceFile[] {
-    if (!existsSync(dir)) return [];
     const out: SourceFile[] = [];
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isFile()) continue;
-      if (!entry.name.endsWith('.md')) continue;
-      if (entry.name === 'INDEX.md') continue;
-      const filePath = path.join(dir, entry.name);
+    // Foldered layout (MNEMA-ADR-51): skills live under default/authored and
+    // memories under scope folders, so walk recursively (indexes excluded by
+    // the shared scan).
+    for (const { filePath } of listMirrorEntries(dir)) {
       try {
         const body = parseFrontmatter(readFileSync(filePath, 'utf-8')).content;
         out.push({ file: filePath, body });

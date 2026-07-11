@@ -148,12 +148,32 @@ describe('inspectMirrorDrift', () => {
          VALUES ('s1', 'foo', 'Foo', 1, 'd', 'c', '[]', 'a1')`,
       )
       .run();
-    writeFileSync(path.join(skillsDir, 'foo.md'), '---\nname: Foo\n---\nc', 'utf-8');
+    // ADR-51: an authored skill's canonical mirror lives under authored/.
+    mkdirSync(path.join(skillsDir, 'authored'), { recursive: true });
+    writeFileSync(path.join(skillsDir, 'authored', 'foo.md'), '---\nname: Foo\n---\nc', 'utf-8');
 
     const checks = drift();
     const skills = checks.find((c) => c.name === 'skills mirrored');
     expect(skills?.ok).toBe(true);
     expect(skills?.severity).toBe('warning');
+  });
+
+  it('ADR-51: flags a FLAT (mislocated) mirror as needing rebuild, so upgrade migrates it', () => {
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+         VALUES ('s1', 'foo', 'Foo', 1, 'd', 'c', '[]', 'a1')`,
+      )
+      .run();
+    // A pre-layout flat file: present, but NOT at its canonical authored/ path.
+    writeFileSync(path.join(skillsDir, 'foo.md'), '---\nname: Foo\n---\nc', 'utf-8');
+
+    const skills = drift().find((c) => c.name === 'skills mirrored');
+    expect(skills?.ok).toBe(false);
+    // The "missing files" wording is the exact signal `mnema upgrade` gates on.
+    expect(skills?.detail).toContain('missing files');
+    expect(skills?.detail).toContain('foo');
   });
 
   it('reports ok=false with severity=warning when a mirror is missing', () => {
