@@ -106,6 +106,7 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'decision_reject',
   'skill_record',
   'skill_show',
+  'skill_diff',
   'skill_use',
   'skill_suggest',
   'skills_list',

@@ -52,6 +52,7 @@ export function readUserSkills(userDir: string): SourcedSkill[] {
         toolsUsed: readStringArray(data, 'tools_used'),
         invocable: data.invocable === true,
         dynamicContext: readStringArray(data, 'dynamic_context'),
+        changeRationale: null,
         usageCount: readNumber(data, 'usage_count') ?? 0,
         lastUsedAt: readString(data, 'last_used_at'),
         createdBy: 'user',

@@ -68,6 +68,13 @@ export class SkillTools {
               'Commands whose output is embedded when the skill is shown, e.g. ["mnema tasks ready"]. Only `mnema …` commands are run.',
             ),
           mode: z.enum(['update', 'new_version']).optional(),
+          change_rationale: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Why this version changed — stored on the resulting version and shown in `skill_diff`. Most useful with mode:"new_version".',
+            ),
         },
       },
       (input) => {
@@ -87,6 +94,7 @@ export class SkillTools {
           invocable: input.invocable,
           dynamicContext: input.dynamic_context,
           mode: input.mode,
+          changeRationale: input.change_rationale,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,
@@ -121,6 +129,35 @@ export class SkillTools {
             ? this.skills.resolveDynamicContext(skill)
             : undefined;
         return ok({ skill, dynamic_context });
+      },
+    );
+
+    server.registerTool(
+      'skill_diff',
+      {
+        description:
+          'Show the line-level diff between two versions of a skill, plus the newer ' +
+          "version's change rationale (the why). Omit `from`/`to` to diff the two most " +
+          'recent versions; a skill with a single version diffs against an empty base. Read-only.',
+        inputSchema: {
+          slug: z.string().min(1),
+          from: z.number().int().positive().optional().describe('Older version number'),
+          to: z.number().int().positive().optional().describe('Newer version number'),
+        },
+      },
+      ({ slug, from, to }) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const result = this.skills.diff(slug, from, to);
+        if (!result.ok) return err(result.error);
+        const d = result.value;
+        return ok({
+          slug: d.slug,
+          from_version: d.fromVersion,
+          to_version: d.toVersion,
+          change_rationale: d.changeRationale,
+          hunks: d.hunks,
+        });
       },
     );
 

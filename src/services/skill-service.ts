@@ -87,6 +87,12 @@ export interface SkillRecordInput {
   /** Commands whose output is injected as context (see {@link Skill.dynamicContext}). */
   readonly dynamicContext?: readonly string[];
   readonly mode?: SkillRecordMode;
+  /**
+   * Why this record changes the skill — stored on the resulting version and
+   * shown alongside the version diff. Most useful on `mode='new_version'`;
+   * ignored (kept null) when creating version 1.
+   */
+  readonly changeRationale?: string | null;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -100,6 +106,22 @@ export interface SkillRecordInput {
 export interface SkillRecordResult {
   readonly skill: Skill;
   readonly action: 'created' | 'updated' | 'new_version' | 'no_op';
+}
+
+/** One line-level change in a {@link SkillDiff}. */
+export interface DiffHunk {
+  readonly kind: 'add' | 'remove' | 'context';
+  readonly text: string;
+}
+
+/** The diff between two versions of a skill — see {@link SkillService.diff}. */
+export interface SkillDiff {
+  readonly slug: string;
+  readonly fromVersion: number;
+  readonly toVersion: number;
+  /** The newer version's change rationale (the "why"), or null if none. */
+  readonly changeRationale: string | null;
+  readonly hunks: readonly DiffHunk[];
 }
 
 /**
@@ -302,6 +324,7 @@ export class SkillService {
         toolsUsed,
         invocable,
         dynamicContext,
+        changeRationale: input.changeRationale ?? null,
         createdBy,
       });
       action = 'new_version';
@@ -324,6 +347,7 @@ export class SkillService {
           toolsUsed,
           invocable,
           dynamicContext,
+          changeRationale: input.changeRationale ?? null,
         });
         if (updated === null) {
           throw new Error('skill update returned null after a known row');
@@ -410,6 +434,46 @@ export class SkillService {
   listVersions(slug: string): readonly Skill[] {
     const { repo } = this.requireRecordDeps();
     return repo.listBySlug(slug);
+  }
+
+  /**
+   * Diffs two versions of a skill's content and surfaces the newer
+   * version's change rationale — the "what changed, and why" that teaches
+   * the next agent. `from`/`to` default to the two most recent versions;
+   * a slug with only one version diffs against an empty base. Read-only.
+   *
+   * @param slug - Skill slug
+   * @param from - Older version number (defaults to the second-newest)
+   * @param to - Newer version number (defaults to the latest)
+   * @returns The diff view or `SkillNotFound`
+   */
+  diff(slug: string, from?: number, to?: number): Result<SkillDiff, MnemaError> {
+    const { repo } = this.requireRecordDeps();
+    const versions = repo.listBySlug(slug); // newest first
+    const latest = versions[0];
+    if (latest === undefined) {
+      return Err({ kind: ErrorCode.SkillNotFound, slug });
+    }
+    const toVersion = to ?? latest.version;
+    // Default `from` to the version just below `to`; for a lone version,
+    // diff against an empty base so the whole body reads as added.
+    const fromVersion = from ?? versions[1]?.version ?? 0;
+
+    const toSkill = versions.find((v) => v.version === toVersion);
+    if (toSkill === undefined) {
+      return Err({ kind: ErrorCode.SkillNotFound, slug });
+    }
+    const fromSkill = versions.find((v) => v.version === fromVersion);
+    // fromVersion 0 (or an unknown one) means "no prior version" → empty base.
+    const fromContent = fromSkill?.content ?? '';
+
+    return Ok({
+      slug,
+      fromVersion: fromSkill?.version ?? 0,
+      toVersion: toSkill.version,
+      changeRationale: toSkill.changeRationale,
+      hunks: diffLines(fromContent, toSkill.content),
+    });
   }
 
   /**
@@ -721,4 +785,63 @@ function quoteYaml(value: string): string {
  */
 export function contentDigest(content: string): string {
   return createHash('sha256').update(content).digest('hex');
+}
+
+/**
+ * A line-level diff between two texts, via the classic LCS dynamic program.
+ * Lines common to both are `context`; lines only in the old text are
+ * `remove`; lines only in the new text are `add`. Deterministic and
+ * dependency-free — enough to show what changed between two skill versions
+ * without pulling in a diff library.
+ *
+ * @param before - The old content
+ * @param after - The new content
+ * @returns The ordered hunks
+ */
+function diffLines(before: string, after: string): DiffHunk[] {
+  const a = before.length === 0 ? [] : before.split('\n');
+  const b = after.length === 0 ? [] : after.split('\n');
+  const n = a.length;
+  const m = b.length;
+  const width = m + 1;
+
+  // lcs[i*width + j] = length of the longest common subsequence of a[i:]
+  // and b[j:]. A flat typed array so every index is defined (no
+  // undefined-index noise) and the walk below reads cleanly.
+  const lcs = new Int32Array((n + 1) * width);
+  const at = (i: number, j: number): number => lcs[i * width + j] as number;
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      lcs[i * width + j] =
+        a[i] === b[j] ? at(i + 1, j + 1) + 1 : Math.max(at(i + 1, j), at(i, j + 1));
+    }
+  }
+
+  const hunks: DiffHunk[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    const ai = a[i] as string;
+    const bj = b[j] as string;
+    if (ai === bj) {
+      hunks.push({ kind: 'context', text: ai });
+      i += 1;
+      j += 1;
+    } else if (at(i + 1, j) >= at(i, j + 1)) {
+      hunks.push({ kind: 'remove', text: ai });
+      i += 1;
+    } else {
+      hunks.push({ kind: 'add', text: bj });
+      j += 1;
+    }
+  }
+  while (i < n) {
+    hunks.push({ kind: 'remove', text: a[i] as string });
+    i += 1;
+  }
+  while (j < m) {
+    hunks.push({ kind: 'add', text: b[j] as string });
+    j += 1;
+  }
+  return hunks;
 }

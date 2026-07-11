@@ -25,6 +25,7 @@ interface RecordOptions {
   readonly invocable?: boolean;
   readonly dynamicContext?: readonly string[];
   readonly newVersion?: boolean;
+  readonly rationale?: string;
 }
 
 /**
@@ -91,6 +92,7 @@ export class SkillCommand {
         [],
       )
       .option('--new-version', 'Bump a new version instead of overwriting the latest in place')
+      .option('--rationale <text>', 'Why this version changed (shown in `skill diff`)')
       .action(async (slug: string, options: RecordOptions) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.skill.record({
@@ -102,6 +104,7 @@ export class SkillCommand {
             invocable: options.invocable,
             dynamicContext: options.dynamicContext,
             mode: options.newVersion === true ? 'new_version' : 'update',
+            changeRationale: options.rationale,
             actor: container.identity.getDefaultActor(),
             via: 'cli',
           });
@@ -152,6 +155,34 @@ export class SkillCommand {
           process.stdout.write(
             `${pc.bold(skill.slug)} v${skill.version} — ${skill.name}\n${pc.dim(skill.description)}\n\n${skill.content}\n`,
           );
+        });
+      });
+
+    group
+      .command('diff <slug>')
+      .description('Show the diff between two versions of a skill, with the change rationale')
+      .option('--from <n>', 'Older version (default: second-newest)')
+      .option('--to <n>', 'Newer version (default: latest)')
+      .action(async (slug: string, options: { readonly from?: string; readonly to?: string }) => {
+        await withCliContext(({ container }) => {
+          const from = options.from !== undefined ? Number(options.from) : undefined;
+          const to = options.to !== undefined ? Number(options.to) : undefined;
+          const result = container.skill.diff(slug, from, to);
+          if (!result.ok) {
+            process.exit(printError(result.error));
+          }
+          const d = result.value;
+          process.stdout.write(
+            `${pc.bold(d.slug)} ${pc.dim(`v${d.fromVersion} → v${d.toVersion}`)}\n`,
+          );
+          process.stdout.write(
+            `${pc.bold('why:')} ${d.changeRationale ?? pc.dim('(no rationale recorded)')}\n\n`,
+          );
+          for (const h of d.hunks) {
+            if (h.kind === 'add') process.stdout.write(`${pc.green(`+ ${h.text}`)}\n`);
+            else if (h.kind === 'remove') process.stdout.write(`${pc.red(`- ${h.text}`)}\n`);
+            else process.stdout.write(`${pc.dim(`  ${h.text}`)}\n`);
+          }
         });
       });
 
