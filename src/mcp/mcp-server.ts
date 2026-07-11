@@ -334,6 +334,7 @@ export class MnemaMcpServer {
         this.services.identity,
         this.session,
         pendingFiles,
+        this.services.skillQuality,
       ).register(this.sdk);
       new WikilinkTools(this.services.wikilinkLint).register(this.sdk);
       new MemoryTools(

@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { IdentityService } from '../../../services/identity-service.js';
+import type { SkillQualityService } from '../../../services/skill-quality-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
@@ -25,6 +26,7 @@ export class SkillTools {
     private readonly identity: IdentityService,
     private readonly session: McpSessionContext,
     private readonly pendingMigrations: PendingMigrationsSource,
+    private readonly skillQuality: SkillQualityService,
   ) {}
 
   /**
@@ -202,14 +204,19 @@ export class SkillTools {
       'skills_list',
       {
         description:
-          'List every recorded skill (latest version only). Ordered by usage_count desc, then recency.',
+          'List every recorded skill (latest version only). Ordered by usage_count desc, then recency. ' +
+          'Each carries `review_flag`: true when the skill was applied in a run that touched a task ' +
+          'which later reopened — a signal its guidance may need revisiting.',
         inputSchema: {},
       },
       () => {
         const drift = requireFreshSchema(this.pendingMigrations);
         if (drift !== null) return drift;
         const skills = this.skills.list();
-        return ok({ skills });
+        const flagged = this.skillQuality.flaggedForReview();
+        return ok({
+          skills: skills.map((s) => ({ ...s, review_flag: flagged.has(s.slug) })),
+        });
       },
     );
 

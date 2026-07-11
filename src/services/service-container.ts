@@ -74,6 +74,7 @@ import { ProvenanceService } from './provenance-service.js';
 import { RoadmapMirror } from './roadmap-mirror.js';
 import { RunDiffService } from './run-diff-service.js';
 import { SearchService } from './search-service.js';
+import { SkillQualityService } from './skill-quality-service.js';
 import { SkillService } from './skill-service.js';
 import { SnapshotService } from './snapshot-service.js';
 import { SprintService } from './sprint-service.js';
@@ -149,6 +150,7 @@ export interface ServiceContainer {
   readonly snapshot: SnapshotService;
   readonly runDiff: RunDiffService;
   readonly focus: FocusService;
+  readonly skillQuality: SkillQualityService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly hookTrust: HookTrustService;
@@ -549,6 +551,7 @@ export function createServiceContainer(
   );
   const runDiffService = new RunDiffService(agentRuns, auditQuery);
   const focusService = new FocusService(taskService, dependencyService, identity, stateMachine);
+  const skillQualityService = new SkillQualityService(auditQuery, tasks);
   const fileCollisionService = new FileCollisionService(
     tasks,
     taskEvidenceRepository,
@@ -689,6 +692,7 @@ export function createServiceContainer(
     snapshot: snapshotService,
     runDiff: runDiffService,
     focus: focusService,
+    skillQuality: skillQualityService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     hookTrust,
