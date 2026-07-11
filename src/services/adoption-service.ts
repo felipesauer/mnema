@@ -2,13 +2,14 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Config } from '../config/config-schema.js';
+import { BUILT_IN_TASK_TEMPLATES, TASK_TEMPLATE_KINDS } from './task-template-service.js';
 
 /**
  * Pieces of the project layout that adoption commands can install.
  *
  * Aligned with the `mnema adopt <component>` table in DESIGN.md §7.3.
  */
-export type AdoptableComponent = 'skills' | 'memory' | 'roadmap' | 'commands';
+export type AdoptableComponent = 'skills' | 'memory' | 'roadmap' | 'commands' | 'templates';
 
 /**
  * Per-component summary of what an adoption call did.
@@ -62,6 +63,8 @@ export class AdoptionService {
         return this.installRoadmap();
       case 'commands':
         return this.installCommands();
+      case 'templates':
+        return this.installTemplates();
     }
   }
 
@@ -73,7 +76,13 @@ export class AdoptionService {
    * @returns Per-component summaries
    */
   adoptAll(): AdoptionSummary {
-    const components: AdoptableComponent[] = ['skills', 'memory', 'roadmap', 'commands'];
+    const components: AdoptableComponent[] = [
+      'skills',
+      'memory',
+      'roadmap',
+      'commands',
+      'templates',
+    ];
     return { results: components.map((c) => this.adopt(c)) };
   }
 
@@ -95,6 +104,11 @@ export class AdoptionService {
   private installCommands(): AdoptionResult {
     const dir = path.join(this.projectRoot, this.config.paths.commands);
     return this.writeTemplates(dir, 'commands', commandsTemplates());
+  }
+
+  private installTemplates(): AdoptionResult {
+    const dir = path.join(this.projectRoot, this.config.paths.templates);
+    return this.writeTemplates(dir, 'templates', taskTemplateFiles());
   }
 
   private writeTemplates(
@@ -528,4 +542,33 @@ function commandsTemplates(): Map<string, string> {
       ].join('\n'),
     ],
   ]);
+}
+
+/**
+ * Renders the built-in task templates (bug/feature/refactor/chore) to
+ * overridable `.md` files, so `templates/` is populated and a project can
+ * edit any kind in place. The SAME built-in skeletons drive both these
+ * files and `task_create`'s pre-fill fallback — single source. Each file's
+ * frontmatter carries `description` + `acceptance_criteria`, exactly what
+ * TaskTemplateService.forKind reads back as an override.
+ */
+function taskTemplateFiles(): Map<string, string> {
+  const entries: [string, string][] = TASK_TEMPLATE_KINDS.map((kind) => {
+    const t = BUILT_IN_TASK_TEMPLATES[kind];
+    const lines = [
+      '---',
+      'description: |',
+      ...t.description.split('\n').map((l) => `  ${l}`),
+      'acceptance_criteria:',
+      ...t.acceptanceCriteria.map((c) => `  - ${c}`),
+      '---',
+      '',
+      `# ${kind} template`,
+      '',
+      `Edit this file to change the ${kind} skeleton \`task_create --template ${kind}\` uses.`,
+      '',
+    ];
+    return [`${kind}.md`, lines.join('\n')];
+  });
+  return new Map(entries);
 }

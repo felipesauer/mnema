@@ -14,6 +14,7 @@ const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = [
   'memory',
   'roadmap',
   'commands',
+  'templates',
   'all',
 ];
 
@@ -38,7 +39,7 @@ export class AdoptCommand {
     program
       .command('adopt <component>')
       .description(
-        'Add an optional layout component (skills, memory, roadmap, commands, all). Idempotent.',
+        'Add an optional layout component (skills, memory, roadmap, commands, templates, all). Idempotent.',
       )
       .action(async (component: string) => {
         if (!SUPPORTED.includes(component as AdoptableComponent | 'all')) {

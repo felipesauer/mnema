@@ -82,6 +82,7 @@ import { SyncRebuild } from './sync-rebuild.js';
 import { SyncMode, SyncService } from './sync-service.js';
 import { TaskEvidenceService } from './task-evidence-service.js';
 import { TaskService } from './task-service.js';
+import { TaskTemplateService } from './task-template-service.js';
 import { userKnowledgeDir } from './user-knowledge.js';
 import { WikilinkLintService } from './wikilink-lint-service.js';
 import { WorkGraphLintService } from './work-graph-lint-service.js';
@@ -162,6 +163,7 @@ export interface ServiceContainer {
   readonly search: SearchService;
   readonly skill: SkillService;
   readonly commandDefinition: CommandDefinitionService;
+  readonly taskTemplate: TaskTemplateService;
   readonly wikilinkLint: WikilinkLintService;
   readonly memory: MemoryService;
   readonly memoryStaleness: MemoryStalenessService;
@@ -636,6 +638,9 @@ export function createServiceContainer(
   const commandDefinitionService = new CommandDefinitionService(
     path.join(projectRoot, config.paths.commands),
   );
+  const taskTemplateService = new TaskTemplateService(
+    path.join(projectRoot, config.paths.templates),
+  );
   const memoryService = new MemoryService(
     memoryDir,
     memoryRepository,
@@ -705,6 +710,7 @@ export function createServiceContainer(
     search: searchService,
     skill: skillService,
     commandDefinition: commandDefinitionService,
+    taskTemplate: taskTemplateService,
     wikilinkLint: wikilinkLintService,
     memory: memoryService,
     memoryStaleness: memoryStalenessService,

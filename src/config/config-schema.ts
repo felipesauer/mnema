@@ -99,6 +99,7 @@ export const ConfigSchema = z.object({
       observations: relativePathField('.mnema/observations'),
       skills: relativePathField('.mnema/skills'),
       commands: relativePathField('.mnema/commands'),
+      templates: relativePathField('.mnema/templates'),
       workflows: relativePathField('.mnema/workflows'),
     })
     .prefault({}),

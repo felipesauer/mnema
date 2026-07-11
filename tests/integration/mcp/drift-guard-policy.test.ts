@@ -88,6 +88,8 @@ async function setup(): Promise<Harness> {
     session,
     container.stateMachine,
     PENDING,
+    container.label,
+    container.taskTemplate,
   ).register(sdkServer);
   new EvidenceTools(container.taskEvidence, container.identity, session, PENDING).register(
     sdkServer,

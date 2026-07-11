@@ -73,6 +73,7 @@ describe('AdoptionService', () => {
       'memory',
       'roadmap',
       'commands',
+      'templates',
     ]);
     expect(existsSync(path.join(projectRoot, '.mnema/skills', 'SKILL.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/memory', 'INDEX.md'))).toBe(true);

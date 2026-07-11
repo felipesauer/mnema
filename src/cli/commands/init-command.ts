@@ -241,6 +241,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.observations), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
+      mkdirSync(path.join(cwd, config.paths.templates), { recursive: true });
     }
 
     appendGitignore(cwd, config.paths.state, config.paths.audit);
@@ -271,6 +272,10 @@ export class InitCommand {
       // (the shortcut that makes the tool get used). Commands are pure files
       // with no SQLite row, so — unlike skills — they need no import step.
       adoption.adopt('commands');
+      // Seed the task templates so `templates/<kind>.md` exist and are
+      // overridable; task_create --template falls back to the built-ins when
+      // a file is absent, so this is discoverability, not a hard dependency.
+      adoption.adopt('templates');
     }
 
     const dbPath = path.join(stateDir, 'state.db');

@@ -240,6 +240,7 @@ export class MnemaMcpServer {
       this.services.stateMachine,
       pendingFiles,
       this.services.label,
+      this.services.taskTemplate,
     ).register(this.sdk);
     new AgentPlanTools(this.services.agentPlan, this.session, pendingFiles).register(this.sdk);
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);

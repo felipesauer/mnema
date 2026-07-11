@@ -6,6 +6,11 @@ import type { StateMachine } from '../../../domain/state-machine/state-machine.j
 import type { IdentityService } from '../../../services/identity-service.js';
 import { type LabelService, validateLabelNames } from '../../../services/label-service.js';
 import type { TaskService } from '../../../services/task-service.js';
+import {
+  TASK_TEMPLATE_KINDS,
+  type TaskTemplateKind,
+  type TaskTemplateService,
+} from '../../../services/task-template-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,
@@ -52,6 +57,7 @@ export class TaskTools {
     private readonly stateMachine: StateMachine,
     private readonly pendingMigrations: PendingMigrationsSource,
     private readonly labels: LabelService,
+    private readonly templates: TaskTemplateService,
   ) {}
 
   /**
@@ -75,6 +81,14 @@ export class TaskTools {
                 'enforces any minimum length when the task is submitted for readiness',
             ),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
+          template: z
+            .enum(TASK_TEMPLATE_KINDS as [TaskTemplateKind, ...TaskTemplateKind[]])
+            .optional()
+            .describe(
+              'Pre-fill a description + acceptance-criteria skeleton for this kind ' +
+                '(bug/feature/refactor/chore). Only fills fields you leave empty; ' +
+                'overridable per project in templates/<kind>.md.',
+            ),
           estimate: z
             .number()
             .int()
@@ -125,11 +139,23 @@ export class TaskTools {
           if (!validated.ok) return err(validated.error);
         }
 
+        // Template pre-fill: only fills fields the caller left empty, so a
+        // supplied description/criteria always wins. Templates are a mould,
+        // never an override.
+        const tmpl = input.template === undefined ? null : this.templates.forKind(input.template);
+        const description = input.description ?? (tmpl !== null ? tmpl.description : undefined);
+        const acceptanceCriteria =
+          input.acceptance_criteria !== undefined && input.acceptance_criteria.length > 0
+            ? input.acceptance_criteria
+            : tmpl !== null
+              ? tmpl.acceptanceCriteria
+              : [];
+
         const result = this.tasks.create({
           projectKey: this.config.project.key,
           title: input.title,
-          description: input.description,
-          acceptanceCriteria: input.acceptance_criteria ?? [],
+          description,
+          acceptanceCriteria,
           estimate: input.estimate ?? null,
           contextBudget: input.context_budget ?? null,
           priority: input.priority ?? 3,
