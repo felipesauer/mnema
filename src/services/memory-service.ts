@@ -13,6 +13,8 @@ import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/pr
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import {
   canonicalMirrorPath as buildMirrorPath,
+  CURATED_MEMORY_SUBFOLDERS,
+  findAllMirrors,
   findMirror,
   scopeFolder,
 } from '../utils/mirror-layout.js';
@@ -302,8 +304,11 @@ export class MemoryService {
       // hidden from `list()`, so its `.md` must not linger on disk looking
       // like a live entry. `rebuildMirrors` (listAll excludes archived)
       // will not recreate it. Reactivating via upsert rewrites the mirror.
-      const mirrorPath = findMirror(this.memoryDir, slug);
-      if (mirrorPath !== null) unlinkSync(mirrorPath);
+      for (const mirrorPath of findAllMirrors(this.memoryDir, slug, {
+        excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+      })) {
+        unlinkSync(mirrorPath);
+      }
       this.audit.write({
         kind: 'memory_archived',
         actor,
@@ -369,8 +374,11 @@ export class MemoryService {
       this.repo.archive(slug);
       // Its `.md` must not linger on disk looking live — same reasoning as
       // `archive`.
-      const mirrorPath = findMirror(this.memoryDir, slug);
-      if (mirrorPath !== null) unlinkSync(mirrorPath);
+      for (const mirrorPath of findAllMirrors(this.memoryDir, slug, {
+        excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+      })) {
+        unlinkSync(mirrorPath);
+      }
       this.audit.write({
         kind: 'memory_superseded',
         actor,
@@ -480,7 +488,9 @@ export class MemoryService {
       // Rewrite when the mirror is missing OR sits somewhere other than its
       // canonical foldered path — the latter migrates a flat pre-ADR-51 file
       // (or a stale scope folder) into place. writeMirror unlinks the old one.
-      const current = findMirror(this.memoryDir, memory.slug);
+      const current = findMirror(this.memoryDir, memory.slug, {
+        excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+      });
       if (current !== this.canonicalMirrorPath(memory)) {
         this.writeMirror(memory);
         rebuilt.push(memory.slug);
@@ -496,12 +506,17 @@ export class MemoryService {
 
   private writeMirror(memory: Memory): void {
     // Foldered layout (MNEMA-ADR-51): a scoped memory mirrors under a
-    // presentational scope folder, a scopeless one at the root. If a mirror
-    // already exists elsewhere in the tree (e.g. its scope changed, or a flat
-    // pre-migration file), remove it first so the row keeps exactly one mirror.
+    // presentational scope folder, a scopeless one at the root. Remove EVERY
+    // existing mirror for this slug other than the target (a changed scope, a
+    // flat pre-migration file, or a duplicate left by an interrupted migration)
+    // so the row keeps exactly one mirror. Curated decisions/notes are excluded
+    // from the scan so a memory slug is never matched against a curated file.
     const targetPath = this.canonicalMirrorPath(memory);
-    const stale = findMirror(this.memoryDir, memory.slug);
-    if (stale !== null && stale !== targetPath) unlinkSync(stale);
+    for (const stale of findAllMirrors(this.memoryDir, memory.slug, {
+      excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+    })) {
+      if (stale !== targetPath) unlinkSync(stale);
+    }
     mkdirSync(path.dirname(targetPath), { recursive: true });
     const lines = [
       '---',
@@ -517,7 +532,9 @@ export class MemoryService {
 }
 
 function mirrorExists(dir: string, slug: string): boolean {
-  return findMirror(dir, slug) !== null;
+  // Exclude curated decisions/notes so a memory slug is never satisfied by a
+  // same-named curated file.
+  return findMirror(dir, slug, { excludeDirs: CURATED_MEMORY_SUBFOLDERS }) !== null;
 }
 
 function topicsArraysEqual(a: readonly string[], b: readonly string[]): boolean {

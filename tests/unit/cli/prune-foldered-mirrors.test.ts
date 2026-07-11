@@ -57,4 +57,26 @@ describe('pruneFolderedOrphanMirrors (ADR-51)', () => {
   it('is a no-op on a missing directory', () => {
     expect(pruneFolderedOrphanMirrors(path.join(root, 'nope'), new Set(), fs)).toEqual([]);
   });
+
+  it('NEVER prunes curated decisions/notes files or sweeps their folders (data-loss guard)', () => {
+    // Regression for the CRITICAL bug: curated ADR/note files have no memory
+    // row, so a naive recursive prune would delete them. With the curated
+    // subfolders excluded they must survive untouched — even the empty-folder
+    // sweep must leave the curated dirs alone.
+    write('scope-x/real-mem.md'); // a genuine memory-row mirror (kept)
+    write('decisions/adr-architecture.md'); // curated, no row — MUST survive
+    write('notes/meeting-2026.md'); // curated, no row — MUST survive
+    write('authored/orphan.md'); // a true orphan (removed)
+
+    const known = new Set(['real-mem']);
+    const removed = pruneFolderedOrphanMirrors(root, known, fs, new Set(['decisions', 'notes']));
+
+    expect(removed).toEqual(['orphan']); // only the real orphan
+    expect(existsSync(path.join(root, 'decisions', 'adr-architecture.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'notes', 'meeting-2026.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'decisions'))).toBe(true);
+    expect(existsSync(path.join(root, 'notes'))).toBe(true);
+    expect(existsSync(path.join(root, 'scope-x', 'real-mem.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'authored', 'orphan.md'))).toBe(false);
+  });
 });

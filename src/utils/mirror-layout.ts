@@ -20,12 +20,25 @@ import path from 'node:path';
  * encoding), and keeps the recursive scanners bounded and simple.
  */
 
+/** Shared empty set so a default `excludeDirs` arg does not allocate per call. */
+const EMPTY_DIR_SET: ReadonlySet<string> = new Set();
+
 /** Curated index filenames that are not entity mirrors and never have a row. */
 export const INDEX_FILENAMES: ReadonlySet<string> = new Set(['INDEX.md', 'SKILL.md']);
 
 /** Skill origin subfolders (MNEMA-ADR-51). */
 export const SKILL_DEFAULT_DIR = 'default';
 export const SKILL_AUTHORED_DIR = 'authored';
+
+/**
+ * Memory subfolders that are HUMAN-CURATED sections (their own INDEX, linted as
+ * ADRs/notes), NOT memory-row mirrors. A recursive row-mirror scan of the
+ * memory dir must skip them, and a memory `scope` must never resolve to one of
+ * these names — otherwise a scoped memory row would land among the curated
+ * files, be reclassified by the consolidator, and (worse) be treated as an
+ * orphan by the prune.
+ */
+export const CURATED_MEMORY_SUBFOLDERS: ReadonlySet<string> = new Set(['decisions', 'notes']);
 
 /** The reserved handle whose skills are the tool-shipped seeds. */
 export const SEED_AUTHOR_HANDLE = 'system';
@@ -38,6 +51,10 @@ export const SEED_AUTHOR_HANDLE = 'system';
  * path-unsafe character collapses to `-`; the result is lowercased and trimmed
  * of leading/trailing separators. This is lossy BY DESIGN — the slug, not the
  * folder, is the key.
+ *
+ * A segment that would collide with a curated memory subfolder
+ * ({@link CURATED_MEMORY_SUBFOLDERS}, e.g. `decisions`/`notes`) is suffixed so
+ * a scoped memory can never land inside the human-curated ADR/note trees.
  */
 export function scopeFolder(scope: string | null | undefined): string | null {
   if (scope === null || scope === undefined) return null;
@@ -46,7 +63,8 @@ export function scopeFolder(scope: string | null | undefined): string | null {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return seg.length > 0 ? seg : null;
+  if (seg.length === 0) return null;
+  return CURATED_MEMORY_SUBFOLDERS.has(seg) ? `${seg}-scope` : seg;
 }
 
 /**
@@ -72,8 +90,10 @@ export function skillOriginDir(createdByHandle: string): string {
  */
 export function listMirrorEntries(
   root: string,
-  maxDepth = 1,
+  options: { maxDepth?: number; excludeDirs?: ReadonlySet<string> } = {},
 ): Array<{ slug: string; filePath: string }> {
+  const maxDepth = options.maxDepth ?? 1;
+  const excludeDirs = options.excludeDirs ?? EMPTY_DIR_SET;
   if (!existsSync(root)) return [];
   const out: Array<{ slug: string; filePath: string }> = [];
   const walk = (dir: string, depth: number): void => {
@@ -81,6 +101,9 @@ export function listMirrorEntries(
       if (entry.name.startsWith('.')) continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
+        // Skip curated top-level subfolders (e.g. memory decisions/notes) —
+        // their files are not row mirrors and must never be scanned as such.
+        if (depth === 0 && excludeDirs.has(entry.name)) continue;
         if (depth < maxDepth) walk(full, depth + 1);
         continue;
       }
@@ -112,28 +135,32 @@ export function canonicalMirrorPath(root: string, slug: string, subfolder: strin
 }
 
 /**
- * Finds the mirror file for `slug` anywhere in the foldered layout under
- * `root`, or `null` when absent. Matches on the file basename, so it locates a
- * mirror regardless of which subfolder it sits in (or if it is still flat).
+ * Every mirror file for `slug` under `root` — usually one, but a partial
+ * migration (crash between unlink and write) can leave a flat AND a foldered
+ * copy. Returned in traversal order. Callers that must keep exactly one mirror
+ * per slug use this to remove ALL stale copies, not just the first found.
  */
-export function findMirror(root: string, slug: string, maxDepth = 1): string | null {
-  const target = `${slug}.md`;
-  const targetAlt = `${slug}.markdown`;
-  if (!existsSync(root)) return null;
-  const walk = (dir: string, depth: number): string | null => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (depth < maxDepth) {
-          const found = walk(full, depth + 1);
-          if (found !== null) return found;
-        }
-        continue;
-      }
-      if (entry.isFile() && (entry.name === target || entry.name === targetAlt)) return full;
-    }
-    return null;
-  };
-  return walk(root, 0);
+export function findAllMirrors(
+  root: string,
+  slug: string,
+  options: { excludeDirs?: ReadonlySet<string> } = {},
+): string[] {
+  return listMirrorEntries(root, options)
+    .filter((e) => e.slug === slug)
+    .map((e) => e.filePath);
+}
+
+/**
+ * Finds a mirror file for `slug` anywhere in the foldered layout under `root`,
+ * or `null` when absent. Matches on the file basename, so it locates a mirror
+ * regardless of which subfolder it sits in (or if it is still flat). When more
+ * than one exists (a partial migration), returns the first in traversal order;
+ * use {@link findAllMirrors} to reconcile duplicates.
+ */
+export function findMirror(
+  root: string,
+  slug: string,
+  options: { excludeDirs?: ReadonlySet<string> } = {},
+): string | null {
+  return findAllMirrors(root, slug, options)[0] ?? null;
 }

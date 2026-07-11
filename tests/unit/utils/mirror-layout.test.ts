@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  findAllMirrors,
   findMirror,
   listMirrorEntries,
   scopeFolder,
@@ -25,6 +26,16 @@ describe('scopeFolder', () => {
   it('trims separators and collapses non-alphanumerics', () => {
     expect(scopeFolder('  /weird__scope!!  ')).toBe('weird-scope');
     expect(scopeFolder('///')).toBeNull(); // nothing usable → root
+  });
+
+  it('never resolves to a curated memory subfolder (decisions/notes)', () => {
+    // Otherwise a scoped memory would land inside the human-curated ADR/note
+    // tree and be reclassified/pruned. Reserved names are suffixed.
+    expect(scopeFolder('decisions')).toBe('decisions-scope');
+    expect(scopeFolder('Notes')).toBe('notes-scope');
+    expect(scopeFolder('DECISIONS')).toBe('decisions-scope');
+    // A non-colliding scope is untouched.
+    expect(scopeFolder('packages/notifier')).toBe('packages-notifier');
   });
 });
 
@@ -81,5 +92,29 @@ describe('findMirror / listMirrorEntries', () => {
       .map((e) => e.slug)
       .sort();
     expect(slugs).toEqual(['flat', 'mem', 'seed']);
+  });
+
+  it('excludeDirs skips a curated top-level subfolder in list and find', () => {
+    write('mem.md');
+    write('decisions/adr-1.md'); // curated — must be invisible to row scans
+    write('notes/note-1.md');
+    const exclude = new Set(['decisions', 'notes']);
+    const slugs = listMirrorEntries(root, { excludeDirs: exclude })
+      .map((e) => e.slug)
+      .sort();
+    expect(slugs).toEqual(['mem']);
+    // A curated file is not found as a row mirror when excluded.
+    expect(findMirror(root, 'adr-1', { excludeDirs: exclude })).toBeNull();
+    // ...but IS found without the exclusion (proves the exclusion is doing it).
+    expect(findMirror(root, 'adr-1')).not.toBeNull();
+  });
+
+  it('findAllMirrors returns every duplicate copy of a slug (partial migration)', () => {
+    write('foo.md'); // flat leftover
+    write('authored/foo.md'); // canonical
+    const all = findAllMirrors(root, 'foo');
+    expect(all.length).toBe(2);
+    expect(all.some((p) => p.endsWith(path.join('authored', 'foo.md')))).toBe(true);
+    expect(all.some((p) => p === path.join(root, 'foo.md'))).toBe(true);
   });
 });

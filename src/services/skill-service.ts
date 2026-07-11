@@ -15,6 +15,7 @@ import type { SkillRepository } from '../storage/sqlite/repositories/skill-repos
 import { writeFileAtomic } from '../utils/atomic-write.js';
 import {
   canonicalMirrorPath as buildMirrorPath,
+  findAllMirrors,
   findMirror,
   listMirrorEntries,
   skillOriginDir,
@@ -764,8 +765,12 @@ export class SkillService {
     // first so a row keeps exactly one mirror (e.g. a pre-migration flat file,
     // or an origin that changed).
     const targetPath = this.canonicalMirrorPath(skill);
-    const stale = findMirror(this.skillsDir, skill.slug);
-    if (stale !== null && stale !== targetPath) unlinkSync(stale);
+    // Remove EVERY existing mirror other than the target — a changed origin, a
+    // flat pre-migration file, or a duplicate left by an interrupted migration
+    // — so the row keeps exactly one mirror.
+    for (const stale of findAllMirrors(this.skillsDir, skill.slug)) {
+      if (stale !== targetPath) unlinkSync(stale);
+    }
     mkdirSync(path.dirname(targetPath), { recursive: true });
     const frontmatter = [
       '---',

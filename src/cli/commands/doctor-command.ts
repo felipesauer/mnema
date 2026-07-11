@@ -32,6 +32,7 @@ import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
 import {
   canonicalMirrorPath as buildMirrorPath,
+  CURATED_MEMORY_SUBFOLDERS,
   findMirror,
   listMirrorEntries,
   scopeFolder,
@@ -174,6 +175,7 @@ export class DoctorCommand {
           pathMod.join(projectRoot, config.paths.memory),
           memorySlugs,
           fsMod,
+          CURATED_MEMORY_SUBFOLDERS,
         );
         // Observation mirrors are keyed by row id; only ACTIVE rows keep one,
         // so an archived observation's already-unlinked file is not resurrected
@@ -571,10 +573,14 @@ export function inspectMirrorDrift(
   // under its scope folder counts as needing a rebuild.
   const memoryMissing = memoryRows.filter(
     (r) =>
-      findMirror(dirs.memoryDir, r.slug) !==
+      findMirror(dirs.memoryDir, r.slug, { excludeDirs: CURATED_MEMORY_SUBFOLDERS }) !==
       buildMirrorPath(dirs.memoryDir, r.slug, scopeFolder(r.scope)),
   );
-  const memoryOrphans = listFolderedMirrorOrphans(dirs.memoryDir, memorySlugs);
+  const memoryOrphans = listFolderedMirrorOrphans(
+    dirs.memoryDir,
+    memorySlugs,
+    CURATED_MEMORY_SUBFOLDERS,
+  );
   checks.push({
     name: 'memories mirrored',
     ok: memoryMissing.length === 0 && memoryOrphans.length === 0,
@@ -749,10 +755,16 @@ function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string
  * Like {@link listMirrorOrphans} but for the foldered memory/skill layout
  * (MNEMA-ADR-51): walks one level of subfolders (scope folders, or
  * default/authored) plus any flat files, matching each `.md` basename to a
- * known slug. Indexes and dotfiles are excluded by the shared scan.
+ * known slug. Indexes and dotfiles are excluded by the shared scan;
+ * `excludeDirs` skips curated top-level subfolders (memory decisions/notes),
+ * whose files are human-authored, have no row, and must never read as orphans.
  */
-function listFolderedMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
-  return listMirrorEntries(dir)
+function listFolderedMirrorOrphans(
+  dir: string,
+  knownSlugs: ReadonlySet<string>,
+  excludeDirs?: ReadonlySet<string>,
+): string[] {
+  return listMirrorEntries(dir, { excludeDirs })
     .map((e) => e.slug)
     .filter((slug) => !knownSlugs.has(slug))
     .sort();
@@ -820,18 +832,21 @@ export function pruneFolderedOrphanMirrors(
   dir: string,
   knownSlugs: ReadonlySet<string>,
   fs: typeof import('node:fs'),
+  excludeDirs?: ReadonlySet<string>,
 ): string[] {
   if (!fs.existsSync(dir)) return [];
   const removed: string[] = [];
-  for (const { slug, filePath } of listMirrorEntries(dir)) {
+  for (const { slug, filePath } of listMirrorEntries(dir, { excludeDirs })) {
     if (!knownSlugs.has(slug)) {
       fs.rmSync(filePath);
       removed.push(slug);
     }
   }
-  // Sweep now-empty scope/origin subfolders so a pruned tree is tidy.
+  // Sweep now-empty scope/origin subfolders so a pruned tree is tidy — but
+  // never a curated subfolder (memory decisions/notes), even if empty.
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
+    if (excludeDirs?.has(entry.name)) continue;
     const sub = path.join(dir, entry.name);
     if (fs.readdirSync(sub).length === 0) fs.rmdirSync(sub);
   }

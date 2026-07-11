@@ -16,6 +16,7 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
+import { CURATED_MEMORY_SUBFOLDERS } from '../../utils/mirror-layout.js';
 import { VERSION } from '../../utils/version.js';
 import { type CliContext, withCliContext } from '../cli-context.js';
 import { isPromptAbort } from '../prompt-helpers.js';
@@ -404,8 +405,15 @@ function pruneAllOrphanMirrors(
   const join = (relative: string) => path.join(projectRoot, relative);
   const removed = [
     // Skills and memories are foldered (MNEMA-ADR-51) — prune recursively.
+    // Memory excludes the curated decisions/notes subfolders: those files are
+    // human-authored, have no memory row, and must never be pruned as orphans.
     ...pruneFolderedOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
-    ...pruneFolderedOrphanMirrors(join(config.paths.memory), memorySlugs, fs),
+    ...pruneFolderedOrphanMirrors(
+      join(config.paths.memory),
+      memorySlugs,
+      fs,
+      CURATED_MEMORY_SUBFOLDERS,
+    ),
     ...pruneOrphanMirrors(join(config.paths.observations), observationIds, fs),
     // Epics and decisions share the roadmap dir; a file is an orphan
     // only when it belongs to neither set.

@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
-import { listMirrorEntries } from '../utils/mirror-layout.js';
+import { CURATED_MEMORY_SUBFOLDERS, listMirrorEntries } from '../utils/mirror-layout.js';
 
 /**
  * One entry rendered in a regenerated `INDEX.md`.
@@ -91,7 +91,7 @@ export class MemoryConsolidator {
     const entries = listMirrorEntries(this.memoryDir)
       .filter((e) => {
         const top = path.relative(this.memoryDir, e.filePath).split(path.sep)[0];
-        return top !== CURATED_SUBFOLDERS[0] && top !== CURATED_SUBFOLDERS[1];
+        return top === undefined || !CURATED_MEMORY_SUBFOLDERS.has(top);
       })
       .map((e) => {
         // Link target relative to memory/INDEX.md, POSIX-style for markdown.
@@ -127,9 +127,6 @@ export class MemoryConsolidator {
     return { indexPath, entries };
   }
 }
-
-/** Curated memory subfolders that are their own index section, not row mirrors. */
-const CURATED_SUBFOLDERS = ['decisions', 'notes'] as const;
 
 function dirNameForHeading(dir: string, memoryRoot: string): string {
   const relative = path.relative(memoryRoot, dir);

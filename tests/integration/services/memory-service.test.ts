@@ -221,6 +221,43 @@ describe('MemoryService', () => {
     expect(existsSync(path.join(memoryDir, 'notifier-rate.md'))).toBe(false);
   });
 
+  it('ADR-51: a scope of "decisions"/"notes" does NOT land in the curated folders', () => {
+    // Regression: scopeFolder must suffix a reserved name so a scoped memory
+    // never mixes into the human-curated decisions/notes trees.
+    service.record({
+      slug: 'reserved-a',
+      title: 'A',
+      content: 'x',
+      scope: 'decisions',
+      actor: 'daniel',
+    });
+    service.record({
+      slug: 'reserved-b',
+      title: 'B',
+      content: 'y',
+      scope: 'Notes',
+      actor: 'daniel',
+    });
+    expect(existsSync(path.join(memoryDir, 'decisions-scope', 'reserved-a.md'))).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'notes-scope', 'reserved-b.md'))).toBe(true);
+    // NOT inside the curated folders.
+    expect(existsSync(path.join(memoryDir, 'decisions', 'reserved-a.md'))).toBe(false);
+    expect(existsSync(path.join(memoryDir, 'notes', 'reserved-b.md'))).toBe(false);
+  });
+
+  it('ADR-51: an interrupted migration leaving two mirrors is reconciled to one', () => {
+    // BUG3: writeMirror must remove ALL stale copies, not just the first found.
+    service.record({ slug: 'dup', title: 'D', content: 'v1', scope: 'area-a', actor: 'daniel' });
+    const canonical = path.join(memoryDir, 'area-a', 'dup.md');
+    // Simulate a leftover flat copy from a crashed migration.
+    writeFileSync(path.join(memoryDir, 'dup.md'), '# stale flat\n', 'utf-8');
+    expect(existsSync(canonical) && existsSync(path.join(memoryDir, 'dup.md'))).toBe(true);
+    // A real re-record must collapse to exactly one mirror (the canonical one).
+    service.record({ slug: 'dup', title: 'D', content: 'v2', scope: 'area-a', actor: 'daniel' });
+    expect(existsSync(canonical)).toBe(true);
+    expect(existsSync(path.join(memoryDir, 'dup.md'))).toBe(false);
+  });
+
   it('ADR-51: changing scope relocates the mirror (one mirror per row)', () => {
     service.record({
       slug: 'moving',
