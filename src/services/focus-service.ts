@@ -71,12 +71,18 @@ export class FocusService {
     const active = ownActive ?? inProgress[0];
 
     if (active !== undefined) {
+      const isMine = ownActive !== undefined;
       return {
         focus: 'resume',
         activeTask: { key: active.key, title: active.title },
         nextTask: null,
-        activeIsMine: ownActive !== undefined,
-        line: `active: ${active.key} (${active.title}) — resume it; finish before starting new work`,
+        activeIsMine: isMine,
+        // "resume it" is only honest when the task is the actor's own —
+        // telling Alice to resume Bob's task invites her to work under his
+        // key. Name the other-actor case so the reader coordinates instead.
+        line: isMine
+          ? `active: ${active.key} (${active.title}) — resume it; finish before starting new work`
+          : `active: ${active.key} (${active.title}) — assigned to another actor; coordinate or pick the next ready task`,
       };
     }
 

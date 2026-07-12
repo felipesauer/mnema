@@ -28,8 +28,8 @@ project config, key by key.
 | `mnema_version` | semver range | required | The Mnema version range this project expects; `mnema doctor` warns on a mismatch. |
 | `workflow` | string | `"default"` | Which workflow preset drives task states/gates (`default`, `jira-classic`, `kanban`, `lean`, or a custom file under `paths.workflows`). |
 | `mode` | `"single"` | `"single"` | Reserved for a future multi-project layout. Only `single` is accepted, so you can't quietly set a value that does nothing. |
-| `audit_strategy` | `"full" \| "recent" \| "local"` | `"recent"` | How much audit history is kept hot vs. archived. |
-| `audit_retention_months` | positive int | `12` | How many months of audit history to retain — one year balances a useful trail against unbounded growth. |
+| `audit_strategy` | `"full" \| "recent" \| "local"` | `"recent"` | How much audit history is kept hot vs. archived. *Reserved for a future compaction pass — accepted and validated today, not yet enforced.* |
+| `audit_retention_months` | positive int | `12` | How many months of audit history to retain — one year balances a useful trail against unbounded growth. *Reserved for a future compaction pass — accepted and validated today, not yet enforced.* |
 
 ## `project`
 
@@ -56,8 +56,10 @@ steer writes outside the project.
 | `paths.sprints` | rel. path | `.mnema/sprints` | Sprint markdown. |
 | `paths.roadmap` | rel. path | `.mnema/roadmap` | Epics and decisions (ADRs) markdown. |
 | `paths.memory` | rel. path | `.mnema/memory` | Memories markdown. |
+| `paths.observations` | rel. path | `.mnema/observations` | Observations markdown (one file per observation, by id). |
 | `paths.skills` | rel. path | `.mnema/skills` | Skills markdown. |
 | `paths.commands` | rel. path | `.mnema/commands` | Custom command definitions. |
+| `paths.templates` | rel. path | `.mnema/templates` | Typed task templates (seeded by `mnema init` / `mnema adopt templates`). |
 | `paths.workflows` | rel. path | `.mnema/workflows` | Workflow preset JSON files. |
 
 ## `audit.checkpoint`
@@ -93,6 +95,12 @@ never blocks or fails an audit write).
 | Key | Type | Default | Why |
 |---|---|---|---|
 | `enforcement_mode` | `"advisory" \| "strict" \| "blocking"` | `"strict"` | How a failed workflow gate is enforced. `strict` (default) holds **agents** to the gate while letting a **human** override — it preserves the protection that matters without locking humans out. `blocking` blocks everyone; `advisory` only warns. |
+
+## `enforcement_field_severity`
+
+| Key | Type | Default | Why |
+|---|---|---|---|
+| `enforcement_field_severity` | record<field, `"off" \| "warn" \| "block"`> | `{}` | Per-gate-field severity, layered over `enforcement_mode`. Maps a required gate field to how *that field's* failure is treated: `off` drops the field check entirely, `warn`/`block` override the global mode for that field; a field without an entry falls back to the global mode. Lets a ceremony gate (e.g. `estimate`) be warn-only while a safety gate (e.g. `pr_url`) stays blocking on the same transition. Empty (the default) reproduces the pure global behaviour exactly. |
 
 ## `sync`
 
@@ -136,12 +144,19 @@ limbo where a transition waits on a human that never comes. `mnema inbox` and
 | Key | Type | Default | Why |
 |---|---|---|---|
 | `claims.lease_minutes` | positive int | `30` | How long a `task_claim` reservation lasts before it self-expires. A claim reserves a task before work starts (closing the race two sessions hit reading the same READY task); the lease expires on its own so a session that dies without releasing never holds a task forever — the same self-healing `aging.orphan_run_after_hours` gives runs. |
+| `claims.require_to_start` | boolean | `false` | When true, the transition that picks a task up for work (the workflow's `start` action, e.g. READY → IN_PROGRESS) requires the acting actor to already hold a live claim on the task — refused with `TASK_NOT_CLAIMED` otherwise. Off by default so a single-agent flow starts work without a prior claim; turn it on when several sessions share a backlog and the claim should be the gate, not a convention. |
 
 ## `github`
 
 | Key | Type | Default | Why |
 |---|---|---|---|
 | `github.done_pr_policy` | `"off" \| "warn" \| "block"` | `"off"` | On a terminal transition carrying a `pr_url`, decides what to do if that PR isn't merged or CI is red. `off`: never check (zero network). `warn`: check and attach a warning but allow the move. `block`: refuse with `PR_NOT_READY`. Unreachable GitHub never blocks — a status that can't be resolved is treated as "can't prove a problem". |
+
+## `git`
+
+| Key | Type | Default | Why |
+|---|---|---|---|
+| `git.watch` | boolean | `false` | Persistent equivalent of `mnema watch --git`: the opt-in, read-only git observer that links the unambiguous in-progress task to its branch and commits. Off by default — a passive-ledger user is never surprised by git ingestion; it never writes `.git`. |
 
 ## `hooks`
 
@@ -169,6 +184,7 @@ This closes the agent-writable-config command-execution vector.
 | `hooks.on_task_transitioned` | array of `{command, args}` | `[]` | Fires on any task state change. |
 | `hooks.on_decision_accepted` | array of `{command, args}` | `[]` | Fires when a decision moves to `accepted`. |
 | `hooks.on_sprint_closed` | array of `{command, args}` | `[]` | Fires when a sprint is closed. |
+| `hooks.on_sprint_canceled` | array of `{command, args}` | `[]` | Fires when a sprint is canceled. |
 | `hooks.on_epic_closed` | array of `{command, args}` | `[]` | Fires when an epic is closed. |
 
 Each hook entry: `command` (non-empty string, the executable) and `args`

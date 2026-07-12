@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import type { EvalCohort, EvalReport } from '../../services/eval-report-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
+import { parseTimeBoundOption } from '../option-helpers.js';
 
 interface EvalOptions {
   readonly since?: string;
@@ -27,7 +28,11 @@ export class EvalCommand {
     program
       .command('eval')
       .description('Guided-vs-unguided metrics diff from the audit log (correlational, not causal)')
-      .option('--since <duration>', 'Lower bound — `7d`, `30d` or an ISO8601 timestamp')
+      .option(
+        '--since <duration>',
+        'Lower bound — `7d`, `30d` or an ISO8601 timestamp',
+        parseTimeBoundOption,
+      )
       .option('--json', 'Emit the raw report object as JSON', false)
       .action(async (options: EvalOptions) => {
         await withCliContext(({ container }) => {

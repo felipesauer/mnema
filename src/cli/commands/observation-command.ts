@@ -95,13 +95,19 @@ export class ObservationCommand {
       .description('Archive an observation by id (soft, one-way — hidden from list and search)')
       .action(async (id: string) => {
         await withMutatingCliContext(({ container }) => {
-          const archived = container.observation.archive(
+          const outcome = container.observation.archive(
             id,
             container.identity.getDefaultActor(),
             'cli',
           );
-          if (!archived) {
+          if (outcome === 'not_found') {
             process.exit(printError({ kind: ErrorCode.ObservationNotFound, observationId: id }));
+          }
+          // Already archived: the requested end state holds, so exit 0 — but
+          // say so instead of the false "not found" this used to print.
+          if (outcome === 'already_archived') {
+            process.stdout.write(`${pc.dim('observation already archived — nothing to do')}\n`);
+            return;
           }
           process.stdout.write(`${pc.green('✓')} observation archived\n`);
         });

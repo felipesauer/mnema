@@ -169,16 +169,22 @@ export class ObservationTools {
         if (guard !== null) return guard;
 
         const handle = this.session.getClientMetadata().agent_handle;
-        const archived = this.observations.archive(
+        const outcome = this.observations.archive(
           observationId,
           this.identity.getDefaultActor(),
           handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId ?? undefined,
         );
-        if (!archived) {
+        if (outcome === 'not_found') {
           return err({ kind: ErrorCode.ObservationNotFound, observationId });
         }
-        return ok({ observation_id: observationId, archived: true });
+        // End-state idempotency: an already-archived row satisfies the
+        // request, so report ok with a flag rather than a false "not found".
+        return ok({
+          observation_id: observationId,
+          archived: true,
+          already_archived: outcome === 'already_archived',
+        });
       },
     );
   }

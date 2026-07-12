@@ -1,4 +1,4 @@
-import { type Command, Option } from 'commander';
+import { type Command, InvalidArgumentError, Option } from 'commander';
 import type { DependencyKind } from '../../domain/entities/dependency.js';
 import type { Task } from '../../domain/entities/task.js';
 import { EVIDENCE_KINDS, type EvidenceKind } from '../../domain/entities/task-evidence.js';
@@ -6,6 +6,10 @@ import type { TaskState } from '../../domain/enums/task-state.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
+import {
+  TASK_TEMPLATE_KINDS,
+  type TaskTemplateKind,
+} from '../../services/task-template-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
@@ -25,6 +29,15 @@ interface CreateOptions {
   readonly priority?: number;
   readonly assignee?: string;
   readonly label?: string[];
+  readonly template?: TaskTemplateKind;
+}
+
+/** Commander coercer: a `--template` kind must be one of the known kinds. */
+function parseTemplateKind(value: string): TaskTemplateKind {
+  if ((TASK_TEMPLATE_KINDS as readonly string[]).includes(value)) {
+    return value as TaskTemplateKind;
+  }
+  throw new InvalidArgumentError(`expected one of: ${TASK_TEMPLATE_KINDS.join(', ')}.`);
 }
 
 interface ListOptions {
@@ -95,13 +108,33 @@ export class TaskCommand {
       .option('--priority <n>', 'Priority 1..5 (default 3)', parseIntInRange(1, 5))
       .option('--assignee <handle>', 'Assignee handle')
       .option('--label <label...>', 'Transversal label, e.g. area:api (repeat for multiple)')
+      .option(
+        '--template <kind>',
+        'Pre-fill a description + acceptance-criteria skeleton for this kind ' +
+          '(bug/feature/refactor/chore). Only fills fields you leave empty; ' +
+          'overridable per project in templates/<kind>.md',
+        parseTemplateKind,
+      )
       .action(async (options: CreateOptions) => {
         await withMutatingCliContext(({ container, config }) => {
+          // Mirror the MCP task_create semantics: a template is a mould,
+          // never an override — supplied description/criteria always win.
+          const tmpl =
+            options.template === undefined
+              ? null
+              : container.taskTemplate.forKind(options.template);
+          const description = options.description ?? (tmpl !== null ? tmpl.description : undefined);
+          const acceptanceCriteria =
+            options.acceptance !== undefined && options.acceptance.length > 0
+              ? options.acceptance
+              : tmpl !== null
+                ? tmpl.acceptanceCriteria
+                : [];
           const result = container.task.create({
             projectKey: config.project.key,
             title: options.title,
-            description: options.description,
-            acceptanceCriteria: options.acceptance ?? [],
+            description,
+            acceptanceCriteria,
             estimate: options.estimate ?? null,
             contextBudget: options.contextBudget ?? null,
             priority: options.priority ?? 3,
@@ -215,12 +248,12 @@ export class TaskCommand {
           '`field=value` positionals (shell-quoted) or as repeated ' +
           '`--field name=value` flags — the latter handles values with ' +
           'spaces cleanly, since the shell delivers the whole token ' +
-          'after `--field` intact. Values with a comma are split into ' +
-          'arrays (`--field acceptance_criteria="A,B,C"`); single-item ' +
-          'arrays need either a trailing comma or the field repeated. ' +
-          'Only fields the action gate requires are validated; extras ' +
-          'ride along to the audit log so payloads stay forward- ' +
-          'compatible with MCP.',
+          "after `--field` intact. Values are coerced by the gate's " +
+          'declared field type: array fields split on commas ' +
+          '(`--field acceptance_criteria="A,B,C"`, a single value works ' +
+          'too), string fields keep commas verbatim. Only fields the ' +
+          'action gate requires are validated; extras ride along to the ' +
+          'audit log so payloads stay forward-compatible with MCP.',
       )
       .option(
         '-f, --field <pair...>',
@@ -241,13 +274,36 @@ export class TaskCommand {
             // form (`field=value`) so callers can mix the two; the
             // positional path is kept for backward compatibility with
             // scripts written before the `--field` flag existed.
-            const payload = parseFieldArgs([...fields, ...(options.field ?? [])]);
+            //
+            // Coercion is driven by the gate's declared field types: the
+            // transition for this task's CURRENT state + action tells us
+            // which fields are arrays vs strings, so a comma inside a
+            // description is content while acceptance_criteria still
+            // splits. Unresolvable (unknown task/action) falls back to the
+            // legacy heuristic and lets transition() report the real error.
+            const lookup = container.task.findByKey(key);
+            const fieldSpecs = lookup.ok
+              ? container.stateMachine.getWorkflow().transitions[lookup.value.state]?.[action]
+                  ?.requiresSpec
+              : undefined;
+            const payload = parseFieldArgs([...fields, ...(options.field ?? [])], fieldSpecs);
             const result = container.task.transition({
               taskKey: key,
               action,
               payload,
               actor: container.identity.getDefaultActor(),
             });
+            // A strict/advisory gate that let a human through is audited as
+            // gate_overridden — but an override the human never SEES defeats
+            // the gate. Surface it on stderr at the moment it happens.
+            const override = container.task.consumeLastGateOverride();
+            if (result.ok && override !== null) {
+              const fieldList = override.map((i) => i.path.join('.') || '(root)').join(', ');
+              process.stderr.write(
+                `${pc.yellow('⚠ gate overridden')} — proceeding without: ${fieldList}. ` +
+                  `The skipped gate is recorded on the audit trail (gate_overridden).\n`,
+              );
+            }
             renderTaskResult(result, (id) => container.identity.resolveHandle(id));
           });
         },
@@ -455,20 +511,32 @@ function renderTaskResult(
 }
 
 /**
- * Parses `name=value` positional fields into a plain object.
+ * Parses `name=value` positional fields into a plain object, coercing each
+ * value by the TYPE the transition's gate declares for that field
+ * (`fieldSpecs`, the workflow's raw JSON DSL):
  *
- * - Numeric strings are converted to numbers.
- * - `true`/`false` are converted to booleans.
- * - Comma-separated values are split into arrays.
- * - When the same key appears multiple times, values accumulate into
- *   an array (handy for `acceptance_criteria=A acceptance_criteria=B`).
- * - Dashes in keys are normalised to underscores so workflow gate
- *   field names match.
+ * - `array` fields split on commas — and a single comma-less value becomes a
+ *   one-item array, so `acceptance_criteria="Works correctly"` satisfies the
+ *   gate instead of failing as a bare string.
+ * - `string` fields keep their value VERBATIM, commas included — a
+ *   `description=First, we parse.` must never be silently split into an
+ *   array, fail the gate, and be dropped.
+ * - `number` / `boolean` fields convert when the value parses; otherwise the
+ *   raw string rides through so the gate reports a proper validation error.
+ * - A field the gate does not declare falls back to the legacy heuristic
+ *   (numbers, booleans, comma-split) for backward compatibility.
+ * - When the same key appears multiple times, values accumulate into an
+ *   array (handy for `acceptance_criteria=A acceptance_criteria=B`).
+ * - Dashes in keys are normalised to underscores so gate field names match.
  *
  * @param fields - Raw positional arguments captured by Commander
+ * @param fieldSpecs - The transition gate's raw field specs, when resolvable
  * @returns Parsed payload object suitable for `task.transition`
  */
-function parseFieldArgs(fields: readonly string[]): Record<string, unknown> {
+function parseFieldArgs(
+  fields: readonly string[],
+  fieldSpecs?: Readonly<Record<string, { readonly type: string }>>,
+): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
   for (const arg of fields) {
     const eq = arg.indexOf('=');
@@ -476,11 +544,13 @@ function parseFieldArgs(fields: readonly string[]): Record<string, unknown> {
     const rawKey = arg.slice(0, eq).replace(/^-+/, '');
     if (rawKey.length === 0) continue;
     const key = rawKey.replace(/-/g, '_');
-    const value = coerceValue(arg.slice(eq + 1));
+    const value = coerceValue(arg.slice(eq + 1), fieldSpecs?.[key]?.type);
 
     if (key in payload) {
       const existing = payload[key];
-      payload[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
+      const merged = Array.isArray(existing) ? [...existing, value] : [existing, value];
+      // Repeating an array-typed field accumulates ITEMS, not nested arrays.
+      payload[key] = merged.flat();
     } else {
       payload[key] = value;
     }
@@ -488,7 +558,22 @@ function parseFieldArgs(fields: readonly string[]): Record<string, unknown> {
   return payload;
 }
 
-function coerceValue(raw: string): unknown {
+function coerceValue(raw: string, declaredType?: string): unknown {
+  switch (declaredType) {
+    case 'string':
+      return raw; // verbatim — commas are content, not separators
+    case 'array':
+      return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    case 'number':
+      return /^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw;
+    case 'boolean':
+      return raw === 'true' ? true : raw === 'false' ? false : raw;
+    default:
+      break; // undeclared field — legacy heuristic below
+  }
   if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
   if (raw === 'true') return true;
   if (raw === 'false') return false;

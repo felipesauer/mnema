@@ -48,6 +48,13 @@ export interface ObservationListInput {
 }
 
 /**
+ * Outcome of {@link ObservationService.archive}. `already_archived` is kept
+ * distinct from `not_found` so callers can report end-state idempotency (the
+ * row exists and is already retired) instead of a false "not found".
+ */
+export type ObservationArchiveOutcome = 'archived' | 'already_archived' | 'not_found';
+
+/**
  * Append-only contextual notes recorded by agents. Lighter than memories
  * (a UUID, no slug), but — like memories — each note is mirrored to
  * `<observationsDir>/<id>.md` when recorded, so the signal survives a clone
@@ -173,27 +180,34 @@ export class ObservationService {
    * @param actor - Identity tuple for audit
    * @param via - Optional client annotation
    * @param runId - Optional run id
-   * @returns `true` if archived, `false` if id was unknown or already archived
+   * @returns The {@link ObservationArchiveOutcome}
    */
-  archive(id: string, actor: string, via?: string, runId?: string): boolean {
-    const archived = this.repo.archive(id);
-    if (archived) {
-      // Unlink the mirror on archive (rather than tombstoning it in place):
-      // an archived observation is retired from circulation, so its `.md`
-      // must not linger on disk looking like a live entry — the same
-      // treatment an archived memory's mirror gets. `rebuildMirrors` skips
-      // archived rows, so it will not recreate the file.
-      const mirrorPath = this.mirrorPath(id);
-      if (existsSync(mirrorPath)) unlinkSync(mirrorPath);
-      this.audit.write({
-        kind: 'observation_archived',
-        actor,
-        via,
-        run: runId,
-        data: { id },
-      });
-    }
-    return archived;
+  archive(id: string, actor: string, via?: string, runId?: string): ObservationArchiveOutcome {
+    // Look the id up first (findById returns archived rows too): the repo's
+    // conditional UPDATE alone cannot tell "unknown id" from "already
+    // archived", and a caller must not report "not found" for a row that
+    // exists in exactly the requested end state.
+    const existing = this.repo.findById(id);
+    if (existing === null) return 'not_found';
+    if (existing.archivedAt !== null) return 'already_archived';
+    // A false here means another writer archived between the lookup and the
+    // UPDATE — the end state holds either way.
+    if (!this.repo.archive(id)) return 'already_archived';
+    // Unlink the mirror on archive (rather than tombstoning it in place):
+    // an archived observation is retired from circulation, so its `.md`
+    // must not linger on disk looking like a live entry — the same
+    // treatment an archived memory's mirror gets. `rebuildMirrors` skips
+    // archived rows, so it will not recreate the file.
+    const mirrorPath = this.mirrorPath(id);
+    if (existsSync(mirrorPath)) unlinkSync(mirrorPath);
+    this.audit.write({
+      kind: 'observation_archived',
+      actor,
+      via,
+      run: runId,
+      data: { id },
+    });
+    return 'archived';
   }
 
   /**

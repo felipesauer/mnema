@@ -1,3 +1,4 @@
+import type { Workflow } from '../domain/state-machine/state-machine.js';
 import type { AuditEvent } from '../storage/audit/audit-writer.js';
 import type { AuditQuery } from './audit-query.js';
 import type { FlowMetrics, FlowMetricsService } from './flow-metrics-service.js';
@@ -59,6 +60,7 @@ export class EvalReportService {
     private readonly audit: AuditQuery,
     private readonly flowMetrics: FlowMetricsService,
     private readonly skillQuality: SkillQualityService,
+    private readonly workflow: Workflow,
   ) {}
 
   /**
@@ -79,27 +81,45 @@ export class EvalReportService {
       }
     }
 
-    // Assign each TASK (not each event) to a cohort by the run that owns it —
-    // the run that created it, falling back to the first run that touched it.
-    // A task's lifecycle can span runs in opposite cohorts (run A creates it,
-    // run B reopens it); if we split by each event's own run, FlowMetricsService
-    // — which keys its timelines by task key — reconstructs that task twice from
-    // partial slices, counting it as completed in BOTH cohorts and blaming the
-    // reopen on whichever run happened to run the reopen transition. Owning the
-    // whole task by one run keeps every task in exactly one cohort, so its
-    // timeline is replayed once, in the right place.
-    const taskOwnerRun = new Map<string, string>();
+    // Assign each TASK (not each event) to a cohort by the run that owns it.
+    // A task's lifecycle can span runs in opposite cohorts; if we split by
+    // each event's own run, FlowMetricsService — which keys its timelines by
+    // task key — reconstructs that task twice from partial slices, counting it
+    // as completed in BOTH cohorts and blaming the reopen on whichever run
+    // happened to run the reopen transition. Owning the whole task by ONE run
+    // keeps every task in exactly one cohort.
+    //
+    // The owner is the run that DID the work whose outcome we measure: the
+    // run of the task's first terminal transition (its completion). Owning by
+    // the CREATING run would invert the split for the normal backlog-first
+    // flow — tasks created up-front in a planning run and executed later in
+    // guided runs would route every completion (and reopen) to the planning
+    // run's cohort, showing guided `done=0`. Fallbacks, for tasks that never
+    // reached terminal in the window: the creating run, then the first run
+    // that touched it (ownership barely matters there — an uncompleted task
+    // contributes no completion/reopen).
+    const terminal = new Set(this.workflow.terminal);
+    const firstTerminalRun = new Map<string, string>();
+    const createdRun = new Map<string, string>();
+    const firstTouchRun = new Map<string, string>();
     for (const event of events) {
       if (event.kind !== 'task_created' && event.kind !== 'task_transitioned') continue;
       const run = typeof event.run === 'string' ? event.run : null;
       if (run === null) continue;
       const key = taskKeyOf(event);
       if (key === null) continue;
-      // task_created wins outright; otherwise the earliest-touching run sticks
-      // (events arrive in audit order — first write wins).
-      if (event.kind === 'task_created') taskOwnerRun.set(key, run);
-      else if (!taskOwnerRun.has(key)) taskOwnerRun.set(key, run);
+      if (!firstTouchRun.has(key)) firstTouchRun.set(key, run);
+      if (event.kind === 'task_created') {
+        if (!createdRun.has(key)) createdRun.set(key, run);
+        continue;
+      }
+      const to = (event.data as { to?: string }).to;
+      if (typeof to === 'string' && terminal.has(to) && !firstTerminalRun.has(key)) {
+        firstTerminalRun.set(key, run);
+      }
     }
+    const ownerOf = (key: string): string | undefined =>
+      firstTerminalRun.get(key) ?? createdRun.get(key) ?? firstTouchRun.get(key);
 
     // Route every event to a cohort. Task events follow their task's owner run;
     // all other events (run_started, skill_*, run-less meta-events) follow their
@@ -114,7 +134,7 @@ export class EvalReportService {
       let guided: boolean;
       if (event.kind === 'task_created' || event.kind === 'task_transitioned') {
         const key = taskKeyOf(event);
-        const owner = key === null ? null : (taskOwnerRun.get(key) ?? ownRun);
+        const owner = key === null ? null : (ownerOf(key) ?? ownRun);
         guided = isGuided(owner);
       } else {
         guided = isGuided(ownRun);

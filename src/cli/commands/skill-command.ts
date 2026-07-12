@@ -173,8 +173,15 @@ export class SkillCommand {
             process.exit(printError(result.error));
           }
           const skill = result.value;
+          // A superseded version stays retrievable for history, but must say
+          // so — otherwise the reader follows a procedure its author already
+          // replaced. Fall back to the raw id if the successor row is gone.
+          const supersededLine =
+            skill.supersededBy === null
+              ? ''
+              : `${pc.yellow(`superseded by ${skill.supersededBySlug ?? skill.supersededBy} — shown for history`)}\n`;
           process.stdout.write(
-            `${pc.bold(skill.slug)} v${skill.version} — ${skill.name}\n${pc.dim(skill.description)}\n\n${skill.content}\n`,
+            `${pc.bold(skill.slug)} v${skill.version} — ${skill.name}\n${pc.dim(skill.description)}\n${supersededLine}\n${skill.content}\n`,
           );
         });
       });

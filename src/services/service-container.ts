@@ -587,6 +587,7 @@ export function createServiceContainer(
     auditQuery,
     flowMetricsService,
     skillQualityService,
+    workflow,
   );
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);

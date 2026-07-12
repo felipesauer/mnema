@@ -73,6 +73,18 @@ export class GuardCommand {
             );
             return;
           }
+          // A task IS in progress but belongs to another actor: "no task in
+          // progress" would misdescribe the state and hide the coordination
+          // problem. Name the task and whose it isn't; the fix is the same —
+          // start (or claim) your own.
+          if (focus.focus === 'resume' && !focus.activeIsMine) {
+            process.stdout.write(
+              `${pc.yellow('✗')} a task is in progress but not yours (${focus.activeTask?.key ?? '?'} — assigned to another actor) — ` +
+                `start or claim your own before editing: ${pc.bold('mnema task move <key> start --field assignee_id=me')} ` +
+                `(or create it first: ${pc.bold('mnema task create --title "…"')}).\n`,
+            );
+            return;
+          }
           // Actionable, agent-parseable: the exact command to get compliant.
           process.stdout.write(
             `${pc.yellow('✗')} no task in progress — this work is untracked. ` +

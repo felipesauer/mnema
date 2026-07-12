@@ -538,6 +538,39 @@ export function toStructured(error: MnemaError): Record<string, unknown> {
   };
 }
 
+/**
+ * A one-line, machine-consumable recovery hint for the error variants an LLM
+ * client can act on by itself. The CLI renderer has its own richer coloured
+ * hints; this is the MCP counterpart — without it a structured error arrives
+ * as a bare discriminator (`{"error":"NO_ACTIVE_RUN"}`) and the agent must
+ * already know the fix. Returns `null` for variants whose structured fields
+ * are self-explanatory (e.g. INVALID_TRANSITION carries `available`).
+ */
+export function recoveryHint(error: MnemaError): string | null {
+  switch (error.kind) {
+    case ErrorCode.NoActiveRun:
+      return 'Call agent_run_start({ goal }) before any mutation; resume a dropped session with agent_run_resume.';
+    case ErrorCode.UnknownAssignee:
+      return "Use 'me' (the acting identity) or a handle from context_bootstrap.actors.known; a human can add one with `mnema identity add <handle>`.";
+    case ErrorCode.AgentHandleMissing:
+      return 'Set the MNEMA_AGENT_HANDLE env var on the MCP server (mnema mcp install-instructions prints the full snippet).';
+    case ErrorCode.TaskNotFound:
+      return 'List existing tasks with tasks_list (or `mnema task list`) — the key may be from another project prefix.';
+    case ErrorCode.EpicNotFound:
+      return 'List existing epics with epics_list.';
+    case ErrorCode.SprintNotFound:
+      return 'List existing sprints with sprints_list.';
+    case ErrorCode.SkillNotFound:
+      return 'List recorded skills with skills_list; record one with skill_record.';
+    case ErrorCode.MemoryNotFound:
+      return 'List recorded memories with memories_list; record one with memory_record.';
+    case ErrorCode.SchemaOutOfDate:
+      return 'Run `mnema migrate` to apply pending migrations, then retry — read-only tools keep working meanwhile.';
+    default:
+      return null;
+  }
+}
+
 function formatPath(parts: readonly PropertyKey[]): string {
   if (parts.length === 0) return '<root>';
   return parts.map(String).join('.');

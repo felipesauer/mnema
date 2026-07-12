@@ -134,6 +134,16 @@ export interface SkillDiff {
 }
 
 /**
+ * `show` payload: the skill plus, when this version is superseded, its
+ * successor's slug. The stored `supersededBy` pointer is the successor
+ * ROW's id (skills are keyed by slug+version), so the service resolves it
+ * here — a renderer should name the replacement, not print a UUID.
+ */
+export type SkillShowView = SourcedSkill & {
+  readonly supersededBySlug?: string;
+};
+
+/**
  * Skill catalogue: lint (filesystem-only, read-only) and record/show/use
  * (SQLite-backed, agent-facing).
  *
@@ -462,13 +472,22 @@ export class SkillService {
    * @param version - Optional specific version
    * @returns The skill or an error
    */
-  show(slug: string, version?: number): Result<SourcedSkill, MnemaError> {
+  show(slug: string, version?: number): Result<SkillShowView, MnemaError> {
     const { repo } = this.requireRecordDeps();
     const skill =
       version !== undefined
         ? repo.findBySlugAndVersion(slug, version)
         : repo.findLatestBySlug(slug);
-    if (skill !== null) return Ok({ ...skill, source: 'project' });
+    if (skill !== null) {
+      // A superseded version stays retrievable for history, so resolve its
+      // successor's slug for the renderer — see {@link SkillShowView}.
+      const successor = skill.supersededBy === null ? null : repo.findById(skill.supersededBy);
+      return Ok({
+        ...skill,
+        source: 'project',
+        ...(successor === null ? {} : { supersededBySlug: successor.slug }),
+      });
+    }
 
     // Fall back to a user-level skill only when no project skill matches —
     // the project always shadows. A specific version is a project concept,

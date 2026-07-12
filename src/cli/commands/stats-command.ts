@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import type { DurationSummary, FlowMetrics } from '../../services/flow-metrics-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
+import { parseTimeBoundOption } from '../option-helpers.js';
 
 interface StatsOptions {
   readonly since?: string;
@@ -26,7 +27,11 @@ export class StatsCommand {
       .description(
         'Show derived flow metrics (throughput, lead/cycle time, reopen rate) from the audit log',
       )
-      .option('--since <duration>', 'Lower bound — `7d`, `30d` or an ISO8601 timestamp')
+      .option(
+        '--since <duration>',
+        'Lower bound — `7d`, `30d` or an ISO8601 timestamp',
+        parseTimeBoundOption,
+      )
       .option('--json', 'Emit the raw metrics object as JSON', false)
       .action(async (options: StatsOptions) => {
         await withCliContext(({ container }) => {

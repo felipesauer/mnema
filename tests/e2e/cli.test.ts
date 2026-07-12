@@ -995,8 +995,10 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(existsSync(path.join(projectRoot, '.mnema/workflows', 'default.json'))).toBe(true);
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
 
-    // The full layout's content folders are NOT created in minimal mode.
-    expect(existsSync(path.join(projectRoot, '.mnema/backlog'))).toBe(false);
+    // The backlog IS an essential (doctor requires it; the first task create
+    // would make it anyway) — a minimal init must pass its own health check.
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog'))).toBe(true);
+    // The full layout's OTHER content folders are NOT created in minimal mode.
     expect(existsSync(path.join(projectRoot, '.mnema/sprints'))).toBe(false);
     expect(existsSync(path.join(projectRoot, '.mnema/memory'))).toBe(false);
     expect(existsSync(path.join(projectRoot, '.mnema/skills'))).toBe(false);
@@ -1250,5 +1252,92 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     } finally {
       db.close();
     }
+  });
+
+  it('release-hardening: type-aware field coercion — commas in strings survive, single criterion satisfies the array gate', () => {
+    runCli(['init', '--name', 'Hard', '--key', 'HRD'], projectRoot);
+    runCli(['task', 'create', '--title', 'Comma survivor'], projectRoot);
+
+    // A comma-bearing description used to be blindly array-split, fail the
+    // string gate, and be silently DROPPED; a single comma-less criterion
+    // used to stay a bare string and fail the array gate the same way.
+    const move = runCli(
+      [
+        'task',
+        'move',
+        'HRD-1',
+        'submit',
+        '--field',
+        'title=Comma survivor',
+        '--field',
+        'description=First, we parse. Then, we render.',
+        '--field',
+        'acceptance_criteria=Works correctly',
+        '--field',
+        'estimate=3',
+      ],
+      projectRoot,
+    );
+    expect(move.status).toBe(0);
+    // No gate override happened — the fields genuinely satisfied the gate.
+    expect(move.stderr).not.toContain('gate overridden');
+
+    const show = runCli(['task', 'show', 'HRD-1'], projectRoot);
+    expect(show.stdout).toContain('First, we parse. Then, we render.');
+    expect(show.stdout).toContain('Works correctly');
+  });
+
+  it('release-hardening: a silent strict-mode gate override now warns on stderr', () => {
+    runCli(['init', '--name', 'Warn', '--key', 'WRN'], projectRoot);
+    runCli(['task', 'create', '--title', 'Underspecified'], projectRoot);
+
+    // A human (no --via) under strict mode may force the gate — but the
+    // override must be VISIBLE, not only an audit row.
+    const move = runCli(['task', 'move', 'WRN-1', 'submit'], projectRoot);
+    expect(move.status).toBe(0);
+    expect(move.stderr).toContain('gate overridden');
+    expect(move.stderr).toContain('gate_overridden'); // names the audit kind
+  });
+
+  it('release-hardening: task create --template pre-fills, caller values win', () => {
+    runCli(['init', '--name', 'Tpl', '--key', 'TPL'], projectRoot);
+
+    const bug = runCli(['task', 'create', '--title', 'A bug', '--template', 'bug'], projectRoot);
+    expect(bug.status).toBe(0);
+    const show = runCli(['task', 'show', 'TPL-1'], projectRoot);
+    // The bug template pre-fills a reproduction-oriented skeleton.
+    expect(show.stdout.length).toBeGreaterThan(0);
+    expect(runCli(['task', 'show', 'TPL-1'], projectRoot).stdout).toMatch(
+      /reproduce|steps|expected/i,
+    );
+
+    // An unknown kind is a loud argument error, not a silent ignore.
+    const bad = runCli(['task', 'create', '--title', 'X', '--template', 'nope'], projectRoot);
+    expect(bad.status).not.toBe(0);
+    expect(bad.stderr).toContain('bug');
+  });
+
+  it('release-hardening: init --minimal passes its own doctor', () => {
+    runCli(['init', '--name', 'Mini', '--key', 'MIN', '--minimal'], projectRoot);
+    const doctor = runCli(['doctor'], projectRoot);
+    expect(doctor.status).toBe(0);
+    expect(doctor.stdout).not.toContain('✗');
+  });
+
+  it('release-hardening: an unparseable --since is a loud argument error, not a silent full scan', () => {
+    runCli(['init', '--name', 'Since', '--key', 'SNC'], projectRoot);
+    for (const cmd of [
+      ['eval', '--since', 'garbage'],
+      ['stats', '--since', '30days'],
+      ['audit', 'query', '--since', 'lastweek'],
+      ['history', '--since', 'not-a-time'],
+    ]) {
+      const res = runCli(cmd, projectRoot);
+      expect(res.status, cmd.join(' ')).not.toBe(0);
+      expect(res.stderr, cmd.join(' ')).toMatch(/duration|ISO-8601/);
+    }
+    // Valid forms still pass.
+    expect(runCli(['stats', '--since', '7d'], projectRoot).status).toBe(0);
+    expect(runCli(['history', '--since', 'today'], projectRoot).status).toBe(0);
   });
 });

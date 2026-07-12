@@ -228,7 +228,12 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
  */
 export function createCli(): Command {
   const program = new Command();
-  program.name('mnema').description('Cognitive persistence for AI agents').version(VERSION);
+  program
+    .name('mnema')
+    .description(
+      'A tamper-evident audit trail for AI-agent work — typed tools behind workflow gates',
+    )
+    .version(VERSION);
 
   // Allow any subcommand name through (`mnema foo`); the dispatcher
   // below validates and forwards.
