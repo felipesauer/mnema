@@ -100,8 +100,10 @@ export class HeadCheckpointService {
  * public key of ITS signer, resolved by (actor, fingerprint) at
  * `.mnema/keys/<actor>.<fp12>.pub`. Verification returns `null` when that
  * public key is absent (a signer whose `.pub` was never committed / is
- * missing on this checkout) so the caller reports "cannot attest" rather
- * than a false tamper. Kept here so the machine-key path resolution lives
+ * missing on this checkout), and `'fingerprint_mismatch'` when a file IS
+ * there but carries a different full fingerprint — both mean "cannot
+ * attest" rather than a false tamper, but the caller words them apart.
+ * Kept here so the machine-key path resolution lives
  * next to the signer, and reused by the verify tool, doctor and dashboard.
  *
  * @param projectRoot - Absolute project root (holds `.mnema/keys/`)
@@ -130,10 +132,12 @@ export function createAttestationSource(
         // (`<fp12>` names the file), so the resolved record could carry a key
         // whose full fingerprint diverges from the one the signature row
         // declared. Verifying against it would attest a signer the row never
-        // named. Require the recorded and declared fingerprints to match on all
-        // 256 bits before trusting the key — a divergence is "cannot attest"
-        // (null), not a tamper verdict, matching the rest of this method.
-        if (record.fingerprint !== sig.signerFingerprint) return null;
+        // named. Require the recorded and declared fingerprints to match on
+        // all 256 bits before trusting the key. Still "cannot attest", not a
+        // tamper verdict — but distinct from the plain-null missing-file case,
+        // because "no key committed" and "a key IS here but it is not the
+        // recorded signer's" call for very different operator responses.
+        if (record.fingerprint !== sig.signerFingerprint) return 'fingerprint_mismatch';
         return MachineKeyService.verify(
           Buffer.from(sig.coveredHeadHash, 'hex'),
           Buffer.from(sig.signature, 'base64'),

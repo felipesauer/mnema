@@ -163,7 +163,7 @@ describe('ObservationService', () => {
     expect(stale.ok).toBe(true);
     if (!stale.ok) return;
 
-    expect(service.archive(stale.value.id, 'daniel')).toBe(true);
+    expect(service.archive(stale.value.id, 'daniel')).toBe('archived');
 
     // Default list excludes the archived one…
     expect(service.list().map((o) => o.content)).toEqual(['live signal']);
@@ -190,11 +190,13 @@ describe('ObservationService', () => {
     expect(service.list({ limit: 2 })).toHaveLength(2);
   });
 
-  it('archive is a no-op (false) for an unknown or already-archived id', () => {
-    expect(service.archive('nope', 'daniel')).toBe(false);
+  it('archive distinguishes an unknown id from an already-archived one', () => {
+    // The audited friction: both cases collapsed to `false` and the CLI told
+    // the user a real (archived) id was "not found".
+    expect(service.archive('nope', 'daniel')).toBe('not_found');
     const rec = service.record({ content: 'x', actor: 'daniel' });
     if (!rec.ok) return;
-    expect(service.archive(rec.value.id, 'daniel')).toBe(true);
-    expect(service.archive(rec.value.id, 'daniel')).toBe(false); // already archived
+    expect(service.archive(rec.value.id, 'daniel')).toBe('archived');
+    expect(service.archive(rec.value.id, 'daniel')).toBe('already_archived');
   });
 });

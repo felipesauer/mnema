@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import { withCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
+import { parseFriendlyTimeBoundOption } from '../option-helpers.js';
 import { parsePositiveInt } from '../option-parsers.js';
 
 interface HistoryOptions {
@@ -35,8 +36,16 @@ export class HistoryCommand {
     program
       .command('history')
       .description('Show past activity from the audit log (formatted for humans)')
-      .option('--since <when>', 'Lower bound — `today`, `1h`, `24h`, `7d` or ISO8601')
-      .option('--until <when>', 'Upper bound — same syntax as --since')
+      .option(
+        '--since <when>',
+        'Lower bound — `today`, `1h`, `24h`, `7d` or ISO8601',
+        parseFriendlyTimeBoundOption,
+      )
+      .option(
+        '--until <when>',
+        'Upper bound — same syntax as --since',
+        parseFriendlyTimeBoundOption,
+      )
       .option('--actor <handle>', 'Filter by actor handle')
       .option('--via <handle>', 'Filter by agent (via) handle')
       .option('--run <runId>', 'Filter by agent run id')

@@ -244,6 +244,20 @@ describe('inspectMirrorDrift', () => {
   });
 
   it('detects an orphan observation mirror (FS→DB drift)', () => {
+    // One LIVE row (mirrored) so the table is not cold — with zero rows the
+    // cold-DB guard deliberately reports nothing (see the clone test below).
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO observations (id, content, topics, created_by)
+         VALUES ('o-live', 'a signal', '[]', 'a1')`,
+      )
+      .run();
+    writeFileSync(
+      path.join(observationsDir, 'o-live.md'),
+      '---\nid: o-live\n---\na signal',
+      'utf-8',
+    );
     writeFileSync(path.join(observationsDir, 'ghost-id.md'), '---\n---\nstray', 'utf-8');
     const obs = drift().find((c) => c.name === 'observations mirrored');
     expect(obs?.ok).toBe(false);
@@ -261,7 +275,17 @@ describe('inspectMirrorDrift', () => {
   });
 
   it('detects orphan mirror files (FS→DB drift)', () => {
-    // No SQLite row, but a stray `.md` lingers in the mirror dir.
+    // One LIVE row (mirrored) so the table is not cold, plus a stray `.md`
+    // with no row — the stray is the orphan.
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+         VALUES ('s-live', 'live', 'Live', 1, 'd', 'c', '[]', 'a1')`,
+      )
+      .run();
+    mkdirSync(path.join(skillsDir, 'authored'), { recursive: true });
+    writeFileSync(path.join(skillsDir, 'authored', 'live.md'), '---\nname: Live\n---\nc', 'utf-8');
     writeFileSync(path.join(skillsDir, 'ghost.md'), '---\nname: ghost\n---\nstray', 'utf-8');
 
     const checks = drift();
@@ -269,6 +293,15 @@ describe('inspectMirrorDrift', () => {
     expect(skills?.ok).toBe(false);
     expect(skills?.severity).toBe('warning');
     expect(skills?.detail).toContain('orphan files: ghost');
+  });
+
+  it('cold-DB guard: a stray mirror with ZERO rows of that kind is NOT flagged (fresh-clone safety)', () => {
+    // A fresh clone carries every versioned mirror while the local DB has no
+    // memory/skill rows yet — flagging (and then pruning) them would wipe the
+    // knowledge base. Zero rows → the orphan scan reports nothing.
+    writeFileSync(path.join(skillsDir, 'ghost.md'), '---\nname: ghost\n---\nstray', 'utf-8');
+    const skills = drift().find((c) => c.name === 'skills mirrored');
+    expect(skills?.ok).toBe(true);
   });
 
   it('INDEX.md and dotfiles are not flagged as orphans', () => {

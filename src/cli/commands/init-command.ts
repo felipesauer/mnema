@@ -232,9 +232,12 @@ export class InitCommand {
     mkdirSync(stateDir, { recursive: true });
     mkdirSync(auditDir, { recursive: true });
     mkdirSync(workflowsDest, { recursive: true });
+    // The backlog is essential in BOTH modes: `doctor` requires it
+    // unconditionally, and the first `task create` would make it anyway — a
+    // minimal init that immediately fails its own health check is a trap.
+    mkdirSync(path.join(cwd, config.paths.backlog), { recursive: true });
 
     if (!minimal) {
-      mkdirSync(path.join(cwd, config.paths.backlog), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.sprints), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.roadmap), { recursive: true });
       mkdirSync(path.join(cwd, config.paths.memory), { recursive: true });

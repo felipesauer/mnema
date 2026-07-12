@@ -35,6 +35,7 @@ import {
   CURATED_MEMORY_SUBFOLDERS,
   findMirror,
   listMirrorEntries,
+  PRUNE_PROTECTED_FILENAMES,
   scopeFolder,
   skillOriginDir,
 } from '../../utils/mirror-layout.js';
@@ -736,14 +737,20 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
  * @returns Orphan slug list, alphabetical
  */
 function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
+  // COLD-DB GUARD: an empty table cannot classify anything as an orphan. A
+  // fresh clone carries the versioned mirrors but a just-rebuilt local DB
+  // (memory/skill rows are not yet re-ingested from markdown), so with zero
+  // rows EVERY mirror would read as an orphan and a prune would wipe the
+  // team's knowledge base. Zero rows → report nothing.
+  if (knownSlugs.size === 0) return [];
   if (!existsSync(dir)) return [];
   const orphans: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     if (entry.name.startsWith('.')) continue;
-    // Curated indexes (INDEX.md for memory, SKILL.md for skills) are not
-    // entity mirrors and have no row — never orphans.
-    if (entry.name === 'INDEX.md' || entry.name === 'SKILL.md') continue;
+    // Curated files (indexes + the adopt-memory context.md scaffolding) are
+    // not entity mirrors and have no row — never orphans.
+    if (PRUNE_PROTECTED_FILENAMES.has(entry.name)) continue;
     if (!entry.name.endsWith('.md')) continue;
     const slug = entry.name.slice(0, -3);
     if (!knownSlugs.has(slug)) orphans.push(slug);
@@ -764,7 +771,10 @@ function listFolderedMirrorOrphans(
   knownSlugs: ReadonlySet<string>,
   excludeDirs?: ReadonlySet<string>,
 ): string[] {
+  // Cold-DB guard — see listMirrorOrphans.
+  if (knownSlugs.size === 0) return [];
   return listMirrorEntries(dir, { excludeDirs })
+    .filter((e) => !PRUNE_PROTECTED_FILENAMES.has(path.basename(e.filePath)))
     .map((e) => e.slug)
     .filter((slug) => !knownSlugs.has(slug))
     .sort();
@@ -798,15 +808,19 @@ export function pruneOrphanMirrors(
   knownSlugs: ReadonlySet<string>,
   fs: typeof import('node:fs'),
 ): string[] {
+  // Cold-DB guard — with zero rows a prune would wipe everything; see
+  // listMirrorOrphans for the clone rationale.
+  if (knownSlugs.size === 0) return [];
   if (!fs.existsSync(dir)) return [];
   const removed: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     if (entry.name.startsWith('.')) continue;
-    // Curated index files are not entity mirrors and never have a row:
-    // INDEX.md (memory) and SKILL.md (skills). Excluding them keeps the
-    // prune from deleting a legitimate catalogue as a phantom orphan.
-    if (entry.name === 'INDEX.md' || entry.name === 'SKILL.md') continue;
+    // Curated files are not entity mirrors and never have a row: the
+    // generated indexes plus the `adopt memory` context.md scaffolding.
+    // Excluding them keeps the prune from deleting a legitimate curated
+    // file as a phantom orphan.
+    if (PRUNE_PROTECTED_FILENAMES.has(entry.name)) continue;
     if (!entry.name.endsWith('.md')) continue;
     const slug = entry.name.slice(0, -3);
     if (!knownSlugs.has(slug)) {
@@ -834,9 +848,13 @@ export function pruneFolderedOrphanMirrors(
   fs: typeof import('node:fs'),
   excludeDirs?: ReadonlySet<string>,
 ): string[] {
+  // Cold-DB guard — with zero rows a prune would wipe everything; see
+  // listMirrorOrphans for the clone rationale.
+  if (knownSlugs.size === 0) return [];
   if (!fs.existsSync(dir)) return [];
   const removed: string[] = [];
   for (const { slug, filePath } of listMirrorEntries(dir, { excludeDirs })) {
+    if (PRUNE_PROTECTED_FILENAMES.has(path.basename(filePath))) continue;
     if (!knownSlugs.has(slug)) {
       fs.rmSync(filePath);
       removed.push(slug);

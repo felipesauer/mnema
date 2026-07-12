@@ -18,6 +18,22 @@ describe('mcp-tool-result', () => {
     expect(result.isError).toBe(true);
   });
 
+  it('err carries a recovery hint for the LLM-actionable variants', () => {
+    // Without the hint a structured error arrives as a bare discriminator
+    // ({"error":"NO_ACTIVE_RUN"}) and the agent must already know the fix —
+    // the CLI's coloured hints never reach the MCP path.
+    const noRun = err({ kind: ErrorCode.NoActiveRun });
+    if (noRun.content[0]?.type !== 'text') throw new Error('expected text');
+    const noRunBody = JSON.parse(noRun.content[0].text) as Record<string, unknown>;
+    expect(noRunBody.hint).toContain('agent_run_start');
+
+    const unknownAssignee = err({ kind: ErrorCode.UnknownAssignee, handle: 'ghost' });
+    if (unknownAssignee.content[0]?.type !== 'text') throw new Error('expected text');
+    const uaBody = JSON.parse(unknownAssignee.content[0].text) as Record<string, unknown>;
+    expect(uaBody.hint).toContain('actors.known');
+    expect(uaBody.handle).toBe('ghost'); // structured fields still ride along
+  });
+
   it('requireActiveRun returns null when run is active', () => {
     expect(requireActiveRun('019e0000-0000-7000-8000-000000000000')).toBeNull();
   });

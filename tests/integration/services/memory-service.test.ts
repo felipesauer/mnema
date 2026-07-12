@@ -323,6 +323,30 @@ describe('MemoryService', () => {
     expect(existsSync(mirror)).toBe(false);
   });
 
+  it('re-recording an archived memory with IDENTICAL content reactivates it (not a no_op)', () => {
+    // The audited gap: isNoOp compared only title/content/topics/scope, so an
+    // identical re-record of an archived slug short-circuited before the
+    // upsert that clears archived_at — the memory stayed silently hidden
+    // while the tool promised re-recording reactivates it.
+    service.record({ slug: 'zombie', title: 'Z', content: 'same body', actor: 'daniel' });
+    expect(service.archive('zombie', 'daniel')).toBe(true);
+    expect(service.list().map((m) => m.slug)).not.toContain('zombie');
+
+    const rerecord = service.record({
+      slug: 'zombie',
+      title: 'Z',
+      content: 'same body',
+      actor: 'daniel',
+    });
+    expect(rerecord.ok).toBe(true);
+    if (rerecord.ok) expect(rerecord.value.action).toBe('updated'); // NOT no_op
+    // Reactivated: back in the default listing, archivedAt cleared.
+    expect(service.list().map((m) => m.slug)).toContain('zombie');
+    const shown = service.show('zombie');
+    expect(shown.ok).toBe(true);
+    if (shown.ok) expect(shown.value.archivedAt).toBeNull();
+  });
+
   it('archive is a no-op (false) for an unknown or already-archived slug', () => {
     expect(service.archive('nope', 'daniel')).toBe(false);
     service.record({ slug: 's', title: 'S', content: 'x', actor: 'daniel' });

@@ -1,4 +1,6 @@
-import { ConfigLoader } from '../config/config-loader.js';
+import type { z } from 'zod';
+
+import { CONFIG_FILE_RELATIVE, ConfigInvalidError, ConfigLoader } from '../config/config-loader.js';
 import type { Config } from '../config/config-schema.js';
 import {
   WorkflowInvalidError,
@@ -6,7 +8,7 @@ import {
 } from '../domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
-import { fromZodIssues } from '../errors/mnema-error.js';
+import { type ErrorIssue, fromZodIssues } from '../errors/mnema-error.js';
 import { IdentityNotConfiguredError } from '../services/identity-service.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
@@ -42,7 +44,26 @@ export function openCliContext(): CliContext {
   }
   trace.mark('config file located');
 
-  const config = loader.load();
+  let config: Config;
+  try {
+    config = loader.load();
+  } catch (error) {
+    // An invalid config is an EXPECTED rejection, not an internal crash.
+    // Left to escape, the global handler printed only "<path> is invalid /
+    // hint: unexpected internal error…", hiding the precise Zod issues the
+    // error already carries — route it through the structured printer, which
+    // renders each issue (path + message).
+    if (error instanceof ConfigInvalidError) {
+      process.exit(
+        printError({
+          kind: ErrorCode.ConfigInvalid,
+          path: CONFIG_FILE_RELATIVE,
+          issues: toConfigIssues(error.issues),
+        }),
+      );
+    }
+    throw error;
+  }
   trace.mark('config parsed');
 
   const projectRoot = resolveProjectRoot(configFile);
@@ -73,6 +94,19 @@ export function openCliContext(): CliContext {
   trace.end();
 
   return { config, projectRoot, container };
+}
+
+/**
+ * Adapts {@link ConfigInvalidError.issues} (typed `unknown`) to the
+ * {@link ErrorIssue} list the structured printer renders. Two shapes exist:
+ * a Zod issue array from a failed schema parse, or the `SyntaxError` cause
+ * wrapped by the loader when the file is not even valid JSON — the latter
+ * becomes a single root-level issue carrying the parser's message.
+ */
+function toConfigIssues(issues: unknown): ErrorIssue[] {
+  if (Array.isArray(issues)) return fromZodIssues(issues as z.core.$ZodIssue[]);
+  const message = issues instanceof Error ? issues.message : String(issues);
+  return [{ path: [], message, code: 'custom' }];
 }
 
 /**

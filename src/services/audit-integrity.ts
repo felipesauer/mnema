@@ -48,11 +48,15 @@ export interface HeadSignatureView {
  * `readHeadSignature` returns the latest recorded head signature (or `null`
  * when none). `verifyHeadSignature` verifies it against the committed public
  * key of its signer, resolved by fingerprint — returns `null` when that
- * public key is not present in the repo (a signer whose `.pub` is missing).
+ * public key is not present in the repo (a signer whose `.pub` is missing),
+ * or `'fingerprint_mismatch'` when a `.pub` file WAS resolved by the 12-char
+ * prefix but its full fingerprint differs from the recorded signer's — the
+ * two "cannot attest" causes read very differently to an operator (a missing
+ * commit vs a possible key substitution), so they are kept distinct.
  */
 export interface AttestationSource {
   readHeadSignature(): HeadSignatureView | null;
-  verifyHeadSignature(sig: HeadSignatureView): boolean | null;
+  verifyHeadSignature(sig: HeadSignatureView): boolean | null | 'fingerprint_mismatch';
 }
 
 /**
@@ -454,7 +458,9 @@ export function inspectAuditIntegrity(
       ok: false,
       detail: stillCovered
         ? `${chainBreakDetail} — accepted as a legacy concurrent-writer artefact on ${waiver?.acceptedAt ?? 'unknown date'} (content re-verified authentic); see \`mnema audit diagnose\``
-        : chainBreakDetail,
+        : // Name the next step, not just the verdict: the operator seeing this
+          // for the first time has no way to know the recovery tooling exists.
+          `${chainBreakDetail} — run \`mnema audit diagnose\` to locate the break; if it is mirror drift (not content tampering), \`mnema audit reconcile\` can heal it`,
       severity: stillCovered ? 'warning' : 'error',
     });
   } else if (lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
@@ -509,7 +515,7 @@ export function inspectAuditIntegrity(
     checks.push({
       name: 'audit authenticity',
       ok: false,
-      detail: `${v3Unverifiable} HMAC-keyed (v3) line(s) could not be verified — project secret not present. Import it with the project secret to verify authenticity.`,
+      detail: `${v3Unverifiable} HMAC-keyed (v3) line(s) could not be verified — project secret not present. Import it with \`mnema project secret import\` to verify authenticity.`,
       severity: 'warning',
     });
   }
@@ -794,6 +800,9 @@ export function reconcileAuditState(
  *   checkpoint interval);
  * - signer's public key missing from the repo (warning — cannot attest,
  *   not a tamper);
+ * - a `.pub` file present under the signer's 12-char prefix but with a
+ *   DIFFERENT full fingerprint (warning — cannot attest, and worth naming
+ *   apart from a missing file: it may be a key substitution);
  * - signature does not verify (ERROR — the head or the signature was
  *   forged);
  * - verifies and covers the current head (ok);
@@ -828,6 +837,18 @@ function attestationCheck(
   }
 
   const verified = attestation.verifyHeadSignature(sig);
+  // A file WAS found under the signer's 12-char prefix, but its full
+  // fingerprint is not the recorded signer's. Saying "not present" here (the
+  // old behaviour) would send the operator hunting for a missing commit when
+  // the real question is why a DIFFERENT key sits under the signer's name.
+  if (verified === 'fingerprint_mismatch') {
+    return {
+      name: 'audit machine attestation',
+      ok: false,
+      detail: `signer ${sig.signerActor}'s public key file (…${sig.signerFingerprint.slice(0, 12)}) was found but its full fingerprint does not match the recorded signer — cannot attest (possible key substitution)`,
+      severity: 'warning',
+    };
+  }
   if (verified === null) {
     return {
       name: 'audit machine attestation',

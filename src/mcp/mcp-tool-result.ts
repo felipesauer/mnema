@@ -1,7 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import { ErrorCode } from '../errors/error-codes.js';
-import { toStructured } from '../errors/error-printer.js';
+import { recoveryHint, toStructured } from '../errors/error-printer.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 
 /**
@@ -75,14 +75,17 @@ export function okTask(
  * Wraps a structured {@link MnemaError} as an MCP tool error.
  *
  * Sets the SDK's `isError` flag and includes the canonical structured
- * representation (`{ error, ...fields, message }`) so LLMs can branch
- * on the discriminator.
+ * representation (`{ error, ...fields, hint? }`) so LLMs can branch on the
+ * discriminator — and, for the variants with a known recovery action, act
+ * on the `hint` without already knowing the fix.
  *
  * @param error - Structured error
  * @returns An error-shaped CallToolResult
  */
 export function err(error: MnemaError): CallToolResult {
   const structured = toStructured(error);
+  const hint = recoveryHint(error);
+  if (hint !== null) structured.hint = hint;
   return {
     isError: true,
     content: [{ type: 'text', text: JSON.stringify(structured) }],

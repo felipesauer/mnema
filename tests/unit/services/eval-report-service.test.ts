@@ -63,7 +63,7 @@ function makeEval(events: AuditEvent[], flaggedCount = 0): EvalReportService {
   const quality = {
     flaggedForReview: () => new Set(Array.from({ length: flaggedCount }, (_, i) => `s${i}`)),
   } as unknown as SkillQualityService;
-  return new EvalReportService(audit, flow, quality);
+  return new EvalReportService(audit, flow, quality, workflow);
 }
 
 describe('EvalReportService', () => {
@@ -104,13 +104,13 @@ describe('EvalReportService', () => {
     expect(report.caveat).toContain('CORRELATIONAL');
   });
 
-  it('keeps a task that spans cohorts in one cohort (the run that created it)', () => {
+  it('keeps a task that spans cohorts in one cohort (the run that completed it)', () => {
     // The regression: T1 is created + completed in a GUIDED run G, then
     // reopened in a later UNGUIDED run U. Splitting by each event's own run
     // would replay T1's timeline in BOTH cohorts — counting it completed twice
     // and blaming the reopen on the unguided cohort that merely ran the reopen.
-    // T1's owner is G (it created it), so the whole task — reopen included —
-    // belongs to the guided cohort only.
+    // T1's owner is G (its first terminal transition), so the whole task —
+    // reopen included — belongs to the guided cohort only.
     const events: AuditEvent[] = [
       runStarted('G', 0),
       skillUsed('deploy', 0.1, 'G'),
@@ -135,6 +135,38 @@ describe('EvalReportService', () => {
     expect(report.unguided.metrics.reopen.completed_tasks).toBe(0);
     expect(report.unguided.metrics.reopen.reopened_tasks).toBe(0);
     expect(report.unguided.metrics.throughput).toBe(0);
+  });
+
+  it('backlog-first: a task created in a planning run belongs to the guided run that completed it', () => {
+    // The audited inversion: tasks are created up-front in an unguided
+    // planning run P, then EXECUTED in a guided run A. Owning by the creating
+    // run routed the completion (and any reopen) to P's unguided cohort —
+    // guided showed done=0 even though the guided run did all the work. The
+    // owner must be the run of the first terminal transition.
+    const events: AuditEvent[] = [
+      // Planning run: creates the backlog, uses no skill.
+      runStarted('P', 0),
+      created('T1', 0.1, 'P'),
+      // Guided run A executes T1 to DONE.
+      runStarted('A', 5),
+      skillUsed('deploy', 5.1, 'A'),
+      transitioned('T1', 6, 'DRAFT', 'IN_PROGRESS', 'start', 'A'),
+      transitioned('T1', 7, 'IN_PROGRESS', 'DONE', 'complete', 'A'),
+      // A later unguided run reopens it — still owned by A (first terminal).
+      runStarted('U', 10),
+      transitioned('T1', 11, 'DONE', 'IN_PROGRESS', 'reopen', 'U'),
+    ];
+    const report = makeEval(events).compute();
+
+    expect(report.guided.runs).toBe(1); // A
+    expect(report.unguided.runs).toBe(2); // P and U
+
+    // The completion AND the reopen land on the guided cohort that did the
+    // work — not on the planning run's cohort.
+    expect(report.guided.metrics.reopen.completed_tasks).toBe(1);
+    expect(report.guided.metrics.reopen.reopened_tasks).toBe(1);
+    expect(report.unguided.metrics.reopen.completed_tasks).toBe(0);
+    expect(report.unguided.metrics.reopen.reopened_tasks).toBe(0);
   });
 
   it('puts a run with no skill_used entirely in the unguided cohort', () => {

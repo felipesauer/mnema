@@ -44,6 +44,37 @@ describe('pruneFolderedOrphanMirrors (ADR-51)', () => {
     expect(existsSync(path.join(root, 'flat-orphan.md'))).toBe(false);
   });
 
+  it('never prunes the adopt-memory context.md scaffolding (human-authored, no row)', () => {
+    // The audited data loss: `adopt memory` writes context.md with no DB row,
+    // and the prune classified it as an orphan and deleted real user content.
+    write('context.md');
+    write('INDEX.md');
+    write('orphan.md');
+
+    const removed = pruneFolderedOrphanMirrors(root, new Set(['something-known']), fs);
+
+    expect(removed).toEqual(['orphan']);
+    expect(existsSync(path.join(root, 'context.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'INDEX.md'))).toBe(true);
+  });
+
+  it('cold-DB guard: refuses to prune ANYTHING when the known-slug set is empty', () => {
+    // A fresh clone carries the versioned mirrors but the local DB has zero
+    // memory/skill rows (rebuild does not re-ingest them yet) — with an empty
+    // set every mirror would read as an orphan and the prune would wipe the
+    // team's knowledge base.
+    write('default/seed-a.md');
+    write('authored/human-b.md');
+    write('flat-c.md');
+
+    const removed = pruneFolderedOrphanMirrors(root, new Set(), fs);
+
+    expect(removed).toEqual([]);
+    expect(existsSync(path.join(root, 'default', 'seed-a.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'authored', 'human-b.md'))).toBe(true);
+    expect(existsSync(path.join(root, 'flat-c.md'))).toBe(true);
+  });
+
   it('removes a subfolder left empty after its only mirror was pruned', () => {
     write('scope-gone/only.md');
     write('default/keep.md');

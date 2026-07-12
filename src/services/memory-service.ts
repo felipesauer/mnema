@@ -159,8 +159,13 @@ export class MemoryService {
     // swallowed (that silently drops the new scope, telling the caller it was
     // set when it wasn't).
     const scopeUnchanged = input.scope === undefined || input.scope === existing?.scope;
+    // An ARCHIVED memory is never a no-op target: re-recording the slug is the
+    // documented way to reactivate it, and the upsert is what clears
+    // `archived_at` — short-circuiting here would leave it silently hidden
+    // while telling the caller nothing changed.
     const isNoOp =
       existing !== null &&
+      existing.archivedAt === null &&
       existing.title === input.title &&
       existing.content === input.content &&
       topicsArraysEqual(existing.topics, topics) &&

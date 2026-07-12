@@ -242,5 +242,15 @@ function formatDecisionDetail(decision: Decision, supersededByKey: string | null
     lines.push(pc.bold('Consequences'));
     lines.push(decision.consequences);
   }
+  // Impacts are persisted (--impact / mirror `impacts:`) and drive
+  // `decision impacting` — omitting them here hid what the reader could
+  // already query, so surface the list alongside the other sections.
+  if (decision.impacts.length > 0) {
+    lines.push('');
+    lines.push(pc.bold('Impact'));
+    for (const impact of decision.impacts) {
+      lines.push(`- ${impact}`);
+    }
+  }
   return lines.join('\n');
 }

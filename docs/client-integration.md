@@ -113,9 +113,10 @@ The word "hook" appears in two unrelated places:
   runs.
 - **Mnema's internal domain-event hooks** (see
   [configuration.md](configuration.md) → `hooks`): configured in
-  `.mnema/mnema.config.json`, they run a shell command **after** an audit
-  event commits (`on_task_done`, `on_task_transitioned`,
-  `on_decision_accepted`, `on_sprint_closed`, …). They are part of the
+  `.mnema/mnema.config.json`, they run a command (an argv pair, **no
+  shell**) **after** an audit event commits (`on_task_done`,
+  `on_task_transitioned`, `on_decision_accepted`, `on_sprint_closed`,
+  …). They are part of the
   audit trail (each firing is a `hook_ran` event) and are **inert until a
   human approves the block** with `mnema hooks approve`. They fire *after*
   the fact; they never gate an edit.

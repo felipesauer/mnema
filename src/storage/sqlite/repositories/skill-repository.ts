@@ -92,6 +92,21 @@ export class SkillRepository {
   }
 
   /**
+   * Finds a skill row by its id. Used to resolve a `superseded_by` pointer
+   * — which stores the successor ROW's id, not a slug — back to something a
+   * human can follow.
+   *
+   * @param id - Skill row id
+   * @returns The skill row or `null`
+   */
+  findById(id: string): Skill | null {
+    const row = this.adapter.getDatabase().prepare('SELECT * FROM skills WHERE id = ?').get(id) as
+      | SkillRow
+      | undefined;
+    return row === undefined ? null : rowToSkill(row);
+  }
+
+  /**
    * Lists every recorded version for a slug, newest first.
    *
    * @param slug - Skill slug

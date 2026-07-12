@@ -25,6 +25,7 @@ import { AuditStateRepository } from '../../storage/sqlite/repositories/audit-st
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
+import { parseTimeBoundOption } from '../option-helpers.js';
 import { parsePositiveInt } from '../option-parsers.js';
 
 interface QueryOptions {
@@ -63,8 +64,12 @@ export class AuditCommand {
         '--task-key <key>',
         'Filter by entity key — matches task, decision (MNEMA-ADR-N) or any event whose `data.key` / `data.task_key` matches',
       )
-      .option('--since <duration>', 'Lower bound — `30s`, `2h`, `7d` or ISO8601')
-      .option('--until <duration>', 'Upper bound — same syntax as --since')
+      .option(
+        '--since <duration>',
+        'Lower bound — `30s`, `2h`, `7d` or ISO8601',
+        parseTimeBoundOption,
+      )
+      .option('--until <duration>', 'Upper bound — same syntax as --since', parseTimeBoundOption)
       .option('--limit <n>', 'Limit the number of results', parsePositiveInt)
       .option('--json', 'Print events as raw JSONL', false)
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
@@ -339,8 +344,11 @@ export class AuditCommand {
             );
           }
           if (report.breaks.length === 0) {
+            // "Clean" here means LINKAGE only — this walk never re-hashes
+            // content, so an in-place edit with intact prev_hash links would
+            // still pass. Say so, and name the check that does cover it.
             process.stdout.write(
-              `${pc.green('✔')}  no prev_hash discontinuities — chain is clean\n`,
+              `${pc.green('✔')}  no prev_hash discontinuities — chain is clean (linkage only — \`mnema audit verify\` checks content authenticity)\n`,
             );
           } else {
             process.stdout.write(

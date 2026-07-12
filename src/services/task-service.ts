@@ -120,6 +120,9 @@ export class TaskService {
     private readonly fieldSeverity: Readonly<Record<string, 'off' | 'warn' | 'block'>> = {},
   ) {}
 
+  /** See {@link consumeLastGateOverride}. */
+  private lastGateOverride: ErrorIssue[] | null = null;
+
   /**
    * Creates a new task in the workflow's initial state.
    *
@@ -557,6 +560,8 @@ export class TaskService {
   }
 
   transition(input: TransitionInput): Result<Task, MnemaError> {
+    // A previous call's override must never leak into this one.
+    this.lastGateOverride = null;
     const task = this.tasks.findByKey(input.taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
@@ -913,11 +918,29 @@ export class TaskService {
           missing: gateOverride.map((i) => i.path.join('.') || '(root)'),
         },
       });
+      // Expose the override to the caller (consume-once) so an interactive
+      // surface can WARN the human at the moment it happens — the audit row
+      // alone is invisible until someone reads the history.
+      this.lastGateOverride = gateOverride;
     }
 
     this.sync.syncTask(task.key);
 
     return Ok(updated);
+  }
+
+  /**
+   * The gate override recorded by the MOST RECENT successful {@link transition}
+   * on this instance, or `null` when the last transition passed its gate
+   * cleanly. Reading it clears it (consume-once), so a caller can surface a
+   * "gate overridden — proceeding without <fields>" warning exactly once.
+   * Instance-scoped and serial by construction (one container per CLI process
+   * / MCP call chain), not a concurrency-safe channel.
+   */
+  consumeLastGateOverride(): ErrorIssue[] | null {
+    const override = this.lastGateOverride;
+    this.lastGateOverride = null;
+    return override;
   }
 
   /**
