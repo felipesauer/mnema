@@ -30,6 +30,7 @@ import { DependencyGraphTool } from './tools/universal/dependency-graph-tool.js'
 import { DependencyTools } from './tools/universal/dependency-tools.js';
 import { DriftTool } from './tools/universal/drift-tool.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
+import { EvalReportTool } from './tools/universal/eval-report-tool.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
 import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
@@ -324,6 +325,7 @@ export class MnemaMcpServer {
       new WorkGraphLintTools(this.services.workGraphLint).register(this.sdk);
     }
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
+    new EvalReportTool(this.services.evalReport).register(this.sdk);
     new PortfolioTool(this.services.portfolio).register(this.sdk);
     new PrStatusTool(this.services.githubPr).register(this.sdk);
     new SearchTool(this.services.search, this.services.task).register(this.sdk, knowledgeEnabled);

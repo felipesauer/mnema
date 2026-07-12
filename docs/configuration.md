@@ -141,6 +141,11 @@ limbo where a transition waits on a human that never comes. `mnema inbox` and
 
 ## `hooks`
 
+> These are Mnema's **internal domain-event hooks** — they fire *after* an
+> audit event commits. They are **not** the client-side `PreToolUse` hook
+> that gates an edit; for that, and for the full client contract, see
+> [client-integration.md](client-integration.md).
+
 Run a command when a curated domain event fires. Each key is a domain-event
 name; the value is the ordered list of hooks to run. A hook is an argv pair —
 `{ command, args }` — spawned **without a shell**, so shell metacharacters

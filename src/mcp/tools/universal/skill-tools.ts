@@ -229,6 +229,20 @@ export class SkillTools {
     );
 
     server.registerTool(
+      'skill_review_proposals',
+      {
+        description:
+          'Structured prompts to reconsider a skill: each proposal names a skill that was applied in a run touching a task which has since reopened, with the task key, run id, reopen count and the recorded reopen reason. A prompt for a human/agent to judge whether the skill needs revising — NOT a verdict, and it changes nothing. Authoring a revised version is a separate, explicit act (skill_record mode:new_version).',
+        inputSchema: {},
+      },
+      () => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        return ok({ proposals: this.skillQuality.reviewProposals() });
+      },
+    );
+
+    server.registerTool(
       'skill_supersede',
       {
         description:

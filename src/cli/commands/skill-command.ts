@@ -138,6 +138,27 @@ export class SkillCommand {
       });
 
     group
+      .command('review')
+      .description('Skills to reconsider: those applied in a run whose task later reopened')
+      .action(async () => {
+        await withCliContext(({ container }) => {
+          const proposals = container.skillQuality.reviewProposals();
+          if (proposals.length === 0) {
+            process.stdout.write(`${pc.dim('no skills flagged for review')}\n`);
+            return;
+          }
+          for (const p of proposals) {
+            const reason = p.reopenReason ?? pc.dim('no reason recorded');
+            process.stdout.write(
+              `${pc.bold(p.slug)} ${pc.dim('·')} ${p.taskKey} reopened ${p.reopenCount}x\n` +
+                `  ${pc.dim('reason:')} ${reason}\n` +
+                `  ${pc.dim(`consider revising this skill (skill_record ${p.slug} --new-version) — a prompt, not a verdict`)}\n`,
+            );
+          }
+        });
+      });
+
+    group
       .command('show <slug>')
       .description('Show a recorded skill by slug')
       .option('--version <n>', 'Specific version (default: latest)')

@@ -11,6 +11,8 @@ docs/*
 !docs/quickstart.cast
 !docs/quickstart.gif
 !docs/configuration.md
+!docs/client-integration.md
+!docs/guard.md
 !docs/assets/
 !docs/assets/**
 .plan/
