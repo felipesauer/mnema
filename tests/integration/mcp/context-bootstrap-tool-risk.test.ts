@@ -19,20 +19,24 @@ interface Harness {
   readonly close: () => Promise<void>;
 }
 
-async function setup(): Promise<Harness> {
+async function setup(
+  options: { workflow?: 'default' | 'lean'; knowledge?: boolean } = {},
+): Promise<Harness> {
+  const workflowName = options.workflow ?? 'default';
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-ctx-risk-'));
   for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
   }
   copyFileSync(
-    path.join(workflowsSrc, 'default.json'),
-    path.join(projectRoot, '.mnema/workflows', 'default.json'),
+    path.join(workflowsSrc, `${workflowName}.json`),
+    path.join(projectRoot, '.mnema/workflows', `${workflowName}.json`),
   );
   const config = ConfigSchema.parse({
     version: '1.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test' },
-    workflow: 'default',
+    workflow: workflowName,
+    ...(options.knowledge === false ? { features: { knowledge: false } } : {}),
   });
   const container = createServiceContainer(config, projectRoot, { migrationsDir });
   const server = new MnemaMcpServer(config, projectRoot, container, { agent_handle: 'test-agent' });
@@ -108,11 +112,40 @@ describe('context_bootstrap surfaces the tool risk vocabulary', () => {
     const risk = boot.tool_risk as Record<string, ToolAnnotations>;
 
     const list = await harness.client.listTools();
+    // Exact key-set equality both ways: every advertised tool is in tool_risk,
+    // AND tool_risk carries no extra (unadvertised) key.
+    const advertised = new Set(list.tools.map((t) => t.name));
+    expect(new Set(Object.keys(risk))).toEqual(advertised);
     for (const tool of list.tools) {
-      // Every advertised tool has a risk entry, and it is the SAME annotation
-      // tools/list exposes — bootstrap must not drift from the live surface.
-      expect(risk[tool.name], `${tool.name} present in tool_risk`).toBeDefined();
       expect(tool.annotations, `${tool.name} annotation matches`).toEqual(risk[tool.name]);
+    }
+  });
+
+  it('gated profile: tool_risk drops disabled tools and matches the advertised set exactly', async () => {
+    // Audit-only: lean workflow (no epics/sprints) + knowledge off.
+    const audit = await setup({ workflow: 'lean', knowledge: false });
+    try {
+      const boot = payload(
+        (await audit.client.callTool({
+          name: 'context_bootstrap',
+          arguments: {},
+        })) as CallToolResult,
+      );
+      const risk = boot.tool_risk as Record<string, ToolAnnotations>;
+
+      // Knowledge / planning tools are gated OFF → absent from tool_risk,
+      // not merely present-but-unregistered (the over-listing bug this guards).
+      for (const gated of ['memory_record', 'skill_record', 'decision_record', 'epic_delete']) {
+        expect(risk[gated], `${gated} must be absent in audit-only`).toBeUndefined();
+      }
+      // Core stays.
+      expect(risk.task_show).toBeDefined();
+
+      // And it equals the advertised set exactly — no extra keys.
+      const advertised = new Set((await audit.client.listTools()).tools.map((t) => t.name));
+      expect(new Set(Object.keys(risk))).toEqual(advertised);
+    } finally {
+      await audit.close();
     }
   });
 });

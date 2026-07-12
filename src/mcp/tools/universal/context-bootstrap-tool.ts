@@ -164,6 +164,14 @@ export class ContextBootstrapTool {
     const focusKey = nextAction.in_progress_task?.key ?? nextAction.top_ready_task?.key ?? null;
     const relevantSkills = focusKey === null ? [] : this.relevantSkillsFor(focusKey);
 
+    // The one profile gate that both tool_groups and tool_risk are filtered
+    // by, so the two never disagree about what this project advertises.
+    const toolFeatures = {
+      epics: this.workflow.features.epics,
+      sprints: this.workflow.features.sprints,
+      knowledge: this.config.features.knowledge,
+    };
+
     return ok({
       project: {
         key: this.config.project.key,
@@ -196,15 +204,13 @@ export class ContextBootstrapTool {
       // reason about ~4 buckets instead of a flat list. `enabled` reflects
       // this project's profile — a disabled layer's tools are listed but
       // are not registered (e.g. Knowledge is off in the audit-only profile).
-      tool_groups: describeToolSurface(this.workflow, {
-        epics: this.workflow.features.epics,
-        sprints: this.workflow.features.sprints,
-        knowledge: this.config.features.knowledge,
-      }),
+      tool_groups: describeToolSurface(this.workflow, toolFeatures),
       // The per-tool risk vocabulary (readonly/destructive/idempotent/openWorld),
       // same as tools/list carries — surfaced here so a client can build a
       // permission policy at session start without a separate round-trip.
-      tool_risk: toolRiskMap(this.workflow),
+      // Gated to the advertised set (same toolFeatures) so it never lists a
+      // tool this profile can't call, staying in lockstep with tool_groups.
+      tool_risk: toolRiskMap(this.workflow, toolFeatures),
       agents_md: this.readTruncated('AGENTS.md', 8 * 1024),
       agents_md_path: existsSync(path.join(this.projectRoot, 'AGENTS.md')) ? 'AGENTS.md' : null,
       // Surfaced on every session start so the directive does not depend on
