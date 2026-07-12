@@ -1,5 +1,7 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
+import type { Workflow } from '../domain/state-machine/state-machine.js';
+
 /**
  * Per-tool risk annotations, surfaced verbatim through `tools/list` so a
  * client can reason about a tool before calling it (MNEMA-ADR-36: everything
@@ -406,4 +408,30 @@ export function transitionRisk(
     idempotentHint: true, // wouldBeNoOp: re-applying the same transition is a no-op
     openWorldHint: false,
   };
+}
+
+/**
+ * The full name → annotation map for a project: the static {@link TOOL_RISK}
+ * entries plus one derived entry per `task_<action>` transition the active
+ * workflow declares. This is the single place that resolves BOTH kinds, so a
+ * consumer (the `tools/list` wrapper, `context_bootstrap`) gets the same
+ * answer without re-deriving the transition logic.
+ *
+ * @param workflow - The active workflow (for its transitions)
+ * @returns A frozen map of every advertised tool's risk annotation
+ */
+export function toolRiskMap(workflow: Workflow): Readonly<Record<string, ToolAnnotations>> {
+  const map: Record<string, ToolAnnotations> = { ...TOOL_RISK };
+  const terminal = new Set(workflow.terminal);
+  // First declaration of a `task_<action>` wins, matching the registrar's
+  // dedupe (a tool name is registered once even if several from-states share
+  // the action).
+  for (const [fromState, actions] of Object.entries(workflow.transitions)) {
+    for (const [action, transition] of Object.entries(actions)) {
+      const name = `task_${action}`;
+      if (name in map) continue;
+      map[name] = transitionRisk(terminal.has(transition.to), terminal.has(fromState), action);
+    }
+  }
+  return map;
 }

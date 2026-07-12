@@ -18,6 +18,7 @@ import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import { ok } from '../../mcp-tool-result.js';
 import { describeToolSurface } from '../../tool-registry.js';
+import { toolRiskMap } from '../../tool-risk.js';
 
 /**
  * Registers the `context_bootstrap` MCP tool — the canonical entry
@@ -200,6 +201,10 @@ export class ContextBootstrapTool {
         sprints: this.workflow.features.sprints,
         knowledge: this.config.features.knowledge,
       }),
+      // The per-tool risk vocabulary (readonly/destructive/idempotent/openWorld),
+      // same as tools/list carries — surfaced here so a client can build a
+      // permission policy at session start without a separate round-trip.
+      tool_risk: toolRiskMap(this.workflow),
       agents_md: this.readTruncated('AGENTS.md', 8 * 1024),
       agents_md_path: existsSync(path.join(this.projectRoot, 'AGENTS.md')) ? 'AGENTS.md' : null,
       // Surfaced on every session start so the directive does not depend on
