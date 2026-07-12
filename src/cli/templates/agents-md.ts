@@ -186,9 +186,9 @@ export function buildAgentsMd(config: Config): string {
   lines.push('## MCP tool surface');
   lines.push('');
   lines.push(
-    'The tools are organised in conceptual layers — reason about these ' +
-      'buckets rather than memorising every tool. `context_bootstrap` returns ' +
-      'the exact per-tool grouping (`tool_groups`) for this project:',
+    'Tools are organised in conceptual layers — reason about these buckets, ' +
+      'not every tool; `context_bootstrap` returns the exact per-tool grouping ' +
+      '(`tool_groups`):',
   );
   lines.push('');
   lines.push(
@@ -213,10 +213,9 @@ export function buildAgentsMd(config: Config): string {
   }
   lines.push('');
   lines.push(
-    'When a layer is available, prefer its MCP tools over the CLI mid-run, and ' +
-      'prefer the batch forms — `task_create_many`, `sprint_add_tasks`, ' +
-      '`task_depends_many` — which attempt every item and report per-item ' +
-      'failures instead of failing the whole call.',
+    'Prefer MCP tools over the CLI mid-run, and the batch forms ' +
+      '(`task_create_many`, `sprint_add_tasks`, `task_depends_many`) — they ' +
+      'report per-item failures instead of failing the whole call.',
   );
   lines.push('');
   lines.push('## Recording what you learn');
@@ -237,70 +236,34 @@ export function buildAgentsMd(config: Config): string {
     lines.push('');
   } else {
     lines.push(
-      '**Use Mnema for this, not your own memory.** If your client has a ' +
-        'built-in memory feature (a personal notes file, native recall), ' +
-        'do **not** put durable facts about *this project* there: those stay on ' +
-        'your machine, never reach a teammate, and leave no audit trail. Record ' +
-        'them through the Mnema tools below — they are mirrored to `.md` in the ' +
-        'repo and recorded in the hash-chained log, so the knowledge travels with ' +
-        'the project and is provable. Your native memory is still fine for your ' +
-        'own cross-project habits; project knowledge belongs in Mnema.',
+      '**Use Mnema, not your client’s own memory,** for durable facts about ' +
+        '*this* project — native recall stays on your machine, unshared and ' +
+        'unaudited. Mnema knowledge is mirrored to `.md` and hash-chained, so it ' +
+        'travels with the repo and is provable. Record as you work, by kind:',
     );
     lines.push('');
     lines.push(
-      'These are not optional housekeeping — they are how the next session ' +
-        '(yours or a teammate’s) avoids relearning what you already know. ' +
-        'Record as you work, not in a batch at the end. Concretely:',
+      '- **Memory** (`memory_record`) — a non-obvious project fact/constraint. ' +
+        'Upsert by slug; latest wins. If you’d re-explain it next week, it’s a memory.',
     );
-    lines.push('');
     lines.push(
-      '- **Hit a non-obvious fact about *this* project** (a constraint, a ' +
-        'convention, why something is the way it is)? Write a **memory** with ' +
-        '`memory_record(slug, title, content, …)`. Upsert by slug — the latest ' +
-        'content wins. Rule of thumb: if you would re-explain it to yourself ' +
-        'next week, it is a memory.',
+      '- **Skill** (`skill_record` + `skill_use`) — a repeatable procedure. ' +
+        'Call `skill_use` when you apply it. An empty `skills/` after real work means you skipped this.',
     );
-    lines.push('');
     lines.push(
-      '- **Worked out a repeatable procedure** (a sequence of steps you would ' +
-        'follow again)? Write a **skill** with `skill_record(slug, name, ' +
-        'description, content, …)`, and call `skill_use` each time you actually ' +
-        "apply it so the useful ones rise. Use `mode='new_version'` for a " +
-        'disruptive rewrite; the default updates in place. An empty `skills/` ' +
-        'after real work usually means this step was skipped — don’t.',
+      '- **Observation** (`observation_record`) — a signal not yet a durable ' +
+        'fact; fire-and-forget, promotable later into a memory.',
     );
-    lines.push('');
     lines.push(
-      '- **Noticed something that might matter later** but isn’t yet a durable ' +
-        'fact (a smell, a surprise, a TODO-shaped signal)? Append an ' +
-        '**observation** with `observation_record` — no slug, no upsert, ' +
-        'fire-and-forget. It is the cheapest gateway: an observation can later ' +
-        'be promoted into a memory with `memory_record(…, derived_from_observation)`, ' +
-        'or retired once stale with `observation_archive`.',
-    );
-    lines.push('');
-    lines.push(
-      '- **Made a choice the team should be able to contest later**? Record a ' +
-        'formal ADR with `decision_record`. When a free-form `note_add` matures ' +
-        'into a decision, use `decision_promote_from_note(note_id, …)` so the ' +
-        'audit log links the ADR back to the note.',
-    );
-    lines.push('');
-    lines.push(
-      'All of the above are mirrored to `.md` on disk so they travel with the ' +
-        'repository and are reviewable in a pull request. The `memory_index` / ' +
-        '`decisions_index` fields in `context_bootstrap` are human-curated ' +
-        'supplements regenerated by `mnema memory consolidate` — read them for ' +
-        'context, never write to them directly.',
+      '- **Decision** (`decision_record`) — a choice the team may contest later (an ADR).',
     );
     lines.push('');
     lines.push('## Project memory');
     lines.push('');
     lines.push(
-      "The project's curated memory index is imported below at generation " +
-        'time, so this section always reflects the current state. Regenerate ' +
-        'it with `mnema memory consolidate`; this block refreshes on the next ' +
-        '`mnema agents sync` / `mnema upgrade`.',
+      'The curated memory index is imported below at generation time ' +
+        '(regenerate with `mnema memory consolidate`; refreshes on the next ' +
+        '`mnema agents sync`).',
     );
     lines.push('');
     // A whole-line `@path` directive, expanded by expandAgentsImports at
@@ -316,9 +279,7 @@ export function buildAgentsMd(config: Config): string {
   lines.push('mnema history --since=today           # what happened today');
   lines.push('mnema watch                           # live tail of mutations');
   lines.push('mnema inbox                           # things waiting on me');
-  lines.push('mnema agent inspect <run_id>          # detail of an agent run');
   lines.push('```');
-  lines.push('');
   return lines.join('\n');
 }
 

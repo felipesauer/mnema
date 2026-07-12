@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { expandAgentsImports, writeAgentsMd } from '@/cli/templates/agents-md.js';
+import { buildAgentsMd, expandAgentsImports, writeAgentsMd } from '@/cli/templates/agents-md.js';
 import { ConfigSchema } from '@/config/config-schema.js';
 
 /**
@@ -17,6 +17,51 @@ function makeConfig() {
     workflow: 'default',
   });
 }
+
+describe('buildAgentsMd stays lean (MNEMA-246)', () => {
+  // The managed block is measured with the @path memory-import directive
+  // counted as a single line (its expansion into the memory index happens
+  // later, at write time, and is project-state-dependent). Osmani's rule of
+  // thumb: keep the operating manual short enough that an agent reads it all.
+  const LIMIT = 60;
+
+  function bodyLines(knowledge: boolean): number {
+    const config = ConfigSchema.parse({
+      version: '1.0',
+      mnema_version: '^0.1.0',
+      project: { key: 'DEMO', name: 'Demo' },
+      workflow: 'default',
+      features: { knowledge },
+    });
+    return buildAgentsMd(config).split('\n').length;
+  }
+
+  it('renders under 60 lines with the knowledge layer on', () => {
+    expect(bodyLines(true)).toBeLessThan(LIMIT);
+  });
+
+  it('renders under 60 lines in the audit-only profile', () => {
+    expect(bodyLines(false)).toBeLessThan(LIMIT);
+  });
+
+  it('keeps the load-bearing rules despite the trim', () => {
+    const config = ConfigSchema.parse({
+      version: '1.0',
+      mnema_version: '^0.1.0',
+      project: { key: 'DEMO', name: 'Demo' },
+      workflow: 'default',
+    });
+    const body = buildAgentsMd(config);
+    // The knowledge-capture guidance and the four record kinds survive.
+    expect(body).toContain('Use Mnema');
+    for (const tool of ['memory_record', 'skill_record', 'observation_record', 'decision_record']) {
+      expect(body).toContain(tool);
+    }
+    // The core operating principles are intact.
+    expect(body).toContain('context_bootstrap');
+    expect(body).toContain('agent_run_start');
+  });
+});
 
 describe('writeAgentsMd (agents sync)', () => {
   let root: string;
