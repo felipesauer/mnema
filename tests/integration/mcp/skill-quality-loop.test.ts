@@ -148,7 +148,7 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
     expect(safe?.review_flag).toBe(false);
   });
 
-  it('skill_review_proposals carries the task, run and reopen reason (MNEMA-249)', async () => {
+  it('skill_review_proposals carries the task, run and reopen reason', async () => {
     await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'run A' } });
     await harness.client.callTool({
       name: 'skill_record',

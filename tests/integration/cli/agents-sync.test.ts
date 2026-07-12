@@ -18,7 +18,7 @@ function makeConfig() {
   });
 }
 
-describe('buildAgentsMd stays lean (MNEMA-246)', () => {
+describe('buildAgentsMd stays lean', () => {
   // The managed block is measured with the @path memory-import directive
   // counted as a single line (its expansion into the memory index happens
   // later, at write time, and is project-state-dependent). Osmani's rule of
