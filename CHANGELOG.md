@@ -17,6 +17,7 @@ conventional commits; the pre-0.4.0 history was written by hand.
 
 ### Features
 
+* agent-usability pass: edit/delete/discover ops + knowledge-write ergonomics ([#197](https://github.com/felipesauer/mnema/issues/197)) ([5eaf652](https://github.com/felipesauer/mnema/commit/5eaf652d5de1cde10508fa706be4463b02261d79))
 * **audit:** flag a likely wrong-secret in the integrity verdict ([#192](https://github.com/felipesauer/mnema/issues/192)) ([9ba92dd](https://github.com/felipesauer/mnema/commit/9ba92dda42e3cf79cc79d8f9b94390f9ab4258dd))
 * **audit:** mnema project secret export/import for the HMAC credential ([#191](https://github.com/felipesauer/mnema/issues/191)) ([5d4f93f](https://github.com/felipesauer/mnema/commit/5d4f93f5bfda722f53e0ba9328384d02b0bfca9e))
 * **audit:** recovery path for chains broken by concurrent writers ([#177](https://github.com/felipesauer/mnema/issues/177)) ([560025a](https://github.com/felipesauer/mnema/commit/560025ad27beb4b8616f823e16192526c9976ae7))
@@ -24,6 +25,7 @@ conventional commits; the pre-0.4.0 history was written by hand.
 * **bootstrap:** surface the tool risk vocabulary in context_bootstrap ([7d15cb7](https://github.com/felipesauer/mnema/commit/7d15cb7adf4e97c00d8de63dbc23d7d40449d030))
 * **cli:** add --derived-from-decision to memory record (provenance parity) ([#194](https://github.com/felipesauer/mnema/issues/194)) ([f1c8fc0](https://github.com/felipesauer/mnema/commit/f1c8fc04e74d3ae2782ac8a1b1b848d0cf6f108b))
 * **cli:** add memory supersede and skill supersede commands ([#189](https://github.com/felipesauer/mnema/issues/189)) ([d1173eb](https://github.com/felipesauer/mnema/commit/d1173eb913d0f58c4ded7658d240d5d321ed6173))
+* **eval:** `mnema eval` — a guided-vs-unguided metrics diff from the audit log — plus the client-integration contract (docs/client-integration.md), a leaner generated AGENTS.md, and structured skill-review proposals from the reopen trajectory ([926d35a](https://github.com/felipesauer/mnema/commit/926d35a9610d8d2fe1da791d2c7a2adad30cb311))
 * **evolve:** read-only evolution-candidate report ([e61584a](https://github.com/felipesauer/mnema/commit/e61584aff952d734f3f92dade1ce8d25a3ab1245))
 * folder skill & memory .md mirrors by origin and scope ([#221](https://github.com/felipesauer/mnema/issues/221)) ([a56fe0d](https://github.com/felipesauer/mnema/commit/a56fe0d163442e6daf890bcf2e6eae93f0694c0c))
 * from passive ledger to active copilot ([#220](https://github.com/felipesauer/mnema/issues/220)) ([b536ee8](https://github.com/felipesauer/mnema/commit/b536ee80082e6ea7f77cfabb6e8ed94cf2a72c76))
@@ -31,6 +33,7 @@ conventional commits; the pre-0.4.0 history was written by hand.
 * **knowledge:** observation lifecycle — archive + promotion to memory ([#186](https://github.com/felipesauer/mnema/issues/186)) ([1fc3548](https://github.com/felipesauer/mnema/commit/1fc3548edf0cead31250302d4b9a30b80c19e496))
 * **knowledge:** record a skill→skill provenance edge on supersede ([#188](https://github.com/felipesauer/mnema/issues/188)) ([bdb9bd3](https://github.com/felipesauer/mnema/commit/bdb9bd356b7f7f3f312bfb4dc0c9b99f43639542))
 * **knowledge:** supersede for memory and skill ([#187](https://github.com/felipesauer/mnema/issues/187)) ([346c59e](https://github.com/felipesauer/mnema/commit/346c59ed2803366fc99ae4d114f673ec1d750308))
+* **mcp:** risk annotations (readOnly/destructive/idempotent/openWorld) on every advertised tool, surfaced through tools/list ([7aa7e77](https://github.com/felipesauer/mnema/commit/7aa7e77c4f157e4045d749edf1fa245a9bf74f24))
 * **observability:** local error log + a report-issue skill ([#183](https://github.com/felipesauer/mnema/issues/183)) ([d359152](https://github.com/felipesauer/mnema/commit/d35915268a4d0ddb7e919889f61384d7bd69eecd))
 * **search:** rename tasks_search to search and add skill_suggest ([#184](https://github.com/felipesauer/mnema/issues/184)) ([da162c1](https://github.com/felipesauer/mnema/commit/da162c195006d4f6f591f2912401b9da69ad978c))
 * **sprint:** add `sprint cancel` to retire a planned or active sprint ([4c876fe](https://github.com/felipesauer/mnema/commit/4c876fec2cff44714c6ade4c9a5558e5a5b628d6))
@@ -41,7 +44,11 @@ conventional commits; the pre-0.4.0 history was written by hand.
 ### Bug Fixes
 
 * atomic skill version bump; explicit derived-commits hint on a cloned git link ([f869474](https://github.com/felipesauer/mnema/commit/f869474abbee239bf3dc9cdaf9d9d9a0a573357e))
+* full-audit remediation: anchor RCE, clone data-loss, ReDoS chain, and the CLI/service validation gap ([#198](https://github.com/felipesauer/mnema/issues/198)) ([3986761](https://github.com/felipesauer/mnema/commit/39867615f8be44c89b769bc104fff40e6a7aa1d5))
+* harden migration safety, claim enforcement, audit verification, sync rebuild, and MCP error paths ([#195](https://github.com/felipesauer/mnema/issues/195)) ([c53ea77](https://github.com/felipesauer/mnema/commit/c53ea77882089bc5b46c80f641086ba7185fa054))
 * **observation:** enforce the content length cap in the service (CLI/MCP parity) ([#193](https://github.com/felipesauer/mnema/issues/193)) ([c2fdc69](https://github.com/felipesauer/mnema/commit/c2fdc69a543d1b88c28549e970a7c083ad9bffba))
+* reconcile epic/sprint/decision content drift on sync rebuild ([#196](https://github.com/felipesauer/mnema/issues/196)) ([24b27a9](https://github.com/felipesauer/mnema/commit/24b27a9aaf6df89eaaf4dcf4dbc7beb3b5588b58))
+* release hardening from the eight-pass 0.13.0-alpha manual audit: orphan-prune data loss (the human context.md, a fresh clone's knowledge base), inverted `mnema eval` cohorts on backlog-first flows, comma-dropping CLI field coercion, silent strict-gate overrides, MCP recovery hints, and a dozen message-honesty fixes ([57a2683](https://github.com/felipesauer/mnema/commit/57a2683244c349e152e67a1f2bb6a00b88855394))
 * **run-diff:** surface task claim/release in the run diff ([#180](https://github.com/felipesauer/mnema/issues/180)) ([a0ce9c6](https://github.com/felipesauer/mnema/commit/a0ce9c6f9f51dfcc8536ff10c3ceba18e57a7fd2))
 * **search:** gate skill_suggest behind the knowledge feature ([#185](https://github.com/felipesauer/mnema/issues/185)) ([b6de7ec](https://github.com/felipesauer/mnema/commit/b6de7ecd57aa5c87a54e64f8877ba064a1be3c5c))
 
