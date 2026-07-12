@@ -13,6 +13,7 @@ docs/*
 !docs/configuration.md
 !docs/client-integration.md
 !docs/guard.md
+!docs/mcp-tools.md
 !docs/assets/
 !docs/assets/**
 .plan/

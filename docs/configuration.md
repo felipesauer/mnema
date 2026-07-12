@@ -114,6 +114,10 @@ How mutations are flushed from the in-session buffer to the markdown mirror.
 | `features.knowledge` | boolean | `true` | Gates the knowledge surface (decisions/skills/memories/observations + provenance) as MCP tools. Off in the audit-only profile; the stores still work if re-enabled — this only controls what the agent sees. |
 | `features.update_check` | boolean | `false` | Opt-in npm update check. **Off by default**: Mnema is offline / zero-telemetry, and a registry check is an outbound request. No usage data is ever transmitted. |
 
+Every advertised tool carries risk annotations (read-only / destructive /
+idempotent / open-world) in `tools/list` so a client can judge it before
+calling — see [mcp-tools.md](mcp-tools.md).
+
 ## `aging`
 
 Surfaces tasks that have sat in a non-terminal state too long — the IN_REVIEW
