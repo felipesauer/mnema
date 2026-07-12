@@ -23,6 +23,7 @@ import {
   type Verbosity,
 } from '../mcp-tool-result.js';
 import { UNIVERSAL_TOOL_NAMES } from '../tool-registry.js';
+import { transitionRisk } from '../tool-risk.js';
 
 /**
  * Action names that, when they also move a task into a terminal state,
@@ -86,7 +87,7 @@ export class TransitionToolsRegistrar {
     // gracefully rather than taking the server down.
     const reserved = new Set(UNIVERSAL_TOOL_NAMES);
 
-    for (const actions of Object.values(this.workflow.transitions)) {
+    for (const [fromState, actions] of Object.entries(this.workflow.transitions)) {
       for (const [action, transition] of Object.entries(actions)) {
         const toolName = `task_${action}`;
         if (seen.has(toolName)) continue;
@@ -144,11 +145,18 @@ export class TransitionToolsRegistrar {
           requiredFieldNames.length === 0
             ? '\n\nThis action has no required fields beyond `task_key`.'
             : `\n\nRequired fields: ${requiredFieldNames.join(', ')}.`;
+        // A transition always mutates; it is idempotent (the handler no-ops
+        // when already in the target state) and destructive only when it
+        // rewinds out of a terminal state (reopen) or abandons the task
+        // (cancel). Derived here because the tool set is per-workflow.
+        const fromTerminal = this.workflow.terminal.includes(fromState);
+        const annotations = transitionRisk(targetsTerminal, fromTerminal, action);
         server.registerTool(
           toolName,
           {
             description: `${transition.description}\n\nUse when: ${transition.useWhen}${fieldsHint}\n\nPass verbosity: 'compact' to get back a lean { key, state, updatedAt } echo instead of the full task — ideal for batch or low-context transitions.`,
             inputSchema,
+            annotations,
           },
           (input: Record<string, unknown>) => {
             // A transition is a mutation: refuse on schema drift with the

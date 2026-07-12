@@ -17,6 +17,7 @@ import {
   McpServerStatus,
   McpSessionContext,
 } from './mcp-session-context.js';
+import { TOOL_RISK } from './tool-risk.js';
 import { TransitionToolsRegistrar } from './tools/transition-tools.js';
 import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
 import { AgentRunTools } from './tools/universal/agent-run-tools.js';
@@ -98,6 +99,31 @@ export class MnemaMcpServer {
     // intercepting setRequestHandler before McpServer claims `tools/call`.
     installZodErrorMap();
     this.wrapToolCallHandler();
+    this.wrapToolAnnotations();
+  }
+
+  /**
+   * Intercepts `registerTool` so every statically-named tool carries its
+   * risk annotation ({@link TOOL_RISK}) in `tools/list`, without editing the
+   * ~40 individual registrars. A tool already passing its own `annotations`
+   * keeps them (the dynamic `task_<action>` transitions derive their own via
+   * `transitionRisk` and are intentionally absent from `TOOL_RISK`); anything
+   * else is looked up by name. The lookup is best-effort: an unmapped name
+   * registers unannotated rather than failing a live server — the
+   * completeness test is what guarantees the table stays exhaustive.
+   */
+  private wrapToolAnnotations(): void {
+    // biome-ignore lint/suspicious/noExplicitAny: external generic SDK boundary
+    const sdk = this.sdk as any;
+    const original = sdk.registerTool.bind(sdk);
+    // biome-ignore lint/suspicious/noExplicitAny: external generic SDK boundary
+    sdk.registerTool = (name: string, config: any, handler: any): unknown => {
+      const risk = TOOL_RISK[name];
+      if (risk !== undefined && config !== null && config.annotations === undefined) {
+        return original(name, { ...config, annotations: risk }, handler);
+      }
+      return original(name, config, handler);
+    };
   }
 
   /**
