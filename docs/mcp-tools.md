@@ -1,9 +1,10 @@
 # MCP tools — the risk vocabulary
 
-Every tool Mnema advertises over MCP carries the SDK's four **risk
-annotations** in `tools/list`, so a client can judge a tool's blast radius
-*before* calling it — surface a confirmation for a destructive write, safely
-retry an idempotent one, or auto-allow a read. The classification is local
+Every tool Mnema advertises over MCP carries **risk annotations** from the
+SDK's four-hint vocabulary in `tools/list`, so a client can judge a tool's
+blast radius *before* calling it — surface a confirmation for a destructive
+write, safely retry an idempotent one, or auto-allow a read. (A read-only tool
+carries only the hints that apply to it — see the table below.) The classification is local
 and static: it collects nothing, it is the same on every machine, and it
 lives in one reviewed table ([src/mcp/tool-risk.ts](../src/mcp/tool-risk.ts)).
 
