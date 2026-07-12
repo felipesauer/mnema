@@ -1,0 +1,139 @@
+import { describe, expect, it } from 'vitest';
+
+import type { Workflow } from '@/domain/state-machine/state-machine.js';
+import type { AuditQuery } from '@/services/audit-query.js';
+import { EvalReportService } from '@/services/eval-report-service.js';
+import { FlowMetricsService } from '@/services/flow-metrics-service.js';
+import type { SkillQualityService } from '@/services/skill-quality-service.js';
+import type { SprintService } from '@/services/sprint-service.js';
+import type { TaskService } from '@/services/task-service.js';
+import type { AuditEvent } from '@/storage/audit/audit-writer.js';
+
+const HOUR = 3_600_000;
+const BASE = Date.parse('2026-01-01T00:00:00.000Z');
+const at = (h: number): string => new Date(BASE + h * HOUR).toISOString();
+
+function runStarted(run: string, h: number): AuditEvent {
+  return { v: 2, at: at(h), kind: 'run_started', actor: 'a', run, data: { goal: 'x' } };
+}
+function created(key: string, h: number, run: string): AuditEvent {
+  return { v: 2, at: at(h), kind: 'task_created', actor: 'a', run, data: { key, state: 'DRAFT' } };
+}
+function transitioned(
+  key: string,
+  h: number,
+  from: string,
+  to: string,
+  action: string,
+  run: string,
+): AuditEvent {
+  return {
+    v: 2,
+    at: at(h),
+    kind: 'task_transitioned',
+    actor: 'a',
+    run,
+    data: { key, from, to, action },
+  };
+}
+function skillUsed(slug: string, h: number, run: string): AuditEvent {
+  return { v: 2, at: at(h), kind: 'skill_used', actor: 'a', run, data: { slug } };
+}
+
+const workflow = {
+  initial: 'DRAFT',
+  terminal: ['DONE'],
+} as unknown as Workflow;
+
+function fakeAudit(events: AuditEvent[]): AuditQuery {
+  return {
+    run: (filter: { since?: string } = {}) => {
+      if (filter.since === undefined) return events;
+      const cut = Date.parse(filter.since);
+      return events.filter((e) => Date.parse(e.at) >= cut);
+    },
+  } as unknown as AuditQuery;
+}
+const noSprints = { list: () => [] } as unknown as SprintService;
+const noTasks = { list: () => [] } as unknown as TaskService;
+
+function makeEval(events: AuditEvent[], flaggedCount = 0): EvalReportService {
+  const audit = fakeAudit(events);
+  const flow = new FlowMetricsService(audit, noTasks, workflow, noSprints, 'TEST');
+  const quality = {
+    flaggedForReview: () => new Set(Array.from({ length: flaggedCount }, (_, i) => `s${i}`)),
+  } as unknown as SkillQualityService;
+  return new EvalReportService(audit, flow, quality);
+}
+
+describe('EvalReportService', () => {
+  it('partitions runs by the skill-use proxy and diffs reopen rate per cohort', () => {
+    // Guided run G: used a skill; its task went to DONE and stayed clean.
+    // Unguided run U: no skill; its task went to DONE then reopened.
+    const events: AuditEvent[] = [
+      // guided
+      runStarted('G', 0),
+      skillUsed('deploy', 0.1, 'G'),
+      created('T1', 0.2, 'G'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'G'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'G'),
+      // unguided
+      runStarted('U', 3),
+      created('T2', 3.2, 'U'),
+      transitioned('T2', 4, 'DRAFT', 'IN_PROGRESS', 'start', 'U'),
+      transitioned('T2', 5, 'IN_PROGRESS', 'DONE', 'complete', 'U'),
+      transitioned('T2', 6, 'DONE', 'IN_PROGRESS', 'reopen', 'U'),
+    ];
+    const report = makeEval(events, 2).compute();
+
+    // One run in each cohort.
+    expect(report.guided.runs).toBe(1);
+    expect(report.unguided.runs).toBe(1);
+
+    // Guided task stayed clean; unguided task reopened.
+    expect(report.guided.metrics.reopen.completed_tasks).toBe(1);
+    expect(report.guided.metrics.reopen.rate).toBe(0);
+    expect(report.unguided.metrics.reopen.completed_tasks).toBe(1);
+    expect(report.unguided.metrics.reopen.rate).toBe(1);
+
+    // Quality signal passes through.
+    expect(report.skills_flagged_for_review).toBe(2);
+
+    // The honesty surface is always present.
+    expect(report.proxy).toContain('skill_used');
+    expect(report.caveat).toContain('CORRELATIONAL');
+  });
+
+  it('puts a run with no skill_used entirely in the unguided cohort', () => {
+    const events: AuditEvent[] = [
+      runStarted('U', 0),
+      created('T1', 0.2, 'U'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'U'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'U'),
+    ];
+    const report = makeEval(events).compute();
+    expect(report.guided.runs).toBe(0);
+    expect(report.unguided.runs).toBe(1);
+    expect(report.guided.metrics.reopen.completed_tasks).toBe(0);
+    expect(report.unguided.metrics.reopen.completed_tasks).toBe(1);
+  });
+
+  it('honours the since window', () => {
+    const events: AuditEvent[] = [
+      runStarted('OLD', 0),
+      skillUsed('deploy', 0.1, 'OLD'),
+      created('T1', 0.2, 'OLD'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'OLD'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'OLD'),
+      // recent, unguided
+      runStarted('NEW', 100),
+      created('T2', 100.2, 'NEW'),
+      transitioned('T2', 101, 'DRAFT', 'IN_PROGRESS', 'start', 'NEW'),
+      transitioned('T2', 102, 'IN_PROGRESS', 'DONE', 'complete', 'NEW'),
+    ];
+    const report = makeEval(events).compute({ since: at(50) });
+    // Only the NEW (unguided) run falls in the window.
+    expect(report.guided.runs).toBe(0);
+    expect(report.unguided.runs).toBe(1);
+  });
+});

@@ -53,6 +53,7 @@ import { DependencyService } from './dependency-service.js';
 import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { DriftService } from './drift-service.js';
 import { EpicService } from './epic-service.js';
+import { EvalReportService } from './eval-report-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { FocusService } from './focus-service.js';
@@ -155,6 +156,7 @@ export interface ServiceContainer {
   readonly skillQuality: SkillQualityService;
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
+  readonly evalReport: EvalReportService;
   readonly hookTrust: HookTrustService;
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
@@ -579,6 +581,11 @@ export function createServiceContainer(
     sprintService,
     config.project.key,
   );
+  const evalReportService = new EvalReportService(
+    auditQuery,
+    flowMetricsService,
+    skillQualityService,
+  );
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);
   const driftService = new DriftService(taskEvidenceRepository, options.commitRunner);
@@ -704,6 +711,7 @@ export function createServiceContainer(
     skillQuality: skillQualityService,
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
+    evalReport: evalReportService,
     hookTrust,
     githubPr: githubPrService,
     commitVerifier,

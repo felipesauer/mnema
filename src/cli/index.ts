@@ -138,6 +138,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     description:
       'Local adoption report (quickstart time, feature activation, doctor use) — no telemetry',
   },
+  eval: {
+    load: async () => new (await import('./commands/eval-command.js')).EvalCommand(),
+    description: 'Guided-vs-unguided metrics diff from the audit log (correlational, not causal)',
+  },
   query: {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
     description: 'Query the backlog by state, epic, sprint, creation window or free text',

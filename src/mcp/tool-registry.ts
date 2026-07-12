@@ -43,6 +43,7 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'task_evidence',
   'pr_status',
   'metrics_flow',
+  'eval_report',
   'search',
   'tasks_query',
   'history_get',
