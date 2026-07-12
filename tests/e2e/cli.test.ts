@@ -279,10 +279,26 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(active.status).toBe(0);
     expect(active.stdout).toContain('WEBAPP-1');
 
-    // JSON form carries the machine-readable verdict.
+    // JSON form carries the machine-readable verdict, enriched so one call
+    // can gate AND reinject focus: verdict + active/next task + the line.
     const json = runCli(['guard', '--json'], projectRoot);
     expect(json.status).toBe(0);
-    expect(JSON.parse(json.stdout)).toMatchObject({ ok: true, focus: 'resume' });
+    const verdict = JSON.parse(json.stdout);
+    expect(verdict).toMatchObject({ ok: true, focus: 'resume' });
+    expect(verdict.active_task).toMatchObject({ key: 'WEBAPP-1' });
+    expect(verdict).toHaveProperty('next_task'); // null here, but present
+    expect(typeof verdict.line).toBe('string');
+    expect(verdict.line.length).toBeGreaterThan(0);
+
+    // --quiet: same exit code, zero stdout — for a gate-only hook.
+    const quiet = runCli(['guard', '--quiet'], projectRoot);
+    expect(quiet.status).toBe(0);
+    expect(quiet.stdout.trim()).toBe('');
+
+    // --quiet wins over --json (no stdout even when both are passed).
+    const quietJson = runCli(['guard', '--quiet', '--json'], projectRoot);
+    expect(quietJson.status).toBe(0);
+    expect(quietJson.stdout.trim()).toBe('');
   });
 
   it('mnema task list --state rejects a state foreign to the active workflow', () => {

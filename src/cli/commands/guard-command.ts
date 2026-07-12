@@ -4,6 +4,7 @@ import { withCliContext } from '../cli-context.js';
 
 interface GuardOptions {
   readonly json?: boolean;
+  readonly quiet?: boolean;
   readonly actor?: string;
 }
 
@@ -29,6 +30,7 @@ export class GuardCommand {
       .command('guard')
       .description('Exit 0 if a task is in progress, non-zero otherwise (for a PreToolUse hook)')
       .option('--json', 'Print the verdict as JSON', false)
+      .option('--quiet', 'Print nothing; set only the exit code (for a gate-only hook)', false)
       .option('--actor <handle>', 'Scope to this actor (defaults to the configured identity)')
       .action(async (options: GuardOptions) => {
         let code = 1;
@@ -43,9 +45,25 @@ export class GuardCommand {
           // exists to catch.
           const ok = focus.focus === 'resume' && focus.activeIsMine;
           code = ok ? 0 : 1;
+          // --quiet wins over --json: a gate-only hook wants the exit code
+          // with zero stdout, so suppress both the JSON and the human text.
+          if (options.quiet === true) return;
           if (options.json === true) {
+            // Enriched so one call can gate AND reinject focus: the verdict,
+            // plus the task to resume, the next ready one, and the ready-to-
+            // surface `line` (all already on Focus).
             process.stdout.write(
-              `${JSON.stringify({ ok, focus: focus.focus, active_task: focus.activeTask }, null, 2)}\n`,
+              `${JSON.stringify(
+                {
+                  ok,
+                  focus: focus.focus,
+                  active_task: focus.activeTask,
+                  next_task: focus.nextTask,
+                  line: focus.line,
+                },
+                null,
+                2,
+              )}\n`,
             );
             return;
           }
