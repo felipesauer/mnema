@@ -737,12 +737,11 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
  * @returns Orphan slug list, alphabetical
  */
 function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
-  // COLD-DB GUARD: an empty table cannot classify anything as an orphan. A
-  // fresh clone carries the versioned mirrors but a just-rebuilt local DB
-  // (memory/skill rows are not yet re-ingested from markdown), so with zero
-  // rows EVERY mirror would read as an orphan and a prune would wipe the
-  // team's knowledge base. Zero rows → report nothing.
-  if (knownSlugs.size === 0) return [];
+  // NO cold-DB guard here: the flat-mirror kinds (observations, roadmap,
+  // sprints) ARE re-ingested from markdown by `mnema sync`, so a zero-row
+  // table with a lingering mirror is a REAL orphan (e.g. the last sprint was
+  // deleted), not a fresh-clone artifact. The guard lives only on the
+  // foldered (skills/memories) variants — see listFolderedMirrorOrphans.
   if (!existsSync(dir)) return [];
   const orphans: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -771,7 +770,14 @@ function listFolderedMirrorOrphans(
   knownSlugs: ReadonlySet<string>,
   excludeDirs?: ReadonlySet<string>,
 ): string[] {
-  // Cold-DB guard — see listMirrorOrphans.
+  // COLD-DB GUARD (skills/memories only — the foldered kinds): an empty table
+  // cannot classify anything as an orphan. A fresh clone carries the
+  // versioned mirrors but a just-rebuilt local DB has zero skill/memory rows
+  // (those kinds are not yet re-ingested from markdown), so EVERY mirror
+  // would read as an orphan and a prune would wipe the team's knowledge
+  // base. Zero rows → report nothing. The flat kinds (observations, roadmap,
+  // sprints) ARE re-ingested by sync and deliberately do NOT carry this
+  // guard — their zero-row orphans are real.
   if (knownSlugs.size === 0) return [];
   return listMirrorEntries(dir, { excludeDirs })
     .filter((e) => !PRUNE_PROTECTED_FILENAMES.has(path.basename(e.filePath)))
@@ -808,9 +814,8 @@ export function pruneOrphanMirrors(
   knownSlugs: ReadonlySet<string>,
   fs: typeof import('node:fs'),
 ): string[] {
-  // Cold-DB guard — with zero rows a prune would wipe everything; see
-  // listMirrorOrphans for the clone rationale.
-  if (knownSlugs.size === 0) return [];
+  // No cold-DB guard: flat kinds are sync-re-ingested, so zero-row orphans
+  // are real — see listMirrorOrphans.
   if (!fs.existsSync(dir)) return [];
   const removed: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -848,8 +853,8 @@ export function pruneFolderedOrphanMirrors(
   fs: typeof import('node:fs'),
   excludeDirs?: ReadonlySet<string>,
 ): string[] {
-  // Cold-DB guard — with zero rows a prune would wipe everything; see
-  // listMirrorOrphans for the clone rationale.
+  // Cold-DB guard (skills/memories only) — with zero rows a prune would wipe
+  // the knowledge base on a fresh clone; see listFolderedMirrorOrphans.
   if (knownSlugs.size === 0) return [];
   if (!fs.existsSync(dir)) return [];
   const removed: string[] = [];
