@@ -104,6 +104,39 @@ describe('EvalReportService', () => {
     expect(report.caveat).toContain('CORRELATIONAL');
   });
 
+  it('keeps a task that spans cohorts in one cohort (the run that created it)', () => {
+    // The regression: T1 is created + completed in a GUIDED run G, then
+    // reopened in a later UNGUIDED run U. Splitting by each event's own run
+    // would replay T1's timeline in BOTH cohorts — counting it completed twice
+    // and blaming the reopen on the unguided cohort that merely ran the reopen.
+    // T1's owner is G (it created it), so the whole task — reopen included —
+    // belongs to the guided cohort only.
+    const events: AuditEvent[] = [
+      runStarted('G', 0),
+      skillUsed('deploy', 0.1, 'G'),
+      created('T1', 0.2, 'G'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'G'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'G'),
+      // Later, an unguided run reopens the same task.
+      runStarted('U', 10),
+      transitioned('T1', 11, 'DONE', 'IN_PROGRESS', 'reopen', 'U'),
+    ];
+    const report = makeEval(events).compute();
+
+    // The reopen run is unguided (it used no skill) so runs split 1/1.
+    expect(report.guided.runs).toBe(1);
+    expect(report.unguided.runs).toBe(1);
+
+    // T1 is counted exactly once, in the guided cohort, and its reopen is
+    // attributed there — NOT double-counted, NOT pinned on the unguided run.
+    expect(report.guided.metrics.reopen.completed_tasks).toBe(1);
+    expect(report.guided.metrics.reopen.reopened_tasks).toBe(1);
+    expect(report.guided.metrics.reopen.rate).toBe(1);
+    expect(report.unguided.metrics.reopen.completed_tasks).toBe(0);
+    expect(report.unguided.metrics.reopen.reopened_tasks).toBe(0);
+    expect(report.unguided.metrics.throughput).toBe(0);
+  });
+
   it('puts a run with no skill_used entirely in the unguided cohort', () => {
     const events: AuditEvent[] = [
       runStarted('U', 0),

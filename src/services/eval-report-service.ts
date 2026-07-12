@@ -79,16 +79,47 @@ export class EvalReportService {
       }
     }
 
-    // Split the event stream by cohort. An event belongs to the guided cohort
-    // when its run is guided; events with no run (rare meta-events) go to
-    // neither cohort's run-scoped metrics but are harmless — FlowMetricsService
-    // keys durations by task and tallies runs by run_started, so an event with
-    // no run simply is not counted as a run.
+    // Assign each TASK (not each event) to a cohort by the run that owns it —
+    // the run that created it, falling back to the first run that touched it.
+    // A task's lifecycle can span runs in opposite cohorts (run A creates it,
+    // run B reopens it); if we split by each event's own run, FlowMetricsService
+    // — which keys its timelines by task key — reconstructs that task twice from
+    // partial slices, counting it as completed in BOTH cohorts and blaming the
+    // reopen on whichever run happened to run the reopen transition. Owning the
+    // whole task by one run keeps every task in exactly one cohort, so its
+    // timeline is replayed once, in the right place.
+    const taskOwnerRun = new Map<string, string>();
+    for (const event of events) {
+      if (event.kind !== 'task_created' && event.kind !== 'task_transitioned') continue;
+      const run = typeof event.run === 'string' ? event.run : null;
+      if (run === null) continue;
+      const key = taskKeyOf(event);
+      if (key === null) continue;
+      // task_created wins outright; otherwise the earliest-touching run sticks
+      // (events arrive in audit order — first write wins).
+      if (event.kind === 'task_created') taskOwnerRun.set(key, run);
+      else if (!taskOwnerRun.has(key)) taskOwnerRun.set(key, run);
+    }
+
+    // Route every event to a cohort. Task events follow their task's owner run;
+    // all other events (run_started, skill_*, run-less meta-events) follow their
+    // own run's guidedness. A task event whose owner run is unknown (no run ever
+    // touched it — e.g. a manual CLI transition outside any run) falls back to
+    // its own run, then to unguided.
     const guidedEvents: AuditEvent[] = [];
     const unguidedEvents: AuditEvent[] = [];
+    const isGuided = (run: string | null): boolean => run !== null && guidedRuns.has(run);
     for (const event of events) {
-      const run = typeof event.run === 'string' ? event.run : null;
-      if (run !== null && guidedRuns.has(run)) guidedEvents.push(event);
+      const ownRun = typeof event.run === 'string' ? event.run : null;
+      let guided: boolean;
+      if (event.kind === 'task_created' || event.kind === 'task_transitioned') {
+        const key = taskKeyOf(event);
+        const owner = key === null ? null : (taskOwnerRun.get(key) ?? ownRun);
+        guided = isGuided(owner);
+      } else {
+        guided = isGuided(ownRun);
+      }
+      if (guided) guidedEvents.push(event);
       else unguidedEvents.push(event);
     }
 
@@ -114,4 +145,10 @@ export class EvalReportService {
       skills_flagged_for_review: this.skillQuality.flaggedForReview().size,
     };
   }
+}
+
+/** The task key carried by a task_created/task_transitioned event, or null. */
+function taskKeyOf(event: AuditEvent): string | null {
+  const key = (event.data as { key?: unknown }).key;
+  return typeof key === 'string' ? key : null;
 }
