@@ -54,6 +54,7 @@ import { DomainEventDispatcher } from './domain-event-dispatcher.js';
 import { DriftService } from './drift-service.js';
 import { EpicService } from './epic-service.js';
 import { EvalReportService } from './eval-report-service.js';
+import { EvolutionCandidateService } from './evolution-candidate-service.js';
 import { FileCollisionService } from './file-collision-service.js';
 import { FlowMetricsService } from './flow-metrics-service.js';
 import { FocusService } from './focus-service.js';
@@ -157,6 +158,7 @@ export interface ServiceContainer {
   readonly portfolio: PortfolioService;
   readonly flowMetrics: FlowMetricsService;
   readonly evalReport: EvalReportService;
+  readonly evolutionCandidate: EvolutionCandidateService;
   readonly hookTrust: HookTrustService;
   readonly githubPr: GitHubPrService;
   readonly commitVerifier: CommitVerifier;
@@ -679,6 +681,11 @@ export function createServiceContainer(
     observationsDir,
   );
   const memoryStalenessService = new MemoryStalenessService(projectRoot);
+  const evolutionCandidateService = new EvolutionCandidateService(
+    skillQualityService,
+    observationService,
+    tasks,
+  );
   trace.mark('all services wired');
   trace.end();
 
@@ -712,6 +719,7 @@ export function createServiceContainer(
     portfolio: portfolioService,
     flowMetrics: flowMetricsService,
     evalReport: evalReportService,
+    evolutionCandidate: evolutionCandidateService,
     hookTrust,
     githubPr: githubPrService,
     commitVerifier,

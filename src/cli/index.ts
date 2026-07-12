@@ -142,6 +142,10 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     load: async () => new (await import('./commands/eval-command.js')).EvalCommand(),
     description: 'Guided-vs-unguided metrics diff from the audit log (correlational, not causal)',
   },
+  evolve: {
+    load: async () => new (await import('./commands/evolve-command.js')).EvolveCommand(),
+    description: 'Read-only evolution-candidate report (skills/reopen-reasons/topics by rework)',
+  },
   query: {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
     description: 'Query the backlog by state, epic, sprint, creation window or free text',

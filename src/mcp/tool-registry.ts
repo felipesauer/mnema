@@ -44,6 +44,7 @@ export const CORE_TOOL_NAMES: readonly string[] = [
   'pr_status',
   'metrics_flow',
   'eval_report',
+  'evolve_report',
   'search',
   'tasks_query',
   'history_get',

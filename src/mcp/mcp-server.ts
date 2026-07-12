@@ -33,6 +33,7 @@ import { DriftTool } from './tools/universal/drift-tool.js';
 import { EpicTools } from './tools/universal/epic-tools.js';
 import { EvalReportTool } from './tools/universal/eval-report-tool.js';
 import { EvidenceTools } from './tools/universal/evidence-tools.js';
+import { EvolveReportTool } from './tools/universal/evolve-report-tool.js';
 import { FileCollisionTool } from './tools/universal/file-collision-tool.js';
 import { FlowMetricsTool } from './tools/universal/flow-metrics-tool.js';
 import { FocusTool } from './tools/universal/focus-tool.js';
@@ -352,6 +353,7 @@ export class MnemaMcpServer {
     }
     new FlowMetricsTool(this.services.flowMetrics).register(this.sdk);
     new EvalReportTool(this.services.evalReport).register(this.sdk);
+    new EvolveReportTool(this.services.evolutionCandidate).register(this.sdk);
     new PortfolioTool(this.services.portfolio).register(this.sdk);
     new PrStatusTool(this.services.githubPr).register(this.sdk);
     new SearchTool(this.services.search, this.services.task).register(this.sdk, knowledgeEnabled);
