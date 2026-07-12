@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type Config, ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
 import { listAvailableToolNames } from '@/mcp/tool-registry.js';
+import { TOOL_RISK } from '@/mcp/tool-risk.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -152,6 +153,44 @@ describe('MnemaMcpServer (in-memory)', () => {
     const orphan = [...registered].filter((n) => !expected.has(n));
     expect(missing, `listed in registry but not registered: ${missing.join(', ')}`).toEqual([]);
     expect(orphan, `registered but absent from registry: ${orphan.join(', ')}`).toEqual([]);
+  });
+
+  it('every non-transition tool carries a risk annotation and TOOL_RISK has no orphans', async () => {
+    const list = await harness.client.listTools();
+    // Transition tools (`task_<action>`) derive their annotation from the
+    // workflow, so they are intentionally absent from TOOL_RISK; every OTHER
+    // registered tool must have a table entry, surfaced in tools/list. This
+    // is what makes it impossible to ship a new static tool unclassified.
+    // A transition is a `task_<action>` tool with no TOOL_RISK entry; the
+    // static task tools (task_show, task_actions, …) do have entries.
+    const isTransition = (name: string): boolean =>
+      name.startsWith('task_') && !(name in TOOL_RISK);
+    const staticTools = list.tools.filter((t) => !isTransition(t.name));
+
+    const unclassified = staticTools.filter((t) => !(t.name in TOOL_RISK)).map((t) => t.name);
+    expect(
+      unclassified,
+      `registered but absent from TOOL_RISK: ${unclassified.join(', ')}`,
+    ).toEqual([]);
+
+    // The annotation the table declares is the annotation tools/list carries.
+    for (const tool of staticTools) {
+      expect(tool.annotations, `${tool.name} annotation`).toEqual(TOOL_RISK[tool.name]);
+    }
+
+    // No orphan entries: every TOOL_RISK key maps to a really-registered tool
+    // (guards against a typo'd key that silently annotates nothing).
+    const registeredNames = new Set(list.tools.map((t) => t.name));
+    const orphanEntries = Object.keys(TOOL_RISK).filter((n) => !registeredNames.has(n));
+    expect(orphanEntries, `TOOL_RISK keys with no tool: ${orphanEntries.join(', ')}`).toEqual([]);
+
+    // Transition tools still get a (derived) annotation — never left blank.
+    const reopen = list.tools.find((t) => t.name === 'task_reopen');
+    expect(reopen?.annotations?.readOnlyHint).toBe(false);
+    expect(reopen?.annotations?.destructiveHint).toBe(true); // reopen rewinds a terminal task
+    const submit = list.tools.find((t) => t.name === 'task_submit');
+    expect(submit?.annotations?.readOnlyHint).toBe(false);
+    expect(submit?.annotations?.destructiveHint).toBe(false); // a forward move loses nothing
   });
 
   it('the audit-only profile hides epic/sprint/knowledge tools but keeps the core', async () => {
