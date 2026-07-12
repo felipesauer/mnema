@@ -69,7 +69,7 @@ A client wires Mnema through two stable contracts, both client-agnostic:
 
 | Surface | Contract |
 |---|---|
-| `mnema guard` | **exit 0** = a task is in progress for the actor → allow. **exit non-zero** = untracked → the client should block. `--json` → `{ ok, focus, active_task }`. |
+| `mnema guard` | **exit 0** = a task is in progress for the actor → allow. **exit non-zero** = untracked → the client should block. `--json` → `{ ok, focus, active_task, next_task, line }` — so one call can gate *and* reinject focus. `--quiet` → prints nothing, sets only the exit code (for a gate-only hook); it wins over `--json`. |
 | `mnema focus` | Never fails on state; always exit 0. `--json` → `{ focus, activeTask, nextTask, activeIsMine, line }`, where `focus` is `resume` / `start` / `idle`. |
 | `--actor <handle>` | Both accept it to scope the check to a specific identity (defaults to the configured actor). Use it when one machine drives more than one identity. |
 

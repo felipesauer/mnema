@@ -20,7 +20,11 @@ mnema guard
 - **exit 1** — nothing is in progress; the work would be untracked. Prints
   an actionable message naming the command to become compliant.
 
-`--json` emits `{ ok, focus, active_task }` for programmatic use.
+`--json` emits `{ ok, focus, active_task, next_task, line }` for programmatic
+use — the verdict plus the task to resume, the next ready one, and a
+ready-to-surface `line`, so one call can gate *and* reinject focus.
+`--quiet` prints nothing and sets only the exit code — for a gate-only hook
+that wants no stdout; it takes precedence over `--json`.
 `--actor <handle>` scopes the check to a specific identity.
 
 The check is the same focus logic behind `mnema focus`: a task is "in

@@ -253,6 +253,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(idle.status).not.toBe(0);
     expect(idle.stdout).toContain('no task in progress');
 
+    // --quiet on the BLOCK path: still non-zero (the flag's core promise),
+    // and no stdout — a gate-only hook relies on exactly this.
+    const idleQuiet = runCli(['guard', '--quiet'], projectRoot);
+    expect(idleQuiet.status).not.toBe(0);
+    expect(idleQuiet.stdout.trim()).toBe('');
+
     // Drive a task to IN_PROGRESS.
     runCli(['task', 'create', '--title', 'Real work', '--acceptance', 'done'], projectRoot);
     runCli(
@@ -279,10 +285,26 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(active.status).toBe(0);
     expect(active.stdout).toContain('WEBAPP-1');
 
-    // JSON form carries the machine-readable verdict.
+    // JSON form carries the machine-readable verdict, enriched so one call
+    // can gate AND reinject focus: verdict + active/next task + the line.
     const json = runCli(['guard', '--json'], projectRoot);
     expect(json.status).toBe(0);
-    expect(JSON.parse(json.stdout)).toMatchObject({ ok: true, focus: 'resume' });
+    const verdict = JSON.parse(json.stdout);
+    expect(verdict).toMatchObject({ ok: true, focus: 'resume' });
+    expect(verdict.active_task).toMatchObject({ key: 'WEBAPP-1' });
+    expect(verdict).toHaveProperty('next_task'); // null here, but present
+    expect(typeof verdict.line).toBe('string');
+    expect(verdict.line.length).toBeGreaterThan(0);
+
+    // --quiet: same exit code, zero stdout — for a gate-only hook.
+    const quiet = runCli(['guard', '--quiet'], projectRoot);
+    expect(quiet.status).toBe(0);
+    expect(quiet.stdout.trim()).toBe('');
+
+    // --quiet wins over --json (no stdout even when both are passed).
+    const quietJson = runCli(['guard', '--quiet', '--json'], projectRoot);
+    expect(quietJson.status).toBe(0);
+    expect(quietJson.stdout.trim()).toBe('');
   });
 
   it('mnema task list --state rejects a state foreign to the active workflow', () => {
