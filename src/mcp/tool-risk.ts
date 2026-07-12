@@ -1,5 +1,8 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
+import type { Workflow } from '../domain/state-machine/state-machine.js';
+import { listAvailableToolNames, type ToolSurfaceFeatures } from './tool-registry.js';
+
 /**
  * Per-tool risk annotations, surfaced verbatim through `tools/list` so a
  * client can reason about a tool before calling it (MNEMA-ADR-36: everything
@@ -406,4 +409,46 @@ export function transitionRisk(
     idempotentHint: true, // wouldBeNoOp: re-applying the same transition is a no-op
     openWorldHint: false,
   };
+}
+
+/**
+ * The name → annotation map for the tools ADVERTISED to a given project: the
+ * static {@link TOOL_RISK} entries plus one derived entry per `task_<action>`
+ * transition the active workflow declares, then filtered to exactly the set
+ * {@link listAvailableToolNames} advertises for `features`. The filter keeps
+ * this in lockstep with `context_bootstrap`'s gating-aware `tool_groups` and
+ * with `tools/list`: a profile with knowledge off does not carry risk for
+ * `memory_*`/`skill_*`, etc. The derivation of each entry matches the
+ * `tools/list` wrapper + the transition registrar by construction (same
+ * `TOOL_RISK` lookup, same `transitionRisk` inputs off the same `Workflow`).
+ *
+ * @param workflow - The active workflow (for its transitions)
+ * @param features - Which tool groups are enabled for this project
+ * @returns A map of every advertised tool's risk annotation
+ */
+export function toolRiskMap(
+  workflow: Workflow,
+  features: ToolSurfaceFeatures,
+): Readonly<Record<string, ToolAnnotations>> {
+  const derived: Record<string, ToolAnnotations> = { ...TOOL_RISK };
+  const terminal = new Set(workflow.terminal);
+  // First declaration of a `task_<action>` wins, matching the registrar's
+  // dedupe (a tool name is registered once even if several from-states share
+  // the action).
+  for (const [fromState, actions] of Object.entries(workflow.transitions)) {
+    for (const [action, transition] of Object.entries(actions)) {
+      const name = `task_${action}`;
+      if (name in derived) continue;
+      derived[name] = transitionRisk(terminal.has(transition.to), terminal.has(fromState), action);
+    }
+  }
+  // Restrict to the advertised set so tool_risk never lists a tool the client
+  // can't call in this profile (and never disagrees with tool_groups).
+  const advertised = listAvailableToolNames(workflow, features);
+  const map: Record<string, ToolAnnotations> = {};
+  for (const name of advertised) {
+    const risk = derived[name];
+    if (risk !== undefined) map[name] = risk;
+  }
+  return map;
 }
