@@ -78,6 +78,7 @@ export const TOOL_RISK: Readonly<Record<string, ToolAnnotations>> = {
   audit_verify: { readOnlyHint: true, openWorldHint: false }, // recomputes the hash chain, reads only
   metrics_flow: { readOnlyHint: true, openWorldHint: false },
   eval_report: { readOnlyHint: true, openWorldHint: false },
+  evolve_report: { readOnlyHint: true, openWorldHint: false }, // mines existing data, mutates nothing
   focus: { readOnlyHint: true, openWorldHint: false },
   commands_list: { readOnlyHint: true, openWorldHint: false },
   command_show: { readOnlyHint: true, openWorldHint: false },
