@@ -253,6 +253,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(idle.status).not.toBe(0);
     expect(idle.stdout).toContain('no task in progress');
 
+    // --quiet on the BLOCK path: still non-zero (the flag's core promise),
+    // and no stdout — a gate-only hook relies on exactly this.
+    const idleQuiet = runCli(['guard', '--quiet'], projectRoot);
+    expect(idleQuiet.status).not.toBe(0);
+    expect(idleQuiet.stdout.trim()).toBe('');
+
     // Drive a task to IN_PROGRESS.
     runCli(['task', 'create', '--title', 'Real work', '--acceptance', 'done'], projectRoot);
     runCli(
