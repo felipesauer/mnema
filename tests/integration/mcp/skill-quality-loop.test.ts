@@ -147,4 +147,60 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
     expect(risky?.review_flag).toBe(true);
     expect(safe?.review_flag).toBe(false);
   });
+
+  it('skill_review_proposals carries the task, run and reopen reason (MNEMA-249)', async () => {
+    await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'run A' } });
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: { slug: 'risky-skill', name: 'Risky', description: 'a skill', content: 'do it' },
+    });
+    await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'risky-skill' } });
+    await driveToDone(harness.client, 'TEST-1', 'Risky work');
+    await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
+
+    await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'run B' } });
+    await harness.client.callTool({
+      name: 'task_reopen',
+      arguments: { task_key: 'TEST-1', reason: 'auth regression under load' },
+    });
+
+    const res = payload(
+      (await harness.client.callTool({
+        name: 'skill_review_proposals',
+        arguments: {},
+      })) as CallToolResult,
+    );
+    const proposals = res.proposals as Array<{
+      slug: string;
+      taskKey: string;
+      runId: string;
+      reopenCount: number;
+      reopenReason: string | null;
+    }>;
+    expect(proposals).toHaveLength(1);
+    const p = proposals[0];
+    expect(p?.slug).toBe('risky-skill');
+    expect(p?.taskKey).toBe('TEST-1');
+    expect(p?.reopenCount).toBe(1);
+    expect(p?.reopenReason).toBe('auth regression under load');
+    expect(typeof p?.runId).toBe('string');
+  });
+
+  it('a clean run produces no proposals', async () => {
+    await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'clean' } });
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: { slug: 'safe-skill', name: 'Safe', description: 'a skill', content: 'do it' },
+    });
+    await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'safe-skill' } });
+    await driveToDone(harness.client, 'TEST-1', 'Safe work');
+
+    const res = payload(
+      (await harness.client.callTool({
+        name: 'skill_review_proposals',
+        arguments: {},
+      })) as CallToolResult,
+    );
+    expect(res.proposals).toEqual([]);
+  });
 });

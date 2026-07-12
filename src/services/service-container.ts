@@ -556,7 +556,7 @@ export function createServiceContainer(
   );
   const runDiffService = new RunDiffService(agentRuns, auditQuery);
   const focusService = new FocusService(taskService, dependencyService, identity, stateMachine);
-  const skillQualityService = new SkillQualityService(auditQuery, tasks);
+  const skillQualityService = new SkillQualityService(auditQuery, tasks, transitions);
   const fileCollisionService = new FileCollisionService(
     tasks,
     taskEvidenceRepository,

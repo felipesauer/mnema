@@ -111,6 +111,7 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'skill_use',
   'skill_suggest',
   'skills_list',
+  'skill_review_proposals',
   'skill_supersede',
   'wikilinks_lint',
   'wikilink_references',
