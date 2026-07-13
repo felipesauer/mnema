@@ -158,6 +158,17 @@ export class GitCommitService {
   }
 
   /**
+   * True when `path` has changes in the working tree that are NOT staged
+   * (i.e. `git diff` against the index reports it). Used to refuse to fold a
+   * dirty extra file into the trail commit, since a pathspec commit would
+   * otherwise capture the unstaged edits.
+   */
+  private hasUnstagedChanges(filePath: string): boolean {
+    const out = this.git('diff', '--name-only', '-z', '--', filePath).stdout;
+    return out.split('\0').some((p) => p.length > 0);
+  }
+
+  /**
    * Commits pending changes as up to two commits — the `.mnema/` trail
    * first, then the code — WITHOUT ever touching the working tree beyond
    * staging the trail:
@@ -194,26 +205,35 @@ export class GitCommitService {
     //    trail by pathspec. Nothing else is auto-staged.
     const addTrail = this.git('add', '--', this.trailDir);
     if (addTrail.status !== 0) throw new GitCommitFailedError('trail', addTrail.stderr);
-    // Also stage the configured mnema-authored root files (e.g. AGENTS.md),
-    // each only when present. `git add --intent-to-add`-free: a plain `git add`
-    // of a missing/unchanged path is harmless (git no-ops when it matches
-    // nothing tracked), so a repo without the file simply stages nothing. We
-    // never throw on a missing extra path — it is optional by design.
-    for (const p of this.trailExtraPaths) {
-      this.git('add', '--', p);
-    }
 
-    // `stagedPaths` classifies the extras as trail (via trailExtraPaths), so
-    // the trail bucket now includes any extra file that actually got staged.
+    // The configured extra root files (e.g. AGENTS.md) are NOT auto-staged:
+    // we never run `git add` on them, so the working tree is left exactly as
+    // the user left it. We only *reclassify* an extra file the user (or a
+    // regeneration step) has ALREADY staged from the code bucket into the
+    // trail commit, so mnema-authored churn rides with the trail instead of
+    // mixing into a code diff. `stagedPaths` does this via trailExtraPaths.
     const trailStaged = this.stagedPaths().trail;
-    if (trailStaged.length > 0) {
+    const extraSet = new Set(this.trailExtraPaths);
+    const dirStaged = trailStaged.filter((p) => !extraSet.has(p));
+    // `git commit -- <path>` commits the WORKING-TREE version of a pathspec,
+    // not the index — so an extra file with unstaged edits on top of its
+    // staged content would capture that WIP. To keep the promise that we never
+    // commit a user's unstaged work, only fold in extras whose working tree
+    // already matches the index (no unstaged delta); a dirty one is left
+    // staged for the user. The trail dir is always safe (machine churn).
+    const cleanExtras = trailStaged
+      .filter((p) => extraSet.has(p))
+      .filter((p) => !this.hasUnstagedChanges(p));
+
+    // Commit only when there is something to commit under the pathspec —
+    // either real trail-dir churn or at least one clean extra. Without this a
+    // lone dirty-and-excluded extra would leave `git commit -- .mnema` with an
+    // empty index and fail.
+    if (dirStaged.length > 0 || cleanExtras.length > 0) {
       const message = options.trailMessage ?? DEFAULT_TRAIL_MESSAGE;
-      const stagedExtras = trailStaged.filter((p) => this.trailExtraPaths.includes(p));
-      // Commit by explicit pathspec so ONLY the trail dir and the staged extra
-      // files land — never anything else the user may have staged.
-      const r = this.git('commit', '-m', message, '--', this.trailDir, ...stagedExtras);
+      const r = this.git('commit', '-m', message, '--', this.trailDir, ...cleanExtras);
       if (r.status !== 0) throw new GitCommitFailedError('trail', r.stderr);
-      committed.push({ kind: 'trail', message, paths: trailStaged });
+      committed.push({ kind: 'trail', message, paths: [...dirStaged, ...cleanExtras] });
     }
 
     // 2. Code = whatever the user already staged outside the trail. We do

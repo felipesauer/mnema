@@ -281,8 +281,7 @@ export class InitCommand {
       adoption.adopt('templates');
       // Seed memory/ (INDEX.md, context.md) so AGENTS.md can embed the memory
       // index on this first write instead of rendering a "skipped — file not
-      // found" note that a later `agents sync` would silently fix (F11: the
-      // two-pass AGENTS.md the dogfooding run flagged).
+      // found" note that a later `agents sync` would silently fix.
       adoption.adopt('memory');
     }
 

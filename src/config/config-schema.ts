@@ -304,10 +304,14 @@ export const ConfigSchema = z.object({
     .object({
       watch: z.boolean().default(false),
       // Root-level files mnema regenerates that should ride along in the
-      // trail commit (which otherwise touches only `.mnema`). AGENTS.md is
-      // the one file with recurring, mnema-authored churn; .gitignore and
-      // .gitattributes are deliberately left out so a human's edits there are
-      // never auto-staged. Matched as exact repo-root paths.
+      // trail commit (which otherwise touches only `.mnema`) WHEN already
+      // staged — the trail commit never `git add`s them, so a user's working
+      // tree is left untouched. AGENTS.md is the one file with recurring,
+      // mnema-authored churn; .gitignore/.gitattributes are deliberately left
+      // out so a human's edits there are never folded in. Entries must be
+      // exact individual repo-root file paths (matched verbatim), not globs or
+      // directories — a directory would not be recognised and would fall to
+      // the code bucket.
       trail_extra_paths: z.array(z.string()).default(['AGENTS.md']),
     })
     .prefault({}),
