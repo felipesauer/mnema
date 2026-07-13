@@ -525,4 +525,25 @@ mnema:
     expect(reasons).toMatch(/unreadable version/);
     expect(container.memory.list().map((m) => m.slug)).toContain('good');
   });
+
+  it('never ingests the adopt scaffolding (context.md) as a memory row', () => {
+    container.task.create({ projectKey: 'TEST', title: 'seed', actor: 'daniel' });
+    const memoryDir = path.join(root, '.mnema/memory');
+    mkdirSync(memoryDir, { recursive: true });
+    // A titled context.md would otherwise become a phantom `context` row; a
+    // bare one would otherwise raise a spurious "missing title" skip.
+    writeFileSync(
+      path.join(memoryDir, 'context.md'),
+      '---\ntitle: Project context\n---\nscaffolding\n',
+      'utf-8',
+    );
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# index\n', 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+
+    expect(summary.memories.scanned).toBe(0);
+    expect(summary.memories.upserted).toBe(0);
+    expect(summary.skipped.some((s) => s.file.endsWith('context.md'))).toBe(false);
+    expect(container.memory.list().map((m) => m.slug)).not.toContain('context');
+  });
 });

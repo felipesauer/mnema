@@ -37,7 +37,13 @@ import type {
   TaskRepository,
 } from '../storage/sqlite/repositories/task-repository.js';
 import { isoNow } from '../utils/iso-now.js';
-import { CURATED_MEMORY_SUBFOLDERS, listMirrorEntries } from '../utils/mirror-layout.js';
+import {
+  CURATED_MEMORY_SUBFOLDERS,
+  listMirrorEntries,
+  PRUNE_PROTECTED_FILENAMES,
+  SEED_AUTHOR_HANDLE,
+  SKILL_DEFAULT_DIR,
+} from '../utils/mirror-layout.js';
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -461,6 +467,11 @@ export class SyncRebuild {
     for (const { slug, filePath } of listMirrorEntries(root, {
       excludeDirs: CURATED_MEMORY_SUBFOLDERS,
     })) {
+      // `context.md` is the `adopt memory` scaffolding at the root — a
+      // human-authored file with no row. The writer/prune path protects it via
+      // PRUNE_PROTECTED_FILENAMES; the rebuild must agree, or it would ingest a
+      // phantom `context` row (or warn on the bare default on every sync).
+      if (PRUNE_PROTECTED_FILENAMES.has(path.basename(filePath))) continue;
       scanned += 1;
       const parsed = this.readMirror(filePath, skipped);
       if (parsed === null) continue;
@@ -530,8 +541,11 @@ export class SyncRebuild {
       // `default/` holds the tool-shipped seeds (authored by the reserved
       // `system` handle); everything else is human-authored. The folder is the
       // authority since the mirror does not carry `created_by`.
-      const inDefault = path.basename(path.dirname(filePath)) === 'default';
-      const createdBy = this.actors.upsert(inDefault ? 'system' : 'unknown', ActorKind.Human);
+      const inDefault = path.basename(path.dirname(filePath)) === SKILL_DEFAULT_DIR;
+      const createdBy = this.actors.upsert(
+        inDefault ? SEED_AUTHOR_HANDLE : 'unknown',
+        ActorKind.Human,
+      );
       const now = isoNow();
       const inserted = this.skills.insertFromMirror({
         slug,
