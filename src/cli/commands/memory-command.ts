@@ -21,6 +21,7 @@ interface RecordOptions {
   readonly title: string;
   readonly content: string;
   readonly topic?: readonly string[];
+  readonly scope?: string;
   readonly derivedFromDecision?: string;
 }
 
@@ -105,6 +106,10 @@ export class MemoryCommand {
       .requiredOption('--content <text>', 'Memory body')
       .option('--topic <topic>', 'Topic tag (repeatable)', collectRepeatable, [])
       .option(
+        '--scope <area>',
+        'Area this memory belongs to, e.g. packages/notifier (omit for a global memory)',
+      )
+      .option(
         '--derived-from-decision <key>',
         'Decision key (e.g. an ADR) this memory derives from — records a decision→memory provenance edge',
       )
@@ -115,6 +120,7 @@ export class MemoryCommand {
             title: options.title,
             content: options.content,
             topics: options.topic,
+            ...(options.scope === undefined ? {} : { scope: options.scope }),
             actor: container.identity.getDefaultActor(),
             via: 'cli',
             ...(options.derivedFromDecision === undefined

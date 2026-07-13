@@ -162,6 +162,26 @@ function freshClone(): string {
   ].join('\n');
   writeFileSync(path.join(projectRoot, '.mnema/memory/git-native-truth.md'), memoryMd);
 
+  // A SCOPED memory: it mirrors under a scope-folder, and its raw scope is
+  // carried in the frontmatter (the folder is only a lossy projection).
+  const scopedMemoryMd = [
+    '---',
+    'title: Notifier retry policy',
+    'topics: ["notifier"]',
+    'scope: packages/notifier',
+    "created_at: '2026-06-01T00:00:00.000Z'",
+    "updated_at: '2026-06-02T00:00:00.000Z'",
+    '---',
+    '',
+    'Retries use exponential backoff capped at 30s.',
+    '',
+  ].join('\n');
+  mkdirSync(path.join(projectRoot, '.mnema/memory/packages-notifier'), { recursive: true });
+  writeFileSync(
+    path.join(projectRoot, '.mnema/memory/packages-notifier/notifier-retry.md'),
+    scopedMemoryMd,
+  );
+
   // A tool-shipped seed skill under default/ (author = system).
   const seedSkillMd = [
     '---',
@@ -322,8 +342,8 @@ describe('fresh clone → sync', () => {
   it('rehydrates committed memory mirrors into the database', () => {
     withClone((container) => {
       const summary = container.syncRebuild.run('CLONE');
-      expect(summary.memories.scanned).toBe(1);
-      expect(summary.memories.upserted).toBe(1);
+      expect(summary.memories.scanned).toBe(2);
+      expect(summary.memories.upserted).toBe(2);
 
       const memories = container.memory.list();
       expect(memories.map((m) => m.slug)).toContain('git-native-truth');
@@ -335,6 +355,22 @@ describe('fresh clone → sync', () => {
         // Committed timestamps are preserved, not reset to now.
         expect(shown.value.createdAt).toBe('2026-06-01T00:00:00.000Z');
         expect(shown.value.updatedAt).toBe('2026-06-02T00:00:00.000Z');
+        // A scopeless memory stays scopeless.
+        expect(shown.value.scope).toBeNull();
+      }
+    });
+  });
+
+  it('recovers the raw scope of a scoped memory from the frontmatter', () => {
+    withClone((container) => {
+      container.syncRebuild.run('CLONE');
+      const scoped = container.memory.show('notifier-retry');
+      expect(scoped.ok).toBe(true);
+      if (scoped.ok) {
+        // The folder is `packages-notifier` (lossy), but the frontmatter
+        // carried the raw `packages/notifier` — which is what round-trips.
+        expect(scoped.value.scope).toBe('packages/notifier');
+        expect(scoped.value.title).toBe('Notifier retry policy');
       }
     });
   });
@@ -364,7 +400,7 @@ describe('fresh clone → sync', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
       const second = container.syncRebuild.run('CLONE');
-      expect(second.memories.scanned).toBe(1);
+      expect(second.memories.scanned).toBe(2);
       expect(second.memories.upserted).toBe(0);
       expect(second.skills.scanned).toBe(2);
       expect(second.skills.upserted).toBe(0);

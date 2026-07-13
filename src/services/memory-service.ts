@@ -1,4 +1,4 @@
-import { mkdirSync, unlinkSync } from 'node:fs';
+import { mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Memory } from '../domain/entities/memory.js';
@@ -7,6 +7,7 @@ import { hasInvocationMarkup } from '../domain/invocation-markup.js';
 import { checkSlug, checkStringLength } from '../domain/validation.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../errors/mnema-error.js';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
@@ -504,6 +505,58 @@ export class MemoryService {
     return rebuilt;
   }
 
+  /**
+   * One-time backfill: rewrites the mirror of every live SCOPED memory whose
+   * on-disk frontmatter is missing the `scope` field, so committed repos
+   * written before scope was persisted gain it (a clone can then recover the
+   * scope on `sync`). Idempotent — a mirror that already carries `scope`, and
+   * every scopeless memory (whose mirror correctly omits it), is left
+   * untouched. Returns the slugs actually rewritten.
+   *
+   * @returns Slugs whose mirror was rewritten to add the scope field
+   */
+  backfillScopeInMirrors(): string[] {
+    const rewritten: string[] = [];
+    for (const slug of this.scopeBackfillCandidates()) {
+      const memory = this.repo.findBySlug(slug);
+      if (memory !== null) {
+        this.writeMirror(memory);
+        rewritten.push(slug);
+      }
+    }
+    return rewritten;
+  }
+
+  /**
+   * Slugs of live scoped memories whose on-disk mirror is missing the `scope`
+   * field — the work {@link backfillScopeInMirrors} would do. Read-only, so
+   * the upgrade planner can decide whether to offer the step without writing.
+   *
+   * @returns Slugs needing a scope backfill
+   */
+  scopeBackfillCandidates(): string[] {
+    const pending: string[] = [];
+    for (const memory of this.repo.listAll()) {
+      if (memory.scope === null) continue; // scopeless mirrors omit scope by design
+      const current = findMirror(this.memoryDir, memory.slug, {
+        excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+      });
+      if (current === null) continue; // missing mirror is rebuildMirrors' job
+      let hasScope = false;
+      try {
+        // Present AND a non-empty string — a bare `scope:` (YAML null) or a
+        // re-typed bareword would read back as a non-string on rebuild (scope
+        // lost), so it must count as missing and be rewritten from the row.
+        const value = parseFrontmatter(readFileSync(current, 'utf-8')).data.scope;
+        hasScope = typeof value === 'string' && value.length > 0;
+      } catch {
+        // Unreadable frontmatter — treat as needing a rewrite from the row.
+      }
+      if (!hasScope) pending.push(memory.slug);
+    }
+    return pending;
+  }
+
   /** The canonical foldered path a memory's mirror belongs at (MNEMA-ADR-51). */
   private canonicalMirrorPath(memory: Memory): string {
     return buildMirrorPath(this.memoryDir, memory.slug, scopeFolder(memory.scope));
@@ -527,11 +580,21 @@ export class MemoryService {
       '---',
       `title: ${quoteYaml(memory.title)}`,
       `topics: ${JSON.stringify(memory.topics)}`,
+      // The scope-folder projection is lossy (`packages/notifier` →
+      // `packages-notifier`), so the RAW scope is persisted in the frontmatter
+      // — the authoritative value a clone rebuild reads back. Emitted only when
+      // set, so a scopeless memory's mirror stays byte-identical to before.
+      // JSON.stringify (not quoteYaml) so the value is ALWAYS an explicitly
+      // quoted string: a bareword scope like `123`/`true`/`null` would be
+      // re-typed by YAML on parse and read back as a non-string (→ scope lost),
+      // and a newline would break the whole mirror. A JSON string is valid YAML
+      // and round-trips to the exact string.
+      memory.scope !== null ? `scope: ${JSON.stringify(memory.scope)}` : null,
       `created_at: ${memory.createdAt}`,
       `updated_at: ${memory.updatedAt}`,
       '---',
       '',
-    ];
+    ].filter((line) => line !== null);
     writeFileAtomic(targetPath, `${lines.join('\n') + memory.content}\n`);
   }
 }
