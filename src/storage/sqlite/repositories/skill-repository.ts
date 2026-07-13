@@ -41,6 +41,29 @@ export interface SkillInsertInput {
 }
 
 /**
+ * Input for {@link SkillRepository.insertFromMirror} — a skill rebuilt from
+ * its `.md` mirror, so the on-disk timestamps and usage counters are
+ * preserved rather than reset. The mirror carries only the latest version, so
+ * a rebuilt skill has no version history; `changeRationale` and `scope` are
+ * not in the mirror either.
+ */
+export interface SkillMirrorInput {
+  readonly slug: string;
+  readonly name: string;
+  readonly version: number;
+  readonly description: string;
+  readonly content: string;
+  readonly toolsUsed: readonly string[];
+  readonly invocable: boolean;
+  readonly dynamicContext: readonly string[];
+  readonly usageCount: number;
+  readonly lastUsedAt: string | null;
+  readonly createdBy: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
  * Persistence for {@link Skill}. Each (slug, version) is a separate row;
  * use {@link findLatestBySlug} to get the most recent version.
  */
@@ -183,6 +206,46 @@ export class SkillRepository {
       throw new Error('skill insert succeeded but row not found');
     }
     return created;
+  }
+
+  /**
+   * Inserts a skill rebuilt from its `.md` mirror, preserving the on-disk
+   * timestamps and usage counters. Idempotent by (slug, version): a row that
+   * already exists is left untouched (the cache wins once present), so a
+   * rebuild over a populated database is a no-op. Only live-latest skills have
+   * a mirror (superseded ones are deleted on write), so a rebuilt row is
+   * always the current version. Returns `true` when a row was inserted.
+   *
+   * @param input - Mirror-sourced skill fields
+   * @returns `true` when a new row was inserted, `false` when it existed
+   */
+  insertFromMirror(input: SkillMirrorInput): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `INSERT OR IGNORE INTO skills (
+           id, slug, name, version, description, content,
+           tools_used, invocable, dynamic_context, change_rationale, scope,
+           usage_count, last_used_at, created_by, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        generateUuid(),
+        input.slug,
+        input.name,
+        input.version,
+        input.description,
+        input.content,
+        JSON.stringify(input.toolsUsed),
+        input.invocable ? 1 : 0,
+        JSON.stringify(input.dynamicContext),
+        input.usageCount,
+        input.lastUsedAt,
+        input.createdBy,
+        input.createdAt,
+        input.updatedAt,
+      );
+    return result.changes > 0;
   }
 
   /**

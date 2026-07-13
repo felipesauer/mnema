@@ -26,6 +26,8 @@ export class SyncCommand {
               `epics=${summary.epics.scanned}/${summary.epics.upserted}  ` +
               `sprints=${summary.sprints.scanned}/${summary.sprints.upserted}  ` +
               `decisions=${summary.decisions.scanned}/${summary.decisions.upserted}  ` +
+              `memories=${summary.memories.scanned}/${summary.memories.upserted}  ` +
+              `skills=${summary.skills.scanned}/${summary.skills.upserted}  ` +
               `${pc.dim('(scanned/upserted)')}\n`,
           );
           for (const skipped of summary.skipped) {

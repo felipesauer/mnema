@@ -39,6 +39,9 @@ function freshClone(): string {
   mkdirSync(path.join(projectRoot, '.mnema/backlog/DRAFT'), { recursive: true });
   mkdirSync(path.join(projectRoot, '.mnema/roadmap'), { recursive: true });
   mkdirSync(path.join(projectRoot, '.mnema/sprints'), { recursive: true });
+  mkdirSync(path.join(projectRoot, '.mnema/memory'), { recursive: true });
+  mkdirSync(path.join(projectRoot, '.mnema/skills/default'), { recursive: true });
+  mkdirSync(path.join(projectRoot, '.mnema/skills/authored'), { recursive: true });
 
   const config = ConfigSchema.parse({
     version: '1.0',
@@ -143,6 +146,61 @@ function freshClone(): string {
     '',
   ].join('\n');
   writeFileSync(path.join(projectRoot, '.mnema/sprints/CLONE-SPRINT-1.md'), sprintMd);
+
+  // Committed knowledge mirrors, in the FLAT-frontmatter shape the memory and
+  // skill writers produce (not the nested `mnema:` block the backlog uses).
+  const memoryMd = [
+    '---',
+    'title: A durable fact',
+    'topics: ["architecture","clone"]',
+    "created_at: '2026-06-01T00:00:00.000Z'",
+    "updated_at: '2026-06-02T00:00:00.000Z'",
+    '---',
+    '',
+    'The project uses git-tracked markdown as the source of truth.',
+    '',
+  ].join('\n');
+  writeFileSync(path.join(projectRoot, '.mnema/memory/git-native-truth.md'), memoryMd);
+
+  // A tool-shipped seed skill under default/ (author = system).
+  const seedSkillMd = [
+    '---',
+    'name: Bug report',
+    'version: 1.0.0',
+    'description: How to file a good bug report',
+    'tools_used: []',
+    'usage_count: 0',
+    "created_at: '2026-06-01T00:00:00.000Z'",
+    "updated_at: '2026-06-01T00:00:00.000Z'",
+    '---',
+    '',
+    'Steps to write a bug report.',
+    '',
+  ].join('\n');
+  writeFileSync(path.join(projectRoot, '.mnema/skills/default/bug-report.md'), seedSkillMd);
+
+  // A human-authored, invocable skill under authored/, with a used counter.
+  const authoredSkillMd = [
+    '---',
+    'name: Release checklist',
+    'version: 2.0.0',
+    'description: The steps before cutting a release',
+    'tools_used: ["pr_status"]',
+    'invocable: true',
+    'dynamic_context: ["release"]',
+    'usage_count: 4',
+    "last_used_at: '2026-06-10T00:00:00.000Z'",
+    "created_at: '2026-06-01T00:00:00.000Z'",
+    "updated_at: '2026-06-09T00:00:00.000Z'",
+    '---',
+    '',
+    'Run the checklist before release.',
+    '',
+  ].join('\n');
+  writeFileSync(
+    path.join(projectRoot, '.mnema/skills/authored/release-checklist.md'),
+    authoredSkillMd,
+  );
 
   return projectRoot;
 }
@@ -258,6 +316,58 @@ describe('fresh clone → sync', () => {
       // epic/sprint rows even though their UUIDs were regenerated.
       expect(task.value.epicId).toBe(epic.value.epic.id);
       expect(task.value.sprintId).toBe(sprint.sprint.id);
+    });
+  });
+
+  it('rehydrates committed memory mirrors into the database', () => {
+    withClone((container) => {
+      const summary = container.syncRebuild.run('CLONE');
+      expect(summary.memories.scanned).toBe(1);
+      expect(summary.memories.upserted).toBe(1);
+
+      const memories = container.memory.list();
+      expect(memories.map((m) => m.slug)).toContain('git-native-truth');
+      const shown = container.memory.show('git-native-truth');
+      expect(shown.ok).toBe(true);
+      if (shown.ok) {
+        expect(shown.value.title).toBe('A durable fact');
+        expect([...shown.value.topics]).toEqual(['architecture', 'clone']);
+        // Committed timestamps are preserved, not reset to now.
+        expect(shown.value.createdAt).toBe('2026-06-01T00:00:00.000Z');
+        expect(shown.value.updatedAt).toBe('2026-06-02T00:00:00.000Z');
+      }
+    });
+  });
+
+  it('rehydrates committed skill mirrors (both origins, latest version)', () => {
+    withClone((container) => {
+      const summary = container.syncRebuild.run('CLONE');
+      expect(summary.skills.scanned).toBe(2);
+      expect(summary.skills.upserted).toBe(2);
+
+      const skills = container.skill.list();
+      expect(skills.map((s) => s.slug).sort()).toEqual(['bug-report', 'release-checklist']);
+
+      const authored = container.skill.show('release-checklist');
+      expect(authored.ok).toBe(true);
+      if (authored.ok) {
+        // The `2.0.0` mirror version becomes the integer row version 2.
+        expect(authored.value.version).toBe(2);
+        expect(authored.value.invocable).toBe(true);
+        expect([...authored.value.toolsUsed]).toEqual(['pr_status']);
+        expect(authored.value.usageCount).toBe(4);
+      }
+    });
+  });
+
+  it('knowledge rebuild is idempotent: a second sync upserts nothing', () => {
+    withClone((container) => {
+      container.syncRebuild.run('CLONE');
+      const second = container.syncRebuild.run('CLONE');
+      expect(second.memories.scanned).toBe(1);
+      expect(second.memories.upserted).toBe(0);
+      expect(second.skills.scanned).toBe(2);
+      expect(second.skills.upserted).toBe(0);
     });
   });
 

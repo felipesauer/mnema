@@ -488,4 +488,41 @@ mnema:
       container = createServiceContainer(makeConfig(), root, { migrationsDir });
     }
   });
+
+  it('skips malformed / incomplete knowledge mirrors without crashing the rebuild', () => {
+    // Seed the project row.
+    container.task.create({ projectKey: 'TEST', title: 'seed', actor: 'daniel' });
+
+    const memoryDir = path.join(root, '.mnema/memory');
+    const skillsDir = path.join(root, '.mnema/skills/authored');
+    mkdirSync(memoryDir, { recursive: true });
+    mkdirSync(skillsDir, { recursive: true });
+
+    // A good memory + a memory missing its title (skipped).
+    writeFileSync(
+      path.join(memoryDir, 'good.md'),
+      '---\ntitle: Good\ntopics: []\n---\nbody\n',
+      'utf-8',
+    );
+    writeFileSync(path.join(memoryDir, 'no-title.md'), '---\ntopics: []\n---\nbody\n', 'utf-8');
+    // Unparseable YAML frontmatter (must be caught, not thrown).
+    writeFileSync(path.join(memoryDir, 'broken.md'), '---\ntitle: "un\nclosed\n---\nx\n', 'utf-8');
+    // A skill with an unreadable version (skipped).
+    writeFileSync(
+      path.join(skillsDir, 'bad-version.md'),
+      '---\nname: Bad\nversion: not-a-version\ndescription: d\ntools_used: []\n---\nx\n',
+      'utf-8',
+    );
+
+    const summary = container.syncRebuild.run('TEST');
+
+    // The good memory landed; the three bad files were skipped, not fatal.
+    expect(summary.memories.upserted).toBe(1);
+    expect(summary.skills.upserted).toBe(0);
+    const reasons = summary.skipped.map((s) => s.reason).join(' | ');
+    expect(reasons).toMatch(/missing title/);
+    expect(reasons).toMatch(/unreadable frontmatter/);
+    expect(reasons).toMatch(/unreadable version/);
+    expect(container.memory.list().map((m) => m.slug)).toContain('good');
+  });
 });
