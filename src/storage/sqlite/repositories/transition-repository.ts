@@ -123,6 +123,31 @@ export class TransitionRepository {
   }
 
   /**
+   * Returns every transition with the given action name, annotated with the
+   * task key, oldest first. Used by the evolution report to mine rework
+   * signals that do not depend on a reopen — e.g. `request_changes` on a
+   * review, or `cancel` to a terminal state — across all tasks. Excludes
+   * soft-deleted tasks so a cancelled-then-deleted task does not double-count.
+   *
+   * @param action - The workflow action to match (e.g. `request_changes`)
+   * @returns Matching transitions with their task key, oldest first
+   */
+  findByAction(action: string): TransitionWithKey[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT t.*, k.key AS task_key
+           FROM transitions t
+           JOIN tasks k ON k.id = t.task_id
+          WHERE t.action = ?
+            AND k.deleted_at IS NULL
+          ORDER BY t.at`,
+      )
+      .all(action) as Array<TransitionRow & { task_key: string }>;
+    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_key }));
+  }
+
+  /**
    * Returns a transition by its internal id, or `null` if absent.
    *
    * @param id - Internal UUID of the transition

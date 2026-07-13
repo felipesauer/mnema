@@ -1,8 +1,10 @@
 import type { Command } from 'commander';
 
 import type {
+  ActionReasonCandidate,
   EvolutionReport,
   ObservationTopicCandidate,
+  RecurringTopicCandidate,
   ReopenReasonCandidate,
   SkillCandidate,
 } from '../../services/evolution-candidate-service.js';
@@ -60,8 +62,13 @@ function reasonLine(c: ReopenReasonCandidate): string {
   return `  ${reason.padEnd(48)} ×${String(c.count).padStart(3)}  ${evidence(c.tasks)}`;
 }
 
-function topicLine(c: ObservationTopicCandidate): string {
+function topicLine(c: ObservationTopicCandidate | RecurringTopicCandidate): string {
   return `  ${pc.bold(c.topic.padEnd(24))} ×${String(c.count).padStart(3)}  ${evidence(c.tasks)}`;
+}
+
+function actionReasonLine(c: ActionReasonCandidate): string {
+  const reason = c.reason.length > 48 ? `${c.reason.slice(0, 47)}…` : c.reason;
+  return `  ${reason.padEnd(48)} ×${String(c.count).padStart(3)}  ${evidence(c.tasks)}`;
 }
 
 function section<T>(
@@ -92,6 +99,15 @@ function render(report: EvolutionReport): string {
     report.observation_topics,
     topicLine,
   );
+  // Reopen-independent signals — useful on a project that rarely reopens.
+  section(
+    lines,
+    'Recurring request_changes feedback',
+    report.request_changes_reasons,
+    actionReasonLine,
+  );
+  section(lines, 'Recurring cancel reasons', report.canceled_reasons, actionReasonLine);
+  section(lines, 'Recurring observation topics (all tasks)', report.recurring_topics, topicLine);
   lines.push(pc.yellow(`  ⚠ ${report.caveat}`));
   lines.push('');
   return `${lines.join('\n')}\n`;
