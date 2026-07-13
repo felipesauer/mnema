@@ -105,12 +105,16 @@ describe('SearchService', () => {
 
   it('2.2: searches skills (latest version only) by content', () => {
     const db = adapter.getDatabase();
+    // skills_fts indexes content_core (not content) since the core/examples
+    // split — set it so the raw insert is searchable like a service write.
     db.prepare(
-      `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+      `INSERT INTO skills (id, slug, name, version, description, content, content_core, tools_used, created_by)
        VALUES
-         ('s1', 'safe-migrate', 'Safe migrate v1', 1, 'd', 'how to roll a migration safely', '[]',
+         ('s1', 'safe-migrate', 'Safe migrate v1', 1, 'd', 'how to roll a migration safely',
+          'how to roll a migration safely', '[]',
           (SELECT id FROM actors WHERE handle = 'daniel')),
-         ('s2', 'safe-migrate', 'Safe migrate v2', 2, 'd', 'updated migration guide v2', '[]',
+         ('s2', 'safe-migrate', 'Safe migrate v2', 2, 'd', 'updated migration guide v2',
+          'updated migration guide v2', '[]',
           (SELECT id FROM actors WHERE handle = 'daniel'))`,
     ).run();
 
@@ -178,11 +182,13 @@ describe('SearchService', () => {
     const db = adapter.getDatabase();
     // Two distinct skills sharing a distinctive term; one is then superseded.
     db.prepare(
-      `INSERT INTO skills (id, slug, name, version, description, content, tools_used, created_by)
+      `INSERT INTO skills (id, slug, name, version, description, content, content_core, tools_used, created_by)
        VALUES
-         ('s1', 'live-skill', 'Live', 1, 'd', 'the quuxtoken procedure', '[]',
+         ('s1', 'live-skill', 'Live', 1, 'd', 'the quuxtoken procedure',
+          'the quuxtoken procedure', '[]',
           (SELECT id FROM actors WHERE handle = 'daniel')),
-         ('s2', 'old-skill', 'Old', 1, 'd', 'the quuxtoken procedure too', '[]',
+         ('s2', 'old-skill', 'Old', 1, 'd', 'the quuxtoken procedure too',
+          'the quuxtoken procedure too', '[]',
           (SELECT id FROM actors WHERE handle = 'daniel'))`,
     ).run();
     db.prepare("UPDATE skills SET superseded_by = 's1' WHERE id = 's2'").run();

@@ -26,6 +26,11 @@ import type { IdentityService } from './identity-service.js';
 import { Err, Ok, type Result } from './result.js';
 import { readUserSkills, type SourcedSkill } from './user-knowledge.js';
 
+// The example/core split lives in a leaf util so the skill repository can call
+// it on the write path without importing this service (which would form a
+// cycle). Re-exported here so it reads as part of the skill vocabulary.
+export { splitSkillExampleSections } from '../utils/skill-body.js';
+
 /**
  * Severity of a skill-lint diagnostic.
  *

@@ -3,42 +3,10 @@ import { z } from 'zod';
 
 import type { SearchService } from '../../../services/search-service.js';
 import type { TaskService } from '../../../services/task-service.js';
+import { skillMatchTerms } from '../../../utils/skill-suggest-stopwords.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 const ENTITY_VALUES = ['task', 'decision', 'note', 'skill', 'memory', 'observation'] as const;
-
-/**
- * Function words dropped from a task's text before matching it against
- * skills in `skill_suggest`. Without this, a common word shared by a task
- * and an unrelated skill would produce a false suggestion. Intentionally
- * small, and only skill_suggest uses it — the raw `search` tool stays
- * literal.
- */
-const SKILL_SUGGEST_STOPWORDS: ReadonlySet<string> = new Set([
-  'the',
-  'and',
-  'for',
-  'with',
-  'from',
-  'this',
-  'that',
-  'into',
-  'onto',
-  'add',
-  'new',
-  'use',
-  'via',
-  'when',
-  'then',
-  'than',
-  'over',
-  'your',
-  'their',
-  'have',
-  'will',
-  'must',
-  'should',
-]);
 
 /**
  * Registers the `search` MCP tool — unified FTS5 search over every
@@ -114,15 +82,11 @@ export class SearchTool {
       (input) => {
         const task = this.tasks.findByKey(input.task_key);
         if (!task.ok) return err(task.error);
-        // Build an FTS query from the task's own words. The split drops all
-        // punctuation, and each surviving token is quoted, so nothing in the
-        // task text can be read as FTS5 syntax; OR them so any overlap
-        // surfaces a candidate.
-        const terms = `${task.value.title} ${task.value.description ?? ''}`
-          .toLowerCase()
-          .split(/[^\p{L}\p{N}]+/u)
-          .filter((t) => t.length >= 4 && !SKILL_SUGGEST_STOPWORDS.has(t))
-          .map((t) => `"${t}"`);
+        // Build an FTS query from the task's own words. The tokeniser drops
+        // punctuation, short tokens and function words, then quotes each
+        // survivor so nothing in the task text is read as FTS5 syntax; OR them
+        // so any overlap surfaces a candidate.
+        const terms = skillMatchTerms(`${task.value.title} ${task.value.description ?? ''}`);
         if (terms.length === 0) return ok({ suggestions: [] });
         const result = this.search.search(terms.join(' OR '), {
           entities: ['skill'],
