@@ -303,6 +303,12 @@ export const ConfigSchema = z.object({
   git: z
     .object({
       watch: z.boolean().default(false),
+      // Root-level files mnema regenerates that should ride along in the
+      // trail commit (which otherwise touches only `.mnema`). AGENTS.md is
+      // the one file with recurring, mnema-authored churn; .gitignore and
+      // .gitattributes are deliberately left out so a human's edits there are
+      // never auto-staged. Matched as exact repo-root paths.
+      trail_extra_paths: z.array(z.string()).default(['AGENTS.md']),
     })
     .prefault({}),
   // Hooks run a command when a curated domain event fires (a task

@@ -93,6 +93,13 @@ export class GitCommitService {
     private readonly projectRoot: string,
     private readonly trailDir: string = '.mnema',
     private readonly run: GitCommandRunner = defaultGitRunner,
+    /**
+     * Extra repo-root files that ride along in the trail commit (exact-path
+     * match), for mnema-authored root files like AGENTS.md that live outside
+     * `.mnema`. Empty by default so the service alone stages nothing but the
+     * trail dir; the CLI passes `git.trail_extra_paths`.
+     */
+    private readonly trailExtraPaths: readonly string[] = [],
   ) {}
 
   private git(...args: string[]): GitResult {
@@ -140,10 +147,12 @@ export class GitCommitService {
     const trail: string[] = [];
     const code: string[] = [];
     const prefix = `${this.trailDir.replace(/\/$/, '')}/`;
+    const extra = new Set(this.trailExtraPaths);
     for (const filePath of out.split('\0')) {
       if (filePath.length === 0) continue;
-      if (filePath === this.trailDir || filePath.startsWith(prefix)) trail.push(filePath);
-      else code.push(filePath);
+      if (filePath === this.trailDir || filePath.startsWith(prefix) || extra.has(filePath)) {
+        trail.push(filePath);
+      } else code.push(filePath);
     }
     return { trail, code };
   }
@@ -185,11 +194,24 @@ export class GitCommitService {
     //    trail by pathspec. Nothing else is auto-staged.
     const addTrail = this.git('add', '--', this.trailDir);
     if (addTrail.status !== 0) throw new GitCommitFailedError('trail', addTrail.stderr);
+    // Also stage the configured mnema-authored root files (e.g. AGENTS.md),
+    // each only when present. `git add --intent-to-add`-free: a plain `git add`
+    // of a missing/unchanged path is harmless (git no-ops when it matches
+    // nothing tracked), so a repo without the file simply stages nothing. We
+    // never throw on a missing extra path — it is optional by design.
+    for (const p of this.trailExtraPaths) {
+      this.git('add', '--', p);
+    }
 
+    // `stagedPaths` classifies the extras as trail (via trailExtraPaths), so
+    // the trail bucket now includes any extra file that actually got staged.
     const trailStaged = this.stagedPaths().trail;
     if (trailStaged.length > 0) {
       const message = options.trailMessage ?? DEFAULT_TRAIL_MESSAGE;
-      const r = this.git('commit', '-m', message, '--', this.trailDir);
+      const stagedExtras = trailStaged.filter((p) => this.trailExtraPaths.includes(p));
+      // Commit by explicit pathspec so ONLY the trail dir and the staged extra
+      // files land — never anything else the user may have staged.
+      const r = this.git('commit', '-m', message, '--', this.trailDir, ...stagedExtras);
       if (r.status !== 0) throw new GitCommitFailedError('trail', r.stderr);
       committed.push({ kind: 'trail', message, paths: trailStaged });
     }

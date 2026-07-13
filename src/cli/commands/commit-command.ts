@@ -43,12 +43,22 @@ export class CommitCommand {
         // A pure git helper: resolve the project root WITHOUT opening the
         // SQLite container, so it works even when the DB is drifted /
         // un-migrated (it never touches the database).
-        const configFile = new ConfigLoader().findConfigFile();
+        const loader = new ConfigLoader();
+        const configFile = loader.findConfigFile();
         if (configFile === null) {
           process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
         }
         const projectRoot = resolveProjectRoot(configFile);
-        const service = new GitCommitService(projectRoot);
+        // Reading the config parses JSON only (no SQLite), so the helper still
+        // works with a drifted DB. If the config is unparseable we fall back to
+        // no extras rather than blocking a trail commit on a bad config.
+        let trailExtraPaths: readonly string[] = [];
+        try {
+          trailExtraPaths = loader.load().git.trail_extra_paths;
+        } catch {
+          trailExtraPaths = ['AGENTS.md'];
+        }
+        const service = new GitCommitService(projectRoot, '.mnema', undefined, trailExtraPaths);
         try {
           const result = service.commit({
             message: options.message,

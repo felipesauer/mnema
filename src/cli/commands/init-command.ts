@@ -224,7 +224,6 @@ export class InitCommand {
 
     mkdirSync(path.dirname(configPath), { recursive: true });
     writeJson(configPath, config);
-    writeAgentsMd(cwd, config);
 
     const stateDir = path.join(cwd, config.paths.state);
     const auditDir = path.join(cwd, config.paths.audit);
@@ -280,7 +279,17 @@ export class InitCommand {
       // overridable; task_create --template falls back to the built-ins when
       // a file is absent, so this is discoverability, not a hard dependency.
       adoption.adopt('templates');
+      // Seed memory/ (INDEX.md, context.md) so AGENTS.md can embed the memory
+      // index on this first write instead of rendering a "skipped — file not
+      // found" note that a later `agents sync` would silently fix (F11: the
+      // two-pass AGENTS.md the dogfooding run flagged).
+      adoption.adopt('memory');
     }
+
+    // AGENTS.md is written AFTER the adopts so its `@memory/INDEX.md` import
+    // resolves in one pass. In --minimal there are no adopts and no memory
+    // dir, so the import correctly degrades to "skipped" until `mnema adopt`.
+    writeAgentsMd(cwd, config);
 
     const dbPath = path.join(stateDir, 'state.db');
     const adapter = new SqliteAdapter(dbPath);

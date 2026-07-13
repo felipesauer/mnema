@@ -81,6 +81,68 @@ describe('GitCommitService', () => {
     expect(adds).toEqual([['add', '--', '.mnema']]);
   });
 
+  it('sweeps a configured extra root file (AGENTS.md) into the trail commit', () => {
+    // Trail bucket: `git add .mnema` + `git add AGENTS.md` leave both staged.
+    // Code bucket: only real code remains.
+    const { run, calls } = repo([
+      z('.mnema/audit/current.jsonl', 'AGENTS.md', 'app.js'),
+      z('app.js'),
+    ]);
+    const result = new GitCommitService('/repo', '.mnema', run, ['AGENTS.md']).commit({
+      message: 'feat: x',
+    });
+
+    expect(result.committed.map((c) => c.kind)).toEqual(['trail', 'code']);
+    const commits = calls.filter((c) => c[0] === 'commit');
+    // AGENTS.md rides in the trail commit's pathspec, beside .mnema.
+    expect(commits[0]).toEqual([
+      'commit',
+      '-m',
+      'chore(mnema): update trail',
+      '--',
+      '.mnema',
+      'AGENTS.md',
+    ]);
+    // The code commit is still pathspec-free (index verbatim), and AGENTS.md
+    // is not in the code bucket.
+    expect(commits[1]).toEqual(['commit', '-m', 'feat: x']);
+    expect(result.committed[1]?.paths).toEqual(['app.js']);
+    // The extra file was explicitly staged.
+    const adds = calls.filter((c) => c[0] === 'add');
+    expect(adds).toEqual([
+      ['add', '--', '.mnema'],
+      ['add', '--', 'AGENTS.md'],
+    ]);
+  });
+
+  it('leaves a root file OUT of the trail commit when it is not configured', () => {
+    // .gitattributes is staged but not in trail_extra_paths → it is code.
+    const { run, calls } = repo([
+      z('.mnema/audit/current.jsonl', '.gitattributes'),
+      z('.gitattributes'),
+    ]);
+    const result = new GitCommitService('/repo', '.mnema', run, ['AGENTS.md']).commit({
+      message: 'chore: attrs',
+    });
+    expect(result.committed.map((c) => c.kind)).toEqual(['trail', 'code']);
+    const commits = calls.filter((c) => c[0] === 'commit');
+    // Trail pathspec is just .mnema (AGENTS.md was never staged).
+    expect(commits[0]).toEqual(['commit', '-m', 'chore(mnema): update trail', '--', '.mnema']);
+    expect(result.committed[1]?.paths).toEqual(['.gitattributes']);
+  });
+
+  it('does not add an extra file that is not staged (missing file is not an error)', () => {
+    // AGENTS.md configured but absent: the `git add` matches nothing, so it is
+    // never in the trail pathspec and the commit still succeeds.
+    const { run, calls } = repo([z('.mnema/audit/current.jsonl'), '']);
+    const result = new GitCommitService('/repo', '.mnema', run, ['AGENTS.md']).commit({
+      message: 'x',
+    });
+    expect(result.committed.map((c) => c.kind)).toEqual(['trail']);
+    const commits = calls.filter((c) => c[0] === 'commit');
+    expect(commits[0]).toEqual(['commit', '-m', 'chore(mnema): update trail', '--', '.mnema']);
+  });
+
   it('auto-stages the trail dir before committing it', () => {
     const { calls, run } = repo([z('.mnema/audit/current.jsonl'), '']);
     new GitCommitService('/repo', '.mnema', run).commit({ message: 'x' });

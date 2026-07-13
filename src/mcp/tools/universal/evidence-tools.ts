@@ -103,6 +103,19 @@ export class EvidenceTools {
           });
           if (!result.ok) return err(result.error);
           proceeded = true;
+          const { evidence, noOp } = result.value;
+
+          // A re-attach of an identical edge is idempotent: return the row
+          // that already existed, flagged so the caller knows nothing new
+          // was created — and is not tempted to alter the ref to dodge a
+          // duplicate (which only trips the commit-verifier warning).
+          if (noOp) {
+            return ok({
+              evidence,
+              no_op: true,
+              note: `already attached at ${evidence.createdAt} — to back another criterion pass a different criterion_index; do not alter the ref`,
+            });
+          }
 
           // Opt-in integrity signal: for a commit ref, check it actually
           // names a commit in the repo. This is advisory only — the
@@ -113,12 +126,12 @@ export class EvidenceTools {
             const check = this.commitVerifier.verify(input.ref, this.projectRoot);
             if (check.checked && !check.found) {
               return ok({
-                evidence: result.value,
+                evidence,
                 warning: check.reason ?? `commit ${input.ref} not found in this repository`,
               });
             }
           }
-          return ok({ evidence: result.value });
+          return ok({ evidence });
         } finally {
           gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
         }

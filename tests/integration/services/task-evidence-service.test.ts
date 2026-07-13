@@ -61,8 +61,9 @@ describe('TaskEvidenceService', () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.criterionIndex).toBe(0);
-    expect(result.value.kind).toBe('test');
+    expect(result.value.noOp).toBe(false);
+    expect(result.value.evidence.criterionIndex).toBe(0);
+    expect(result.value.evidence.kind).toBe('test');
   });
 
   it('rejects an out-of-range criterion index', () => {
@@ -78,7 +79,7 @@ describe('TaskEvidenceService', () => {
     expect(result.error.kind).toBe(ErrorCode.EvidenceCriterionOutOfRange);
   });
 
-  it('rejects a duplicate evidence edge', () => {
+  it('re-attaching an identical edge is an idempotent no-op', () => {
     makeTask('TEST-1', ['c']);
     const input = {
       taskKey: 'TEST-1',
@@ -87,11 +88,16 @@ describe('TaskEvidenceService', () => {
       ref: '/login',
       actor: 'daniel',
     };
-    svc.attach(input);
+    const first = svc.attach(input);
     const dup = svc.attach(input);
-    expect(dup.ok).toBe(false);
-    if (dup.ok) return;
-    expect(dup.error.kind).toBe(ErrorCode.EvidenceDuplicate);
+    expect(first.ok).toBe(true);
+    expect(dup.ok).toBe(true);
+    if (!first.ok || !dup.ok) return;
+    // Same row, flagged as a no-op — never a second insert, never an error.
+    expect(dup.value.noOp).toBe(true);
+    expect(dup.value.evidence.id).toBe(first.value.evidence.id);
+    const view = svc.forTask('TEST-1');
+    expect(view.ok && view.value.criteria[0]?.evidence).toHaveLength(1);
   });
 
   it('rejects an unknown task', () => {
@@ -125,7 +131,7 @@ describe('TaskEvidenceService', () => {
     const result = svc.attach({ taskKey: 'TEST-1', criterionIndex: 0, ref: 'x', actor: 'daniel' });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.kind).toBe('other');
+    expect(result.value.evidence.kind).toBe('other');
   });
 
   it('surfaces evidence as orphaned (not dropped) when criteria shrink below its index', () => {

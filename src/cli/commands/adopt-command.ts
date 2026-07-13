@@ -8,6 +8,7 @@ import {
 } from '../../services/adoption-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
+import { writeAgentsMd } from '../templates/agents-md.js';
 
 const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = [
   'skills',
@@ -76,6 +77,19 @@ export class AdoptCommand {
             process.stdout.write(
               `${pc.green('✓')} ${pc.bold(result.component)} → ${path.relative(projectRoot, result.path)}` +
                 ` ${pc.dim(`(created=${created}, skipped=${skipped})`)}\n`,
+            );
+          }
+
+          // AGENTS.md imports `@memory/INDEX.md` at generation time. When adopt
+          // has just created the memory index (it did not exist at init, or
+          // this is a --minimal project growing memory), regenerate AGENTS.md
+          // now so the index is embedded in one pass — instead of leaving a
+          // "skipped — file not found" note for a later `agents sync` to fix.
+          const memoryBorn = results.some((r) => r.component === 'memory' && r.created.length > 0);
+          if (memoryBorn) {
+            const outcome = writeAgentsMd(projectRoot, config);
+            process.stdout.write(
+              `${pc.green('✓')} ${pc.bold('AGENTS.md')} ${pc.dim(`(${outcome}; embedded the memory index)`)}\n`,
             );
           }
         });
