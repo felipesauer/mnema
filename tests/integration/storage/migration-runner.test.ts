@@ -53,7 +53,7 @@ describe('MigrationRunner', () => {
 
     expect(applied.map((a) => a.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33, 34,
+      27, 28, 29, 30, 31, 32, 33, 34, 35,
     ]);
 
     const versions = adapter
@@ -62,7 +62,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33, 34,
+      27, 28, 29, 30, 31, 32, 33, 34, 35,
     ]);
   });
 
@@ -79,7 +79,7 @@ describe('MigrationRunner', () => {
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 32, 33, 34,
+      27, 28, 29, 30, 31, 32, 33, 34, 35,
     ]);
   });
 
@@ -120,8 +120,9 @@ describe('MigrationRunner', () => {
 
     db.prepare(`INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')`).run();
     db.prepare(
-      `INSERT INTO skills (id, slug, name, description, content, created_by)
-       VALUES ('s1', 'deploy', 'Deploy', 'How to deploy', 'run the zephyr pipeline', 'a1')`,
+      `INSERT INTO skills (id, slug, name, description, content, content_core, content_examples, created_by)
+       VALUES ('s1', 'deploy', 'Deploy', 'How to deploy', 'run the zephyr pipeline',
+               'run the zephyr pipeline', '', 'a1')`,
     ).run();
     db.prepare(
       `INSERT INTO memories (id, slug, title, content, created_by)
@@ -141,12 +142,23 @@ describe('MigrationRunner', () => {
     // Pre-backfill: the un-indexed rows are invisible to search.
     expect(searchIds(search, 'zephyr')).toEqual([]);
 
-    // Apply the backfill (029 as a fresh migration against the pre-009 state).
-    const backfill = readFileSync(
-      path.join(migrationsDir, '029_backfill_fts_skills_memories_observations.sql'),
-      'utf-8',
-    ).replace(/INSERT INTO schema_migrations[\s\S]*$/m, '');
-    db.exec(backfill);
+    // Re-index the un-indexed rows. Migration 035 later rebuilt skills_fts
+    // around content_core/content_examples, so the skills re-index uses that
+    // current shape; the memory/observation backfill is 029 verbatim.
+    db.exec(
+      `INSERT INTO skills_fts (skill_id, slug, version, name, description, content_core, content_examples)
+       SELECT s.id, s.slug, s.version, s.name, s.description, s.content_core, s.content_examples
+         FROM skills s
+        WHERE s.id NOT IN (SELECT skill_id FROM skills_fts);
+       INSERT INTO memories_fts (memory_id, slug, title, content)
+       SELECT m.id, m.slug, m.title, m.content
+         FROM memories m
+        WHERE m.id NOT IN (SELECT memory_id FROM memories_fts);
+       INSERT INTO observations_fts (observation_id, content)
+       SELECT o.id, o.content
+         FROM observations o
+        WHERE o.id NOT IN (SELECT observation_id FROM observations_fts);`,
+    );
 
     expect(searchIds(search, 'zephyr').sort()).toEqual(['m1', 'o1', 's1']);
   });
@@ -164,15 +176,57 @@ describe('MigrationRunner', () => {
        VALUES ('m1', 'arch', 'Architecture', 'the zephyr module owns storage', 'a1')`,
     ).run();
 
-    const backfill = readFileSync(
-      path.join(migrationsDir, '029_backfill_fts_skills_memories_observations.sql'),
-      'utf-8',
-    ).replace(/INSERT INTO schema_migrations[\s\S]*$/m, '');
-    db.exec(backfill);
-    db.exec(backfill);
+    // Only the memory backfill is exercised here. 029's skills backfill is
+    // schema-incompatible after migration 035 rebuilt skills_fts (its `content`
+    // FTS column is gone), so it can't be replayed verbatim; the NOT IN guard
+    // it shares with the memory statement is what this test checks.
+    const memoryBackfill = `INSERT INTO memories_fts (memory_id, slug, title, content)
+       SELECT m.id, m.slug, m.title, m.content
+         FROM memories m
+        WHERE m.id NOT IN (SELECT memory_id FROM memories_fts);`;
+    db.exec(memoryBackfill);
+    db.exec(memoryBackfill);
 
     const hits = searchIds(new SearchService(adapter), 'zephyr').filter((id) => id === 'm1');
     expect(hits).toHaveLength(1);
+  });
+
+  it('migration 035 keeps a pre-split skill searchable by name/description', () => {
+    // Simulate a skill recorded BEFORE the core/example split: apply migrations
+    // 001..034 into a temp dir, insert a skill (the 009-era trigger indexes its
+    // `content`), then apply 035 and confirm search still finds it.
+    const preDir = path.join(tempRoot, 'pre035');
+    mkdirSync(preDir, { recursive: true });
+    for (const file of readdirSync(migrationsDir)) {
+      if (file.endsWith('.sql') && Number.parseInt(file.split('_')[0] ?? '', 10) <= 34) {
+        copyFileSync(path.join(migrationsDir, file), path.join(preDir, file));
+      }
+    }
+    const runner = new MigrationRunner();
+    runner.run(adapter, preDir);
+    const db = adapter.getDatabase();
+
+    db.prepare(`INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')`).run();
+    // Only content is set — content_core/content_examples do not exist yet.
+    db.prepare(
+      `INSERT INTO skills (id, slug, name, version, description, content, created_by)
+       VALUES ('s1', 'blorptography', 'Blorptography', 1, 'How to blorp under load',
+               'the blorp pipeline runs nightly', 'a1')`,
+    ).run();
+
+    // Now apply the split migration on top of the pre-035 state.
+    runner.run(adapter, migrationsDir);
+
+    const search = new SearchService(adapter);
+    // Backfilled (content_core = content), so a description-term query surfaces it.
+    expect(searchIds(search, 'blorp').sort()).toEqual(['s1']);
+    // And the FTS table is the new shape (has content_examples), not the old one.
+    const cols = (db.prepare("PRAGMA table_info('skills_fts')").all() as Array<{ name: string }>)
+      .map((c) => c.name)
+      .sort();
+    expect(cols).toContain('content_core');
+    expect(cols).toContain('content_examples');
+    expect(cols).not.toContain('content');
   });
 
   it("migration 028 widens provenance_links CHECK to accept 'skill' and still rejects unknown kinds", () => {

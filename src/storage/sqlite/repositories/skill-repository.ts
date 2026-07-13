@@ -1,6 +1,7 @@
 import type { Skill } from '../../../domain/entities/skill.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
+import { splitSkillExampleSections } from '../../../utils/skill-body.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface SkillRow {
@@ -152,14 +153,17 @@ export class SkillRepository {
   insert(input: SkillInsertInput): Skill {
     const id = generateUuid();
     const now = isoNow();
+    // Split the body so the FTS triggers can index example tokens at a much
+    // lower weight than the core prose. `content` still stores the full body.
+    const { core, examples } = splitSkillExampleSections(input.content);
     this.adapter
       .getDatabase()
       .prepare(
         `INSERT INTO skills (
-           id, slug, name, version, description, content,
+           id, slug, name, version, description, content, content_core, content_examples,
            tools_used, invocable, dynamic_context, change_rationale, scope,
            usage_count, last_used_at, created_by, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
       )
       .run(
         id,
@@ -168,6 +172,8 @@ export class SkillRepository {
         input.version,
         input.description,
         input.content,
+        core,
+        examples,
         JSON.stringify(input.toolsUsed),
         input.invocable === true ? 1 : 0,
         JSON.stringify(input.dynamicContext ?? []),
@@ -206,18 +212,25 @@ export class SkillRepository {
       readonly scope?: string | null;
     },
   ): Skill | null {
+    // Re-split on every content write so a re-recorded body re-derives its
+    // core/examples columns (a version whose Example section changed must not
+    // keep stale split columns).
+    const { core, examples } = splitSkillExampleSections(fields.content);
     this.adapter
       .getDatabase()
       .prepare(
         `UPDATE skills
-            SET name = ?, description = ?, content = ?, tools_used = ?,
-                invocable = ?, dynamic_context = ?, change_rationale = ?, scope = ?, updated_at = ?
+            SET name = ?, description = ?, content = ?, content_core = ?, content_examples = ?,
+                tools_used = ?, invocable = ?, dynamic_context = ?, change_rationale = ?,
+                scope = ?, updated_at = ?
           WHERE id = ?`,
       )
       .run(
         fields.name,
         fields.description,
         fields.content,
+        core,
+        examples,
         JSON.stringify(fields.toolsUsed),
         fields.invocable === true ? 1 : 0,
         JSON.stringify(fields.dynamicContext ?? []),

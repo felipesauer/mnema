@@ -16,6 +16,7 @@ import type { ObservationService } from '../../../services/observation-service.j
 import type { SearchService } from '../../../services/search-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
+import { skillMatchTerms } from '../../../utils/skill-suggest-stopwords.js';
 import { ok } from '../../mcp-tool-result.js';
 import { describeToolSurface } from '../../tool-registry.js';
 import { toolRiskMap } from '../../tool-risk.js';
@@ -430,14 +431,11 @@ export class ContextBootstrapTool {
       }
     }
 
-    // Then full-text matches on the task's words + labels. Quote each token so
-    // nothing is read as FTS5 syntax; OR them so any overlap surfaces a
-    // candidate. Mirrors skill_suggest's tokenisation.
-    const terms = `${task.title} ${task.description ?? ''} ${labelWords}`
-      .toLowerCase()
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter((t) => t.length >= 4)
-      .map((t) => `"${t}"`);
+    // Then full-text matches on the task's words + labels. Uses the same
+    // tokeniser as skill_suggest so the two "which skills fit this task"
+    // paths agree — same short-token and function-word filtering, same
+    // quoting — then OR the terms so any overlap surfaces a candidate.
+    const terms = skillMatchTerms(`${task.title} ${task.description ?? ''} ${labelWords}`);
     if (terms.length > 0) {
       const result = this.searchService.search(terms.join(' OR '), {
         entities: ['skill'],

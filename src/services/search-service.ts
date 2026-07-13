@@ -157,15 +157,23 @@ export class SearchService {
     // with explicit version when you need a specific historical row).
     //
     // Skills_fts columns: skill_id(0, UNINDEXED), slug(1, UNINDEXED),
-    // version(2, UNINDEXED), name(3), description(4), content(5).
-    // Prefer the content snippet; fall back to description, then name.
+    // version(2, UNINDEXED), name(3), description(4), content_core(5),
+    // content_examples(6). The body is split so example-section tokens
+    // (which the linter pushes every skill to carry) rank far below the
+    // core body: bm25 weights name/description highest, content_core
+    // moderate, and content_examples near-zero. A negative bm25 score is
+    // "more relevant", so ordering by the weighted score ascending puts
+    // name/description hits above example-only hits. Prefer the
+    // content_core snippet for display, then description, then name — an
+    // examples-only snippet is never the primary.
     const rows = this.adapter
       .getDatabase()
       .prepare(
         `SELECT s.id AS id,
                 s.slug AS slug,
                 s.name AS name,
-                snippet(skills_fts, 5, '<mark>', '</mark>', '…', 32) AS content_snippet,
+                bm25(skills_fts, 0.0, 0.0, 0.0, 8.0, 4.0, 2.0, 0.25) AS score,
+                snippet(skills_fts, 5, '<mark>', '</mark>', '…', 32) AS core_snippet,
                 snippet(skills_fts, 4, '<mark>', '</mark>', '…', 32) AS description_snippet,
                 snippet(skills_fts, 3, '<mark>', '</mark>', '…', 32) AS name_snippet
            FROM skills_fts
@@ -175,14 +183,15 @@ export class SearchService {
            ) latest ON latest.slug = s.slug AND latest.max_version = s.version
           WHERE skills_fts MATCH ?
             AND s.superseded_by IS NULL
-          ORDER BY rank
+          ORDER BY score
           LIMIT ?`,
       )
       .all(query, limit) as Array<{
       id: string;
       slug: string;
       name: string;
-      content_snippet: string;
+      score: number;
+      core_snippet: string;
       description_snippet: string;
       name_snippet: string;
     }>;
@@ -192,8 +201,8 @@ export class SearchService {
       key: row.slug,
       title: row.name,
       snippet:
-        row.content_snippet.length > 0
-          ? row.content_snippet
+        row.core_snippet.length > 0
+          ? row.core_snippet
           : row.description_snippet.length > 0
             ? row.description_snippet
             : row.name_snippet,

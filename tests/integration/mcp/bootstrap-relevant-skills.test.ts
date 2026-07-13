@@ -137,4 +137,159 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     );
     expect(boot.relevant_skills).toEqual([]);
   });
+
+  it('does not surface a skill whose only shared token is a stopword', async () => {
+    // The skill and the task share only "runtime" (long enough to survive the
+    // length filter) and "with" (a stopword). If bootstrap dropped the
+    // stopword filter, "with" would leak into the FTS query and match this
+    // unrelated skill. Both tokeniser paths must agree with skill_suggest.
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: {
+        slug: 'unrelated-runtime',
+        name: 'Runtime tuning',
+        description: 'Working with the process runtime knobs',
+        content: 'Tune the runtime.',
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Ship the invoice export', acceptance_criteria: ['exports'] },
+    });
+    await harness.client.callTool({
+      name: 'task_submit',
+      arguments: {
+        task_key: 'TEST-1',
+        title: 'Ship the invoice export',
+        description: 'Generate a CSV with the monthly invoices.',
+        acceptance_criteria: ['exports'],
+        estimate: 2,
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_start',
+      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+    });
+
+    const boot = payload(
+      (await harness.client.callTool({
+        name: 'context_bootstrap',
+        arguments: {},
+      })) as CallToolResult,
+    );
+    const relevant = boot.relevant_skills as RelevantSkill[];
+    // "with" is a stopword and must not match; the task shares no real term.
+    expect(relevant.some((s) => s.slug === 'unrelated-runtime')).toBe(false);
+  });
+
+  it('bootstrap parity: agrees with skill_suggest for the same task', async () => {
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: {
+        slug: 'add-notification-channel',
+        name: 'Add a notification channel',
+        description: 'How to wire a new notifier channel into the dispatcher',
+        content: 'Register the channel, add config, cover it with a test.',
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Wire the notifier channel', acceptance_criteria: ['sends'] },
+    });
+    await harness.client.callTool({
+      name: 'task_submit',
+      arguments: {
+        task_key: 'TEST-1',
+        title: 'Wire the notifier channel',
+        description: 'Add a new notifier dispatcher channel.',
+        acceptance_criteria: ['sends'],
+        estimate: 2,
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_start',
+      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+    });
+
+    const boot = payload(
+      (await harness.client.callTool({
+        name: 'context_bootstrap',
+        arguments: {},
+      })) as CallToolResult,
+    );
+    const relevant = (boot.relevant_skills as RelevantSkill[]).map((s) => s.slug);
+
+    const suggest = payload(
+      (await harness.client.callTool({
+        name: 'skill_suggest',
+        arguments: { task_key: 'TEST-1' },
+      })) as CallToolResult,
+    );
+    const suggested = (suggest.suggestions as Array<{ key: string | null }>).map((s) => s.key);
+
+    expect(relevant).toContain('add-notification-channel');
+    expect(suggested).toContain('add-notification-channel');
+  });
+
+  it('does not rank an Example-only match above a name/description match', async () => {
+    // A task-creation skill that happens to mention an auth path only inside
+    // its worked example. Before the core/example FTS split, "/auth/callback"
+    // was indexed at full weight and this skill won auth queries.
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: {
+        slug: 'creating-tasks',
+        name: 'Creating tasks',
+        description: 'How to break work down into tasks and record them',
+        content: [
+          'Split the work into small tasks and record each one.',
+          '',
+          '## Example',
+          '',
+          'When adding an endpoint like GET /auth/callback for oauth,',
+          'create one task per acceptance criterion.',
+        ].join('\n'),
+      },
+    });
+    // A skill genuinely about auth, matching in name AND description.
+    await harness.client.callTool({
+      name: 'skill_record',
+      arguments: {
+        slug: 'oauth-callback-flow',
+        name: 'OAuth callback flow',
+        description: 'How to wire the oauth callback endpoint and exchange the code',
+        content: 'Register the callback route and exchange the code for a token.',
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Implement the oauth callback', acceptance_criteria: ['tokens'] },
+    });
+    await harness.client.callTool({
+      name: 'task_submit',
+      arguments: {
+        task_key: 'TEST-1',
+        title: 'Implement the oauth callback',
+        description: 'Handle the oauth callback and exchange the authorization code.',
+        acceptance_criteria: ['tokens'],
+        estimate: 2,
+      },
+    });
+    await harness.client.callTool({
+      name: 'task_start',
+      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+    });
+
+    const suggest = payload(
+      (await harness.client.callTool({
+        name: 'skill_suggest',
+        arguments: { task_key: 'TEST-1' },
+      })) as CallToolResult,
+    );
+    const suggested = (suggest.suggestions as Array<{ key: string | null }>).map((s) => s.key);
+
+    // The genuine auth skill leads; the Example-only match must not be top.
+    expect(suggested[0]).toBe('oauth-callback-flow');
+    expect(suggested.indexOf('creating-tasks')).not.toBe(0);
+  });
 });
