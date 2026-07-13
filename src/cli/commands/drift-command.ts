@@ -47,25 +47,48 @@ export class DriftCommand {
             );
             return;
           }
-          if (result.untracked.length === 0) {
+          if (result.linkable.length === 0 && result.untracked.length === 0) {
             process.stdout.write(
               `${pc.green('✓')} ${result.scanned} commit(s) scanned — all tied to a task\n`,
             );
             return;
           }
           const lines: string[] = [];
-          lines.push(
-            `${pc.yellow('▲')} ${pc.bold(`${result.untracked.length} commit(s) with no task`)} ` +
-              `${pc.dim(`(of ${result.scanned} scanned)`)}`,
-          );
-          for (const c of result.untracked) {
-            lines.push(`  ${pc.yellow(c.sha)} ${c.subject}`);
+          // Linkable first — these are one command away from tracked: the
+          // commit already names an existing task, just attach the SHA.
+          if (result.linkable.length > 0) {
+            lines.push(
+              `${pc.yellow('▲')} ${pc.bold(`${result.linkable.length} commit(s) name a task but are not linked`)} ` +
+                `${pc.dim(`(of ${result.scanned} scanned)`)}`,
+            );
+            for (const c of result.linkable) {
+              lines.push(
+                `  ${pc.yellow(c.sha)} ${c.subject} ${pc.dim(`→ ${c.taskKeys.join(', ')}`)}`,
+              );
+              // `<i>` is a placeholder, not a literal 0: evidence attaches to a
+              // specific acceptance criterion, so the user picks the one this
+              // commit satisfies (see `mnema task show <key>`).
+              lines.push(
+                pc.dim(
+                  `    mnema task evidence ${c.taskKeys[0]} --criterion <i> --ref ${c.sha} --kind commit`,
+                ),
+              );
+            }
           }
-          lines.push(
-            pc.dim(
-              '  tie a commit to a task with `mnema task evidence <key> --criterion <i> --ref <sha> --kind commit`',
-            ),
-          );
+          if (result.untracked.length > 0) {
+            lines.push(
+              `${pc.yellow('▲')} ${pc.bold(`${result.untracked.length} commit(s) with no task`)} ` +
+                `${pc.dim(`(of ${result.scanned} scanned)`)}`,
+            );
+            for (const c of result.untracked) {
+              lines.push(`  ${pc.yellow(c.sha)} ${c.subject}`);
+            }
+            lines.push(
+              pc.dim(
+                '  create a task for the work, then tie the commit with `mnema task evidence <key> --criterion <i> --ref <sha> --kind commit`',
+              ),
+            );
+          }
           process.stdout.write(`${lines.join('\n')}\n`);
         });
       });

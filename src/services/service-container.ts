@@ -591,7 +591,12 @@ export function createServiceContainer(
   );
   const githubPrService = new GitHubPrService();
   const commitVerifier = new CommitVerifier(options.commitRunner);
-  const driftService = new DriftService(taskEvidenceRepository, options.commitRunner);
+  const driftService = new DriftService(
+    taskEvidenceRepository,
+    options.commitRunner,
+    config.project.key,
+    (key) => tasks.findByKey(key) !== null,
+  );
   const gitObserverService = new GitObserverService(tasks, identity, options.commitRunner);
   const workGraphLintService = new WorkGraphLintService(
     sprintRepository,

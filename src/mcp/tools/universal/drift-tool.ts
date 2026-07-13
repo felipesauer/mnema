@@ -56,6 +56,18 @@ export class DriftTool {
         return ok({
           checked: result.checked,
           scanned: result.scanned,
+          // Commits that name an existing task but carry no evidence link — one
+          // command away from tracked. Each item carries the exact call to make.
+          linkable_count: result.linkable.length,
+          linkable: result.linkable.map((c) => ({
+            sha: c.sha,
+            subject: c.subject,
+            task_keys: c.taskKeys,
+            // criterion_index points at the acceptance criterion this commit
+            // satisfies — pick it from task_show; a task with no criteria yet
+            // needs one before commit evidence can attach.
+            hint: `task_attach_evidence({ task_key: "${c.taskKeys[0]}", criterion_index: <i>, kind: "commit", ref: "${c.sha}" })`,
+          })),
           untracked_count: result.untracked.length,
           untracked: result.untracked.map((c) => ({ sha: c.sha, subject: c.subject })),
           ...(result.reason === undefined ? {} : { reason: result.reason }),
