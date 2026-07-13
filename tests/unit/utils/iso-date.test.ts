@@ -32,5 +32,22 @@ describe('isIso8601', () => {
   it('rejects out-of-range months/days that JS Date silently rolls over', () => {
     expect(isIso8601('2026-13-01')).toBe(false);
     expect(isIso8601('2026-02-30')).toBe(false);
+    // Also rejected with a time part (Date folds "2026-02-30T10:00" to Mar 2).
+    expect(isIso8601('2026-13-01T12:00:00')).toBe(false);
+    expect(isIso8601('2026-02-30T10:00:00')).toBe(false);
+  });
+
+  it('accepts a timezone-less evening datetime regardless of local timezone', () => {
+    // Regression: the UTC date-prefix round-trip wrongly rejected a valid
+    // local datetime whose UTC instant rolls to the next day (e.g. 23:00 in a
+    // behind-UTC zone). It is parsed as LOCAL time and must stay valid.
+    const prevTz = process.env.TZ;
+    for (const tz of ['America/Sao_Paulo', 'UTC', 'Asia/Tokyo']) {
+      process.env.TZ = tz;
+      expect(isIso8601('2026-07-13T23:00:00'), tz).toBe(true);
+      expect(isIso8601('2026-07-13T01:00:00'), tz).toBe(true);
+    }
+    if (prevTz === undefined) delete process.env.TZ;
+    else process.env.TZ = prevTz;
   });
 });
