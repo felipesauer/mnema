@@ -34,6 +34,7 @@ import { ProjectRepository } from '../../storage/sqlite/repositories/project-rep
 import { SkillRepository } from '../../storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
+import { ensureGitattributes } from '../../utils/gitattributes.js';
 import { VERSION } from '../../utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 import { writeAgentsMd } from '../templates/agents-md.js';
@@ -248,7 +249,7 @@ export class InitCommand {
     }
 
     appendGitignore(cwd, config.paths.state, config.paths.audit);
-    scaffoldGitattributes(cwd, config.paths.audit);
+    ensureGitattributes(cwd, config.paths.audit);
 
     const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
     const workflowDestFile = path.join(workflowsDest, `${config.workflow}.json`);
@@ -430,46 +431,6 @@ function appendGitignore(cwd: string, statePath: string, auditPath: string): voi
   // layout `.mnema/state`) is already ignored, the more specific
   // entry would be redundant — skip it.
   if (covers(current, entry)) return;
-  appendFileSync(file, `\n${block}\n`, 'utf-8');
-}
-
-/**
- * The `.gitattributes` line Mnema writes for the audit log.
- *
- * The audit JSONL is append-only: every mutation adds a line, so two
- * branches that both recorded activity will, on merge, conflict on the
- * tail even though neither edited the other's lines. Git's built-in
- * `union` merge driver resolves exactly this — it keeps the lines from
- * both sides instead of raising a conflict, which is what an append-only
- * log wants. `union` needs no `.git/config` entry; it ships with git.
- *
- * Caveat (documented for honesty): a `union` merge of two divergent
- * histories can interleave lines and so fork the per-file SHA-256 hash
- * chain. `mnema doctor` / `audit_verify` detect that, and `mnema sync`
- * rebuilds the cache from the markdown (the real source of truth). For
- * the common case — one machine, or branches that don't both append to
- * the audit — `union` simply removes the conflict noise with no
- * downside.
- */
-function gitattributesLines(auditPath: string): string {
-  const dir = auditPath.replace(/\/$/, '');
-  return [
-    '# mnema: the audit log is append-only; merge with union so parallel',
-    '# branches keep both sides instead of conflicting on the tail.',
-    `${dir}/*.jsonl merge=union`,
-  ].join('\n');
-}
-
-function scaffoldGitattributes(cwd: string, auditPath: string): void {
-  const file = path.join(cwd, '.gitattributes');
-  const marker = `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
-  const block = gitattributesLines(auditPath);
-  if (!existsSync(file)) {
-    writeFileSync(file, `${block}\n`, 'utf-8');
-    return;
-  }
-  const current = readFileSync(file, 'utf-8');
-  if (current.includes(marker)) return;
   appendFileSync(file, `\n${block}\n`, 'utf-8');
 }
 

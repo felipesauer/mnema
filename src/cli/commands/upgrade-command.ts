@@ -16,6 +16,7 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
+import { ensureGitattributes, hasGitattributesUnion } from '../../utils/gitattributes.js';
 import { CURATED_MEMORY_SUBFOLDERS } from '../../utils/mirror-layout.js';
 import { VERSION } from '../../utils/version.js';
 import { type CliContext, withCliContext } from '../cli-context.js';
@@ -127,6 +128,25 @@ export class UpgradeCommand {
   private postMigrationSteps(ctx: CliContext): UpgradeStep[] {
     const { config, projectRoot, container } = ctx;
     const steps: UpgradeStep[] = [];
+
+    // Retrofit the audit `merge=union` .gitattributes onto a project that was
+    // initialised by a version predating it. Union keeps both sides when
+    // parallel branches append to the append-only log, blunting the
+    // stale-snapshot merge that can strand duplicate/rewound audit state. It is
+    // defense-in-depth (a driver, not a guarantee against every host's
+    // server-side squash) — the authoritative guards are the sync
+    // duplicate-mirror check and doctor's duplicate/delta checks. Fires only
+    // when the marker is absent, and is idempotent.
+    if (!hasGitattributesUnion(projectRoot, config.paths.audit)) {
+      steps.push({
+        label:
+          'add the audit-log `merge=union` .gitattributes (defense-in-depth for parallel branches)',
+        run: () => {
+          const outcome = ensureGitattributes(projectRoot, config.paths.audit);
+          return `.gitattributes ${outcome}`;
+        },
+      });
+    }
 
     // AGENTS.md managed block out of date (or absent).
     if (agentsBlockIsStale(projectRoot, config)) {
