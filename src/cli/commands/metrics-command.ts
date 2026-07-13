@@ -14,9 +14,8 @@ interface MetricsOptions {
 /**
  * Registers `mnema metrics` — a LOCAL adoption report for the alpha. It
  * aggregates already-recorded local data (the audit log, the local counter
- * log, and flow metrics) into the success metrics defined in
- * docs/METRICS-DESIGN.md. Strictly local, zero remote telemetry
- * (MNEMA-ADR-36). Read-only.
+ * log, and flow metrics) into the alpha success metrics. Strictly local,
+ * zero remote telemetry (see MNEMA-ADR-36). Read-only.
  */
 export class MetricsCommand {
   /**
@@ -103,6 +102,8 @@ function render(m: AdoptionMetrics): string {
   lines.push(
     pc.dim('  doctor/sync performance at >500 tasks: run `pnpm bench:scale` (synthetic).'),
   );
-  lines.push(pc.dim('  See docs/METRICS-DESIGN.md for how each metric is derived locally.'));
+  lines.push(
+    pc.dim('  All metrics are derived locally from your audit log — nothing is transmitted.'),
+  );
   return `${lines.join('\n')}\n`;
 }
