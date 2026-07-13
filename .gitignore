@@ -63,3 +63,4 @@ scripts/record-quickstart.sh
 # today the head-signature row) is not verification material.
 
 AGENTS.md
+docs-local/
