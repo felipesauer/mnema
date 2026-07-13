@@ -4,7 +4,7 @@ import { printError } from '../../errors/error-printer.js';
 import { pc } from '../../utils/colors.js';
 
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
-import { collectRepeatable } from '../option-helpers.js';
+import { collectRepeatable, parseIsoBoundOption } from '../option-helpers.js';
 
 interface ListOptions {
   readonly topic?: string;
@@ -63,7 +63,7 @@ export class ObservationCommand {
       .description('List observations, newest first')
       .option('--topic <topic>', 'Filter by topic')
       .option('--task <key>', 'Filter by related task key')
-      .option('--since <iso>', 'Lower bound ISO 8601 timestamp')
+      .option('--since <iso>', 'Lower bound ISO 8601 timestamp', parseIsoBoundOption)
       .option('--limit <n>', 'Maximum number of rows')
       .option('--include-archived', 'Include archived observations, which are hidden by default')
       .action(async (options: ListOptions) => {

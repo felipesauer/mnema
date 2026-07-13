@@ -1,6 +1,7 @@
 import { InvalidArgumentError } from 'commander';
 
 import { isValidTimeBound } from '../mcp/time-bound-schema.js';
+import { isIso8601 } from '../utils/iso-date.js';
 
 /**
  * Commander option coercer for a flag that may be passed more than once,
@@ -51,4 +52,24 @@ export function parseTimeBoundOption(value: string): string {
 export function parseFriendlyTimeBoundOption(value: string): string {
   if (value === 'today' || value === 'yesterday') return value;
   return parseTimeBoundOption(value);
+}
+
+/**
+ * Commander option coercer for an ISO-8601-only created-at bound — the
+ * `--since`/`--until` on `mnema query` and `--since` on `observation list`,
+ * whose downstream (`createdSince`/`observation.list`) compares raw strings
+ * and treats an unparseable one as "no bound" (fail-open). Unlike the audit
+ * window these accept no relative duration, so a typo like `30d` or
+ * `2026-13-40` must be a loud argument error, not a silent full scan.
+ *
+ * @param value - Raw flag value
+ * @returns The value, when it is a strict ISO-8601 instant/date
+ */
+export function parseIsoBoundOption(value: string): string {
+  if (!isIso8601(value)) {
+    throw new InvalidArgumentError(
+      'expected an ISO-8601 timestamp (e.g. 2026-07-13 or 2026-07-13T00:00:00Z).',
+    );
+  }
+  return value;
 }

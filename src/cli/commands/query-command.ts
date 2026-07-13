@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import type { PortfolioResult } from '../../services/portfolio-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
+import { parseIsoBoundOption } from '../option-helpers.js';
 
 interface QueryOptions {
   readonly state?: string;
@@ -34,8 +35,8 @@ export class QueryCommand {
       .option('--epic <key>', 'Filter by epic key')
       .option('--sprint <key>', 'Filter by sprint key')
       .option('--label <label...>', 'Filter by label (repeat for AND; task must carry all)')
-      .option('--since <iso>', 'Created at or after (ISO-8601)')
-      .option('--until <iso>', 'Created at or before (ISO-8601)')
+      .option('--since <iso>', 'Created at or after (ISO-8601)', parseIsoBoundOption)
+      .option('--until <iso>', 'Created at or before (ISO-8601)', parseIsoBoundOption)
       .option('--text <text>', 'Substring over title + description')
       .option('--json', 'Emit the raw result as JSON', false)
       .action(async (options: QueryOptions) => {

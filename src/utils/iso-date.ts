@@ -26,8 +26,22 @@ export function isIso8601(value: string): boolean {
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
-  // Round-trip the date portion so values like "2026-13-01" (which Date
-  // happily folds to 2027-01-01) are caught here.
-  const expectedPrefix = value.slice(0, 10);
-  return date.toISOString().slice(0, 10) === expectedPrefix;
+  // Reject a value whose date components Date silently folded — "2026-13-01"
+  // → 2027-01-01, "2026-02-30" → Mar 2. Compare the literal Y-M-D against the
+  // parsed date in the SAME reference frame the string was parsed in:
+  //   - date-only ("2026-07-13") is parsed as UTC midnight → use UTC getters;
+  //   - a timezone-less datetime ("2026-07-13T23:00:00") is parsed as LOCAL
+  //     time → use local getters (using the UTC prefix here would wrongly
+  //     reject an evening value behind UTC, which rolls to the next UTC day);
+  //   - a zoned datetime ("…Z" / "…+02:00") pins an absolute instant whose
+  //     local Y-M-D may legitimately differ, so the regex + non-NaN check
+  //     already prove it — no component comparison.
+  const [y, m, d] = value.slice(0, 10).split('-').map(Number);
+  const zoned = value.length > 10 && /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  if (zoned) return true;
+  const dateOnly = value.length === 10;
+  const gotY = dateOnly ? date.getUTCFullYear() : date.getFullYear();
+  const gotM = (dateOnly ? date.getUTCMonth() : date.getMonth()) + 1;
+  const gotD = dateOnly ? date.getUTCDate() : date.getDate();
+  return gotY === y && gotM === m && gotD === d;
 }
