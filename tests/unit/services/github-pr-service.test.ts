@@ -264,6 +264,20 @@ describe('GitHubPrService base-branch CI (merge commit)', () => {
     expect(status.ciBase).toBe('unknown'); // base lookups failed → unknown
   });
 
+  it('never lets a merge-blocking check-run be masked by a green legacy status', () => {
+    // An ACTION_REQUIRED (or STALE / empty-conclusion) COMPLETED run is
+    // merge-blocking on GitHub. It must read as failing, not be dropped so a
+    // green combined-status paints the base green.
+    const status = new GitHubPrService(
+      dispatchRunner({
+        view: mergedView,
+        checkRuns: { check_runs: [{ status: 'COMPLETED', conclusion: 'ACTION_REQUIRED' }] },
+        combinedStatus: { state: 'success', statuses: [{ state: 'success' }] },
+      }),
+    ).status(URL);
+    expect(status.ciBase).toBe('failing');
+  });
+
   it('does not query the base for an OPEN (unmerged) PR', () => {
     let apiCalled = false;
     const runner: CommandRunner = (_c, args) => {

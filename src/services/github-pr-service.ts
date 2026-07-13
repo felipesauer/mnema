@@ -230,16 +230,21 @@ export class GitHubPrService {
         ? (r.conclusion ?? '').toUpperCase()
         : 'IN_PROGRESS',
     );
-    if (states.some((s) => s === 'FAILURE' || s === 'TIMED_OUT' || s === 'CANCELLED')) {
-      return 'failing';
-    }
+    // Any in-flight run makes the whole rollup pending, no matter what else
+    // has landed. Check this before failing so a still-running required check
+    // isn't prematurely called red.
     if (states.some((s) => s === 'IN_PROGRESS' || s === 'QUEUED' || s === 'PENDING')) {
       return 'pending';
     }
+    // Everything is COMPLETED. A clean rollup is one where every conclusion is
+    // a passing/neutral outcome; anything else — FAILURE/TIMED_OUT/CANCELLED,
+    // the merge-blocking ACTION_REQUIRED/STALE, or an empty/unrecognized
+    // conclusion — is treated as failing. A not-clean completed run must never
+    // be silently dropped to 'unknown', or a green legacy status could mask it.
     if (states.every((s) => s === 'SUCCESS' || s === 'NEUTRAL' || s === 'SKIPPED')) {
       return 'passing';
     }
-    return 'unknown';
+    return 'failing';
   }
 
   /** Legacy combined-status for a commit → CiStatus, 'unknown' when unresolved. */
