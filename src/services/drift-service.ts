@@ -10,6 +10,18 @@ export interface UntrackedCommit {
 }
 
 /**
+ * An untracked commit whose subject names one or more EXISTING task keys —
+ * the work was done and mentions its task, but no evidence links them yet.
+ * This is the one-command-away case: attach the SHA to the task.
+ */
+export interface LinkableCommit {
+  readonly sha: string;
+  readonly subject: string;
+  /** Existing task keys parsed from the subject (deduped, in order). */
+  readonly taskKeys: readonly string[];
+}
+
+/**
  * The result of a commit-drift scan.
  *
  * `checked` is the honesty bit (same contract as {@link CommitVerifier}):
@@ -19,7 +31,17 @@ export interface UntrackedCommit {
  */
 export interface CommitDrift {
   readonly checked: boolean;
-  /** Commits on the branch with no commit-evidence tying them to a task. */
+  /**
+   * Untracked commits whose subject names an existing task — link them with
+   * `task_attach_evidence` (the SHA is the ref). Split out from
+   * {@link untracked} because the remedy is different: these are one command
+   * away from being tracked, the rest need a task first.
+   */
+  readonly linkable: readonly LinkableCommit[];
+  /**
+   * Untracked commits with no existing task key in the subject — genuinely
+   * task-less work (a task must be created before evidence can be attached).
+   */
   readonly untracked: readonly UntrackedCommit[];
   /** How many commits were scanned (0 when unchecked). */
   readonly scanned: number;
@@ -46,10 +68,44 @@ const DEFAULT_SCAN_LIMIT = 30;
  * and never shell out.
  */
 export class DriftService {
+  /** Matches a task key for THIS project in a commit subject: `KEY-<n>`. */
+  private readonly keyPattern: RegExp;
+
   constructor(
     private readonly evidence: TaskEvidenceRepository,
     private readonly run: CommandRunner = defaultRunner,
-  ) {}
+    /**
+     * The active project key (e.g. `NOTA`). Task keys are parsed from commit
+     * subjects to split "linkable" (mentions an existing task) from genuinely
+     * task-less commits. Optional so existing callers/tests keep working; when
+     * absent every untracked commit stays in `untracked` (no key parsing).
+     */
+    private readonly projectKey: string | null = null,
+    /**
+     * Existence check for a parsed key. A key that parses but names no live
+     * task is NOT linkable — the mention is stale or a typo. Optional; when
+     * absent (no project key wired) it is never consulted.
+     */
+    private readonly taskExists: (key: string) => boolean = () => false,
+  ) {
+    // `\b … -(\d+)\b`: the trailing digit requirement means `NOTA-EPIC-32`
+    // (an epic/ADR key) never matches as a task key. Escape the project key
+    // so a punctuation-bearing key cannot inject regex syntax.
+    const escaped = (projectKey ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    this.keyPattern = new RegExp(`\\b${escaped}-(\\d+)\\b`, 'g');
+  }
+
+  /** Existing task keys named in a commit subject (deduped, in first-seen order). */
+  private taskKeysIn(subject: string): string[] {
+    if (this.projectKey === null) return [];
+    const seen = new Set<string>();
+    this.keyPattern.lastIndex = 0;
+    for (const match of subject.matchAll(this.keyPattern)) {
+      const key = match[0];
+      if (!seen.has(key) && this.taskExists(key)) seen.add(key);
+    }
+    return [...seen];
+  }
 
   /**
    * Scans for commits on the branch at `cwd` that no task claims.
@@ -64,7 +120,13 @@ export class DriftService {
   scan(cwd: string, options: { base?: string; limit?: number } = {}): CommitDrift {
     const inRepo = this.run('git', ['-C', cwd, 'rev-parse', '--is-inside-work-tree']);
     if (!ranOk(inRepo) || inRepo.stdout.trim() !== 'true') {
-      return { checked: false, untracked: [], scanned: 0, reason: skipReason(inRepo) };
+      return {
+        checked: false,
+        linkable: [],
+        untracked: [],
+        scanned: 0,
+        reason: skipReason(inRepo),
+      };
     }
 
     // A NUL/newline-delimited "<sha>\x1f<subject>" list. `%h` is the
@@ -75,7 +137,7 @@ export class DriftService {
       options.base === undefined ? ['-n', String(options.limit ?? DEFAULT_SCAN_LIMIT)] : [];
     const log = this.run('git', ['-C', cwd, 'log', ...bound, '--pretty=format:%h\x1f%s', ...range]);
     if (!ranOk(log)) {
-      return { checked: false, untracked: [], scanned: 0, reason: skipReason(log) };
+      return { checked: false, linkable: [], untracked: [], scanned: 0, reason: skipReason(log) };
     }
 
     const commits = log.stdout
@@ -98,8 +160,18 @@ export class DriftService {
       return refs.some((ref) => ref.length > 0 && (s.startsWith(ref) || ref.startsWith(s)));
     };
 
-    const untracked = commits.filter((c) => !isTracked(c.sha));
-    return { checked: true, untracked, scanned: commits.length };
+    // Split the commits that carry no evidence link: a subject naming an
+    // existing task is "linkable" (attach the SHA and it is tracked), the rest
+    // are genuinely task-less. A commit already tracked by evidence is neither.
+    const linkable: LinkableCommit[] = [];
+    const untracked: UntrackedCommit[] = [];
+    for (const c of commits) {
+      if (isTracked(c.sha)) continue;
+      const taskKeys = this.taskKeysIn(c.subject);
+      if (taskKeys.length > 0) linkable.push({ sha: c.sha, subject: c.subject, taskKeys });
+      else untracked.push({ sha: c.sha, subject: c.subject });
+    }
+    return { checked: true, linkable, untracked, scanned: commits.length };
   }
 }
 
