@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Resets /tmp/mnema-smoke/ so the manual smoke suite documented at
-# docs/SMOKE.md can start from a clean slate. Idempotent: re-running
-# wipes any previous run.
+# Resets /tmp/mnema-smoke/ so the maintainer's manual smoke suite can start
+# from a clean slate. Idempotent: re-running wipes any previous run.
+# (The step-by-step suite lives in the maintainer's local docs, not in the
+# published package.)
 #
 # Usage:
 #   bash scripts/smoke-bootstrap.sh
@@ -29,4 +30,4 @@ else
   echo "  ⚠ \`mnema\` is not on PATH — run \`pnpm build && pnpm pack && npm i -g ./felipesauer-mnema-*.tgz\` first"
 fi
 echo ""
-echo "Open docs/SMOKE.md and follow Phase 1 onwards."
+echo "Clean slate ready — follow the manual smoke suite from Phase 1."

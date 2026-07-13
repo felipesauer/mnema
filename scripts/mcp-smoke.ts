@@ -8,7 +8,7 @@
  * observation_record, agent_run_end. Exits 0 on success and non-zero on
  * any failure, so CI can gate releases.
  *
- * Substitutes the manual fases 10, 15, 17, 21 of docs/SMOKE.md.
+ * Automates the MCP portions of the maintainer's manual smoke suite.
  */
 
 import { spawn } from 'node:child_process';

@@ -14,6 +14,7 @@ docs/*
 !docs/client-integration.md
 !docs/guard.md
 !docs/mcp-tools.md
+!docs/skills-and-memory.md
 !docs/assets/
 !docs/assets/**
 .plan/
@@ -62,3 +63,4 @@ scripts/record-quickstart.sh
 # today the head-signature row) is not verification material.
 
 AGENTS.md
+docs-local/
