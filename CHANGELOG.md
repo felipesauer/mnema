@@ -52,6 +52,14 @@ conventional commits; the pre-0.4.0 history was written by hand.
 * **run-diff:** surface task claim/release in the run diff ([#180](https://github.com/felipesauer/mnema/issues/180)) ([a0ce9c6](https://github.com/felipesauer/mnema/commit/a0ce9c6f9f51dfcc8536ff10c3ceba18e57a7fd2))
 * **search:** gate skill_suggest behind the knowledge feature ([#185](https://github.com/felipesauer/mnema/issues/185)) ([b6de7ec](https://github.com/felipesauer/mnema/commit/b6de7ecd57aa5c87a54e64f8877ba064a1be3c5c))
 
+
+### Documentation
+
+* **config:** a published reference for every mnema.config.json key ([#182](https://github.com/felipesauer/mnema/issues/182)) ([25f2296](https://github.com/felipesauer/mnema/commit/25f2296ce3f0ed5c199e6e67a8d7dbe779e00137))
+* MCP tool risk vocabulary (docs/mcp-tools.md) ([2307986](https://github.com/felipesauer/mnema/commit/2307986a491d7933d7c8cbd7a68cb7d7a3f27610))
+* **readme:** document the active-copilot surface ([61d40ba](https://github.com/felipesauer/mnema/commit/61d40ba0d4cb7cfb1b3874ed4d7da5f4b3994065))
+* **readme:** show the foldered skill/memory layout (ADR-51) ([ddf33de](https://github.com/felipesauer/mnema/commit/ddf33de8557667a2a0cc0ab0ac12614625363325))
+
 ## [0.12.0-alpha.0](https://github.com/felipesauer/mnema/compare/v0.11.0-alpha.0...v0.12.0-alpha.0) (2026-07-08)
 
 
