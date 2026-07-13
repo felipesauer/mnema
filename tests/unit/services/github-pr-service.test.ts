@@ -182,3 +182,103 @@ describe('GitHubPrService', () => {
     expect(status.reason).toContain('parse');
   });
 });
+
+/**
+ * A runner that routes by subcommand: `pr view` → the view payload, and each
+ * `gh api .../commits/<sha>/{check-runs,status}` → its own fixture. Anything
+ * unmatched returns a non-zero exit (so an unexpected call reads as unknown).
+ */
+function dispatchRunner(fixtures: {
+  view: unknown;
+  checkRuns?: unknown;
+  combinedStatus?: unknown;
+}): CommandRunner {
+  return (_command, args) => {
+    const joined = args.join(' ');
+    if (args[0] === 'pr' && args[1] === 'view') {
+      return { status: 0, stdout: JSON.stringify(fixtures.view) };
+    }
+    if (args[0] === 'api' && joined.includes('/check-runs')) {
+      return fixtures.checkRuns === undefined
+        ? { status: 1, stdout: '' }
+        : { status: 0, stdout: JSON.stringify(fixtures.checkRuns) };
+    }
+    if (args[0] === 'api' && joined.endsWith('/status')) {
+      return fixtures.combinedStatus === undefined
+        ? { status: 1, stdout: '' }
+        : { status: 0, stdout: JSON.stringify(fixtures.combinedStatus) };
+    }
+    return { status: 1, stdout: '' };
+  };
+}
+
+const mergedView = {
+  state: 'MERGED',
+  mergedAt: '2026-06-30T00:00:00Z',
+  statusCheckRollup: [{ state: 'SUCCESS' }], // GREEN head
+  mergeCommit: { oid: 'deadbeefcafe' },
+  baseRefName: 'main',
+};
+
+describe('GitHubPrService base-branch CI (merge commit)', () => {
+  it('surfaces a RED base even when the PR head was green', () => {
+    const status = new GitHubPrService(
+      dispatchRunner({
+        view: mergedView,
+        checkRuns: { check_runs: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] },
+        combinedStatus: { state: 'success', statuses: [] },
+      }),
+    ).status(URL);
+    expect(status.merged).toBe(true);
+    expect(status.ci).toBe('passing'); // head still green (compat)
+    expect(status.ciBase).toBe('failing'); // but the base broke post-merge
+    expect(status.mergeCommit).toBe('deadbeefcafe');
+  });
+
+  it('reports a green base when the merge commit passed', () => {
+    const status = new GitHubPrService(
+      dispatchRunner({
+        view: mergedView,
+        checkRuns: { check_runs: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }] },
+        combinedStatus: { state: 'success', statuses: [] },
+      }),
+    ).status(URL);
+    expect(status.ciBase).toBe('passing');
+  });
+
+  it('treats an in-progress base run as pending', () => {
+    const status = new GitHubPrService(
+      dispatchRunner({
+        view: mergedView,
+        checkRuns: { check_runs: [{ status: 'IN_PROGRESS' }] },
+        combinedStatus: { state: 'pending', statuses: [] },
+      }),
+    ).status(URL);
+    expect(status.ciBase).toBe('pending');
+  });
+
+  it('ciBase is unknown (never a false green) when the gh api lookups fail', () => {
+    // dispatchRunner returns non-zero for the api calls (no fixtures given).
+    const status = new GitHubPrService(dispatchRunner({ view: mergedView })).status(URL);
+    expect(status.ci).toBe('passing'); // head resolved
+    expect(status.ciBase).toBe('unknown'); // base lookups failed → unknown
+  });
+
+  it('does not query the base for an OPEN (unmerged) PR', () => {
+    let apiCalled = false;
+    const runner: CommandRunner = (_c, args) => {
+      if (args[0] === 'api') apiCalled = true;
+      if (args[0] === 'pr') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({ state: 'OPEN', mergedAt: null, statusCheckRollup: [] }),
+        };
+      }
+      return { status: 1, stdout: '' };
+    };
+    const status = new GitHubPrService(runner).status(URL);
+    expect(status.merged).toBe(false);
+    expect(status.ciBase).toBe('unknown');
+    expect(apiCalled).toBe(false);
+  });
+});

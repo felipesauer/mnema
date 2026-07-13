@@ -28,11 +28,14 @@ export class PrStatusTool {
       'pr_status',
       {
         description:
-          "Resolve a pull request's state (open/merged/closed) and CI status (passing/" +
-          'failing/pending/none) from its URL, via the GitHub CLI. Use it before approving a ' +
-          'task to confirm the PR really merged with green CI, instead of taking it on faith. ' +
-          'Read-only; requires no active run. Returns { available, ref, state, merged, ci }; ' +
-          'when GitHub cannot be reached, `available` is false and `reason` explains why.',
+          "Resolve a pull request's state (open/merged/closed) and CI status from its URL, " +
+          'via the GitHub CLI. Use it before approving a task to check whether the PR merged ' +
+          'and its code passed. Returns { available, ref, state, merged, ci, ciBase, ' +
+          'mergeCommit }: `ci` is the PR HEAD (branch tip) rollup; `ciBase` is the merge ' +
+          "commit's CI on the base branch — the signal that matters once merged (a green " +
+          'branch can still break the base), resolved only when merged and available. ' +
+          'Read-only; requires no active run. When GitHub cannot be reached, `available` is ' +
+          'false and `reason` explains why (CI fields are then `unknown`, never a false green).',
         inputSchema: {
           pr_url: z.string().describe('A github.com pull-request URL'),
         },

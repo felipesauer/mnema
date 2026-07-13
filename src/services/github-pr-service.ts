@@ -14,7 +14,22 @@ export interface PrStatus {
   readonly ref: string | null;
   readonly state: PrState;
   readonly merged: boolean;
+  /**
+   * CI on the PR's HEAD commit (the branch tip) — the rollup GitHub attaches
+   * to the pull request. For an OPEN PR this is the signal that matters. For a
+   * MERGED PR it reflects the branch at merge time, NOT the merge commit's run
+   * on the base — for that, use {@link ciBase}.
+   */
   readonly ci: CiStatus;
+  /**
+   * CI on the MERGE COMMIT on the base branch, resolved only when the PR is
+   * merged and its merge commit is known. This is the signal an approve gate
+   * actually wants: did the code, once on the base, pass? `unknown` when not
+   * merged, no merge commit, or the follow-up lookup failed.
+   */
+  readonly ciBase: CiStatus;
+  /** The merge commit SHA on the base branch, when merged and known. */
+  readonly mergeCommit?: string;
   /** Human-readable reason when `available` is false. */
   readonly reason?: string;
 }
@@ -58,6 +73,20 @@ interface GhPrView {
   readonly state?: string;
   readonly mergedAt?: string | null;
   readonly statusCheckRollup?: RollupEntry[] | null;
+  /** The merge commit on the base branch, present once merged. */
+  readonly mergeCommit?: { readonly oid?: string } | null;
+  readonly baseRefName?: string | null;
+}
+
+/** One `gh api .../commits/<sha>/check-runs` entry (Checks API, REST shape). */
+interface RestCheckRun {
+  readonly status?: string;
+  readonly conclusion?: string | null;
+}
+/** `gh api .../commits/<sha>/status` combined-status payload (legacy statuses). */
+interface RestCombinedStatus {
+  readonly state?: string;
+  readonly statuses?: Array<{ readonly state?: string }>;
 }
 
 /**
@@ -89,13 +118,20 @@ export class GitHubPrService {
         state: 'unknown',
         merged: false,
         ci: 'unknown',
+        ciBase: 'unknown',
         reason: 'not a recognised github.com pull-request URL',
       };
     }
 
     let result: CommandResult;
     try {
-      result = this.run('gh', ['pr', 'view', prUrl, '--json', 'state,mergedAt,statusCheckRollup']);
+      result = this.run('gh', [
+        'pr',
+        'view',
+        prUrl,
+        '--json',
+        'state,mergedAt,statusCheckRollup,mergeCommit,baseRefName',
+      ]);
     } catch (error) {
       return unavailable(
         ref.label,
@@ -122,18 +158,121 @@ export class GitHubPrService {
     }
 
     const merged = typeof view.mergedAt === 'string' && view.mergedAt.length > 0;
+    const mergeOid =
+      typeof view.mergeCommit?.oid === 'string' && view.mergeCommit.oid.length > 0
+        ? view.mergeCommit.oid
+        : undefined;
+    // Base-branch CI: only meaningful once merged and the merge commit is
+    // known. The follow-up gh api calls degrade to 'unknown' on any failure,
+    // exactly like the pr view path — a gate reading ciBase then treats
+    // 'unknown' as "can't prove a problem", never a false block.
+    const ciBase =
+      merged && mergeOid !== undefined
+        ? this.mergeCommitCi(ref.owner, ref.repo, mergeOid)
+        : 'unknown';
     return {
       available: true,
       ref: ref.label,
       state: normaliseState(view.state, merged),
       merged,
       ci: normaliseCi(view.statusCheckRollup),
+      ciBase,
+      ...(mergeOid !== undefined ? { mergeCommit: mergeOid } : {}),
     };
+  }
+
+  /**
+   * Resolves the CI status of the merge commit on the base branch, combining
+   * the Checks API (`/commits/<sha>/check-runs`, GitHub Actions et al.) and the
+   * legacy combined status (`/commits/<sha>/status`). Any failure — gh error,
+   * non-zero exit, unparseable JSON — yields 'unknown', so a caller never reads
+   * a lookup failure as a red or green base.
+   */
+  private mergeCommitCi(owner: string, repo: string, sha: string): CiStatus {
+    const base = `repos/${owner}/${repo}/commits/${sha}`;
+    const checkRuns = this.ghApiCheckRuns(`${base}/check-runs`);
+    const combined = this.ghApiCombinedStatus(`${base}/status`);
+    // No signal from either endpoint → 'none' only when BOTH resolved and were
+    // empty; if either failed to resolve, prefer 'unknown' (do not claim clean).
+    if (checkRuns === 'unknown' && combined === 'unknown') return 'unknown';
+    const states: CiStatus[] = [checkRuns, combined].filter((c) => c !== 'unknown');
+    if (states.some((s) => s === 'failing')) return 'failing';
+    if (states.some((s) => s === 'pending')) return 'pending';
+    if (states.some((s) => s === 'passing')) return 'passing';
+    return 'none';
+  }
+
+  /** Runs `gh api <path>` and returns parsed JSON, or null on any failure. */
+  private ghApiJson(apiPath: string): unknown {
+    let result: CommandResult;
+    try {
+      result = this.run('gh', ['api', apiPath]);
+    } catch {
+      return null;
+    }
+    if (result.error !== undefined || result.status !== 0) return null;
+    try {
+      return JSON.parse(result.stdout);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Checks-API rollup for a commit → CiStatus, 'unknown' when unresolved. */
+  private ghApiCheckRuns(apiPath: string): CiStatus {
+    const json = this.ghApiJson(apiPath);
+    if (json === null || typeof json !== 'object') return 'unknown';
+    const runs = (json as { check_runs?: RestCheckRun[] }).check_runs;
+    if (!Array.isArray(runs)) return 'unknown';
+    if (runs.length === 0) return 'none';
+    const states = runs.map((r) =>
+      (r.status ?? '').toUpperCase() === 'COMPLETED'
+        ? (r.conclusion ?? '').toUpperCase()
+        : 'IN_PROGRESS',
+    );
+    if (states.some((s) => s === 'FAILURE' || s === 'TIMED_OUT' || s === 'CANCELLED')) {
+      return 'failing';
+    }
+    if (states.some((s) => s === 'IN_PROGRESS' || s === 'QUEUED' || s === 'PENDING')) {
+      return 'pending';
+    }
+    if (states.every((s) => s === 'SUCCESS' || s === 'NEUTRAL' || s === 'SKIPPED')) {
+      return 'passing';
+    }
+    return 'unknown';
+  }
+
+  /** Legacy combined-status for a commit → CiStatus, 'unknown' when unresolved. */
+  private ghApiCombinedStatus(apiPath: string): CiStatus {
+    const json = this.ghApiJson(apiPath);
+    if (json === null || typeof json !== 'object') return 'unknown';
+    const combined = json as RestCombinedStatus;
+    // The API returns state 'pending' when there are NO statuses at all, which
+    // would masquerade as an in-flight run; treat an empty statuses list as
+    // 'none' and only trust the top-level state when there is ≥1 status.
+    if (!Array.isArray(combined.statuses) || combined.statuses.length === 0) return 'none';
+    switch ((combined.state ?? '').toLowerCase()) {
+      case 'failure':
+      case 'error':
+        return 'failing';
+      case 'pending':
+        return 'pending';
+      case 'success':
+        return 'passing';
+      default:
+        return 'unknown';
+    }
   }
 }
 
-/** Parse `https://github.com/<owner>/<repo>/pull/<n>` → label `owner/repo#n`. */
-function parsePrUrl(url: string): { label: string } | null {
+/**
+ * Parse `https://github.com/<owner>/<repo>/pull/<n>` into its parts plus a
+ * display label `owner/repo#n`. The parts feed the `gh api repos/<o>/<r>/…`
+ * follow-up that resolves the merge commit's CI on the base branch.
+ */
+function parsePrUrl(
+  url: string,
+): { label: string; owner: string; repo: string; number: string } | null {
   // Anchor the host so `mygithub.com` / `notgithub.com` don't slip
   // through: require the scheme + exactly `github.com` (or a `www.`)
   // as the host, not just a substring match.
@@ -141,7 +280,8 @@ function parsePrUrl(url: string): { label: string } | null {
     /^https?:\/\/(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[/?#]|$)/,
   );
   if (match === null) return null;
-  return { label: `${match[1]}/${match[2]}#${match[3]}` };
+  const [, owner, repo, number] = match as unknown as [string, string, string, string];
+  return { label: `${owner}/${repo}#${number}`, owner, repo, number };
 }
 
 function normaliseState(raw: string | undefined, merged: boolean): PrState {
@@ -188,5 +328,13 @@ function rollupEntryState(entry: RollupEntry): string {
 }
 
 function unavailable(ref: string, reason: string): PrStatus {
-  return { available: false, ref, state: 'unknown', merged: false, ci: 'unknown', reason };
+  return {
+    available: false,
+    ref,
+    state: 'unknown',
+    merged: false,
+    ci: 'unknown',
+    ciBase: 'unknown',
+    reason,
+  };
 }

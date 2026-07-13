@@ -360,6 +360,18 @@ function prProblem(status: PrStatus): string | null {
   if (!status.merged) {
     return `${ref} is not merged (state: ${status.state}) — the task is moving to a terminal state before its PR landed.`;
   }
+  // Once merged, the signal that matters is the merge commit's CI ON THE BASE,
+  // not the branch tip at merge time (a green branch can still break the base).
+  // Prefer ciBase when it resolved; fall back to head `ci` when it did not
+  // (e.g. gh api unavailable). A base run that is merely pending or absent
+  // right after the merge is NOT a failure — only a genuinely failing base
+  // blocks; pending/none/unknown fall through (no problem to prove).
+  if (status.ciBase !== 'unknown') {
+    if (status.ciBase === 'failing') {
+      return `${ref} merged but its CI on the base branch (merge commit) is failing.`;
+    }
+    return null;
+  }
   if (status.ci === 'failing') {
     return `${ref} merged but its CI is failing.`;
   }
