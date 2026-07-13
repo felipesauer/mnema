@@ -90,6 +90,40 @@ describe('inspectAuditDiskDelta', () => {
     expect(check?.detail).toContain('mnema audit reconcile');
   });
 
+  it('treats a one-ahead delta with a clean tail as a WARNING, not an error (benign crash window)', () => {
+    writeEvents(3);
+    // The commit-before-append crash window: mirror one ahead of a clean disk.
+    adapter
+      .getDatabase()
+      .prepare('UPDATE audit_state SET event_count = event_count + 1 WHERE id = 1')
+      .run();
+
+    const check = inspectAuditDiskDelta(adapter, auditDir, null)[0];
+    // ok:false (there IS a divergence to report) but only a warning — doctor
+    // must not go red for a state the next write self-heals.
+    expect(check?.ok).toBe(false);
+    expect(check?.severity).toBe('warning');
+    expect(check?.detail).toContain('one ahead');
+    expect(check?.detail).toContain('crash window');
+    // Must NOT use the scary truncation/rewind wording of the hard-error path.
+    expect(check?.detail).not.toContain('truncation/rewind');
+  });
+
+  it('still flags an ERROR for a one-ahead delta when a malformed line is present (masked deletion shape)', () => {
+    writeEvents(3);
+    // A malformed line means the clean-crash-window assumption does not hold —
+    // the one-ahead could be masking an interior deletion, so stay a hard error.
+    appendFileSync(path.join(auditDir, 'current.jsonl'), '{ not json\n', 'utf-8');
+    adapter
+      .getDatabase()
+      .prepare('UPDATE audit_state SET event_count = event_count + 1 WHERE id = 1')
+      .run();
+
+    const check = inspectAuditDiskDelta(adapter, auditDir, null)[0];
+    expect(check?.ok).toBe(false);
+    expect(check?.severity).toBe('error');
+  });
+
   it('names the commit that shrank the on-disk chain when the audit files are git-tracked', () => {
     const git = (...args: string[]): void => {
       execFileSync('git', args, { cwd: tempRoot, stdio: 'pipe' });
@@ -98,17 +132,19 @@ describe('inspectAuditDiskDelta', () => {
     git('config', 'user.email', 't@t');
     git('config', 'user.name', 't');
 
-    // Commit a full 3-event chain.
-    writeEvents(3);
+    // Commit a full 5-event chain.
+    writeEvents(5);
     const currentFile = path.join(auditDir, 'current.jsonl');
     const fullChain = readFileSync(currentFile, 'utf-8');
     git('add', '-A');
     git('commit', '-q', '-m', 'full chain');
 
-    // A rewind commit drops the tail line from the tracked file (the shape a
-    // squash-merge of a stale branch snapshot leaves behind).
+    // A rewind commit drops the last TWO lines from the tracked file (the shape
+    // a squash-merge of a stale branch snapshot leaves behind). Dropping two —
+    // not one — keeps this in the hard-error/culprit path rather than the
+    // benign one-ahead crash window (delta 1, clean tail), which is a warning.
     const lines = fullChain.split('\n').filter((l) => l.length > 0);
-    writeFileSync(currentFile, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
+    writeFileSync(currentFile, `${lines.slice(0, 3).join('\n')}\n`, 'utf-8');
     git('add', '-A');
     git('commit', '-q', '-m', 'rewind: drop the tail');
     const rewindSha = execFileSync('git', ['rev-parse', 'HEAD'], {
@@ -116,15 +152,16 @@ describe('inspectAuditDiskDelta', () => {
       encoding: 'utf-8',
     }).trim();
 
-    // The mirror still counts the original 3 (its counter is gitignored and
-    // never retreated); disk now holds 2.
-    // (event_count is already 3 from writeEvents; do not touch it.)
+    // The mirror still counts the original 5 (its counter is gitignored and
+    // never retreated); disk now holds 3.
+    // (event_count is already 5 from writeEvents; do not touch it.)
     const check = inspectAuditDiskDelta(adapter, auditDir, tempRoot)[0];
     expect(check?.ok).toBe(false);
-    expect(check?.detail).toContain('event_count 3 exceeds 2');
+    expect(check?.severity).toBe('error');
+    expect(check?.detail).toContain('event_count 5 exceeds 3');
     expect(check?.detail).toContain('last shrank in commit');
     expect(check?.detail).toContain(rewindSha.slice(0, 12));
-    expect(check?.detail).toContain('3 → 2 lines');
+    expect(check?.detail).toContain('5 → 3 lines');
   });
 
   it('handles a malformed line on disk without counting it as a chained event', () => {
