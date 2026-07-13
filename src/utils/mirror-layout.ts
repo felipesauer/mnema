@@ -28,15 +28,19 @@ export const INDEX_FILENAMES: ReadonlySet<string> = new Set(['INDEX.md', 'SKILL.
 
 /**
  * Filenames the ORPHAN scan/prune must never classify as row mirrors: the
- * generated indexes plus the `adopt memory` scaffolding (context.md), which is
- * human-authored from day one and has no row. This is deliberately a SEPARATE
- * set from {@link INDEX_FILENAMES}: the memory consolidator still lists
- * context.md in the human INDEX (it is real content), while the prune treating
- * it as an orphan deleted real user writing along the documented remedy path.
+ * generated indexes plus scaffolding that is human-authored from day one and
+ * has no row — `context.md` (from `adopt memory`) and `README.md` (planted by
+ * the roadmap/knowledge scaffolders). This is deliberately a SEPARATE set from
+ * {@link INDEX_FILENAMES}: the memory consolidator still lists context.md in
+ * the human INDEX (it is real content), while the prune treating any of these
+ * as an orphan deleted real, tool-scaffolded files along the documented remedy
+ * path (a `mnema upgrade`/`doctor --prune-orphans` would remove the very
+ * README the tool itself wrote).
  */
 export const PRUNE_PROTECTED_FILENAMES: ReadonlySet<string> = new Set([
   ...INDEX_FILENAMES,
   'context.md',
+  'README.md',
 ]);
 
 /** Skill origin subfolders (MNEMA-ADR-51). */
