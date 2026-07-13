@@ -145,6 +145,7 @@ export class DoctorCommand {
       let prunedMemories: string[] = [];
       let prunedObservations: string[] = [];
       let prunedTasks: string[] = [];
+      let quarantined: QuarantinedMirror[] = [];
 
       if (pruneOrphans) {
         const adapter = container.adapter;
@@ -209,6 +210,26 @@ export class DoctorCommand {
           taskKeys,
           fsMod,
         );
+
+        // Enforce the one-mirror-per-task invariant by QUARANTINE (a safe move,
+        // not a delete). Runs AFTER the rebuild so the canonical DB-state file
+        // exists; the DB decides which copy is canonical, so no frontmatter
+        // tiebreak is trusted. A stale copy in the wrong state dir — the shape a
+        // squash-merge strands and that a plain sync would resolve by directory
+        // order — is moved to backlog/.quarantine/ for the human to inspect.
+        const stateByKey = new Map(
+          (
+            adapter
+              .getDatabase()
+              .prepare('SELECT key, state FROM tasks WHERE deleted_at IS NULL')
+              .all() as Array<{ key: string; state: string }>
+          ).map((r) => [r.key, r.state] as const),
+        );
+        quarantined = quarantineDuplicateTaskMirrors(
+          pathMod.join(projectRoot, config.paths.backlog),
+          stateByKey,
+          fsMod,
+        );
       }
 
       if (
@@ -222,7 +243,8 @@ export class DoctorCommand {
         prunedTasks.length === 0 &&
         prunedSkills.length === 0 &&
         prunedMemories.length === 0 &&
-        prunedObservations.length === 0
+        prunedObservations.length === 0 &&
+        quarantined.length === 0
       ) {
         process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
         return;
@@ -269,6 +291,13 @@ export class DoctorCommand {
       }
       if (prunedTasks.length > 0) {
         process.stdout.write(`✗ tasks pruned: ${prunedTasks.length} — ${prunedTasks.join(', ')}\n`);
+      }
+      if (quarantined.length > 0) {
+        process.stdout.write(
+          `⚠ duplicate task mirrors quarantined: ${quarantined.length} — ` +
+            `${quarantined.map((q) => `${q.key} (${q.fromState}/ → ${q.to})`).join(', ')}\n` +
+            `  the canonical DB-state copy was kept; inspect ${QUARANTINE_DIRNAME}/ and delete once confident\n`,
+        );
       }
       exit = ExitCode.Success;
     });
@@ -896,6 +925,7 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
   const orphans: string[] = [];
   for (const stateDir of readdirSync(backlogDir, { withFileTypes: true })) {
     if (!stateDir.isDirectory()) continue;
+    if (stateDir.name.startsWith('.')) continue; // skip .quarantine and other dotdirs
     for (const entry of readdirSync(path.join(backlogDir, stateDir.name), {
       withFileTypes: true,
     })) {
@@ -941,6 +971,7 @@ function listDuplicateTaskMirrors(
   const dirsByKey = new Map<string, string[]>();
   for (const stateDir of readdirSync(backlogDir, { withFileTypes: true })) {
     if (!stateDir.isDirectory()) continue;
+    if (stateDir.name.startsWith('.')) continue; // skip .quarantine and other dotdirs
     for (const entry of readdirSync(path.join(backlogDir, stateDir.name), {
       withFileTypes: true,
     })) {
@@ -1139,6 +1170,7 @@ export function pruneNestedOrphanMirrors(
   const removed: string[] = [];
   for (const stateDir of fs.readdirSync(backlogDir, { withFileTypes: true })) {
     if (!stateDir.isDirectory()) continue;
+    if (stateDir.name.startsWith('.')) continue; // skip .quarantine and other dotdirs
     const stateRoot = path.join(backlogDir, stateDir.name);
     for (const entry of fs.readdirSync(stateRoot, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
@@ -1153,6 +1185,77 @@ export function pruneNestedOrphanMirrors(
     }
   }
   return removed.sort();
+}
+
+/** The directory (under the backlog) where quarantined duplicate mirrors are moved. */
+export const QUARANTINE_DIRNAME = '.quarantine';
+
+/** One non-canonical mirror copy moved out of the way by the quarantine sweep. */
+export interface QuarantinedMirror {
+  readonly key: string;
+  /** The state dir the stale copy was in. */
+  readonly fromState: string;
+  /** Where it was moved, relative to the backlog dir. */
+  readonly to: string;
+}
+
+/**
+ * Enforces the invariant "one mirror per task, at `backlog/<DB-state>/<KEY>.md`"
+ * SAFELY: for each live task whose key is mirrored in a directory other than
+ * its DB state, MOVE that non-canonical copy to
+ * `backlog/.quarantine/<state>/<KEY>.md` rather than deleting it. The copy at
+ * the canonical DB-state path (if present) is left untouched — the DB, not the
+ * mirror's frontmatter, decides which state is current, so there is no
+ * updated_at tiebreak to get wrong. A duplicate whose ONLY copies are all
+ * non-canonical (the canonical path is empty) still has every copy quarantined;
+ * the next `doctor --rebuild-mirrors` then writes the canonical file fresh from
+ * the row. Idempotent: a repo already satisfying the invariant moves nothing.
+ *
+ * Quarantine (not delete) is deliberate: the moved file is recoverable and the
+ * human can inspect it. A hard delete is offered only behind an explicit flag
+ * by the caller.
+ *
+ * @param backlogDir - Backlog root
+ * @param stateByKey - DB state per live task key (source of truth)
+ * @param fs - Injectable fs (tests pass the real module or a stub)
+ * @returns One entry per moved copy, alphabetical by key then state
+ */
+export function quarantineDuplicateTaskMirrors(
+  backlogDir: string,
+  stateByKey: ReadonlyMap<string, string>,
+  fs: typeof import('node:fs'),
+): QuarantinedMirror[] {
+  if (!fs.existsSync(backlogDir)) return [];
+  const moved: QuarantinedMirror[] = [];
+  for (const stateDir of fs.readdirSync(backlogDir, { withFileTypes: true })) {
+    if (!stateDir.isDirectory()) continue;
+    if (stateDir.name === QUARANTINE_DIRNAME) continue; // never re-quarantine
+    const canonicalStateDir = stateDir.name;
+    const stateRoot = path.join(backlogDir, canonicalStateDir);
+    for (const entry of fs.readdirSync(stateRoot, { withFileTypes: true })) {
+      if (!entry.isFile() || entry.name.startsWith('.') || !entry.name.endsWith('.md')) continue;
+      if (entry.name === 'INDEX.md') continue;
+      const key = entry.name.slice(0, -3);
+      const dbState = stateByKey.get(key);
+      // No row → orphan (handled by the orphan prune, not here). In the right
+      // dir → canonical, leave it. Otherwise it is a stale non-canonical copy.
+      if (dbState === undefined || dbState === canonicalStateDir) continue;
+
+      const destDir = path.join(backlogDir, QUARANTINE_DIRNAME, canonicalStateDir);
+      fs.mkdirSync(destDir, { recursive: true });
+      // Disambiguate if a prior quarantine already holds this key from the same
+      // state (repeated sweeps of regenerated duplicates): suffix with a counter.
+      let dest = path.join(destDir, entry.name);
+      let n = 1;
+      while (fs.existsSync(dest)) {
+        dest = path.join(destDir, `${key}.${n}.md`);
+        n += 1;
+      }
+      fs.renameSync(path.join(stateRoot, entry.name), dest);
+      moved.push({ key, fromState: canonicalStateDir, to: path.relative(backlogDir, dest) });
+    }
+  }
+  return moved.sort((a, b) => a.key.localeCompare(b.key) || a.fromState.localeCompare(b.fromState));
 }
 
 // Re-exported so existing `doctor-command` importers (tests, other
