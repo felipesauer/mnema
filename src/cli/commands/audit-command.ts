@@ -855,6 +855,19 @@ export function planAuditRepair(input: {
   // Decide the recommendation from the strongest signal.
   const truncation = findings.some((f) => f.text.includes('ABSENT from disk'));
   if (truncation) {
+    // accept-truncation refuses a broken chain unconditionally (no
+    // legacy-break escape hatch, unlike reconcile), so recommending it while
+    // the chain is broken would hand the operator a command that immediately
+    // refuses. When both are present, the break must be resolved first — even
+    // a content-valid concurrent-writer seam blocks accept-truncation.
+    if (chain.chainBroken) {
+      return {
+        findings,
+        recommendation:
+          'BOTH a chain break AND a truncation below attested history are present. `accept-truncation` refuses any broken chain, so resolve the break FIRST (start with `mnema audit diagnose`); once the chain is internally consistent, re-run `mnema audit repair` for the truncation step.',
+        commands: ['mnema audit diagnose'],
+      };
+    }
     if (truncationBelowAtt !== null) {
       return {
         findings,

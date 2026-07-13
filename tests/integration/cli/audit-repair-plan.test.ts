@@ -1,11 +1,20 @@
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { planAuditRepair } from '@/cli/commands/audit-command.js';
 import { AuditService } from '@/services/audit-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
+import type { GitCommandRunner } from '@/services/git-commit-service.js';
+import { hashEvent } from '@/storage/audit/audit-hash.js';
+import { type AuditEvent, AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -57,6 +66,45 @@ describe('planAuditRepair', () => {
     }
     return out;
   };
+
+  // Two independently-hashed sub-chains written back to back make ONE
+  // content-VALID prev_hash seam (each line self-verifies; only the linkage
+  // across the join is discontinuous) — the concurrent-writer shape.
+  const buildChain = (
+    n: number,
+    startAt: number,
+    startPrev: string | null = null,
+  ): AuditEvent[] => {
+    const events: AuditEvent[] = [];
+    let prevHash = startPrev;
+    for (let i = 0; i < n; i += 1) {
+      const at = new Date(Date.UTC(2026, 5, 1, 0, 0, startAt + i)).toISOString();
+      const unsealed: AuditEvent = {
+        v: 2,
+        at,
+        kind: 'task_created',
+        actor: 'dev',
+        data: { key: `T-${startAt + i}` },
+        prev_hash: prevHash,
+      };
+      const hash = hashEvent(unsealed);
+      events.push({ ...unsealed, hash });
+      prevHash = hash;
+    }
+    return events;
+  };
+  const writeLines = (events: readonly AuditEvent[]): void => {
+    writeFileSync(
+      path.join(auditDir, 'current.jsonl'),
+      `${events.map((e) => JSON.stringify(e)).join('\n')}\n`,
+      'utf-8',
+    );
+  };
+  // Satisfies matchesCommittedHead === true (git work tree, no local diff).
+  const gitMatch: GitCommandRunner = (args) =>
+    args[0] === 'rev-parse'
+      ? { status: 0, stdout: 'true\n', stderr: '' }
+      : { status: 0, stdout: '', stderr: '' };
 
   const plan = (over: Partial<Parameters<typeof planAuditRepair>[0]> = {}) =>
     planAuditRepair({
@@ -124,6 +172,34 @@ describe('planAuditRepair', () => {
     });
     expect(p.findings.some((f) => f.text.includes('ABSENT from disk'))).toBe(true);
     expect(p.commands).toContain('mnema audit accept-truncation --require-committed --force');
+  });
+
+  it('never recommends accept-truncation while the chain is ALSO broken (it would refuse); routes to diagnose', () => {
+    // The reachable combination the planner must not mishandle: a CONTENT-VALID
+    // concurrent-writer seam (which alone would be a legacy-breaks reconcile
+    // candidate) co-occurring with a genuine truncation (a signed checkpoint
+    // whose covered head is absent from disk). accept-truncation refuses ANY
+    // broken chain unconditionally — no legacy-break escape hatch, unlike
+    // reconcile — so recommending it here would hand the operator a command
+    // that immediately refuses. The plan must route to diagnose first instead.
+    const seamed = [...buildChain(5, 0), ...buildChain(4, 100)]; // one content-valid seam
+    writeLines(seamed);
+
+    const p = plan({
+      mirrorCount: 9,
+      gitCwd: tempRoot,
+      gitRunner: gitMatch, // matchesCommittedHead === true → the break is a legacy seam
+      // A signed head that is not any on-disk hash → genuine truncation/fork.
+      signature: { eventCountAt: 20, coveredHeadHash: 'deadbeef'.repeat(8) },
+    });
+
+    // The truncation IS recognised in the findings…
+    expect(p.findings.some((f) => f.text.includes('ABSENT from disk'))).toBe(true);
+    // …but the broken chain means accept-truncation would refuse, so it is NOT
+    // recommended; the plan sends the operator to resolve the break first.
+    expect(p.commands).not.toContain('mnema audit accept-truncation --require-committed --force');
+    expect(p.commands).toEqual(['mnema audit diagnose']);
+    expect(p.recommendation).toContain('resolve the break FIRST');
   });
 
   it('tells the user to remove an overreaching .att before accepting a truncation', () => {
