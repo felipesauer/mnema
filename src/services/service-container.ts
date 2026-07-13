@@ -695,6 +695,8 @@ export function createServiceContainer(
     skillQualityService,
     observationService,
     tasks,
+    transitions,
+    stateMachine.getWorkflow(),
   );
   trace.mark('all services wired');
   trace.end();
