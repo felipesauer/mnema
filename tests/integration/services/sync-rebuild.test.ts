@@ -119,11 +119,83 @@ mnema:
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.tasksUpserted).toBe(1);
+    expect(summary.conflicts).toEqual([]);
 
     const reloaded = container.task.findByKey('TEST-1');
     expect(reloaded.ok).toBe(true);
     if (!reloaded.ok) return;
     expect(reloaded.value.state).toBe('READY');
+
+    // Realigning an already-cached row's state must not be invisible: a
+    // `sync_realign` event records the change (the field incident silently
+    // regressed DONE tasks with no audit trace).
+    const realigns = container.auditQuery.run({ kind: 'sync_realign' });
+    expect(realigns).toHaveLength(1);
+    expect(realigns[0]?.data).toMatchObject({ key: 'TEST-1', from: 'DRAFT', to: 'READY' });
+  });
+
+  it('refuses to realign a task mirrored in more than one state dir (no silent regression)', () => {
+    // A task that is genuinely DONE in the cache…
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Delivered work',
+      description: 'a real deliverable',
+      acceptanceCriteria: ['it works'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    const move = (action: string, payload: Record<string, unknown>) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok).toBe(true);
+    };
+    move('submit', {});
+    move('start', { assignee_id: 'daniel' });
+    move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
+    move('approve', { approval_note: 'lgtm' });
+
+    const doneReload = container.task.findByKey(key);
+    expect(doneReload.ok).toBe(true);
+    if (!doneReload.ok) return;
+    expect(doneReload.value.state).toBe('DONE');
+
+    // …but a squash-merge left a stale mirror of it in READY/ too (the
+    // canonical DONE/ mirror stays in place). Two copies of one key now
+    // exist across state dirs.
+    const doneFile = path.join(root, '.mnema/backlog', 'DONE', `${key}.md`);
+    const readyDir = path.join(root, '.mnema/backlog', 'READY');
+    mkdirSync(readyDir, { recursive: true });
+    const doneMd = readFileSync(doneFile, 'utf-8');
+    writeFileSync(path.join(readyDir, `${key}.md`), doneMd.replace('DONE', 'READY'), 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+
+    // The row is left exactly as it was — never regressed to READY on a guess.
+    const afterReload = container.task.findByKey(key);
+    expect(afterReload.ok).toBe(true);
+    if (!afterReload.ok) return;
+    expect(afterReload.value.state).toBe('DONE');
+
+    // The conflict is reported with both offending directories.
+    expect(summary.conflicts).toHaveLength(1);
+    expect(summary.conflicts[0]?.key).toBe(key);
+    expect([...(summary.conflicts[0]?.states ?? [])].sort()).toEqual(['DONE', 'READY']);
+
+    // And no realign event was emitted for the ambiguous key.
+    const realigns = container.auditQuery.run({ kind: 'sync_realign' });
+    expect(realigns.some((e) => (e.data as { key?: string }).key === key)).toBe(false);
+  });
+
+  it('reports no conflicts for a healthy one-mirror-per-task repo (guard is a no-op)', () => {
+    container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
+    container.task.create({ projectKey: 'TEST', title: 'Task B', actor: 'daniel' });
+
+    const summary = container.syncRebuild.run('TEST');
+
+    expect(summary.conflicts).toEqual([]);
+    expect(summary.tasksScanned).toBe(2);
   });
 
   it('applies content drift (title/priority/acceptance_criteria) from the committed markdown', () => {
