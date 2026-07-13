@@ -264,6 +264,26 @@ describe('inspectMirrorDrift', () => {
     expect(obs?.detail).toContain('orphan files: ghost-id');
   });
 
+  it('does not flag a free-form roadmap file (e.g. 2026-Q2.md) as an orphan', () => {
+    // The scaffold README invites human roadmap files. Their stems are not
+    // key-shaped, so the orphan scan must ignore them entirely.
+    writeFileSync(path.join(roadmapDir, '2026-Q2.md'), '# Q2 themes\n', 'utf-8');
+    writeFileSync(path.join(roadmapDir, 'north-star.md'), '# vision\n', 'utf-8');
+    const decisions = drift().find((c) => c.name === 'decisions mirrored');
+    expect(decisions?.ok).toBe(true);
+    expect(decisions?.detail).not.toContain('2026-Q2');
+    expect(decisions?.detail).not.toContain('north-star');
+  });
+
+  it('still flags a key-shaped roadmap mirror with no row as an orphan', () => {
+    // A file that LOOKS like an entity key (<PROJECT>-EPIC-N) but has no
+    // matching row is a genuine orphan — the restriction must not hide it.
+    writeFileSync(path.join(roadmapDir, 'TEST-EPIC-9.md'), '# gone\n', 'utf-8');
+    const decisions = drift().find((c) => c.name === 'decisions mirrored');
+    expect(decisions?.ok).toBe(false);
+    expect(decisions?.detail).toContain('TEST-EPIC-9');
+  });
+
   // readdirSync used implicitly to confirm the suite compiles when the
   // import is touched — harmless.
   it('respects empty state without errors', () => {
