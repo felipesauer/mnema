@@ -299,6 +299,61 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
   };
 }
 
+/**
+ * Read-only assessment of what the on-disk chain physically holds and whether
+ * it carries a real tamper signal, from the SAME {@link walkAuditChain} the
+ * reconcile gates use. Exposed so the `accept-truncation` recovery command can
+ * apply IDENTICAL malformed-line / broken-chain refusals as `reconcile` (never
+ * a re-implementation that could drift from it) before re-baselining, and so it
+ * can read the disk tail hash/count and test whether a signed head is still an
+ * ancestor of the current chain.
+ */
+export interface ChainAssessment {
+  /** Chained (v>=2) line count on disk. */
+  readonly chainedLines: number;
+  /** `hash` of the last chained line, or `null` when the chain is empty. */
+  readonly lastHash: string | null;
+  /** `at` of the last chained line, or `null`. */
+  readonly lastAt: string | null;
+  /** Unparseable lines encountered (a possible deletion smokescreen). */
+  readonly malformedLines: number;
+  /**
+   * True when the per-line chain is internally inconsistent — a `prev_hash`
+   * break, a content-hash mismatch, or a version downgrade. Any real tamper
+   * signal that reconcile refuses lands here.
+   */
+  readonly chainBroken: boolean;
+  /** Human-readable detail of the last break, when `chainBroken`. */
+  readonly chainBreakDetail: string;
+  /** Whether at least one chained line was found. */
+  readonly chainEverStarted: boolean;
+  /** Every chained line's own hash, in order — the ancestry oracle. */
+  readonly chainedHashes: readonly string[];
+}
+
+/**
+ * Assesses the on-disk chain for the recovery commands. Pure and read-only —
+ * runs the shared {@link walkAuditChain} and projects out the fields the
+ * `accept-truncation` command needs.
+ *
+ * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @returns The assessment
+ */
+export function assessAuditChain(auditDir: string, secret: Buffer | null): ChainAssessment {
+  const walk = walkAuditChain(auditDir, secret);
+  return {
+    chainedLines: walk.chainedLines,
+    lastHash: walk.lastHash,
+    lastAt: walk.lastAt,
+    malformedLines: walk.malformedLines,
+    chainBroken: walk.chainBroken,
+    chainBreakDetail: walk.chainBreakDetail,
+    chainEverStarted: walk.chainEverStarted,
+    chainedHashes: walk.chainedHashes,
+  };
+}
+
 export function inspectAuditIntegrity(
   adapter: SqliteAdapter,
   auditDir: string,
@@ -586,6 +641,15 @@ export type ReconcileResult =
       readonly afterEventCount: number;
       readonly changed: boolean;
       readonly applied: boolean;
+      /**
+       * True when the correction dropped `event_count` below a recorded
+       * signed checkpoint AND the head signature was re-recorded at the new
+       * baseline (via the `reSign` callback). When false after such a drop,
+       * no signer was available and attestation must be re-run once one is —
+       * the CLI reports this so the operator is not misled into thinking
+       * attestation is already green.
+       */
+      readonly reSigned: boolean;
     }
   | { readonly ok: false; readonly reason: string };
 
@@ -614,14 +678,26 @@ export type ReconcileResult =
  * - any line failed to parse — same reasoning as above (a possible
  *   smokescreen for a deleted line)
  * - a signed checkpoint (layer-2 machine attestation) attests a higher
- *   `event_count` than the walk found — reconciling down would silently
- *   accept a truncation the attestation layer exists to catch
+ *   `event_count` than the walk found AND its covered head is ABSENT from the
+ *   on-disk chain — a genuine truncation/fork, which only the explicit
+ *   `audit accept-truncation` command may accept, never an automatic reconcile
+ *
+ * When a signed checkpoint attests a higher count but its covered head is
+ * still PRESENT on the disk chain (its `coveredHeadHash` appears in
+ * `walk.chainedHashes`), the shortfall is interior drift — lines lost between
+ * the signed head and the mirror's high-water mark — NOT a truncation of the
+ * signed head. This is exactly what reconcile exists to heal: it falls
+ * through and re-baselines, then re-records the head signature at the new
+ * (lower) count via `reSign` so the attestation layer's retreat check passes
+ * at the new baseline.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @param state - The mirror repository to correct
  * @param secret - Per-project HMAC secret for verifying v3 lines
- * @param signedEventCountAt - The highest `event_count` covered by a valid
- *   head signature, or `null` when none is recorded
+ * @param signedCheckpoint - The recorded head signature's `eventCountAt` and
+ *   `coveredHeadHash`, or `null` when none is recorded. The covered hash is
+ *   the ancestry oracle that separates interior drift (heal) from a genuine
+ *   truncation of the signed head (refuse).
  * @param apply - When true, persist the correction; when false, only compute
  *   the verdict (dry run)
  * @param acceptLegacyBreaks - Opt-in recovery for a chain corrupted by
@@ -638,8 +714,15 @@ export type ReconcileResult =
  * @param gitCwd - Working directory for the git-anchor check (required to
  *   accept legacy breaks; ignored otherwise)
  * @param gitRunner - Injectable git runner (tests avoid a real repo)
- * @returns The outcome — on success, the event count before/after and
- *   whether a correction was needed and applied
+ * @param reSign - Optional callback invoked AFTER an applied correction that
+ *   dropped `event_count` below the recorded `signedCheckpoint.eventCountAt`.
+ *   Given the new disk tail hash and count, it re-records the head signature
+ *   at that lower baseline and returns true iff it signed (false when no
+ *   signer is available). Without it — or when it returns false — audit_state
+ *   is still corrected, but the attestation layer stays red until a signer
+ *   re-attests. Never called on a dry run.
+ * @returns The outcome — on success, the event count before/after, whether a
+ *   correction was needed and applied, and whether the head was re-signed
  */
 /**
  * The git-independent half of the legacy-break check: no version downgrade or
@@ -731,11 +814,12 @@ export function reconcileAuditState(
   auditDir: string,
   state: AuditStateRepository,
   secret: Buffer | null,
-  signedEventCountAt: number | null,
+  signedCheckpoint: { eventCountAt: number; coveredHeadHash: string } | null,
   apply: boolean,
   acceptLegacyBreaks: string | null = null,
   gitCwd: string | null = null,
   gitRunner: GitCommandRunner = defaultGitRunner,
+  reSign?: (newHeadHash: string, newEventCount: number) => boolean,
 ): ReconcileResult {
   const walk = walkAuditChain(auditDir, secret);
 
@@ -773,17 +857,46 @@ export function reconcileAuditState(
   if (!walk.chainEverStarted) {
     return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to reconcile' };
   }
-  if (signedEventCountAt !== null && walk.chainedLines < signedEventCountAt) {
-    return {
-      ok: false,
-      reason: `a signed checkpoint attests event ${signedEventCountAt}, but the disk chain only holds ${walk.chainedLines} — this looks like a truncation, not mirror drift`,
-    };
+  if (signedCheckpoint !== null && walk.chainedLines < signedCheckpoint.eventCountAt) {
+    // The mirror/attestation high-water mark sits above the on-disk line
+    // count. Two very different situations look identical by count alone:
+    //   - the signed head is STILL on disk → the lost lines are interior to
+    //     the chain (concurrent/git drift between the signed head and the
+    //     mirror's count). This is exactly the drift reconcile heals: the
+    //     attested head is present, nothing below it vanished.
+    //   - the signed head is GONE from disk → the chain was truncated/forked
+    //     below an attested head. Reconciling down would launder that, so it
+    //     is refused here and left to the explicit `accept-truncation` path.
+    // The ancestry oracle is membership in the walk's chained hashes — the
+    // same oracle attestationCheck uses to accept an earlier checkpoint.
+    const signedHeadOnDisk = walk.chainedHashes.includes(signedCheckpoint.coveredHeadHash);
+    if (!signedHeadOnDisk) {
+      return {
+        ok: false,
+        reason: `a signed checkpoint attests event ${signedCheckpoint.eventCountAt}, but the disk chain only holds ${walk.chainedLines} and the signed head is absent from disk — this is a truncation/fork below attested history, not mirror drift. If the history was deliberately rewritten, run \`mnema audit accept-truncation\` to re-baseline; reconcile never accepts a truncation.`,
+      };
+    }
+    // signed head present → interior drift; fall through to reconcile.
   }
 
   const before = state.read();
   const changed = before.eventCount !== walk.chainedLines || before.chainHeadHash !== walk.lastHash;
+  let reSigned = false;
   if (changed && apply) {
     state.forceReconcile(walk.chainedLines, walk.lastHash, walk.lastAt);
+    // Re-attest at the new baseline when the correction dropped the count
+    // below the recorded signed checkpoint: the durable head signature still
+    // covers the old (higher) count, so the attestation layer's retreat check
+    // (`currentEventCount < sig.eventCountAt`) would stay red until the head
+    // is re-signed over the new tail. Only meaningful with a real tail to sign.
+    if (
+      reSign !== undefined &&
+      signedCheckpoint !== null &&
+      walk.chainedLines < signedCheckpoint.eventCountAt &&
+      walk.lastHash !== null
+    ) {
+      reSigned = reSign(walk.lastHash, walk.chainedLines);
+    }
   }
   return {
     ok: true,
@@ -791,6 +904,7 @@ export function reconcileAuditState(
     afterEventCount: walk.chainedLines,
     changed,
     applied: changed && apply,
+    reSigned,
   };
 }
 
@@ -871,6 +985,15 @@ function attestationCheck(
   // is SHORTER than a signed checkpoint, the count retreated below an attested
   // high-water mark. Whether that is tamper or benign turns on the SAME
   // ancestry oracle used below: is the signed head still on disk?
+  //
+  // Note on the accepted-truncation path: when an operator explicitly accepts
+  // a deliberate truncation, the accept command RE-SIGNS the head at the new
+  // (lower) baseline, so `sig.eventCountAt` becomes the new count and this
+  // check passes naturally. This retreat check therefore reads NO waiver — the
+  // simpler, safer design (a stale waiver can never suppress a fresh retreat
+  // here; the truncation waiver is the human-decision audit trail, not the
+  // thing that turns this green). A retreat that reaches this branch with no
+  // matching re-sign is always a real, unaccepted rollback.
   if (currentEventCount < sig.eventCountAt) {
     // The signed head is still present in the walk. Nothing below the attested
     // head vanished — the count sits above the on-disk line count only because

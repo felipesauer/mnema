@@ -124,20 +124,30 @@ describe('reconcileAuditState', () => {
     }
   });
 
-  it('refuses when a signed checkpoint attests more events than the disk chain holds', () => {
+  it('refuses when a signed checkpoint attests more events than the disk chain holds and its head is truncated away', () => {
     writeThreeEvents();
     // Simulate a valid signed checkpoint that covers event 3, then simulate
-    // a truncation of the last line — walking the disk now finds only 2.
+    // a truncation of the last line — walking the disk now finds only 2, and
+    // the signed head (the truncated line's hash) is ABSENT from disk: a
+    // genuine truncation, which reconcile must refuse (only accept-truncation
+    // may accept it).
     const file = path.join(auditDir, 'current.jsonl');
     const lines = readFileSync(file, 'utf-8')
       .split('\n')
       .filter((l) => l.length > 0);
+    const truncatedHead = (JSON.parse(lines[2] as string) as { hash: string }).hash;
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
 
-    const result = reconcileAuditState(auditDir, state, null, 3, true);
+    const result = reconcileAuditState(
+      auditDir,
+      state,
+      null,
+      { eventCountAt: 3, coveredHeadHash: truncatedHead },
+      true,
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.reason).toMatch(/signed checkpoint|truncation/i);
+      expect(result.reason).toMatch(/signed checkpoint|truncation|absent/i);
     }
   });
 

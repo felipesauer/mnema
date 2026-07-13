@@ -15,12 +15,20 @@ import {
   writeArtifact,
 } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
-import { inspectAuditIntegrity, reconcileAuditState } from '../../services/audit-integrity.js';
+import { diagnoseAuditChain, writeTruncationWaiver } from '../../services/audit/audit-diagnose.js';
+import {
+  assessAuditChain,
+  inspectAuditIntegrity,
+  reconcileAuditState,
+} from '../../services/audit-integrity.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
-import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
+import {
+  AuditHeadSignatureRepository,
+  type HeadSignature,
+} from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '../../storage/sqlite/repositories/audit-state-repository.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
@@ -39,6 +47,67 @@ interface QueryOptions {
   readonly limit?: number;
   readonly json?: boolean;
   readonly iso?: boolean;
+}
+
+/**
+ * Builds the `reSign` callback the recovery paths (`reconcile`,
+ * `accept-truncation`) hand to their re-baseline step: it resolves the machine
+ * signer and force-upserts a head signature over the NEW (lower) tail, so the
+ * attestation layer's retreat check passes at the re-baselined count instead of
+ * staying red against the old high-water mark.
+ *
+ * The signer is resolved exactly as `reattest` does — a null OR malformed actor
+ * is a clean "no signer" (the MachineKeyService constructor rejects a bad
+ * handle), never a throw — and when no signer is available the callback returns
+ * false so the caller can honestly report that attestation could not be
+ * re-signed on this machine. This is a FORCED upsert on purpose: the normal
+ * checkpoint path (`HeadCheckpointService.shouldSign`) never re-signs at an
+ * event count at/below the last signature, which is precisely the situation a
+ * reconcile-down leaves behind.
+ *
+ * @param projectRoot - Absolute project root (holds `.mnema/keys/`)
+ * @param actor - Resolved default actor handle, or `null` when none is set
+ * @param signatures - The head-signature repository to overwrite
+ * @param now - Clock, injectable for deterministic `signedAt` in tests
+ * @param userDir - The user-level key dir (`~/.config/mnema`); injectable so
+ *   tests point at an isolated path. Defaults to the real user dir, exactly as
+ *   the rest of the machine-key resolution does.
+ * @returns A callback that signs the given head at the given count and returns
+ *   true iff a signer was available and the signature was written
+ */
+export function buildHeadReSigner(
+  projectRoot: string,
+  actor: string | null,
+  signatures: AuditHeadSignatureRepository,
+  now: () => Date = () => new Date(),
+  userDir?: string,
+): (newHeadHash: string, newEventCount: number) => boolean {
+  return (newHeadHash: string, newEventCount: number): boolean => {
+    if (actor === null) return false;
+    let machineKey: MachineKeyService;
+    try {
+      machineKey =
+        userDir !== undefined
+          ? new MachineKeyService(projectRoot, actor, userDir)
+          : new MachineKeyService(projectRoot, actor);
+    } catch {
+      return false;
+    }
+    // Same signing recipe as HeadCheckpointService, but unconditional: sign the
+    // new tail hash bytes and overwrite the single head-signature row.
+    const { fingerprint } = machineKey.getOrCreate();
+    const signature = machineKey.sign(Buffer.from(newHeadHash, 'hex')).toString('base64');
+    const record: HeadSignature = {
+      coveredHeadHash: newHeadHash,
+      eventCountAt: newEventCount,
+      signerActor: actor,
+      signerFingerprint: fingerprint,
+      signature,
+      signedAt: now().toISOString(),
+    };
+    signatures.upsert(record);
+    return true;
+  };
 }
 
 /**
@@ -283,17 +352,31 @@ export class AuditCommand {
             const auditDir = path.join(projectRoot, config.paths.audit);
             const secret = new ProjectSecretService(projectRoot, config.project.key);
             const state = new AuditStateRepository(container.adapter);
-            const signature = new AuditHeadSignatureRepository(container.adapter).read();
+            const signatures = new AuditHeadSignatureRepository(container.adapter);
+            const signature = signatures.read();
             const apply = options.force === true;
+            // Re-attest at the new baseline if the correction drops the count
+            // below the recorded signed checkpoint (interior drift). Signer
+            // resolved like reattest; no signer → returns false and reconcile
+            // still corrects audit_state (attestation just stays to be re-run).
+            const actor = container.identity.resolveDefaultActor().actor;
+            const reSign = buildHeadReSigner(projectRoot, actor, signatures);
 
             const result = reconcileAuditState(
               auditDir,
               state,
               secret.read(),
-              signature?.eventCountAt ?? null,
+              signature !== null
+                ? {
+                    eventCountAt: signature.eventCountAt,
+                    coveredHeadHash: signature.coveredHeadHash,
+                  }
+                : null,
               apply,
               options.acceptLegacyBreaks ?? null,
               projectRoot,
+              undefined,
+              reSign,
             );
             if (!result.ok) {
               process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
@@ -310,10 +393,158 @@ export class AuditCommand {
               process.stdout.write(
                 `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
               );
+              // Report the attestation re-baseline honestly: green when the
+              // head was re-signed, a dim caveat when no signer was available
+              // (a machine without the key cannot re-attest — doctor will warn).
+              if (result.reSigned) {
+                process.stdout.write(
+                  `${pc.green('✔')}  re-signed head at event ${result.afterEventCount} as ${actor}\n`,
+                );
+              } else if (signature !== null && result.afterEventCount < signature.eventCountAt) {
+                process.stdout.write(
+                  `${pc.dim("note: attestation could not be re-signed (no machine key on this host) — run 'mnema audit reattest' where the signer key lives")}\n`,
+                );
+              }
             } else {
               process.stdout.write(
                 `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
                   `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+              );
+            }
+          });
+          process.exit(hasError ? 1 : 0);
+        },
+      );
+
+    group
+      .command('accept-truncation')
+      .description(
+        'Explicitly accept a GENUINE truncation of the audit chain — history you deliberately ' +
+          'rewrote below a signed checkpoint. Re-baselines audit_state to the verified on-disk ' +
+          'tail, re-signs the head at the new (lower) count, and records a re-verified waiver so ' +
+          'doctor/verify/reconcile stop reading the vanished checkpoint as tamper. Fail-closed: ' +
+          'refuses on any real tamper signal (malformed line, content-invalid or broken chain), ' +
+          'refuses when the signed head is STILL on disk (that is drift — use `mnema audit ' +
+          'reconcile`), and refuses when a committed .att covers events beyond the new tail. ' +
+          'Dry-run by default; --force applies. Does NOT modify the JSONL files.',
+      )
+      .option('--force', 'Apply the re-baseline (without it, only report the plan)', false)
+      .option(
+        '--require-committed',
+        'Refuse unless the audit files match the committed git HEAD (the anchor of trust)',
+        false,
+      )
+      .action(
+        async (options: { readonly force?: boolean; readonly requireCommitted?: boolean }) => {
+          let hasError = false;
+          await withCliContext(async ({ config, projectRoot, container }) => {
+            const auditDir = path.join(projectRoot, config.paths.audit);
+            const secret = new ProjectSecretService(projectRoot, config.project.key);
+            const state = new AuditStateRepository(container.adapter);
+            const signatures = new AuditHeadSignatureRepository(container.adapter);
+            const signature = signatures.read();
+            const apply = options.force === true;
+
+            const refuse = (reason: string): void => {
+              process.stdout.write(`${pc.red('✘')}  cannot accept truncation: ${reason}\n`);
+              hasError = true;
+            };
+
+            // Gate 1 — same tamper refusals as reconcile, from the SHARED walk:
+            // never launder a malformed line or a content-invalid/broken chain.
+            const chain = assessAuditChain(auditDir, secret.read());
+            if (chain.malformedLines > 0) {
+              return refuse(
+                `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
+              );
+            }
+            if (chain.chainBroken) {
+              return refuse(
+                `on-disk chain is not internally consistent: ${chain.chainBreakDetail} — this is tampering, not a clean truncation. Run \`mnema audit diagnose\` first.`,
+              );
+            }
+            if (!chain.chainEverStarted || chain.lastHash === null) {
+              return refuse('no chained (v>=2) events on disk yet — nothing to baseline to');
+            }
+
+            // Gate 2 — this command is ONLY for a genuine truncation: a signed
+            // checkpoint whose covered head is ABSENT from disk. If the signed
+            // head is still an ancestor of the current chain, the shortfall is
+            // interior drift and belongs to `reconcile`, not here.
+            if (signature === null) {
+              return refuse(
+                'no signed checkpoint recorded — nothing attests a truncation; run `mnema audit reconcile` for plain mirror drift',
+              );
+            }
+            if (chain.chainedLines >= signature.eventCountAt) {
+              return refuse(
+                `the chain holds ${chain.chainedLines} event(s), at or above the signed checkpoint (event ${signature.eventCountAt}) — no truncation below attested history to accept`,
+              );
+            }
+            if (chain.chainedHashes.includes(signature.coveredHeadHash)) {
+              return refuse(
+                'the signed head is still present on disk — this is interior mirror drift, not a truncation. Use `mnema audit reconcile` (it heals this and re-attests).',
+              );
+            }
+
+            // Gate 3 — --require-committed: the disk must match the committed
+            // git HEAD, or a human could be staring at exactly the tampered
+            // state this whole gate exists to catch. Fail-closed.
+            if (options.requireCommitted === true) {
+              const diag = diagnoseAuditChain(auditDir, secret.read(), projectRoot);
+              if (diag.matchesCommittedHead !== true) {
+                return refuse(
+                  diag.matchesCommittedHead === null
+                    ? '--require-committed: could not confirm the audit files match the committed git HEAD (not a git work tree, or no commits yet)'
+                    : '--require-committed: the audit files have local, uncommitted changes — the git anchor of trust does not hold',
+                );
+              }
+            }
+
+            // Gate 4 — a committed .att that covers events beyond the new tail
+            // proves the chain reached PAST the count we are about to accept.
+            // Baselining below it would orphan proven coverage — refuse and name
+            // the offending artifact (`to` is one-past-the-last-covered index).
+            const overreaching = listArtifacts(auditDir).find((a) => a.to > chain.chainedLines);
+            if (overreaching !== undefined) {
+              return refuse(
+                `committed attestation attest/${overreaching.to}.att covers events up to index ${overreaching.to} (> the new tail count ${chain.chainedLines}) — accepting truncation below it would orphan proven coverage. Remove or reconcile that .att first.`,
+              );
+            }
+
+            // The plan is legitimate. On a dry run, describe it and write
+            // nothing; --force applies it.
+            if (!apply) {
+              process.stdout.write(
+                `${pc.yellow('⚠')}  would re-baseline audit_state: event_count ${state.read().eventCount} → ${chain.chainedLines}, re-sign the head, and record a truncation waiver\n` +
+                  `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+              );
+              return;
+            }
+
+            state.forceReconcile(chain.chainedLines, chain.lastHash, chain.lastAt);
+            const actor = container.identity.resolveDefaultActor().actor;
+            const reSigned = buildHeadReSigner(
+              projectRoot,
+              actor,
+              signatures,
+            )(chain.lastHash, chain.chainedLines);
+            // The waiver is the AUDIT TRAIL of the human decision, re-verified
+            // against the current disk on every read; attestation passing relies
+            // on the re-sign above, not on reading this file in the verify hot
+            // path (simpler, and a stale waiver can never suppress a fresh
+            // retreat). Written last, after audit_state and the re-sign.
+            writeTruncationWaiver(auditDir, chain.lastHash, chain.chainedLines);
+            process.stdout.write(
+              `${pc.green('✔')}  accepted truncation: re-baselined audit_state to event ${chain.chainedLines} and recorded a waiver\n`,
+            );
+            if (reSigned) {
+              process.stdout.write(
+                `${pc.green('✔')}  re-signed head at event ${chain.chainedLines} as ${actor}\n`,
+              );
+            } else {
+              process.stdout.write(
+                `${pc.dim('note: attestation could not be re-signed (no machine key on this host) — run `mnema audit reattest` where the signer key lives')}\n`,
               );
             }
           });
