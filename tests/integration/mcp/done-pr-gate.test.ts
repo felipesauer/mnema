@@ -26,6 +26,41 @@ function ghRunner(view: Record<string, unknown>): CommandRunner {
   return () => ({ status: 0, stdout: JSON.stringify(view) });
 }
 
+/**
+ * A gh runner that answers `pr view` with `view` and routes the merge-commit
+ * `gh api .../{check-runs,status}` lookups to their own fixtures — so the gate
+ * can be exercised on the base-branch CI signal, not just the head rollup.
+ */
+function ghBaseRunner(
+  view: Record<string, unknown>,
+  checkRuns: unknown,
+  combinedStatus: unknown,
+): CommandRunner {
+  return (_command, args) => {
+    const joined = args.join(' ');
+    if (args[0] === 'pr') return { status: 0, stdout: JSON.stringify(view) };
+    if (args[0] === 'api' && joined.includes('/check-runs')) {
+      return { status: 0, stdout: JSON.stringify(checkRuns) };
+    }
+    if (args[0] === 'api' && joined.endsWith('/status')) {
+      return { status: 0, stdout: JSON.stringify(combinedStatus) };
+    }
+    return { status: 1, stdout: '' };
+  };
+}
+
+/** Merged, head green, but carrying a merge commit whose base CI we can probe. */
+const MERGED_GREEN_HEAD_WITH_MERGE_OID = {
+  state: 'MERGED',
+  mergedAt: '2026-06-30T00:00:00Z',
+  statusCheckRollup: [{ state: 'SUCCESS' }],
+  mergeCommit: { oid: 'basecommitsha' },
+  baseRefName: 'main',
+};
+const CHECK_RUNS_RED = { check_runs: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] };
+const CHECK_RUNS_GREEN = { check_runs: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }] };
+const COMBINED_EMPTY = { state: 'success', statuses: [] };
+
 async function setupHarness(policy: Policy, runner: CommandRunner): Promise<Harness> {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-pr-gate-'));
   for (const dir of ['.mnema/state', '.mnema/audit', '.mnema/backlog', '.mnema/workflows']) {
@@ -196,6 +231,37 @@ describe('DONE-transition PR/CI gate', () => {
       name: 'task_approve',
       arguments: { task_key: key, approval_note: 'lgtm', pr_url: PR },
     })) as CallToolResult;
+    expect(result.isError).toBeFalsy();
+    expect((parsePayload(result).task as { state: string }).state).toBe('DONE');
+  });
+
+  it('blocks approve when the head is green but the base merge commit is red', async () => {
+    // The regression the dogfooding run surfaced: a branch can be green and
+    // still break the base once merged. The gate must read the base signal.
+    harness = await setupHarness(
+      'block',
+      ghBaseRunner(MERGED_GREEN_HEAD_WITH_MERGE_OID, CHECK_RUNS_RED, COMBINED_EMPTY),
+    );
+    const key = await taskInReview(harness.client);
+    const result = (await harness.client.callTool({
+      name: 'task_approve',
+      arguments: { task_key: key, approval_note: 'lgtm', pr_url: PR },
+    })) as CallToolResult;
+    expect(result.isError).toBe(true);
+    expect(parsePayload(result).error).toBe('GATE_FAILED');
+  });
+
+  it('allows approve when both the head and the base merge commit are green', async () => {
+    harness = await setupHarness(
+      'block',
+      ghBaseRunner(MERGED_GREEN_HEAD_WITH_MERGE_OID, CHECK_RUNS_GREEN, COMBINED_EMPTY),
+    );
+    const key = await taskInReview(harness.client);
+    const result = (await harness.client.callTool({
+      name: 'task_approve',
+      arguments: { task_key: key, approval_note: 'lgtm', pr_url: PR },
+    })) as CallToolResult;
+    if (result.isError) console.error('GREEN_BASE_FAIL', JSON.stringify(parsePayload(result)));
     expect(result.isError).toBeFalsy();
     expect((parsePayload(result).task as { state: string }).state).toBe('DONE');
   });
