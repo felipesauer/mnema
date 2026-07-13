@@ -544,7 +544,11 @@ export class MemoryService {
       if (current === null) continue; // missing mirror is rebuildMirrors' job
       let hasScope = false;
       try {
-        hasScope = 'scope' in parseFrontmatter(readFileSync(current, 'utf-8')).data;
+        // Present AND a non-empty string — a bare `scope:` (YAML null) or a
+        // re-typed bareword would read back as a non-string on rebuild (scope
+        // lost), so it must count as missing and be rewritten from the row.
+        const value = parseFrontmatter(readFileSync(current, 'utf-8')).data.scope;
+        hasScope = typeof value === 'string' && value.length > 0;
       } catch {
         // Unreadable frontmatter — treat as needing a rewrite from the row.
       }
@@ -580,7 +584,12 @@ export class MemoryService {
       // `packages-notifier`), so the RAW scope is persisted in the frontmatter
       // — the authoritative value a clone rebuild reads back. Emitted only when
       // set, so a scopeless memory's mirror stays byte-identical to before.
-      memory.scope !== null ? `scope: ${quoteYaml(memory.scope)}` : null,
+      // JSON.stringify (not quoteYaml) so the value is ALWAYS an explicitly
+      // quoted string: a bareword scope like `123`/`true`/`null` would be
+      // re-typed by YAML on parse and read back as a non-string (→ scope lost),
+      // and a newline would break the whole mirror. A JSON string is valid YAML
+      // and round-trips to the exact string.
+      memory.scope !== null ? `scope: ${JSON.stringify(memory.scope)}` : null,
       `created_at: ${memory.createdAt}`,
       `updated_at: ${memory.updatedAt}`,
       '---',

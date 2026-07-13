@@ -1,20 +1,33 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditService } from '@/services/audit-service.js';
 import { IdentityService } from '@/services/identity-service.js';
 import { MemoryService } from '@/services/memory-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
+import { parseFrontmatter } from '@/storage/markdown/frontmatter.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { MemoryRepository } from '@/storage/sqlite/repositories/memory-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
+
+/** Finds `<slug>.md` anywhere one level under the memory dir (scope folders). */
+function findMemoryMirror(memoryDir: string, slug: string): string | null {
+  const direct = path.join(memoryDir, `${slug}.md`);
+  if (existsSync(direct)) return direct;
+  for (const entry of readdirSync(memoryDir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      const nested = path.join(memoryDir, entry.name, `${slug}.md`);
+      if (existsSync(nested)) return nested;
+    }
+  }
+  return null;
+}
 
 describe('MemoryService', () => {
   let tempRoot: string;
@@ -206,8 +219,31 @@ describe('MemoryService', () => {
       path.join(memoryDir, 'packages-notifier', 'notifier-rate.md'),
       'utf-8',
     );
-    // The folder is the lossy projection; the frontmatter carries the raw scope.
-    expect(mirror).toContain('scope: packages/notifier');
+    // The folder is the lossy projection; the frontmatter carries the raw
+    // scope, emitted as a JSON-quoted string so it always round-trips.
+    expect(mirror).toContain('scope: "packages/notifier"');
+  });
+
+  it('round-trips a scope that YAML would otherwise re-type (123 / true / null)', () => {
+    // These barewords parse back as number/boolean/null unless quoted; the
+    // mirror must emit them as strings so the scope survives a clone rebuild.
+    const cases: Array<[slug: string, scope: string]> = [
+      ['scope-num', '123'],
+      ['scope-bool', 'true'],
+      ['scope-null-word', 'null'],
+      ['scope-tilde', '~'],
+      ['scope-hex', '0x1F'],
+    ];
+    for (const [slug, scope] of cases) {
+      recordOk({ slug, title: 'T', content: 'b', scope, actor: 'daniel' });
+      // Locate the mirror wherever the (lossy) scope folder placed it, then
+      // parse it back exactly as a clone rebuild would.
+      const mirrorPath = findMemoryMirror(memoryDir, slug);
+      expect(mirrorPath, scope).not.toBeNull();
+      const parsed = parseFrontmatter(readFileSync(mirrorPath as string, 'utf-8'));
+      expect(parsed.data.scope, scope).toBe(scope);
+      expect(typeof parsed.data.scope, scope).toBe('string');
+    }
   });
 
   it('backfillScopeInMirrors adds scope to a scoped mirror written without it', () => {
@@ -229,7 +265,7 @@ describe('MemoryService', () => {
 
     const done = service.backfillScopeInMirrors();
     expect(done).toEqual(['notifier-rate']);
-    expect(readFileSync(mirrorPath, 'utf-8')).toContain('scope: packages/notifier');
+    expect(readFileSync(mirrorPath, 'utf-8')).toContain('scope: "packages/notifier"');
 
     // Idempotent: a second pass rewrites nothing.
     expect(service.backfillScopeInMirrors()).toEqual([]);
