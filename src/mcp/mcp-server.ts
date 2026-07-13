@@ -251,6 +251,7 @@ export class MnemaMcpServer {
       this.services.dependency,
       this.services.search,
       this.services.label,
+      this.session,
     ).register(this.sdk);
 
     new AgentRunTools(

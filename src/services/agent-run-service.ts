@@ -30,6 +30,12 @@ export interface StartRunInput {
   readonly skillsLoaded?: readonly string[];
   readonly metadata?: Readonly<Record<string, unknown>>;
   readonly clientMetadata?: Readonly<Record<string, unknown>>;
+  /**
+   * True when `context_bootstrap` ran in this session before the run opened.
+   * Stamped into the `run_started` event so eval_report can count the run as
+   * guided even when it used no recorded skill (a bootstrap-guided solo run).
+   */
+  readonly bootstrapped?: boolean;
 }
 
 /**
@@ -173,6 +179,9 @@ export class AgentRunService {
         goal: input.goal,
         parent_run_id: run.parentRunId,
         depth: run.depth,
+        // Only stamped when true, so existing events/tests are unchanged and
+        // eval_report keys off its presence.
+        ...(input.bootstrapped === true ? { bootstrapped: true } : {}),
       },
     });
 

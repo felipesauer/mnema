@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-
 import type { Config } from '../../../config/config-schema.js';
 import type { Task } from '../../../domain/entities/task.js';
 import type { Workflow } from '../../../domain/state-machine/state-machine.js';
@@ -17,6 +16,7 @@ import type { SearchService } from '../../../services/search-service.js';
 import type { SkillService } from '../../../services/skill-service.js';
 import type { TaskService } from '../../../services/task-service.js';
 import { skillMatchTerms } from '../../../utils/skill-suggest-stopwords.js';
+import type { McpSessionContext } from '../../mcp-session-context.js';
 import { ok } from '../../mcp-tool-result.js';
 import { describeToolSurface } from '../../tool-registry.js';
 import { toolRiskMap } from '../../tool-risk.js';
@@ -64,6 +64,10 @@ export class ContextBootstrapTool {
     private readonly dependencyService: DependencyService,
     private readonly searchService: SearchService,
     private readonly labelService: LabelService,
+    // Optional so existing callers/tests construct the tool unchanged. When
+    // present, a bootstrap marks the session so a run opened afterwards is
+    // stamped guided — the tool itself writes nothing (readOnlyHint stays true).
+    private readonly session: McpSessionContext | null = null,
   ) {}
 
   /**
@@ -84,6 +88,10 @@ export class ContextBootstrapTool {
 
   /** Builds the bootstrap payload. */
   private handle(): ReturnType<typeof ok> {
+    // Record that this session bootstrapped, so a run opened afterwards is
+    // counted guided in eval_report. Pure in-memory flag — no audit write, so
+    // the tool's readOnlyHint stays honest.
+    this.session?.markBootstrapped();
     const all = this.taskService.list();
     const byState: Record<string, number> = {};
     for (const state of this.workflow.states) {

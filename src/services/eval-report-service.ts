@@ -31,10 +31,25 @@ export interface EvalReport {
   readonly skills_flagged_for_review: number;
 }
 
-const PROXY =
-  'A run is "guided" when it used a recorded skill (a `skill_used` event). ' +
-  'context_bootstrap and focus are read-only and leave no audit trace, so ' +
-  'they cannot be part of the proxy — skill use is the observable signal.';
+/** How a run is judged "guided". Configurable via `eval.guided_proxy`. */
+export type GuidedProxy = 'skill_used' | 'bootstrap' | 'either';
+
+/** The proxy description shown in the report, per configured mode. */
+function proxyText(proxy: GuidedProxy): string {
+  const skill = 'used a recorded skill (a `skill_used` event)';
+  const boot =
+    'was opened after `context_bootstrap` ran (a `run_started` event flagged ' +
+    '`bootstrapped` — the observable signal for a bootstrap-guided run that ' +
+    'uses no recorded skill; context_bootstrap stays read-only and only sets ' +
+    'a per-session flag the run start stamps)';
+  const body =
+    proxy === 'skill_used'
+      ? `it ${skill}`
+      : proxy === 'bootstrap'
+        ? `it ${boot}`
+        : `it EITHER ${skill} OR ${boot}`;
+  return `A run is "guided" when ${body}. Configurable via \`eval.guided_proxy\` (skill_used | bootstrap | either).`;
+}
 
 const CAVEAT =
   'CORRELATIONAL, NOT CAUSAL. This compares runs within one real project, ' +
@@ -69,14 +84,26 @@ export class EvalReportService {
    * @param options.since - Lower bound (`7d`, `30d`, or ISO8601)
    * @returns The two-cohort diff plus the proxy and caveat
    */
-  compute(options: { readonly since?: string } = {}): EvalReport {
+  compute(options: { readonly since?: string; readonly proxy?: GuidedProxy } = {}): EvalReport {
     const events = this.audit.run(options.since === undefined ? {} : { since: options.since });
+    const proxy: GuidedProxy = options.proxy ?? 'either';
 
-    // A run is "guided" iff it emitted a skill_used event. Collect those run
-    // ids in one pass.
+    // A run is "guided" per the configured proxy. skill_used: the run emitted
+    // a skill_used event. bootstrap: its run_started carries data.bootstrapped
+    // (context_bootstrap ran before the run opened — a guided solo run with no
+    // skill trace). either: whichever holds. Collect the run ids in one pass.
+    const wantSkill = proxy === 'skill_used' || proxy === 'either';
+    const wantBootstrap = proxy === 'bootstrap' || proxy === 'either';
     const guidedRuns = new Set<string>();
     for (const event of events) {
-      if (event.kind === 'skill_used' && typeof event.run === 'string') {
+      if (typeof event.run !== 'string') continue;
+      if (wantSkill && event.kind === 'skill_used') {
+        guidedRuns.add(event.run);
+      } else if (
+        wantBootstrap &&
+        event.kind === 'run_started' &&
+        (event.data as { bootstrapped?: unknown }).bootstrapped === true
+      ) {
         guidedRuns.add(event.run);
       }
     }
@@ -152,7 +179,7 @@ export class EvalReportService {
     };
 
     return {
-      proxy: PROXY,
+      proxy: proxyText(proxy),
       caveat: CAVEAT,
       guided: {
         runs: runsWithId(guidedEvents),
