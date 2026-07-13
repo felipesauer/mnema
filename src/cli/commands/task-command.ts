@@ -282,10 +282,24 @@ export class TaskCommand {
             // splits. Unresolvable (unknown task/action) falls back to the
             // legacy heuristic and lets transition() report the real error.
             const lookup = container.task.findByKey(key);
-            const fieldSpecs = lookup.ok
-              ? container.stateMachine.getWorkflow().transitions[lookup.value.state]?.[action]
-                  ?.requiresSpec
+            const workflow = container.stateMachine.getWorkflow();
+            const transition = lookup.ok
+              ? workflow.transitions[lookup.value.state]?.[action]
               : undefined;
+            let fieldSpecs = transition?.requiresSpec;
+            // A terminal transition (e.g. approve → DONE) accepts a synthetic
+            // gate-only `pr_url` the workflow does not declare (see
+            // transition-tools' injectPrUrl). Without a spec for it, a
+            // comma-bearing URL would hit the legacy heuristic and be split
+            // into an array in the audit payload. Coerce it as a string so the
+            // URL rides through verbatim, mirroring the MCP path exactly.
+            if (
+              transition !== undefined &&
+              workflow.terminal.includes(transition.to) &&
+              !('pr_url' in transition.requiresSpec)
+            ) {
+              fieldSpecs = { ...transition.requiresSpec, pr_url: { type: 'string' } };
+            }
             const payload = parseFieldArgs([...fields, ...(options.field ?? [])], fieldSpecs);
             const result = container.task.transition({
               taskKey: key,
@@ -533,7 +547,7 @@ function renderTaskResult(
  * @param fieldSpecs - The transition gate's raw field specs, when resolvable
  * @returns Parsed payload object suitable for `task.transition`
  */
-function parseFieldArgs(
+export function parseFieldArgs(
   fields: readonly string[],
   fieldSpecs?: Readonly<Record<string, { readonly type: string }>>,
 ): Record<string, unknown> {
