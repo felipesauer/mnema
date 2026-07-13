@@ -488,4 +488,62 @@ mnema:
       container = createServiceContainer(makeConfig(), root, { migrationsDir });
     }
   });
+
+  it('skips malformed / incomplete knowledge mirrors without crashing the rebuild', () => {
+    // Seed the project row.
+    container.task.create({ projectKey: 'TEST', title: 'seed', actor: 'daniel' });
+
+    const memoryDir = path.join(root, '.mnema/memory');
+    const skillsDir = path.join(root, '.mnema/skills/authored');
+    mkdirSync(memoryDir, { recursive: true });
+    mkdirSync(skillsDir, { recursive: true });
+
+    // A good memory + a memory missing its title (skipped).
+    writeFileSync(
+      path.join(memoryDir, 'good.md'),
+      '---\ntitle: Good\ntopics: []\n---\nbody\n',
+      'utf-8',
+    );
+    writeFileSync(path.join(memoryDir, 'no-title.md'), '---\ntopics: []\n---\nbody\n', 'utf-8');
+    // Unparseable YAML frontmatter (must be caught, not thrown).
+    writeFileSync(path.join(memoryDir, 'broken.md'), '---\ntitle: "un\nclosed\n---\nx\n', 'utf-8');
+    // A skill with an unreadable version (skipped).
+    writeFileSync(
+      path.join(skillsDir, 'bad-version.md'),
+      '---\nname: Bad\nversion: not-a-version\ndescription: d\ntools_used: []\n---\nx\n',
+      'utf-8',
+    );
+
+    const summary = container.syncRebuild.run('TEST');
+
+    // The good memory landed; the three bad files were skipped, not fatal.
+    expect(summary.memories.upserted).toBe(1);
+    expect(summary.skills.upserted).toBe(0);
+    const reasons = summary.skipped.map((s) => s.reason).join(' | ');
+    expect(reasons).toMatch(/missing title/);
+    expect(reasons).toMatch(/unreadable frontmatter/);
+    expect(reasons).toMatch(/unreadable version/);
+    expect(container.memory.list().map((m) => m.slug)).toContain('good');
+  });
+
+  it('never ingests the adopt scaffolding (context.md) as a memory row', () => {
+    container.task.create({ projectKey: 'TEST', title: 'seed', actor: 'daniel' });
+    const memoryDir = path.join(root, '.mnema/memory');
+    mkdirSync(memoryDir, { recursive: true });
+    // A titled context.md would otherwise become a phantom `context` row; a
+    // bare one would otherwise raise a spurious "missing title" skip.
+    writeFileSync(
+      path.join(memoryDir, 'context.md'),
+      '---\ntitle: Project context\n---\nscaffolding\n',
+      'utf-8',
+    );
+    writeFileSync(path.join(memoryDir, 'INDEX.md'), '# index\n', 'utf-8');
+
+    const summary = container.syncRebuild.run('TEST');
+
+    expect(summary.memories.scanned).toBe(0);
+    expect(summary.memories.upserted).toBe(0);
+    expect(summary.skipped.some((s) => s.file.endsWith('context.md'))).toBe(false);
+    expect(container.memory.list().map((m) => m.slug)).not.toContain('context');
+  });
 });

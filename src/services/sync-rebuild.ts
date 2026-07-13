@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Decision } from '../domain/entities/decision.js';
@@ -11,6 +11,7 @@ import { EpicState } from '../domain/enums/epic-state.js';
 import { SprintState } from '../domain/enums/sprint-state.js';
 import type { TaskState } from '../domain/enums/task-state.js';
 import { parseTaskKey } from '../domain/id-generator.js';
+import { parseFrontmatter } from '../storage/markdown/frontmatter.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../storage/sqlite/repositories/actor-repository.js';
 import type {
@@ -23,8 +24,10 @@ import type {
   EpicRepository,
 } from '../storage/sqlite/repositories/epic-repository.js';
 import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
+import type { MemoryRepository } from '../storage/sqlite/repositories/memory-repository.js';
 import type { ObservationRepository } from '../storage/sqlite/repositories/observation-repository.js';
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
+import type { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
 import type {
   SprintFieldUpdates,
   SprintRepository,
@@ -34,6 +37,13 @@ import type {
   TaskRepository,
 } from '../storage/sqlite/repositories/task-repository.js';
 import { isoNow } from '../utils/iso-now.js';
+import {
+  CURATED_MEMORY_SUBFOLDERS,
+  listMirrorEntries,
+  PRUNE_PROTECTED_FILENAMES,
+  SEED_AUTHOR_HANDLE,
+  SKILL_DEFAULT_DIR,
+} from '../utils/mirror-layout.js';
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -53,6 +63,8 @@ export interface RebuildSummary {
   readonly sprints: RebuildCounts;
   readonly decisions: RebuildCounts;
   readonly observations: RebuildCounts;
+  readonly memories: RebuildCounts;
+  readonly skills: RebuildCounts;
   readonly skipped: readonly { readonly file: string; readonly reason: string }[];
 }
 
@@ -92,12 +104,16 @@ export class SyncRebuild {
     private readonly dependencies: DependencyRepository,
     private readonly labels: LabelRepository,
     private readonly observations: ObservationRepository,
+    private readonly memories: MemoryRepository,
+    private readonly skills: SkillRepository,
     private readonly paths: {
       readonly projectRoot: string;
       readonly backlogDir: string;
       readonly roadmapDir: string;
       readonly sprintsDir: string;
       readonly observationsDir: string;
+      readonly memoryDir: string;
+      readonly skillsDir: string;
     },
     /**
      * The states declared by the active workflow. A `backlog/<STATE>/`
@@ -131,6 +147,8 @@ export class SyncRebuild {
       sprints: { scanned: 0, upserted: 0 },
       decisions: { scanned: 0, upserted: 0 },
       observations: { scanned: 0, upserted: 0 },
+      memories: { scanned: 0, upserted: 0 },
+      skills: { scanned: 0, upserted: 0 },
       skipped: [],
     };
 
@@ -177,6 +195,12 @@ export class SyncRebuild {
     // Observations are rebuilt after tasks so a note's `related_task_key`
     // resolves to a freshly-inserted task row.
     const observations = this.rebuildObservations(skipped);
+    // Knowledge mirrors (foldered, flat frontmatter). Independent of the
+    // backlog graph, so order does not matter. Without these a fresh clone
+    // has the .md on disk but no rows, so list/show/search/bootstrap see
+    // nothing (the clone-survivability gap).
+    const memories = this.rebuildMemories(skipped);
+    const skills = this.rebuildSkills(skipped);
 
     return {
       tasksScanned: tasks.scanned,
@@ -185,6 +209,8 @@ export class SyncRebuild {
       sprints,
       decisions,
       observations,
+      memories,
+      skills,
       skipped,
     };
   }
@@ -416,6 +442,152 @@ export class SyncRebuild {
     }
 
     return { scanned, upserted };
+  }
+
+  /**
+   * Walks the foldered memory mirrors (`memory/[<scope>/]<slug>.md`, ADR-51)
+   * and re-inserts each into the cache so a fresh clone recovers its memories
+   * — without this the .md exist on disk but `memory list`/`search`/bootstrap
+   * see nothing. Unlike the backlog entities the mirror uses FLAT top-level
+   * frontmatter (not the `mnema:` block), so it is parsed directly. The slug
+   * is the filename basename; the insert is idempotent by slug.
+   *
+   * Documented losses (not in the mirror): `scope` (the folder is a lossy
+   * projection — a rebuilt memory is scopeless, recovered by MNEMA-271) and
+   * `created_by` (attributed to `unknown`). Only live memories have a mirror
+   * (archived/superseded ones are deleted on write), so this restores only
+   * live rows. The curated `decisions/`/`notes/` subfolders are human-authored
+   * and never scanned as memory mirrors.
+   */
+  private rebuildMemories(skipped: { file: string; reason: string }[]): RebuildCounts {
+    const root = path.join(this.paths.projectRoot, this.paths.memoryDir);
+    let scanned = 0;
+    let upserted = 0;
+
+    for (const { slug, filePath } of listMirrorEntries(root, {
+      excludeDirs: CURATED_MEMORY_SUBFOLDERS,
+    })) {
+      // `context.md` is the `adopt memory` scaffolding at the root — a
+      // human-authored file with no row. The writer/prune path protects it via
+      // PRUNE_PROTECTED_FILENAMES; the rebuild must agree, or it would ingest a
+      // phantom `context` row (or warn on the bare default on every sync).
+      if (PRUNE_PROTECTED_FILENAMES.has(path.basename(filePath))) continue;
+      scanned += 1;
+      const parsed = this.readMirror(filePath, skipped);
+      if (parsed === null) continue;
+      const { data, content } = parsed;
+
+      const title = readString(data, 'title');
+      if (title === null) {
+        skipped.push({ file: filePath, reason: 'missing title' });
+        continue;
+      }
+      const createdBy = this.actors.upsert('unknown', ActorKind.Human);
+      const now = isoNow();
+      const inserted = this.memories.insertFromMirror({
+        slug,
+        title,
+        content: content.trim(),
+        topics: readStringArray(data, 'topics'),
+        createdBy,
+        createdAt: readString(data, 'created_at') ?? now,
+        updatedAt: readString(data, 'updated_at') ?? now,
+      });
+      if (inserted) upserted += 1;
+    }
+
+    return { scanned, upserted };
+  }
+
+  /**
+   * Walks the foldered skill mirrors (`skills/{default,authored}/<slug>.md`,
+   * ADR-51) and re-inserts each into the cache so a fresh clone recovers its
+   * skills. Like memories the mirror uses flat frontmatter; the slug is the
+   * filename basename and the origin folder decides the author (`default/` →
+   * the reserved `system` seed handle, `authored/` → a human). The mirror
+   * version is dressed as `<n>.0.0`; only the leading integer is the row
+   * version. Idempotent by (slug, version).
+   *
+   * Documented losses (not in the mirror): version HISTORY (only the latest is
+   * mirrored — a rebuilt skill is a single row at its current version), and
+   * `change_rationale`/`scope`. Only live-latest skills have a mirror
+   * (superseded ones are deleted on write).
+   */
+  private rebuildSkills(skipped: { file: string; reason: string }[]): RebuildCounts {
+    const root = path.join(this.paths.projectRoot, this.paths.skillsDir);
+    let scanned = 0;
+    let upserted = 0;
+
+    for (const { slug, filePath } of listMirrorEntries(root)) {
+      scanned += 1;
+      const parsed = this.readMirror(filePath, skipped);
+      if (parsed === null) continue;
+      const { data, content } = parsed;
+
+      const name = readString(data, 'name');
+      const description = readString(data, 'description');
+      if (name === null || description === null) {
+        skipped.push({ file: filePath, reason: 'missing name or description' });
+        continue;
+      }
+      // The mirror version is semver-dressed (`3.0.0`); the row version is the
+      // leading integer. A malformed value skips the file rather than guessing.
+      const versionRaw = readString(data, 'version');
+      const version = versionRaw === null ? Number.NaN : Number.parseInt(versionRaw, 10);
+      if (!Number.isInteger(version) || version < 1) {
+        skipped.push({ file: filePath, reason: `unreadable version "${versionRaw ?? ''}"` });
+        continue;
+      }
+      // `default/` holds the tool-shipped seeds (authored by the reserved
+      // `system` handle); everything else is human-authored. The folder is the
+      // authority since the mirror does not carry `created_by`.
+      const inDefault = path.basename(path.dirname(filePath)) === SKILL_DEFAULT_DIR;
+      const createdBy = this.actors.upsert(
+        inDefault ? SEED_AUTHOR_HANDLE : 'unknown',
+        ActorKind.Human,
+      );
+      const now = isoNow();
+      const inserted = this.skills.insertFromMirror({
+        slug,
+        name,
+        version,
+        description,
+        content: content.trim(),
+        toolsUsed: readStringArray(data, 'tools_used'),
+        invocable: data.invocable === true,
+        dynamicContext: readStringArray(data, 'dynamic_context'),
+        usageCount: readNumber(data, 'usage_count') ?? 0,
+        lastUsedAt: readString(data, 'last_used_at'),
+        createdBy,
+        createdAt: readString(data, 'created_at') ?? now,
+        updatedAt: readString(data, 'updated_at') ?? now,
+      });
+      if (inserted) upserted += 1;
+    }
+
+    return { scanned, upserted };
+  }
+
+  /**
+   * Reads a knowledge mirror's FLAT frontmatter + body, recording a skip and
+   * returning null on unreadable YAML (a hostile or corrupt file must not
+   * crash the whole rebuild). Distinct from the backlog entities, which read
+   * the nested `mnema:` block via {@link MarkdownIo}.
+   */
+  private readMirror(
+    filePath: string,
+    skipped: { file: string; reason: string }[],
+  ): { data: Record<string, unknown>; content: string } | null {
+    try {
+      const parsed = parseFrontmatter(readFileSync(filePath, 'utf-8'));
+      return { data: parsed.data as Record<string, unknown>, content: parsed.content };
+    } catch (error) {
+      skipped.push({
+        file: filePath,
+        reason: `unreadable frontmatter: ${error instanceof Error ? error.message : 'parse error'}`,
+      });
+      return null;
+    }
   }
 
   /**

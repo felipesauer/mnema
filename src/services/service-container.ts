@@ -459,12 +459,16 @@ export function createServiceContainer(
     dependencyRepository,
     labelRepository,
     observationRepository,
+    memoryRepository,
+    skillRepository,
     {
       projectRoot,
       backlogDir: config.paths.backlog,
       roadmapDir: config.paths.roadmap,
       sprintsDir: config.paths.sprints,
       observationsDir: config.paths.observations,
+      memoryDir: config.paths.memory,
+      skillsDir: config.paths.skills,
     },
     new Set(stateMachine.getWorkflow().states),
   );

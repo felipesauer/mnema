@@ -366,12 +366,13 @@ between the two decides what belongs in git:
 - **Commit it.** The markdown mirror — `backlog/`, `roadmap/`,
   `sprints/`, `memory/`, `skills/` — and the `audit/` log are the
   version-controlled record of the work. They survive a fresh clone and
-  are what a teammate (or another machine) reads. One caveat:
-  agent-recorded **memories and skills** are SQLite-first today — a
-  fresh clone can read their `.md` mirrors, but the local database does
-  not yet re-ingest them (`mnema sync` rebuilds tasks, epics, sprints,
-  decisions and observations from markdown; memory/skill ingestion is
-  on the roadmap). `mnema.config.json`
+  are what a teammate (or another machine) reads: `mnema sync` rebuilds
+  tasks, epics, sprints, decisions, observations **and** memories and
+  skills from the committed markdown into a fresh database. A few
+  knowledge fields are not carried by the mirror and so are lost on a
+  clone-rebuild — memory `scope`, skill version history, and
+  `created_by`/provenance (see [Skills & memory](docs/skills-and-memory.md)).
+  `mnema.config.json`
   and the active `workflows/*.json` are versioned too. So is
   `.mnema/keys/` — but note it holds **only public verification
   material** (the HMAC fingerprint and per-machine `.pub` files), never

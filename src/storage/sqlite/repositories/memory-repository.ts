@@ -32,6 +32,22 @@ export interface MemoryUpsertInput {
 }
 
 /**
+ * Input for {@link MemoryRepository.insertFromMirror} — a memory rebuilt from
+ * its `.md` mirror, so the on-disk timestamps are preserved rather than
+ * regenerated. `scope` is not present in the mirror (the folder projection is
+ * lossy), so a rebuilt memory is scopeless; recovering it is MNEMA-271.
+ */
+export interface MemoryMirrorInput {
+  readonly slug: string;
+  readonly title: string;
+  readonly content: string;
+  readonly topics: readonly string[];
+  readonly createdBy: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
  * Persistence for {@link Memory}. Slug is the natural key (UNIQUE); a
  * second call with the same slug overwrites the prior content.
  */
@@ -189,6 +205,38 @@ export class MemoryRepository {
       throw new Error('memory upsert succeeded but row not found');
     }
     return upserted;
+  }
+
+  /**
+   * Inserts a memory rebuilt from its `.md` mirror, preserving the on-disk
+   * timestamps. Idempotent by slug: a row that already exists is left
+   * untouched (the cache wins once present), so a rebuild over a populated
+   * database is a no-op and does not churn `updated_at`. Only live memories
+   * have a mirror (archived/superseded ones are deleted on write), so a
+   * rebuilt row is always active. Returns `true` when a row was inserted.
+   *
+   * @param input - Mirror-sourced memory fields
+   * @returns `true` when a new row was inserted, `false` when the slug existed
+   */
+  insertFromMirror(input: MemoryMirrorInput): boolean {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(
+        `INSERT OR IGNORE INTO memories (
+           id, slug, title, content, topics, scope, created_by, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+      )
+      .run(
+        generateUuid(),
+        input.slug,
+        input.title,
+        input.content,
+        JSON.stringify(input.topics),
+        input.createdBy,
+        input.createdAt,
+        input.updatedAt,
+      );
+    return result.changes > 0;
   }
 
   /**
