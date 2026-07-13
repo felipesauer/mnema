@@ -30,6 +30,7 @@ import {
   expandAgentsImports,
   writeAgentsMd,
 } from '../templates/agents-md.js';
+import { buildHeadReSigner } from './audit-command.js';
 import {
   type DoctorCheck,
   inspectAuditDiskDelta,
@@ -311,7 +312,13 @@ export class UpgradeCommand {
         run: () => {
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const state = new AuditStateRepository(container.adapter);
-          const signature = new AuditHeadSignatureRepository(container.adapter).read();
+          const signatures = new AuditHeadSignatureRepository(container.adapter);
+          const signature = signatures.read();
+          // Re-attest at the new baseline if the correction drops the count
+          // below the recorded signed checkpoint (interior drift) — no signer
+          // → returns false and reconcile still corrects audit_state.
+          const actor = container.identity.resolveDefaultActor().actor;
+          const reSign = buildHeadReSigner(projectRoot, actor, signatures);
           // apply=true; acceptLegacyBreaks=null (never launder a real break
           // during an upgrade); gitCwd=projectRoot for the anchor check —
           // exactly as `mnema audit reconcile --force` calls it. A refusal
@@ -323,10 +330,14 @@ export class UpgradeCommand {
             auditDir,
             state,
             secret.read(),
-            signature?.eventCountAt ?? null,
+            signature !== null
+              ? { eventCountAt: signature.eventCountAt, coveredHeadHash: signature.coveredHeadHash }
+              : null,
             true,
             null,
             projectRoot,
+            undefined,
+            reSign,
           );
           if (!result.ok) {
             return `${pc.yellow('⚠')} could not reconcile the audit mirror: ${result.reason} — run \`mnema audit diagnose\` to inspect`;
