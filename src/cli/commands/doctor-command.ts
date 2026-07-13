@@ -639,7 +639,9 @@ export function inspectMirrorDrift(
   ).map((r) => r.key);
 
   const roadmapKnown = new Set([...epicKeys, ...decisionKeys]);
-  const roadmapOrphans = listMirrorOrphans(dirs.roadmapDir, roadmapKnown);
+  // Only key-shaped stems are entity mirrors in roadmap/; free-form human
+  // files (e.g. 2026-Q2.md) are invited by the scaffold and never orphans.
+  const roadmapOrphans = listMirrorOrphans(dirs.roadmapDir, roadmapKnown, isRoadmapMirrorStem);
 
   const epicMissing = epicKeys.filter((k) => !existsSync(path.join(dirs.roadmapDir, `${k}.md`)));
   checks.push({
@@ -736,7 +738,11 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
  * @param knownSlugs - Authoritative set of slugs from SQLite
  * @returns Orphan slug list, alphabetical
  */
-function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string[] {
+function listMirrorOrphans(
+  dir: string,
+  knownSlugs: ReadonlySet<string>,
+  isMirrorStem?: (stem: string) => boolean,
+): string[] {
   // NO cold-DB guard here: the flat-mirror kinds (observations, roadmap,
   // sprints) ARE re-ingested from markdown by `mnema sync`, so a zero-row
   // table with a lingering mirror is a REAL orphan (e.g. the last sprint was
@@ -752,9 +758,24 @@ function listMirrorOrphans(dir: string, knownSlugs: ReadonlySet<string>): string
     if (PRUNE_PROTECTED_FILENAMES.has(entry.name)) continue;
     if (!entry.name.endsWith('.md')) continue;
     const slug = entry.name.slice(0, -3);
+    // When a stem shape is supplied (roadmap: only entity keys are mirrors),
+    // a file whose stem is not key-shaped is human-authored free-form content
+    // the scaffold invites (e.g. 2026-Q2.md) — never an orphan.
+    if (isMirrorStem !== undefined && !isMirrorStem(slug)) continue;
     if (!knownSlugs.has(slug)) orphans.push(slug);
   }
   return orphans.sort();
+}
+
+/**
+ * True when a `roadmap/` stem is a shaped entity key — `<PROJECT>-ADR-<n>` or
+ * `<PROJECT>-EPIC-<n>`. Only these are mirrors of a SQLite row; any other
+ * `.md` in roadmap/ is free-form human content (quarter/theme notes the
+ * scaffold README explicitly invites) and must never read as an orphan.
+ */
+const ROADMAP_MIRROR_STEM = /^[A-Z][A-Z0-9]*-(?:ADR|EPIC)-\d+$/;
+export function isRoadmapMirrorStem(stem: string): boolean {
+  return ROADMAP_MIRROR_STEM.test(stem);
 }
 
 /**
