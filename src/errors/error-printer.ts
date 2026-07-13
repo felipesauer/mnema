@@ -428,7 +428,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
   switch (error.kind) {
     // Conflict (4): retryable — the caller raced a concurrent change or hit a
     // contended resource. A wrapper script keys its retry loop off this code,
-    // so it must be distinct from Usage. (errors-catalog.md: E_CONFLICT, E_DB_LOCKED.)
+    // so it must be distinct from Usage. (e.g. CONFLICT, STORAGE_BUSY.)
     // Only genuine races belong here. Deterministic "already exists" duplicates
     // (DependencyDuplicate/EvidenceDuplicate/SprintMetricDuplicate) are NOT
     // retryable — they live under Usage with TaskKeyExists.

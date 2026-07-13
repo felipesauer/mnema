@@ -132,8 +132,9 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
  * Names of every universal MCP tool the server can register (core +
  * epic + sprint + knowledge), independent of any gating.
  *
- * Kept in lockstep with the registrars in `src/mcp/tools/universal/`
- * and with the lists in DESIGN.md §12 / EXECUTION_GUIDE.md §5.3.
+ * Kept in lockstep with the registrars in `src/mcp/tools/universal/` — the
+ * single source of truth for the catalogue (the group arrays below are its
+ * only authority; no hand-maintained doc list is canonical).
  *
  * Used by `mnema skill lint` to validate that every tool referenced by a
  * skill exists in the catalogue, without spinning up a real MCP server —
