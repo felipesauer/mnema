@@ -33,6 +33,13 @@ export class SyncCommand {
           for (const skipped of summary.skipped) {
             process.stderr.write(`${pc.yellow('!')} skipped ${skipped.file}: ${skipped.reason}\n`);
           }
+          for (const conflict of summary.conflicts) {
+            process.stderr.write(
+              `${pc.red('✗')} ${conflict.key} mirrored in ${conflict.states.length} state dirs ` +
+                `(${conflict.states.join(', ')}) — state left unchanged. ` +
+                `Run ${pc.bold('mnema doctor')} to resolve the duplicate.\n`,
+            );
+          }
         });
       });
   }

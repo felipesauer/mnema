@@ -471,6 +471,7 @@ export function createServiceContainer(
       skillsDir: config.paths.skills,
     },
     new Set(stateMachine.getWorkflow().states),
+    audit,
   );
 
   const taskService = new TaskService(

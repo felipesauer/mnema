@@ -54,6 +54,18 @@ export interface RebuildCounts {
 }
 
 /**
+ * A task key found mirrored in more than one backlog state directory in a
+ * single rebuild. The rebuild refuses to realign the cached row from any of
+ * the copies — it cannot know which state is current, and picking by
+ * directory order is exactly the silent regression this guard prevents.
+ */
+export interface MirrorConflict {
+  readonly key: string;
+  /** The state directories the key was found in, in scan order. */
+  readonly states: readonly string[];
+}
+
+/**
  * Outcome of a {@link SyncRebuild.run} execution.
  */
 export interface RebuildSummary {
@@ -66,6 +78,12 @@ export interface RebuildSummary {
   readonly memories: RebuildCounts;
   readonly skills: RebuildCounts;
   readonly skipped: readonly { readonly file: string; readonly reason: string }[];
+  /**
+   * Task keys mirrored in more than one state directory. Their cached rows
+   * were left untouched (no state realignment) so a duplicate can never move
+   * a task backwards silently. Resolve with `mnema doctor` before re-syncing.
+   */
+  readonly conflicts: readonly MirrorConflict[];
 }
 
 /**
@@ -124,6 +142,17 @@ export class SyncRebuild {
      * a way to smuggle a task past the workflow gates.
      */
     private readonly validStates: ReadonlySet<string>,
+    /**
+     * Optional audit writer. When present, a rebuild that realigns an
+     * ALREADY-CACHED task's state emits a `sync_realign` event so the
+     * change is not invisible to the timeline. The first-insert path (a
+     * fresh clone rebuilding every row from disk) deliberately emits
+     * nothing — see the class contract on not inventing history. Left
+     * optional so existing callers/tests construct the rebuild unchanged.
+     */
+    private readonly audit: {
+      write(input: { kind: string; actor: string; data: Record<string, unknown> }): void;
+    } | null = null,
   ) {}
 
   /**
@@ -150,6 +179,7 @@ export class SyncRebuild {
       memories: { scanned: 0, upserted: 0 },
       skills: { scanned: 0, upserted: 0 },
       skipped: [],
+      conflicts: [],
     };
 
     const project = this.projects.findByKey(projectKey);
@@ -158,6 +188,7 @@ export class SyncRebuild {
     }
 
     const skipped: { file: string; reason: string }[] = [];
+    const conflicts: MirrorConflict[] = [];
 
     // Roadmap first so tasks can resolve their links afterwards.
     const epics = this.rebuildRoadmap(
@@ -186,7 +217,7 @@ export class SyncRebuild {
     // directory order is not guaranteed), so the link is resolved in a
     // second pass, once every decision row exists.
     this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
-    const tasks = this.rebuildTasks(project.id, project.key, skipped);
+    const tasks = this.rebuildTasks(project.id, project.key, skipped, conflicts);
     // A task's `depends_on` list points at its blockers by key. Those
     // blocker rows may be walked after the dependent (directory order is
     // not guaranteed), so the edges are recreated in a second pass, once
@@ -212,6 +243,7 @@ export class SyncRebuild {
       memories,
       skills,
       skipped,
+      conflicts,
     };
   }
 
@@ -223,12 +255,21 @@ export class SyncRebuild {
     projectId: string,
     projectKey: string,
     skipped: { file: string; reason: string }[],
+    conflicts: MirrorConflict[],
   ): RebuildCounts {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return { scanned: 0, upserted: 0 };
 
     let scanned = 0;
     let upserted = 0;
+
+    // A first pass maps every key to the state directories it is mirrored
+    // in. A key found in more than one directory is a conflict: the rebuild
+    // must not pick a state for it (directory iteration order is arbitrary,
+    // and choosing by it silently regressed DONE tasks to READY/DRAFT in the
+    // field). These keys are recorded as conflicts and skipped entirely in
+    // the pass below — never upserted from any copy.
+    const duplicateKeys = this.collectDuplicateTaskKeys(root, conflicts);
 
     for (const stateDir of listDirs(root)) {
       const stateRoot = path.join(root, stateDir);
@@ -277,6 +318,14 @@ export class SyncRebuild {
           continue;
         }
 
+        // A key mirrored in more than one state directory is ambiguous: the
+        // rebuild refuses to realign the cached row from any copy (recorded
+        // as a conflict in the first pass). Leaving the row untouched is
+        // fail-closed — it never moves a task backwards on a guess.
+        if (duplicateKeys.has(key)) {
+          continue;
+        }
+
         const reporterId = this.actors.upsert(
           readString(data, 'reporter') ?? 'unknown',
           ActorKind.Human,
@@ -322,8 +371,18 @@ export class SyncRebuild {
           let changed = false;
 
           if (existing.state !== stateName) {
+            const fromState = existing.state;
             this.tasks.updateState(existing.id, stateName, null);
             changed = true;
+            // Realigning an already-cached row's state is a real change to
+            // the projection, not a fresh-clone reconstruction — record it
+            // so it is not invisible to the timeline. The first-insert path
+            // above emits nothing (see the constructor's `audit` contract).
+            this.audit?.write({
+              kind: 'sync_realign',
+              actor: 'system',
+              data: { key, from: fromState, to: stateName },
+            });
           }
 
           // Fold the content columns serialiseTask round-trips back onto the
@@ -375,6 +434,48 @@ export class SyncRebuild {
     }
 
     return { scanned, upserted };
+  }
+
+  /**
+   * First pass over `backlog/<STATE>/*.md`: finds every task key mirrored in
+   * more than one valid state directory and returns the set of such keys,
+   * appending a {@link MirrorConflict} for each to `conflicts`.
+   *
+   * Only copies that the main pass would actually act on are counted — the
+   * state directory must be one the active workflow declares, and the
+   * frontmatter `key` must match the filename — so an already-skipped file
+   * (unknown state, key/filename mismatch) never fabricates a false
+   * conflict. A key seen once is not a conflict; the common single-mirror
+   * repo yields an empty set and the guard is a no-op.
+   */
+  private collectDuplicateTaskKeys(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
+    const statesByKey = new Map<string, string[]>();
+
+    for (const stateDir of listDirs(root)) {
+      if (!this.validStates.has(stateDir)) continue;
+      const stateRoot = path.join(root, stateDir);
+
+      for (const fileName of listMarkdownFiles(stateRoot)) {
+        const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
+        const key = readString(data, 'key');
+        // Mirror the main pass's guards: a key that is absent or disagrees
+        // with the filename is skipped there, so it must not count here.
+        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+
+        const states = statesByKey.get(key);
+        if (states === undefined) statesByKey.set(key, [stateDir]);
+        else states.push(stateDir);
+      }
+    }
+
+    const duplicates = new Set<string>();
+    for (const [key, states] of statesByKey) {
+      if (states.length > 1) {
+        duplicates.add(key);
+        conflicts.push({ key, states });
+      }
+    }
+    return duplicates;
   }
 
   /**
