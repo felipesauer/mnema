@@ -868,17 +868,34 @@ function attestationCheck(
 
   // Rollback / truncation detection. A valid signature is durable, signed
   // evidence that the chain once reached `eventCountAt`. If the current chain
-  // is SHORTER than a signed checkpoint, the log retreated below an attested
-  // high-water mark — a truncation (or a rollback), which the count/hash
-  // checks alone cannot tell from a benign crash (and which boot
-  // reconciliation would otherwise launder to green). The attacker cannot
-  // forge or lower the signature without the machine key, so this is a hard
-  // tamper signal.
+  // is SHORTER than a signed checkpoint, the count retreated below an attested
+  // high-water mark. Whether that is tamper or benign turns on the SAME
+  // ancestry oracle used below: is the signed head still on disk?
   if (currentEventCount < sig.eventCountAt) {
+    // The signed head is still present in the walk. Nothing below the attested
+    // head vanished — the count sits above the on-disk line count only because
+    // the mirror/signature drifted ahead (interior drift). This is the benign
+    // pre-reconcile state, not a rollback; downgrade to a warning that names
+    // the heal. (In the reconcile flow the head is re-signed at the new
+    // baseline, so a standalone verify BEFORE reconcile is the only place this
+    // shows — and it must not read as tamper.)
+    if (chainedHashes.includes(sig.coveredHeadHash)) {
+      return {
+        name: 'audit machine attestation',
+        ok: false,
+        detail: `signed count (${sig.eventCountAt} by ${sig.signerActor}) sits above the on-disk chain (${currentEventCount}), but the signed head is still present — interior drift, not a rollback; run \`mnema audit reconcile\` to realign and re-attest`,
+        severity: 'warning',
+      };
+    }
+    // The signed head is ABSENT from disk: the chain retreated below an
+    // attested head that no longer exists — a genuine truncation/rollback the
+    // count/hash checks alone cannot tell from a benign crash. The attacker
+    // cannot forge or lower the signature without the machine key, so this
+    // stays a hard, fail-closed tamper signal.
     return {
       name: 'audit machine attestation',
       ok: false,
-      detail: `chain retreated below a signed checkpoint: a valid signature by ${sig.signerActor} covers event ${sig.eventCountAt}, but the chain now holds only ${currentEventCount} — the log was truncated/rolled back below attested history`,
+      detail: `chain retreated below a signed checkpoint: a valid signature by ${sig.signerActor} covers event ${sig.eventCountAt}, but the chain now holds only ${currentEventCount} and the signed head is absent — the log was truncated/rolled back below attested history`,
       severity: 'error',
     };
   }

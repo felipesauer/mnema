@@ -115,6 +115,28 @@ describe('rollback / truncation below a signed checkpoint', () => {
     expect(verdict?.ok).toBe(true);
   });
 
+  it('downgrades to a warning naming reconcile when the count drifted below the signature but the signed head is still on disk', () => {
+    const audit = signingWriter();
+    audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
+    audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-2' } });
+    audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-3' } });
+    // A checkpoint signed event 3; all three lines remain on disk.
+    expect(signatures.read()?.eventCountAt).toBe(3);
+
+    // INTERIOR DRIFT (the notagrafo pre-reconcile state): the DB event_count
+    // sits BELOW the signed count, but nothing on disk was removed — the
+    // signed head (event 3) is still present in the walk. This is drift to
+    // heal, not a rollback to alarm on.
+    adapter.getDatabase().prepare('UPDATE audit_state SET event_count = 2 WHERE id = 1').run();
+
+    const verdict = attestVerdict();
+    expect(verdict?.ok).toBe(false);
+    // NOT the hard tamper error — a warning that points at the heal.
+    expect(verdict?.severity).toBe('warning');
+    expect(verdict?.detail).toMatch(/reconcile/i);
+    expect(verdict?.detail).not.toMatch(/rolled back|truncated/i);
+  });
+
   it('documents the bound: truncating an UNSIGNED tail event (above the last checkpoint) is not caught by attestation', () => {
     // Checkpoint interval 2 signs at event 2; event 3 is then UNSIGNED.
     const checkpoint = new HeadCheckpointService(
