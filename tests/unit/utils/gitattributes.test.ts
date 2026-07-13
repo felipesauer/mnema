@@ -57,6 +57,28 @@ describe('gitattributes util', () => {
     expect(hasGitattributesUnion(cwd, auditPath)).toBe(false);
   });
 
+  it('matches a WHOLE rule line, not a substring — a deeper suffix rule is not a false positive', () => {
+    // A bare `audit` audit path whose marker is a suffix of an unrelated deeper
+    // rule already in the file must NOT read as present, or the top-level rule
+    // it actually needs is silently skipped.
+    const bareAudit = 'audit';
+    writeFileSync(
+      path.join(cwd, '.gitattributes'),
+      'packages/foo/audit/*.jsonl merge=union\n',
+      'utf-8',
+    );
+    expect(hasGitattributesUnion(cwd, bareAudit)).toBe(false);
+    // ensureGitattributes therefore appends the top-level rule…
+    expect(ensureGitattributes(cwd, bareAudit)).toBe('appended');
+    expect(hasGitattributesUnion(cwd, bareAudit)).toBe(true);
+    // …and the pre-existing deeper rule is untouched.
+    const attrs = readFileSync(path.join(cwd, '.gitattributes'), 'utf-8');
+    expect(attrs).toContain('packages/foo/audit/*.jsonl merge=union');
+    // Exactly one line equals the bare-audit marker.
+    const exact = attrs.split('\n').filter((l) => l.trim() === 'audit/*.jsonl merge=union');
+    expect(exact).toHaveLength(1);
+  });
+
   it('retrofit scenario: a pre-0.13 repo (no .gitattributes) gains the union rule', () => {
     // Exactly what `mnema upgrade` does for a project initialised before the
     // block existed — the file is created with the audit union rule.

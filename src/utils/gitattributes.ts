@@ -42,26 +42,42 @@ export function gitattributesLines(auditPath: string): string {
  * @returns `'created'` when the file was written, `'appended'` when the block
  *   was added to an existing file, `'present'` when it was already there
  */
+/** The exact `.gitattributes` rule line for an audit path (no comments). */
+function unionMarker(auditPath: string): string {
+  return `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
+}
+
+/**
+ * True when `content` contains the marker as a WHOLE rule line. A plain
+ * substring test would false-positive when the configured audit path is a
+ * suffix of a deeper unrelated rule already in the file (e.g. a bare `audit`
+ * marker matching an existing `packages/foo/audit/*.jsonl merge=union`), which
+ * would skip writing the rule the top-level dir actually needs. Matching the
+ * trimmed line exactly avoids that.
+ */
+function containsMarkerLine(content: string, marker: string): boolean {
+  return content.split('\n').some((line) => line.trim() === marker);
+}
+
 export function ensureGitattributes(
   cwd: string,
   auditPath: string,
 ): 'created' | 'appended' | 'present' {
   const file = path.join(cwd, '.gitattributes');
-  const marker = `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
+  const marker = unionMarker(auditPath);
   const block = gitattributesLines(auditPath);
   if (!existsSync(file)) {
     writeFileSync(file, `${block}\n`, 'utf-8');
     return 'created';
   }
-  if (readFileSync(file, 'utf-8').includes(marker)) return 'present';
+  if (containsMarkerLine(readFileSync(file, 'utf-8'), marker)) return 'present';
   appendFileSync(file, `\n${block}\n`, 'utf-8');
   return 'appended';
 }
 
-/** Whether the root `.gitattributes` already carries the audit `merge=union` marker. */
+/** Whether the root `.gitattributes` already carries the audit `merge=union` rule line. */
 export function hasGitattributesUnion(cwd: string, auditPath: string): boolean {
   const file = path.join(cwd, '.gitattributes');
   if (!existsSync(file)) return false;
-  const marker = `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
-  return readFileSync(file, 'utf-8').includes(marker);
+  return containsMarkerLine(readFileSync(file, 'utf-8'), unionMarker(auditPath));
 }
