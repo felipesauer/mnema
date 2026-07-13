@@ -472,16 +472,19 @@ export class TaskCommand {
             if (!result.ok) {
               process.exit(printError(result.error));
             }
+            const { evidence, noOp } = result.value;
+            const verb = noOp ? 'already attached to' : 'evidence attached to';
             process.stdout.write(
-              `${pc.green('✓')} evidence attached to ${key} criterion ${result.value.criterionIndex} ${pc.dim(`(${result.value.kind})`)}\n`,
+              `${pc.green('✓')} ${verb} ${key} criterion ${evidence.criterionIndex} ${pc.dim(`(${evidence.kind})`)}\n`,
             );
             // Advisory integrity check for a commit ref — never blocks the
             // attach (it already succeeded); silent when git can't verify.
-            if (result.value.kind === 'commit') {
-              const check = container.commitVerifier.verify(result.value.ref, projectRoot);
+            // Skip on a no-op: the edge (and any earlier warning) already stood.
+            if (!noOp && evidence.kind === 'commit') {
+              const check = container.commitVerifier.verify(evidence.ref, projectRoot);
               if (check.checked && !check.found) {
                 process.stdout.write(
-                  `${pc.yellow('▲')} ${pc.dim(check.reason ?? `commit ${result.value.ref} not found in this repository`)}\n`,
+                  `${pc.yellow('▲')} ${pc.dim(check.reason ?? `commit ${evidence.ref} not found in this repository`)}\n`,
                 );
               }
             }

@@ -97,14 +97,34 @@ export class TaskEvidenceRepository {
    * @returns `true` when present
    */
   exists(taskId: string, criterionIndex: number, kind: EvidenceKind, ref: string): boolean {
+    return this.findEdge(taskId, criterionIndex, kind, ref) !== null;
+  }
+
+  /**
+   * Returns the evidence row matching an exact edge, or null when absent.
+   * Lets a re-attach of an identical edge return the existing row (an
+   * idempotent no-op) instead of throwing.
+   *
+   * @param taskId - Task id
+   * @param criterionIndex - Criterion position
+   * @param kind - Evidence kind
+   * @param ref - Reference
+   * @returns The existing {@link TaskEvidence}, or null
+   */
+  findEdge(
+    taskId: string,
+    criterionIndex: number,
+    kind: EvidenceKind,
+    ref: string,
+  ): TaskEvidence | null {
     const row = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT 1 FROM task_evidence
+        `SELECT * FROM task_evidence
           WHERE task_id = ? AND criterion_index = ? AND kind = ? AND ref = ?`,
       )
-      .get(taskId, criterionIndex, kind, ref);
-    return row !== undefined;
+      .get(taskId, criterionIndex, kind, ref) as TaskEvidenceRow | undefined;
+    return row === undefined ? null : rowToEvidence(row);
   }
 
   /**

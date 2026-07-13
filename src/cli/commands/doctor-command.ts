@@ -1510,6 +1510,20 @@ export function inspectTaskStateDrift(
  * an orphan is untidy, not broken, and `mnema agent close-orphans
  * --apply` resolves it.
  */
+/**
+ * The oldest orphan — the one whose age is greatest. Picked by `ageHours`
+ * rather than array position so the label can never invert the ordering
+ * again, regardless of how the source list happens to be sorted.
+ */
+export function oldestOrphan<T extends { readonly ageHours: number }>(
+  orphans: readonly T[],
+): T | undefined {
+  return orphans.reduce<T | undefined>(
+    (max, o) => (max === undefined || o.ageHours > max.ageHours ? o : max),
+    undefined,
+  );
+}
+
 function inspectOrphanRuns(adapter: SqliteAdapter, thresholdHours: number): DoctorCheck[] {
   const orphans = findOrphanRuns(
     new AgentRunRepository(adapter).findRunning(),
@@ -1519,7 +1533,7 @@ function inspectOrphanRuns(adapter: SqliteAdapter, thresholdHours: number): Doct
   if (orphans.length === 0) {
     return [{ name: 'no orphaned runs', ok: true, detail: `none open > ${thresholdHours}h` }];
   }
-  const oldest = orphans[orphans.length - 1];
+  const oldest = oldestOrphan(orphans);
   return [
     {
       name: 'orphaned agent runs',

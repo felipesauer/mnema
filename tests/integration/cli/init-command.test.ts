@@ -46,6 +46,26 @@ describe('InitCommand.run (silent mode)', () => {
     expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
   });
 
+  it('embeds the memory index in AGENTS.md in one pass (full mode)', () => {
+    const result = new InitCommand().run({
+      cwd: projectRoot,
+      name: 'My App',
+      key: 'MYAPP',
+      workflow: 'default',
+      force: false,
+      minimal: false,
+    });
+    expect(result.ok).toBe(true);
+
+    // The memory index was seeded …
+    expect(existsSync(path.join(projectRoot, '.mnema', 'memory', 'INDEX.md'))).toBe(true);
+    // … and AGENTS.md embedded it on this first write — never the degraded
+    // "skipped — file not found" note a second `agents sync` would fix.
+    const agents = readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8');
+    expect(agents).toContain('# Memory index');
+    expect(agents).not.toContain('file not found');
+  });
+
   it('reports identityConfigured=false when no actor is resolvable', () => {
     const prevActor = process.env.MNEMA_ACTOR;
     const prevHome = process.env.HOME;

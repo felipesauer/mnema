@@ -26,6 +26,17 @@ export interface AttachEvidenceInput {
 }
 
 /**
+ * The outcome of {@link TaskEvidenceService.attach}: the evidence row, and
+ * whether the call created it (`noOp: false`) or matched an edge that already
+ * existed (`noOp: true`). Re-attaching an identical edge is idempotent rather
+ * than an error, so a retry after a dropped response is safe.
+ */
+export interface AttachEvidenceResult {
+  readonly evidence: TaskEvidence;
+  readonly noOp: boolean;
+}
+
+/**
  * One acceptance criterion paired with the evidence attached to it.
  */
 export interface CriterionEvidence {
@@ -64,7 +75,7 @@ export class TaskEvidenceService {
    * @param input - Task key, criterion index, evidence fields + identity
    * @returns The created evidence or a structured error
    */
-  attach(input: AttachEvidenceInput): Result<TaskEvidence, MnemaError> {
+  attach(input: AttachEvidenceInput): Result<AttachEvidenceResult, MnemaError> {
     const rawKind: string = input.kind ?? 'other';
     if (!isEvidenceKind(rawKind)) {
       return Err({
@@ -99,13 +110,12 @@ export class TaskEvidenceService {
       });
     }
 
-    if (this.evidence.exists(task.id, input.criterionIndex, kind, input.ref)) {
-      return Err({
-        kind: ErrorCode.EvidenceDuplicate,
-        taskKey: input.taskKey,
-        index: input.criterionIndex,
-        ref: input.ref,
-      });
+    // Re-attaching the exact same edge is a no-op, not an error: return the
+    // row that already exists so a retry after a dropped response is safe and
+    // the caller is never tempted to mangle the ref to dodge a duplicate.
+    const existing = this.evidence.findEdge(task.id, input.criterionIndex, kind, input.ref);
+    if (existing !== null) {
+      return Ok({ evidence: existing, noOp: true });
     }
 
     const created = this.evidence.insert({
@@ -132,7 +142,7 @@ export class TaskEvidenceService {
       },
     });
 
-    return Ok(created);
+    return Ok({ evidence: created, noOp: false });
   }
 
   /**

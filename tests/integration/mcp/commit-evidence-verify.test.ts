@@ -166,4 +166,31 @@ describe('commit evidence verification (MNEMA-89)', () => {
 
     expect(payload(res).warning).toBeUndefined();
   });
+
+  it('re-attaching an identical edge is an idempotent no_op, not an error', async () => {
+    process.env.MNEMA_ACTOR = 'daniel';
+    harness = await setup(gitRunner(true));
+    await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'commit ev' } });
+    const key = await seedTask(harness.client);
+    const args = { task_key: key, criterion_index: 0, kind: 'url', ref: 'https://example.com' };
+
+    const first = payload(
+      (await harness.client.callTool({
+        name: 'task_attach_evidence',
+        arguments: args,
+      })) as CallToolResult,
+    );
+    const second = (await harness.client.callTool({
+      name: 'task_attach_evidence',
+      arguments: args,
+    })) as CallToolResult;
+    const body = payload(second);
+
+    // No error, flagged as a no_op, and it points the caller at criterion_index
+    // rather than inviting a mangled ref.
+    expect(second.isError).toBeFalsy();
+    expect(body.no_op).toBe(true);
+    expect(String(body.note)).toContain('criterion_index');
+    expect((body.evidence as { id: string }).id).toBe((first.evidence as { id: string }).id);
+  });
 });
