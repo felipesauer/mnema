@@ -434,6 +434,21 @@ export class UpgradeCommand {
       });
     }
 
+    // Backfill the raw `scope` into scoped memory mirrors written before it
+    // was persisted, so a future clone recovers the scope on `sync` (the
+    // folder is only a lossy projection). Read-only detection here; the
+    // rewrite runs on confirmation. Scopeless memories are untouched.
+    const scopeBackfill = container.memory.scopeBackfillCandidates();
+    if (scopeBackfill.length > 0) {
+      steps.push({
+        label: `backfill scope into ${scopeBackfill.length} memory mirror(s) missing it`,
+        run: () => {
+          const done = container.memory.backfillScopeInMirrors();
+          return `added the scope field to ${done.length} memory mirror(s)`;
+        },
+      });
+    }
+
     // Orphan mirrors — `.md` files with no live SQLite row. Left
     // unhandled they masquerade as real entities after a clone/rebuild.
     // `upgrade` surfaces them and offers to prune; the scan only reports

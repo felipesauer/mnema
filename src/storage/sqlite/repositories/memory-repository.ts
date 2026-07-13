@@ -33,9 +33,9 @@ export interface MemoryUpsertInput {
 
 /**
  * Input for {@link MemoryRepository.insertFromMirror} — a memory rebuilt from
- * its `.md` mirror, so the on-disk timestamps are preserved rather than
- * regenerated. `scope` is not present in the mirror (the folder projection is
- * lossy), so a rebuilt memory is scopeless; recovering it is MNEMA-271.
+ * its `.md` mirror, so the on-disk timestamps and raw `scope` are preserved
+ * rather than regenerated. The mirror carries the authoritative scope in its
+ * frontmatter (the folder is only a lossy presentational projection).
  */
 export interface MemoryMirrorInput {
   readonly slug: string;
@@ -45,6 +45,8 @@ export interface MemoryMirrorInput {
   readonly createdBy: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /** Raw scope from the mirror frontmatter; null for a scopeless memory. */
+  readonly scope: string | null;
 }
 
 /**
@@ -224,7 +226,7 @@ export class MemoryRepository {
       .prepare(
         `INSERT OR IGNORE INTO memories (
            id, slug, title, content, topics, scope, created_by, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         generateUuid(),
@@ -232,6 +234,7 @@ export class MemoryRepository {
         input.title,
         input.content,
         JSON.stringify(input.topics),
+        input.scope,
         input.createdBy,
         input.createdAt,
         input.updatedAt,

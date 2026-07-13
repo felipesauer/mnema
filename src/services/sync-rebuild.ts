@@ -553,9 +553,9 @@ export class SyncRebuild {
    * frontmatter (not the `mnema:` block), so it is parsed directly. The slug
    * is the filename basename; the insert is idempotent by slug.
    *
-   * Documented losses (not in the mirror): `scope` (the folder is a lossy
-   * projection — a rebuilt memory is scopeless, recovered by MNEMA-271) and
-   * `created_by` (attributed to `unknown`). Only live memories have a mirror
+   * The raw `scope` is read back from the frontmatter (the folder is only a
+   * lossy projection). Documented loss (not in the mirror): `created_by`
+   * (attributed to `unknown`). Only live memories have a mirror
    * (archived/superseded ones are deleted on write), so this restores only
    * live rows. The curated `decisions/`/`notes/` subfolders are human-authored
    * and never scanned as memory mirrors.
@@ -590,6 +590,10 @@ export class SyncRebuild {
         title,
         content: content.trim(),
         topics: readStringArray(data, 'topics'),
+        // The raw scope is authoritative in the frontmatter; the folder is a
+        // lossy projection. Absent (a scopeless memory, or a mirror written
+        // before scope was persisted) → null.
+        scope: readString(data, 'scope'),
         createdBy,
         createdAt: readString(data, 'created_at') ?? now,
         updatedAt: readString(data, 'updated_at') ?? now,

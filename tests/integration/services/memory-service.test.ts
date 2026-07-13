@@ -190,6 +190,49 @@ describe('MemoryService', () => {
     const mirror = readFileSync(path.join(memoryDir, 'x.md'), 'utf-8');
     expect(mirror).toContain('title: My title');
     expect(mirror).toContain('body');
+    // A scopeless memory's mirror omits the scope field entirely.
+    expect(mirror).not.toContain('scope:');
+  });
+
+  it('persists the RAW scope in a scoped memory mirror frontmatter', () => {
+    service.record({
+      slug: 'notifier-rate',
+      title: 'N',
+      content: 'body',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    const mirror = readFileSync(
+      path.join(memoryDir, 'packages-notifier', 'notifier-rate.md'),
+      'utf-8',
+    );
+    // The folder is the lossy projection; the frontmatter carries the raw scope.
+    expect(mirror).toContain('scope: packages/notifier');
+  });
+
+  it('backfillScopeInMirrors adds scope to a scoped mirror written without it', () => {
+    service.record({
+      slug: 'notifier-rate',
+      title: 'N',
+      content: 'body',
+      scope: 'packages/notifier',
+      actor: 'daniel',
+    });
+    const mirrorPath = path.join(memoryDir, 'packages-notifier', 'notifier-rate.md');
+    // Simulate a pre-scope mirror: strip the scope line, keep everything else.
+    const stripped = readFileSync(mirrorPath, 'utf-8')
+      .split('\n')
+      .filter((l) => !l.startsWith('scope:'))
+      .join('\n');
+    writeFileSync(mirrorPath, stripped);
+    expect(readFileSync(mirrorPath, 'utf-8')).not.toContain('scope:');
+
+    const done = service.backfillScopeInMirrors();
+    expect(done).toEqual(['notifier-rate']);
+    expect(readFileSync(mirrorPath, 'utf-8')).toContain('scope: packages/notifier');
+
+    // Idempotent: a second pass rewrites nothing.
+    expect(service.backfillScopeInMirrors()).toEqual([]);
   });
 
   it('2.3: rebuildMirrors recreates missing mirrors and leaves present ones intact', () => {
