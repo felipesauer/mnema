@@ -21,6 +21,7 @@ import {
   inspectAuditIntegrity,
   reconcileAuditState,
 } from '../../services/audit-integrity.js';
+import type { GitCommandRunner } from '../../services/git-commit-service.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
@@ -635,5 +636,275 @@ export class AuditCommand {
           }
         });
       });
+
+    group
+      .command('repair')
+      .description(
+        'Read-only, single-pass recovery planner for the audit chain. Runs every ' +
+          'precondition the recovery commands check — malformed lines, prev_hash breaks and ' +
+          'their content validity, the git anchor, the mirror-vs-disk delta, and the signed ' +
+          'checkpoint — in ONE pass and prints an ordered plan naming the exact next command ' +
+          'per finding (reconcile, accept-truncation, or a git fix), instead of making you ' +
+          'discover them one refusal at a time. Never modifies anything (--dry-run is implied ' +
+          'and the only mode).',
+      )
+      .option(
+        '--dry-run',
+        'No-op flag: repair is always read-only. Accepted so the intent is explicit in scripts.',
+        false,
+      )
+      .action(async () => {
+        await withCliContext(({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, config.paths.audit);
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const plan = planAuditRepair({
+            auditDir,
+            secret: secret.read(),
+            gitCwd: projectRoot,
+            mirrorCount: new AuditStateRepository(container.adapter).read().eventCount,
+            signature: new AuditHeadSignatureRepository(container.adapter).read(),
+            attestationArtifacts: listArtifacts(auditDir),
+          });
+
+          process.stdout.write(
+            `${pc.bold('audit repair plan')} ${pc.dim('(read-only — nothing changed)')}\n`,
+          );
+          for (const line of plan.findings) {
+            const mark =
+              line.severity === 'ok'
+                ? pc.green('✔')
+                : line.severity === 'blocker'
+                  ? pc.red('✘')
+                  : pc.yellow('⚠');
+            process.stdout.write(`  ${mark}  ${line.text}\n`);
+          }
+          process.stdout.write(`\n${pc.bold('Next:')} ${plan.recommendation}\n`);
+          if (plan.commands.length > 0) {
+            for (const cmd of plan.commands) {
+              process.stdout.write(`  ${pc.cyan('$')} ${cmd}\n`);
+            }
+          }
+        });
+      });
   }
+}
+
+/** One line in the {@link planAuditRepair} report. */
+export interface RepairFinding {
+  readonly severity: 'ok' | 'warn' | 'blocker';
+  readonly text: string;
+}
+
+/** The ordered recovery plan {@link planAuditRepair} produces. */
+export interface AuditRepairPlan {
+  readonly findings: readonly RepairFinding[];
+  /** One-line verdict of what to do next. */
+  readonly recommendation: string;
+  /** The exact command(s) to run next, in order (may be empty when healthy). */
+  readonly commands: readonly string[];
+}
+
+/**
+ * Evaluates every audit-recovery precondition in ONE read-only pass and
+ * returns an ordered plan. It mirrors the exact gate order the mutating
+ * commands enforce, so the plan tells the truth about what would happen:
+ *
+ *  1. malformed lines            → blocker (a deletion smokescreen); fix by hand
+ *  2. chain break (prev_hash /   → if content-valid AND disk matches git HEAD,
+ *     hash / version)               a legacy-break reconcile candidate; else a
+ *                                    content/git blocker to resolve first
+ *  3. mirror vs disk delta        → equal: nothing; disk-ahead: reconcile;
+ *                                    mirror-ahead-by-one clean: self-heals;
+ *                                    mirror-ahead-by-more: reconcile
+ *  4. signed checkpoint vs disk   → signed head present on disk = interior
+ *                                    drift (reconcile heals + re-signs); signed
+ *                                    head ABSENT = genuine truncation, needs the
+ *                                    explicit accept-truncation path (gated on
+ *                                    no committed .att covering beyond the tail)
+ *
+ * Pure and read-only: it computes nothing the individual checks don't already,
+ * it just gathers them so the operator sees the whole path at once.
+ */
+export function planAuditRepair(input: {
+  readonly auditDir: string;
+  readonly secret: Buffer | null;
+  readonly gitCwd: string | null;
+  readonly mirrorCount: number;
+  readonly signature: { readonly eventCountAt: number; readonly coveredHeadHash: string } | null;
+  readonly attestationArtifacts: ReadonlyArray<{ readonly to: number }>;
+  readonly gitRunner?: GitCommandRunner;
+}): AuditRepairPlan {
+  const { auditDir, secret, gitCwd, mirrorCount, signature, attestationArtifacts } = input;
+  const chain = assessAuditChain(auditDir, secret);
+  const findings: RepairFinding[] = [];
+
+  // 1. Malformed lines — a hard blocker for every recovery path.
+  if (chain.malformedLines > 0) {
+    findings.push({
+      severity: 'blocker',
+      text: `${chain.malformedLines} unparseable line(s) on disk — every recovery path refuses until these are resolved (a malformed line can mask a deletion)`,
+    });
+    return {
+      findings,
+      recommendation:
+        'Resolve the unparseable line(s) by hand first (inspect the audit JSONL), then re-run `mnema audit repair`.',
+      commands: [],
+    };
+  }
+  findings.push({ severity: 'ok', text: 'no unparseable lines' });
+
+  // Nothing chained yet — nothing to recover.
+  if (!chain.chainEverStarted) {
+    return {
+      findings: [...findings, { severity: 'ok', text: 'no chained (v>=2) events on disk yet' }],
+      recommendation: 'Nothing to repair — the chain has not started.',
+      commands: [],
+    };
+  }
+
+  // 2. Chain break — run the SAME content + git-anchor diagnosis reconcile uses.
+  let legacyBreakCutoff: string | null = null;
+  if (chain.chainBroken) {
+    const diag = diagnoseAuditChain(auditDir, secret, gitCwd, input.gitRunner);
+    const gitOk = diag.matchesCommittedHead === true;
+    if (diag.allBreaksContentValid && gitOk) {
+      // Suggest the day AFTER the latest break so the printed cutoff works.
+      const latest = diag.breaks.reduce((max, b) => (b.at !== null && b.at > max ? b.at : max), '');
+      const parsed = latest !== '' ? new Date(latest) : null;
+      legacyBreakCutoff =
+        parsed !== null && !Number.isNaN(parsed.getTime())
+          ? new Date(parsed.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+          : null;
+      findings.push({
+        severity: 'warn',
+        text: `${diag.breaks.length} prev_hash break(s), all content-valid, and the disk matches git HEAD — a concurrent-writer seam, recoverable with an explicit legacy-breaks acceptance`,
+      });
+    } else {
+      const why = !diag.allBreaksContentValid
+        ? 'at least one break is NOT content-valid (a real edit, or unverifiable without the project secret)'
+        : diag.matchesCommittedHead === false
+          ? 'the audit files have local, uncommitted changes vs git HEAD'
+          : 'not a git work tree, so the git anchor of trust could not be confirmed';
+      findings.push({
+        severity: 'blocker',
+        text: `${chain.chainBreakDetail} — ${why}. This is not a mirror-drift shape; reconciling would hide it`,
+      });
+      return {
+        findings,
+        recommendation:
+          'Resolve the content/git issue above first (start with `mnema audit diagnose` for the per-break detail). No automated recovery is safe until the on-disk chain is internally consistent and committed.',
+        commands: ['mnema audit diagnose'],
+      };
+    }
+  } else {
+    findings.push({ severity: 'ok', text: 'chain linkage is internally consistent' });
+  }
+
+  // 3. Mirror vs disk delta.
+  const delta = mirrorCount - chain.chainedLines;
+  if (delta === 0) {
+    findings.push({
+      severity: 'ok',
+      text: `audit_state matches disk (${chain.chainedLines} events)`,
+    });
+  } else if (delta < 0) {
+    findings.push({
+      severity: 'warn',
+      text: `audit_state (${mirrorCount}) is BEHIND disk (${chain.chainedLines}) — the fresh-clone / mirror-behind shape; reconcile rebuilds the counter from disk`,
+    });
+  } else if (delta === 1) {
+    findings.push({
+      severity: 'warn',
+      text: `audit_state (${mirrorCount}) is one AHEAD of disk (${chain.chainedLines}) with a clean tail — the benign crash window; the next write self-heals it (or reconcile now)`,
+    });
+  } else {
+    findings.push({
+      severity: 'warn',
+      text: `audit_state (${mirrorCount}) is ${delta} AHEAD of disk (${chain.chainedLines}) — mirror drift from concurrent writers; reconcile rebuilds the counter from disk`,
+    });
+  }
+
+  // 4. Signed checkpoint vs disk — the interior-drift vs genuine-truncation fork.
+  let truncationBelowAtt: number | null = null;
+  let interiorDrift = false;
+  if (signature !== null && chain.chainedLines < signature.eventCountAt) {
+    const signedHeadOnDisk = chain.chainedHashes.includes(signature.coveredHeadHash);
+    if (signedHeadOnDisk) {
+      // Even if the mirror counter already matches disk, a signed checkpoint
+      // above the on-disk chain leaves attestation reading a stale high-water
+      // mark; reconcile re-signs the head at the on-disk tail to clear it.
+      interiorDrift = true;
+      findings.push({
+        severity: 'warn',
+        text: `a signed checkpoint attests event ${signature.eventCountAt} but disk holds ${chain.chainedLines}; the signed head IS on disk — interior drift, which reconcile heals and re-signs`,
+      });
+    } else {
+      // Genuine truncation. accept-truncation is the path — unless a committed
+      // .att covers beyond the new tail (then that must be removed first).
+      const overreaching = attestationArtifacts.find((a) => a.to > chain.chainedLines);
+      truncationBelowAtt = overreaching?.to ?? null;
+      findings.push({
+        severity: 'blocker',
+        text: `a signed checkpoint attests event ${signature.eventCountAt}, disk holds ${chain.chainedLines}, and the signed head is ABSENT from disk — a truncation/fork below attested history, not mirror drift`,
+      });
+    }
+  } else if (signature !== null) {
+    findings.push({ severity: 'ok', text: 'signed checkpoint is at or below the on-disk chain' });
+  }
+
+  // Decide the recommendation from the strongest signal.
+  const truncation = findings.some((f) => f.text.includes('ABSENT from disk'));
+  if (truncation) {
+    // accept-truncation refuses a broken chain unconditionally (no
+    // legacy-break escape hatch, unlike reconcile), so recommending it while
+    // the chain is broken would hand the operator a command that immediately
+    // refuses. When both are present, the break must be resolved first — even
+    // a content-valid concurrent-writer seam blocks accept-truncation.
+    if (chain.chainBroken) {
+      return {
+        findings,
+        recommendation:
+          'BOTH a chain break AND a truncation below attested history are present. `accept-truncation` refuses any broken chain, so resolve the break FIRST (start with `mnema audit diagnose`); once the chain is internally consistent, re-run `mnema audit repair` for the truncation step.',
+        commands: ['mnema audit diagnose'],
+      };
+    }
+    if (truncationBelowAtt !== null) {
+      return {
+        findings,
+        recommendation: `Genuine truncation below attested history, AND a committed attestation (attest/${truncationBelowAtt}.att) covers events beyond the new tail. Remove or reconcile that .att first, then accept the truncation explicitly:`,
+        commands: [
+          `# inspect the committed attestation attest/${truncationBelowAtt}.att and remove it if the truncation is intended`,
+          'mnema audit accept-truncation --require-committed --force',
+        ],
+      };
+    }
+    return {
+      findings,
+      recommendation:
+        'Genuine truncation below attested history. If the history was deliberately rewritten, accept it explicitly (fail-closed; re-verified against the committed disk); otherwise investigate the missing events — reconcile will NOT launder this:',
+      commands: ['mnema audit accept-truncation --require-committed --force'],
+    };
+  }
+
+  const needsReconcile = delta !== 0 || chain.chainBroken || interiorDrift;
+  if (needsReconcile) {
+    const cmd =
+      legacyBreakCutoff !== null
+        ? `mnema audit reconcile --force --accept-legacy-breaks ${legacyBreakCutoff}`
+        : 'mnema audit reconcile --force';
+    return {
+      findings,
+      recommendation:
+        delta === 1 && !chain.chainBroken
+          ? 'A one-ahead mirror self-heals on the next write; run reconcile now only if you want it corrected immediately:'
+          : 'Recover the mirror from the on-disk chain (rebuilds audit_state, re-signs the head if the count drops below a signed checkpoint):',
+      commands: [cmd],
+    };
+  }
+
+  return {
+    findings,
+    recommendation: 'Audit chain and mirror are healthy — no repair needed.',
+    commands: [],
+  };
 }
