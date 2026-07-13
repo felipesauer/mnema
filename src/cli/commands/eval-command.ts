@@ -35,10 +35,11 @@ export class EvalCommand {
       )
       .option('--json', 'Emit the raw report object as JSON', false)
       .action(async (options: EvalOptions) => {
-        await withCliContext(({ container }) => {
-          const report = container.evalReport.compute(
-            options.since === undefined ? {} : { since: options.since },
-          );
+        await withCliContext(({ container, config }) => {
+          const report = container.evalReport.compute({
+            ...(options.since === undefined ? {} : { since: options.since }),
+            proxy: config.eval.guided_proxy,
+          });
           if (options.json === true) {
             process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
             return;

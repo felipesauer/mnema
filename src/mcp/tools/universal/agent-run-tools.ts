@@ -74,6 +74,10 @@ export class AgentRunTools {
           agentHandle: handle,
           parentRunId,
           clientMetadata: this.session.getClientMetadata() as Record<string, unknown>,
+          // Stamp the run guided when context_bootstrap ran earlier this
+          // session — the observable proxy for a bootstrap-guided (solo) run
+          // that leaves no skill_used trace.
+          bootstrapped: this.session.wasBootstrapped(),
         });
         if (!result.ok) return err(result.error);
 

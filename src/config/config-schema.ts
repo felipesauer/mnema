@@ -111,6 +111,15 @@ export const ConfigSchema = z.object({
   mode: z.literal('single').default('single'),
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
+  // Which observable signal marks an agent run as "guided" in `eval_report`.
+  // `skill_used`: the run emitted a skill_used event. `bootstrap`: the run was
+  // opened after context_bootstrap ran (a bootstrap-guided solo run that
+  // leaves no skill trace). `either` (default): guided when EITHER holds.
+  eval: z
+    .object({
+      guided_proxy: z.enum(['skill_used', 'bootstrap', 'either']).default('either'),
+    })
+    .prefault({}),
   // Machine attestation (ADR-37 layer 2): the chain head is signed with the
   // per-machine Ed25519 key at a checkpoint interval — NOT every event, to
   // spare the write hot path and cold-start. A checkpoint fires when EITHER

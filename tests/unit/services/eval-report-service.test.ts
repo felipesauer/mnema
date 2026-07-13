@@ -16,6 +16,16 @@ const at = (h: number): string => new Date(BASE + h * HOUR).toISOString();
 function runStarted(run: string, h: number): AuditEvent {
   return { v: 2, at: at(h), kind: 'run_started', actor: 'a', run, data: { goal: 'x' } };
 }
+function runStartedBootstrapped(run: string, h: number): AuditEvent {
+  return {
+    v: 2,
+    at: at(h),
+    kind: 'run_started',
+    actor: 'a',
+    run,
+    data: { goal: 'x', bootstrapped: true },
+  };
+}
 function created(key: string, h: number, run: string): AuditEvent {
   return { v: 2, at: at(h), kind: 'task_created', actor: 'a', run, data: { key, state: 'DRAFT' } };
 }
@@ -102,6 +112,48 @@ describe('EvalReportService', () => {
     // The honesty surface is always present.
     expect(report.proxy).toContain('skill_used');
     expect(report.caveat).toContain('CORRELATIONAL');
+  });
+
+  it('counts a bootstrap-only run (no skill_used) as guided under the default proxy', () => {
+    // The core MNEMA-263 case: a solo run that bootstrapped but used no
+    // recorded skill. Its run_started carries data.bootstrapped, so the
+    // default `either` proxy puts it in the guided cohort.
+    const events: AuditEvent[] = [
+      runStartedBootstrapped('G', 0),
+      created('T1', 0.2, 'G'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'G'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'G'),
+      runStarted('U', 3),
+      created('T2', 3.2, 'U'),
+      transitioned('T2', 4, 'DRAFT', 'IN_PROGRESS', 'start', 'U'),
+      transitioned('T2', 5, 'IN_PROGRESS', 'DONE', 'complete', 'U'),
+    ];
+    const report = makeEval(events).compute(); // default proxy = either
+    expect(report.guided.runs).toBe(1);
+    expect(report.unguided.runs).toBe(1);
+    expect(report.guided.metrics.reopen.completed_tasks).toBe(1);
+  });
+
+  it('proxy=skill_used ignores a bootstrap flag; proxy=bootstrap counts it', () => {
+    const events: AuditEvent[] = [
+      runStartedBootstrapped('G', 0),
+      created('T1', 0.2, 'G'),
+      transitioned('T1', 1, 'DRAFT', 'IN_PROGRESS', 'start', 'G'),
+      transitioned('T1', 2, 'IN_PROGRESS', 'DONE', 'complete', 'G'),
+    ];
+    // skill_used proxy: no skill event → the run is NOT guided, and the proxy
+    // text describes skill use as the signal (the run_started flag is ignored).
+    const skillOnly = makeEval(events).compute({ proxy: 'skill_used' });
+    expect(skillOnly.guided.runs).toBe(0);
+    expect(skillOnly.unguided.runs).toBe(1);
+    expect(skillOnly.proxy).toContain('used a recorded skill');
+    expect(skillOnly.proxy).not.toContain('was opened after');
+
+    // bootstrap proxy: the flag alone makes it guided; the text names it.
+    const bootOnly = makeEval(events).compute({ proxy: 'bootstrap' });
+    expect(bootOnly.guided.runs).toBe(1);
+    expect(bootOnly.unguided.runs).toBe(0);
+    expect(bootOnly.proxy).toContain('was opened after');
   });
 
   it('keeps a task that spans cohorts in one cohort (the run that completed it)', () => {

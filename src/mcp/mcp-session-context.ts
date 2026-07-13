@@ -30,6 +30,7 @@ export class McpSessionContext {
   private status: McpServerStatus = McpServerStatus.Running;
   private currentRunId: string | null = null;
   private clientMetadata: McpClientMetadata;
+  private bootstrapped = false;
 
   constructor(clientMetadata: McpClientMetadata = {}) {
     this.clientMetadata = clientMetadata;
@@ -65,6 +66,21 @@ export class McpSessionContext {
    */
   setCurrentRunId(runId: string | null): void {
     this.currentRunId = runId;
+  }
+
+  /**
+   * Records that `context_bootstrap` ran in this session. Set by the tool's
+   * handler; read by `agent_run_start`/`agent_run_resume` so a run opened
+   * after a bootstrap is stamped as guided WITHOUT making bootstrap a writer
+   * (it stays read-only — the flag lives only in this per-process state).
+   */
+  markBootstrapped(): void {
+    this.bootstrapped = true;
+  }
+
+  /** Whether `context_bootstrap` has run in this session. */
+  wasBootstrapped(): boolean {
+    return this.bootstrapped;
   }
 
   /**
