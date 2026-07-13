@@ -269,8 +269,9 @@ describe('inspectMirrorDrift', () => {
   it('respects empty state without errors', () => {
     expect(readdirSync(skillsDir)).toEqual([]);
     const checks = drift();
-    // skills, memories, observations, epics, decisions, sprints, tasks
-    expect(checks).toHaveLength(7);
+    // skills, memories, observations, epics, decisions, sprints, tasks,
+    // task mirror uniqueness
+    expect(checks).toHaveLength(8);
     expect(checks.every((c) => c.ok)).toBe(true);
   });
 
@@ -358,6 +359,61 @@ describe('inspectMirrorDrift', () => {
     const tasks = checks.find((c) => c.name === 'tasks mirrored');
     expect(tasks?.ok).toBe(false);
     expect(tasks?.detail).toContain('orphan files: PRJ-999');
+  });
+
+  it('flags a task mirrored in two state dirs under "task mirror uniqueness"', () => {
+    // The task is DONE in the DB, but a stale READY copy lingers alongside the
+    // canonical DONE one — the squash-merge shape. Neither missing nor orphan
+    // (canonical file present, row live), so only the uniqueness check sees it.
+    seedTask('PRJ-1', 'DONE');
+    for (const state of ['DONE', 'READY']) {
+      mkdirSync(path.join(backlogDir, state), { recursive: true });
+      writeFileSync(path.join(backlogDir, state, 'PRJ-1.md'), '---\n---\n# T', 'utf-8');
+    }
+
+    const checks = drift();
+    const tasksMirrored = checks.find((c) => c.name === 'tasks mirrored');
+    // The canonical DONE file exists and the row is live, so the classic check is green.
+    expect(tasksMirrored?.ok).toBe(true);
+
+    const uniqueness = checks.find((c) => c.name === 'task mirror uniqueness');
+    expect(uniqueness?.ok).toBe(false);
+    expect(uniqueness?.severity).toBe('error');
+    expect(uniqueness?.detail).toContain('PRJ-1');
+    expect(uniqueness?.detail).toContain('DONE, READY');
+    expect(uniqueness?.detail).toContain('canonical DONE/');
+  });
+
+  it('flags a task whose single mirror sits in the WRONG state dir', () => {
+    // Row says DONE, but the only mirror is under READY/ — a mirror that drifted
+    // to a non-canonical dir. Not missing (a file exists for the key) via the
+    // uniqueness lens; the classic check flags it missing at the DONE path.
+    seedTask('PRJ-2', 'DONE');
+    mkdirSync(path.join(backlogDir, 'READY'), { recursive: true });
+    writeFileSync(path.join(backlogDir, 'READY', 'PRJ-2.md'), '---\n---\n# T', 'utf-8');
+
+    const uniqueness = drift().find((c) => c.name === 'task mirror uniqueness');
+    expect(uniqueness?.ok).toBe(false);
+    expect(uniqueness?.detail).toContain('PRJ-2 in [READY]');
+    expect(uniqueness?.detail).toContain('canonical DONE/');
+  });
+
+  it('task mirror uniqueness is green when each task has exactly one mirror at its state dir', () => {
+    seedTask('PRJ-1', 'DONE');
+    mkdirSync(path.join(backlogDir, 'DONE'), { recursive: true });
+    writeFileSync(path.join(backlogDir, 'DONE', 'PRJ-1.md'), '---\n---\n# T', 'utf-8');
+
+    const uniqueness = drift().find((c) => c.name === 'task mirror uniqueness');
+    expect(uniqueness?.ok).toBe(true);
+  });
+
+  it('a stray mirror whose key has no live row is an orphan, not a uniqueness violation', () => {
+    // PRJ-999 has no row → the uniqueness check ignores it (orphan scan owns it).
+    mkdirSync(path.join(backlogDir, 'DONE'), { recursive: true });
+    writeFileSync(path.join(backlogDir, 'DONE', 'PRJ-999.md'), '---\n---\nstray', 'utf-8');
+
+    const uniqueness = drift().find((c) => c.name === 'task mirror uniqueness');
+    expect(uniqueness?.ok).toBe(true);
   });
 });
 

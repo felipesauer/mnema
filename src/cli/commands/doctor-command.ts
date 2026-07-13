@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Command } from 'commander';
 import { ConfigLoader } from '../../config/config-loader.js';
@@ -16,12 +16,14 @@ import { printError } from '../../errors/error-printer.js';
 import { anchorStatusCheck } from '../../services/anchor/anchor-inspect.js';
 import { buildContentAttestation } from '../../services/audit/attestation-cli.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { defaultGitRunner, type GitCommandRunner } from '../../services/git-commit-service.js';
 import { createAttestationSource } from '../../services/head-checkpoint.js';
 import { HookTrustService } from '../../services/hook-trust.js';
 import { IdentityService } from '../../services/identity-service.js';
 import { recordCounter } from '../../services/metrics-counter.js';
 import { findOrphanRuns } from '../../services/orphan-run-service.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
+import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
@@ -413,6 +415,16 @@ export class DoctorCommand {
               buildContentAttestation(projectRoot, path.join(projectRoot, config.paths.audit)),
             ),
           );
+          // Explicit DB-vs-disk delta with the culprit commit — the signal
+          // that a git rewind of the tracked audit log left the mirror
+          // counting events no longer on disk (read-only; git archaeology).
+          checks.push(
+            ...inspectAuditDiskDelta(
+              adapter,
+              path.join(projectRoot, config.paths.audit),
+              projectRoot,
+            ),
+          );
           // Temporal anchoring (layer 3): offline status only — how many
           // heads are anchored vs pending. Verifying receipts against a
           // provider is the online `audit verify --verify-anchors` path, so
@@ -517,6 +529,125 @@ export function inspectMigrationDrift(
  * @param dirs - Mirror directories (`paths.skills` and `paths.memory`)
  * @returns Two checks, one per kind
  */
+/** Counts hash-chained (v >= 2) lines across the ordered audit JSONL files. */
+function countChainedLinesOnDisk(auditDir: string): number {
+  let count = 0;
+  for (const file of orderedAuditFiles(auditDir)) {
+    for (const line of readFileSync(file, 'utf-8').split('\n')) {
+      if (line.length === 0) continue;
+      try {
+        const event = JSON.parse(line) as { v?: unknown };
+        if (typeof event.v === 'number' && event.v >= 2) count += 1;
+      } catch {
+        // A malformed line is not a chained event; inspectAuditIntegrity
+        // reports the parse failure separately.
+      }
+    }
+  }
+  return count;
+}
+
+/**
+ * Reads `current.jsonl` at a git revision and counts its chained (v >= 2)
+ * lines, or `null` when the file did not exist at that revision. Used only to
+ * find the commit that shrank the on-disk chain.
+ */
+function chainedLinesAtRevision(
+  gitCwd: string,
+  relPath: string,
+  rev: string,
+  gitRunner: GitCommandRunner,
+): number | null {
+  const res = gitRunner(['show', `${rev}:${relPath}`], gitCwd);
+  if (res.status !== 0) return null;
+  let count = 0;
+  for (const line of res.stdout.split('\n')) {
+    if (line.length === 0) continue;
+    try {
+      const event = JSON.parse(line) as { v?: unknown };
+      if (typeof event.v === 'number' && event.v >= 2) count += 1;
+    } catch {
+      // ignore
+    }
+  }
+  return count;
+}
+
+/**
+ * Reports when the audit mirror's `event_count` sits ABOVE the number of
+ * hash-chained lines actually on disk — the signature of events the SQLite
+ * counter recorded that never reached (or were later removed from) the JSONL,
+ * e.g. a git checkout/rewind of the tracked audit files while the gitignored
+ * counter held. `inspectAuditIntegrity` already fails on the count mismatch;
+ * this adds the explicit numeric delta and, when the files are git-tracked,
+ * names the commit that reduced the on-disk chain — the pointer an operator
+ * needs to know it was a history rewrite, not a live bug. Strictly read-only.
+ *
+ * @param adapter - Open database adapter
+ * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param gitCwd - Project root for the git archaeology, or null to skip it
+ * @param gitRunner - Injectable git runner (tests pass a stub)
+ */
+export function inspectAuditDiskDelta(
+  adapter: SqliteAdapter,
+  auditDir: string,
+  gitCwd: string | null,
+  gitRunner: GitCommandRunner = defaultGitRunner,
+): DoctorCheck[] {
+  const row = adapter
+    .getDatabase()
+    .prepare('SELECT event_count FROM audit_state WHERE id = 1')
+    .get() as { event_count: number } | undefined;
+  // No audit_state row yet (pre-migration or virgin) — nothing to compare.
+  if (row === undefined) return [];
+
+  const dbCount = row.event_count;
+  const diskCount = countChainedLinesOnDisk(auditDir);
+  // Only the DB-ahead direction is the data-loss signal this check exists for.
+  // Disk >= DB is either healthy (equal) or the disk-ahead crash window that
+  // `mnema audit reconcile` already covers, so it is not flagged here.
+  if (dbCount <= diskCount) {
+    return [
+      {
+        name: 'audit mirror vs disk',
+        ok: true,
+        severity: 'warning',
+        detail: `event_count ${dbCount} ≤ ${diskCount} chained line(s) on disk`,
+      },
+    ];
+  }
+
+  const delta = dbCount - diskCount;
+  let culprit = '';
+  if (gitCwd !== null) {
+    // Walk the commits that touched current.jsonl, newest first, and find the
+    // first one where its chained-line count dropped relative to its parent —
+    // the commit that removed audit history from disk.
+    const relPath = path.relative(gitCwd, path.join(auditDir, 'current.jsonl'));
+    const log = gitRunner(['log', '--format=%H', '--', relPath], gitCwd);
+    if (log.status === 0) {
+      const shas = log.stdout.split('\n').filter((s) => s.length > 0);
+      for (const sha of shas) {
+        const here = chainedLinesAtRevision(gitCwd, relPath, sha, gitRunner);
+        const parent = chainedLinesAtRevision(gitCwd, relPath, `${sha}~1`, gitRunner);
+        if (here !== null && parent !== null && here < parent) {
+          culprit = ` — on-disk chain last shrank in commit ${sha.slice(0, 12)} (${parent} → ${here} lines)`;
+          break;
+        }
+      }
+    }
+  }
+
+  return [
+    {
+      name: 'audit mirror vs disk',
+      ok: false,
+      severity: 'error',
+      detail: `event_count ${dbCount} exceeds ${diskCount} chained line(s) on disk by ${delta} — the mirror counted events absent from the JSONL (a truncation/rewind of the tracked audit log)${culprit}. Run \`mnema audit reconcile\` (or \`accept-truncation\` if the history was deliberately rewritten).`,
+    },
+  ];
+}
+
 export function inspectMirrorDrift(
   adapter: SqliteAdapter,
   dirs: {
@@ -691,6 +822,25 @@ export function inspectMirrorDrift(
     detail: mirrorDetail(taskRows.length, taskMissing, taskOrphans),
   });
 
+  // The invariant "one mirror per task, at its DB-state dir" is separate from
+  // missing/orphan: a duplicate leaves the canonical file present AND the row
+  // live, so neither check above sees it. Surface it as its own error — it is
+  // the shape a squash-merge strands, and a subsequent `mnema sync` would
+  // otherwise resolve it by directory order and regress the task's state.
+  const stateByKey = new Map(taskRows.map((r) => [r.key, r.state]));
+  const duplicates = listDuplicateTaskMirrors(dirs.backlogDir, stateByKey);
+  checks.push({
+    name: 'task mirror uniqueness',
+    ok: duplicates.length === 0,
+    severity: 'error',
+    detail:
+      duplicates.length === 0
+        ? 'one mirror per task'
+        : `${duplicates.length} task(s) mirrored in the wrong or multiple state dirs — ${duplicates
+            .map((d) => `${d.key} in [${d.foundIn.join(', ')}], canonical ${d.canonical}/`)
+            .join('; ')}. Resolve before \`mnema sync\` (which would pick one by directory order).`,
+  });
+
   return checks;
 }
 
@@ -722,6 +872,64 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
     }
   }
   return orphans.sort();
+}
+
+/** A live task whose mirror invariant (one file, at its DB-state dir) is broken. */
+interface DuplicateTaskMirror {
+  readonly key: string;
+  /** Every state directory the key was found in, alphabetical. */
+  readonly foundIn: readonly string[];
+  /** The one directory the mirror should live in (the task's DB state). */
+  readonly canonical: string;
+}
+
+/**
+ * Finds live tasks whose backlog mirror breaks the invariant "exactly one
+ * file per task, at `backlog/<DB-state>/<KEY>.md`": a key present in more than
+ * one state directory, or present in a single directory that is not its DB
+ * state. Both shapes are invisible to the missing/orphan checks (the canonical
+ * file may exist AND the row is live), yet they are how a squash-merge of
+ * parallel branches strands stale copies — copies a plain `mnema sync` then
+ * resolves by directory order, silently regressing state. Read-only.
+ *
+ * @param backlogDir - Backlog root (returns empty if it does not exist)
+ * @param stateByKey - DB state per live task key (the source of truth)
+ * @returns One entry per offending key, alphabetical
+ */
+function listDuplicateTaskMirrors(
+  backlogDir: string,
+  stateByKey: ReadonlyMap<string, string>,
+): DuplicateTaskMirror[] {
+  if (!existsSync(backlogDir)) return [];
+  // Collect the state directories each known key appears in.
+  const dirsByKey = new Map<string, string[]>();
+  for (const stateDir of readdirSync(backlogDir, { withFileTypes: true })) {
+    if (!stateDir.isDirectory()) continue;
+    for (const entry of readdirSync(path.join(backlogDir, stateDir.name), {
+      withFileTypes: true,
+    })) {
+      if (!entry.isFile() || entry.name.startsWith('.') || !entry.name.endsWith('.md')) continue;
+      if (entry.name === 'INDEX.md') continue;
+      const key = entry.name.slice(0, -3);
+      // Only live rows carry a canonical state; a key with no row is an orphan,
+      // reported by the orphan scan, not here.
+      if (!stateByKey.has(key)) continue;
+      const dirs = dirsByKey.get(key);
+      if (dirs === undefined) dirsByKey.set(key, [stateDir.name]);
+      else dirs.push(stateDir.name);
+    }
+  }
+
+  const offenders: DuplicateTaskMirror[] = [];
+  for (const [key, foundIn] of dirsByKey) {
+    const canonical = stateByKey.get(key) as string;
+    // Broken when the key is in more than one dir, or in a single dir that is
+    // not its DB state. A single file already at the canonical dir is healthy.
+    if (foundIn.length > 1 || foundIn[0] !== canonical) {
+      offenders.push({ key, foundIn: [...foundIn].sort(), canonical });
+    }
+  }
+  return offenders.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 /**
