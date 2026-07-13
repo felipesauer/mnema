@@ -312,6 +312,33 @@ describe('inspectMirrorDrift', () => {
     expect(skills?.ok).toBe(true);
   });
 
+  it('a scaffolded roadmap/README.md is NOT flagged as an orphan (the tool wrote it)', () => {
+    // The roadmap scaffolder plants README.md with no DB row. It must not read
+    // as an orphan — the documented prune remedy would otherwise delete it.
+    // One live decision (mirrored) so the roadmap dir is not empty.
+    adapter
+      .getDatabase()
+      .prepare(`INSERT OR IGNORE INTO projects (id, key, name) VALUES ('p1', 'PRJ', 'Project')`)
+      .run();
+    adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO decisions (id, key, project_id, title, decision, status, authored_by)
+         VALUES ('d1', 'PRJ-ADR-1', 'p1', 'D', 'we decided', 'accepted', 'a1')`,
+      )
+      .run();
+    writeFileSync(path.join(roadmapDir, 'PRJ-ADR-1.md'), '---\nkey: PRJ-ADR-1\n---\nd', 'utf-8');
+    writeFileSync(
+      path.join(roadmapDir, 'README.md'),
+      '# Roadmap\n\nDrop a file per quarter.',
+      'utf-8',
+    );
+
+    const decisions = drift().find((c) => c.name === 'decisions mirrored');
+    expect(decisions?.ok).toBe(true);
+    expect(decisions?.detail).not.toContain('README');
+  });
+
   // Seeds a project + one task so the per-state backlog layout can be
   // exercised. Returns the task key.
   const seedTask = (key: string, state: string) => {

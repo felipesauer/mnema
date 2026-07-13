@@ -58,6 +58,19 @@ describe('pruneFolderedOrphanMirrors (ADR-51)', () => {
     expect(existsSync(path.join(root, 'INDEX.md'))).toBe(true);
   });
 
+  it('never prunes a scaffolded README.md (the tool writes it; the row-less prune would self-delete it)', () => {
+    // The roadmap/knowledge scaffolders plant README.md with no DB row. Before
+    // the fix, the documented remedy (doctor --prune-orphans / mnema upgrade)
+    // would classify it as an orphan and delete the tool's own scaffolding.
+    write('README.md');
+    write('orphan.md');
+
+    const removed = pruneFolderedOrphanMirrors(root, new Set(['known']), fs);
+
+    expect(removed).toEqual(['orphan']);
+    expect(existsSync(path.join(root, 'README.md'))).toBe(true);
+  });
+
   it('cold-DB guard: refuses to prune ANYTHING when the known-slug set is empty', () => {
     // A fresh clone carries the versioned mirrors but the local DB has zero
     // memory/skill rows (rebuild does not re-ingest them yet) — with an empty
