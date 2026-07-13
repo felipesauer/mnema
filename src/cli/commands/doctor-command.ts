@@ -146,6 +146,10 @@ export class DoctorCommand {
       let prunedObservations: string[] = [];
       let prunedTasks: string[] = [];
       let quarantined: QuarantinedMirror[] = [];
+      // Row-less keys mirrored in >1 state dir: NOT pruned (deleting every copy
+      // would lose a committed task with no row to rebuild it) — reported so
+      // the user resolves the duplicate by hand.
+      const rowlessDuplicateKeys: string[] = [];
 
       if (pruneOrphans) {
         const adapter = container.adapter;
@@ -209,6 +213,7 @@ export class DoctorCommand {
           pathMod.join(projectRoot, config.paths.backlog),
           taskKeys,
           fsMod,
+          rowlessDuplicateKeys,
         );
 
         // Enforce the one-mirror-per-task invariant by QUARANTINE (a safe move,
@@ -244,7 +249,8 @@ export class DoctorCommand {
         prunedSkills.length === 0 &&
         prunedMemories.length === 0 &&
         prunedObservations.length === 0 &&
-        quarantined.length === 0
+        quarantined.length === 0 &&
+        rowlessDuplicateKeys.length === 0
       ) {
         process.stdout.write('✓ nothing to rebuild — every row already has a mirror\n');
         return;
@@ -297,6 +303,14 @@ export class DoctorCommand {
           `⚠ duplicate task mirrors quarantined: ${quarantined.length} — ` +
             `${quarantined.map((q) => `${q.key} (${q.fromState}/ → ${q.to})`).join(', ')}\n` +
             `  the canonical DB-state copy was kept; inspect ${QUARANTINE_DIRNAME}/ and delete once confident\n`,
+        );
+      }
+      if (rowlessDuplicateKeys.length > 0) {
+        process.stdout.write(
+          `⚠ ${rowlessDuplicateKeys.length} task(s) mirrored in more than one state dir with NO cached row ` +
+            `were NOT pruned (deleting every copy would lose the task): ${rowlessDuplicateKeys.join(', ')}\n` +
+            `  resolve by deleting the stale copy from the wrong state folder (keep the correct one), ` +
+            `then re-run — or ingest the markdown first with \`mnema sync\` so a canonical state exists\n`,
         );
       }
       exit = ExitCode.Success;
@@ -1177,21 +1191,59 @@ export function pruneFolderedOrphanMirrors(
  * layout: deletes every `backlog/<STATE>/*.md` whose key has no live
  * SQLite row. Returns the keys whose mirror was removed.
  *
+ * EXCEPT a row-less key mirrored in MORE THAN ONE state directory: deleting
+ * every copy of such a key would destroy the user's committed task outright
+ * (there is no row to rebuild it from), and on a fresh clone — where no rows
+ * exist yet — a committed duplicate is exactly this shape. Those keys are a
+ * conflict to resolve, not orphans to sweep: their files are LEFT in place and
+ * collected in `duplicateConflicts` so the caller can surface them. A genuine
+ * orphan (a single copy, no row) is still pruned as before.
+ *
  * @param backlogDir - Backlog root (no-op if it does not exist)
  * @param knownKeys - Authoritative task key set from SQLite
  * @param fs - `node:fs` namespace (injected for testability + lazy load)
+ * @param duplicateConflicts - Optional collector; each row-less key found in
+ *   more than one state dir is pushed here (alphabetical, deduped) and its
+ *   files are NOT deleted
  * @returns Key list (alphabetical) of the files that were deleted
  */
 export function pruneNestedOrphanMirrors(
   backlogDir: string,
   knownKeys: ReadonlySet<string>,
   fs: typeof import('node:fs'),
+  duplicateConflicts?: string[],
 ): string[] {
   if (!fs.existsSync(backlogDir)) return [];
+
+  // First pass: for every row-less key, count the state dirs it appears in.
+  // A key in >1 dir is a duplicate we must not double-delete.
+  const rowlessDirCount = new Map<string, number>();
+  const stateDirs = fs
+    .readdirSync(backlogDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.')); // skip .quarantine etc.
+  for (const stateDir of stateDirs) {
+    for (const entry of fs.readdirSync(path.join(backlogDir, stateDir.name), {
+      withFileTypes: true,
+    })) {
+      if (!entry.isFile() || entry.name.startsWith('.') || !entry.name.endsWith('.md')) continue;
+      if (entry.name === 'INDEX.md') continue;
+      const key = entry.name.slice(0, -3);
+      if (knownKeys.has(key)) continue;
+      rowlessDirCount.set(key, (rowlessDirCount.get(key) ?? 0) + 1);
+    }
+  }
+  const duplicated = new Set(
+    [...rowlessDirCount].filter(([, count]) => count > 1).map(([key]) => key),
+  );
+  if (duplicateConflicts !== undefined && duplicated.size > 0) {
+    for (const key of [...duplicated].sort()) {
+      if (!duplicateConflicts.includes(key)) duplicateConflicts.push(key);
+    }
+  }
+
+  // Second pass: prune a row-less key only when it is NOT a duplicate.
   const removed: string[] = [];
-  for (const stateDir of fs.readdirSync(backlogDir, { withFileTypes: true })) {
-    if (!stateDir.isDirectory()) continue;
-    if (stateDir.name.startsWith('.')) continue; // skip .quarantine and other dotdirs
+  for (const stateDir of stateDirs) {
     const stateRoot = path.join(backlogDir, stateDir.name);
     for (const entry of fs.readdirSync(stateRoot, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
@@ -1199,7 +1251,7 @@ export function pruneNestedOrphanMirrors(
       if (entry.name === 'INDEX.md') continue;
       if (!entry.name.endsWith('.md')) continue;
       const key = entry.name.slice(0, -3);
-      if (!knownKeys.has(key)) {
+      if (!knownKeys.has(key) && !duplicated.has(key)) {
         fs.rmSync(path.join(stateRoot, entry.name));
         removed.push(key);
       }
