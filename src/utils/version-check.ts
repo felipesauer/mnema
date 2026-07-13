@@ -115,7 +115,7 @@ export function checkForUpdate(latest: string | null): UpdateCheckResult {
     current: VERSION,
     latest,
     message: newer
-      ? `a newer mnema is available: ${latest} (you have ${VERSION}). Update with: npm i -g ${PACKAGE_NAME}`
+      ? `a newer mnema is available: ${latest} (you have ${VERSION}). Update with: npm i -g ${PACKAGE_NAME}, then run \`mnema upgrade\` to bring this project in line`
       : `mnema is up to date (${VERSION})`,
   };
 }

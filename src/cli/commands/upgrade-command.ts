@@ -1,18 +1,20 @@
 import * as nodeFs from 'node:fs';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
 
 import type { Config } from '../../config/config-schema.js';
+import { type AdoptableComponent, AdoptionService } from '../../services/adoption-service.js';
 import { autoAttest, chainHealthyForAttest } from '../../services/audit/attestation-cli.js';
 import { listArtifacts } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
-import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
+import { inspectAuditIntegrity, reconcileAuditState } from '../../services/audit-integrity.js';
 import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
+import { AuditStateRepository } from '../../storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
@@ -29,6 +31,8 @@ import {
   writeAgentsMd,
 } from '../templates/agents-md.js';
 import {
+  type DoctorCheck,
+  inspectAuditDiskDelta,
   inspectMirrorDrift,
   pruneFolderedOrphanMirrors,
   pruneNestedOrphanMirrors,
@@ -65,9 +69,24 @@ export class UpgradeCommand {
           'update mnema_version. Shows the plan and asks before changing anything.',
       )
       .option('--yes', 'Skip the confirmation prompt and apply the plan', false)
-      .action(async (options: { readonly yes?: boolean }) => {
+      .option(
+        '--dry-run',
+        'Print the ordered plan across both phases and exit without changing anything',
+        false,
+      )
+      .action(async (options: { readonly yes?: boolean; readonly dryRun?: boolean }) => {
         await withCliContext(async (ctx) => {
           const skipPrompt = options.yes === true;
+
+          // --dry-run: show the full ordered plan (both phases) and stop.
+          // Nothing is applied — no migrations, no ingest, no adopt, no
+          // rebuild/prune/bump/attest, no writes at all. The step labels are
+          // the same ones the real run would show, so the preview is faithful.
+          if (options.dryRun === true) {
+            this.printDryRunPlan(ctx);
+            return;
+          }
+
           let didSomething = false;
 
           // Phase 1 — migrations FIRST, on their own. Detecting the rest
@@ -92,8 +111,48 @@ export class UpgradeCommand {
           if (!didSomething) {
             process.stdout.write(`${pc.green('✓')} already up to date — nothing to upgrade\n`);
           }
+
+          // Read-only health summary AFTER every mutating step, so the user
+          // sees the post-upgrade state at a glance without re-running
+          // `mnema doctor`. Never writes — it reuses the doctor inspectors.
+          printPostUpgradeHealth(ctx);
         });
       });
+  }
+
+  /**
+   * Prints the ordered plan across both phases without executing anything.
+   * Used by `--dry-run`: the migration step (Phase 1) followed by every
+   * post-migration step (Phase 2), each by the exact label the real run
+   * would show. Detecting Phase 2 reads domain tables, which is safe here —
+   * reading never mutates, and a pending migration only means some steps may
+   * not yet be detectable (the same caveat the live run has before Phase 1
+   * applies migrations). A trailing note makes clear nothing was applied.
+   *
+   * @param ctx - Open CLI context
+   */
+  private printDryRunPlan(ctx: CliContext): void {
+    const migrationStep = this.migrationStep(ctx);
+    const steps = this.postMigrationSteps(ctx);
+    const all = [...(migrationStep !== null ? [migrationStep] : []), ...steps];
+
+    process.stdout.write(
+      `${pc.bold('mnema upgrade')} — planned steps (dry run, nothing applied):\n`,
+    );
+    if (all.length === 0) {
+      process.stdout.write(`  ${pc.dim('(already up to date — nothing to upgrade)')}\n`);
+      return;
+    }
+    let n = 1;
+    if (migrationStep !== null) {
+      process.stdout.write(`  ${pc.cyan(`${n++}.`)} [migrations] ${migrationStep.label}\n`);
+    }
+    for (const step of steps) {
+      process.stdout.write(`  ${pc.cyan(`${n++}.`)} ${step.label}\n`);
+    }
+    process.stdout.write(
+      `\n${pc.dim('run `mnema upgrade` (or `--yes`) to apply — this was a dry run')}\n`,
+    );
   }
 
   /**
@@ -129,6 +188,13 @@ export class UpgradeCommand {
     const { config, projectRoot, container } = ctx;
     const steps: UpgradeStep[] = [];
 
+    // Filled by the ingest step's run() with the task keys it refused to
+    // ingest because they are mirrored in more than one state dir. Read by the
+    // orphan-prune step's run() (which executes AFTER ingest in the same phase)
+    // so those conflicted mirrors — which have no row — are NOT pruned as
+    // orphans. Shared holder because both steps are independent closures.
+    const conflictedTaskKeys = new Set<string>();
+
     // Retrofit the audit `merge=union` .gitattributes onto a project that was
     // initialised by a version predating it. Union keeps both sides when
     // parallel branches append to the append-only log, blunting the
@@ -148,11 +214,182 @@ export class UpgradeCommand {
       });
     }
 
-    // AGENTS.md managed block out of date (or absent).
-    if (agentsBlockIsStale(projectRoot, config)) {
+    // Ingest committed markdown into the cache (markdown → DB), FIRST among
+    // the sync steps. A fresh clone (or a project whose markdown drifted from
+    // a branch merge) has committed backlog/roadmap files but rows the local,
+    // git-ignored database lacks. `mnema sync` is the only other path that
+    // rebuilds them, so upgrade runs the SAME rebuild here.
+    //
+    // Ordering: this MUST precede the mirror-rebuild step below. Rebuild is
+    // DB → markdown; ingest is markdown → DB. Ingesting first means a fresh
+    // clone's rows exist before we mirror them, and any file the markdown
+    // genuinely lacks is then filled by the rebuild.
+    //
+    // Fail-closed on duplicates: `SyncRebuild.run` refuses to realign a task
+    // key mirrored in more than one state directory (it cannot know which
+    // state is current) and records each in `conflicts` — so calling run() is
+    // already safe and never regresses a duplicated task. We report conflicts
+    // loudly but do NOT fail the upgrade: the unsafe write was already
+    // prevented. The step's run() below spells out the remedy (which differs
+    // by whether the key already has a cached row).
+    //
+    // Gated on the cheap "is there committed entity markdown on disk at all?"
+    // probe below. run() is idempotent and safe (the duplicate guard makes it
+    // so), but including it unconditionally would keep `upgrade` from ever
+    // reporting "already up to date" — a fully-synced project would always
+    // carry this one step. The probe is a shallow readdir, not a full walk, so
+    // it never re-parses the files; the step's run() does the real work.
+    if (hasIngestibleMarkdown(projectRoot, config)) {
+      steps.push({
+        label: 'ingest committed markdown into the cache (idempotent)',
+        run: () => {
+          const summary = container.syncRebuild.run(config.project.key);
+          const upserted =
+            summary.tasksUpserted +
+            summary.epics.upserted +
+            summary.sprints.upserted +
+            summary.decisions.upserted +
+            summary.observations.upserted;
+          if (summary.conflicts.length === 0) {
+            return `ingested ${upserted} row(s) from committed markdown`;
+          }
+          // Record the conflicted keys so the orphan-prune step (later this
+          // phase) does not delete their mirrors — they have no row, so a
+          // naive prune would treat them as orphans and destroy the copies the
+          // human needs to resolve the duplicate.
+          for (const conflict of summary.conflicts) conflictedTaskKeys.add(conflict.key);
+          // Conflicts are surfaced loudly; the rows we could safely ingest
+          // still count. Two shapes reach here and their remedies differ, so
+          // the message names both accurately:
+          //   - The key ALREADY has a cached row (e.g. a squash-merge stranded
+          //     a stale copy in a second state dir). `doctor
+          //     --rebuild-mirrors --prune-orphans` QUARANTINES the non-canonical
+          //     copy and keeps the DB-state one — the assisted path.
+          //   - The key has NO row (a fresh clone whose committed markdown is
+          //     itself duplicated). There is no canonical state to quarantine
+          //     against, so that same doctor run would DELETE BOTH copies. The
+          //     only safe fix is a human one: remove the wrong copy from version
+          //     control, keep the correct state.
+          // We lead with the always-safe manual step and offer doctor for the
+          // row-backed case, rather than blanket-recommending a command that is
+          // destructive in the no-row case.
+          const detail = summary.conflicts
+            .map((c) => `${c.key} in [${c.states.join(', ')}]`)
+            .join('; ');
+          return (
+            `ingested ${upserted} row(s); ${pc.yellow('⚠')} ${summary.conflicts.length} ` +
+            `task(s) mirrored in more than one state dir were LEFT UNTOUCHED ` +
+            `(no state guessed, nothing regressed): ${detail}. Resolve by deleting the stale ` +
+            `copy from the wrong state folder (e.g. \`git rm\`) and keeping the correct one, ` +
+            `then re-run \`mnema upgrade\`. If the task already has a tracked state, ` +
+            `\`mnema doctor --rebuild-mirrors --prune-orphans\` quarantines the stale copy for you.`
+          );
+        },
+      });
+    }
+
+    // Reconcile the audit mirror when it sits BEHIND the on-disk chain (the
+    // fresh-clone shape). `.mnema/state/` is git-ignored, so a clone recreates
+    // an empty database whose `audit_state.event_count` is 0 while the
+    // committed `.audit/*.jsonl` already holds N chained events. Ingesting the
+    // domain markdown (above) rebuilds the task/roadmap rows but never touches
+    // audit_state, and the writer's boot-time self-heal only covers the
+    // opposite one-ahead crash window — so without this the post-upgrade health
+    // summary is permanently RED (`audit event count`, `audit hash chain`)
+    // after every clone.
+    //
+    // Gate: only when the mirror is strictly behind disk (disk-ahead). Equal is
+    // healthy, and the mirror-ahead one-ahead shape is the crash window the
+    // writer self-heals — neither belongs here. The count is the chained (v>=2)
+    // line count, matching what `reconcileAuditState`'s own walk recomputes.
+    const auditDir = path.join(projectRoot, config.paths.audit);
+    const diskChainedCount = walkChainedEvents(auditDir).chained.length;
+    const mirrorCount = new AuditStateRepository(container.adapter).read().eventCount;
+    if (diskChainedCount > mirrorCount) {
+      steps.push({
+        label: `reconcile the audit mirror to the ${diskChainedCount} chained event(s) on disk (was ${mirrorCount})`,
+        run: () => {
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const state = new AuditStateRepository(container.adapter);
+          const signature = new AuditHeadSignatureRepository(container.adapter).read();
+          // apply=true; acceptLegacyBreaks=null (never launder a real break
+          // during an upgrade); gitCwd=projectRoot for the anchor check —
+          // exactly as `mnema audit reconcile --force` calls it. A refusal
+          // (broken chain, malformed line, attestation over a truncation) is
+          // reported but does NOT fail the upgrade: it is a real integrity
+          // signal the human must resolve with `mnema audit diagnose`, not
+          // something the orchestrator should paper over or abort on.
+          const result = reconcileAuditState(
+            auditDir,
+            state,
+            secret.read(),
+            signature?.eventCountAt ?? null,
+            true,
+            null,
+            projectRoot,
+          );
+          if (!result.ok) {
+            return `${pc.yellow('⚠')} could not reconcile the audit mirror: ${result.reason} — run \`mnema audit diagnose\` to inspect`;
+          }
+          if (!result.changed) return 'audit mirror already matched disk';
+          return `audit mirror reconciled: event_count ${result.beforeEventCount} → ${result.afterEventCount}`;
+        },
+      });
+    }
+
+    // Adopt optional layout components this version ships that the project is
+    // missing (a `--minimal` init, or a project predating a component). Each
+    // adoption is idempotent — it only writes files that do not exist — so we
+    // still restrict to the components actually missing to keep the plan
+    // honest (a fully-adopted project adds no adopt step at all). Runs AFTER
+    // ingest and BEFORE the AGENTS.md sync (adopting `memory` creates
+    // memory/INDEX.md, which the AGENTS.md managed block imports).
+    const missingComponents = detectMissingComponents(projectRoot, config);
+    if (missingComponents.length > 0) {
+      steps.push({
+        label: `adopt missing layout component(s): ${missingComponents.join(', ')}`,
+        run: () => {
+          const service = new AdoptionService(projectRoot, config);
+          const added: string[] = [];
+          let adoptedSkills = false;
+          for (const component of missingComponents) {
+            const result = service.adopt(component);
+            if (result.created.length > 0) added.push(component);
+            if (component === 'skills' && result.created.length > 0) adoptedSkills = true;
+          }
+          // Seed skills need a matching SQLite row per file, or the NEXT
+          // upgrade's orphan-prune would delete them as mirrors with no row.
+          // Record them as `system` (the tool is the author), exactly as
+          // `mnema init` and `mnema adopt` do. Idempotent on existing rows.
+          if (adoptedSkills) container.skill.importSeeds('system');
+          return added.length > 0 ? `adopted ${added.join(', ')}` : 'nothing to adopt';
+        },
+      });
+    }
+
+    // AGENTS.md managed block out of date (or absent). Ordered AFTER adopt so
+    // a freshly-adopted memory/INDEX.md is embedded in the SAME pass (the
+    // managed block expands `@.mnema/memory/INDEX.md`), collapsing a known
+    // two-pass diff.
+    //
+    // Timing (choice b): the staleness gate below is evaluated at plan-BUILD
+    // time, before adopt runs, so it cannot see a not-yet-created INDEX.md. We
+    // therefore include the step when it is stale now OR when adopting memory
+    // will make it stale, and re-check staleness INSIDE run() (after adopt has
+    // executed) so it writes only if actually stale then. A run-time re-check
+    // is the robust choice — it also no-ops cleanly if adopt wrote nothing.
+    const adoptingMemory = missingComponents.includes('memory');
+    if (agentsBlockIsStale(projectRoot, config) || adoptingMemory) {
       steps.push({
         label: 'sync the AGENTS.md managed block to the current guidance',
         run: () => {
+          // Re-evaluate against the post-adopt tree: if adopt created
+          // memory/INDEX.md this run, the block is now stale and must be
+          // rewritten to embed it; if nothing is stale, skip the write so
+          // updated_at stays truthful.
+          if (!agentsBlockIsStale(projectRoot, config)) {
+            return 'AGENTS.md already current';
+          }
           const outcome = writeAgentsMd(projectRoot, config);
           return `AGENTS.md ${outcome === 'updated' ? 'block updated' : outcome}`;
         },
@@ -198,8 +435,21 @@ export class UpgradeCommand {
       steps.push({
         label: `prune orphan markdown mirrors with no SQLite row (${orphanDetail})`,
         run: () => {
-          const pruned = pruneAllOrphanMirrors(container.adapter, config, projectRoot);
-          return `pruned ${pruned} orphan mirror file(s)`;
+          // Runs AFTER ingest: the live task keys it reads now include every
+          // row the ingest just created, so a fresh clone's committed tasks
+          // are not mistaken for orphans. Conflicted keys (ingest refused
+          // them, so they have no row) are protected so their mirrors survive.
+          const pruned = pruneAllOrphanMirrors(
+            container.adapter,
+            config,
+            projectRoot,
+            conflictedTaskKeys,
+          );
+          const protectedNote =
+            conflictedTaskKeys.size > 0
+              ? ` (kept ${conflictedTaskKeys.size} conflicted mirror(s) for you to resolve)`
+              : '';
+          return `pruned ${pruned} orphan mirror file(s)${protectedNote}`;
         },
       });
     }
@@ -298,6 +548,124 @@ function attestedToAfter(auditDir: string): number {
 }
 
 /**
+ * Cheap probe for "does the committed markdown hold any entity the ingest
+ * would rebuild?" — used to decide whether the ingest step is worth listing.
+ * Mirrors the directories {@link SyncRebuild.run} walks: `backlog/<STATE>/*.md`
+ * (one level down), and the flat `roadmap/`, `sprints/`, `observations/` dirs.
+ * A shallow readdir per directory, never a file read, so it stays cheap; the
+ * step's run() does the real parsing. Index/dotfiles are ignored so a
+ * README-only roadmap does not read as ingestible. Exported for tests.
+ *
+ * @param projectRoot - Absolute project root
+ * @param config - Validated project configuration
+ */
+export function hasIngestibleMarkdown(projectRoot: string, config: Config): boolean {
+  const isEntityFile = (name: string): boolean =>
+    name.endsWith('.md') && !name.startsWith('.') && name !== 'INDEX.md' && name !== 'README.md';
+
+  // Backlog is nested one level: backlog/<STATE>/<KEY>.md.
+  const backlogRoot = path.join(projectRoot, config.paths.backlog);
+  if (existsSync(backlogRoot)) {
+    for (const entry of readdirSync(backlogRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const stateDir = path.join(backlogRoot, entry.name);
+      if (existsSync(stateDir) && readdirSync(stateDir).some(isEntityFile)) return true;
+    }
+  }
+
+  // Roadmap (epics + decisions), sprints and observations are flat dirs.
+  for (const dir of [config.paths.roadmap, config.paths.sprints, config.paths.observations]) {
+    const root = path.join(projectRoot, dir);
+    if (existsSync(root) && readdirSync(root).some(isEntityFile)) return true;
+  }
+  return false;
+}
+
+/** The optional layout components adoption can install, in a stable order. */
+const ADOPTABLE_COMPONENTS: readonly AdoptableComponent[] = [
+  'skills',
+  'memory',
+  'roadmap',
+  'commands',
+  'templates',
+];
+
+/**
+ * Returns the adoptable components whose target directory is absent or holds
+ * no real content, so `upgrade` adopts only what is missing. A directory is
+ * "present" when it contains at least one non-dotfile entry — a bare skeleton
+ * left by `--minimal` (empty, or only a `.gitkeep`) still counts as missing so
+ * its seed files get installed. The target dirs are resolved exactly as
+ * {@link AdoptionService} resolves them (via `config.paths`). Exported for tests.
+ *
+ * @param projectRoot - Absolute project root
+ * @param config - Validated project configuration
+ */
+export function detectMissingComponents(projectRoot: string, config: Config): AdoptableComponent[] {
+  const dirFor: Record<AdoptableComponent, string> = {
+    skills: config.paths.skills,
+    memory: config.paths.memory,
+    roadmap: config.paths.roadmap,
+    commands: config.paths.commands,
+    templates: config.paths.templates,
+  };
+  return ADOPTABLE_COMPONENTS.filter((component) => {
+    const dir = path.join(projectRoot, dirFor[component]);
+    if (!existsSync(dir)) return true;
+    // A dir with only dotfiles (e.g. a lone `.gitkeep`) is treated as empty.
+    return readdirSync(dir).every((entry) => entry.startsWith('.'));
+  });
+}
+
+/**
+ * Prints a short read-only health summary after the upgrade completes, so the
+ * user sees the post-upgrade state at a glance without re-running
+ * `mnema doctor`. Reuses the doctor inspectors (mirror drift, audit integrity,
+ * audit-vs-disk delta) and renders each check the same way doctor does. Strictly
+ * read-only — it opens nothing new and writes nothing (a secret is read, never
+ * minted, matching doctor).
+ *
+ * @param ctx - Open CLI context (its container/adapter is reused)
+ */
+function printPostUpgradeHealth(ctx: CliContext): void {
+  const { config, projectRoot, container } = ctx;
+  const auditDir = path.join(projectRoot, config.paths.audit);
+  const checks: DoctorCheck[] = [];
+
+  checks.push(
+    ...inspectMirrorDrift(container.adapter, {
+      skillsDir: path.join(projectRoot, config.paths.skills),
+      memoryDir: path.join(projectRoot, config.paths.memory),
+      roadmapDir: path.join(projectRoot, config.paths.roadmap),
+      sprintsDir: path.join(projectRoot, config.paths.sprints),
+      backlogDir: path.join(projectRoot, config.paths.backlog),
+      observationsDir: path.join(projectRoot, config.paths.observations),
+    }),
+  );
+  // read() not getOrCreate(): the summary verifies, it never mints a secret.
+  const secret = new ProjectSecretService(projectRoot, config.project.key);
+  checks.push(
+    ...inspectAuditIntegrity(
+      container.adapter,
+      auditDir,
+      secret.read(),
+      secret.readFingerprint() !== null,
+    ),
+  );
+  checks.push(...inspectAuditDiskDelta(container.adapter, auditDir, projectRoot));
+
+  process.stdout.write(`\n${pc.bold('post-upgrade health')} ${pc.dim('(read-only)')}\n`);
+  for (const check of checks) {
+    const mark = check.ok
+      ? pc.green('✓')
+      : (check.severity ?? 'error') === 'warning'
+        ? pc.yellow('⚠')
+        : pc.red('✗');
+    process.stdout.write(`  ${mark} ${check.name}  ${pc.dim(check.detail)}\n`);
+  }
+}
+
+/**
  * Prints a phase's plan, asks for confirmation (unless skipped), and runs
  * its steps. Returns what happened so the caller can track whether any
  * work was done and stop on an abort.
@@ -374,11 +742,19 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
  * row) across the entity directories and the per-state backlog. Returns
  * the total number of files deleted. The slug/key sets are read from
  * SQLite, which is authoritative.
+ *
+ * `protectedTaskKeys` are task keys the caller knows must NOT be pruned even
+ * though they have no row — the upgrade ingest passes the keys it refused to
+ * ingest because they are mirrored in more than one state directory
+ * (conflicts). Those copies are the exact files the human needs to resolve the
+ * conflict via `doctor` (which quarantines, not deletes); pruning them here
+ * would destroy the only evidence and is the data loss this guard prevents.
  */
 function pruneAllOrphanMirrors(
   adapter: SqliteAdapter,
   config: Config,
   projectRoot: string,
+  protectedTaskKeys: ReadonlySet<string> = new Set(),
 ): number {
   const db = adapter.getDatabase();
   const fs = nodeFs;
@@ -413,6 +789,11 @@ function pruneAllOrphanMirrors(
       db.prepare('SELECT key FROM tasks WHERE deleted_at IS NULL').all() as Array<{ key: string }>
     ).map((r) => r.key),
   );
+  // Treat conflicted keys as "known" so the backlog prune below leaves their
+  // mirrors on disk. They have no row (the ingest refused them), so without
+  // this they would read as orphans and be deleted — destroying the very
+  // copies the human must inspect to resolve the duplicate.
+  for (const key of protectedTaskKeys) taskKeys.add(key);
   // Observation mirrors are keyed by row id; only active rows carry one.
   const observationIds = new Set(
     (

@@ -265,7 +265,10 @@ export function formatError(error: MnemaError): string {
       for (const file of error.pending) {
         lines.push(`  - ${file}`);
       }
-      lines.push(`${pc.dim('hint:')} Run \`mnema migrate\` to apply pending migrations`);
+      lines.push(
+        `${pc.dim('hint:')} Run \`mnema upgrade\` to apply pending migrations and bring the ` +
+          'project in line with the installed version (or `mnema migrate` for just the migrations)',
+      );
       break;
     }
 
@@ -565,7 +568,7 @@ export function recoveryHint(error: MnemaError): string | null {
     case ErrorCode.MemoryNotFound:
       return 'List recorded memories with memories_list; record one with memory_record.';
     case ErrorCode.SchemaOutOfDate:
-      return 'Run `mnema migrate` to apply pending migrations, then retry — read-only tools keep working meanwhile.';
+      return 'Run `mnema upgrade` to apply pending migrations and sync the project (or `mnema migrate` for just the migrations), then retry — read-only tools keep working meanwhile.';
     default:
       return null;
   }
