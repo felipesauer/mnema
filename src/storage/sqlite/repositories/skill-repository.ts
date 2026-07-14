@@ -226,14 +226,19 @@ export class SkillRepository {
    * @returns `true` when a new row was inserted, `false` when it existed
    */
   insertFromMirror(input: SkillMirrorInput): boolean {
+    // The FTS body index (migration 035) reads content_core/content_examples,
+    // NOT `content`. A mirror rebuild must split the body exactly like insert()
+    // does, or a clone-rebuilt skill is body-unsearchable (search/skill_suggest/
+    // context_bootstrap match only name+description until it is re-recorded).
+    const { core, examples } = splitSkillExampleSections(input.content);
     const result = this.adapter
       .getDatabase()
       .prepare(
         `INSERT OR IGNORE INTO skills (
-           id, slug, name, version, description, content,
+           id, slug, name, version, description, content, content_core, content_examples,
            tools_used, invocable, dynamic_context, change_rationale, scope,
            usage_count, last_used_at, created_by, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`,
       )
       .run(
         generateUuid(),
@@ -242,6 +247,8 @@ export class SkillRepository {
         input.version,
         input.description,
         input.content,
+        core,
+        examples,
         JSON.stringify(input.toolsUsed),
         input.invocable ? 1 : 0,
         JSON.stringify(input.dynamicContext),

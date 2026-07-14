@@ -35,6 +35,17 @@ describe('isIso8601', () => {
     // Also rejected with a time part (Date folds "2026-02-30T10:00" to Mar 2).
     expect(isIso8601('2026-13-01T12:00:00')).toBe(false);
     expect(isIso8601('2026-02-30T10:00:00')).toBe(false);
+    // …and in the ZONED form too — a fold must not slip past the offset branch.
+    expect(isIso8601('2026-02-30T00:00:00Z')).toBe(false);
+    expect(isIso8601('2026-04-31T00:00:00Z')).toBe(false);
+    expect(isIso8601('2026-02-29T00:00:00Z')).toBe(false); // 2026 is not a leap year
+    expect(isIso8601('2026-13-01T12:00:00+02:00')).toBe(false);
+  });
+
+  it('accepts a real leap day in the zoned form', () => {
+    // The zoned calendar check must be leap-aware, not blanket-reject Feb 29.
+    expect(isIso8601('2028-02-29T00:00:00Z')).toBe(true);
+    expect(isIso8601('2026-07-13T23:00:00+02:00')).toBe(true);
   });
 
   it('accepts a timezone-less evening datetime regardless of local timezone', () => {
