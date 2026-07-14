@@ -139,21 +139,13 @@ function roundTrip(h: Harness): Harness {
 }
 
 /**
- * KNOWN, DOCUMENTED losses — fields that do not (yet) survive a round-trip.
- * Each entry states WHY the field is lost; when the corresponding fix lands
- * and the field starts surviving, drop it here and the test tightens
- * automatically. An UNLISTED loss is a failure. Keyed by entity, then by
- * domain field name.
+ * KNOWN, DOCUMENTED losses — fields that do not survive a round-trip and are
+ * deliberately tolerated. Keyed by entity, then by domain field name; each
+ * entry states WHY. Currently EMPTY: every field of every mirror entity
+ * round-trips. If a real, intentional loss is ever introduced, add it here
+ * with its reason; an UNLISTED loss is a failure.
  */
-const KNOWN_LOSSES: Record<string, Record<string, string>> = {
-  skill: {
-    // NEW loss found by this very test: a skill's scope is dropped on the
-    // disk→DB round-trip (rebuilt as null), the same class as the already-fixed
-    // memory-scope loss but on the skill side. Remove this entry once the
-    // skill serialiser/rebuild carries scope.
-    scope: 'skill scope lost on clone (rebuilt null) — same class as the fixed memory-scope loss',
-  },
-};
+const KNOWN_LOSSES: Record<string, Record<string, string>> = {};
 
 /**
  * Compare selected domain fields of the original vs the rebuilt entity.

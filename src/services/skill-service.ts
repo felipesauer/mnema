@@ -75,6 +75,8 @@ export const SkillFrontmatterSchema = z.object({
   // Dynamic-invocation fields (optional; absent on a passive skill).
   invocable: z.boolean().optional(),
   dynamic_context: z.array(z.string()).optional(),
+  // Raw scope (path/package); absent for a project-global skill.
+  scope: z.string().optional(),
 });
 
 export type SkillFrontmatter = z.infer<typeof SkillFrontmatterSchema>;
@@ -810,6 +812,10 @@ export class SkillService {
         : null,
       `usage_count: ${skill.usageCount}`,
       skill.lastUsedAt !== null ? `last_used_at: ${skill.lastUsedAt}` : null,
+      // Persist the raw scope in the frontmatter: the scope subfolder is only a
+      // lossy projection, so a clone rebuild must read the scope back from here
+      // (mirrors how memory persists its scope). Omitted when project-global.
+      skill.scope !== null ? `scope: ${quoteYaml(skill.scope)}` : null,
       `created_at: ${skill.createdAt}`,
       `updated_at: ${skill.updatedAt}`,
       '---',

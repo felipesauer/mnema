@@ -635,9 +635,9 @@ export class SyncRebuild {
    * version. Idempotent by (slug, version).
    *
    * Documented losses (not in the mirror): version HISTORY (only the latest is
-   * mirrored — a rebuilt skill is a single row at its current version), and
-   * `change_rationale`/`scope`. Only live-latest skills have a mirror
-   * (superseded ones are deleted on write).
+   * mirrored — a rebuilt skill is a single row at its current version) and
+   * `change_rationale`. `scope` IS preserved (read back from the frontmatter).
+   * Only live-latest skills have a mirror (superseded ones are deleted on write).
    */
   private rebuildSkills(skipped: { file: string; reason: string }[]): RebuildCounts {
     const root = path.join(this.paths.projectRoot, this.paths.skillsDir);
@@ -685,6 +685,10 @@ export class SyncRebuild {
         usageCount: readNumber(data, 'usage_count') ?? 0,
         lastUsedAt: readString(data, 'last_used_at'),
         createdBy,
+        // Raw scope is authoritative in the frontmatter; the scope subfolder is
+        // a lossy projection. Absent (scopeless skill, or a mirror written
+        // before scope was persisted) → null.
+        scope: readString(data, 'scope'),
         createdAt: readString(data, 'created_at') ?? now,
         updatedAt: readString(data, 'updated_at') ?? now,
       });
