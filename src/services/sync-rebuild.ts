@@ -368,6 +368,7 @@ export class SyncRebuild {
             state: stateName,
             estimate: readNumber(data, 'estimate'),
             contextBudget: readNumber(data, 'context_budget'),
+            reopenCount: readNumber(data, 'reopen_count') ?? 0,
             priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,

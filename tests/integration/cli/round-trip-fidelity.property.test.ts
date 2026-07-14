@@ -147,7 +147,6 @@ function roundTrip(h: Harness): Harness {
  */
 const KNOWN_LOSSES: Record<string, Record<string, string>> = {
   task: {
-    reopenCount: 'serialised but never read back on rebuild (fix pending)',
     createdAt: 'backlog createdAt resets to clone time (preserve-vs-derive pending)',
     closedAt: 'backlog closedAt not read back on rebuild (preserve-vs-derive pending)',
   },
