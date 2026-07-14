@@ -49,10 +49,7 @@ export class AgentPlanTools {
           task_key: z
             .string()
             .optional()
-            .describe(
-              'Optional task key (e.g. WEBAPP-42) this plan implements. ' +
-                'Server resolves to a task FK; unknown keys return TASK_NOT_FOUND.',
-            ),
+            .describe('Task key (e.g. WEBAPP-42) this plan implements; unknown → TASK_NOT_FOUND'),
           parent_plan_id: z
             .string()
             .uuid()

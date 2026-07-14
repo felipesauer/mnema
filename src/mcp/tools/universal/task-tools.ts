@@ -73,49 +73,27 @@ export class TaskTools {
           'Create a new task in the workflow initial state. Requires an active agent run.',
         inputSchema: {
           title: z.string().min(3).max(200),
-          description: z
-            .string()
-            .optional()
-            .describe(
-              'Free-form at creation (a draft may be terse); the workflow gate ' +
-                'enforces any minimum length when the task is submitted for readiness',
-            ),
+          description: z.string().optional().describe('Free-form; may be terse in a draft'),
           acceptance_criteria: z.array(z.string().min(1)).optional(),
           template: z
             .enum(TASK_TEMPLATE_KINDS as [TaskTemplateKind, ...TaskTemplateKind[]])
             .optional()
-            .describe(
-              'Pre-fill a description + acceptance-criteria skeleton for this kind ' +
-                '(bug/feature/refactor/chore). Only fills fields you leave empty; ' +
-                'overridable per project in templates/<kind>.md.',
-            ),
-          estimate: z
-            .number()
-            .int()
-            .min(0)
-            .optional()
-            .describe('Estimate in story points (non-negative integer)'),
+            .describe('Pre-fill a skeleton for this kind (bug/feature/refactor/chore)'),
+          estimate: z.number().int().min(0).optional().describe('Story points'),
           context_budget: z
             .number()
             .int()
             .min(0)
             .optional()
-            .describe('Estimated context cost in tokens (distinct from estimate / story points)'),
+            .describe('Estimated context cost in tokens (≠ estimate)'),
           priority: z.number().int().min(1).max(5).optional(),
-          assignee: z
-            .string()
-            .optional()
-            .describe('Assignee — a known actor handle (e.g. `maria`) or a UUID'),
-          labels: z
-            .array(z.string().min(1))
-            .optional()
-            .describe('Transversal labels, e.g. ["area:api", "tipo:bug"]'),
+          assignee: z.string().optional().describe('Actor handle (e.g. `maria`) or UUID'),
+          labels: z.array(z.string().min(1)).optional().describe('e.g. ["area:api", "tipo:bug"]'),
           verbosity: z
             .enum(['full', 'compact'])
             .optional()
             .describe(
-              "Echo mode for the created task. 'full' (default) returns the whole entity; " +
-                "'compact' returns only { key, state, updatedAt } to save context in batches.",
+              "Echo mode: 'full' (default) whole entity; 'compact' { key, state, updatedAt }",
             ),
         },
       },
@@ -302,9 +280,7 @@ export class TaskTools {
             .enum(['full', 'compact'])
             .optional()
             .describe(
-              "Echo mode for each created task. 'full' (default) returns whole entities; " +
-                "'compact' returns only { key, state, updatedAt } each — recommended for large " +
-                'batches to avoid inflating context with repeated descriptions.',
+              "Echo mode per task: 'full' (default) whole entities; 'compact' { key, state, updatedAt } — use for large batches",
             ),
         },
       },
@@ -392,8 +368,7 @@ export class TaskTools {
             .string()
             .optional()
             .describe(
-              'Optimistic-concurrency token: the task’s current updatedAt. ' +
-                'When omitted, the last read wins.',
+              'Optimistic-concurrency token (current updatedAt); omitted = last write wins',
             ),
         },
       },
