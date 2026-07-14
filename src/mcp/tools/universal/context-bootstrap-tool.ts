@@ -172,8 +172,8 @@ export class ContextBootstrapTool {
     const focusKey = nextAction.in_progress_task?.key ?? nextAction.top_ready_task?.key ?? null;
     const relevantSkills = focusKey === null ? [] : this.relevantSkillsFor(focusKey);
 
-    // The one profile gate that both tool_groups and tool_risk are filtered
-    // by, so the two never disagree about what this project advertises.
+    // The profile gate that `tool_groups` is filtered by, so it advertises
+    // exactly what this project can call.
     const toolFeatures = {
       epics: this.workflow.features.epics,
       sprints: this.workflow.features.sprints,
