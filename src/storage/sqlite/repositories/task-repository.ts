@@ -1,8 +1,29 @@
 import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
 import { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
+import type {
+  ClaimResult,
+  ITaskRepository,
+  LeanTask,
+  LeanTaskFilter,
+  TaskFieldUpdates,
+  TaskInsertInput,
+  UpdateStateResult,
+} from '../../../ports/task-repository.port.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
+
+// Re-export the port's data-shape types from here too, so existing importers
+// that reach for them via the repository keep working. The canonical
+// definitions live in the port (ports/task-repository.port.ts).
+export type {
+  ClaimResult,
+  LeanTask,
+  LeanTaskFilter,
+  TaskFieldUpdates,
+  TaskInsertInput,
+  UpdateStateResult,
+} from '../../../ports/task-repository.port.js';
 
 interface TaskRow {
   readonly id: string;
@@ -33,122 +54,11 @@ interface TaskRow {
 }
 
 /**
- * A lean projection of a task row for aggregate reads (portfolio, inbox)
- * that need only these columns and never touch `acceptance_criteria` or
- * `metadata`. Deliberately skips the two JSON blobs — do NOT substitute
- * this where a full {@link Task} (with acceptanceCriteria/metadata) is
- * required. `state` is `string` (not `TaskState`) to match how the
- * aggregate services compare it.
+ * SQLite persistence for {@link Task} — one adapter behind
+ * {@link ITaskRepository}. Read/write only, no business rules. The data-shape
+ * types (TaskInsertInput, TaskFieldUpdates, LeanTask, …) live in the port.
  */
-export interface LeanTask {
-  readonly id: string;
-  readonly key: string;
-  readonly title: string;
-  readonly description: string | null;
-  readonly state: string;
-  readonly priority: number;
-  readonly assigneeId: string | null;
-  readonly epicId: string | null;
-  readonly sprintId: string | null;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly claimedBy: string | null;
-  readonly leaseExpiresAt: string | null;
-}
-
-/**
- * Optional equality filters pushed into SQL by {@link TaskRepository.findActiveLean}.
- * Values must be non-null — this method matches by equality and does not
- * support `IS NULL` filtering (a null here would match no rows and bypass
- * the partial indexes).
- */
-export interface LeanTaskFilter {
-  readonly state?: string;
-  readonly epicId?: string;
-  readonly sprintId?: string;
-}
-
-/**
- * Input shape for {@link TaskRepository.insert}.
- */
-export interface TaskInsertInput {
-  readonly key: string;
-  readonly projectId: string;
-  readonly title: string;
-  readonly reporterId: string;
-  readonly description?: string | null;
-  readonly acceptanceCriteria?: readonly string[];
-  readonly state?: string;
-  readonly estimate?: number | null;
-  readonly contextBudget?: number | null;
-  readonly priority?: number;
-  readonly assigneeId?: string | null;
-  readonly epicId?: string | null;
-  readonly sprintId?: string | null;
-  readonly metadata?: Readonly<Record<string, unknown>>;
-  /** Preserved on a clone rebuild; defaults to 0 for a genuinely new task. */
-  readonly reopenCount?: number;
-  /** Committed timestamps, preserved on a clone rebuild; default to now/null. */
-  readonly createdAt?: string;
-  readonly updatedAt?: string;
-  readonly closedAt?: string | null;
-}
-
-/**
- * Fields {@link TaskRepository.updateFields} is allowed to overwrite.
- *
- * Whitelist by design: only attributes that map to first-class columns
- * on the `tasks` table appear here. Annotation-only payload bits
- * (`reason`, `approval_note`, `pr_url`, …) stay in `transitions.payload`
- * and never touch the task record.
- */
-export interface TaskFieldUpdates {
-  readonly title?: string;
-  readonly description?: string | null;
-  readonly acceptanceCriteria?: readonly string[];
-  readonly estimate?: number | null;
-  readonly contextBudget?: number | null;
-  readonly priority?: number;
-  readonly assigneeId?: string | null;
-  readonly metadata?: Readonly<Record<string, unknown>>;
-}
-
-/**
- * Reason an `updateState` call failed.
- */
-export type UpdateStateFailure =
-  | { readonly kind: 'NOT_FOUND' }
-  | { readonly kind: 'CONFLICT'; readonly currentUpdatedAt: string };
-
-/**
- * Outcome of a state update attempt.
- */
-export type UpdateStateResult =
-  | { readonly ok: true; readonly task: Task }
-  | { readonly ok: false; readonly reason: UpdateStateFailure };
-
-/**
- * Reason a `claim` call failed.
- */
-export type ClaimFailure =
-  | { readonly kind: 'NOT_FOUND' }
-  | {
-      readonly kind: 'ALREADY_CLAIMED';
-      readonly claimedBy: string;
-      readonly leaseExpiresAt: string;
-    };
-
-/**
- * Outcome of a claim attempt.
- */
-export type ClaimResult =
-  | { readonly ok: true; readonly task: Task }
-  | { readonly ok: false; readonly reason: ClaimFailure };
-
-/**
- * Persistence for {@link Task}. Read/write only — no business rules.
- */
-export class TaskRepository {
+export class TaskRepository implements ITaskRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
