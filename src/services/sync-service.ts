@@ -357,6 +357,7 @@ function serialiseTask(
     labels: [...labels],
     depends_on: [...dependsOn],
     estimate: task.estimate,
+    context_budget: task.contextBudget,
     priority: task.priority,
     assignee: task.assigneeId,
     reporter: task.reporterId,
