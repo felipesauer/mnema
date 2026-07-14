@@ -26,6 +26,15 @@ export interface EpicInsertInput {
   readonly title: string;
   readonly description?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /**
+   * State to create in — defaults to OPEN. A clone rebuild passes the
+   * committed state so it lands final in one insert, without an updateState
+   * that would stamp a fresh closed_at.
+   */
+  readonly state?: string;
+  /** Committed timestamps, preserved on a clone rebuild; default to now/null. */
+  readonly createdAt?: string;
+  readonly closedAt?: string | null;
 }
 
 /** Content columns of an epic that sync rebuild can reconcile from markdown. */
@@ -126,8 +135,8 @@ export class EpicRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO epics (id, key, project_id, title, description, state, metadata, created_at)
-         VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?)`,
+        `INSERT INTO epics (id, key, project_id, title, description, state, metadata, created_at, closed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -135,8 +144,10 @@ export class EpicRepository {
         input.projectId,
         input.title,
         input.description ?? null,
+        input.state ?? 'OPEN',
         metadata,
-        isoNow(),
+        input.createdAt ?? isoNow(),
+        input.closedAt ?? null,
       );
 
     const created = this.findById(id);

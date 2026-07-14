@@ -75,6 +75,11 @@ export interface SprintInsertInput {
   readonly endsAt?: string | null;
   readonly capacity?: number | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /** Committed state to create in — defaults to PLANNED (clone rebuild). */
+  readonly state?: string;
+  /** Committed timestamps, preserved on a clone rebuild; default to now/null. */
+  readonly createdAt?: string;
+  readonly closedAt?: string | null;
 }
 
 /** Content columns of a sprint that sync rebuild can reconcile from markdown. */
@@ -200,8 +205,8 @@ export class SprintRepository {
       .prepare(
         `INSERT INTO sprints (
            id, key, project_id, name, goal,
-           state, starts_at, ends_at, capacity, metadata, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, 'PLANNED', ?, ?, ?, ?, ?, ?)`,
+           state, starts_at, ends_at, capacity, metadata, created_at, updated_at, closed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -209,12 +214,14 @@ export class SprintRepository {
         input.projectId,
         input.name,
         input.goal ?? null,
+        input.state ?? 'PLANNED',
         input.startsAt ?? null,
         input.endsAt ?? null,
         input.capacity ?? null,
         metadata,
+        input.createdAt ?? now,
         now,
-        now,
+        input.closedAt ?? null,
       );
 
     const created = this.findById(id);
