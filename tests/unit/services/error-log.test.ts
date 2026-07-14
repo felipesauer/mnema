@@ -115,4 +115,34 @@ describe('error-log', () => {
       expect(sanitize('task WEBAPP-42 failed the gate')).toBe('task WEBAPP-42 failed the gate');
     });
   });
+
+  describe('cap', () => {
+    it('bounds the log and keeps the most recent entries (drop-oldest)', () => {
+      // Write well past the cap; each entry is uniquely identifiable by index.
+      const total = 620;
+      for (let i = 0; i < total; i++) {
+        recordError(new Error(`crash-${i}`), {
+          stateDir: dir,
+          now: `2026-01-01T00:00:${String(i % 60).padStart(2, '0')}.000Z`,
+        });
+      }
+      const entries = readErrors(dir);
+      // Never exceeds the cap.
+      expect(entries.length).toBeLessThanOrEqual(500);
+      expect(entries.length).toBe(500);
+      // The oldest were dropped, the newest kept: the last entry is crash-619,
+      // and crash-0 is gone.
+      expect(entries.at(-1)?.message).toBe('crash-619');
+      expect(entries.some((e) => e.message === 'crash-0')).toBe(false);
+      // The kept window is contiguous and ends at the newest.
+      expect(entries[0]?.message).toBe(`crash-${total - 500}`);
+    });
+
+    it('leaves the log untouched below the cap', () => {
+      for (let i = 0; i < 10; i++) {
+        recordError(new Error(`e-${i}`), { stateDir: dir });
+      }
+      expect(readErrors(dir)).toHaveLength(10);
+    });
+  });
 });
