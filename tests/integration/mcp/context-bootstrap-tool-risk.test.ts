@@ -64,7 +64,13 @@ function payload(result: CallToolResult): Record<string, unknown> {
   return JSON.parse(block.text) as Record<string, unknown>;
 }
 
-describe('context_bootstrap surfaces the tool risk vocabulary', () => {
+// The risk vocabulary used to be duplicated into the context_bootstrap payload
+// (a `tool_risk` map). It was removed because tools/list already carries the
+// same annotations for every tool and lands in the model's context at session
+// start, so bootstrap was paying ~8.8k tokens to repeat it. These tests lock
+// in that the payload no longer carries it AND that the information a client
+// needs for a permission policy is still fully available — via tools/list.
+describe('context_bootstrap no longer duplicates the tool risk vocabulary', () => {
   let harness: Harness;
 
   beforeEach(async () => {
@@ -77,73 +83,63 @@ describe('context_bootstrap surfaces the tool risk vocabulary', () => {
     delete process.env.MNEMA_ACTOR;
   });
 
-  it('exposes tool_risk with correct hints for a sample of tools', async () => {
+  it('does not emit a tool_risk block in the bootstrap payload', async () => {
     const boot = payload(
       (await harness.client.callTool({
         name: 'context_bootstrap',
         arguments: {},
       })) as CallToolResult,
     );
-    const risk = boot.tool_risk as Record<string, ToolAnnotations>;
-    expect(risk).toBeDefined();
+    expect(boot.tool_risk).toBeUndefined();
+    // The unique layered view is retained — this is what bootstrap keeps.
+    expect(boot.tool_groups).toBeDefined();
+  });
+
+  it('the same risk annotations are still available for every tool via tools/list', async () => {
+    // What tool_risk used to provide, tools/list carries losslessly: each
+    // advertised tool has readOnly/destructive/idempotent/openWorld hints.
+    const list = await harness.client.listTools();
+    const byName = new Map(list.tools.map((t) => [t.name, t.annotations]));
 
     // A read-only tool: only readOnly + openWorld, no destructive/idempotent.
-    expect(risk.task_show).toEqual({ readOnlyHint: true, openWorldHint: false });
+    expect(byName.get('task_show')).toEqual({ readOnlyHint: true, openWorldHint: false });
     // The one open-world read.
-    expect(risk.pr_status).toEqual({ readOnlyHint: true, openWorldHint: true });
+    expect(byName.get('pr_status')).toEqual({ readOnlyHint: true, openWorldHint: true });
     // A destructive write.
-    expect(risk.epic_delete?.readOnlyHint).toBe(false);
-    expect(risk.epic_delete?.destructiveHint).toBe(true);
-    // A derived transition tool: present, a mutation, destructive on the rewind.
-    expect(risk.task_reopen?.readOnlyHint).toBe(false);
-    expect(risk.task_reopen?.destructiveHint).toBe(true);
+    const epicDelete = byName.get('epic_delete') as ToolAnnotations | undefined;
+    expect(epicDelete?.readOnlyHint).toBe(false);
+    expect(epicDelete?.destructiveHint).toBe(true);
+    // A derived transition tool: a mutation, destructive on the rewind.
+    const reopen = byName.get('task_reopen') as ToolAnnotations | undefined;
+    expect(reopen?.readOnlyHint).toBe(false);
+    expect(reopen?.destructiveHint).toBe(true);
     // A forward transition: a mutation but not destructive.
-    expect(risk.task_submit?.readOnlyHint).toBe(false);
-    expect(risk.task_submit?.destructiveHint).toBe(false);
+    const submit = byName.get('task_submit') as ToolAnnotations | undefined;
+    expect(submit?.readOnlyHint).toBe(false);
+    expect(submit?.destructiveHint).toBe(false);
   });
 
-  it('tool_risk matches, for every advertised tool, what tools/list carries', async () => {
-    const boot = payload(
-      (await harness.client.callTool({
-        name: 'context_bootstrap',
-        arguments: {},
-      })) as CallToolResult,
-    );
-    const risk = boot.tool_risk as Record<string, ToolAnnotations>;
-
-    const list = await harness.client.listTools();
-    // Exact key-set equality both ways: every advertised tool is in tool_risk,
-    // AND tool_risk carries no extra (unadvertised) key.
-    const advertised = new Set(list.tools.map((t) => t.name));
-    expect(new Set(Object.keys(risk))).toEqual(advertised);
-    for (const tool of list.tools) {
-      expect(tool.annotations, `${tool.name} annotation matches`).toEqual(risk[tool.name]);
-    }
-  });
-
-  it('gated profile: tool_risk drops disabled tools and matches the advertised set exactly', async () => {
-    // Audit-only: lean workflow (no epics/sprints) + knowledge off.
+  it('gated profile: tools/list drops disabled tools (no risk info leaks for them)', async () => {
+    // Audit-only: lean workflow (no epics/sprints) + knowledge off. The gating
+    // that tool_risk used to have to mirror is inherent to tools/list.
     const audit = await setup({ workflow: 'lean', knowledge: false });
     try {
+      const advertised = new Set((await audit.client.listTools()).tools.map((t) => t.name));
+      // Knowledge / planning tools are gated OFF → absent from tools/list.
+      for (const gated of ['memory_record', 'skill_record', 'decision_record', 'epic_delete']) {
+        expect(advertised.has(gated), `${gated} must be absent in audit-only`).toBe(false);
+      }
+      // Core stays.
+      expect(advertised.has('task_show')).toBe(true);
+
+      // And the bootstrap payload still carries no tool_risk in this profile.
       const boot = payload(
         (await audit.client.callTool({
           name: 'context_bootstrap',
           arguments: {},
         })) as CallToolResult,
       );
-      const risk = boot.tool_risk as Record<string, ToolAnnotations>;
-
-      // Knowledge / planning tools are gated OFF → absent from tool_risk,
-      // not merely present-but-unregistered (the over-listing bug this guards).
-      for (const gated of ['memory_record', 'skill_record', 'decision_record', 'epic_delete']) {
-        expect(risk[gated], `${gated} must be absent in audit-only`).toBeUndefined();
-      }
-      // Core stays.
-      expect(risk.task_show).toBeDefined();
-
-      // And it equals the advertised set exactly — no extra keys.
-      const advertised = new Set((await audit.client.listTools()).tools.map((t) => t.name));
-      expect(new Set(Object.keys(risk))).toEqual(advertised);
+      expect(boot.tool_risk).toBeUndefined();
     } finally {
       await audit.close();
     }

@@ -19,7 +19,6 @@ import { skillMatchTerms } from '../../../utils/skill-suggest-stopwords.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import { ok } from '../../mcp-tool-result.js';
 import { describeToolSurface } from '../../tool-registry.js';
-import { toolRiskMap } from '../../tool-risk.js';
 
 /**
  * Registers the `context_bootstrap` MCP tool — the canonical entry
@@ -214,12 +213,12 @@ export class ContextBootstrapTool {
       // this project's profile — a disabled layer's tools are listed but
       // are not registered (e.g. Knowledge is off in the audit-only profile).
       tool_groups: describeToolSurface(this.workflow, toolFeatures),
-      // The per-tool risk vocabulary (readonly/destructive/idempotent/openWorld),
-      // same as tools/list carries — surfaced here so a client can build a
-      // permission policy at session start without a separate round-trip.
-      // Gated to the advertised set (same toolFeatures) so it never lists a
-      // tool this profile can't call, staying in lockstep with tool_groups.
-      tool_risk: toolRiskMap(this.workflow, toolFeatures),
+      // Per-tool risk annotations (readOnly/destructive/idempotent/openWorld)
+      // are NOT surfaced here: the MCP client already receives them for every
+      // tool via tools/list, which lands in the model's context at session
+      // start, so repeating them in the bootstrap payload only duplicated
+      // ~8.8k tokens with no new information. Build permission policy from the
+      // tools/list annotations; tool_groups above is the unique layered view.
       agents_md: this.readTruncated('AGENTS.md', 8 * 1024),
       agents_md_path: existsSync(path.join(this.projectRoot, 'AGENTS.md')) ? 'AGENTS.md' : null,
       // Surfaced on every session start so the directive does not depend on
