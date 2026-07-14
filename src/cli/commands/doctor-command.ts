@@ -7,7 +7,7 @@ import {
   WorkflowInvalidError,
   WorkflowLoader,
 } from '../../domain/state-machine/workflow-loader.js';
-import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
+import { ErrorCode, ExitCode, type ExitCodeValue } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 // `inspectAuditIntegrity` lives in `services/audit-integrity.ts` so both
 // the CLI doctor and the `audit_verify` MCP tool consume one source of
@@ -91,8 +91,20 @@ export class DoctorCommand {
         '--prune-orphans',
         'When combined with --rebuild-mirrors, also delete `.md` files (including backlog task mirrors) whose slug/key has no matching SQLite row',
       )
+      .option(
+        '--vacuum',
+        'Reclaim local disk: VACUUM the SQLite cache (compacts page churn from deleted/archived rows) and truncate the WAL. Locks the DB briefly; opt-in, not part of the regular checks. The state/ cache is git-ignored and rebuildable, so this only reclaims space.',
+      )
       .action(
-        async (options: { readonly rebuildMirrors?: boolean; readonly pruneOrphans?: boolean }) => {
+        async (options: {
+          readonly rebuildMirrors?: boolean;
+          readonly pruneOrphans?: boolean;
+          readonly vacuum?: boolean;
+        }) => {
+          if (options.vacuum === true) {
+            const exit = await this.vacuum();
+            process.exit(exit);
+          }
           if (options.rebuildMirrors === true) {
             const exit = await this.rebuildMirrors(options.pruneOrphans === true);
             process.exit(exit);
@@ -101,6 +113,33 @@ export class DoctorCommand {
           process.exit(exit);
         },
       );
+  }
+
+  /**
+   * Reclaims local disk on the SQLite cache: `VACUUM` rewrites the database
+   * without the free pages left by deleted/archived/soft-deleted rows, then a
+   * `wal_checkpoint(TRUNCATE)` shrinks the `-wal` back to zero. Both lock the
+   * DB briefly, which is why this is opt-in (`--vacuum`) rather than run on
+   * every command. `state/` is git-ignored and rebuildable from the markdown
+   * mirror + audit chain, so this is pure space reclamation — never touches
+   * the source of truth.
+   *
+   * @returns Exit code (`0` on success, `3` if the context could not be opened)
+   */
+  private async vacuum(): Promise<number> {
+    const { withCliContext } = await import('../cli-context.js');
+    let exit: ExitCodeValue = ExitCode.Success;
+    await withCliContext(({ container }) => {
+      const db = container.adapter.getDatabase();
+      db.exec('VACUUM');
+      // TRUNCATE after VACUUM: VACUUM's own rewrite repopulates the WAL, so
+      // checkpoint it back down before we hand control back.
+      db.pragma('wal_checkpoint(TRUNCATE)');
+      process.stdout.write(`${pc.green('✓')} vacuumed the SQLite cache and truncated the WAL\n`);
+    }).catch(() => {
+      exit = ExitCode.State;
+    });
+    return exit;
   }
 
   /**

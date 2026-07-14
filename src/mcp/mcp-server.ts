@@ -58,6 +58,16 @@ import { installZodErrorMap, reformatSdkValidationError } from './validation-err
 const HARD_SHUTDOWN_MS = 5_000;
 
 /**
+ * How often the long-lived daemon truncates the WAL. `close()` reclaims it on
+ * a short-lived CLI run, but a persistent connection lets the `-wal` grow to
+ * the high-water mark of its largest write burst and sit there; a periodic
+ * `wal_checkpoint(TRUNCATE)` keeps the git-ignored cache small over a long
+ * session. Five minutes is far off the write hot path — this is disk hygiene,
+ * not durability (a passive autocheckpoint already flushes at 1000 pages).
+ */
+const WAL_CHECKPOINT_INTERVAL_MS = 5 * 60_000;
+
+/**
  * High-level wrapper around the MCP SDK that wires Mnema services to
  * the JSON-RPC stdio transport.
  *
@@ -77,6 +87,7 @@ export class MnemaMcpServer {
   private readonly session: McpSessionContext;
   private shuttingDown = false;
   private inflight = 0;
+  private walCheckpointTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly config: Config,
@@ -178,6 +189,13 @@ export class MnemaMcpServer {
     await this.sdk.connect(transport);
 
     this.installSignalHandlers();
+
+    // Reclaim the WAL periodically over a long session. `.unref()` so this
+    // timer never keeps the process alive on its own — shutdown clears it.
+    this.walCheckpointTimer = setInterval(() => {
+      this.services.adapter.checkpointTruncate();
+    }, WAL_CHECKPOINT_INTERVAL_MS);
+    this.walCheckpointTimer.unref();
 
     // Surface migration drift loudly: tool calls will fail with
     // `SCHEMA_OUT_OF_DATE` via `requireFreshSchema`, but a server boot
@@ -415,6 +433,11 @@ export class MnemaMcpServer {
     this.shuttingDown = true;
     this.session.setStatus(McpServerStatus.ShuttingDown);
     logger.info({ signal }, 'MCP server: graceful shutdown started');
+
+    if (this.walCheckpointTimer !== null) {
+      clearInterval(this.walCheckpointTimer);
+      this.walCheckpointTimer = null;
+    }
 
     const hardExit = setTimeout(() => {
       logger.fatal('MCP server: graceful shutdown timeout, forcing exit');
