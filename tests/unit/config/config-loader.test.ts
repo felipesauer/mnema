@@ -104,14 +104,25 @@ describe('ConfigLoader', () => {
         expect(() => loader.load(tempRoot)).not.toThrow();
       });
 
-      it('parses a valid opentimestamps config', () => {
+      it('rejects opentimestamps — declared in the enum but not implemented yet', () => {
+        // The provider is a documented-but-unshipped target (MNEMA-163): the
+        // enum keeps it, but selecting it must fail at config load with an
+        // actionable message rather than throwing a raw "unknown anchor
+        // provider" deep in the factory at first use.
         writeConfig(tempRoot, {
           ...validConfig,
           audit: { anchor: { provider: 'opentimestamps', interval: { seconds: 86400 } } },
         });
-        const config = loader.load(tempRoot);
-        expect(config.audit.anchor.provider).toBe('opentimestamps');
-        expect(config.audit.anchor.interval.seconds).toBe(86400);
+        let caught: unknown;
+        try {
+          loader.load(tempRoot);
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught).toBeInstanceOf(ConfigInvalidError);
+        // The issue must name the shortfall actionably, not just fail opaquely.
+        const issues = JSON.stringify((caught as ConfigInvalidError).issues);
+        expect(issues).toMatch(/not implemented yet/);
       });
 
       it('parses a valid git-signed config with remote and ref', () => {
