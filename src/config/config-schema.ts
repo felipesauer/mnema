@@ -109,6 +109,15 @@ export const ConfigSchema = z.object({
   // not been designed yet. The schema only accepts `single` so users
   // don't quietly configure a value that does nothing.
   mode: z.literal('single').default('single'),
+  // `audit_strategy` and `audit_retention_months` are RESERVED and inert
+  // today: they are accepted and validated, but no code reads them and the
+  // audit chain is append-only forever. Enforcing them means compacting old
+  // months behind a re-baselined chain head (a checkpoint that hashes the
+  // pruned prefix, then continues from there) — a destructive rewrite of the
+  // source of truth that is tracked as its own epic, not a config toggle.
+  // Kept in the schema so a project can express intent now and have it honored
+  // when enforcement lands; `mnema doctor` warns so no one mistakes them for
+  // active retention. See docs/configuration.md.
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
   // Which observable signal marks an agent run as "guided" in `eval_report`.

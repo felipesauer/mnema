@@ -367,6 +367,11 @@ export class DoctorCommand {
     // is flagged as a warning rather than passing silently.
     checks.push(...inspectEnforcementMode(config.enforcement_mode));
 
+    // Audit retention is declared but not yet enforced: warn when the config
+    // asks for pruning ('recent'/'local' or a finite retention) so no one
+    // mistakes an inert setting for an active guarantee.
+    checks.push(...inspectAuditRetention(config.audit_strategy, config.audit_retention_months));
+
     // Domain-event hooks: surface how many commands are wired, and whether
     // the block is human-approved. An un-approved block is inert (it never
     // executes) — flag it as not-ok so a configured-but-unapproved hook is
@@ -1405,6 +1410,38 @@ export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking')
             ? 'strict — a failed gate blocks agents; humans may override'
             : 'advisory — gate enforcement is off (a failed gate only warns); ' +
               'set enforcement_mode to "strict" to restore it',
+    },
+  ];
+}
+
+/**
+ * Flags the reserved-but-inert audit-retention config. `audit_strategy` and
+ * `audit_retention_months` are accepted and validated but nothing prunes the
+ * append-only chain yet (enforcement is a destructive re-baseline tracked as
+ * its own epic). A user who set `strategy` to `recent`/`local` — or any finite
+ * retention — is expecting old history to be dropped; surface that it is a
+ * no-op today so the expectation is not silently unmet. `full` means "keep
+ * everything", which is exactly what happens, so it passes without noise.
+ *
+ * @param strategy - Configured `audit_strategy`
+ * @param retentionMonths - Configured `audit_retention_months`
+ */
+export function inspectAuditRetention(
+  strategy: 'full' | 'recent' | 'local',
+  retentionMonths: number,
+): DoctorCheck[] {
+  // `full` = keep everything = today's actual behavior → no expectation to miss.
+  if (strategy === 'full') return [];
+  return [
+    {
+      name: 'audit retention',
+      ok: false,
+      severity: 'warning',
+      detail:
+        `audit_strategy="${strategy}" (retain ${retentionMonths} months) is reserved but ` +
+        'not yet enforced — the audit chain is append-only, so no old history is ' +
+        'pruned. Set audit_strategy to "full" to match actual behavior, or track the ' +
+        'retention epic if you need pruning.',
     },
   ];
 }
