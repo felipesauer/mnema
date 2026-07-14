@@ -179,6 +179,26 @@ export class AttachmentRepository {
     }
     return created;
   }
+
+  /**
+   * Returns the distinct `path` (filename) of every attachment row —
+   * DELIBERATELY including soft-deleted rows (no `deleted_at` filter).
+   *
+   * This is the set of blobs the attachments directory must keep. A
+   * soft-deleted row still protects its blob: no undo path exists today,
+   * but a future restore must not find the content gone, so GC treats a
+   * blob referenced by a soft-deleted row as live. Only a file matching
+   * zero rows here is a true orphan.
+   *
+   * @returns Filenames referenced by any row, live or soft-deleted
+   */
+  allReferencedPaths(): Set<string> {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT DISTINCT path FROM attachments')
+      .all() as Array<{ path: string }>;
+    return new Set(rows.map((r) => r.path));
+  }
 }
 
 function rowToAttachment(row: AttachmentRow): Attachment {

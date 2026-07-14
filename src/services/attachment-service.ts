@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import { ActorKind } from '../domain/enums/actor-kind.js';
@@ -41,6 +41,18 @@ export interface AttachToDecisionInput {
 }
 
 /**
+ * Outcome of {@link AttachmentService.gcOrphans}.
+ */
+export interface AttachmentGcResult {
+  /** Filenames of the orphan blobs (would-be or actually removed). */
+  readonly orphans: string[];
+  /** Total bytes reclaimed — always `0` in dry-run mode. */
+  readonly freedBytes: number;
+  /** `true` when files were actually deleted (i.e. not a dry run). */
+  readonly removed: boolean;
+}
+
+/**
  * Maps file extensions to a default mime type when the caller doesn't
  * provide one. Intentionally tiny — anything unrecognised falls back
  * to `application/octet-stream`.
@@ -73,6 +85,7 @@ export class AttachmentService {
     private readonly fileStore: FileStore,
     private readonly identity: IdentityService,
     private readonly audit: AuditService,
+    private readonly attachmentsDir: string,
   ) {}
 
   /**
@@ -223,6 +236,65 @@ export class AttachmentService {
       return Err({ kind: ErrorCode.DecisionNotFound, decisionKey });
     }
     return Ok(this.attachments.findByParent('decision', decision.id));
+  }
+
+  /**
+   * Reclaims true orphan blobs from the attachments directory: files
+   * that no attachment row references — counting live AND soft-deleted
+   * rows (see {@link AttachmentRepository.allReferencedPaths}). A blob
+   * shared by several rows is kept while any row still points at it, so
+   * dedup is safe automatically.
+   *
+   * Best-effort per file: a single stat/unlink error is skipped rather
+   * than thrown, so one unreadable entry never aborts the sweep. When
+   * the attachments directory does not exist there is nothing to
+   * collect and the result is empty.
+   *
+   * @param opts.dryRun - When `true`, only report the orphans (nothing
+   *   is deleted and `freedBytes` stays `0`); when `false`, unlink each
+   *   orphan and sum the reclaimed bytes
+   * @returns The orphan filenames, bytes freed, and whether files were
+   *   actually removed
+   */
+  gcOrphans(opts: { dryRun: boolean }): AttachmentGcResult {
+    if (!existsSync(this.attachmentsDir)) {
+      return { orphans: [], freedBytes: 0, removed: !opts.dryRun };
+    }
+
+    const referenced = this.attachments.allReferencedPaths();
+    const orphans: string[] = [];
+    let freedBytes = 0;
+
+    for (const entry of readdirSync(this.attachmentsDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      if (referenced.has(entry.name)) continue;
+
+      const full = path.join(this.attachmentsDir, entry.name);
+      if (opts.dryRun) {
+        // Report the reclaimable size without touching disk; a stat
+        // failure just drops the byte tally for this one file.
+        try {
+          freedBytes += statSync(full).size;
+        } catch {
+          // best-effort: skip an unreadable entry
+        }
+        orphans.push(entry.name);
+        continue;
+      }
+
+      // Size before unlink so the freed tally is accurate; either op
+      // failing skips the file rather than aborting the whole sweep.
+      try {
+        const { size } = statSync(full);
+        unlinkSync(full);
+        freedBytes += size;
+        orphans.push(entry.name);
+      } catch {
+        // best-effort: leave a file we could not remove in place
+      }
+    }
+
+    return { orphans, freedBytes, removed: !opts.dryRun };
   }
 }
 
