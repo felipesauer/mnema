@@ -101,6 +101,7 @@ export interface TaskFieldUpdates {
   readonly description?: string | null;
   readonly acceptanceCriteria?: readonly string[];
   readonly estimate?: number | null;
+  readonly contextBudget?: number | null;
   readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
@@ -644,6 +645,10 @@ export class TaskRepository {
     if (fields.estimate !== undefined) {
       sets.push('estimate = ?');
       values.push(fields.estimate);
+    }
+    if (fields.contextBudget !== undefined) {
+      sets.push('context_budget = ?');
+      values.push(fields.contextBudget);
     }
     if (fields.priority !== undefined) {
       sets.push('priority = ?');
