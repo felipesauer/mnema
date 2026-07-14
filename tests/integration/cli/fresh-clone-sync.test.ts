@@ -194,7 +194,10 @@ function freshClone(): string {
     "updated_at: '2026-06-01T00:00:00.000Z'",
     '---',
     '',
-    'Steps to write a bug report.',
+    // `zephyrredact` is a distinctive token that appears ONLY in the body —
+    // not in name/description — so a search for it exercises the FTS body
+    // columns (content_core), which a mirror rebuild must populate.
+    'Steps to write a bug report: redact secrets with the zephyrredact helper.',
     '',
   ].join('\n');
   writeFileSync(path.join(projectRoot, '.mnema/skills/default/bug-report.md'), seedSkillMd);
@@ -392,6 +395,20 @@ describe('fresh clone → sync', () => {
         expect(authored.value.invocable).toBe(true);
         expect([...authored.value.toolsUsed]).toEqual(['pr_status']);
         expect(authored.value.usageCount).toBe(4);
+      }
+    });
+  });
+
+  it('a mirror-rebuilt skill is searchable by a BODY-only term (FTS content_core populated)', () => {
+    withClone((container) => {
+      container.syncRebuild.run('CLONE');
+      // `zephyrredact` lives only in bug-report's body. Migration 035 indexes
+      // the body via content_core/content_examples, so insertFromMirror must
+      // populate them — otherwise the rebuilt skill is body-unsearchable.
+      const result = container.search.search('zephyrredact', { entities: ['skill'] });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.map((h) => h.key)).toContain('bug-report');
       }
     });
   });
