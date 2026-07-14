@@ -703,4 +703,46 @@ mnema:
       fresh.close();
     }
   });
+
+  it('reconstructs the provenance graph from the audit on a fresh clone', () => {
+    // An observation promoted to a decision builds an observation → decision
+    // edge in the (git-ignored) provenance_links cache.
+    const obs = container.observation.record({
+      content: 'a signal worth promoting',
+      actor: 'daniel',
+    });
+    expect(obs.ok).toBe(true);
+    if (!obs.ok) return;
+    const promoted = container.decision.promoteFromObservation({
+      observationId: obs.value.id,
+      projectKey: 'TEST',
+      title: 'Promoted decision',
+      decision: 'do the thing',
+      actor: 'daniel',
+    });
+    expect(promoted.ok).toBe(true);
+    if (!promoted.ok) return;
+    const decisionKey = promoted.value.key;
+
+    // Sanity: the edge exists before the clone.
+    const beforeChain = container.provenance.chain({ kind: 'decision', ref: decisionKey });
+    expect(beforeChain.upstream.some((e) => e.fromKind === 'observation')).toBe(true);
+
+    // Fresh clone: the provenance_links table is git-ignored, so it is gone;
+    // only the committed audit chain survives.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      // The edge is rebuilt from the decision_promoted_from_observation event.
+      const afterChain = fresh.provenance.chain({ kind: 'decision', ref: decisionKey });
+      const edge = afterChain.upstream.find((e) => e.fromKind === 'observation');
+      expect(edge, 'observation → decision provenance edge must survive the clone').toBeDefined();
+      expect(edge?.toRef).toBe(decisionKey);
+    } finally {
+      fresh.close();
+    }
+  });
 });

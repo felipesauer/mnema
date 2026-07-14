@@ -204,7 +204,19 @@ export class MemoryService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { slug: memory.slug, action },
+      // Carry the provenance source refs so the edge is reconstructable from
+      // the audit alone on a fresh clone (the provenance_links table is a
+      // git-ignored cache). Omitted when the memory has no derivation.
+      data: {
+        slug: memory.slug,
+        action,
+        ...(input.derivedFromDecision !== undefined && input.derivedFromDecision.length > 0
+          ? { derived_from_decision: input.derivedFromDecision }
+          : {}),
+        ...(input.derivedFromObservation !== undefined && input.derivedFromObservation.length > 0
+          ? { derived_from_observation: input.derivedFromObservation }
+          : {}),
+      },
     });
 
     // First-class, navigable edge: decision → memory, when the memory
