@@ -191,6 +191,21 @@ export const ConfigSchema = z.object({
               message: 'audit.anchor.tsa (a TSA URL) is required when provider is "rfc3161"',
             });
           }
+          // `opentimestamps` is a declared-but-unshipped provider: the enum
+          // keeps it as documented intent (MNEMA-163), but no provider is
+          // registered yet, so resolving it at runtime would throw a raw
+          // "unknown anchor provider" deep in the anchor factory. Reject it at
+          // config load with an actionable message instead — fail closed at
+          // the earliest point, and drop this guard when the provider lands.
+          if (ctx.value.provider === 'opentimestamps') {
+            ctx.issues.push({
+              code: 'custom',
+              input: ctx.value,
+              path: ['provider'],
+              message:
+                'audit.anchor.provider "opentimestamps" is not implemented yet — use "none", "git-signed", or "rfc3161".',
+            });
+          }
         }),
     })
     .prefault({}),
