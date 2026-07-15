@@ -9,6 +9,33 @@
  * The shell only needs the top-level identity + the panel roots; each panel
  * task (Needs-you 291, graph 290, charts 292) refines the sub-shapes it uses.
  */
+/** One task node in the dependency graph (mirrors the server GraphNode). */
+export interface GraphNode {
+  readonly key: string;
+  readonly state: string;
+  readonly terminal: boolean;
+  readonly blockedBy: readonly string[];
+  readonly blocks: readonly string[];
+}
+
+/** A blocked task with the non-terminal blockers holding it (server BlockedNode). */
+export interface BlockedNode {
+  readonly key: string;
+  readonly blockedBy: readonly string[];
+}
+
+/** The dependency graph section of the contract (mirrors server DependencyGraph). */
+export interface DashboardGraph {
+  readonly scope: { readonly kind: string; readonly key?: string };
+  readonly nodes: readonly GraphNode[];
+  readonly cycles: readonly (readonly string[])[];
+  readonly frontier: {
+    readonly ready: readonly string[];
+    readonly blocked: readonly BlockedNode[];
+  };
+  readonly criticalPath: readonly string[];
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;
@@ -22,11 +49,7 @@ export interface DashboardContract {
     readonly slaBreaches: readonly unknown[];
     readonly wipBreaches: readonly unknown[];
   };
-  readonly graph: {
-    readonly nodes: readonly unknown[];
-    readonly frontier: { readonly ready: readonly string[]; readonly blocked: readonly unknown[] };
-    readonly criticalPath: readonly string[];
-  };
+  readonly graph: DashboardGraph;
   readonly series: {
     readonly activityByDay: ReadonlyArray<{ label: string; value: number }>;
     readonly throughputByDay: ReadonlyArray<{ label: string; value: number }>;
