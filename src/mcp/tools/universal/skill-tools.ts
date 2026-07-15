@@ -67,7 +67,7 @@ export class SkillTools {
             .array(z.string().min(1))
             .optional()
             .describe(
-              'Commands whose output is embedded when the skill is shown, e.g. ["mnema tasks ready"]. Only `mnema …` commands are run.',
+              '`mnema …` commands whose output is embedded when shown, e.g. ["mnema tasks ready"]',
             ),
           mode: z.enum(['update', 'new_version']).optional(),
           change_rationale: z
@@ -75,15 +75,13 @@ export class SkillTools {
             .min(1)
             .optional()
             .describe(
-              'Why this version changed — stored on the resulting version and shown in `skill_diff`. Most useful with mode:"new_version".',
+              'Why this version changed (shown in `skill_diff`); best with mode:"new_version"',
             ),
           scope: z
             .string()
             .min(1)
             .optional()
-            .describe(
-              'Area this skill belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows bootstrap relevance for a given area.',
-            ),
+            .describe('Area path/package like "packages/notifier"; omit for project-global'),
         },
       },
       (input) => {

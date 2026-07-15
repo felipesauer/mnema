@@ -62,19 +62,15 @@ export class MemoryTools {
             .string()
             .min(1)
             .optional()
-            .describe(
-              'Area this memory belongs to — a path/package like "packages/notifier". Omit for project-global. Narrows what the bootstrap surfaces for a given area.',
-            ),
+            .describe('Area path/package like "packages/notifier"; omit for project-global'),
           derived_from_decision: z
             .string()
             .optional()
-            .describe('Decision key this memory was derived from — records a provenance edge'),
+            .describe('Decision key this was derived from (records a provenance edge)'),
           derived_from_observation: z
             .string()
             .optional()
-            .describe(
-              'Observation id this memory was promoted from — records an observation→memory provenance edge',
-            ),
+            .describe('Observation id this was promoted from (records a provenance edge)'),
         },
       },
       (input) => {
