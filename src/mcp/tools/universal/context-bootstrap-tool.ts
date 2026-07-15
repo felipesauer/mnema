@@ -279,7 +279,7 @@ export class ContextBootstrapTool {
         // Advisory only: flag a memory whose cited file:line references
         // changed in git since it was written, so the agent knows which
         // memories to re-check against current code. Never blocks recall.
-        const staleness = this.memoryStaleness.assess(m.content, m.updatedAt);
+        const staleness = this.memoryStaleness.assess(m.content, m.updatedAt, m.slug);
         return {
           slug: m.slug,
           title: m.title,
