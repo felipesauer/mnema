@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { AgentRun } from '../domain/entities/agent-run.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { AgentPlanState } from '../domain/enums/agent-plan-state.js';
@@ -12,7 +13,6 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Maximum nesting depth allowed for agent runs (mirrors the SQL CHECK).

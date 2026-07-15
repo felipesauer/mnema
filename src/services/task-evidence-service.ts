@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import {
   EVIDENCE_KINDS,
   type EvidenceKind,
@@ -9,7 +10,6 @@ import type { MnemaError } from '../errors/mnema-error.js';
 import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Input for {@link TaskEvidenceService.attach}.

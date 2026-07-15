@@ -1,9 +1,9 @@
+import { Ok, type Result } from '../common/result.js';
 import type { AgentRun } from '../domain/entities/agent-run.js';
 import { AgentRunStatus } from '../domain/enums/agent-run-status.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import type { AgentRunService } from './agent-run-service.js';
-import { Ok, type Result } from '../common/result.js';
 
 const MS_PER_HOUR = 3_600_000;
 

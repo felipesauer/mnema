@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 
 import { z } from 'zod';
-
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Skill } from '../domain/entities/skill.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { checkSlug, checkStringLength } from '../domain/validation.js';
@@ -23,7 +23,6 @@ import {
 import type { AuditService } from './audit-service.js';
 import { type CommandRunner, defaultRunner } from './github-pr-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import { readUserSkills, type SourcedSkill } from './user-knowledge.js';
 
 // The example/core split lives in a leaf util so the skill repository can call

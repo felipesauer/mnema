@@ -8,6 +8,7 @@ import { pc } from '../../utils/colors.js';
 // silent runs (`--yes` or all flags supplied) never pay the cost,
 // and `mnema --version` / `mnema task ...` never touch it at all.
 
+import { Err, Ok, type Result } from '../../common/result.js';
 import { CONFIG_FILE_RELATIVE } from '../../config/config-loader.js';
 import type { Config } from '../../config/config-schema.js';
 import { ConfigSchema } from '../../config/config-schema.js';
@@ -18,7 +19,6 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import { AdoptionService } from '../../services/adoption-service.js';
 import { AuditService } from '../../services/audit-service.js';
 import { IdentityService } from '../../services/identity-service.js';
-import { Err, Ok, type Result } from '../../common/result.js';
 import { SkillService } from '../../services/skill-service.js';
 import { AuditWriter } from '../../storage/audit/audit-writer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
@@ -396,7 +396,6 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
 function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
-
 
 /**
  * Creates one folder per workflow state under `backlog/`, derived from

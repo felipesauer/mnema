@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Task } from '../domain/entities/task.js';
 import type { StateMachine } from '../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../errors/error-codes.js';
@@ -6,7 +7,6 @@ import type { DependencyRepository } from '../storage/sqlite/repositories/depend
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /** What the graph is scoped to. */
 export type GraphScope =

@@ -1,9 +1,9 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { AgentRunStatus } from '../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import type { AuditQuery } from './audit-query.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /** One change a run produced, normalised for display. */
 export interface RunChange {

@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Decision } from '../domain/entities/decision.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { DecisionStatus } from '../domain/enums/decision-status.js';
@@ -12,7 +13,6 @@ import type { ProvenanceLinkRepository } from '../storage/sqlite/repositories/pr
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import type { RoadmapMirror } from './roadmap-mirror.js';
 
 /**

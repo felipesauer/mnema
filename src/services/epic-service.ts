@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Epic } from '../domain/entities/epic.js';
 import type { Task } from '../domain/entities/task.js';
 import type { EpicLifecycle } from '../domain/enums/epic-lifecycle.js';
@@ -9,7 +10,6 @@ import type { EpicRepository } from '../storage/sqlite/repositories/epic-reposit
 import type { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import type { RoadmapMirror } from './roadmap-mirror.js';
 import type { SyncService } from './sync-service.js';
 
