@@ -95,11 +95,22 @@ export class DoctorCommand {
         '--vacuum',
         'Reclaim local disk: VACUUM the SQLite cache (compacts page churn from deleted/archived rows) and truncate the WAL. Locks the DB briefly; opt-in, not part of the regular checks. The state/ cache is git-ignored and rebuildable, so this only reclaims space.',
       )
+      .option(
+        '--gc-attachments',
+        'Recovery: reclaim orphan attachment blobs in `state/attachments/` — files no attachment row (live or soft-deleted) references. Dry run unless `--yes` is given. Skips the regular doctor checks.',
+      )
+      .option(
+        '--yes',
+        'Apply destructive actions (e.g. --gc-attachments) instead of a dry run',
+        false,
+      )
       .action(
         async (options: {
           readonly rebuildMirrors?: boolean;
           readonly pruneOrphans?: boolean;
           readonly vacuum?: boolean;
+          readonly gcAttachments?: boolean;
+          readonly yes?: boolean;
         }) => {
           if (options.vacuum === true) {
             const exit = await this.vacuum();
@@ -107,6 +118,10 @@ export class DoctorCommand {
           }
           if (options.rebuildMirrors === true) {
             const exit = await this.rebuildMirrors(options.pruneOrphans === true);
+            process.exit(exit);
+          }
+          if (options.gcAttachments === true) {
+            const exit = await this.gcAttachments(options.yes !== true);
             process.exit(exit);
           }
           const exit = await this.run();
@@ -353,6 +368,48 @@ export class DoctorCommand {
         );
       }
       exit = ExitCode.Success;
+    });
+    return exit;
+  }
+
+  /**
+   * Reclaims orphan attachment blobs from `state/attachments/`: files
+   * that no attachment row references, counting live AND soft-deleted
+   * rows (a soft-deleted row still protects its blob, since a restore
+   * must not find the content gone). A blob shared by multiple rows is
+   * kept while any row points at it, so dedup stays safe.
+   *
+   * Dry run by default — it prints what WOULD be removed and the total
+   * bytes, changing nothing. Pass `--yes` (dryRun=false) to actually
+   * delete. Runs instead of the regular doctor checks.
+   *
+   * @param dryRun - When `true` (the default), only report the orphans;
+   *   when `false`, delete them
+   * @returns Exit code (`0` on success, `3` if the context could not be
+   *   opened)
+   */
+  private async gcAttachments(dryRun: boolean): Promise<ExitCodeValue> {
+    const { withCliContext } = await import('../cli-context.js');
+    let exit: ExitCodeValue = ExitCode.Success;
+    await withCliContext(({ container }) => {
+      const result = container.attachment.gcOrphans({ dryRun });
+      if (result.orphans.length === 0) {
+        process.stdout.write(`${pc.green('✓')} no orphan attachments — every blob is referenced\n`);
+        return;
+      }
+      const total = `${result.orphans.length} orphan blob(s), ${result.freedBytes} byte(s)`;
+      if (dryRun) {
+        process.stdout.write(
+          `${pc.yellow('⚠')} would reclaim ${total} ${pc.dim('(dry run — pass --yes to delete)')}\n`,
+        );
+      } else {
+        process.stdout.write(`${pc.red('✗')} reclaimed ${total}\n`);
+      }
+      for (const name of result.orphans) {
+        process.stdout.write(`  ${pc.dim(name)}\n`);
+      }
+    }).catch(() => {
+      exit = ExitCode.State;
     });
     return exit;
   }

@@ -632,6 +632,7 @@ export function createServiceContainer(
     fileStore,
     identity,
     audit,
+    path.join(stateDir, 'attachments'),
   );
   const searchService = new SearchService(adapter);
   const skillsDir = path.join(projectRoot, config.paths.skills);

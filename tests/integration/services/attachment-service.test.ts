@@ -48,6 +48,7 @@ describe('AttachmentService + FileStore', () => {
       fileStore,
       identity,
       audit,
+      attachmentsDir,
     );
 
     const project = projects.insert({ key: 'TEST', name: 'Test' });
