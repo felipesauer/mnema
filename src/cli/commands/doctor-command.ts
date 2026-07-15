@@ -722,7 +722,7 @@ export function inspectAuditDiskDelta(
       name: 'audit mirror vs disk',
       ok: false,
       severity: 'error',
-      detail: `event_count ${dbCount} exceeds ${diskCount} chained line(s) on disk by ${delta} — the mirror counted events absent from the JSONL (a truncation/rewind of the tracked audit log)${culprit}. Run \`mnema audit reconcile\` (or \`accept-truncation\` if the history was deliberately rewritten).`,
+      detail: `event_count ${dbCount} exceeds ${diskCount} chained line(s) on disk by ${delta} — the mirror counted events absent from the JSONL (a truncation/rewind of the tracked audit log)${culprit}. Run \`mnema audit reconcile\` (or \`mnema audit accept-truncation\` if the history was deliberately rewritten). These recovery commands are hidden from \`--help\` but run when invoked.`,
     },
   ];
 }

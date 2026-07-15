@@ -80,7 +80,7 @@ export class AgentCommand {
       });
 
     group
-      .command('close-orphans')
+      .command('close-orphans', { hidden: true })
       .description('Find runs left open past the threshold; with --apply, abort them with a note')
       .option('--apply', 'Actually abort the stale runs (otherwise just list them)', false)
       .option('--hours <n>', 'Override the orphan threshold in hours')

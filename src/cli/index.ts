@@ -176,7 +176,9 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   },
   drift: {
     load: async () => new (await import('./commands/drift-command.js')).DriftCommand(),
-    description: 'List commits on this branch not tied to any task',
+    // Read-only governance lens (never mutates) — a permanent feature, not a
+    // recovery/repair command, so it stays visible at the top level.
+    description: 'Governance: list commits on this branch not tied to any task',
   },
   guard: {
     load: async () => new (await import('./commands/guard-command.js')).GuardCommand(),
