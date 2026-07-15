@@ -618,4 +618,48 @@ mnema:
     expect(summary.skipped.some((s) => s.file.endsWith('context.md'))).toBe(false);
     expect(container.memory.list().map((m) => m.slug)).not.toContain('context');
   });
+
+  it('preserves a task reopen_count across a fresh-clone rebuild', () => {
+    // Drive a task to DONE, then reopen it so reopen_count becomes non-zero
+    // (the counter only bumps on a reopen from a terminal state).
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Reopened work',
+      acceptanceCriteria: ['done once'],
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    const move = (action: string, payload: Record<string, unknown> = {}) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok, `${action}: ${r.ok ? '' : JSON.stringify(r.error)}`).toBe(true);
+    };
+    move('submit');
+    move('start', { assignee_id: 'daniel' });
+    move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
+    move('approve', { approval_note: 'lgtm' });
+    move('reopen', { reason: 'regression found' });
+
+    const before = container.task.findByKey(key);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    expect(before.value.reopenCount).toBe(1);
+
+    // Fresh clone: flush mirror, drop the state cache, rebuild from disk.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.task.findByKey(key);
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      // The whole point of the fix: reopen_count survives, not reset to 0.
+      expect(after.value.reopenCount).toBe(1);
+    } finally {
+      fresh.close();
+    }
+  });
 });

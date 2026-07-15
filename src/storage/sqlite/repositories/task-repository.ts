@@ -86,6 +86,8 @@ export interface TaskInsertInput {
   readonly epicId?: string | null;
   readonly sprintId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /** Preserved on a clone rebuild; defaults to 0 for a genuinely new task. */
+  readonly reopenCount?: number;
 }
 
 /**
@@ -336,8 +338,8 @@ export class TaskRepository {
            id, key, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
            estimate, context_budget, priority, assignee_id, reporter_id, metadata,
-           created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           reopen_count, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -355,6 +357,7 @@ export class TaskRepository {
         input.assigneeId ?? null,
         input.reporterId,
         metadata,
+        input.reopenCount ?? 0,
         now,
         now,
       );
