@@ -633,6 +633,85 @@ h1 {
   font-family: var(--mono);
 }
 
+/* Estimate-vs-actual scatter */
+.scatter {
+  display: block;
+  width: 100%;
+  height: 220px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  /* Non-scaling strokes: the viewBox is stretched (preserveAspectRatio=none),
+     so declare stroke widths in the stretched user space directly. */
+}
+.scatter .ax {
+  stroke: var(--border);
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+.scatter .grid {
+  stroke: var(--border-soft);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+.scatter .ideal {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  opacity: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+.scatter .pt {
+  fill: var(--accent);
+  fill-opacity: 0.45;
+}
+.scatter .pt.fallback {
+  fill: var(--warn);
+  fill-opacity: 0.5;
+}
+.axlabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--faint);
+}
+.axlabels .axname {
+  color: var(--muted);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+.legend .sw.run {
+  background: var(--accent);
+}
+.legend .sw.lead {
+  background: var(--warn);
+}
+.legend .sw.ideal {
+  height: 0;
+  width: 14px;
+  border-radius: 0;
+  border-top: 2px dashed var(--accent);
+}
+
 /* Graph */
 .gcanvas {
   background: var(--panel-2);
