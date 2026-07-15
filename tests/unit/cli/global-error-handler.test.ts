@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { isMnemaError, reportUncaught } from '@/cli/error-handler.js';
@@ -13,6 +17,13 @@ import { ExitCode } from '@/errors/error-codes.js';
 describe('reportUncaught', () => {
   let stderr: string;
   let spy: ReturnType<typeof vi.spyOn>;
+  // The generic-error cases below reach `recordError`, which resolves the
+  // crash log by walking up from cwd for a `.mnema`. Run them from a bare
+  // temp dir so that walk finds none and logging no-ops — otherwise the
+  // suite writes real crash entries into this repo's own (git-ignored)
+  // .mnema/state/errors.jsonl, corrupting the local dogfooding audit.
+  let cwd: string;
+  let bareDir: string;
 
   beforeEach(() => {
     stderr = '';
@@ -20,10 +31,15 @@ describe('reportUncaught', () => {
       stderr += String(chunk);
       return true;
     });
+    cwd = process.cwd();
+    bareDir = mkdtempSync(path.join(tmpdir(), 'mnema-errh-'));
+    process.chdir(bareDir);
   });
 
   afterEach(() => {
     spy.mockRestore();
+    process.chdir(cwd);
+    rmSync(bareDir, { recursive: true, force: true });
   });
 
   it('routes a MnemaError through printError with its mapped exit code', () => {
