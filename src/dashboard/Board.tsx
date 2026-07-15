@@ -1,25 +1,47 @@
-import type { ReactElement } from 'react';
+import { type ReactElement, useState } from 'react';
 
-import type { BoardData } from './contract.js';
+import type { BoardData, WorklinesData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Board panel (MNEMA-335 / ADR-67 slice 3). Every task grouped by workflow
- * state, from the /api/board read (the existing portfolio service). A column
- * per state, each listing its tasks as cards. No new source of truth.
+ * Board panel (MNEMA-335 / ADR-67 slice 3, filters added in slice 7). Tasks
+ * grouped by workflow state, from the /api/board read (the existing portfolio
+ * service). An optional epic filter (slice 7) is pushed to the server query —
+ * an unknown key yields an honest empty result. No new source of truth.
  */
 export function Board(): ReactElement {
-  const state = useApi<BoardData>('/api/board');
+  const [epic, setEpic] = useState('');
+  const epics = useApi<WorklinesData>('/api/epics');
+  const state = useApi<BoardData>(epic ? `/api/board?epic=${encodeURIComponent(epic)}` : '/api/board');
 
-  if (state.status === 'loading') return <p className="subtitle">Loading board…</p>;
-  if (state.status === 'error')
-    return (
-      <p className="subtitle" role="alert">
-        Failed to load board: {state.message}
-      </p>
-    );
-
-  return <BoardView data={state.data} />;
+  return (
+    <>
+      <div className="board-filter">
+        <label htmlFor="board-epic">Filter</label>
+        <select
+          id="board-epic"
+          value={epic}
+          onChange={(e) => setEpic(e.target.value)}
+          data-filter="epic"
+        >
+          <option value="">All epics</option>
+          {epics.status === 'ready' &&
+            epics.data.epics.map((ep) => (
+              <option value={ep.key} key={ep.key}>
+                {ep.key} · {ep.title}
+              </option>
+            ))}
+        </select>
+      </div>
+      {state.status === 'loading' && <p className="subtitle">Loading board…</p>}
+      {state.status === 'error' && (
+        <p className="subtitle" role="alert">
+          Failed to load board: {state.message}
+        </p>
+      )}
+      {state.status === 'ready' && <BoardView data={state.data} />}
+    </>
+  );
 }
 
 /** Pure presentation, so it can be rendered/tested without a fetch. */

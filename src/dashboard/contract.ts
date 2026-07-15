@@ -173,6 +173,18 @@ export interface AgentsData {
   }>;
 }
 
+/** The /api/search payload: FTS hits for a query (the snippet is the result). */
+export interface SearchData {
+  readonly query: string;
+  readonly hits: ReadonlyArray<{
+    readonly entity: string;
+    readonly key: string | null;
+    readonly title: string | null;
+    readonly snippet: string;
+    readonly parentKey: string | null;
+  }>;
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;

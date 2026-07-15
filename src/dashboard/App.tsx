@@ -1,4 +1,4 @@
-import { type ReactElement, useEffect, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useState } from 'react';
 
 import { Agents } from './Agents.js';
 import { AuditTrail } from './AuditTrail.js';
@@ -28,6 +28,8 @@ import {
 } from './icons.js';
 import { NeedsYou } from './NeedsYou.js';
 import { Overview } from './Overview.js';
+import { Search } from './Search.js';
+import { useLiveRefresh } from './useApi.js';
 import { Worklines } from './Worklines.js';
 
 type LoadState =
@@ -103,34 +105,70 @@ const NAV: readonly NavGroup[] = [
 export function App(): ReactElement {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [view, setView] = useState('overview');
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Reload the always-on snapshot. Reused by the initial mount and by the
+  // real-time SSE tick (a mutation lands → the panels refresh themselves).
+  const load = useCallback((signal?: { cancelled: boolean }) => {
     fetch('/api/dashboard')
       .then((res) => {
         if (!res.ok) throw new Error(`/api/dashboard returned ${res.status}`);
         return res.json() as Promise<DashboardContract>;
       })
       .then((data) => {
-        if (!cancelled) setState({ status: 'ready', data });
+        if (!signal?.cancelled) setState({ status: 'ready', data });
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setState({ status: 'error', message: err instanceof Error ? err.message : String(err) });
+        if (!signal?.cancelled) {
+          setState((prev) =>
+            // Keep showing stale data on a refresh error; only surface the
+            // error on the very first load.
+            prev.status === 'ready'
+              ? prev
+              : { status: 'error', message: err instanceof Error ? err.message : String(err) },
+          );
         }
       });
+  }, []);
+
+  useEffect(() => {
+    const signal = { cancelled: false };
+    load(signal);
     return () => {
-      cancelled = true;
+      signal.cancelled = true;
     };
+  }, [load]);
+
+  // Real-time: refresh when the trail moves (ADR-67 slice 7).
+  useLiveRefresh(() => load());
+
+  // ⌘K / Ctrl-K opens global search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const data = state.status === 'ready' ? state.data : null;
+
+  // Drill-down: opening a hit's key routes to the most relevant module. For
+  // now every entity key lands on the Board (its state column) — a full
+  // per-entity detail view is a later enhancement; this at least navigates.
+  const openKey = useCallback((_key: string) => {
+    setSearchOpen(false);
+    setView('board');
+  }, []);
 
   return (
     <div className="app">
       <Rail data={data} view={view} onNavigate={setView} />
       <div className="main">
-        <Header />
+        <Header onOpenSearch={() => setSearchOpen(true)} />
         <div className="content">
           {state.status === 'loading' && <p className="subtitle">Loading…</p>}
           {state.status === 'error' && (
@@ -141,6 +179,7 @@ export function App(): ReactElement {
           {data && <Content view={view} data={data} />}
         </div>
       </div>
+      {searchOpen && <Search onClose={() => setSearchOpen(false)} onOpenKey={openKey} />}
     </div>
   );
 }
@@ -150,12 +189,12 @@ function toggleTheme(): void {
   root.setAttribute('data-theme', root.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
 }
 
-function Header(): ReactElement {
+function Header({ onOpenSearch }: { onOpenSearch: () => void }): ReactElement {
   return (
     <div className="header">
-      <div className="search">
+      <button type="button" className="search" onClick={onOpenSearch}>
         <IconSearch /> Search tasks, decisions, skills… <kbd>⌘K</kbd>
-      </div>
+      </button>
       <button type="button" className="themetoggle" aria-label="Toggle theme" onClick={toggleTheme}>
         <IconTheme />
       </button>

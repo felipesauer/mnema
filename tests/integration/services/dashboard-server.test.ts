@@ -253,6 +253,28 @@ describe('createDashboardServer (integration)', () => {
     expect(Array.isArray(data.orphans)).toBe(true);
   });
 
+  it('serves global search hits at /api/search', async () => {
+    const { status, body } = await httpGet(server.port, '/api/search?q=test');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(data).toHaveProperty('query', 'test');
+    expect(Array.isArray(data.hits)).toBe(true);
+  });
+
+  it('returns no search hits for a too-short query (not an error)', async () => {
+    const { status, body } = await httpGet(server.port, '/api/search?q=a');
+    expect(status).toBe(200);
+    expect(JSON.parse(body).hits).toEqual([]);
+  });
+
+  it('filters the board by epic via query param', async () => {
+    // An unknown epic yields an honest empty board, not the whole backlog.
+    const { status, body } = await httpGet(server.port, '/api/board?epic=NOPE-EPIC-999');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(data.total).toBe(0);
+  });
+
   const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
 
   it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {
