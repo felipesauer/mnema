@@ -110,6 +110,33 @@ export interface WorklinesData {
   readonly sprints: readonly WorklineSprint[];
 }
 
+/** One audit-trail row from /api/audit (server projection, not the raw event). */
+export interface AuditRow {
+  readonly index: number;
+  readonly at: string;
+  readonly kind: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly key?: string;
+  readonly prevHash: string | null;
+}
+/** The /api/audit payload: the bounded, newest-first tail of the chain. */
+export interface AuditData {
+  readonly total: number;
+  readonly events: readonly AuditRow[];
+}
+
+/** The /api/drift payload (mirrors the server CommitDrift). */
+export interface DriftData {
+  readonly checked: boolean;
+  readonly linkable: ReadonlyArray<{
+    readonly sha: string;
+    readonly subject: string;
+    readonly taskKeys: readonly string[];
+  }>;
+  readonly untracked: ReadonlyArray<{ readonly sha: string; readonly subject: string }>;
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;

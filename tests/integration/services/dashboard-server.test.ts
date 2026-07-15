@@ -170,6 +170,51 @@ describe('createDashboardServer (integration)', () => {
     expect(Array.isArray(data.sprints)).toBe(true);
   });
 
+  it('serves the audit trail (newest-first, bounded) at /api/audit', async () => {
+    const { status, body } = await httpGet(server.port, '/api/audit');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(data).toHaveProperty('total');
+    expect(Array.isArray(data.events)).toBe(true);
+    // Each row carries the wire projection (no raw payload dump).
+    if (data.events.length > 0) {
+      const e = data.events[0];
+      expect(e).toHaveProperty('index');
+      expect(e).toHaveProperty('kind');
+      expect(e).toHaveProperty('actor');
+      // Thesis guard: the raw event envelope must NOT leak to the wire — no
+      // `data` payload (arbitrary task content), no internal hash/run/v fields.
+      expect(e).not.toHaveProperty('data');
+      expect(e).not.toHaveProperty('run');
+      expect(e).not.toHaveProperty('v');
+    }
+  });
+
+  it('never leaks a raw event payload through /api/audit', async () => {
+    // Write an event whose payload carries a sensitive marker, then confirm
+    // the marker never appears in the /api/audit response body.
+    h.container.audit.write({
+      kind: 'test_event',
+      actor: 'tester',
+      data: { key: 'TEST-9', secret_marker: 'DO-NOT-LEAK-abc123' },
+    });
+    const { body } = await httpGet(server.port, '/api/audit');
+    expect(body).not.toContain('DO-NOT-LEAK-abc123');
+    // The entity key IS allowed through (it's an identifier, not content).
+    const data = JSON.parse(body);
+    expect(data.events.some((e: { key?: string }) => e.key === 'TEST-9')).toBe(true);
+  });
+
+  it('serves the commit-drift scan at /api/drift', async () => {
+    const { status, body } = await httpGet(server.port, '/api/drift');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    // CommitDrift shape — `checked` is the honesty bit.
+    expect(data).toHaveProperty('checked');
+    expect(data).toHaveProperty('untracked');
+    expect(data).toHaveProperty('linkable');
+  });
+
   const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
 
   it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {

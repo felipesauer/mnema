@@ -891,6 +891,49 @@ h1 {
   color: var(--muted);
 }
 
+/* Audit trail (Integrity module): event rows with a hash cell */
+.ev-audit {
+  grid-template-columns: 52px 16px 1fr auto;
+}
+.hash-cell {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--ok);
+}
+.check-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--ok);
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.check-icon[data-ok="false"] {
+  color: var(--bad);
+}
+.check-detail {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
+}
+.sha {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
 /* A module not yet built (placeholder for the later slices) */
 .soon-panel {
   padding: 40px 24px;
