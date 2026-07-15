@@ -1,5 +1,7 @@
+import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { Config } from '../../config/config-schema.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
@@ -33,6 +35,25 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
 /** Loopback host names accepted in a request's `Host` header. */
 const ALLOWED_HOST_NAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+/**
+ * Absolute path to the built SPA bundle (Vite output, MNEMA-ADR-66). Resolved
+ * relative to this compiled module so it works both from `dist/` at runtime
+ * and from source during tests. The SPA is served under `/app`; the legacy
+ * string-rendered shell keeps `/` as the bridge until the SPA reaches parity
+ * (ADR-65).
+ */
+const SPA_DIR = fileURLToPath(new URL('../../../dist/dashboard', import.meta.url));
+
+/** Minimal content types for the static SPA assets — no external lookup. */
+const SPA_CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.json': 'application/json; charset=utf-8',
+};
 
 /** Options for {@link createDashboardServer}. */
 export interface DashboardServerOptions {
@@ -188,8 +209,52 @@ export async function createDashboardServer(
       return;
     }
 
+    // JSON contract for the SPA (ADR-65/ADR-8): the same composed snapshot the
+    // string-rendered shell uses, serialised verbatim. Proven pure/serialisable
+    // by MNEMA-330; integrity is injected from the cache, so this path never
+    // reaches the raw SQLite adapter itself.
+    if (url === '/api/dashboard') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(snapshot()));
+      return;
+    }
+
+    // The Vite-built SPA (ADR-66), served under /app so it coexists with the
+    // legacy string-rendered shell at / (the bridge, per ADR-65). A missing
+    // bundle (SPA not built) is a plain 404, not a crash.
+    if (url === '/app' || url === '/app/' || url.startsWith('/app/')) {
+      serveSpa(url, res);
+      return;
+    }
+
     res.writeHead(404, { 'content-type': 'text/plain' });
     res.end('not found\n');
+  }
+
+  /**
+   * Serves a file from the built SPA bundle, defending against path traversal
+   * by resolving inside {@link SPA_DIR} and refusing anything that escapes it.
+   * `/app` and `/app/` map to the SPA's index.html so a deep link still boots
+   * the app.
+   */
+  function serveSpa(url: string, res: ServerResponse): void {
+    const rel = url === '/app' || url === '/app/' ? 'index.html' : url.slice('/app/'.length);
+    // Strip any query/hash, then resolve and confirm containment.
+    const clean = rel.split('?')[0]?.split('#')[0] ?? 'index.html';
+    const resolved = path.resolve(SPA_DIR, clean);
+    if (resolved !== SPA_DIR && !resolved.startsWith(SPA_DIR + path.sep)) {
+      res.writeHead(403, { 'content-type': 'text/plain' });
+      res.end('forbidden\n');
+      return;
+    }
+    if (!existsSync(resolved) || !statSync(resolved).isFile()) {
+      res.writeHead(404, { 'content-type': 'text/plain' });
+      res.end('not found (SPA bundle missing — run `pnpm build`)\n');
+      return;
+    }
+    const type = SPA_CONTENT_TYPES[path.extname(resolved)] ?? 'application/octet-stream';
+    res.writeHead(200, { 'content-type': type });
+    createReadStream(resolved).pipe(res);
   }
 
   /** Registers an SSE client and keeps the connection open. */

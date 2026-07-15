@@ -19,5 +19,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "//": "The dashboard SPA (src/dashboard) is a separate React+DOM compilation unit built by Vite with its own tsconfig.dashboard.json — exclude it here so the Node/backend build never sees JSX or DOM libs.",
+  "exclude": ["src/dashboard"]
 }

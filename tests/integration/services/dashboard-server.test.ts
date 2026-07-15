@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { get, request } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -132,6 +132,38 @@ describe('createDashboardServer (integration)', () => {
   it('404s an unknown path', async () => {
     const { status } = await httpGet(server.port, '/nope');
     expect(status).toBe(404);
+  });
+
+  it('serves the DashboardData contract as JSON at /api/dashboard (SPA data source)', async () => {
+    const { status, body } = await httpGet(server.port, '/api/dashboard');
+    expect(status).toBe(200);
+    // Valid JSON that round-trips and carries the panels the SPA builds on.
+    const data = JSON.parse(body);
+    expect(data).toHaveProperty('projectKey', 'TEST');
+    expect(data).toHaveProperty('inbox');
+    expect(data.inbox).toHaveProperty('awaitingReview');
+    expect(data.inbox).toHaveProperty('pendingDecisions');
+    expect(data).toHaveProperty('graph');
+    expect(data).toHaveProperty('series');
+    expect(data).toHaveProperty('integrity');
+  });
+
+  const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
+
+  it.skipIf(!spaBuilt)('serves the built SPA bundle under /app', async () => {
+    const { status, body } = await httpGet(server.port, '/app');
+    expect(status).toBe(200);
+    expect(body).toContain('<div id="root">');
+    // The SPA entry script is a relative, self-hosted asset (offline-first).
+    expect(body).toMatch(/src="\.\/assets\//);
+    expect(body).not.toMatch(/https?:\/\//);
+  });
+
+  it('refuses a path-traversal escape from the /app static root', async () => {
+    const { status } = await httpGet(server.port, '/app/../../package.json');
+    // Either the server normalises and 403s, or the escape simply misses the
+    // bundle dir and 404s — never a 200 leaking a file outside dist/dashboard.
+    expect([403, 404]).toContain(status);
   });
 
   it('refuses to bind a non-loopback host', async () => {
