@@ -15,9 +15,7 @@ import {
   buildDashboardData,
   DEFAULT_METRICS_WINDOW,
   DEFAULT_RECENT_LIMIT,
-  toRecentEvent,
 } from './dashboard-data.js';
-import { renderEventRow, renderLiveShell, renderTabBody } from './dashboard-render.js';
 
 /** Loopback host the server binds to by default. Never `0.0.0.0`. */
 export const DEFAULT_HOST = '127.0.0.1';
@@ -289,14 +287,6 @@ export async function createDashboardServer(
     return { epics, sprints };
   }
 
-  /** The four tab routes → the tab id their fragment renders. */
-  const TAB_ROUTES: Record<string, string> = {
-    '/overview': 'overview',
-    '/flow': 'flow',
-    '/activity': 'activity',
-    '/graph': 'graph',
-  };
-
   // Every connected /stream response. Broadcast writes to all of them.
   const clients = new Set<ServerResponse>();
 
@@ -330,19 +320,21 @@ export async function createDashboardServer(
       return;
     }
 
+    // The SPA (ADR-67) now owns the root. `/` serves the built index.html and
+    // `/assets/*` its bundle (Vite `base:'./'` → the page requests `/assets/…`
+    // from the root). The legacy string-rendered dashboard has been retired.
     if (url === '/' || url === '/index.html') {
-      const html = renderLiveShell(snapshot());
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(html);
+      serveSpaFile('index.html', res);
       return;
     }
-
-    // Per-tab HTML fragments — the client fetches only the visible tab and
-    // swaps the pane, so a live refresh redraws just that tab's charts.
-    const tab = TAB_ROUTES[url];
-    if (tab !== undefined) {
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(renderTabBody(tab, snapshot()));
+    if (url.startsWith('/assets/')) {
+      serveSpaFile(url.slice(1), res); // strip leading '/'
+      return;
+    }
+    // Back-compat: the SPA used to live under /app; redirect any old link home.
+    if (url === '/app' || url === '/app/' || url.startsWith('/app/')) {
+      res.writeHead(301, { location: '/' });
+      res.end();
       return;
     }
 
@@ -418,26 +410,6 @@ export async function createDashboardServer(
       return;
     }
 
-    // The Vite-built SPA (ADR-66), served under /app so it coexists with the
-    // legacy string-rendered shell at / (the bridge, per ADR-65). A missing
-    // bundle (SPA not built) is a plain 404, not a crash.
-    //
-    // `/app` (no trailing slash) MUST redirect to `/app/`: the bundle's
-    // index.html references assets relatively (`./assets/…`, from Vite's
-    // base:'./'), and a browser at `/app` resolves `./` against `/` — asking
-    // for `/assets/…`, which this server does not serve, leaving a blank page.
-    // At `/app/` the same relative ref resolves to `/app/assets/…`, which it
-    // does serve. So normalise before serving.
-    if (url === '/app') {
-      res.writeHead(301, { location: '/app/' });
-      res.end();
-      return;
-    }
-    if (url === '/app/' || url.startsWith('/app/')) {
-      serveSpa(url, res);
-      return;
-    }
-
     res.writeHead(404, { 'content-type': 'text/plain' });
     res.end('not found\n');
   }
@@ -445,12 +417,12 @@ export async function createDashboardServer(
   /**
    * Serves a file from the built SPA bundle, defending against path traversal
    * by resolving inside {@link SPA_DIR} and refusing anything that escapes it.
-   * `/app/` maps to the SPA's index.html so a deep link still boots the app
-   * (the caller has already redirected the slashless `/app` to `/app/`).
+   * The caller passes `index.html` for `/` and the bundle-relative path for
+   * `/assets/*`; the SPA owns the server root after the cutover.
    */
-  function serveSpa(url: string, res: ServerResponse): void {
-    const rel = url === '/app/' ? 'index.html' : url.slice('/app/'.length);
-    // Strip any query/hash, then resolve and confirm containment.
+  function serveSpaFile(rel: string, res: ServerResponse): void {
+    // Strip any query/hash, then resolve and confirm containment in SPA_DIR
+    // (path-traversal guard).
     const clean = rel.split('?')[0]?.split('#')[0] ?? 'index.html';
     const resolved = path.resolve(SPA_DIR, clean);
     if (resolved !== SPA_DIR && !resolved.startsWith(SPA_DIR + path.sep)) {
@@ -501,13 +473,14 @@ export async function createDashboardServer(
     }
   }
 
-  // One tail for the whole server; its handler fans each event out to
-  // every connected client as a ready-to-insert table row. renderEventRow
-  // escapes CR/LF, so a recorded value cannot break the SSE framing.
+  // One tail for the whole server; its handler fans each event out to every
+  // connected client as a compact JSON tick. The SPA refetches /api/dashboard
+  // on any tick (it does not consume rendered HTML). Only the event `kind` is
+  // sent — a stable enum token, so no recorded free-text reaches the wire and
+  // CR/LF cannot break the SSE framing.
   const tail = new AuditTail(auditDir, (event) => {
     if (clients.size === 0) return;
-    const row = renderEventRow(toRecentEvent(event, display));
-    const frame = `data: ${row}\n\n`;
+    const frame = `data: ${JSON.stringify({ kind: event.kind })}\n\n`;
     for (const res of clients) writeToClient(res, frame);
   });
 
