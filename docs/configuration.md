@@ -213,3 +213,41 @@ This closes the agent-writable-config command-execution vector.
 Each hook entry: `command` (non-empty string, the executable) and `args`
 (array of strings, passed verbatim as separate argv entries — a value like
 `$(id -un)` is a literal string, never expanded).
+
+## Profiles & the MCP surface
+
+`mnema init --profile <name>` picks how much of the surface is on. The default
+`full` keeps every surface; `audit-only` gives you the core thesis — a
+tamper-evident audit log, workflow gates and `doctor` — without the
+project-management surface:
+
+```bash
+mnema init --name "My App" --key "MYAPP" --profile audit-only
+```
+
+`audit-only` picks the `lean` workflow and sets `features.knowledge: false`, so
+the MCP server advertises a **small core** of tools (audit, tasks, runs, plans,
+dependencies, evidence, search) instead of the full set — the agent isn't shown
+epic/sprint/knowledge tools it can't meaningfully use. Nothing is deleted: flip
+`features.knowledge` back to `true` (or switch to a fuller workflow) to grow
+into the complete surface, and use `mnema adopt` to add the
+skills/memory/roadmap directories when you want them.
+
+The MCP surface is organised into conceptual **layers** so an agent (and you)
+reason about a handful of buckets instead of one flat list. `context_bootstrap`
+returns the exact per-tool grouping as `tool_groups`, each flagged
+enabled/disabled for the active profile:
+
+| Layer | Enabled when | Examples |
+|---|---|---|
+| **Core** | always | `audit_query`, `audit_verify`, `task_*`, `agent_run_*`, `graph_dependencies`, `snapshot_generate` |
+| **Workflow transitions** | always | one `task_<action>` per workflow transition (`task_submit`, `task_approve`, …) |
+| **Planning** | workflow enables epics and/or sprints | `epic_create`, `sprint_start`, `epic_coverage`, `sprint_lint` |
+| **Knowledge** | `features.knowledge` | `decision_*`, `skill_*`, `memory_*`, `observation_*`, `provenance`, `wikilink_references` |
+
+The audit-only profile leaves only **Core** and **Workflow transitions** on.
+
+Every workflow-transition tool (`task_submit`, `task_approve`, …) accepts an
+optional `verbosity: 'compact'` that returns a lean `{ key, state, updatedAt }`
+echo instead of the full task entity — useful for batch or low-context
+transitions. The default stays `full`.

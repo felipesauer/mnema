@@ -30,6 +30,13 @@ export default defineConfig({
     ],
     sidebar: [
       {
+        text: 'Concepts',
+        items: [
+          { text: 'Integrity model', link: '/integrity' },
+          { text: 'Project layout', link: '/project-layout' },
+        ],
+      },
+      {
         text: 'Using mnema with an agent',
         items: [
           { text: 'Client integration', link: '/client-integration' },
@@ -40,6 +47,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: 'CLI commands', link: '/cli' },
           { text: 'Configuration', link: '/configuration' },
           { text: 'MCP tools', link: '/mcp-tools' },
         ],
