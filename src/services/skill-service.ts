@@ -686,7 +686,18 @@ export class SkillService {
         actor,
         via,
         run: runId,
-        data: { slug, version: target.version, superseded_by: successor.id },
+        // `superseded_by` is the successor ROW id — the live pointer's value,
+        // kept for existing readers. Row ids are regenerated on a clone
+        // rebuild, so the edge cannot be reconstructed from them. The stable
+        // (slug, version) of BOTH endpoints is recorded additively so a rebuild
+        // can remap each end to its freshly-inserted row.
+        data: {
+          slug,
+          version: target.version,
+          superseded_by: successor.id,
+          successor_slug: successor.slug,
+          successor_version: successor.version,
+        },
       });
       // First-class, navigable edge: the superseded skill row → its successor
       // row. Skill refs are row ids (not slugs), matching how the pointer
