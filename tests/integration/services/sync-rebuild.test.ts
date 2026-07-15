@@ -745,4 +745,96 @@ mnema:
       fresh.close();
     }
   });
+
+  it('reconstructs a skill-supersede provenance edge on a fresh clone', () => {
+    // Two skills, then supersede the first with the second — the live wiring
+    // records a skill → skill edge keyed on ROW IDS (which are regenerated on a
+    // clone) and retires the superseded skill's mirror. The rebuild recovers the
+    // edge from the skill_superseded audit event, remapping the successor to its
+    // fresh row id and anchoring the retired end at its stable slug.
+    const recorded = container.skill.record({
+      slug: 'old-skill',
+      name: 'Old skill',
+      description: 'the way we used to do it',
+      content: 'the old steps',
+      actor: 'daniel',
+    });
+    expect(recorded.ok).toBe(true);
+    container.skill.record({
+      slug: 'new-skill',
+      name: 'New skill',
+      description: 'the way we do it now',
+      content: 'the new steps',
+      actor: 'daniel',
+    });
+    // Drive the real supersede path so the audit event is written by production
+    // code — not hand-crafted.
+    const superseded = container.skill.supersede('old-skill', 'new-skill', 'daniel');
+    expect(superseded.ok).toBe(true);
+
+    // Sanity: the edge exists live before the clone (keyed on row ids).
+    const beforeNew = container.skill.show('new-skill');
+    expect(beforeNew.ok).toBe(true);
+    if (!beforeNew.ok) return;
+    const beforeChain = container.provenance.chain({ kind: 'skill', ref: beforeNew.value.id });
+    expect(beforeChain.upstream.some((e) => e.fromKind === 'skill')).toBe(true);
+
+    // Fresh clone: drop the git-ignored state (rows AND the provenance cache),
+    // rebuild from the committed mirrors + audit chain.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+
+      // The successor survives the clone with a NEW row id.
+      const afterNew = fresh.skill.show('new-skill');
+      expect(afterNew.ok).toBe(true);
+      if (!afterNew.ok) return;
+      const newId = afterNew.value.id;
+
+      // Walking up from the successor's new id surfaces the reconstructed edge,
+      // resolved to that new row id — not the pre-clone id, not empty.
+      const afterChain = fresh.provenance.chain({ kind: 'skill', ref: newId });
+      const edge = afterChain.upstream.find((e) => e.fromKind === 'skill');
+      expect(edge, 'skill-supersede provenance edge must survive the clone').toBeDefined();
+      expect(edge?.toRef).toBe(newId);
+      // The superseded skill has no mirror after being retired, so its stable
+      // slug anchors the source end.
+      expect(edge?.fromRef).toBe('old-skill');
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('carries the stable successor key on a skill_superseded audit event', () => {
+    // The remap above only works because the event records the successor's
+    // stable (slug, version), not just the regenerated row id.
+    container.skill.record({
+      slug: 'legacy',
+      name: 'Legacy',
+      description: 'old',
+      content: 'a',
+      actor: 'daniel',
+    });
+    container.skill.record({
+      slug: 'current',
+      name: 'Current',
+      description: 'new',
+      content: 'b',
+      actor: 'daniel',
+    });
+    container.skill.supersede('legacy', 'current', 'daniel');
+
+    const events = container.auditQuery.run({ kind: 'skill_superseded' });
+    expect(events).toHaveLength(1);
+    const { data } = events[0] ?? { data: {} };
+    expect(data.slug).toBe('legacy');
+    expect(data.version).toBe(1);
+    expect(data.successor_slug).toBe('current');
+    expect(data.successor_version).toBe(1);
+    // The pre-existing row-id pointer is preserved for existing readers.
+    expect(typeof data.superseded_by).toBe('string');
+  });
 });

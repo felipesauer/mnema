@@ -161,10 +161,7 @@ export class SyncRebuild {
      * callers/tests construct the rebuild unchanged.
      */
     private readonly provenance: {
-      link(
-        source: { kind: string; ref: string },
-        target: { kind: string; ref: string },
-      ): unknown;
+      link(source: { kind: string; ref: string }, target: { kind: string; ref: string }): unknown;
     } | null = null,
     private readonly auditEvents:
       | ((kind: string) => readonly { readonly data: Record<string, unknown> }[])
@@ -341,13 +338,33 @@ export class SyncRebuild {
         { kind: 'memory', ref: readString(data, 'slug') ?? '' },
       );
     }
-    // NOT reconstructed here: skill-supersede edges. Those link skill ROW IDs
-    // (target.id → successor.id), and row ids are regenerated on a clone, so
-    // the ids in the skill_superseded event no longer match any rebuilt row.
-    // Recovering them would need a stable slug+version key in the event and an
-    // old-id→new-id remap — tracked as a separate follow-up. Every OTHER
-    // provenance edge (decision promotions, memory derivation/supersede/
-    // obsolete) keys on stable slugs/keys and is reconstructed above.
+    // skill-supersede (skill → skill). Unlike the chains above, skill refs in
+    // provenance_links are ROW IDs (matching the live wiring), and row ids are
+    // regenerated on a clone — so the ids in the event no longer resolve. The
+    // event carries the stable (slug, version) of both endpoints, recorded
+    // additively for exactly this.
+    //
+    // The successor always has a live mirror (it is the surviving skill), so it
+    // is remapped to its freshly-inserted row id — a walk from the successor's
+    // new id then surfaces the edge, matching a live supersede on the clone. The
+    // superseded skill has NO mirror (superseding retires it, and only the
+    // latest live version of a slug is ever mirrored), so no row exists to remap
+    // to; its stable slug stands in as the source ref. The edge is thus recovered
+    // and anchored at the successor's real row, rather than dropped as dangling.
+    const skillRowId = (slug: string | null, version: number | null): string | null => {
+      if (slug === null || version === null) return null;
+      return this.skills.findBySlugAndVersion(slug, version)?.id ?? null;
+    };
+    for (const { data } of read('skill_superseded')) {
+      const supersededSlug = readString(data, 'slug');
+      const successorSlug = readString(data, 'successor_slug');
+      const successorId = skillRowId(successorSlug, readNumber(data, 'successor_version'));
+      // The superseded end has no live row: fall back to its stable slug so the
+      // edge still resolves to the successor's real row on the far end.
+      const supersededRef =
+        skillRowId(supersededSlug, readNumber(data, 'version')) ?? supersededSlug;
+      link({ kind: 'skill', ref: supersededRef ?? '' }, { kind: 'skill', ref: successorId ?? '' });
+    }
   }
 
   /**
