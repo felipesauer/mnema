@@ -60,6 +60,17 @@ export interface FlowMetrics {
     readonly completed_points: number;
     readonly completed_tasks: number;
   }>;
+  readonly estimate_vs_actual: {
+    readonly samples: ReadonlyArray<{
+      readonly task_key: string;
+      readonly estimate: number;
+      readonly actual_hours: number;
+      readonly actual_source: 'run_duration' | 'lead_time';
+    }>;
+    readonly hours_per_point: number | null;
+    readonly run_duration_samples: number;
+    readonly lead_time_fallback_samples: number;
+  };
 }
 
 /** One recent-activity row (mirrors the server RecentEvent). */

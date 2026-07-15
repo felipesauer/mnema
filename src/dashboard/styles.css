@@ -633,6 +633,98 @@ h1 {
   font-family: var(--mono);
 }
 
+/* Estimate-vs-actual scatter. A relative box: the grid is a stretched SVG
+   underlay, the points are absolutely-positioned round HTML dots on top. */
+.scatter {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+}
+.scatter-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* The viewBox is stretched (preserveAspectRatio=none), so keep hairlines crisp
+   with a non-scaling stroke rather than a distorted one. */
+.scatter-grid .ax {
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.scatter-grid .grid {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.scatter-grid .ideal {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+.scatter .pt {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* Center the dot on its coordinate. */
+  transform: translate(-50%, -50%);
+  background: var(--accent);
+  opacity: 0.5;
+}
+.scatter .pt.fallback {
+  background: var(--warn);
+  opacity: 0.55;
+}
+.axlabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--faint);
+}
+.axlabels .axname {
+  color: var(--muted);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+.legend .sw.run {
+  background: var(--accent);
+}
+.legend .sw.lead {
+  background: var(--warn);
+}
+.legend .sw.ideal {
+  height: 0;
+  width: 14px;
+  border-radius: 0;
+  border-top: 2px dashed var(--accent);
+}
+
 /* Graph */
 .gcanvas {
   background: var(--panel-2);
