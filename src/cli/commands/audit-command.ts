@@ -18,6 +18,7 @@ import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
 import { diagnoseAuditChain, writeTruncationWaiver } from '../../services/audit/audit-diagnose.js';
 import {
   assessAuditChain,
+  type IntegrityCheck,
   inspectAuditIntegrity,
   reconcileAuditState,
 } from '../../services/audit-integrity.js';
@@ -222,13 +223,10 @@ export class AuditCommand {
             );
           }
           for (const check of checks) {
-            const severity = check.severity ?? 'error';
-            const mark = check.ok
-              ? pc.green('✔')
-              : severity === 'warning'
-                ? pc.yellow('⚠')
-                : pc.red('✘');
-            if (!check.ok && severity === 'error') hasError = true;
+            const glyph = verifyCheckGlyph(check);
+            const mark =
+              glyph === '⚠' ? pc.yellow(glyph) : glyph === '✔' ? pc.green(glyph) : pc.red(glyph);
+            if (!check.ok && (check.severity ?? 'error') === 'error') hasError = true;
             process.stdout.write(`${mark}  ${check.name}: ${pc.dim(check.detail)}\n`);
           }
         });
@@ -907,4 +905,22 @@ export function planAuditRepair(input: {
     recommendation: 'Audit chain and mirror are healthy — no repair needed.',
     commands: [],
   };
+}
+
+/**
+ * Picks the status glyph for one `audit verify` line. A `warning`-severity
+ * check renders `⚠` EVEN WHEN `ok:true` — a dormant/unverifiable line (e.g.
+ * no content attestation committed, so an anonymous clone cannot verify
+ * authenticity) is not a clean pass, and a human skimming a green screen must
+ * not read "all good" when it isn't. `✔` is reserved for a genuinely-ok,
+ * non-warning check; `✘` is an error-severity failure. This is purely how the
+ * line is drawn — the exit code is derived separately from error-severity
+ * failures only, so CI's "errors fail, warnings pass" contract is unaffected.
+ *
+ * @param check - One integrity check
+ * @returns The semantic glyph (caller applies colour)
+ */
+export function verifyCheckGlyph(check: IntegrityCheck): '✔' | '⚠' | '✘' {
+  if ((check.severity ?? 'error') === 'warning') return '⚠';
+  return check.ok ? '✔' : '✘';
 }
