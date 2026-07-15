@@ -367,6 +367,7 @@ export class SyncRebuild {
             acceptanceCriteria: readStringArray(data, 'acceptance_criteria'),
             state: stateName,
             estimate: readNumber(data, 'estimate'),
+            contextBudget: readNumber(data, 'context_budget'),
             priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,
@@ -1001,6 +1002,12 @@ function collectTaskContentDrift(
   const estimate = readNumber(data, 'estimate');
   if (estimate !== existing.estimate) {
     updates.estimate = estimate;
+    changed = true;
+  }
+
+  const contextBudget = readNumber(data, 'context_budget');
+  if (contextBudget !== existing.contextBudget) {
+    updates.contextBudget = contextBudget;
     changed = true;
   }
 
