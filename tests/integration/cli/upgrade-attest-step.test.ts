@@ -84,6 +84,7 @@ describe('upgrade attestation step', () => {
         inspectAuditIntegrity(adapter, auditDir, secret.read(), true),
       ),
       signedEventCountAt: null,
+      headCount: walkChainedEvents(auditDir).chained.length,
       batchSize: 100,
     });
   }

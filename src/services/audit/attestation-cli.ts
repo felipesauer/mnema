@@ -1,10 +1,10 @@
 import type { IntegrityCheck } from '../audit-integrity.js';
 import { readCommittedProjectHmacId } from '../project-secret.js';
 import type { AttestationSigner } from './attestation-emitter.js';
-import { planReattest } from './attestation-reattest.js';
+import { planReattestIncremental } from './attestation-reattest.js';
 import { committedSignerResolver, listArtifacts, writeArtifact } from './attestation-store.js';
 import { contentAttestationCheck } from './attestation-verify.js';
-import { walkChainedEvents } from './audit-chain-walk.js';
+import { walkChainedEvents, walkChainedTail } from './audit-chain-walk.js';
 
 /**
  * Chain-soundness checks whose WARNING-severity failures must still block a
@@ -85,7 +85,10 @@ export function chainHealthyForAttest(checks: readonly IntegrityCheck[]): boolea
  *   (resolved by the caller via {@link chainHealthyForAttest})
  * @param opts.signedEventCountAt - Highest event_count under a signed
  *   checkpoint, for the truncation guard (or `null`)
- * @param opts.batchSize - Backfill batch size (defaults inside planReattest)
+ * @param opts.headCount - On-disk chained count at this checkpoint
+ *   (`audit_state.event_count`). Bounds the tail walk so the checkpoint does
+ *   NOT re-parse the whole chain — it attests only `[lastCoveredTo, headCount)`.
+ * @param opts.batchSize - Backfill batch size (defaults inside the planner)
  */
 export function autoAttest(opts: {
   projectRoot: string;
@@ -94,12 +97,20 @@ export function autoAttest(opts: {
   projectHmacId: string | null;
   chainHealthy: boolean;
   signedEventCountAt: number | null;
+  headCount: number;
   batchSize?: number;
 }): void {
-  const plan = planReattest({
-    walk: walkChainedEvents(opts.auditDir),
-    existing: listArtifacts(opts.auditDir),
-    resolvePublicKeyPem: committedSignerResolver(opts.projectRoot),
+  const existing = listArtifacts(opts.auditDir);
+  // The unattested tail begins at the highest `to` of the committed `.att`
+  // set. Structural discontiguity/overlap is caught by the planner; here we
+  // only need where to start reading so the walk stays bounded by the batch.
+  const coveredTo = existing.reduce((max, art) => (art.to > max ? art.to : max), 0);
+  // Walk ONLY [coveredTo, headCount) instead of the whole chain from genesis.
+  const walk = walkChainedTail(opts.auditDir, opts.headCount, coveredTo);
+  const plan = planReattestIncremental({
+    walk,
+    headCount: opts.headCount,
+    existing,
     signer: opts.signer,
     projectHmacId: opts.projectHmacId,
     chainHealthy: opts.chainHealthy,

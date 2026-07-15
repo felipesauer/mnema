@@ -1,3 +1,4 @@
+import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import type { CheckpointSigner } from '../head-checkpoint.js';
 import { type AttestationArtifact, buildArtifact } from './attestation-artifact.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
@@ -46,6 +47,31 @@ export function emitAttestation(
     );
   }
   const events = walk.chained.slice(from, to).map((c) => c.event);
+  return emitAttestationFromEvents(events, from, to, signer, projectHmacId);
+}
+
+/**
+ * Materialises the signed attestation for an already-extracted batch of events
+ * covering `[from, to)`. Identical output to {@link emitAttestation}, but takes
+ * the events directly rather than slicing a 0-based walk — so the incremental
+ * (tail-only) attestation path, whose walk is indexed by ABSOLUTE chained
+ * index, can emit a batch whose `from` is not zero without re-deriving a
+ * whole-chain walk. The produced artifact is byte-identical to the full-walk
+ * emit for the same events and range.
+ *
+ * @param events - The events for `[from, to)`, in chain order (length `to-from`)
+ * @param from - First covered index (inclusive)
+ * @param to - One past the last covered index (exclusive)
+ * @param signer - The machine key + actor doing the signing
+ * @param projectHmacId - The committed `sha256(secret)` id bound into the sig
+ */
+export function emitAttestationFromEvents(
+  events: readonly AuditEvent[],
+  from: number,
+  to: number,
+  signer: AttestationSigner,
+  projectHmacId: string,
+): AttestationArtifact {
   const { fingerprint } = signer.machineKey.getOrCreate();
   return buildArtifact({
     events,

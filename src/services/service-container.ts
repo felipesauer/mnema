@@ -41,7 +41,7 @@ import { AgentRunService } from './agent-run-service.js';
 import { buildAnchorScheduler } from './anchor/anchor-factory.js';
 import { AttachmentService } from './attachment-service.js';
 import { autoAttest, chainHealthyForAttest } from './audit/attestation-cli.js';
-import { inspectAuditIntegrity } from './audit-integrity.js';
+import { CachedAuditIntegrity } from './audit-integrity.js';
 import { AuditQuery } from './audit-query.js';
 import { AuditService } from './audit-service.js';
 import { CommandDefinitionService } from './command-definition-service.js';
@@ -60,7 +60,7 @@ import { FlowMetricsService } from './flow-metrics-service.js';
 import { FocusService } from './focus-service.js';
 import { GitObserverService } from './git-observer-service.js';
 import { type CommandRunner, GitHubPrService } from './github-pr-service.js';
-import { HeadCheckpointService } from './head-checkpoint.js';
+import { createAttestationSource, HeadCheckpointService } from './head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from './hook-trust.js';
 import { IdentityService } from './identity-service.js';
 import { InboxService } from './inbox-service.js';
@@ -352,21 +352,34 @@ export function createServiceContainer(
   // and the signer at call time and delegates to the same fail-closed policy
   // the command uses; fail-open (the writer wraps it, `reattest` can backfill).
   const headSignatures = new AuditHeadSignatureRepository(adapter);
-  const onCheckpoint = (_head: string, _eventCount: number): void => {
+  // Chain-health for the checkpoint hook resolves through a cache keyed on the
+  // audit-file stat signature (+ secret/attest identity), so a checkpoint that
+  // follows another integrity surface (doctor, verify, the dashboard) reuses
+  // its result instead of re-hashing the whole chain a second time. The cache
+  // still recomputes whenever the log actually changed, so it never blesses a
+  // mutated chain. The attest planner is what makes the checkpoint's OWN cost
+  // flat in log size: it walks and signs only the newly-closed batch.
+  // No content-attestation builder here: the checkpoint only needs the
+  // chain-SOUNDNESS verdicts (count + hash chain + head signature) that
+  // `chainHealthyForAttest` reads. Folding in the content-attestation verdict
+  // would re-walk the whole chain on every miss — exactly the second O(n) scan
+  // this change removes — and the emit path is already fail-closed on its own
+  // structural checks.
+  const checkpointIntegrity = new CachedAuditIntegrity(
+    adapter,
+    auditDir,
+    projectSecretService,
+    createAttestationSource(projectRoot, headSignatures),
+  );
+  const onCheckpoint = (_head: string, eventCount: number): void => {
     autoAttest({
       projectRoot,
       auditDir,
       signer: resolveSigner(),
       projectHmacId: projectSecretService.readFingerprint(),
-      chainHealthy: chainHealthyForAttest(
-        inspectAuditIntegrity(
-          adapter,
-          auditDir,
-          projectSecretService.read(),
-          projectSecretService.readFingerprint() !== null,
-        ),
-      ),
+      chainHealthy: chainHealthyForAttest(checkpointIntegrity.get()),
       signedEventCountAt: headSignatures.read()?.eventCountAt ?? null,
+      headCount: eventCount,
       batchSize: config.audit.checkpoint.events,
     });
   };

@@ -557,6 +557,7 @@ export class UpgradeCommand {
           ),
           signedEventCountAt:
             new AuditHeadSignatureRepository(container.adapter).read()?.eventCountAt ?? null,
+          headCount: total,
           batchSize: config.audit.checkpoint.events,
         });
         const remaining = walkChainedEvents(auditDir).chained.length - attestedToAfter(auditDir);
