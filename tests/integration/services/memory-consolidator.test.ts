@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { MemoryConsolidator } from '@/services/memory-consolidator.js';
+import { MemoryConsolidator } from '@/services/knowledge/memory-consolidator.js';
 
 describe('MemoryConsolidator', () => {
   let memoryDir: string;

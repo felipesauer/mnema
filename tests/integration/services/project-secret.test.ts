@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ProjectSecretService } from '@/services/project-secret.js';
+import { ProjectSecretService } from '@/services/integrity/project-secret.js';
 
 /**
  * The per-project HMAC secret (ADR-37 layer 2) must live outside the repo

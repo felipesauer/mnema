@@ -10,7 +10,7 @@ import {
   createDashboardServer,
   type DashboardServer,
   isLoopbackHost,
-} from '@/services/dashboard-server.js';
+} from '@/services/dashboard/dashboard-server.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');

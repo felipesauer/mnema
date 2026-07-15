@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { FileCollisionService } from '@/services/file-collision-service.js';
+import { FileCollisionService } from '@/services/lint/file-collision-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';

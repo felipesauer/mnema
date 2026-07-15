@@ -3,14 +3,14 @@ import { z } from 'zod';
 
 import type { Config } from '../../../config/config-schema.js';
 import type { StateMachine } from '../../../domain/state-machine/state-machine.js';
-import type { IdentityService } from '../../../services/identity-service.js';
-import { type LabelService, validateLabelNames } from '../../../services/label-service.js';
-import type { TaskService } from '../../../services/task-service.js';
+import { type LabelService, validateLabelNames } from '../../../services/backlog/label-service.js';
+import type { TaskService } from '../../../services/backlog/task-service.js';
 import {
   TASK_TEMPLATE_KINDS,
   type TaskTemplateKind,
   type TaskTemplateService,
-} from '../../../services/task-template-service.js';
+} from '../../../services/backlog/task-template-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

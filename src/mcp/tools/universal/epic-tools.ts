@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import type { Config } from '../../../config/config-schema.js';
 import { EpicState } from '../../../domain/enums/epic-state.js';
-import type { EpicService } from '../../../services/epic-service.js';
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { WikilinkLintService } from '../../../services/wikilink-lint-service.js';
+import type { EpicService } from '../../../services/backlog/epic-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
+import type { WikilinkLintService } from '../../../services/lint/wikilink-lint-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

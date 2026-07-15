@@ -4,8 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ErrorCode } from '@/errors/error-codes.js';
-import { AuditService } from '@/services/audit-service.js';
-import { TaskEvidenceService } from '@/services/task-evidence-service.js';
+import { TaskEvidenceService } from '@/services/backlog/task-evidence-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';

@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { WorkGraphLintService } from '../../../services/work-graph-lint-service.js';
+import type { WorkGraphLintService } from '../../../services/lint/work-graph-lint-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

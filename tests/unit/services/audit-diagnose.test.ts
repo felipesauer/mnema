@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { diagnoseAuditChain } from '@/services/audit/audit-diagnose.js';
-import type { GitCommandRunner } from '@/services/git-commit-service.js';
+import type { GitCommandRunner } from '@/services/git/git-commit-service.js';
 import { hashEvent, hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 

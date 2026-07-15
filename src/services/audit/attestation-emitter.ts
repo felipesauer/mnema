@@ -1,5 +1,5 @@
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
-import type { CheckpointSigner } from '../head-checkpoint.js';
+import type { CheckpointSigner } from '../integrity/head-checkpoint.js';
 import { type AttestationArtifact, buildArtifact } from './attestation-artifact.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
 

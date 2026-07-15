@@ -5,9 +5,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { ErrorCode } from '@/errors/error-codes.js';
-import { AuditService } from '@/services/audit-service.js';
-import { IdentityService } from '@/services/identity-service.js';
-import { OBSERVATION_CONTENT_MAX, ObservationService } from '@/services/observation-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import { IdentityService } from '@/services/integrity/identity-service.js';
+import {
+  OBSERVATION_CONTENT_MAX,
+  ObservationService,
+} from '@/services/knowledge/observation-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';

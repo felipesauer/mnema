@@ -2,8 +2,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { ErrorCode } from '../../../errors/error-codes.js';
-import { renderMarkdown } from '../../../services/snapshot-render.js';
-import type { SnapshotScope, SnapshotService } from '../../../services/snapshot-service.js';
+import { renderMarkdown } from '../../../services/snapshot/snapshot-render.js';
+import type {
+  SnapshotScope,
+  SnapshotService,
+} from '../../../services/snapshot/snapshot-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

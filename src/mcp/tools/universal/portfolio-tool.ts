@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { PortfolioService } from '../../../services/portfolio-service.js';
+import type { PortfolioService } from '../../../services/knowledge/portfolio-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
 /**

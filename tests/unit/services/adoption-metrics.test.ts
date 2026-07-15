@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeAdoptionMetrics } from '@/services/adoption-metrics.js';
-import type { FlowMetrics } from '@/services/flow-metrics-service.js';
-import type { CounterEntry } from '@/services/metrics-counter.js';
+import { computeAdoptionMetrics } from '@/services/metrics/adoption-metrics.js';
+import type { FlowMetrics } from '@/services/metrics/flow-metrics-service.js';
+import type { CounterEntry } from '@/services/metrics/metrics-counter.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 function ev(at: string, kind: string, data: Record<string, unknown> = {}): AuditEvent {

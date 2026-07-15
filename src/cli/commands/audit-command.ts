@@ -16,16 +16,16 @@ import {
 } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
 import { diagnoseAuditChain, writeTruncationWaiver } from '../../services/audit/audit-diagnose.js';
+import type { GitCommandRunner } from '../../services/git/git-commit-service.js';
 import {
   assessAuditChain,
   type IntegrityCheck,
   inspectAuditIntegrity,
   reconcileAuditState,
-} from '../../services/audit-integrity.js';
-import type { GitCommandRunner } from '../../services/git-commit-service.js';
-import { createAttestationSource } from '../../services/head-checkpoint.js';
-import { MachineKeyService } from '../../services/machine-key.js';
-import { ProjectSecretService } from '../../services/project-secret.js';
+} from '../../services/integrity/audit-integrity.js';
+import { createAttestationSource } from '../../services/integrity/head-checkpoint.js';
+import { MachineKeyService } from '../../services/integrity/machine-key.js';
+import { ProjectSecretService } from '../../services/integrity/project-secret.js';
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import {
   AuditHeadSignatureRepository,

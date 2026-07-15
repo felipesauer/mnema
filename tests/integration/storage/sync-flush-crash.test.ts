@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Task } from '@/domain/entities/task.js';
-import { SyncService } from '@/services/sync-service.js';
+import { SyncService } from '@/services/sync/sync-service.js';
 import { SyncBuffer, type SyncBufferEntry } from '@/storage/buffer/sync-buffer.js';
 import type { MarkdownIo, ParsedMarkdown } from '@/storage/markdown/markdown-io.js';
 import type { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';

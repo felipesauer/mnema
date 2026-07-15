@@ -1,8 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-
+import type { TaskService } from '../../../services/backlog/task-service.js';
 import type { SearchService } from '../../../services/search-service.js';
-import type { TaskService } from '../../../services/task-service.js';
 import { skillMatchTerms } from '../../../utils/skill-suggest-stopwords.js';
 import { err, ok } from '../../mcp-tool-result.js';
 

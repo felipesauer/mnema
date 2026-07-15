@@ -9,21 +9,21 @@ import {
 } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode, ExitCode, type ExitCodeValue } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
-// `inspectAuditIntegrity` lives in `services/audit-integrity.ts` so both
+// `inspectAuditIntegrity` lives in `services/integrity/audit-integrity.ts` so both
 // the CLI doctor and the `audit_verify` MCP tool consume one source of
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { anchorStatusCheck } from '../../services/anchor/anchor-inspect.js';
-import { ARCHIVE_DIRNAME, type ArchiveResult } from '../../services/archive-service.js';
 import { buildContentAttestation } from '../../services/audit/attestation-cli.js';
-import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
-import { defaultGitRunner, type GitCommandRunner } from '../../services/git-commit-service.js';
-import { createAttestationSource } from '../../services/head-checkpoint.js';
-import { HookTrustService } from '../../services/hook-trust.js';
-import { IdentityService } from '../../services/identity-service.js';
-import { recordCounter } from '../../services/metrics-counter.js';
-import { findOrphanRuns } from '../../services/orphan-run-service.js';
-import { ProjectSecretService } from '../../services/project-secret.js';
+import { ARCHIVE_DIRNAME, type ArchiveResult } from '../../services/backlog/archive-service.js';
+import { defaultGitRunner, type GitCommandRunner } from '../../services/git/git-commit-service.js';
+import { inspectAuditIntegrity } from '../../services/integrity/audit-integrity.js';
+import { createAttestationSource } from '../../services/integrity/head-checkpoint.js';
+import { HookTrustService } from '../../services/integrity/hook-trust.js';
+import { IdentityService } from '../../services/integrity/identity-service.js';
+import { ProjectSecretService } from '../../services/integrity/project-secret.js';
+import { recordCounter } from '../../services/metrics/metrics-counter.js';
+import { findOrphanRuns } from '../../services/metrics/orphan-run-service.js';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';

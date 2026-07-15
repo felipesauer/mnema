@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { CoverageService } from '../../../services/coverage-service.js';
+import type { CoverageService } from '../../../services/backlog/coverage-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

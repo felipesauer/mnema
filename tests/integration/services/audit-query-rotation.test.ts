@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AuditQuery } from '@/services/audit-query.js';
+import { AuditQuery } from '@/services/integrity/audit-query.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 /**

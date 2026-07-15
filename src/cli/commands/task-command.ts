@@ -9,7 +9,7 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import {
   TASK_TEMPLATE_KINDS,
   type TaskTemplateKind,
-} from '../../services/task-template-service.js';
+} from '../../services/backlog/task-template-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';

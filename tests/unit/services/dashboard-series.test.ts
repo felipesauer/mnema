@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { activityByDay, eventsByKind, throughputByDay } from '@/services/dashboard-series.js';
+import {
+  activityByDay,
+  eventsByKind,
+  throughputByDay,
+} from '@/services/dashboard/dashboard-series.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 function ev(at: string, kind: string, data: Record<string, unknown> = {}): AuditEvent {

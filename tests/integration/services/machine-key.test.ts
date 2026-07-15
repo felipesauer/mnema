@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { MachineKeyService, type PublicKeyRecord } from '@/services/machine-key.js';
+import { MachineKeyService, type PublicKeyRecord } from '@/services/integrity/machine-key.js';
 
 /**
  * The per-machine Ed25519 keypair (ADR-37 layer 2) signs the periodic chain

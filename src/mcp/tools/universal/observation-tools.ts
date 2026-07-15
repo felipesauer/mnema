@@ -3,12 +3,12 @@ import { z } from 'zod';
 
 import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
-import type { AgentRunService } from '../../../services/agent-run-service.js';
-import type { IdentityService } from '../../../services/identity-service.js';
+import type { AgentRunService } from '../../../services/agent/agent-run-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import {
   OBSERVATION_CONTENT_MAX,
   type ObservationService,
-} from '../../../services/observation-service.js';
+} from '../../../services/knowledge/observation-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {

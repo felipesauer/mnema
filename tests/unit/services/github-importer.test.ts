@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-
+import type { TaskService } from '@/services/backlog/task-service.js';
 import {
   GithubIssuesImporter,
   parseNextLink,
 } from '@/services/importers/github-issues-importer.js';
-import type { TaskService } from '@/services/task-service.js';
 
 describe('parseNextLink', () => {
   it('returns the next-page URL when present', () => {

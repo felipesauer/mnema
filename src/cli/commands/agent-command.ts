@@ -4,7 +4,7 @@ import type { AgentRun } from '../../domain/entities/agent-run.js';
 import { AgentPlanState } from '../../domain/enums/agent-plan-state.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { printError } from '../../errors/error-printer.js';
-import type { RunDiff } from '../../services/run-diff-service.js';
+import type { RunDiff } from '../../services/metrics/run-diff-service.js';
 import type { ServiceContainer } from '../../services/service-container.js';
 import type { TransitionWithKey } from '../../storage/sqlite/repositories/transition-repository.js';
 import { pc } from '../../utils/colors.js';

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AuditTail } from '@/services/audit-tail.js';
+import { AuditTail } from '@/services/integrity/audit-tail.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

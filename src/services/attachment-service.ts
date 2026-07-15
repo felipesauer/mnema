@@ -12,8 +12,8 @@ import type {
 } from '../storage/sqlite/repositories/attachment-repository.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
-import type { AuditService } from './audit-service.js';
-import type { IdentityService } from './identity-service.js';
+import type { AuditService } from './integrity/audit-service.js';
+import type { IdentityService } from './integrity/identity-service.js';
 
 /**
  * Input for {@link AttachmentService.attachToTask}.

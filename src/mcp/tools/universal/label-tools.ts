@@ -1,8 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { LabelService } from '../../../services/label-service.js';
+import type { LabelService } from '../../../services/backlog/label-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

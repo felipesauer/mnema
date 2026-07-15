@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { canonicalise } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
-import { MachineKeyService } from '../machine-key.js';
+import { MachineKeyService } from '../integrity/machine-key.js';
 
 /**
  * `mnema-attest/v1` — a committed, per-batch attestation that lets an

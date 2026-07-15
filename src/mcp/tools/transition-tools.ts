@@ -5,11 +5,11 @@ import type { Config } from '../../config/config-schema.js';
 import { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import type { Workflow } from '../../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../../errors/error-codes.js';
-import type { AgentRunService } from '../../services/agent-run-service.js';
-import type { GitHubPrService, PrStatus } from '../../services/github-pr-service.js';
-import type { IdentityService } from '../../services/identity-service.js';
-import type { LabelService } from '../../services/label-service.js';
-import type { TaskService } from '../../services/task-service.js';
+import type { AgentRunService } from '../../services/agent/agent-run-service.js';
+import type { LabelService } from '../../services/backlog/label-service.js';
+import type { TaskService } from '../../services/backlog/task-service.js';
+import type { GitHubPrService, PrStatus } from '../../services/git/github-pr-service.js';
+import type { IdentityService } from '../../services/integrity/identity-service.js';
 import { resolveGovernanceRun } from '../governance-run.js';
 import type { McpSessionContext } from '../mcp-session-context.js';
 import {

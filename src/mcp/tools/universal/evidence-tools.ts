@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import type { EvidenceKind } from '../../../domain/entities/task-evidence.js';
 import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
-import type { AgentRunService } from '../../../services/agent-run-service.js';
-import type { CommitVerifier } from '../../../services/commit-verifier.js';
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { TaskEvidenceService } from '../../../services/task-evidence-service.js';
+import type { AgentRunService } from '../../../services/agent/agent-run-service.js';
+import type { TaskEvidenceService } from '../../../services/backlog/task-evidence-service.js';
+import type { CommitVerifier } from '../../../services/integrity/commit-verifier.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import { resolveGovernanceRun } from '../../governance-run.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {

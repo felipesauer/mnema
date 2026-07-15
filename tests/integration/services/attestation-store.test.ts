@@ -11,7 +11,7 @@ import {
   readArtifact,
   writeArtifact,
 } from '@/services/audit/attestation-store.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 
 /**
  * The attestation store: committed `.att` I/O under <auditDir>/attest/, and

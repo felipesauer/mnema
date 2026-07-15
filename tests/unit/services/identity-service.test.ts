@@ -12,7 +12,10 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ActorKind } from '@/domain/enums/actor-kind.js';
-import { IdentityNotConfiguredError, IdentityService } from '@/services/identity-service.js';
+import {
+  IdentityNotConfiguredError,
+  IdentityService,
+} from '@/services/integrity/identity-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';

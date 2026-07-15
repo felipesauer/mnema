@@ -7,7 +7,7 @@ import { emitAttestation } from '@/services/audit/attestation-emitter.js';
 import { committedSignerResolver } from '@/services/audit/attestation-store.js';
 import { contentAttestationCheck } from '@/services/audit/attestation-verify.js';
 import { walkChainedEvents } from '@/services/audit/audit-chain-walk.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 
 /**
  * The fail-closed content-attestation verdict: ok ONLY when every chained

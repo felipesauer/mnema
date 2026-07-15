@@ -1,5 +1,5 @@
-import type { IntegrityCheck } from '../audit-integrity.js';
-import { readCommittedProjectHmacId } from '../project-secret.js';
+import type { IntegrityCheck } from '../integrity/audit-integrity.js';
+import { readCommittedProjectHmacId } from '../integrity/project-secret.js';
 import type { AttestationSigner } from './attestation-emitter.js';
 import { planReattestIncremental } from './attestation-reattest.js';
 import { committedSignerResolver, listArtifacts, writeArtifact } from './attestation-store.js';

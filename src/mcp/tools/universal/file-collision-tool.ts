@@ -5,7 +5,7 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type {
   CollisionScope,
   FileCollisionService,
-} from '../../../services/file-collision-service.js';
+} from '../../../services/lint/file-collision-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

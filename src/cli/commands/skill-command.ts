@@ -4,7 +4,7 @@ import type { Command } from 'commander';
 import { ErrorCode, ExitCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import { listAvailableToolNames } from '../../mcp/tool-registry.js';
-import { SkillService } from '../../services/skill-service.js';
+import { SkillService } from '../../services/knowledge/skill-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { collectRepeatable } from '../option-helpers.js';

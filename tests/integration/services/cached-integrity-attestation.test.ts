@@ -3,10 +3,13 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { CachedAuditIntegrity } from '@/services/audit-integrity.js';
-import { AuditService } from '@/services/audit-service.js';
-import { createAttestationSource, HeadCheckpointService } from '@/services/head-checkpoint.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { CachedAuditIntegrity } from '@/services/integrity/audit-integrity.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import {
+  createAttestationSource,
+  HeadCheckpointService,
+} from '@/services/integrity/head-checkpoint.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AuditHeadSignatureRepository } from '@/storage/sqlite/repositories/audit-head-signature-repository.js';

@@ -3,8 +3,8 @@ import { writeFileSync } from 'node:fs';
 import type { Command } from 'commander';
 
 import { printError } from '../../errors/error-printer.js';
-import { renderHtml, renderMarkdown } from '../../services/snapshot-render.js';
-import type { SnapshotScope } from '../../services/snapshot-service.js';
+import { renderHtml, renderMarkdown } from '../../services/snapshot/snapshot-render.js';
+import type { SnapshotScope } from '../../services/snapshot/snapshot-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 

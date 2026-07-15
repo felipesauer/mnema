@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AuditQuery, parseTimeBound } from '@/services/audit-query.js';
+import { AuditQuery, parseTimeBound } from '@/services/integrity/audit-query.js';
 
 function writeJsonl(file: string, events: readonly object[]): void {
   writeFileSync(file, events.map((e) => JSON.stringify(e)).join('\n'), 'utf-8');

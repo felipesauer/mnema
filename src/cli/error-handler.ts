@@ -1,7 +1,7 @@
 import { ErrorCode, ExitCode, type ExitCodeValue } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import type { MnemaError } from '../errors/mnema-error.js';
-import { recordError } from '../services/error-log.js';
+import { recordError } from '../services/agent/error-log.js';
 import { pc } from '../utils/colors.js';
 
 const KNOWN_CODES = new Set<string>(Object.values(ErrorCode));

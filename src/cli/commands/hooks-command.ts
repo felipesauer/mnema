@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 
 import type { Config } from '../../config/config-schema.js';
-import { renderHookCommand } from '../../services/domain-event-dispatcher.js';
-import { fingerprintHooks, hasAnyHook } from '../../services/hook-trust.js';
+import { renderHookCommand } from '../../services/integrity/domain-event-dispatcher.js';
+import { fingerprintHooks, hasAnyHook } from '../../services/integrity/hook-trust.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 

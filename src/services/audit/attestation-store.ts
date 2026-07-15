@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { MachineKeyService } from '../machine-key.js';
+import { MachineKeyService } from '../integrity/machine-key.js';
 import {
   type AttestationArtifact,
   parseArtifact,

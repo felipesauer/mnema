@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { WikilinkLintService } from '../../../services/wikilink-lint-service.js';
+import type { WikilinkLintService } from '../../../services/lint/wikilink-lint-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
 /**

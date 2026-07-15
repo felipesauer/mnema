@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { printError } from '../../errors/error-printer.js';
-import type { WorkGraphLintReport } from '../../services/work-graph-lint-service.js';
+import type { WorkGraphLintReport } from '../../services/lint/work-graph-lint-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 

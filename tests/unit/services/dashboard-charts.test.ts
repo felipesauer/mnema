@@ -7,8 +7,8 @@ import {
   lineChart,
   nodeLink,
   scatter,
-} from '@/services/dashboard-charts.js';
-import type { DependencyGraph } from '@/services/dependency-graph-service.js';
+} from '@/services/dashboard/dashboard-charts.js';
+import type { DependencyGraph } from '@/services/snapshot/dependency-graph-service.js';
 
 /** Every chart must be self-contained SVG: no external refs of any kind. */
 function assertSelfContained(svg: string): void {

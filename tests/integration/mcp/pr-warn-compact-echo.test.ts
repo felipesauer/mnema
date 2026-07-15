@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
 import { MnemaMcpServer } from '@/mcp/mcp-server.js';
-import { type CommandRunner, GitHubPrService } from '@/services/github-pr-service.js';
+import { type CommandRunner, GitHubPrService } from '@/services/git/github-pr-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');

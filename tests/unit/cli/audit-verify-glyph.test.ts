@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { verifyCheckGlyph } from '@/cli/commands/audit-command.js';
-import type { IntegrityCheck } from '@/services/audit-integrity.js';
+import type { IntegrityCheck } from '@/services/integrity/audit-integrity.js';
 
 /**
  * `audit verify` used to render a green ✔ on a dormant/unverifiable

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { WikilinkLintService } from '@/services/wikilink-lint-service.js';
+import { WikilinkLintService } from '@/services/lint/wikilink-lint-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repository.js';
 import { MemoryRepository } from '@/storage/sqlite/repositories/memory-repository.js';

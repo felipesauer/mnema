@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
-import { ARCHIVE_DIRNAME } from '@/services/archive-service.js';
+import { ARCHIVE_DIRNAME } from '@/services/backlog/archive-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 import { MarkdownIo } from '@/storage/markdown/markdown-io.js';
 

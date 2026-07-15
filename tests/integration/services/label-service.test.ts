@@ -4,9 +4,9 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ErrorCode } from '@/errors/error-codes.js';
-import { AuditService } from '@/services/audit-service.js';
-import { LabelService } from '@/services/label-service.js';
-import type { SyncService } from '@/services/sync-service.js';
+import { LabelService } from '@/services/backlog/label-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import type { SyncService } from '@/services/sync/sync-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { LabelRepository } from '@/storage/sqlite/repositories/label-repository.js';

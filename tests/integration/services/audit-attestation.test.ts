@@ -7,10 +7,13 @@ import {
   type AttestationSource,
   type HeadSignatureView,
   inspectAuditIntegrity,
-} from '@/services/audit-integrity.js';
-import { AuditService } from '@/services/audit-service.js';
-import { createAttestationSource, HeadCheckpointService } from '@/services/head-checkpoint.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+} from '@/services/integrity/audit-integrity.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import {
+  createAttestationSource,
+  HeadCheckpointService,
+} from '@/services/integrity/head-checkpoint.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AuditHeadSignatureRepository } from '@/storage/sqlite/repositories/audit-head-signature-repository.js';

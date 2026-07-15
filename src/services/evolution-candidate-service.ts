@@ -1,8 +1,8 @@
 import type { Workflow } from '../domain/state-machine/state-machine.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
-import type { ObservationService } from './observation-service.js';
-import type { SkillQualityService } from './skill-quality-service.js';
+import type { ObservationService } from './knowledge/observation-service.js';
+import type { SkillQualityService } from './knowledge/skill-quality-service.js';
 
 /**
  * A skill that preceded rework, ranked by how many reopened tasks its runs

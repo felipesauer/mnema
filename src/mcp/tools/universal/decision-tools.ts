@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import type { Config } from '../../../config/config-schema.js';
 import { DecisionStatus } from '../../../domain/enums/decision-status.js';
-import type { DecisionService } from '../../../services/decision-service.js';
-import type { IdentityService } from '../../../services/identity-service.js';
+import type { DecisionService } from '../../../services/backlog/decision-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

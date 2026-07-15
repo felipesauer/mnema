@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { IdentityService } from '../../services/identity-service.js';
+import { IdentityService } from '../../services/integrity/identity-service.js';
 import { pc } from '../../utils/colors.js';
 
 interface SetOptions {

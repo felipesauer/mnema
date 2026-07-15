@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { AgentPlanState } from '../../../domain/enums/agent-plan-state.js';
-import type { AgentPlanService } from '../../../services/agent-plan-service.js';
+import type { AgentPlanService } from '../../../services/agent/agent-plan-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

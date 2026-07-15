@@ -9,7 +9,7 @@ import {
   serializeArtifact,
   verifyArtifact,
 } from '@/services/audit/attestation-artifact.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 /**

@@ -9,7 +9,7 @@ import { planReattest, planReattestIncremental } from '@/services/audit/attestat
 import { committedSignerResolver } from '@/services/audit/attestation-store.js';
 import { contentAttestationCheck } from '@/services/audit/attestation-verify.js';
 import { walkChainedEvents, walkChainedTail } from '@/services/audit/audit-chain-walk.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 
 /**
  * Incremental (tail-only) auto-attestation must be CORRECTNESS-identical to the

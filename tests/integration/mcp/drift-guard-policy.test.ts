@@ -14,7 +14,7 @@ import { DecisionTools } from '@/mcp/tools/universal/decision-tools.js';
 import { EvidenceTools } from '@/mcp/tools/universal/evidence-tools.js';
 import { SprintTools } from '@/mcp/tools/universal/sprint-tools.js';
 import { TaskTools } from '@/mcp/tools/universal/task-tools.js';
-import { GitHubPrService } from '@/services/github-pr-service.js';
+import { GitHubPrService } from '@/services/git/github-pr-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 /**

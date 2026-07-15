@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { DomainEvent } from '@/domain/enums/domain-event.js';
-import type { AuditEventInput } from '@/services/audit-service.js';
+import type { AuditEventInput } from '@/services/integrity/audit-service.js';
 import {
   DomainEventDispatcher,
   type HookRunner,
   resolveDomainEvents,
-} from '@/services/domain-event-dispatcher.js';
+} from '@/services/integrity/domain-event-dispatcher.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 const TERMINAL = ['DONE'] as const;

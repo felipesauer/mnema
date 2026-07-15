@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { AuditQuery } from '../../../services/audit-query.js';
+import type { AuditQuery } from '../../../services/integrity/audit-query.js';
 import { ok } from '../../mcp-tool-result.js';
 import { timeBoundSchema } from '../../time-bound-schema.js';
 

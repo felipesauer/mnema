@@ -6,7 +6,7 @@ import {
   GitCommitNotARepoError,
   GitCommitService,
   type GitResult,
-} from '@/services/git-commit-service.js';
+} from '@/services/git/git-commit-service.js';
 
 const OK: GitResult = { status: 0, stdout: '', stderr: '' };
 
