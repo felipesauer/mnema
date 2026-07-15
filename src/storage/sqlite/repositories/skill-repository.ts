@@ -45,8 +45,8 @@ export interface SkillInsertInput {
  * Input for {@link SkillRepository.insertFromMirror} — a skill rebuilt from
  * its `.md` mirror, so the on-disk timestamps and usage counters are
  * preserved rather than reset. The mirror carries only the latest version, so
- * a rebuilt skill has no version history; `changeRationale` and `scope` are
- * not in the mirror either.
+ * a rebuilt skill has no version history; `changeRationale` is not in the
+ * mirror. `scope` IS carried (the mirror persists it in the frontmatter).
  */
 export interface SkillMirrorInput {
   readonly slug: string;
@@ -62,6 +62,7 @@ export interface SkillMirrorInput {
   readonly createdBy: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly scope?: string | null;
 }
 
 /**
@@ -238,7 +239,7 @@ export class SkillRepository {
            id, slug, name, version, description, content, content_core, content_examples,
            tools_used, invocable, dynamic_context, change_rationale, scope,
            usage_count, last_used_at, created_by, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         generateUuid(),
@@ -252,6 +253,7 @@ export class SkillRepository {
         JSON.stringify(input.toolsUsed),
         input.invocable ? 1 : 0,
         JSON.stringify(input.dynamicContext),
+        input.scope ?? null,
         input.usageCount,
         input.lastUsedAt,
         input.createdBy,
