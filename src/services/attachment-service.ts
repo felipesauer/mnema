@@ -46,7 +46,7 @@ export interface AttachToDecisionInput {
 export interface AttachmentGcResult {
   /** Filenames of the orphan blobs (would-be or actually removed). */
   readonly orphans: string[];
-  /** Total bytes reclaimed — always `0` in dry-run mode. */
+  /** Bytes reclaimed; on a dry run, the bytes that WOULD be reclaimed. */
   readonly freedBytes: number;
   /** `true` when files were actually deleted (i.e. not a dry run). */
   readonly removed: boolean;
@@ -250,9 +250,9 @@ export class AttachmentService {
    * the attachments directory does not exist there is nothing to
    * collect and the result is empty.
    *
-   * @param opts.dryRun - When `true`, only report the orphans (nothing
-   *   is deleted and `freedBytes` stays `0`); when `false`, unlink each
-   *   orphan and sum the reclaimed bytes
+   * @param opts.dryRun - When `true`, only report the orphans and the bytes
+   *   they WOULD free (nothing is deleted); when `false`, unlink each orphan
+   *   and sum the reclaimed bytes
    * @returns The orphan filenames, bytes freed, and whether files were
    *   actually removed
    */
