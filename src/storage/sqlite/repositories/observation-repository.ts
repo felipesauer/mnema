@@ -35,7 +35,10 @@ export interface ObservationMirrorInput {
   readonly relatedTaskId: string | null;
   readonly createdBy: string;
   readonly at: string;
-  readonly archivedAt: string | null;
+  // No `archivedAt`: archiving an observation UNLINKS its mirror and
+  // rebuildMirrors skips archived rows, so a mirror with a non-null
+  // archived_at can never exist. A rebuilt observation is always live —
+  // the row is inserted with archived_at = NULL.
 }
 
 /**
@@ -106,9 +109,10 @@ export class ObservationRepository {
     const result = this.adapter
       .getDatabase()
       .prepare(
+        // archived_at is always NULL from a mirror — see ObservationMirrorInput.
         `INSERT OR IGNORE INTO observations (
            id, content, topics, related_task_id, created_by, at, archived_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, NULL)`,
       )
       .run(
         input.id,
@@ -117,7 +121,6 @@ export class ObservationRepository {
         input.relatedTaskId,
         input.createdBy,
         input.at,
-        input.archivedAt,
       );
     return result.changes > 0;
   }
