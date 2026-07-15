@@ -153,6 +153,22 @@ export class SyncRebuild {
     private readonly audit: {
       write(input: { kind: string; actor: string; data: Record<string, unknown> }): void;
     } | null = null,
+    /**
+     * Optional provenance repo + an audit event reader. When both are present,
+     * the rebuild replays the promotion/supersede/derivation events from the
+     * committed audit chain into the git-ignored provenance_links cache, so a
+     * fresh clone recovers the provenance graph. Left optional so existing
+     * callers/tests construct the rebuild unchanged.
+     */
+    private readonly provenance: {
+      link(
+        source: { kind: string; ref: string },
+        target: { kind: string; ref: string },
+      ): unknown;
+    } | null = null,
+    private readonly auditEvents:
+      | ((kind: string) => readonly { readonly data: Record<string, unknown> }[])
+      | null = null,
   ) {}
 
   /**
@@ -246,6 +262,12 @@ export class SyncRebuild {
     const memories = this.rebuildMemories(skipped);
     const skills = this.rebuildSkills(skipped);
 
+    // Replay provenance edges from the committed audit chain into the
+    // git-ignored provenance_links cache. Runs last, after every entity row
+    // exists (the edges reference decision/memory/skill refs). No-op when the
+    // provenance repo or the event reader was not wired.
+    this.rebuildProvenance();
+
     return {
       tasksScanned: tasks.scanned,
       tasksUpserted: tasks.upserted,
@@ -258,6 +280,74 @@ export class SyncRebuild {
       skipped,
       conflicts,
     };
+  }
+
+  /**
+   * Rebuilds the provenance_links cache from the committed audit chain. Each
+   * promotion/supersede/derivation event carries both endpoints of an edge, so
+   * the graph is recomputable without the (git-ignored) links table. link() is
+   * INSERT OR IGNORE, so this is idempotent — re-running adds nothing. No-op
+   * when the provenance repo or the event reader is absent.
+   */
+  private rebuildProvenance(): void {
+    if (this.provenance === null || this.auditEvents === null) return;
+    const read = this.auditEvents;
+    const link = (
+      source: { kind: string; ref: string },
+      target: { kind: string; ref: string },
+    ): void => {
+      // Guard: only link when both refs are present (an older event predating
+      // the field simply does not reconstruct that edge).
+      if (source.ref.length > 0 && target.ref.length > 0) this.provenance?.link(source, target);
+    };
+
+    // decision ← note / observation (the promotion events carry both refs).
+    for (const { data } of read('decision_promoted_from_note')) {
+      link(
+        { kind: 'note', ref: readString(data, 'note_id') ?? '' },
+        { kind: 'decision', ref: readString(data, 'decision_key') ?? '' },
+      );
+    }
+    for (const { data } of read('decision_promoted_from_observation')) {
+      link(
+        { kind: 'observation', ref: readString(data, 'observation_id') ?? '' },
+        { kind: 'decision', ref: readString(data, 'decision_key') ?? '' },
+      );
+    }
+    // memory derived-from decision / observation (recorded on memory_recorded).
+    for (const { data } of read('memory_recorded')) {
+      const slug = readString(data, 'slug') ?? '';
+      const fromDecision = readString(data, 'derived_from_decision');
+      const fromObservation = readString(data, 'derived_from_observation');
+      if (fromDecision !== null) {
+        link({ kind: 'decision', ref: fromDecision }, { kind: 'memory', ref: slug });
+      }
+      if (fromObservation !== null) {
+        link({ kind: 'observation', ref: fromObservation }, { kind: 'memory', ref: slug });
+      }
+    }
+    // memory supersede / obsolete (memory → memory).
+    for (const { data } of read('memory_superseded')) {
+      link(
+        { kind: 'memory', ref: readString(data, 'slug') ?? '' },
+        { kind: 'memory', ref: readString(data, 'superseded_by') ?? '' },
+      );
+    }
+    for (const { data } of read('memory_obsoleted')) {
+      // The obsoleting memory (obsoleted_by) points at the obsoleted slug —
+      // matches the live wiring: link(obsoleter → obsoleted).
+      link(
+        { kind: 'memory', ref: readString(data, 'obsoleted_by') ?? '' },
+        { kind: 'memory', ref: readString(data, 'slug') ?? '' },
+      );
+    }
+    // NOT reconstructed here: skill-supersede edges. Those link skill ROW IDs
+    // (target.id → successor.id), and row ids are regenerated on a clone, so
+    // the ids in the skill_superseded event no longer match any rebuilt row.
+    // Recovering them would need a stable slug+version key in the event and an
+    // old-id→new-id remap — tracked as a separate follow-up. Every OTHER
+    // provenance edge (decision promotions, memory derivation/supersede/
+    // obsolete) keys on stable slugs/keys and is reconstructed above.
   }
 
   /**

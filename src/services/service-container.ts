@@ -474,6 +474,8 @@ export function createServiceContainer(
     },
     new Set(stateMachine.getWorkflow().states),
     audit,
+    provenanceLinkRepository,
+    (kind: string) => auditQuery.run({ kind }),
   );
 
   const archiveService = new ArchiveService(tasks, {
