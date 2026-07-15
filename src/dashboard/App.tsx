@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
 import type { DashboardContract } from './contract.js';
+import { NeedsYou } from './NeedsYou.js';
 
 type LoadState =
   | { status: 'loading' }
@@ -55,15 +56,10 @@ export function App(): ReactElement {
         </p>
       </header>
 
-      {/* Panel regions — placeholders the follow-up tasks replace. */}
-      <section aria-label="Needs you" data-panel="needs-you">
-        <h2>Needs you</h2>
-        <p>
-          {data.inbox.awaitingReview.length} awaiting review · {data.inbox.blocked.length} blocked ·{' '}
-          {data.inbox.pendingDecisions} pending decisions
-        </p>
-      </section>
+      {/* Needs-you (291): a real panel over the shared contract. */}
+      <NeedsYou inbox={data.inbox} />
 
+      {/* Remaining regions are placeholders the follow-up tasks replace. */}
       <section aria-label="Dependency graph" data-panel="graph">
         <h2>Graph</h2>
         <p>{data.graph.nodes.length} nodes · critical path {data.graph.criticalPath.length}</p>
