@@ -25,7 +25,7 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import { AdoptionService } from '../../services/adoption-service.js';
 import { AuditService } from '../../services/audit-service.js';
 import { IdentityService } from '../../services/identity-service.js';
-import { Err, Ok, type Result } from '../../services/result.js';
+import { Err, Ok, type Result } from '../../common/result.js';
 import { SkillService } from '../../services/skill-service.js';
 import { AuditWriter } from '../../storage/audit/audit-writer.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';

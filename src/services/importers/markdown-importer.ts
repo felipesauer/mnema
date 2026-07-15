@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { Err, Ok, type Result } from '../result.js';
+import { Err, Ok, type Result } from '../../common/result.js';
 import type { TaskService } from '../task-service.js';
 
 /**

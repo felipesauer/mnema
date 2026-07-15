@@ -6,7 +6,7 @@ import { fromZodIssues, type MnemaError } from '../errors/mnema-error.js';
 import type { LabelRepository } from '../storage/sqlite/repositories/label-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 import type { SyncService } from './sync-service.js';
 
 /**

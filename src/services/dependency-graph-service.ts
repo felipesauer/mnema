@@ -6,7 +6,7 @@ import type { DependencyRepository } from '../storage/sqlite/repositories/depend
 import type { EpicRepository } from '../storage/sqlite/repositories/epic-repository.js';
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /** What the graph is scoped to. */
 export type GraphScope =

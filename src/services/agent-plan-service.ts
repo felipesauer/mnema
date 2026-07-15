@@ -5,7 +5,7 @@ import type { MnemaError } from '../errors/mnema-error.js';
 import type { AgentPlanRepository } from '../storage/sqlite/repositories/agent-plan-repository.js';
 import type { AgentRunRepository } from '../storage/sqlite/repositories/agent-run-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Maximum nesting depth for plans (mirrors the SQL CHECK).

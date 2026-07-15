@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-import { Err, Ok, type Result } from '../../services/result.js';
+import { Err, Ok, type Result } from '../../common/result.js';
 import type { FieldSpec } from './workflow-meta-schema.js';
 
 /**

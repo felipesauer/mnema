@@ -7,7 +7,7 @@ import type { DependencyRepository } from '../storage/sqlite/repositories/depend
 import type { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /** The only `pickable` state a ready task can be in (per the default workflow). */
 const READY_STATE = 'READY';

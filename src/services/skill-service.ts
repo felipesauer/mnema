@@ -23,7 +23,7 @@ import {
 import type { AuditService } from './audit-service.js';
 import { type CommandRunner, defaultRunner } from './github-pr-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 import { readUserSkills, type SourcedSkill } from './user-knowledge.js';
 
 // The example/core split lives in a leaf util so the skill repository can call

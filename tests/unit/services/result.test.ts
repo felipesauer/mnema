@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Err, Ok } from '@/services/result.js';
+import { Err, Ok } from '@/common/result.js';
 
 describe('Result', () => {
   it('Ok wraps the value with ok=true', () => {
