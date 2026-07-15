@@ -147,9 +147,14 @@ export async function createDashboardServer(
     });
   }
 
-  /** The Board read: the whole backlog counted + listed by state (portfolio). */
-  function boardData() {
-    return container.portfolio.run({});
+  /**
+   * The Board read: the backlog counted + listed by state (portfolio),
+   * optionally filtered (ADR-67 slice 7). Filters are echoed by the portfolio
+   * service and pushed into its query — an unknown epic/sprint key yields an
+   * honest empty result, not a silent ignore.
+   */
+  function boardData(filter: { epicKey?: string; sprintKey?: string; state?: string } = {}) {
+    return container.portfolio.run(filter);
   }
 
   /**
@@ -221,6 +226,29 @@ export async function createDashboardServer(
       reopenCount: p.reopenCount,
     }));
     return { decisions, skills, memories, reviewProposals };
+  }
+
+  /**
+   * Global search (Integrity-independent): FTS hits for `q` via the existing
+   * search service. A blank/too-short query returns no hits rather than an
+   * error. The snippet is the search result itself (what the user asked to
+   * see), so it is intentionally included.
+   */
+  function searchData(q: string) {
+    const query = q.trim();
+    if (query.length < 2) return { query, hits: [] as unknown[] };
+    const result = container.search.search(query, { perEntityLimit: 8 });
+    if (!result.ok) return { query, hits: [] as unknown[] };
+    return {
+      query,
+      hits: result.value.map((h) => ({
+        entity: h.entity,
+        key: h.key,
+        title: h.title,
+        snippet: h.snippet,
+        parentKey: h.parentKey,
+      })),
+    };
   }
 
   /** The Agents read (Agents module): orphaned (stale-open) runs. */
@@ -336,9 +364,18 @@ export async function createDashboardServer(
     // Work module (ADR-67 slice 3). Served on demand — kept off the always-on
     // /api/dashboard payload so the Overview stays lean. Both read only the
     // existing services (no second source of truth).
-    if (url === '/api/board') {
+    if (url.startsWith('/api/board')) {
+      const params = new URL(url, 'http://localhost').searchParams;
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(boardData()));
+      res.end(
+        JSON.stringify(
+          boardData({
+            epicKey: params.get('epic') ?? undefined,
+            sprintKey: params.get('sprint') ?? undefined,
+            state: params.get('state') ?? undefined,
+          }),
+        ),
+      );
       return;
     }
     if (url === '/api/epics') {
@@ -356,6 +393,16 @@ export async function createDashboardServer(
     if (url === '/api/drift') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(driftData()));
+      return;
+    }
+
+    // Global search (ADR-67 slice 7): FTS over tasks/decisions/notes/skills/
+    // memories/observations, via the existing search service. The query is the
+    // `q` param; an empty/absent q returns no hits (not an error).
+    if (url.startsWith('/api/search')) {
+      const q = new URL(url, 'http://localhost').searchParams.get('q') ?? '';
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(searchData(q)));
       return;
     }
 
