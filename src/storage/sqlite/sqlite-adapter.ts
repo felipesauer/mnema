@@ -60,6 +60,23 @@ export class SqliteAdapter {
   }
 
   /**
+   * Runs `wal_checkpoint(TRUNCATE)` to flush the WAL into the main DB and
+   * shrink the `-wal` file back to zero. On a short-lived CLI process the
+   * `-wal` is emptied by `close()` anyway, so this matters for a LONG-LIVED
+   * connection (the `mnema mcp serve` daemon): its `-wal` otherwise grows to
+   * the high-water mark of the largest transaction burst and stays there for
+   * the life of the process. Best-effort — a checkpoint that can't run (e.g.
+   * another reader holds the WAL) is a no-op, never an error.
+   */
+  checkpointTruncate(): void {
+    try {
+      this.database.pragma('wal_checkpoint(TRUNCATE)');
+    } catch {
+      // Non-fatal: the WAL just isn't reclaimed this time.
+    }
+  }
+
+  /**
    * Closes the database connection. Should be called on graceful shutdown.
    */
   close(): void {
