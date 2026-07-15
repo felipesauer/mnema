@@ -42,6 +42,10 @@
     "build:spa": "vite build",
     "typecheck:spa": "tsc -p tsconfig.dashboard.json",
     "verify:spa": "node scripts/verify-spa-bundle.mjs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "verify:docs": "node scripts/verify-docs-site.mjs",
     "prepack": "pnpm build",
     "prepublishOnly": "bash scripts/publish-check.sh",
     "dev": "tsx src/index.ts",
@@ -84,6 +88,7 @@
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.9"
   },
   "pnpm": {
