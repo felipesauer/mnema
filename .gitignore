@@ -15,6 +15,9 @@ docs/*
 !docs/guard.md
 !docs/mcp-tools.md
 !docs/skills-and-memory.md
+!docs/cli.md
+!docs/integrity.md
+!docs/project-layout.md
 !docs/assets/
 !docs/assets/**
 # VitePress site (MNEMA-ADR-59): commit the home + config, never the build
