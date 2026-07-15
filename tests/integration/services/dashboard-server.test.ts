@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { get, request } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -100,36 +100,42 @@ describe('createDashboardServer (integration)', () => {
     rmSync(h.projectRoot, { recursive: true, force: true });
   });
 
-  it('serves a self-contained live page (no external requests; one inline script)', async () => {
+  const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
+
+  it.skipIf(!spaBuilt)('serves the SPA at / (the cutover — SPA owns root)', async () => {
     const { status, body } = await httpGet(server.port, '/');
     expect(status).toBe(200);
-    expect(body.startsWith('<!doctype html>')).toBe(true);
+    expect(body).toContain('<div id="root">');
+    // Self-hosted, offline-first: the entry script is a relative asset, no CDN.
+    expect(body).toMatch(/src="\.\/assets\//);
     expect(body).not.toMatch(/https?:\/\//);
-    expect(body).not.toContain('<link');
-    expect((body.match(/<script/g) ?? []).length).toBe(1);
-    expect(body).not.toMatch(/<script[^>]*\ssrc=/);
-    expect(body).toContain("new EventSource('stream')");
   });
 
-  it('serves each per-tab HTML fragment', async () => {
+  it.skipIf(!spaBuilt)('serves the SPA bundle assets at /assets/*', async () => {
+    const asset = readdirSync(path.resolve('dist/dashboard/assets')).find((f) => f.endsWith('.js'));
+    const { status } = await httpGet(server.port, `/assets/${asset}`);
+    expect(status).toBe(200);
+  });
+
+  it('404s the retired legacy tab routes', async () => {
+    // /overview, /flow, /activity, /graph were the string-rendered dashboard;
+    // it is gone, so they no longer resolve.
     for (const tab of ['/overview', '/flow', '/activity', '/graph']) {
-      const { status, body } = await httpGet(server.port, tab);
-      expect(status).toBe(200);
-      expect(body.length).toBeGreaterThan(0);
-      // A fragment, not a full document.
-      expect(body).not.toContain('<!doctype html>');
+      expect((await httpGet(server.port, tab)).status).toBe(404);
     }
-    // The overview fragment carries the coverage card; the graph fragment
-    // carries the dependency-graph card (its SVG appears once there are
-    // nodes — the seeded temp project has none).
-    expect((await httpGet(server.port, '/overview')).body).toContain('Coverage');
-    expect((await httpGet(server.port, '/graph')).body).toContain('Dependency graph');
+  });
+
+  it('redirects the old /app path to / (back-compat)', async () => {
+    const { status, headers } = await httpGet(server.port, '/app');
+    expect(status).toBe(301);
+    expect(headers.location).toBe('/');
   });
 
   it('rejects a foreign Host header and accepts a loopback one', async () => {
     const foreign = await httpGet(server.port, '/', { host: 'evil.example' });
     expect(foreign.status).toBe(403);
-    const ok = await httpGet(server.port, '/overview', { host: `localhost:${server.port}` });
+    // Use a live JSON route (no bundle needed) to confirm loopback is accepted.
+    const ok = await httpGet(server.port, '/api/dashboard', { host: `localhost:${server.port}` });
     expect(ok.status).toBe(200);
   });
 
@@ -275,28 +281,8 @@ describe('createDashboardServer (integration)', () => {
     expect(data.total).toBe(0);
   });
 
-  const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
-
-  it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {
-    // Without this the browser resolves the bundle's `./assets/…` against `/`
-    // → /assets/… (404) → blank page. The redirect makes `./` resolve under
-    // /app/ where the assets are actually served.
-    const { status, headers } = await httpGet(server.port, '/app');
-    expect(status).toBe(301);
-    expect(headers.location).toBe('/app/');
-  });
-
-  it.skipIf(!spaBuilt)('serves the built SPA bundle at /app/', async () => {
-    const { status, body } = await httpGet(server.port, '/app/');
-    expect(status).toBe(200);
-    expect(body).toContain('<div id="root">');
-    // The SPA entry script is a relative, self-hosted asset (offline-first).
-    expect(body).toMatch(/src="\.\/assets\//);
-    expect(body).not.toMatch(/https?:\/\//);
-  });
-
-  it('refuses a path-traversal escape from the /app static root', async () => {
-    const { status } = await httpGet(server.port, '/app/../../package.json');
+  it('refuses a path-traversal escape from the /assets static root', async () => {
+    const { status } = await httpGet(server.port, '/assets/../../package.json');
     // Either the server normalises and 403s, or the escape simply misses the
     // bundle dir and 404s — never a 200 leaking a file outside dist/dashboard.
     expect([403, 404]).toContain(status);
@@ -348,9 +334,9 @@ describe('createDashboardServer (integration)', () => {
     streamReq.destroy();
 
     const all = received.join('');
-    // The row now carries data-* filter attributes, so match the opening tag.
-    expect(all).toContain('data: <tr');
-    expect(all).toContain('TEST-1');
-    expect(all).toContain('test_event');
+    // The SPA consumes a compact JSON tick (kind only) and refetches — no
+    // rendered HTML, and no payload/entity content on the wire.
+    expect(all).toContain('data: {"kind":"test_event"}');
+    expect(all).not.toContain('TEST-1');
   });
 });

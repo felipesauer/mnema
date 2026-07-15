@@ -540,31 +540,34 @@ MCP tools. The commands group by what you're doing — run
 
 ### Live dashboard
 
-`mnema serve` opens a dark, tabbed dashboard on `localhost` and pushes
-each audit event to it in real time — so you watch the project move as
-agents (or you) work, without refreshing:
+`mnema serve` opens a dark single-page dashboard on `localhost` and
+updates live as each audit event lands — so you watch the project move
+as agents (or you) work, without refreshing:
 
 ```bash
 mnema serve            # → http://127.0.0.1:4700, opens your browser
 ```
 
-- **Overview** — coverage, throughput/lead/cycle time, WIP vs limits, SLA
-  breaches, and the chain verdict.
-- **Flow** — velocity, reopen rate, estimate-vs-actual, throughput over time.
-- **Activity** — a live event feed (filterable) plus events-by-kind.
-- **Graph** — the dependency graph as a node-link diagram with the critical
-  path highlighted.
+The rail groups the views into modules, with the chain-integrity verdict
+always in view:
 
-It is strictly read-only and derives everything from what's already
-recorded — no new collection. The server binds the loopback interface
-only and the page is self-contained (no external requests, no chart
-library), so **nothing leaves your machine**. It receives events from
-*any* process (an agent over MCP, a CLI mutation) by watching the trail.
+- **Overview** — the chain verdict, the human-attention queues, throughput
+  and reopen rate, and a live activity timeline.
+- **Work** — Needs-you (review/blocked/decisions), a Board by state, epics &
+  sprints with coverage, and the dependency graph (pan/zoom, connected
+  subgraph + critical path).
+- **Flow** — throughput, lead/cycle time, reopen, velocity, events by kind.
+- **Integrity** — the navigable audit trail (hash-linked events) + chain
+  verification, and drift (commits with no task).
+- **Knowledge / Agents** — decisions, skills & memory (with the rework
+  quality flag), and orphaned agent runs.
 
-> The dashboard is being rebuilt into a richer single-page app as the
-> visualization foundation for real-time agent activity and per-project
-> flow. The loopback-only, offline-first, nothing-leaves-your-machine
-> posture above is a hard constraint the rebuild keeps.
+Plus global search (`⌘K`), click-through drill-down, and interactive
+filters. It is strictly read-only and derives everything from what's
+already recorded — no new collection. The server binds the loopback
+interface only and the bundle is self-contained (no external request, no
+CDN), so **nothing leaves your machine**. It receives events from *any*
+process (an agent over MCP, a CLI mutation) by watching the trail.
 
 ## How the MCP loop works
 
