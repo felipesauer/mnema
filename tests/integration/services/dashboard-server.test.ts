@@ -46,14 +46,18 @@ function httpGet(
   port: number,
   urlPath: string,
   headers: Record<string, string> = {},
-): Promise<{ status: number; body: string }> {
+): Promise<{
+  status: number;
+  body: string;
+  headers: Record<string, string | string[] | undefined>;
+}> {
   return new Promise((resolve, reject) => {
     const req = get({ host: '127.0.0.1', port, path: urlPath, headers }, (res) => {
       let body = '';
       res.on('data', (c) => {
         body += c;
       });
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body, headers: res.headers }));
     });
     req.on('error', reject);
   });
@@ -150,8 +154,17 @@ describe('createDashboardServer (integration)', () => {
 
   const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
 
-  it.skipIf(!spaBuilt)('serves the built SPA bundle under /app', async () => {
-    const { status, body } = await httpGet(server.port, '/app');
+  it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {
+    // Without this the browser resolves the bundle's `./assets/…` against `/`
+    // → /assets/… (404) → blank page. The redirect makes `./` resolve under
+    // /app/ where the assets are actually served.
+    const { status, headers } = await httpGet(server.port, '/app');
+    expect(status).toBe(301);
+    expect(headers.location).toBe('/app/');
+  });
+
+  it.skipIf(!spaBuilt)('serves the built SPA bundle at /app/', async () => {
+    const { status, body } = await httpGet(server.port, '/app/');
     expect(status).toBe(200);
     expect(body).toContain('<div id="root">');
     // The SPA entry script is a relative, self-hosted asset (offline-first).
