@@ -633,41 +633,54 @@ h1 {
   font-family: var(--mono);
 }
 
-/* Estimate-vs-actual scatter */
+/* Estimate-vs-actual scatter. A relative box: the grid is a stretched SVG
+   underlay, the points are absolutely-positioned round HTML dots on top. */
 .scatter {
-  display: block;
+  position: relative;
   width: 100%;
   height: 220px;
   background: var(--panel-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-sm);
-  /* Non-scaling strokes: the viewBox is stretched (preserveAspectRatio=none),
-     so declare stroke widths in the stretched user space directly. */
 }
-.scatter .ax {
+.scatter-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* The viewBox is stretched (preserveAspectRatio=none), so keep hairlines crisp
+   with a non-scaling stroke rather than a distorted one. */
+.scatter-grid .ax {
   stroke: var(--border);
-  stroke-width: 0.6;
-  vector-effect: non-scaling-stroke;
-}
-.scatter .grid {
-  stroke: var(--border-soft);
-  stroke-width: 0.4;
-  vector-effect: non-scaling-stroke;
-}
-.scatter .ideal {
-  stroke: var(--accent);
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.scatter-grid .grid {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.scatter-grid .ideal {
+  stroke: var(--accent);
+  stroke-width: 1.5;
   stroke-dasharray: 4 3;
   opacity: 0.75;
   vector-effect: non-scaling-stroke;
 }
 .scatter .pt {
-  fill: var(--accent);
-  fill-opacity: 0.45;
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* Center the dot on its coordinate. */
+  transform: translate(-50%, -50%);
+  background: var(--accent);
+  opacity: 0.5;
 }
 .scatter .pt.fallback {
-  fill: var(--warn);
-  fill-opacity: 0.5;
+  background: var(--warn);
+  opacity: 0.55;
 }
 .axlabels {
   display: flex;

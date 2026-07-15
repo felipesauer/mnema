@@ -87,7 +87,12 @@ export function Metrics({ flow }: { flow: DashboardContract['flow'] }): ReactEle
  * of hiding it, and each is coloured by whether its `actual_hours` was measured
  * from run duration or fell back to lead time (the less certain source). A
  * dashed line marks the `hours_per_point` mean, so above/below the line reads
- * as over/under the typical realised effort. Plain SVG — no chart library.
+ * as over/under the typical realised effort.
+ *
+ * The frame/grid/mean line is a stretched SVG (a non-scaling stroke keeps the
+ * hairlines crisp); the points are absolutely-positioned HTML dots, so they
+ * stay perfectly round regardless of the panel's aspect ratio — an SVG circle
+ * in that stretched box would render as an ellipse. No chart library.
  */
 function EstimateScatter({
   eva,
@@ -108,6 +113,7 @@ function EstimateScatter({
   }
 
   const { points, xMax, yMax } = plot;
+  const n = eva.samples.length;
   // Ideal line y = hours_per_point · x, clipped to the plotted box.
   const hpp = eva.hours_per_point;
   const idealYAtXMax = hpp === null ? null : hpp * xMax;
@@ -116,48 +122,44 @@ function EstimateScatter({
     <div className="card">
       <div className="panelhead">
         <span className="t">
-          {eva.samples.length} task{eva.samples.length === 1 ? '' : 's'}
+          {n} task{n === 1 ? '' : 's'}
         </span>
         <span className="sub">
           {hpp === null ? 'no mean' : `~${hpp.toFixed(1)}h per point`}
         </span>
       </div>
       <div className="panelbody">
-        <svg
+        <div
           className="scatter"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
           role="img"
-          aria-label={`Estimate versus actual hours for ${eva.samples.length} tasks; up to ${xMax} points estimated, up to ${Math.round(yMax)} hours realised`}
+          aria-label={`Estimate versus actual hours for ${n} task${n === 1 ? '' : 's'}; up to ${xMax} points estimated, up to ${Math.round(yMax)} hours realised`}
           data-scatter
         >
-          <title>Estimate vs. actual effort</title>
-          {/* Frame + midline grid (drawn first, under the points). */}
-          <line className="ax" x1="0" y1="100" x2="100" y2="100" />
-          <line className="ax" x1="0" y1="0" x2="0" y2="100" />
-          <line className="grid" x1="0" y1="50" x2="100" y2="50" />
-          <line className="grid" x1="50" y1="0" x2="50" y2="100" />
-          {idealYAtXMax !== null && (
-            <line
-              className="ideal"
-              data-ideal
-              x1="0"
-              y1="100"
-              x2="100"
-              y2={100 - (Math.min(idealYAtXMax, yMax) / yMax) * 100}
-            />
-          )}
+          <svg className="scatter-grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <line className="ax" x1="0" y1="100" x2="100" y2="100" />
+            <line className="ax" x1="0" y1="0" x2="0" y2="100" />
+            <line className="grid" x1="0" y1="50" x2="100" y2="50" />
+            <line className="grid" x1="50" y1="0" x2="50" y2="100" />
+            {idealYAtXMax !== null && (
+              <line
+                className="ideal"
+                data-ideal
+                x1="0"
+                y1="100"
+                x2="100"
+                y2={100 - (Math.min(idealYAtXMax, yMax) / yMax) * 100}
+              />
+            )}
+          </svg>
           {points.map((p) => (
-            <circle
+            <i
               key={p.key}
               className={p.measured ? 'pt' : 'pt fallback'}
               data-src={p.measured ? 'run' : 'lead'}
-              cx={p.cx}
-              cy={p.cy}
-              r="1.4"
+              style={{ left: `${p.cx}%`, top: `${p.cy}%` }}
             />
           ))}
-        </svg>
+        </div>
         <div className="axlabels">
           <span>0</span>
           <span className="axname">estimate (points) →</span>
@@ -181,7 +183,7 @@ function EstimateScatter({
   );
 }
 
-/** One projected point in the 0..100 SVG box (y flipped: 0 = top). */
+/** One projected point in a 0..100 box, y flipped so 0 = top. */
 interface ScatterPoint {
   readonly key: string;
   readonly cx: number;
@@ -195,7 +197,7 @@ interface ScatterPlot {
 }
 
 /**
- * Project estimate/actual samples into a 0..100 SVG coordinate box. Pure and
+ * Project estimate/actual samples into a 0..100 coordinate box. Pure and
  * exported so the geometry is unit-testable without a DOM. Returns null when
  * there is nothing to plot. Axes start at 0 (a scatter of effort should not
  * hide the origin) and scale to the data's max, so any range stays legible.
