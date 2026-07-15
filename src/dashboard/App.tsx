@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
 import type { DashboardContract } from './contract.js';
+import { Graph } from './Graph.js';
 import { NeedsYou } from './NeedsYou.js';
 
 type LoadState =
@@ -61,12 +62,10 @@ export function App(): ReactElement {
       {/* Needs-you (291): a real panel over the shared contract. */}
       <NeedsYou inbox={data.inbox} />
 
-      {/* Remaining regions are placeholders the follow-up tasks replace. */}
-      <section aria-label="Dependency graph" data-panel="graph">
-        <h2>Graph</h2>
-        <p>{data.graph.nodes.length} nodes · critical path {data.graph.criticalPath.length}</p>
-      </section>
+      {/* Graph (290): connected subgraph + critical path in a pan/zoom viewport. */}
+      <Graph graph={data.graph} />
 
+      {/* Activity remains a placeholder the charts task (292) replaces. */}
       <section aria-label="Activity" data-panel="charts">
         <h2>Activity</h2>
         <p>{data.series.activityByDay.length} days of activity</p>
