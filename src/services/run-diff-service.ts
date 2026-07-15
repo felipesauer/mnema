@@ -110,8 +110,15 @@ export class RunDiffService {
     const knowledge: RunChange[] = [];
 
     // Chronological: the audit log is append-only, so ordering by event
-    // arrival reads as the session's timeline.
-    for (const event of this.audit.run({ run: runId })) {
+    // arrival reads as the session's timeline. Scope the read to the run's
+    // own time window so the query skips segments the run never touched
+    // instead of reading+parsing the whole chain to filter one run in memory
+    // (`until` omitted for an open run → reads through the current segment).
+    for (const event of this.audit.run({
+      run: runId,
+      since: run.startedAt,
+      until: run.endedAt ?? undefined,
+    })) {
       const change: RunChange = {
         at: event.at,
         kind: event.kind,
