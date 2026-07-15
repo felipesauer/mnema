@@ -4,6 +4,7 @@ import { Board } from './Board.js';
 import { Charts } from './Charts.js';
 import type { DashboardContract } from './contract.js';
 import { Graph } from './Graph.js';
+import { Metrics } from './Metrics.js';
 import {
   IconActivity,
   IconAgents,
@@ -74,7 +75,7 @@ const NAV: readonly NavGroup[] = [
   {
     label: 'Flow',
     items: [
-      { id: 'metrics', label: 'Metrics', Icon: IconMetrics },
+      { id: 'metrics', label: 'Metrics', Icon: IconMetrics, ready: true },
       { id: 'activity', label: 'Activity', Icon: IconActivity, ready: true },
     ],
   },
@@ -282,6 +283,16 @@ function Content({ view, data }: { view: string; data: DashboardContract }): Rea
             The connected subgraph and critical path; singletons summarised aside.
           </p>
           <Graph graph={data.graph} />
+        </>
+      );
+    case 'metrics':
+      return (
+        <>
+          <h1>Flow metrics</h1>
+          <p className="subtitle">
+            Throughput, lead/cycle time, reopen rate and velocity — from the audit log.
+          </p>
+          <Metrics flow={data.flow} />
         </>
       );
     case 'activity':
