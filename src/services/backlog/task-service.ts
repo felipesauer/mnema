@@ -9,11 +9,8 @@ import type { FieldSpec } from '../../domain/state-machine/workflow-meta-schema.
 import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { type ErrorIssue, fromZodIssues, type MnemaError } from '../../errors/mnema-error.js';
+import type { ITaskRepository, TaskFieldUpdates } from '../../ports/task-repository.port.js';
 import type { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
-import type {
-  TaskFieldUpdates,
-  TaskRepository,
-} from '../../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../../storage/sqlite/repositories/transition-repository.js';
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from '../integrity/audit-service.js';
@@ -93,7 +90,7 @@ export interface ListTasksFilter {
  */
 export class TaskService {
   constructor(
-    private readonly tasks: TaskRepository,
+    private readonly tasks: ITaskRepository,
     private readonly transitions: TransitionRepository,
     private readonly projects: ProjectRepository,
     private readonly stateMachine: StateMachine,
