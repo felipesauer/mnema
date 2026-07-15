@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
-
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Memory } from '../domain/entities/memory.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { hasInvocationMarkup } from '../domain/invocation-markup.js';
@@ -21,7 +21,6 @@ import {
 } from '../utils/mirror-layout.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import { readUserMemories, type SourcedMemory } from './user-knowledge.js';
 
 /**

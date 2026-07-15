@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Note, NoteKind } from '../domain/entities/note.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
@@ -7,7 +8,6 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
 import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Input for {@link NoteService.add}.

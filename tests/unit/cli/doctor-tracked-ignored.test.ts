@@ -48,7 +48,11 @@ describe('inspectTrackedIgnored', () => {
 
 describe('listTrackedFiles', () => {
   it('is a silent no-op (empty list) outside a git repo — never throws', () => {
-    const notARepo: GitCommandRunner = () => ({ status: 128, stdout: '', stderr: 'not a git repo' });
+    const notARepo: GitCommandRunner = () => ({
+      status: 128,
+      stdout: '',
+      stderr: 'not a git repo',
+    });
     expect(listTrackedFiles('/whatever', notARepo)).toEqual([]);
   });
 

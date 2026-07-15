@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Sprint } from '../domain/entities/sprint.js';
 import type { SprintMetric } from '../domain/entities/sprint-metric.js';
 import type { Task } from '../domain/entities/task.js';
@@ -13,7 +14,6 @@ import type { TaskRepository } from '../storage/sqlite/repositories/task-reposit
 import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import { isIso8601 } from '../utils/iso-date.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import type { RoadmapMirror } from './roadmap-mirror.js';
 import type { SyncService } from './sync-service.js';
 

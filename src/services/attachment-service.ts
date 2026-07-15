@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
-
+import { Err, Ok, type Result } from '../common/result.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
@@ -14,7 +14,6 @@ import type { DecisionRepository } from '../storage/sqlite/repositories/decision
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Input for {@link AttachmentService.attachToTask}.

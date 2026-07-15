@@ -127,7 +127,11 @@ export function ensureGitignore(
  * @param statePath - The configured state dir (e.g. `.mnema/state`)
  * @param auditPath - The configured audit dir (e.g. `.mnema/audit`)
  */
-export function managedBlockIgnores(relPath: string, statePath: string, auditPath: string): boolean {
+export function managedBlockIgnores(
+  relPath: string,
+  statePath: string,
+  auditPath: string,
+): boolean {
   const p = relPath.replace(/^\.\//, '');
   const stateDir = `${statePath.replace(/\/$/, '')}/`;
   if (p === '.mnema/config.local.json') return true;

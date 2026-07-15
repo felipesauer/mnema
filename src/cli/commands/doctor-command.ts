@@ -33,6 +33,7 @@ import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
+import { managedBlockIgnores } from '../../utils/gitignore.js';
 import {
   canonicalMirrorPath as buildMirrorPath,
   CURATED_MEMORY_SUBFOLDERS,
@@ -42,7 +43,6 @@ import {
   scopeFolder,
   skillOriginDir,
 } from '../../utils/mirror-layout.js';
-import { managedBlockIgnores } from '../../utils/gitignore.js';
 import { checkForUpdate, checkVersion, fetchLatestVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -1583,7 +1583,9 @@ export function inspectTrackedIgnored(
 ): DoctorCheck[] {
   const offenders = trackedFiles.filter((p) => managedBlockIgnores(p, statePath, auditPath)).sort();
   if (offenders.length === 0) {
-    return [{ name: 'no tracked ignored files', ok: true, detail: 'nothing tracked is now ignored' }];
+    return [
+      { name: 'no tracked ignored files', ok: true, detail: 'nothing tracked is now ignored' },
+    ];
   }
   return [
     {

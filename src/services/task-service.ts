@@ -1,3 +1,4 @@
+import { Err, Ok, type Result } from '../common/result.js';
 import type { Task } from '../domain/entities/task.js';
 import { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../domain/enums/task-state.js';
@@ -16,7 +17,6 @@ import type {
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { tryMutation } from '../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from './audit-service.js';
-import { Err, Ok, type Result } from '../common/result.js';
 import type { SyncService } from './sync-service.js';
 
 /** Matches a v4/v7 UUID so an assignee reference can be told apart from a handle. */
