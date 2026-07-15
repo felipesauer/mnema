@@ -166,7 +166,7 @@ $ mnema doctor
 | **Decisions (ADRs)** | proposed → accepted/rejected → superseded chains, each able to record which artefacts it impacts, with a shortcut to promote a note into a decision. |
 | **Traceability layer** | Trace work end to end: task↔task dependencies and readiness, a navigable **dependency graph** (cycle detection, ready/blocked frontier, critical path), epic/sprint completion coverage, acceptance-criteria evidence (commit refs verified against git), **file-collision** warnings (related tasks that touch the same files, inferred from commit evidence), a navigable **provenance chain** (observation/note → decision → memory, walkable in both directions), a read-only work-graph lint, wikilinks between artefacts, and ADR impact queries. |
 | **Queries & review flow** | An aggregate backlog query (counts + lists by state / epic / sprint / label / date / text), a per-run diff of everything one agent session changed, an **executive snapshot** of an epic or sprint (coverage + graph + inbox, rendered to Markdown or HTML), and an active inbox that surfaces review-SLA breaches, per-state **WIP-limit** breaches, and orphaned runs. |
-| **Live dashboard & metrics** | `mnema serve` — a dark, tabbed **local dashboard** (Overview / Flow / Activity / Graph, inline-SVG charts including a dependency node-link diagram) that streams each audit event over SSE in real time; loopback-only and self-contained, so nothing leaves your machine. `mnema metrics` — a local adoption report (time-to-first-done, feature activation, doctor use, skill adoption), derived from the trail with no telemetry. |
+| **Live dashboard & metrics** | `mnema serve` — a live, loopback-only **local dashboard** that streams each audit event as it lands (see [Live dashboard](#live-dashboard)). `mnema metrics` — a local adoption report (time-to-first-done, feature activation, doctor use, skill adoption), derived from the trail with no telemetry. |
 | **Full-text search** | Search across tasks, decisions, notes, skills, memories and observations — case- and accent-insensitive. |
 | **Attachments** | Files attached to a task or decision, deduplicated by content hash. |
 | **Skills, memories, observations** | Knowledge the agent records as it works (and humans curate) via MCP tools, mirrored to plain `.md` files so it travels with the repo (not semantic recall — see the note above). A skill can be **invocable** with **dynamic context** — read-only `mnema` commands whose live output (e.g. `mnema tasks ready`) is embedded when the skill is shown. A run-end **skill draft** is derived from the run's real audit trail rather than re-asked; skills carry a **version diff** with a per-version change rationale, and a quality loop flags a skill that preceded rework. Memories can be **archived** when stale and carry a typed **contradicts/obsoletes** relation; both skills and memories take an optional **scope**. User-level skills/memories under `~/.config/mnema/` merge in read-only, with the project always shadowing them. |
@@ -508,7 +508,7 @@ MCP tools. The commands group by what you're doing — run
 | `mnema audit verify [--verify-anchors]` | Verify the chain + attestation; with `--verify-anchors`, also check the temporal anchors (layer 3) online |
 | `mnema history --since=today` · `mnema watch` | Compact activity view; live tail of mutations. `mnema watch --git` also runs the opt-in, read-only git observer that links the in-progress task to its branch + commits |
 | `mnema inbox` | Tasks awaiting your review or blocked, plus review-SLA breaches |
-| `mnema serve` | Live local dashboard on `localhost` — dark, tabbed (Overview / Flow / Activity / Graph), pushes each audit event over SSE as it lands. Loopback-only, read-only, zero external assets |
+| `mnema serve` | Live local dashboard on `localhost`, read-only, loopback-only — see [Live dashboard](#live-dashboard) |
 | `mnema stats [--since]` | Derived flow metrics from the audit log (throughput, lead/cycle time, reopen rate, velocity) |
 | `mnema metrics [--json]` | Local adoption report (time-to-first-done, feature activation, doctor use, skill adoption) — derived locally, no telemetry |
 | `mnema eval [--since]` | Guided-vs-unguided flow-metrics diff from the audit log — correlational, not causal (`--json` for raw) |
@@ -560,6 +560,11 @@ recorded — no new collection. The server binds the loopback interface
 only and the page is self-contained (no external requests, no chart
 library), so **nothing leaves your machine**. It receives events from
 *any* process (an agent over MCP, a CLI mutation) by watching the trail.
+
+> The dashboard is being rebuilt into a richer single-page app as the
+> visualization foundation for real-time agent activity and per-project
+> flow. The loopback-only, offline-first, nothing-leaves-your-machine
+> posture above is a hard constraint the rebuild keeps.
 
 ## How the MCP loop works
 
