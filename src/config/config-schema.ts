@@ -284,6 +284,19 @@ export const ConfigSchema = z.object({
       wip_limits: z.record(z.string(), z.number().int().positive()).default({}),
     })
     .prefault({}),
+  // Terminal-mirror archival. DONE/CANCELED tasks keep a live SQLite row (the
+  // source of truth) and their `.md` mirror is never deleted, so a committed
+  // backlog accumulates every finished task forever. `mnema archive` (and
+  // `mnema doctor --archive-terminal`) is an OPT-IN step that MOVES — never
+  // deletes — the mirrors of terminal tasks older than the cutoff into
+  // `backlog/.archive/<STATE>/`, out of the active state folders. The dot-prefix
+  // is deliberate: every backlog scanner skips it, so an archived mirror is
+  // inert across `sync` and `doctor --prune-orphans` and the row stays intact.
+  archive: z
+    .object({
+      terminal_after_months: z.number().int().positive().default(6),
+    })
+    .prefault({}),
   // A task_claim reserves a task for an actor BEFORE work starts, closing
   // the window optimistic concurrency (updated_at CAS on transition) only
   // catches after the fact: two sessions reading the same READY task can

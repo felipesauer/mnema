@@ -14,6 +14,7 @@ import { printError } from '../../errors/error-printer.js';
 // truth. Imported for the doctor's own use and re-exported below to keep
 // existing `doctor-command` importers working.
 import { anchorStatusCheck } from '../../services/anchor/anchor-inspect.js';
+import { ARCHIVE_DIRNAME, type ArchiveResult } from '../../services/archive-service.js';
 import { buildContentAttestation } from '../../services/audit/attestation-cli.js';
 import { inspectAuditIntegrity } from '../../services/audit-integrity.js';
 import { defaultGitRunner, type GitCommandRunner } from '../../services/git-commit-service.js';
@@ -100,8 +101,12 @@ export class DoctorCommand {
         'Recovery: reclaim orphan attachment blobs in `state/attachments/` — files no attachment row (live or soft-deleted) references. Dry run unless `--yes` is given. Skips the regular doctor checks.',
       )
       .option(
+        '--archive-terminal',
+        'Recovery: move mirrors of DONE/CANCELED tasks older than `archive.terminal_after_months` out of the active state folders into backlog/.archive/ (never deletes, keeps the SQLite row). Dry-run unless combined with --yes. Skips the regular doctor checks.',
+      )
+      .option(
         '--yes',
-        'Apply destructive actions (e.g. --gc-attachments) instead of a dry run',
+        'Apply destructive actions (e.g. --gc-attachments / --archive-terminal) instead of a dry run',
         false,
       )
       .action(
@@ -110,10 +115,15 @@ export class DoctorCommand {
           readonly pruneOrphans?: boolean;
           readonly vacuum?: boolean;
           readonly gcAttachments?: boolean;
+          readonly archiveTerminal?: boolean;
           readonly yes?: boolean;
         }) => {
           if (options.vacuum === true) {
             const exit = await this.vacuum();
+            process.exit(exit);
+          }
+          if (options.archiveTerminal === true) {
+            const exit = await this.archiveTerminal(options.yes === true);
             process.exit(exit);
           }
           if (options.rebuildMirrors === true) {
@@ -410,6 +420,32 @@ export class DoctorCommand {
       }
     }).catch(() => {
       exit = ExitCode.State;
+    });
+    return exit;
+  }
+
+  /**
+   * Moves the mirrors of terminal (DONE/CANCELED) tasks older than
+   * `archive.terminal_after_months` out of their active state folders and into
+   * `backlog/.archive/<STATE>/`. Never deletes and never touches the SQLite
+   * row — the dot-prefixed folder keeps the moved file inert to every backlog
+   * scanner, so `mnema sync` neither resurrects nor removes it. Dry-run unless
+   * `apply` is true. Shares its output with `mnema archive` via
+   * {@link printArchiveResult}. Skips the regular doctor checks.
+   *
+   * @param apply - When true, actually move the mirrors (`--yes`)
+   * @returns Exit code (`0` on success, `3` if the context could not be opened)
+   */
+  private async archiveTerminal(apply: boolean): Promise<number> {
+    const { withCliContext } = await import('../cli-context.js');
+    let exit = ExitCode.Success;
+    await withCliContext(({ container, config }) => {
+      const result = container.archive.archiveTerminalMirrors({
+        months: config.archive.terminal_after_months,
+        dryRun: !apply,
+      });
+      printArchiveResult(result, config.archive.terminal_after_months);
+      exit = ExitCode.Success;
     });
     return exit;
   }
@@ -1722,4 +1758,36 @@ function printMirrorHints(checks: readonly DoctorCheck[]): void {
   for (const hint of mirrorHints(checks)) {
     process.stdout.write(`${pc.dim('hint:')} ${hint}\n`);
   }
+}
+
+/**
+ * Renders an {@link ArchiveResult} identically for both opt-in surfaces
+ * (`mnema doctor --archive-terminal` and `mnema archive`), so the two report
+ * the same thing. A dry run lists the mirrors that WOULD move and how to apply;
+ * a real run reports the moves performed. Exported so `mnema archive` reuses it
+ * rather than re-deriving the wording. Uses `pc` colours like the checklist.
+ *
+ * @param result - The plan (dry run) or the moves performed
+ * @param months - The configured cutoff, echoed so the boundary is explicit
+ */
+export function printArchiveResult(result: ArchiveResult, months: number): void {
+  if (result.archived.length === 0) {
+    process.stdout.write(
+      `${pc.green('✓')} no terminal task mirrors older than ${months} month(s) to archive\n`,
+    );
+    return;
+  }
+  const lines = result.archived.map((a) => `${a.key} (${a.state})`).join(', ');
+  if (result.dryRun) {
+    process.stdout.write(
+      `${pc.yellow('⚠')} ${result.archived.length} terminal task mirror(s) older than ` +
+        `${months} month(s) would move to ${ARCHIVE_DIRNAME}/: ${lines}\n` +
+        `${pc.dim('run `mnema archive --yes` (or `mnema doctor --archive-terminal --yes`) to move them — this was a dry run')}\n`,
+    );
+    return;
+  }
+  process.stdout.write(
+    `${pc.green('✓')} archived ${result.movedCount} terminal task mirror(s) to ${ARCHIVE_DIRNAME}/: ${lines}\n` +
+      `${pc.dim('the SQLite rows are untouched; commit the moved files with your backlog')}\n`,
+  );
 }
