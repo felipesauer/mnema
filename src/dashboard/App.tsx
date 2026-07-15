@@ -21,6 +21,7 @@ import {
   IconTheme,
 } from './icons.js';
 import { NeedsYou } from './NeedsYou.js';
+import { Overview } from './Overview.js';
 
 type LoadState =
   | { status: 'loading' }
@@ -51,7 +52,7 @@ interface NavGroup {
 }
 
 const NAV: readonly NavGroup[] = [
-  { items: [{ id: 'overview', label: 'Overview', Icon: IconOverview }] },
+  { items: [{ id: 'overview', label: 'Overview', Icon: IconOverview, ready: true }] },
   {
     label: 'Work',
     items: [
@@ -94,7 +95,7 @@ const NAV: readonly NavGroup[] = [
 
 export function App(): ReactElement {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
-  const [view, setView] = useState('needs');
+  const [view, setView] = useState('overview');
 
   useEffect(() => {
     let cancelled = false;
@@ -243,6 +244,8 @@ function ComingSoon({ label }: { label: string }): ReactElement {
 
 function Content({ view, data }: { view: string; data: DashboardContract }): ReactElement {
   switch (view) {
+    case 'overview':
+      return <Overview data={data} />;
     case 'needs':
       return (
         <>

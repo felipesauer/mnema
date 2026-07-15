@@ -36,11 +36,48 @@ export interface DashboardGraph {
   readonly criticalPath: readonly string[];
 }
 
+/** A duration summary (mirrors the server DurationSummary). */
+export interface DurationSummary {
+  readonly count: number;
+  readonly avg_hours: number | null;
+  readonly median_hours: number | null;
+  readonly max_hours: number | null;
+}
+
+/** Flow metrics (mirrors the server FlowMetrics; only the fields the UI reads). */
+export interface FlowMetrics {
+  readonly throughput: number;
+  readonly lead_time: DurationSummary;
+  readonly cycle_time: DurationSummary;
+  readonly reopen: {
+    readonly reopened_tasks: number;
+    readonly completed_tasks: number;
+    readonly rate: number;
+  };
+  readonly velocity: ReadonlyArray<{
+    readonly sprint_key: string;
+    readonly sprint_name: string;
+    readonly completed_points: number;
+    readonly completed_tasks: number;
+  }>;
+}
+
+/** One recent-activity row (mirrors the server RecentEvent). */
+export interface RecentEvent {
+  readonly at: string;
+  readonly kind: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly key?: string;
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;
   readonly window: string;
   readonly schemaDrift: boolean;
+  readonly flow: FlowMetrics;
+  readonly recent: readonly RecentEvent[];
   readonly integrity: ReadonlyArray<{ name: string; ok: boolean; detail: string }>;
   readonly inbox: {
     readonly awaitingReview: ReadonlyArray<{ key: string; title: string; state: string }>;

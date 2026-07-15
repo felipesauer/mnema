@@ -455,6 +455,9 @@ h1 {
 .g2 {
   grid-template-columns: repeat(2, 1fr);
 }
+.g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
 .g-2-1 {
   grid-template-columns: 1.4fr 1fr;
   align-items: start;
@@ -462,6 +465,7 @@ h1 {
 @media (max-width: 940px) {
   .g3,
   .g2,
+  .g4,
   .g-2-1 {
     grid-template-columns: 1fr;
   }
@@ -682,6 +686,97 @@ h1 {
   columns: 3;
   font-family: var(--mono);
   font-size: 11px;
+}
+
+/* Stat tiles (Overview) */
+.tile {
+  padding: 14px 15px;
+}
+.tile .l {
+  font-size: 11.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tile .v {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tile .v svg {
+  stroke: var(--ok);
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tile .d {
+  font-size: 11.5px;
+  margin-top: 3px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.tile .d.up {
+  color: var(--ok);
+}
+.tile .d.down {
+  color: var(--bad);
+}
+
+/* Activity timeline */
+.tl {
+  display: flex;
+  flex-direction: column;
+}
+.tl .ev {
+  display: grid;
+  grid-template-columns: 60px 16px 1fr;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12px;
+  align-items: baseline;
+}
+.tl .ev:last-child {
+  border-bottom: none;
+}
+.tl .ev .tm {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.tl .ev .rail-dot {
+  position: relative;
+}
+.tl .ev .rail-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: absolute;
+  left: 4px;
+  top: 5px;
+}
+.tl .ev .rail-dot.w::before {
+  background: var(--warn);
+}
+.tl .ev .rail-dot.g::before {
+  background: var(--ok);
+}
+.tl .ev .k {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg);
+}
+.tl .ev .who {
+  color: var(--muted);
 }
 
 /* A module not yet built (placeholder for the later slices) */
