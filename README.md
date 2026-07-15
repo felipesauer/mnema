@@ -441,7 +441,9 @@ verifying the full chain (`mnema doctor`) takes single-digit
 milliseconds and a mirror rebuild (`mnema sync`) well under a second —
 measured by `pnpm bench:scale`. The `audit_strategy` and `audit_retention_months`
 config keys are reserved for a future compaction pass (compressing or
-pruning old months); they are accepted today but not yet enforced.
+pruning old months); they are accepted today but not yet enforced — the
+chain is append-only, so nothing is dropped regardless of their value, and
+`mnema doctor` warns if they're set expecting otherwise.
 
 ## Common CLI commands
 

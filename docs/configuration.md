@@ -28,8 +28,8 @@ project config, key by key.
 | `mnema_version` | semver range | required | The Mnema version range this project expects; `mnema doctor` warns on a mismatch. |
 | `workflow` | string | `"default"` | Which workflow preset drives task states/gates (`default`, `jira-classic`, `kanban`, `lean`, or a custom file under `paths.workflows`). |
 | `mode` | `"single"` | `"single"` | Reserved for a future multi-project layout. Only `single` is accepted, so you can't quietly set a value that does nothing. |
-| `audit_strategy` | `"full" \| "recent" \| "local"` | `"recent"` | How much audit history is kept hot vs. archived. *Reserved for a future compaction pass — accepted and validated today, not yet enforced.* |
-| `audit_retention_months` | positive int | `12` | How many months of audit history to retain — one year balances a useful trail against unbounded growth. *Reserved for a future compaction pass — accepted and validated today, not yet enforced.* |
+| `audit_strategy` | `"full" \| "recent" \| "local"` | `"recent"` | How much audit history is kept hot vs. archived. **Reserved and not yet enforced** — the audit chain is append-only, so nothing is pruned regardless of this value. Enforcing it means compacting old months behind a re-baselined chain head (a destructive rewrite of the source of truth), tracked as its own epic. `mnema doctor` warns when this is set to anything but `"full"` so an inert setting isn't mistaken for active retention. |
+| `audit_retention_months` | positive int | `12` | Intended retention window once compaction ships. **Reserved and not yet enforced** (see `audit_strategy`) — no old history is dropped today. |
 
 ## `project`
 
