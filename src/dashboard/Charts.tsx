@@ -24,10 +24,17 @@ const MAX_ROWS = 12;
 export function Charts({ series }: { series: DashboardContract['series'] }): ReactElement {
   return (
     <section aria-label="Activity" data-panel="charts">
-      <h2>Activity</h2>
-      <BarChart title="Activity by day" testid="activity-by-day" data={series.activityByDay} />
-      <BarChart title="Throughput by day" testid="throughput-by-day" data={series.throughputByDay} />
-      <BarChart title="Events by kind" testid="events-by-kind" data={series.eventsByKind} />
+      <div className="grid g2">
+        <BarChart title="Events by kind" testid="events-by-kind" data={series.eventsByKind} />
+        <BarChart title="Activity by day" testid="activity-by-day" data={series.activityByDay} />
+      </div>
+      <div style={{ marginTop: '14px' }}>
+        <BarChart
+          title="Throughput by day"
+          testid="throughput-by-day"
+          data={series.throughputByDay}
+        />
+      </div>
     </section>
   );
 }
@@ -43,9 +50,15 @@ function BarChart({
 }): ReactElement {
   if (data.length === 0) {
     return (
-      <div data-chart={testid}>
-        <h3>{title}</h3>
-        <p data-empty="true">No data in this window.</p>
+      <div className="card" data-chart={testid}>
+        <div className="panelhead">
+          <span className="t">{title}</span>
+        </div>
+        <div className="panelbody">
+          <p className="q-empty" data-empty="true">
+            No data in this window.
+          </p>
+        </div>
       </div>
     );
   }
@@ -58,28 +71,39 @@ function BarChart({
   const max = Math.max(...shown.map((d) => d.value), 1);
 
   return (
-    <div data-chart={testid}>
-      <h3>{title}</h3>
-      <ul data-bars={testid}>
-        {shown.map((d) => (
-          <li key={d.label} data-bar={d.label}>
-            <span data-label>{d.label}</span>
-            <span
-              data-value
-              role="img"
-              aria-label={`${d.label}: ${d.value}`}
-              style={{
-                display: 'inline-block',
-                width: `${(d.value / max) * 100}%`,
-                minWidth: 1,
-                background: 'currentColor',
-              }}
-            />
-            <span data-num>{d.value}</span>
-          </li>
-        ))}
-      </ul>
-      {hidden > 0 && <p data-more={testid}>+{hidden} more</p>}
+    <div className="card" data-chart={testid}>
+      <div className="panelhead">
+        <span className="t">{title}</span>
+        <span className="sub">{sorted.length} series</span>
+      </div>
+      <div className="panelbody">
+        <div className="bars" data-bars={testid}>
+          {shown.map((d) => (
+            <div className="barrow" key={d.label} data-bar={d.label}>
+              <span className="lbl" data-label>
+                {d.label}
+              </span>
+              <span className="track">
+                <span
+                  className="fill"
+                  data-value
+                  role="img"
+                  aria-label={`${d.label}: ${d.value}`}
+                  style={{ width: `${(d.value / max) * 100}%` }}
+                />
+              </span>
+              <span className="num" data-num>
+                {d.value}
+              </span>
+            </div>
+          ))}
+        </div>
+        {hidden > 0 && (
+          <p className="more" data-more={testid}>
+            +{hidden} more
+          </p>
+        )}
+      </div>
     </div>
   );
 }

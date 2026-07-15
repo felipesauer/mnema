@@ -27,44 +27,61 @@ export function Graph({ graph }: { graph: DashboardGraph }): ReactElement {
 
   return (
     <section aria-label="Dependency graph" data-panel="graph">
-      <h2>Graph</h2>
-      <p>
-        <span data-count="connected">{connected.length}</span> connected ·{' '}
-        <span data-count="singletons">{singletons.length}</span> unconnected ·{' '}
-        <span data-count="critical-path">{graph.criticalPath.length}</span> on critical path
-        {graph.cycles.length > 0 ? (
-          <>
-            {' · '}
-            <span data-count="cycles">{graph.cycles.length}</span> cycle(s)
-          </>
-        ) : null}
-      </p>
+      <div className="card">
+        <div className="panelhead">
+          <span className="t">Connected subgraph</span>
+          <span className="sub">
+            <span data-count="connected">{connected.length}</span> connected ·{' '}
+            <span data-count="singletons">{singletons.length}</span> aside ·{' '}
+            crit <span data-count="critical-path">{graph.criticalPath.length}</span>
+            {graph.cycles.length > 0 ? (
+              <>
+                {' · '}
+                <span data-count="cycles">{graph.cycles.length}</span> cycle(s)
+              </>
+            ) : null}
+          </span>
+        </div>
+        <div className="panelbody">
+          {connected.length === 0 ? (
+            <p className="q-empty" data-empty="true">
+              No dependency edges yet — nothing to plot.
+            </p>
+          ) : (
+            <>
+              <Viewport>
+                <GraphSvg
+                  connected={connected}
+                  positions={positions}
+                  depthOf={depthOf}
+                  criticalPath={criticalPath}
+                />
+              </Viewport>
+              <div className="glegend">
+                <span>
+                  <i className="crit" /> critical path
+                </span>
+                <span>
+                  <i /> blocks edge
+                </span>
+              </div>
+            </>
+          )}
 
-      {connected.length === 0 ? (
-        <p data-empty="true">No dependency edges yet — nothing to plot.</p>
-      ) : (
-        <Viewport>
-          <GraphSvg
-            connected={connected}
-            positions={positions}
-            depthOf={depthOf}
-            criticalPath={criticalPath}
-          />
-        </Viewport>
-      )}
-
-      {singletons.length > 0 && (
-        <details data-aside="singletons">
-          <summary>{singletons.length} unconnected task(s)</summary>
-          <ul>
-            {singletons.map((n) => (
-              <li key={n.key}>
-                {n.key} · {n.state}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+          {singletons.length > 0 && (
+            <details className="gaside" data-aside="singletons">
+              <summary>{singletons.length} unconnected task(s)</summary>
+              <ul>
+                {singletons.map((n) => (
+                  <li key={n.key}>
+                    {n.key} · {n.state}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -141,8 +158,8 @@ function Viewport({ children }: { children: ReactElement }): ReactElement {
 
   return (
     <div
+      className="gcanvas"
       data-viewport="graph"
-      style={{ overflow: 'hidden', border: '1px solid currentColor', height: 420, cursor: 'grab' }}
       onWheel={(e) => {
         e.preventDefault();
         setScale((s) => Math.min(4, Math.max(0.2, s * (e.deltaY < 0 ? 1.1 : 0.9))));
@@ -163,6 +180,7 @@ function Viewport({ children }: { children: ReactElement }): ReactElement {
       <svg width="100%" height="100%" role="img" aria-label="dependency graph viewport">
         <g transform={`translate(${tx},${ty}) scale(${scale})`}>{children}</g>
       </svg>
+      <span className="hint">drag to pan · scroll to zoom</span>
     </div>
   );
 }
