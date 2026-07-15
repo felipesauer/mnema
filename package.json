@@ -29,7 +29,7 @@
     "workflows/",
     "CHANGELOG.md"
   ],
-  "homepage": "https://github.com/felipesauer/mnema#readme",
+  "homepage": "https://felipesauer.github.io/mnema/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/felipesauer/mnema.git"

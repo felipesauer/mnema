@@ -78,8 +78,8 @@ function BarChart({
       </div>
       <div className="panelbody">
         <div className="bars" data-bars={testid}>
-          {shown.map((d) => (
-            <div className="barrow" key={d.label} data-bar={d.label}>
+          {shown.map((d, i) => (
+            <div className="barrow" key={`${i}-${d.label}`} data-bar={d.label}>
               <span className="lbl" data-label>
                 {d.label}
               </span>
