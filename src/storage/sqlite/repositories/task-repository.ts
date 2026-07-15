@@ -1,5 +1,5 @@
 import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
-import type { TaskState } from '../../../domain/enums/task-state.js';
+import { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
 import type { SqliteAdapter } from '../sqlite-adapter.js';
@@ -173,6 +173,34 @@ export class TaskRepository {
           ORDER BY key`,
       )
       .all(state) as TaskRow[];
+    return rows.map(rowToTask);
+  }
+
+  /**
+   * Lists active tasks in a terminal state (DONE/CANCELED) whose
+   * `updated_at` is strictly older than `cutoff`, ordered by key. Backs the
+   * opt-in terminal-mirror archival: DONE/CANCELED rows are never deleted
+   * (deletion is soft-delete-gated), so their mirrors accumulate — this is
+   * the age-and-state selection that decides which mirrors are old enough to
+   * move out of the active state folders.
+   *
+   * `updated_at` is the age signal (not `closed_at`, which is declared but
+   * never written for tasks). Comparison is lexicographic on the ISO8601
+   * string, which is a valid chronological ordering for the `Z`-suffixed,
+   * fixed-width timestamps {@link isoNow} produces.
+   *
+   * @param cutoff - ISO8601 instant; rows with `updated_at < cutoff` match
+   * @returns Matching terminal tasks (possibly empty), ordered by key
+   */
+  findTerminalUpdatedBefore(cutoff: string): Task[] {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare(
+        `SELECT * FROM tasks
+          WHERE state IN (?, ?) AND updated_at < ? AND deleted_at IS NULL
+          ORDER BY key`,
+      )
+      .all(TaskState.Done, TaskState.Canceled, cutoff) as TaskRow[];
     return rows.map(rowToTask);
   }
 

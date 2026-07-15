@@ -145,6 +145,23 @@ limbo where a transition waits on a human that never comes. `mnema inbox` and
 | `aging.sla_days` | record<state, positive int> | `{}` | Per-state review SLA in days (e.g. `{ "IN_REVIEW": 2 }`); a state without an entry falls back to `stale_after_days`. |
 | `aging.wip_limits` | record<state, positive int> | `{}` | Per-state work-in-progress limit; a state over its limit is a WIP breach. A state without an entry is uncapped. |
 
+## `archive`
+
+DONE and CANCELED are live states with live SQLite rows, so their `.md` mirrors
+are never deleted (deletion is gated on the row being gone) and a committed
+backlog accrues every finished task forever. `mnema archive` — and the same
+logic via `mnema doctor --archive-terminal` — is an **opt-in** step that
+**moves** (never deletes) the mirrors of terminal tasks older than the cutoff
+out of the active state folders into `backlog/.archive/<STATE>/`. The
+dot-prefixed archive folder is inert to every backlog scanner (`sync`,
+`doctor --prune-orphans`, drift), so a moved mirror survives a later rebuild and
+the SQLite row (the source of truth) is untouched. Both surfaces are a dry run
+until `--yes`. Age is measured by the task's `updated_at`.
+
+| Key | Type | Default | Why |
+|---|---|---|---|
+| `archive.terminal_after_months` | positive int | `6` | A DONE/CANCELED task whose `updated_at` is older than this many months has its mirror moved to `backlog/.archive/<STATE>/` by `mnema archive --yes`. Raise it to keep finished tasks visible longer; lower it to prune the committed backlog sooner. |
+
 ## `claims`
 
 | Key | Type | Default | Why |

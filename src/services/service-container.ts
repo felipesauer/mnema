@@ -39,6 +39,7 @@ import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent-plan-service.js';
 import { AgentRunService } from './agent-run-service.js';
 import { buildAnchorScheduler } from './anchor/anchor-factory.js';
+import { ArchiveService } from './archive-service.js';
 import { AttachmentService } from './attachment-service.js';
 import { autoAttest, chainHealthyForAttest } from './audit/attestation-cli.js';
 import { inspectAuditIntegrity } from './audit-integrity.js';
@@ -137,6 +138,7 @@ export interface ServiceContainer {
   readonly auditQuery: AuditQuery;
   readonly sync: SyncService;
   readonly syncRebuild: SyncRebuild;
+  readonly archive: ArchiveService;
   readonly agentRun: AgentRunService;
   readonly orphanRun: OrphanRunService;
   readonly agentPlan: AgentPlanService;
@@ -474,6 +476,11 @@ export function createServiceContainer(
     audit,
   );
 
+  const archiveService = new ArchiveService(tasks, {
+    projectRoot,
+    backlogDir: config.paths.backlog,
+  });
+
   const taskService = new TaskService(
     tasks,
     transitions,
@@ -712,6 +719,7 @@ export function createServiceContainer(
     auditQuery,
     sync,
     syncRebuild,
+    archive: archiveService,
     agentRun: agentRunService,
     orphanRun: orphanRunService,
     agentPlan: agentPlanService,
