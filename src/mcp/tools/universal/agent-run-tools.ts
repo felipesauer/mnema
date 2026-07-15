@@ -139,7 +139,10 @@ export class AgentRunTools {
         // had near-zero adoption when the nudge was only a reminder; a
         // concrete starting point lowers the cost of recording one.
         const skillDraft = shouldNudge
-          ? buildSkillDraft(ended.value.goal, this.runSteps(runId))
+          ? buildSkillDraft(
+              ended.value.goal,
+              this.runSteps(runId, ended.value.startedAt, ended.value.endedAt),
+            )
           : undefined;
 
         return ok({
@@ -226,9 +229,15 @@ export class AgentRunTools {
    * reads as a procedure, not a log. Feeds {@link buildSkillDraft} so the
    * draft's steps are what the agent actually did, not a placeholder.
    */
-  private runSteps(runId: string): RunStep[] {
+  private runSteps(runId: string, startedAt: string, endedAt: string | null): RunStep[] {
     const steps: RunStep[] = [];
-    for (const event of this.auditQuery.run({ run: runId })) {
+    // Scope the read to the run's own window so the query skips segments the
+    // run never touched instead of reading the whole chain to filter one run.
+    for (const event of this.auditQuery.run({
+      run: runId,
+      since: startedAt,
+      until: endedAt ?? undefined,
+    })) {
       const step = stepForEvent(event.kind, event.data as Record<string, unknown>);
       if (step !== null) steps.push(step);
     }
