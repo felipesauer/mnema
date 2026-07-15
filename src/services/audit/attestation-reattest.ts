@@ -1,7 +1,171 @@
 import { type AttestationArtifact, verifyArtifact } from './attestation-artifact.js';
 import type { AttestationSigner } from './attestation-emitter.js';
-import { emitAttestation } from './attestation-emitter.js';
+import { emitAttestation, emitAttestationFromEvents } from './attestation-emitter.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
+
+/**
+ * Inputs for {@link planReattestIncremental}. Unlike {@link ReattestInput},
+ * `walk` here covers ONLY the tail `[coveredTo, headCount)` (with absolute
+ * indices), and `headCount` carries the whole-chain length separately — the
+ * caller obtains it from `audit_state.event_count`, not by walking the log.
+ */
+export interface IncrementalReattestInput {
+  /** The chained tail on disk, indexed absolutely (see `walkChainedTail`). */
+  readonly walk: AuditChainWalk;
+  /** On-disk chained count (the head high-water mark). */
+  readonly headCount: number;
+  /** Existing committed `.att`s (any order; sorted internally). */
+  readonly existing: readonly AttestationArtifact[];
+  /** The signer for NEW batches, or `null` when no identity is resolvable. */
+  readonly signer: AttestationSigner | null;
+  /** The committed `sha256(secret)` id, or `null` when not committed. */
+  readonly projectHmacId: string | null;
+  /** Whether the whole on-disk chain is sound enough to attest. */
+  readonly chainHealthy: boolean;
+  /** Highest `event_count` under a valid signed checkpoint, or `null`. */
+  readonly signedEventCountAt: number | null;
+  /** Batch size for the tail; defaults to {@link DEFAULT_BATCH}. */
+  readonly batchSize?: number;
+}
+
+/**
+ * The incremental counterpart to {@link planReattest} for the auto-attestation
+ * hot path. It attests ONLY the tail `[coveredTo, headCount)` — where
+ * `coveredTo` is the highest `to` of the existing contiguous `.att` prefix —
+ * instead of re-walking and re-verifying the whole chain every checkpoint.
+ *
+ * Same fail-closed refusals as {@link planReattest} for everything that bears
+ * on the batch being signed:
+ *
+ * - `chainHealthy` false — the whole-chain integrity check (resolved by the
+ *   caller) failed, so an interior tamper is already caught and we refuse;
+ * - malformed / unhashed lines IN THE TAIL — a corrupt line inside the batch
+ *   we would sign;
+ * - the disk chain retreated below a signed checkpoint (truncation);
+ * - the existing `.att` set is discontiguous, overlapping, or reaches past the
+ *   on-disk head — a structurally inconsistent committed set;
+ * - there is a tail to emit but no resolvable signer / project fingerprint.
+ *
+ * It deliberately does NOT re-verify the CRYPTO of every already-committed
+ * `.att` on each checkpoint — that is the O(n) cost being removed. A tampered
+ * committed `.att` is still caught at verify time (`buildContentAttestation`,
+ * `audit verify`, `doctor`) and by the manual `reattest`, which keeps the full
+ * walk. The emitted artifacts are byte-identical to what the full-walk plan
+ * would emit for the same tail, so verifying the whole chain afterwards yields
+ * the identical verdict.
+ *
+ * @param input - The tail walk, head count, existing artifacts, and signals
+ * @returns The plan to apply (emit batches), or a structured refusal
+ */
+export function planReattestIncremental(input: IncrementalReattestInput): ReattestPlan {
+  const { walk, headCount, existing, signer, projectHmacId } = input;
+
+  if (!input.chainHealthy) {
+    return {
+      ok: false,
+      reason: 'on-disk chain is not internally consistent — reattesting would hide tampering',
+    };
+  }
+  if (walk.malformedLines > 0) {
+    return {
+      ok: false,
+      reason: `${walk.malformedLines} unparseable line(s) in the tail — resolve them before reattesting`,
+    };
+  }
+  if (walk.unhashedLines > 0) {
+    return {
+      ok: false,
+      reason: `${walk.unhashedLines} chained line(s) in the tail have no hash — the chain is malformed; resolve before reattesting`,
+    };
+  }
+  if (headCount === 0) {
+    return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to attest' };
+  }
+  if (input.signedEventCountAt !== null && headCount < input.signedEventCountAt) {
+    return {
+      ok: false,
+      reason: `a signed checkpoint attests event ${input.signedEventCountAt}, but the disk chain holds only ${headCount} — this looks like a truncation, not missing attestations`,
+    };
+  }
+
+  // Structural validation of the committed `.att` prefix: it must be a
+  // gap-free, non-overlapping prefix that does not reach past the on-disk head.
+  // This is the same contiguity/overlap/in-bounds guard the full planner runs,
+  // minus the per-artifact crypto re-verification (deferred to verify time).
+  const sorted = [...existing].sort((a, b) => a.from - b.from);
+  let coveredTo = 0;
+  for (const art of sorted) {
+    if (art.from !== coveredTo) {
+      return {
+        ok: false,
+        reason: `committed attestations are discontiguous: expected a batch starting at ${coveredTo}, found [${art.from}, ${art.to})`,
+      };
+    }
+    if (art.to > headCount) {
+      return {
+        ok: false,
+        reason: `attestation [${art.from}, ${art.to}) covers events not present on disk (chain holds ${headCount})`,
+      };
+    }
+    coveredTo = art.to;
+  }
+
+  const toEmit: PlannedBatch[] = [];
+  const artifacts: AttestationArtifact[] = [];
+  if (coveredTo < headCount) {
+    if (signer === null) {
+      return {
+        ok: false,
+        reason:
+          'events are unattested but no signing identity is resolvable — configure an identity (mnema identity set) before reattesting',
+      };
+    }
+    if (projectHmacId === null) {
+      return {
+        ok: false,
+        reason:
+          'no committed project fingerprint (.mnema/keys/project.hmac-id) to bind the attestation to',
+      };
+    }
+    // The tail walk must actually hold the events we are about to slice. If it
+    // does not reach `coveredTo`, the head count and disk disagree — refuse
+    // rather than emit over a short read.
+    const firstTail = walk.chained[0];
+    const firstTailIndex = firstTail === undefined ? headCount : firstTail.index;
+    if (firstTailIndex > coveredTo) {
+      return {
+        ok: false,
+        reason: `tail walk starts at ${firstTailIndex} but the unattested batch begins at ${coveredTo} — refusing to emit over a short read`,
+      };
+    }
+    // Index the tail events by their absolute chained index for O(1) slicing.
+    const byIndex = new Map<number, AuditChainWalk['chained'][number]['event']>();
+    for (const c of walk.chained) byIndex.set(c.index, c.event);
+    const batchSize = input.batchSize ?? DEFAULT_BATCH;
+    try {
+      for (let from = coveredTo; from < headCount; from += batchSize) {
+        const to = Math.min(from + batchSize, headCount);
+        const events: AuditChainWalk['chained'][number]['event'][] = [];
+        for (let i = from; i < to; i += 1) {
+          const ev = byIndex.get(i);
+          if (ev === undefined) {
+            return {
+              ok: false,
+              reason: `tail walk is missing event ${i} for batch [${from}, ${to}) — refusing to emit over a short read`,
+            };
+          }
+          events.push(ev);
+        }
+        artifacts.push(emitAttestationFromEvents(events, from, to, signer, projectHmacId));
+        toEmit.push({ from, to, action: 'emit', signerActor: signer.actor });
+      }
+    } catch (error) {
+      return { ok: false, reason: `failed to emit attestation: ${(error as Error).message}` };
+    }
+  }
+
+  return { ok: true, planned: toEmit, artifacts };
+}
 
 /**
  * Default batch size a fresh attestation covers when backfilling, used when
