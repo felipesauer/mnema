@@ -177,7 +177,9 @@ doctor` verifies layers 1–2 offline on every run:
   (the `.pub` is committed so any clone verifies, and a signed checkpoint
   pins the length against rollback). A **content attestation** (opt-in,
   committed `.att` files) additionally lets *anyone* — a public clone
-  with no secret — recompute the covered root and check the signature.
+  with no secret — recompute the covered root and check the signature;
+  `mnema audit verify` **never shows green beyond the last attestation**,
+  so an unattested tail is never mistaken for verified.
 - **Layer 3 — temporal anchoring (opt-in, default `none`).** A pluggable
   provider (`git-signed`, `rfc3161`) stamps the signed head into external,
   independently verifiable history, off the write path and fail-open —
