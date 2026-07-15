@@ -41,6 +41,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Typecheck the dashboard SPA
+        run: pnpm typecheck:spa
+
+      - name: Verify the SPA bundle (offline-first + size budget)
+        run: pnpm verify:spa
+
       - name: Test
         run: pnpm test
 
