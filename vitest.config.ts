@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     environment: 'node',
     // Redirect $HOME to a per-process sandbox so anything resolving the
     // user-level dir (~/.config/mnema: project HMAC secret, hook
