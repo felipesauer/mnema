@@ -6,7 +6,7 @@ import type { SprintRepository } from '../storage/sqlite/repositories/sprint-rep
 import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { type CommandRunner, defaultRunner } from './github-pr-service.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /** What the collision scan is scoped to. */
 export type CollisionScope =

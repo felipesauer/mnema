@@ -21,7 +21,7 @@ import {
 } from '../utils/mirror-layout.js';
 import type { AuditService } from './audit-service.js';
 import type { IdentityService } from './identity-service.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 import { readUserMemories, type SourcedMemory } from './user-knowledge.js';
 
 /**

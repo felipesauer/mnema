@@ -1,7 +1,7 @@
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Entity kinds searchable via the unified FTS5 index.

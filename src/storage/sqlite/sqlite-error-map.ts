@@ -1,6 +1,6 @@
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import { Err, Ok, type Result } from '../../services/result.js';
+import { Err, Ok, type Result } from '../../common/result.js';
 
 /**
  * Translates an unknown thrown value into a structured {@link MnemaError}

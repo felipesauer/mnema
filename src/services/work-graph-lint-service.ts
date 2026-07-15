@@ -9,7 +9,7 @@ import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 import type { AuditQuery } from './audit-query.js';
-import { Err, Ok, type Result } from './result.js';
+import { Err, Ok, type Result } from '../common/result.js';
 
 /**
  * Severity of a work-graph lint diagnostic. Mirrors the skill-lint
