@@ -662,4 +662,45 @@ mnema:
       fresh.close();
     }
   });
+
+  it('preserves a closed epic created_at + closed_at across a fresh-clone rebuild', () => {
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Delivered epic',
+      description: 'closed and re-cloned',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    const closed = container.epic.close({ epicKey: key, actor: 'daniel' });
+    expect(closed.ok).toBe(true);
+    if (!closed.ok) return;
+
+    const before = container.epic.show(key);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    const { createdAt, closedAt, state } = before.value.epic;
+    // Guard the assertion is meaningful: a closed epic has both timestamps set.
+    expect(state).toBe('CLOSED');
+    expect(closedAt).not.toBeNull();
+
+    container.sync.rebuildMirrors();
+    container.epic.rebuildMirrors('TEST');
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.epic.show(key);
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      // The committed timestamps survive — not reset to the clone's "now".
+      expect(after.value.epic.state).toBe('CLOSED');
+      expect(after.value.epic.createdAt).toBe(createdAt);
+      expect(after.value.epic.closedAt).toBe(closedAt);
+    } finally {
+      fresh.close();
+    }
+  });
 });

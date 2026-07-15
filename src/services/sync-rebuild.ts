@@ -369,6 +369,9 @@ export class SyncRebuild {
             estimate: readNumber(data, 'estimate'),
             contextBudget: readNumber(data, 'context_budget'),
             reopenCount: readNumber(data, 'reopen_count') ?? 0,
+            createdAt: readString(data, 'created_at') ?? undefined,
+            updatedAt: readString(data, 'updated_at') ?? undefined,
+            closedAt: readString(data, 'closed_at'),
             priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,
@@ -775,14 +778,19 @@ export class SyncRebuild {
     const state = readEnum(data, 'state', EpicState, EpicState.Open);
     const existing = this.epics.findByKey(key);
     if (existing === null) {
-      const epic = this.epics.insert({
+      // Insert directly in the committed state with the committed timestamps,
+      // so a CLOSED epic keeps its original created_at/closed_at instead of
+      // an updateState stamping a fresh now.
+      this.epics.insert({
         key,
         projectId,
         title: readString(data, 'title') ?? key,
         description: readString(data, 'description'),
         metadata: readRecord(data, 'metadata'),
+        state,
+        createdAt: readString(data, 'created_at') ?? undefined,
+        closedAt: readString(data, 'closed_at'),
       });
-      if (state !== EpicState.Open) this.epics.updateState(epic.id, state);
       return true;
     }
     let changed = false;
@@ -803,7 +811,9 @@ export class SyncRebuild {
     const state = readEnum(data, 'state', SprintState, SprintState.Planned);
     const existing = this.sprints.findByKey(key);
     if (existing === null) {
-      const sprint = this.sprints.insert({
+      // Insert directly in the committed state with the committed timestamps,
+      // so a closed sprint keeps its original created_at/closed_at.
+      this.sprints.insert({
         key,
         projectId,
         name: readString(data, 'name') ?? key,
@@ -812,8 +822,10 @@ export class SyncRebuild {
         endsAt: readString(data, 'ends_at'),
         capacity: readNumber(data, 'capacity'),
         metadata: readRecord(data, 'metadata'),
+        state,
+        createdAt: readString(data, 'created_at') ?? undefined,
+        closedAt: readString(data, 'closed_at'),
       });
-      if (state !== SprintState.Planned) this.sprints.updateState(sprint.id, state);
       return true;
     }
     let changed = false;
@@ -845,7 +857,10 @@ export class SyncRebuild {
         readString(data, 'authored_by') ?? 'unknown',
         ActorKind.Human,
       );
-      const decision = this.decisions.insert({
+      // Insert directly in the committed status with the committed `at`, so an
+      // accepted/superseded ADR keeps its original decision timestamp instead
+      // of an updateStatus stamping a fresh now.
+      this.decisions.insert({
         key,
         projectId,
         title: readString(data, 'title') ?? key,
@@ -856,10 +871,9 @@ export class SyncRebuild {
         impacts: readStringArray(data, 'impacts'),
         metadata: readRecord(data, 'metadata'),
         authoredBy,
+        status,
+        at: readString(data, 'at') ?? undefined,
       });
-      if (status !== DecisionStatus.Proposed) {
-        this.decisions.updateStatus(decision.id, status, null);
-      }
       return true;
     }
     let changed = false;

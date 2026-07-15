@@ -56,6 +56,10 @@ export interface DecisionInsertInput {
   readonly authoredBy: string;
   readonly impacts?: readonly string[];
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /** Committed status to create in — defaults to proposed (clone rebuild). */
+  readonly status?: string;
+  /** Committed decision timestamp, preserved on a clone rebuild; default now. */
+  readonly at?: string;
 }
 
 /** Content columns of a decision that sync rebuild can reconcile from markdown. */
@@ -180,7 +184,7 @@ export class DecisionRepository {
         `INSERT INTO decisions (
            id, key, project_id, title, context, decision, rationale,
            consequences, status, authored_by, impacts, metadata, at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -191,10 +195,11 @@ export class DecisionRepository {
         input.decision,
         input.rationale ?? null,
         input.consequences ?? null,
+        input.status ?? 'proposed',
         input.authoredBy,
         impacts,
         metadata,
-        now,
+        input.at ?? now,
         now,
       );
 

@@ -146,21 +146,6 @@ function roundTrip(h: Harness): Harness {
  * domain field name.
  */
 const KNOWN_LOSSES: Record<string, Record<string, string>> = {
-  task: {
-    createdAt: 'backlog createdAt resets to clone time (preserve-vs-derive pending)',
-    closedAt: 'backlog closedAt not read back on rebuild (preserve-vs-derive pending)',
-  },
-  epic: {
-    createdAt: 'epic createdAt resets to clone time (preserve-vs-derive pending)',
-    closedAt: 'epic closedAt not read back on rebuild (preserve-vs-derive pending)',
-  },
-  sprint: {
-    createdAt: 'sprint createdAt resets to clone time (preserve-vs-derive pending)',
-    closedAt: 'sprint closedAt not read back on rebuild (preserve-vs-derive pending)',
-  },
-  decision: {
-    at: 'decision `at` resets to clone time (preserve-vs-derive pending)',
-  },
   skill: {
     // NEW loss found by this very test: a skill's scope is dropped on the
     // disk→DB round-trip (rebuilt as null), the same class as the already-fixed
@@ -275,7 +260,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
   );
 
   it(
-    'epic: title/description/state survive; timestamps are known losses',
+    'epic: title/description/state/timestamps survive a round-trip',
     () => {
       fc.assert(
         fc.property(
@@ -317,7 +302,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
   );
 
   it(
-    'sprint: name/goal/capacity/state survive; timestamps are known losses',
+    'sprint: name/goal/capacity/state/timestamps survive a round-trip',
     () => {
       fc.assert(
         fc.property(
@@ -361,7 +346,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
   );
 
   it(
-    'decision: title/decision/context/rationale/consequences/impacts/status survive; `at` is a known loss',
+    'decision: content/status/at survive a round-trip',
     () => {
       fc.assert(
         fc.property(

@@ -372,6 +372,8 @@ function serialiseTask(
     // `!= null` guards both null and undefined (a partial task shape).
     ...(task.gitBranch != null ? { git_branch: task.gitBranch } : {}),
     ...(task.gitPr != null ? { git_pr: { url: task.gitPr.url, state: task.gitPr.state } } : {}),
+    created_at: task.createdAt,
+    closed_at: task.closedAt,
     updated_at: task.updatedAt,
   };
 }

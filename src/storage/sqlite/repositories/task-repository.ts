@@ -88,6 +88,10 @@ export interface TaskInsertInput {
   readonly metadata?: Readonly<Record<string, unknown>>;
   /** Preserved on a clone rebuild; defaults to 0 for a genuinely new task. */
   readonly reopenCount?: number;
+  /** Committed timestamps, preserved on a clone rebuild; default to now/null. */
+  readonly createdAt?: string;
+  readonly updatedAt?: string;
+  readonly closedAt?: string | null;
 }
 
 /**
@@ -338,8 +342,8 @@ export class TaskRepository {
            id, key, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
            estimate, context_budget, priority, assignee_id, reporter_id, metadata,
-           reopen_count, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           reopen_count, created_at, updated_at, closed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -358,8 +362,11 @@ export class TaskRepository {
         input.reporterId,
         metadata,
         input.reopenCount ?? 0,
-        now,
-        now,
+        // Preserve the committed timestamps on a clone rebuild; default to now
+        // for a genuinely new task (no timestamps supplied).
+        input.createdAt ?? now,
+        input.updatedAt ?? now,
+        input.closedAt ?? null,
       );
 
     const created = this.findByKey(input.key);
