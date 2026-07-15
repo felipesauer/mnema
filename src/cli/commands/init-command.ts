@@ -38,6 +38,7 @@ import { ensureGitattributes } from '../../utils/gitattributes.js';
 import { VERSION } from '../../utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 import { writeAgentsMd } from '../templates/agents-md.js';
+import { writeMnemaReadme } from '../templates/mnema-readme.js';
 
 const SUPPORTED_WORKFLOWS = ['default', 'lean', 'kanban', 'jira-classic'] as const;
 type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
@@ -289,6 +290,11 @@ export class InitCommand {
     // resolves in one pass. In --minimal there are no adopts and no memory
     // dir, so the import correctly degrades to "skipped" until `mnema adopt`.
     writeAgentsMd(cwd, config);
+
+    // A committed source-of-truth map inside `.mnema/` — it travels with a
+    // clone (the top-level README does not), so a teammate who opens the dir
+    // can tell record from cache from public-key material. Non-destructive.
+    writeMnemaReadme(cwd, config);
 
     const dbPath = path.join(stateDir, 'state.db');
     const adapter = new SqliteAdapter(dbPath);

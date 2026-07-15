@@ -160,10 +160,23 @@ export class SyncRebuild {
    * entity it finds, then relinks tasks to their epic/sprint.
    *
    * For each markdown:
-   * - the `mnema:` frontmatter is the source of truth
    * - missing actors are created (handles taken verbatim from the file)
    * - existing rows are touched only when something changed, to keep
    *   `updated_at` truthful
+   *
+   * SOURCE-OF-TRUTH ASYMMETRY (deliberate): the two entity families treat a
+   * hand-edited, already-cached `.md` differently.
+   * - The 4 BACKLOG entities (task/epic/sprint/decision) fold a content edit
+   *   back into the row on sync (see collect*ContentDrift) — for these the
+   *   committed frontmatter is authoritative and editing the file then syncing
+   *   is a supported way to change the row.
+   * - The 3 KNOWLEDGE entities (memory/skill/observation) are INSERT OR IGNORE:
+   *   a rebuild only re-creates a row that is ABSENT (e.g. a fresh clone), and
+   *   a hand-edit of a `.md` whose row already exists is intentionally NOT
+   *   folded back. Knowledge is mutated only through its `record`/`supersede`
+   *   commands (which rewrite the mirror), so the row — not a manual file edit
+   *   — is authoritative once cached. This keeps provenance/versioning honest;
+   *   it is not a bug that a stray edit to a cached knowledge `.md` is ignored.
    *
    * @param projectKey - Active project key (taken from `mnema.config.json`)
    * @returns Summary describing what was scanned and what changed
@@ -519,9 +532,11 @@ export class SyncRebuild {
         continue;
       }
 
-      // The frontmatter is the source of truth (as with tasks/decisions); the
-      // body is only a readable copy. `related_task_key` resolves to the
-      // freshly-inserted task row by its stable key.
+      // The frontmatter seeds the row on a fresh clone (INSERT OR IGNORE —
+      // observations are record-only knowledge, NOT folded back like the
+      // backlog entities; see the run() contract). The body is only a
+      // readable copy. `related_task_key` resolves to the freshly-inserted
+      // task row by its stable key.
       const relatedTaskKey = readString(data, 'related_task_key');
       const relatedTaskId =
         relatedTaskKey !== null ? (this.tasks.findByKey(relatedTaskKey)?.id ?? null) : null;
@@ -537,7 +552,8 @@ export class SyncRebuild {
         relatedTaskId,
         createdBy,
         at: readString(data, 'at') ?? isoNow(),
-        archivedAt: readString(data, 'archived_at'),
+        // No archived_at: only live observations have a mirror (archiving
+        // unlinks it), so a rebuilt observation is always live.
       });
       if (inserted) upserted += 1;
     }

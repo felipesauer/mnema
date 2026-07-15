@@ -348,3 +348,54 @@ describe('InitCommand wizard helpers', () => {
     expect(_internal.deriveKey('?? !!')).toBeUndefined();
   });
 });
+
+describe('InitCommand.run — committed .mnema/README.md', () => {
+  let projectRoot: string;
+
+  beforeEach(() => {
+    projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-init-readme-'));
+  });
+  afterEach(() => {
+    rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it('scaffolds a source-of-truth map that names each dir role', () => {
+    const result = new InitCommand().run({
+      cwd: projectRoot,
+      name: 'My App',
+      key: 'MYAPP',
+      workflow: 'default',
+      force: false,
+      minimal: false,
+    });
+    expect(result.ok).toBe(true);
+
+    const readmePath = path.join(projectRoot, '.mnema', 'README.md');
+    expect(existsSync(readmePath)).toBe(true);
+    const body = readFileSync(readmePath, 'utf-8');
+    expect(body).toContain('Source of truth');
+    expect(body).toContain('Rebuildable cache');
+    expect(body).toContain('Public verification material');
+    expect(body).toContain('.mnema/state/');
+    expect(body).toContain('mnema sync');
+    expect(body).toContain('~/.config/mnema');
+  });
+
+  it('is non-destructive: a second init leaves an existing README untouched', () => {
+    const opts = {
+      cwd: projectRoot,
+      name: 'My App',
+      key: 'MYAPP',
+      workflow: 'default',
+      force: true,
+      minimal: false,
+    };
+    new InitCommand().run(opts);
+    const readmePath = path.join(projectRoot, '.mnema', 'README.md');
+    const custom = '# my custom .mnema notes\n';
+    appendFileSync(readmePath, custom);
+    new InitCommand().run(opts);
+    // The re-run must not clobber the customised README.
+    expect(readFileSync(readmePath, 'utf-8')).toContain('my custom .mnema notes');
+  });
+});
