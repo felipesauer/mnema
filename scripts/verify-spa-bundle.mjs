@@ -13,7 +13,9 @@ const MAX_GZIP_JS_BYTES = 250 * 1024;
 
 // External-host reference: an http(s) URL or a protocol-relative //host one.
 // Data URIs (data:) and relative paths are fine — those are self-contained.
-const EXTERNAL_URL = /(https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}/i;
+// Global so a single line can be scanned for EVERY reference, not just the
+// first — minified JS packs many URLs onto one physical line.
+const EXTERNAL_URL = /(https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}/gi;
 
 // Registrable domains whose appearance in the bundle is inert text, never a
 // runtime fetch (XML/SVG namespaces; React's minified error-doc links).
@@ -60,8 +62,8 @@ for (const file of files) {
   if (['.js', '.css', '.html', '.svg', '.json'].includes(ext)) {
     const text = readFileSync(file, 'utf8');
     for (const line of text.split('\n')) {
-      const m = line.match(EXTERNAL_URL);
-      if (m) {
+      // Every external reference on the line, not just the first.
+      for (const m of line.matchAll(EXTERNAL_URL)) {
         const url = m[0];
         // Allowlisted hosts: identifiers/text that never trigger a network
         // request — XML/SVG spec namespace URIs, and the documentation links
