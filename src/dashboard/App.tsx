@@ -1,11 +1,13 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
+import { Agents } from './Agents.js';
 import { AuditTrail } from './AuditTrail.js';
 import { Board } from './Board.js';
 import { Charts } from './Charts.js';
 import { Drift } from './Drift.js';
 import type { DashboardContract } from './contract.js';
 import { Graph } from './Graph.js';
+import { Knowledge } from './Knowledge.js';
 import { Metrics } from './Metrics.js';
 import {
   IconActivity,
@@ -91,11 +93,11 @@ const NAV: readonly NavGroup[] = [
   {
     label: 'Knowledge',
     items: [
-      { id: 'decisions', label: 'Decisions', Icon: IconDecisions },
-      { id: 'skills', label: 'Skills & memory', Icon: IconSkills },
+      { id: 'decisions', label: 'Decisions', Icon: IconDecisions, ready: true },
+      { id: 'skills', label: 'Skills & memory', Icon: IconSkills, ready: true },
     ],
   },
-  { label: 'Agents', items: [{ id: 'agents', label: 'Runs', Icon: IconAgents }] },
+  { label: 'Agents', items: [{ id: 'agents', label: 'Runs', Icon: IconAgents, ready: true }] },
 ];
 
 export function App(): ReactElement {
@@ -322,6 +324,26 @@ function Content({ view, data }: { view: string; data: DashboardContract }): Rea
           <h1>Drift</h1>
           <p className="subtitle">Commits on this branch not tied to any task.</p>
           <Drift />
+        </>
+      );
+    case 'decisions':
+    case 'skills':
+      return (
+        <>
+          <h1>Knowledge</h1>
+          <p className="subtitle">
+            Decisions, skills and memories — with the quality loop flagging skills that preceded
+            rework.
+          </p>
+          <Knowledge />
+        </>
+      );
+    case 'agents':
+      return (
+        <>
+          <h1>Agent runs</h1>
+          <p className="subtitle">Orphaned runs left open past the threshold.</p>
+          <Agents />
         </>
       );
     default: {

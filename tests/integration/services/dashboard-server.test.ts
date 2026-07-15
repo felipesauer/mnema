@@ -215,6 +215,44 @@ describe('createDashboardServer (integration)', () => {
     expect(data).toHaveProperty('linkable');
   });
 
+  it('serves knowledge (decisions/skills/memories) at /api/knowledge', async () => {
+    const { status, body } = await httpGet(server.port, '/api/knowledge');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(Array.isArray(data.decisions)).toBe(true);
+    expect(Array.isArray(data.skills)).toBe(true);
+    expect(Array.isArray(data.memories)).toBe(true);
+    expect(Array.isArray(data.reviewProposals)).toBe(true);
+  });
+
+  it('never leaks decision free-text (context/rationale/decision body) through /api/knowledge', async () => {
+    // Record a decision whose prose carries a sensitive marker, then confirm
+    // only its identifier/metadata reach the wire — not the body.
+    const rec = h.container.decision.record({
+      projectKey: h.config.project.key,
+      title: 'Test ADR',
+      context: 'CONTEXT-LEAK-xyz',
+      decision: 'DECISION-LEAK-xyz',
+      rationale: 'RATIONALE-LEAK-xyz',
+      actor: 'tester',
+    });
+    expect(rec.ok, 'decision.record should succeed').toBe(true);
+    const { body } = await httpGet(server.port, '/api/knowledge');
+    expect(body).not.toContain('CONTEXT-LEAK-xyz');
+    expect(body).not.toContain('DECISION-LEAK-xyz');
+    expect(body).not.toContain('RATIONALE-LEAK-xyz');
+    // The title (an identifier-ish label) is allowed through.
+    expect(body).toContain('Test ADR');
+  });
+
+  it('serves orphan runs at /api/agents', async () => {
+    const { status, body } = await httpGet(server.port, '/api/agents');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(data).toHaveProperty('thresholdHours');
+    expect(Array.isArray(data.orphans)).toBe(true);
+  });
+
   const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
 
   it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {

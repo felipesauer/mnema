@@ -137,6 +137,42 @@ export interface DriftData {
   readonly untracked: ReadonlyArray<{ readonly sha: string; readonly subject: string }>;
 }
 
+/** The /api/knowledge payload (decisions/skills/memories — identifiers only). */
+export interface KnowledgeData {
+  readonly decisions: ReadonlyArray<{
+    readonly key: string;
+    readonly title: string;
+    readonly status: string;
+    readonly superseded: boolean;
+    readonly impacts: number;
+  }>;
+  readonly skills: ReadonlyArray<{
+    readonly slug: string;
+    readonly name: string;
+    readonly flagged: boolean;
+  }>;
+  readonly memories: ReadonlyArray<{
+    readonly slug: string;
+    readonly title: string;
+    readonly topics: readonly string[];
+  }>;
+  readonly reviewProposals: ReadonlyArray<{
+    readonly slug: string;
+    readonly taskKey: string;
+    readonly reopenCount: number;
+  }>;
+}
+
+/** The /api/agents payload: orphaned (stale-open) runs. */
+export interface AgentsData {
+  readonly thresholdHours: number;
+  readonly orphans: ReadonlyArray<{
+    readonly id: string;
+    readonly goal: string;
+    readonly ageHours: number;
+  }>;
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;

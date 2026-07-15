@@ -188,6 +188,51 @@ export async function createDashboardServer(
     return container.drift.scan(projectRoot, { limit: 50 });
   }
 
+  /**
+   * The Knowledge read (Knowledge module): decisions, skills, memories, and the
+   * skill-review proposals. Projected to identifiers/metadata ONLY — the free
+   * text (a decision's context/rationale, a skill/memory body) is never sent to
+   * the wire, same discipline as the audit trail. Reads only existing services.
+   */
+  function knowledgeData() {
+    const key = config.project.key;
+    const decisions = container.decision.list(key).map((d) => ({
+      key: d.key,
+      title: d.title,
+      status: d.status,
+      superseded: d.supersededBy !== null,
+      impacts: d.impacts.length,
+    }));
+    const flagged = container.skillQuality.reviewProposals();
+    const flaggedSlugs = new Set(flagged.map((p) => p.slug));
+    const skills = container.skill.list().map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      flagged: flaggedSlugs.has(s.slug),
+    }));
+    const memories = container.memory.list().map((m) => ({
+      slug: m.slug,
+      title: m.title,
+      topics: m.topics ?? [],
+    }));
+    const reviewProposals = flagged.map((p) => ({
+      slug: p.slug,
+      taskKey: p.taskKey,
+      reopenCount: p.reopenCount,
+    }));
+    return { decisions, skills, memories, reviewProposals };
+  }
+
+  /** The Agents read (Agents module): orphaned (stale-open) runs. */
+  function agentsData() {
+    const threshold = config.aging.orphan_run_after_hours;
+    const orphans = container.orphanRun.detect(threshold);
+    return {
+      thresholdHours: threshold,
+      orphans: orphans.map((o) => ({ id: o.id, goal: o.goal, ageHours: o.ageHours })),
+    };
+  }
+
   /** Epics and sprints with their coverage — the "worklines" read. */
   function worklineData() {
     const key = config.project.key;
@@ -311,6 +356,18 @@ export async function createDashboardServer(
     if (url === '/api/drift') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(driftData()));
+      return;
+    }
+
+    // Knowledge + Agents modules (ADR-67 slice 6). On-demand, existing services.
+    if (url === '/api/knowledge') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(knowledgeData()));
+      return;
+    }
+    if (url === '/api/agents') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(agentsData()));
       return;
     }
 

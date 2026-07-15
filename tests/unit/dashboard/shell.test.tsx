@@ -39,10 +39,10 @@ describe('dashboard shell', () => {
     }
   });
 
-  it('marks not-yet-built modules as "soon" but ships the three real panels un-gated', () => {
-    // The placeholder modules carry a "soon" affordance…
-    expect(html).toContain('soon');
-    // …and the header search + theme toggle are part of the frame.
+  it('ships the header frame (search + theme toggle); all modules are now built', () => {
+    // Every module is wired as of slice 6, so no "soon" placeholder remains.
+    expect(html).not.toContain('>soon<');
+    // The header search + theme toggle are part of the frame.
     expect(html).toContain('Toggle theme');
     expect(html.toLowerCase()).toContain('search');
   });
