@@ -36,8 +36,11 @@ describe('NeedsYou panel', () => {
       />,
     );
     expect(html).toContain('Awaiting review');
-    expect(html).toContain('PAY-1 · Rate limiting');
-    expect(html).toContain('PAY-2 · Idempotency keys');
+    // Key (a mono chip) and title (separate) both render for each row.
+    expect(html).toContain('PAY-1');
+    expect(html).toContain('Rate limiting');
+    expect(html).toContain('PAY-2');
+    expect(html).toContain('Idempotency keys');
     // The queue count reflects the list length.
     expect(html).toMatch(/data-count="awaiting-review">2</);
   });
@@ -51,7 +54,8 @@ describe('NeedsYou panel', () => {
         })}
       />,
     );
-    expect(html).toContain('PAY-9 · Webhook retries');
+    expect(html).toContain('PAY-9');
+    expect(html).toContain('Webhook retries');
     expect(html).toMatch(/data-count="blocked">1</);
     expect(html).toMatch(/data-count="pending-decisions">3</);
   });
