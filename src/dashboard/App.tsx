@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
+import { Board } from './Board.js';
 import { Charts } from './Charts.js';
 import type { DashboardContract } from './contract.js';
 import { Graph } from './Graph.js';
@@ -22,6 +23,7 @@ import {
 } from './icons.js';
 import { NeedsYou } from './NeedsYou.js';
 import { Overview } from './Overview.js';
+import { Worklines } from './Worklines.js';
 
 type LoadState =
   | { status: 'loading' }
@@ -64,8 +66,8 @@ const NAV: readonly NavGroup[] = [
         badge: (d) =>
           d.inbox.awaitingReview.length + d.inbox.blocked.length + d.inbox.pendingDecisions,
       },
-      { id: 'board', label: 'Board', Icon: IconBoard },
-      { id: 'epics', label: 'Epics & sprints', Icon: IconEpics },
+      { id: 'board', label: 'Board', Icon: IconBoard, ready: true },
+      { id: 'epics', label: 'Epics & sprints', Icon: IconEpics, ready: true },
       { id: 'graph', label: 'Graph', Icon: IconGraph, ready: true },
     ],
   },
@@ -254,6 +256,22 @@ function Content({ view, data }: { view: string; data: DashboardContract }): Rea
             The human-attention queues — awaiting review, blocked, and pending decisions.
           </p>
           <NeedsYou inbox={data.inbox} />
+        </>
+      );
+    case 'board':
+      return (
+        <>
+          <h1>Board</h1>
+          <p className="subtitle">Every task by workflow state.</p>
+          <Board />
+        </>
+      );
+    case 'epics':
+      return (
+        <>
+          <h1>Epics &amp; sprints</h1>
+          <p className="subtitle">Coverage across the portfolio.</p>
+          <Worklines />
         </>
       );
     case 'graph':

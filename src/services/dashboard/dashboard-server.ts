@@ -147,6 +147,39 @@ export async function createDashboardServer(
     });
   }
 
+  /** The Board read: the whole backlog counted + listed by state (portfolio). */
+  function boardData() {
+    return container.portfolio.run({});
+  }
+
+  /** Epics and sprints with their coverage — the "worklines" read. */
+  function worklineData() {
+    const key = config.project.key;
+    const epics = container.epic.list(key).map((e) => {
+      const cov = container.coverage.forEpic(e.key);
+      return {
+        key: e.key,
+        title: e.title,
+        state: e.state,
+        coverage: cov.ok
+          ? { total: cov.value.total, terminal: cov.value.terminal, percent: cov.value.percent }
+          : null,
+      };
+    });
+    const sprints = container.sprint.list(key).map((s) => {
+      const cov = container.coverage.forSprint(s.key);
+      return {
+        key: s.key,
+        name: s.name,
+        state: s.state,
+        coverage: cov.ok
+          ? { total: cov.value.total, terminal: cov.value.terminal, percent: cov.value.percent }
+          : null,
+      };
+    });
+    return { epics, sprints };
+  }
+
   /** The four tab routes → the tab id their fragment renders. */
   const TAB_ROUTES: Record<string, string> = {
     '/overview': 'overview',
@@ -216,6 +249,20 @@ export async function createDashboardServer(
     if (url === '/api/dashboard') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(snapshot()));
+      return;
+    }
+
+    // Work module (ADR-67 slice 3). Served on demand — kept off the always-on
+    // /api/dashboard payload so the Overview stays lean. Both read only the
+    // existing services (no second source of truth).
+    if (url === '/api/board') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(boardData()));
+      return;
+    }
+    if (url === '/api/epics') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(worklineData()));
       return;
     }
 

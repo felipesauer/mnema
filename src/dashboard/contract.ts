@@ -71,6 +71,45 @@ export interface RecentEvent {
   readonly key?: string;
 }
 
+/** The /api/board payload (mirrors the server PortfolioResult). */
+export interface BoardData {
+  readonly total: number;
+  readonly by_state: Readonly<Record<string, number>>;
+  readonly tasks: ReadonlyArray<{
+    readonly key: string;
+    readonly title: string;
+    readonly state: string;
+    readonly priority: number;
+    readonly assignee_id: string | null;
+    readonly updated_at: string;
+    readonly labels: readonly string[];
+  }>;
+}
+
+/** A coverage summary for an epic or sprint (from /api/epics). */
+export interface CoverageSummary {
+  readonly total: number;
+  readonly terminal: number;
+  readonly percent: number;
+}
+export interface WorklineEpic {
+  readonly key: string;
+  readonly title: string;
+  readonly state: string;
+  readonly coverage: CoverageSummary | null;
+}
+export interface WorklineSprint {
+  readonly key: string;
+  readonly name: string;
+  readonly state: string;
+  readonly coverage: CoverageSummary | null;
+}
+/** The /api/epics payload: epics + sprints with coverage. */
+export interface WorklinesData {
+  readonly epics: readonly WorklineEpic[];
+  readonly sprints: readonly WorklineSprint[];
+}
+
 export interface DashboardContract {
   readonly projectKey: string;
   readonly generatedAt: string;

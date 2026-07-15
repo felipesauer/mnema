@@ -152,6 +152,24 @@ describe('createDashboardServer (integration)', () => {
     expect(data).toHaveProperty('integrity');
   });
 
+  it('serves the Board read (portfolio by state) at /api/board', async () => {
+    const { status, body } = await httpGet(server.port, '/api/board');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    // PortfolioResult shape — from the existing portfolio service.
+    expect(data).toHaveProperty('total');
+    expect(data).toHaveProperty('by_state');
+    expect(Array.isArray(data.tasks)).toBe(true);
+  });
+
+  it('serves epics + sprints with coverage at /api/epics', async () => {
+    const { status, body } = await httpGet(server.port, '/api/epics');
+    expect(status).toBe(200);
+    const data = JSON.parse(body);
+    expect(Array.isArray(data.epics)).toBe(true);
+    expect(Array.isArray(data.sprints)).toBe(true);
+  });
+
   const spaBuilt = existsSync(path.resolve('dist/dashboard/index.html'));
 
   it('redirects /app (no trailing slash) to /app/ so relative assets resolve', async () => {
