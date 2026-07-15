@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
+import { Charts } from './Charts.js';
 import type { DashboardContract } from './contract.js';
 import { Graph } from './Graph.js';
 import { NeedsYou } from './NeedsYou.js';
@@ -65,11 +66,8 @@ export function App(): ReactElement {
       {/* Graph (290): connected subgraph + critical path in a pan/zoom viewport. */}
       <Graph graph={data.graph} />
 
-      {/* Activity remains a placeholder the charts task (292) replaces. */}
-      <section aria-label="Activity" data-panel="charts">
-        <h2>Activity</h2>
-        <p>{data.series.activityByDay.length} days of activity</p>
-      </section>
+      {/* Charts (292): time + category series with honest "+N more" truncation. */}
+      <Charts series={data.series} />
     </main>
   );
 }
