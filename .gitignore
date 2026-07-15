@@ -28,39 +28,20 @@ evaluations/
 # generated docs/quickstart.cast are versioned so the README can link them.
 scripts/record-quickstart.sh
 
-# Dogfood: running mnema against itself for testing. Every Mnema-managed
-# artefact lives under .mnema/, so we ignore its CONTENTS — but with `.mnema/*`
-# (contents), NOT `.mnema/` (the dir): ignoring the directory itself stops git
-# descending into it, which would make every un-ignore below unreachable.
-.mnema/*
-
-# EXCEPT the audit VERIFICATION material, which is public by design and MUST
-# reach the repo or the attestation is silently inert (generated, never
-# committed, a clone never sees it, `audit verify` passes green on nothing).
-# These carry no secret: public keys, a non-reversible secret fingerprint,
-# signed attestations, and external-anchor receipts. The raw private key and
-# HMAC secret live only in ~/.config/mnema/ (0600), never under .mnema/.
-# Each path must re-include EVERY intermediate dir (git evaluates level by
-# level and never descends into an excluded dir), then re-ignore that dir's
-# other contents with `/*`, then whitelist the leaf.
-!.mnema/keys/
-.mnema/keys/*
-!.mnema/keys/*.pub
-!.mnema/keys/project.hmac-id
-!.mnema/audit/
-.mnema/audit/*
-!.mnema/audit/attest/
-.mnema/audit/attest/*
-!.mnema/audit/attest/*.att
-!.mnema/anchors/
-.mnema/anchors/*
-!.mnema/anchors/*.receipt
-# The `dir/* then whitelist the leaf glob` shape (same as keys/*.pub above) is
-# deliberate: a bare `!attest/**` would re-include ANYTHING dropped in there —
-# an editor swapfile, a `.att.tmp`, a stray key — so only the exact artifact
-# suffix is tracked; everything else stays ignored (defence in depth).
-# NEVER un-ignore .mnema/state/ — the SQLite mirror (rebuildable cache, and
-# today the head-signature row) is not verification material.
+# Dogfood: mnema runs against itself here, so this .mnema/ is a development
+# workbench, not a reference project. Its audit chain is knowingly broken and
+# truncated by the churn of building the tool (merges, rebases, rewinds), so
+# nothing under it — not even the public verification material — is meant to
+# be trusted or held up as an example. We therefore ignore .mnema/ WHOLESALE.
+#
+# This is a deliberate exception for the tool's OWN repo. Adopter projects do
+# the opposite (and `mnema init` scaffolds it): commit the markdown mirrors +
+# audit chain + public keys, ignore only the rebuildable .mnema/state/ cache.
+# The faithful examples of the audit/attestation flow are those adopter repos,
+# never this one. (Consequence: with no committed keys/project.hmac-id, the
+# wholesale-downgrade defence is inert HERE — accepted, since this chain is a
+# throwaway workbench, not something a clone should verify.)
+.mnema/
 
 AGENTS.md
 docs-local/
