@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 
-import type { EvalCohort, EvalReport } from '../../services/eval-report-service.js';
+import type { EvalCohort, EvalReport } from '../../services/metrics/eval-report-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { parseTimeBoundOption } from '../option-helpers.js';

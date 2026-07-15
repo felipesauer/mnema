@@ -4,8 +4,8 @@ import { buildContentAttestation } from '../../../services/audit/attestation-cli
 import {
   type AttestationSource,
   inspectAuditIntegrity,
-} from '../../../services/audit-integrity.js';
-import type { ProjectSecretService } from '../../../services/project-secret.js';
+} from '../../../services/integrity/audit-integrity.js';
+import type { ProjectSecretService } from '../../../services/integrity/project-secret.js';
 import type { SqliteAdapter } from '../../../storage/sqlite/sqlite-adapter.js';
 import { ok } from '../../mcp-tool-result.js';
 

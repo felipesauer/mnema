@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { GitHubPrService } from '../../../services/github-pr-service.js';
+import type { GitHubPrService } from '../../../services/git/github-pr-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
 /**

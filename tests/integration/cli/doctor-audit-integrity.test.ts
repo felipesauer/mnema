@@ -5,9 +5,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { inspectAuditIntegrity } from '@/cli/commands/doctor-command.js';
 import { anchorStatusCheck } from '@/services/anchor/anchor-inspect.js';
-import { AuditService } from '@/services/audit-service.js';
-import { createAttestationSource, HeadCheckpointService } from '@/services/head-checkpoint.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import {
+  createAttestationSource,
+  HeadCheckpointService,
+} from '@/services/integrity/head-checkpoint.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AnchorRepository } from '@/storage/sqlite/repositories/anchor-repository.js';

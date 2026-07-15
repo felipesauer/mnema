@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { RunDiffService } from '../../../services/run-diff-service.js';
+import type { RunDiffService } from '../../../services/metrics/run-diff-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

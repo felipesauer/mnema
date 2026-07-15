@@ -1,5 +1,5 @@
 import type { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
-import { type CommandResult, type CommandRunner, defaultRunner } from './github-pr-service.js';
+import { type CommandResult, type CommandRunner, defaultRunner } from './git/github-pr-service.js';
 
 /** One commit on the branch with no task tied to it. */
 export interface UntrackedCommit {

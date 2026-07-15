@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Workflow } from '@/domain/state-machine/state-machine.js';
-import type { AuditQuery } from '@/services/audit-query.js';
-import { FlowMetricsService } from '@/services/flow-metrics-service.js';
-import type { SprintService } from '@/services/sprint-service.js';
-import type { TaskService } from '@/services/task-service.js';
+import type { SprintService } from '@/services/backlog/sprint-service.js';
+import type { TaskService } from '@/services/backlog/task-service.js';
+import type { AuditQuery } from '@/services/integrity/audit-query.js';
+import { FlowMetricsService } from '@/services/metrics/flow-metrics-service.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 const HOUR = 3_600_000;

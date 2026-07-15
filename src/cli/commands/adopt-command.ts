@@ -5,7 +5,7 @@ import {
   type AdoptableComponent,
   type AdoptionResult,
   AdoptionService,
-} from '../../services/adoption-service.js';
+} from '../../services/knowledge/adoption-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { writeAgentsMd } from '../templates/agents-md.js';

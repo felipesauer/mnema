@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
 import { ErrorCode } from '@/errors/error-codes.js';
-import { AuditQuery } from '@/services/audit-query.js';
+import { AuditQuery } from '@/services/integrity/audit-query.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 /**

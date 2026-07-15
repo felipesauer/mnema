@@ -4,7 +4,7 @@ import {
   type CommandResult,
   type CommandRunner,
   GitHubPrService,
-} from '@/services/github-pr-service.js';
+} from '@/services/git/github-pr-service.js';
 
 const URL = 'https://github.com/felipesauer/mnema/pull/42';
 

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
-import { DependencyGraphService } from '@/services/dependency-graph-service.js';
+import { DependencyGraphService } from '@/services/snapshot/dependency-graph-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { DependencyRepository } from '@/storage/sqlite/repositories/dependency-repository.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';

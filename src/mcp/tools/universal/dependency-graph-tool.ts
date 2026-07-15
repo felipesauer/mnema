@@ -5,7 +5,7 @@ import { ErrorCode } from '../../../errors/error-codes.js';
 import type {
   DependencyGraphService,
   GraphScope,
-} from '../../../services/dependency-graph-service.js';
+} from '../../../services/snapshot/dependency-graph-service.js';
 import { err, ok } from '../../mcp-tool-result.js';
 
 /**

@@ -5,8 +5,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { readLegacyBreaksWaiver } from '@/services/audit/audit-diagnose.js';
-import { reconcileAuditState } from '@/services/audit-integrity.js';
-import type { GitCommandRunner } from '@/services/git-commit-service.js';
+import type { GitCommandRunner } from '@/services/git/git-commit-service.js';
+import { reconcileAuditState } from '@/services/integrity/audit-integrity.js';
 import { hashEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
@@ -237,7 +237,7 @@ describe('reconcileAuditState with acceptLegacyBreaks', () => {
     });
 
     it('downgrades inspectAuditIntegrity to a WARNING under a distinct name, unblocking reattest', async () => {
-      const { inspectAuditIntegrity } = await import('@/services/audit-integrity.js');
+      const { inspectAuditIntegrity } = await import('@/services/integrity/audit-integrity.js');
       const { chainHealthyForAttest } = await import('@/services/audit/attestation-cli.js');
       const events = [...buildChain(5, 0), ...buildChain(5, 100)];
       writeLines(events);
@@ -261,7 +261,7 @@ describe('reconcileAuditState with acceptLegacyBreaks', () => {
     });
 
     it('a waiver NEVER covers a NEW content edit made after it was written', async () => {
-      const { inspectAuditIntegrity } = await import('@/services/audit-integrity.js');
+      const { inspectAuditIntegrity } = await import('@/services/integrity/audit-integrity.js');
       const events = [...buildChain(5, 0), ...buildChain(5, 100)];
       writeLines(events);
       reconcileAuditState(auditDir, state, null, null, true, '2026-12-31', tempRoot, gitMatch);
@@ -280,7 +280,7 @@ describe('reconcileAuditState with acceptLegacyBreaks', () => {
     });
 
     it('a waiver NEVER covers a break that appears after the accepted cutoff', async () => {
-      const { inspectAuditIntegrity } = await import('@/services/audit-integrity.js');
+      const { inspectAuditIntegrity } = await import('@/services/integrity/audit-integrity.js');
       const events = [...buildChain(5, 0), ...buildChain(5, 100)];
       writeLines(events);
       reconcileAuditState(auditDir, state, null, null, true, '2026-12-31', tempRoot, gitMatch);

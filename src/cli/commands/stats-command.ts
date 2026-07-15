@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 
-import type { DurationSummary, FlowMetrics } from '../../services/flow-metrics-service.js';
+import type { DurationSummary, FlowMetrics } from '../../services/metrics/flow-metrics-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { parseTimeBoundOption } from '../option-helpers.js';

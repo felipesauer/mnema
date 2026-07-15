@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
-import type { SlaBreach, WipBreach } from '../../services/inbox-service.js';
+import type { SlaBreach, WipBreach } from '../../services/backlog/inbox-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';

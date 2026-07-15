@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
-import { fingerprintHooks, HookTrustService, hasAnyHook } from '@/services/hook-trust.js';
+import { fingerprintHooks, HookTrustService, hasAnyHook } from '@/services/integrity/hook-trust.js';
 
 const EMPTY: Config['hooks'] = {
   on_task_done: [],

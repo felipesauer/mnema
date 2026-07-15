@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 
-import type { PortfolioResult } from '../../services/portfolio-service.js';
+import type { PortfolioResult } from '../../services/knowledge/portfolio-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { parseIsoBoundOption } from '../option-helpers.js';

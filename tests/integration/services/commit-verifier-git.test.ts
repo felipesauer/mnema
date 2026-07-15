@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { CommitVerifier } from '@/services/commit-verifier.js';
+import { CommitVerifier } from '@/services/integrity/commit-verifier.js';
 
 /**
  * Exercises CommitVerifier against a REAL git repository through the

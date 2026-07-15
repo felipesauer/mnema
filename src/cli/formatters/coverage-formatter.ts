@@ -1,4 +1,4 @@
-import type { CoverageReport } from '../../services/coverage-service.js';
+import type { CoverageReport } from '../../services/backlog/coverage-service.js';
 import { pc } from '../../utils/colors.js';
 
 /**

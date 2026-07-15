@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Task } from '@/domain/entities/task.js';
-import { SyncService } from '@/services/sync-service.js';
+import { SyncService } from '@/services/sync/sync-service.js';
 
 /**
  * The task's `state` names a backlog subdirectory, and since migration

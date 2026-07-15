@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { ProvenanceKind } from '../../../domain/entities/provenance-link.js';
-import type { ProvenanceService } from '../../../services/provenance-service.js';
+import type { ProvenanceService } from '../../../services/integrity/provenance-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
 const KIND_VALUES = ['observation', 'note', 'decision', 'memory'] as const satisfies readonly [

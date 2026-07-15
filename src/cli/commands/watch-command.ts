@@ -1,8 +1,8 @@
 import path from 'node:path';
 
 import type { Command } from 'commander';
-import { parseTimeBound } from '../../services/audit-query.js';
-import { AuditTail } from '../../services/audit-tail.js';
+import { parseTimeBound } from '../../services/integrity/audit-query.js';
+import { AuditTail } from '../../services/integrity/audit-tail.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 import { formatEvent, type HistoryFormat } from '../formatters/history-formatter.js';

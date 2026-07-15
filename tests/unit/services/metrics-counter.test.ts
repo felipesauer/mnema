@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { readCounters, recordCounter } from '@/services/metrics-counter.js';
+import { readCounters, recordCounter } from '@/services/metrics/metrics-counter.js';
 
 describe('metrics-counter', () => {
   let dir: string;

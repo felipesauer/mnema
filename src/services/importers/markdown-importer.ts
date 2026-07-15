@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Err, Ok, type Result } from '../../common/result.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
-import type { TaskService } from '../task-service.js';
+import type { TaskService } from '../backlog/task-service.js';
 
 /**
  * Parsed-task shape produced by {@link MarkdownImporter.parse} before

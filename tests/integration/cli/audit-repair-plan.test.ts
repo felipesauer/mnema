@@ -11,8 +11,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { planAuditRepair } from '@/cli/commands/audit-command.js';
-import { AuditService } from '@/services/audit-service.js';
-import type { GitCommandRunner } from '@/services/git-commit-service.js';
+import type { GitCommandRunner } from '@/services/git/git-commit-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
 import { hashEvent } from '@/storage/audit/audit-hash.js';
 import { type AuditEvent, AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';

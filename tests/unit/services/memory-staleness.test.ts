@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { type GitRunner, MemoryStalenessService } from '@/services/memory-staleness.js';
+import { type GitRunner, MemoryStalenessService } from '@/services/knowledge/memory-staleness.js';
 
 const WRITTEN_AT = '2026-01-01T00:00:00.000Z';
 

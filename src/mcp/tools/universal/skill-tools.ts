@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { SkillQualityService } from '../../../services/skill-quality-service.js';
-import type { SkillService } from '../../../services/skill-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
+import type { SkillQualityService } from '../../../services/knowledge/skill-quality-service.js';
+import type { SkillService } from '../../../services/knowledge/skill-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

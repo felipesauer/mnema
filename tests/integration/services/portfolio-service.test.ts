@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TaskState } from '@/domain/enums/task-state.js';
-import { PortfolioService } from '@/services/portfolio-service.js';
+import { PortfolioService } from '@/services/knowledge/portfolio-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
 import { LabelRepository } from '@/storage/sqlite/repositories/label-repository.js';

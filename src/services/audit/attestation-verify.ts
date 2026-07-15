@@ -1,4 +1,4 @@
-import type { IntegrityCheck } from '../audit-integrity.js';
+import type { IntegrityCheck } from '../integrity/audit-integrity.js';
 import { type AttestationArtifact, verifyArtifact } from './attestation-artifact.js';
 import type { AuditChainWalk } from './audit-chain-walk.js';
 

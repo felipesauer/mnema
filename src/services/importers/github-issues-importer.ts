@@ -1,4 +1,4 @@
-import type { TaskService } from '../task-service.js';
+import type { TaskService } from '../backlog/task-service.js';
 
 /**
  * Subset of the GitHub Issues REST API payload that the importer

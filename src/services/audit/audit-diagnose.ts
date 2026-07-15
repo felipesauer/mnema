@@ -3,7 +3,7 @@ import path from 'node:path';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
 import { hashEvent, hmacEvent } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
-import { defaultGitRunner, type GitCommandRunner } from '../git-commit-service.js';
+import { defaultGitRunner, type GitCommandRunner } from '../git/git-commit-service.js';
 
 /**
  * Filename (relative to `auditDir`) recording a human's decision to accept

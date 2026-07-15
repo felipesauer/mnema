@@ -1,5 +1,5 @@
 import type { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
-import type { IntegrityCheck } from '../audit-integrity.js';
+import type { IntegrityCheck } from '../integrity/audit-integrity.js';
 import type { AnchorRegistry } from './anchor-registry.js';
 import { NONE_PROVIDER } from './none-anchor-provider.js';
 

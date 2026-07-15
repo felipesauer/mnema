@@ -5,7 +5,7 @@ import type { Command } from 'commander';
 import { ConfigLoader } from '../../config/config-loader.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
-import { ProjectSecretService } from '../../services/project-secret.js';
+import { ProjectSecretService } from '../../services/integrity/project-secret.js';
 import { pc } from '../../utils/colors.js';
 import { resolveProjectRoot } from '../project-root.js';
 

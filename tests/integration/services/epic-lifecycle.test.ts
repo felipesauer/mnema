@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
-import { AuditService } from '@/services/audit-service.js';
-import { EpicService } from '@/services/epic-service.js';
+import { EpicService } from '@/services/backlog/epic-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';

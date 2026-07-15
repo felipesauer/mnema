@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chainHealthyForAttest } from '@/services/audit/attestation-cli.js';
-import type { IntegrityCheck } from '@/services/audit-integrity.js';
+import type { IntegrityCheck } from '@/services/integrity/audit-integrity.js';
 
 /**
  * chainHealthyForAttest is the gate that closes the truncation-laundering gap:

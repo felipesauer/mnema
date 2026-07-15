@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import type { FocusService } from '../../../services/focus-service.js';
+import type { FocusService } from '../../../services/knowledge/focus-service.js';
 import { ok } from '../../mcp-tool-result.js';
 
 /**

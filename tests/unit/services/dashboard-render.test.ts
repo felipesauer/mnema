@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-
-import type { IntegrityCheck } from '@/services/audit-integrity.js';
-import type { DashboardData } from '@/services/dashboard-data.js';
+import type { DashboardData } from '@/services/dashboard/dashboard-data.js';
 import {
   renderChainPill,
   renderEventRow,
   renderGraphTab,
   renderLiveShell,
   renderTabBody,
-} from '@/services/dashboard-render.js';
-import type { DependencyGraph } from '@/services/dependency-graph-service.js';
-import type { FlowMetrics } from '@/services/flow-metrics-service.js';
+} from '@/services/dashboard/dashboard-render.js';
+import type { IntegrityCheck } from '@/services/integrity/audit-integrity.js';
+import type { FlowMetrics } from '@/services/metrics/flow-metrics-service.js';
+import type { DependencyGraph } from '@/services/snapshot/dependency-graph-service.js';
 
 function graph(overrides: Partial<DependencyGraph> = {}): DependencyGraph {
   return {

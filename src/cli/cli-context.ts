@@ -9,7 +9,7 @@ import {
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import { type ErrorIssue, fromZodIssues } from '../errors/mnema-error.js';
-import { IdentityNotConfiguredError } from '../services/identity-service.js';
+import { IdentityNotConfiguredError } from '../services/integrity/identity-service.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
 import { perfTrace } from '../utils/perf-trace.js';

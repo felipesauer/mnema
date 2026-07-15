@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { AgentRunStatus } from '../../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
-import type { AgentRunService } from '../../../services/agent-run-service.js';
-import type { AuditQuery } from '../../../services/audit-query.js';
-import type { IdentityService } from '../../../services/identity-service.js';
+import type { AgentRunService } from '../../../services/agent/agent-run-service.js';
+import type { AuditQuery } from '../../../services/integrity/audit-query.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

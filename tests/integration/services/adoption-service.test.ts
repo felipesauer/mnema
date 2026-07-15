@@ -4,10 +4,10 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
-import { AdoptionService } from '@/services/adoption-service.js';
-import { AuditService } from '@/services/audit-service.js';
-import { IdentityService } from '@/services/identity-service.js';
-import { SkillService } from '@/services/skill-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
+import { IdentityService } from '@/services/integrity/identity-service.js';
+import { AdoptionService } from '@/services/knowledge/adoption-service.js';
+import { SkillService } from '@/services/knowledge/skill-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';

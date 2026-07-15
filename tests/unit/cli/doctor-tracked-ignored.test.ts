@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { inspectTrackedIgnored, listTrackedFiles } from '@/cli/commands/doctor-command.js';
-import type { GitCommandRunner } from '@/services/git-commit-service.js';
+import type { GitCommandRunner } from '@/services/git/git-commit-service.js';
 
 /**
  * `mnema upgrade` reconciles the managed `.gitignore` block but deliberately

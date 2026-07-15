@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { MemoryLinter } from '@/services/memory-linter.js';
+import { MemoryLinter } from '@/services/knowledge/memory-linter.js';
 
 describe('MemoryLinter', () => {
   let tempRoot: string;

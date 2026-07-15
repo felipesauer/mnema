@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { Workflow } from '@/domain/state-machine/state-machine.js';
 import { EvolutionCandidateService } from '@/services/evolution-candidate-service.js';
-import type { ObservationService } from '@/services/observation-service.js';
-import type { SkillQualityService, SkillReviewProposal } from '@/services/skill-quality-service.js';
+import type { ObservationService } from '@/services/knowledge/observation-service.js';
+import type {
+  SkillQualityService,
+  SkillReviewProposal,
+} from '@/services/knowledge/skill-quality-service.js';
 import type { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 

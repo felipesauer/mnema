@@ -8,8 +8,8 @@ import { emitAttestation } from '@/services/audit/attestation-emitter.js';
 import { writeArtifact } from '@/services/audit/attestation-store.js';
 import { CONTENT_ATTESTATION_CHECK } from '@/services/audit/attestation-verify.js';
 import { walkChainedEvents } from '@/services/audit/audit-chain-walk.js';
-import { MachineKeyService } from '@/services/machine-key.js';
-import { HMAC_ID_RELATIVE } from '@/services/project-secret.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
+import { HMAC_ID_RELATIVE } from '@/services/integrity/project-secret.js';
 
 /**
  * The content-attestation verify path must BIND each `.att` to the project's

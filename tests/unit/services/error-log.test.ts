@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { readErrors, recordError, resolveStateDir, sanitize } from '@/services/error-log.js';
+import { readErrors, recordError, resolveStateDir, sanitize } from '@/services/agent/error-log.js';
 
 describe('error-log', () => {
   let dir: string;

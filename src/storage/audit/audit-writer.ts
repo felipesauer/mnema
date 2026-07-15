@@ -12,7 +12,7 @@ import path from 'node:path';
 import lockfile from 'proper-lockfile';
 
 import type { AnchorScheduler } from '../../services/anchor/anchor-scheduler.js';
-import type { HeadCheckpointService } from '../../services/head-checkpoint.js';
+import type { HeadCheckpointService } from '../../services/integrity/head-checkpoint.js';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
 import { SQLITE_BUSY_TIMEOUT_MS } from '../sqlite/sqlite-adapter.js';
 import { orderedAuditFiles } from './audit-files.js';

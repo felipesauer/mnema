@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { Config } from '../../../config/config-schema.js';
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { SprintService } from '../../../services/sprint-service.js';
+import type { SprintService } from '../../../services/backlog/sprint-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

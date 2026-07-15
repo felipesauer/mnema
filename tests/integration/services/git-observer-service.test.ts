@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
-import { GitObserverService } from '@/services/git-observer-service.js';
-import type { CommandResult, CommandRunner } from '@/services/github-pr-service.js';
+import { GitObserverService } from '@/services/git/git-observer-service.js';
+import type { CommandResult, CommandRunner } from '@/services/git/github-pr-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 

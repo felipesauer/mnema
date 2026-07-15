@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-
-import { CommitVerifier } from '@/services/commit-verifier.js';
-import type { CommandResult, CommandRunner } from '@/services/github-pr-service.js';
+import type { CommandResult, CommandRunner } from '@/services/git/github-pr-service.js';
+import { CommitVerifier } from '@/services/integrity/commit-verifier.js';
 
 const ROOT = '/repo';
 

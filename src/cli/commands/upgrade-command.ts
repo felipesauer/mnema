@@ -5,13 +5,19 @@ import path from 'node:path';
 import type { Command } from 'commander';
 
 import type { Config } from '../../config/config-schema.js';
-import { type AdoptableComponent, AdoptionService } from '../../services/adoption-service.js';
 import { autoAttest, chainHealthyForAttest } from '../../services/audit/attestation-cli.js';
 import { listArtifacts } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
-import { inspectAuditIntegrity, reconcileAuditState } from '../../services/audit-integrity.js';
-import { MachineKeyService } from '../../services/machine-key.js';
-import { ProjectSecretService } from '../../services/project-secret.js';
+import {
+  inspectAuditIntegrity,
+  reconcileAuditState,
+} from '../../services/integrity/audit-integrity.js';
+import { MachineKeyService } from '../../services/integrity/machine-key.js';
+import { ProjectSecretService } from '../../services/integrity/project-secret.js';
+import {
+  type AdoptableComponent,
+  AdoptionService,
+} from '../../services/knowledge/adoption-service.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import {
   RemediationRunner,

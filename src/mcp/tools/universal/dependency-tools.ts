@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { DependencyKind } from '../../../domain/entities/dependency.js';
-import type { DependencyService } from '../../../services/dependency-service.js';
-import type { IdentityService } from '../../../services/identity-service.js';
+import type { DependencyService } from '../../../services/backlog/dependency-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

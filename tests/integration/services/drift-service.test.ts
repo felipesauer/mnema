@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DriftService } from '@/services/drift-service.js';
-import type { CommandResult, CommandRunner } from '@/services/github-pr-service.js';
+import type { CommandResult, CommandRunner } from '@/services/git/github-pr-service.js';
 import type { TaskEvidenceRepository } from '@/storage/sqlite/repositories/task-evidence-repository.js';
 
 /** A git runner driven by a fixed script keyed on the subcommand. */

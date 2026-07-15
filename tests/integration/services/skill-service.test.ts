@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SkillService } from '@/services/skill-service.js';
+import { SkillService } from '@/services/knowledge/skill-service.js';
 
 const KNOWN_TOOLS = new Set(['task_create', 'task_submit', 'agent_run_start']);
 

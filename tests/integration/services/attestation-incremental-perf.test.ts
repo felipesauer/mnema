@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { emitAttestation } from '@/services/audit/attestation-emitter.js';
 import { walkChainedEvents, walkChainedTail } from '@/services/audit/audit-chain-walk.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 
 /**
  * The checkpoint's attestation walk must cost a function of the NEW batch, not

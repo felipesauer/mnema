@@ -7,7 +7,7 @@ import {
   GitCommitFailedError,
   GitCommitNotARepoError,
   GitCommitService,
-} from '../../services/git-commit-service.js';
+} from '../../services/git/git-commit-service.js';
 import { pc } from '../../utils/colors.js';
 import { resolveProjectRoot } from '../project-root.js';
 

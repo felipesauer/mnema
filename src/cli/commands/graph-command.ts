@@ -1,7 +1,10 @@
 import type { Command } from 'commander';
 
 import { printError } from '../../errors/error-printer.js';
-import type { DependencyGraph, GraphScope } from '../../services/dependency-graph-service.js';
+import type {
+  DependencyGraph,
+  GraphScope,
+} from '../../services/snapshot/dependency-graph-service.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 

@@ -8,7 +8,7 @@ import { emitAttestation } from '@/services/audit/attestation-emitter.js';
 import { planReattest } from '@/services/audit/attestation-reattest.js';
 import { committedSignerResolver } from '@/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@/services/audit/audit-chain-walk.js';
-import { MachineKeyService } from '@/services/machine-key.js';
+import { MachineKeyService } from '@/services/integrity/machine-key.js';
 
 /**
  * planReattest is FAIL-CLOSED: it refuses to sign anything on any sign of real

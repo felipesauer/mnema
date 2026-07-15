@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { AuditService } from '@/services/audit-service.js';
+import { AuditService } from '@/services/integrity/audit-service.js';
 import type { AuditEvent, AuditWriter } from '@/storage/audit/audit-writer.js';
 
 function fakeWriter(): { writer: AuditWriter; written: AuditEvent[] } {

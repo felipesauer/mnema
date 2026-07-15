@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import type { NoteKind } from '../../../domain/entities/note.js';
-import type { IdentityService } from '../../../services/identity-service.js';
-import type { NoteService } from '../../../services/note-service.js';
+import type { NoteService } from '../../../services/backlog/note-service.js';
+import type { IdentityService } from '../../../services/integrity/identity-service.js';
 import type { McpSessionContext } from '../../mcp-session-context.js';
 import {
   err,

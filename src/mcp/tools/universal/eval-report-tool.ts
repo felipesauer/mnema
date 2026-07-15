@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import type { EvalReportService } from '../../../services/eval-report-service.js';
+import type { EvalReportService } from '../../../services/metrics/eval-report-service.js';
 import { ok } from '../../mcp-tool-result.js';
 import { timeBoundSchema } from '../../time-bound-schema.js';
 

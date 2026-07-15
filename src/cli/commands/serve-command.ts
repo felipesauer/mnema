@@ -8,7 +8,7 @@ import {
   DEFAULT_HOST,
   DEFAULT_PORT,
   isLoopbackHost,
-} from '../../services/dashboard-server.js';
+} from '../../services/dashboard/dashboard-server.js';
 import { pc } from '../../utils/colors.js';
 import { openCliContext } from '../cli-context.js';
 

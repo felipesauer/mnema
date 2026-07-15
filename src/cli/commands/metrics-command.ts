@@ -2,8 +2,11 @@ import path from 'node:path';
 
 import type { Command } from 'commander';
 
-import { type AdoptionMetrics, computeAdoptionMetrics } from '../../services/adoption-metrics.js';
-import { readCounters } from '../../services/metrics-counter.js';
+import {
+  type AdoptionMetrics,
+  computeAdoptionMetrics,
+} from '../../services/metrics/adoption-metrics.js';
+import { readCounters } from '../../services/metrics/metrics-counter.js';
 import { pc } from '../../utils/colors.js';
 import { withCliContext } from '../cli-context.js';
 

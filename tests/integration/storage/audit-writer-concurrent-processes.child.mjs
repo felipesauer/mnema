@@ -8,7 +8,9 @@ import { pathToFileURL } from 'node:url';
 
 const [, , distRoot, auditDir, statePath, actor, count] = process.argv;
 
-const { AuditService } = await import(pathToFileURL(`${distRoot}/services/audit-service.js`).href);
+const { AuditService } = await import(
+  pathToFileURL(`${distRoot}/services/integrity/audit-service.js`).href
+);
 const { AuditWriter } = await import(pathToFileURL(`${distRoot}/storage/audit/audit-writer.js`).href);
 const { AuditStateRepository } = await import(
   pathToFileURL(`${distRoot}/storage/sqlite/repositories/audit-state-repository.js`).href
