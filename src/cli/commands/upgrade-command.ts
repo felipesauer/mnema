@@ -23,6 +23,7 @@ import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
 import { ensureGitattributes, hasGitattributesUnion } from '../../utils/gitattributes.js';
+import { ensureGitignore, hasCurrentGitignore } from '../../utils/gitignore.js';
 import { CURATED_MEMORY_SUBFOLDERS } from '../../utils/mirror-layout.js';
 import { VERSION } from '../../utils/version.js';
 import { type CliContext, withCliContext } from '../cli-context.js';
@@ -245,6 +246,22 @@ export class UpgradeCommand {
           'add the audit-log `merge=union` .gitattributes (defense-in-depth for parallel branches)',
         ),
       );
+    }
+
+    // Retrofit the managed .gitignore block onto a project initialised by a
+    // version predating the current template — chiefly the later
+    // `.audit.lock*` line, so an early-vintage adopter stops committing the
+    // transient cross-process write lock. Same shape as the .gitattributes
+    // retrofit: fires only when the block is not already current, idempotent,
+    // and never touches user-added lines (it only appends what is missing).
+    if (!hasCurrentGitignore(projectRoot, config.paths.state, config.paths.audit)) {
+      steps.push({
+        label: 'reconcile the managed .gitignore block (e.g. ignore the transient .audit.lock)',
+        run: () => {
+          const outcome = ensureGitignore(projectRoot, config.paths.state, config.paths.audit);
+          return `.gitignore ${outcome}`;
+        },
+      });
     }
 
     // Ingest committed markdown into the cache (markdown → DB), FIRST among

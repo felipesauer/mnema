@@ -1,11 +1,4 @@
-import {
-  appendFileSync,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Command } from 'commander';
@@ -35,6 +28,7 @@ import { SkillRepository } from '../../storage/sqlite/repositories/skill-reposit
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
 import { ensureGitattributes } from '../../utils/gitattributes.js';
+import { ensureGitignore } from '../../utils/gitignore.js';
 import { VERSION } from '../../utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 import { writeAgentsMd } from '../templates/agents-md.js';
@@ -248,7 +242,7 @@ export class InitCommand {
       mkdirSync(path.join(cwd, config.paths.templates), { recursive: true });
     }
 
-    appendGitignore(cwd, config.paths.state, config.paths.audit);
+    ensureGitignore(cwd, config.paths.state, config.paths.audit);
     ensureGitattributes(cwd, config.paths.audit);
 
     const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
@@ -403,69 +397,6 @@ function writeJson(filePath: string, data: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
 
-/**
- * The `.gitignore` block Mnema writes. Only the **state** directory and
- * the personal `config.local.json` override are ignored — the state dir
- * holds the SQLite cache, the sync buffer and attachment blobs, all of
- * which are derived and rebuildable from the markdown via `mnema sync`;
- * `config.local.json` is a per-user override that must not reach the
- * team's repo. Everything else under `.mnema/` (the backlog / roadmap /
- * sprint / memory / skill markdown and the `audit/` log) is the
- * version-controlled record of the work and is meant to be committed:
- * it is the source of truth and what survives a fresh clone. The
- * comment lines double as the in-repo documentation of that split.
- */
-function gitignoreBlock(statePath: string, auditPath: string): string {
-  const entry = `${statePath.replace(/\/$/, '')}/`;
-  return [
-    '# mnema: ignore only the local cache (SQLite db, sync buffer,',
-    '# attachments) and the personal config.local.json override. The',
-    '# backlog/roadmap/sprint/memory/skill markdown and the audit log',
-    '# under .mnema/ are the source of truth — commit them. The cache is',
-    '# rebuildable from that markdown via `mnema sync`.',
-    entry,
-    '.mnema/config.local.json',
-    // The audit dir is committed, but the cross-process write lock in it
-    // is transient local state — never version it.
-    `${auditPath.replace(/\/$/, '')}/.audit.lock*`,
-  ].join('\n');
-}
-
-function appendGitignore(cwd: string, statePath: string, auditPath: string): void {
-  const file = path.join(cwd, '.gitignore');
-  const entry = `${statePath.replace(/\/$/, '')}/`;
-  const block = gitignoreBlock(statePath, auditPath);
-  if (!existsSync(file)) {
-    writeFileSync(file, `${block}\n`, 'utf-8');
-    return;
-  }
-  const current = readFileSync(file, 'utf-8');
-  if (current.includes(entry)) return;
-  // If a broader ancestor (e.g. `.mnema/` for the new default
-  // layout `.mnema/state`) is already ignored, the more specific
-  // entry would be redundant — skip it.
-  if (covers(current, entry)) return;
-  appendFileSync(file, `\n${block}\n`, 'utf-8');
-}
-
-/**
- * Returns true when `gitignore` already contains a line that ignores
- * an ancestor of `entry`. The check is intentionally simple: it walks
- * up the path one segment at a time and looks for a literal match —
- * good enough for the defaults Mnema writes; users with custom
- * negation rules can edit the file themselves.
- */
-function covers(gitignoreBody: string, entry: string): boolean {
-  const segments = entry
-    .replace(/\/$/, '')
-    .split('/')
-    .filter((s) => s.length > 0);
-  for (let i = 1; i < segments.length; i += 1) {
-    const ancestor = `${segments.slice(0, i).join('/')}/`;
-    if (gitignoreBody.includes(ancestor)) return true;
-  }
-  return false;
-}
 
 /**
  * Creates one folder per workflow state under `backlog/`, derived from
