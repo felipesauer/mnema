@@ -42,6 +42,7 @@ import {
   scopeFolder,
   skillOriginDir,
 } from '../../utils/mirror-layout.js';
+import { managedBlockIgnores } from '../../utils/gitignore.js';
 import { checkForUpdate, checkVersion, fetchLatestVersion } from '../../utils/version-check.js';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -557,6 +558,18 @@ export class DoctorCommand {
         detail: fullPath,
       });
     }
+
+    // Reconciling the managed `.gitignore` block never untracks a file a repo
+    // committed before the rule existed (that rewrites history) — so surface
+    // any tracked file the current template now intends to ignore, with the
+    // exact `git rm --cached` to fix it. Read-only; a no-op outside git.
+    checks.push(
+      ...inspectTrackedIgnored(
+        listTrackedFiles(projectRoot),
+        config.paths.state,
+        config.paths.audit,
+      ),
+    );
 
     const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
     if (existsSync(dbPath)) {
@@ -1525,6 +1538,62 @@ export function inspectIdentity(identity: {
       name: 'identity configured',
       ok: true,
       detail: `${identity.actor} (${identity.source})`,
+    },
+  ];
+}
+
+/**
+ * Enumerates git-tracked files via `git ls-files`. The single thin boundary
+ * that shells out: absent git, or a directory that is not a git repo, yields an
+ * empty list so {@link inspectTrackedIgnored} degrades to a silent no-op — the
+ * check never throws and never warns outside a repo.
+ *
+ * @param cwd - Project root to run git in
+ * @param gitRunner - Injectable git runner (tests pass a stub)
+ * @returns Repo-relative tracked paths (forward slashes), or `[]` off-repo
+ */
+export function listTrackedFiles(
+  cwd: string,
+  gitRunner: GitCommandRunner = defaultGitRunner,
+): string[] {
+  const res = gitRunner(['ls-files', '-z'], cwd);
+  if (res.status !== 0) return [];
+  return res.stdout.split('\0').filter((p) => p.length > 0);
+}
+
+/**
+ * Flags any git-tracked file the current managed `.gitignore` template now
+ * intends to ignore — e.g. a `.audit.lock` a repo committed before the ignore
+ * rule existed, or a file under the ignored part of the state dir. `mnema
+ * upgrade` reconciles the ignore *rules* but deliberately never untracks such a
+ * file (that rewrites history), so doctor WARNS with the exact `git rm --cached`
+ * for the user to run — it never touches history itself. A warning (exit stays
+ * 0); a clean repo passes. Pure over the tracked-file list so the git-spawn
+ * boundary ({@link listTrackedFiles}) is the only untested-by-shell part.
+ *
+ * @param trackedFiles - Repo-relative tracked paths (from `git ls-files`)
+ * @param statePath - The configured state dir (e.g. `.mnema/state`)
+ * @param auditPath - The configured audit dir (e.g. `.mnema/audit`)
+ * @returns A single-element check list
+ */
+export function inspectTrackedIgnored(
+  trackedFiles: readonly string[],
+  statePath: string,
+  auditPath: string,
+): DoctorCheck[] {
+  const offenders = trackedFiles.filter((p) => managedBlockIgnores(p, statePath, auditPath)).sort();
+  if (offenders.length === 0) {
+    return [{ name: 'no tracked ignored files', ok: true, detail: 'nothing tracked is now ignored' }];
+  }
+  return [
+    {
+      name: 'tracked files now ignored',
+      ok: false,
+      severity: 'warning',
+      detail:
+        `${offenders.length} tracked file(s) match the managed .gitignore block but were committed ` +
+        `before the rule existed — untracking rewrites history, so run it yourself: ` +
+        offenders.map((p) => `git rm --cached ${p}`).join(' && '),
     },
   ];
 }

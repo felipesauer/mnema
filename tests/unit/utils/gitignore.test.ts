@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ensureGitignore, gitignoreBlock, hasCurrentGitignore } from '@/utils/gitignore.js';
+import {
+  ensureGitignore,
+  gitignoreBlock,
+  hasCurrentGitignore,
+  managedBlockIgnores,
+} from '@/utils/gitignore.js';
 
 describe('gitignore util', () => {
   let cwd: string;
@@ -90,5 +95,28 @@ describe('gitignore util', () => {
   it('hasCurrentGitignore is false for a legacy block missing the lock line', () => {
     writeFileSync(path.join(cwd, '.gitignore'), `${stateEntry}\n`, 'utf-8');
     expect(hasCurrentGitignore(cwd, statePath, auditPath)).toBe(false);
+  });
+
+  describe('managedBlockIgnores', () => {
+    it('flags the audit lock file and its suffixed variants', () => {
+      expect(managedBlockIgnores('.mnema/audit/.audit.lock', statePath, auditPath)).toBe(true);
+      expect(managedBlockIgnores('.mnema/audit/.audit.lock.pid', statePath, auditPath)).toBe(true);
+    });
+
+    it('flags files under the state dir and the personal config override', () => {
+      expect(managedBlockIgnores('.mnema/state/state.db', statePath, auditPath)).toBe(true);
+      expect(managedBlockIgnores('.mnema/config.local.json', statePath, auditPath)).toBe(true);
+    });
+
+    it('does NOT flag committed content: the audit log, backlog markdown, config.json', () => {
+      // The audit LOG is version-controlled; only the transient lock is ignored.
+      expect(managedBlockIgnores('.mnema/audit/current.jsonl', statePath, auditPath)).toBe(false);
+      expect(managedBlockIgnores('.mnema/backlog/TODO/KEY-1.md', statePath, auditPath)).toBe(false);
+      expect(managedBlockIgnores('mnema.config.json', statePath, auditPath)).toBe(false);
+    });
+
+    it('tolerates a trailing slash on the configured dirs and a leading ./', () => {
+      expect(managedBlockIgnores('./.mnema/state/x', '.mnema/state/', '.mnema/audit/')).toBe(true);
+    });
   });
 });

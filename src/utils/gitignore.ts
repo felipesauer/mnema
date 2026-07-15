@@ -110,6 +110,36 @@ export function ensureGitignore(
 }
 
 /**
+ * True when `relPath` (a repo-relative, forward-slash path) is one the managed
+ * block intends to ignore: it lives under the state dir, is the personal
+ * `config.local.json` override, or is a transient `.audit.lock*` file under the
+ * audit dir. Pure and self-contained — it does NOT read the `.gitignore` on
+ * disk; it answers "would the *current template* ignore this?" so `mnema
+ * doctor` can flag a file a repo committed before the rule existed (untracking
+ * rewrites history, so reconciling the rules never does it — the fix stays an
+ * explicit user action).
+ *
+ * Intentionally simple, matching {@link covers}: whole-line for the literal
+ * override, prefix for the state dir, and prefix + `.audit.lock` basename for
+ * the lock marker. Not a full gitignore engine.
+ *
+ * @param relPath - Repo-relative path, forward slashes (as `git ls-files` emits)
+ * @param statePath - The configured state dir (e.g. `.mnema/state`)
+ * @param auditPath - The configured audit dir (e.g. `.mnema/audit`)
+ */
+export function managedBlockIgnores(relPath: string, statePath: string, auditPath: string): boolean {
+  const p = relPath.replace(/^\.\//, '');
+  const stateDir = `${statePath.replace(/\/$/, '')}/`;
+  if (p === '.mnema/config.local.json') return true;
+  if (p.startsWith(stateDir)) return true;
+  // `.audit.lock*` is a glob: match the lock file and any suffixed variant
+  // (e.g. `.audit.lock.pid`) directly under the audit dir.
+  const auditDir = `${auditPath.replace(/\/$/, '')}/`;
+  if (p.startsWith(auditDir) && p.slice(auditDir.length).startsWith('.audit.lock')) return true;
+  return false;
+}
+
+/**
  * True when the root `.gitignore` is already on the current managed template:
  * it ignores the state dir AND carries the `.audit.lock*` line. False when the
  * file is missing, has no managed block, or is an older block missing the lock
