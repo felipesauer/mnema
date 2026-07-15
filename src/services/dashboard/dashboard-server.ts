@@ -152,6 +152,42 @@ export async function createDashboardServer(
     return container.portfolio.run({});
   }
 
+  /**
+   * The Audit-trail read (Integrity module): the most recent chained events,
+   * newest-first, projected to the wire (kind/actor/via/at + a short prev_hash
+   * pointer + the entity key). Bounded to a tail — the full log can be huge —
+   * and reads only the existing AuditQuery service.
+   */
+  function auditData() {
+    const AUDIT_TAIL = 60;
+    const all = container.auditQuery.run({});
+    const tail = all.slice(-AUDIT_TAIL);
+    const rows = tail
+      .map((e, i) => {
+        // Absolute index in the full log (1-based), so the UI can show #N.
+        const index = all.length - tail.length + i + 1;
+        const keyField = ['key', 'task_key', 'decision_key', 'epic_key', 'sprint_key'].find(
+          (k) => typeof e.data[k] === 'string',
+        );
+        return {
+          index,
+          at: e.at,
+          kind: e.kind,
+          actor: display(e.actor),
+          via: e.via,
+          key: keyField ? (e.data[keyField] as string) : undefined,
+          prevHash: typeof e.prev_hash === 'string' ? e.prev_hash.slice(0, 8) : null,
+        };
+      })
+      .reverse();
+    return { total: all.length, events: rows };
+  }
+
+  /** The Drift read (Integrity module): commits on this branch with no task. */
+  function driftData() {
+    return container.drift.scan(projectRoot, { limit: 50 });
+  }
+
   /** Epics and sprints with their coverage — the "worklines" read. */
   function worklineData() {
     const key = config.project.key;
@@ -263,6 +299,18 @@ export async function createDashboardServer(
     if (url === '/api/epics') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(worklineData()));
+      return;
+    }
+
+    // Integrity module (ADR-67 slice 5). On-demand reads over existing services.
+    if (url === '/api/audit') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(auditData()));
+      return;
+    }
+    if (url === '/api/drift') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(driftData()));
       return;
     }
 

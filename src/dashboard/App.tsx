@@ -1,7 +1,9 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
+import { AuditTrail } from './AuditTrail.js';
 import { Board } from './Board.js';
 import { Charts } from './Charts.js';
+import { Drift } from './Drift.js';
 import type { DashboardContract } from './contract.js';
 import { Graph } from './Graph.js';
 import { Metrics } from './Metrics.js';
@@ -82,8 +84,8 @@ const NAV: readonly NavGroup[] = [
   {
     label: 'Integrity',
     items: [
-      { id: 'audit', label: 'Audit trail', Icon: IconAudit },
-      { id: 'drift', label: 'Drift', Icon: IconDrift },
+      { id: 'audit', label: 'Audit trail', Icon: IconAudit, ready: true },
+      { id: 'drift', label: 'Drift', Icon: IconDrift, ready: true },
     ],
   },
   {
@@ -301,6 +303,25 @@ function Content({ view, data }: { view: string; data: DashboardContract }): Rea
           <h1>Activity</h1>
           <p className="subtitle">Event volume by kind and over time.</p>
           <Charts series={data.series} />
+        </>
+      );
+    case 'audit':
+      return (
+        <>
+          <h1>Audit trail</h1>
+          <p className="subtitle">
+            The tamper-evident chain — every event hash-linked and signed. This is what mnema
+            proves.
+          </p>
+          <AuditTrail integrity={data.integrity} />
+        </>
+      );
+    case 'drift':
+      return (
+        <>
+          <h1>Drift</h1>
+          <p className="subtitle">Commits on this branch not tied to any task.</p>
+          <Drift />
         </>
       );
     default: {
