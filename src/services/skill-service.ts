@@ -893,7 +893,11 @@ function toolsArraysEqual(a: readonly string[], b: readonly string[]): boolean {
 }
 
 function quoteYaml(value: string): string {
-  if (/[:#&*!|>{}[\],?\-'"`%@\\\n]/.test(value)) {
+  // Quote when the value carries a YAML-significant character OR leading/
+  // trailing whitespace (the YAML parser strips border whitespace from an
+  // unquoted scalar, so an unquoted `name: ( ` round-trips as `(`) OR is
+  // empty (an unquoted empty scalar parses as null).
+  if (/[:#&*!|>{}[\],?\-'"`%@\\\n]/.test(value) || /^\s|\s$/.test(value) || value === '') {
     return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
   return value;

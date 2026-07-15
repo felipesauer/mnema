@@ -458,17 +458,23 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
       fc.assert(
         fc.property(
           fc.record({
-            name: safeText(1, 60),
+            // Border whitespace is deliberately in scope here: the skill mirror
+            // hand-builds YAML and quoteYaml must quote it, or the parser trims
+            // it on rebuild. `pad` wraps the name with leading/trailing spaces
+            // on some runs to exercise exactly that.
+            base: safeText(1, 56),
+            pad: fc.constantFrom('', ' ', '  ', ' x '),
             bodyToken: fc
               .string({ minLength: 6, maxLength: 12 })
               .map((s) => `zk${s.replace(/[^a-z]/gi, 'x')}`),
           }),
           (gen) => {
             const local = makeProject();
-            const slug = `skill-${Math.abs(hashStr(gen.name + gen.bodyToken)).toString(36)}`;
+            const name = `${gen.pad}${gen.base}${gen.pad}`;
+            const slug = `skill-${Math.abs(hashStr(name + gen.bodyToken)).toString(36)}`;
             const created = local.container.skill.record({
               slug,
-              name: gen.name,
+              name,
               description: 'A reusable procedure',
               content: `Steps: use the ${gen.bodyToken} helper carefully.`,
               toolsUsed: ['pr_status'],
