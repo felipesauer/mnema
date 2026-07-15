@@ -221,19 +221,25 @@ unkeyed chain — is closed by version monotonicity plus a
 fingerprint-implies-v3 rule, so an attacker can't quietly drop to the
 weaker format.
 
-**Content attestation — verifiable by anyone, no secret needed.** The
-HMAC proves authenticity only to a *secret-holder*; a **public clone or
-an outside reviewer** has no way to check it. So the per-machine Ed25519
-key also signs a **content-recomputable root** over each batch of
-events, committed as `.mnema/audit/attest/<to>.att`. A stranger
-recomputes that root from the events on disk and verifies the signature
-against the committed public key — with **no secret at all**. Editing
-any covered event changes the root and breaks the signature; without
-this, editing v3 content passed green for anyone lacking the project
-secret. Attestations are emitted automatically at each checkpoint;
-`mnema audit reattest` backfills or repairs them. `mnema audit verify`
-reports coverage per batch and **never shows green beyond the last
-attestation**.
+**Content attestation — verifiable by anyone, no secret needed (opt-in).**
+The HMAC proves authenticity only to a *secret-holder*; a **public clone
+or an outside reviewer** has no way to check it. So the per-machine
+Ed25519 key can also sign a **content-recomputable root** over each
+batch of events, written to `.mnema/audit/attest/<to>.att`. Once those
+`.att` files are committed, a stranger recomputes that root from the
+events on disk and verifies the signature against the committed public
+key — with **no secret at all**. Editing any covered event changes the
+root and breaks the signature; without this, editing v3 content passes
+green for anyone lacking the project secret. Attestations are emitted
+automatically at each checkpoint; `mnema audit reattest` backfills or
+repairs them. `mnema audit verify` reports coverage per batch and
+**never shows green beyond the last attestation**.
+
+Whether to commit the `.att` files is the project's choice: this repo
+does **not** commit its own — its `.mnema/` is a development workbench
+(a knowingly churned, non-canonical audit trail), not a reference. For a
+worked example of a repo that adopts attestation, look to a real
+adopting project rather than to Mnema's own tree.
 
 **Layer 3 — temporal anchoring (opt-in, default `none`).** A pluggable
 provider stamps the signed head into an external, independently
@@ -258,7 +264,7 @@ receipts against the provider.
 | Attack | Caught by |
 |---|---|
 | Editing a past event | Layer 1 (chain) + Layer 2 (HMAC) |
-| Editing a past event, checked by someone *without* the secret | Layer 2 content attestation — the committed `.att` breaks |
+| Editing a past event, checked by someone *without* the secret | Layer 2 content attestation, **when the `.att` files are committed** — the signed root breaks |
 | Recomputing hashes to hide an edit | Layer 2 — no HMAC secret, so the recomputed chain fails |
 | Deleting or reordering events | Layer 1 |
 | Rolling the log back below a signed checkpoint | Layer 2 signatures |
