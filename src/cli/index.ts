@@ -27,6 +27,14 @@ interface CommandSpec {
    * the subcommand tree.
    */
   readonly description: string;
+  /**
+   * Advanced/recovery/plumbing command. Hidden from the default
+   * `mnema --help` so a first-time user sees only the everyday set;
+   * revealed by `mnema help --all` (or `mnema --help --all`). Never
+   * removed — an advanced command is always runnable when invoked
+   * directly, exactly like a visible one.
+   */
+  readonly advanced?: boolean;
 }
 
 /**
@@ -42,10 +50,12 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   adopt: {
     load: async () => new (await import('./commands/adopt-command.js')).AdoptCommand(),
     description: 'Add an optional component (skills, memory, roadmap) to an existing project',
+    advanced: true,
   },
   import: {
     load: async () => new (await import('./commands/import-command.js')).ImportCommand(),
     description: 'One-shot import from external sources (markdown, github-issues)',
+    advanced: true,
   },
   task: {
     load: async () => new (await import('./commands/task-command.js')).TaskCommand(),
@@ -60,6 +70,7 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   attach: {
     load: async () => new (await import('./commands/attach-command.js')).AttachCommand(),
     description: 'Manage task attachments (add / list)',
+    advanced: true,
   },
   decision: {
     load: async () => new (await import('./commands/decision-command.js')).DecisionCommand(),
@@ -79,31 +90,38 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   lint: {
     load: async () => new (await import('./commands/lint-command.js')).LintCommand(),
     description: 'Integrity checks over the work graph (lint sprint / lint epic)',
+    advanced: true,
   },
   hooks: {
     load: async () => new (await import('./commands/hooks-command.js')).HooksCommand(),
     description: 'Review and approve domain-event hooks (approve / show)',
+    advanced: true,
   },
   commit: {
     load: async () => new (await import('./commands/commit-command.js')).CommitCommand(),
     description: 'Commit the .mnema/ trail separately from code (trail first, then code)',
+    advanced: true,
   },
   skill: {
     load: async () => new (await import('./commands/skill-command.js')).SkillCommand(),
     description: 'Manage skills (lint / list / show)',
+    advanced: true,
   },
   commands: {
     load: async () => new (await import('./commands/commands-command.js')).CommandsCommand(),
     description: 'Versioned slash commands (list / show)',
+    advanced: true,
   },
   memory: {
     load: async () => new (await import('./commands/memory-command.js')).MemoryCommand(),
     description: 'Curate memory (consolidate / lint / list / show)',
+    advanced: true,
   },
   observation: {
     load: async () => new (await import('./commands/observation-command.js')).ObservationCommand(),
     aliases: ['observations'],
     description: 'Read agent-recorded observations (list)',
+    advanced: true,
   },
   search: {
     load: async () => new (await import('./commands/search-command.js')).SearchCommand(),
@@ -112,18 +130,22 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   audit: {
     load: async () => new (await import('./commands/audit-command.js')).AuditCommand(),
     description: 'Inspect the raw audit log (query with filters)',
+    advanced: true,
   },
   update: {
     load: async () => new (await import('./commands/update-command.js')).UpdateCommand(),
     description: 'Check npm for a newer mnema version (explicit, opt-in network)',
+    advanced: true,
   },
   identity: {
     load: async () => new (await import('./commands/identity-command.js')).IdentityCommand(),
     description: 'Manage your default actor handle (set / whoami / unset / add / list)',
+    advanced: true,
   },
   project: {
     load: async () => new (await import('./commands/project-command.js')).ProjectCommand(),
     description: 'Manage project-scoped credentials (secret export / import)',
+    advanced: true,
   },
   history: {
     load: async () => new (await import('./commands/history-command.js')).HistoryCommand(),
@@ -132,19 +154,23 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   stats: {
     load: async () => new (await import('./commands/stats-command.js')).StatsCommand(),
     description: 'Show derived flow metrics (throughput, lead/cycle time, reopen rate)',
+    advanced: true,
   },
   metrics: {
     load: async () => new (await import('./commands/metrics-command.js')).MetricsCommand(),
     description:
       'Local adoption report (quickstart time, feature activation, doctor use) — no telemetry',
+    advanced: true,
   },
   eval: {
     load: async () => new (await import('./commands/eval-command.js')).EvalCommand(),
     description: 'Guided-vs-unguided metrics diff from the audit log (correlational, not causal)',
+    advanced: true,
   },
   evolve: {
     load: async () => new (await import('./commands/evolve-command.js')).EvolveCommand(),
     description: 'Read-only evolution-candidate report (skills/reopen-reasons/topics by rework)',
+    advanced: true,
   },
   query: {
     load: async () => new (await import('./commands/query-command.js')).QueryCommand(),
@@ -153,10 +179,12 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   graph: {
     load: async () => new (await import('./commands/graph-command.js')).GraphCommand(),
     description: 'Show the dependency graph: cycles, ready/blocked frontier, critical path',
+    advanced: true,
   },
   snapshot: {
     load: async () => new (await import('./commands/snapshot-command.js')).SnapshotCommand(),
     description: 'Executive snapshot of an epic or sprint (coverage, deps, SLA) — markdown or HTML',
+    advanced: true,
   },
   serve: {
     load: async () => new (await import('./commands/serve-command.js')).ServeCommand(),
@@ -165,6 +193,7 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   watch: {
     load: async () => new (await import('./commands/watch-command.js')).WatchCommand(),
     description: 'Live tail of the audit log (Ctrl+C to stop)',
+    advanced: true,
   },
   inbox: {
     load: async () => new (await import('./commands/inbox-command.js')).InboxCommand(),
@@ -179,26 +208,32 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
     // Read-only governance lens (never mutates) — a permanent feature, not a
     // recovery/repair command, so it stays visible at the top level.
     description: 'Governance: list commits on this branch not tied to any task',
+    advanced: true,
   },
   guard: {
     load: async () => new (await import('./commands/guard-command.js')).GuardCommand(),
     description: 'Exit 0 if a task is in progress, non-zero otherwise (for a PreToolUse hook)',
+    advanced: true,
   },
   agent: {
     load: async () => new (await import('./commands/agent-command.js')).AgentCommand(),
     description: 'Inspect agent activity (run inspect)',
+    advanced: true,
   },
   agents: {
     load: async () => new (await import('./commands/agents-command.js')).AgentsCommand(),
     description: 'Manage the generated AGENTS.md manual (sync)',
+    advanced: true,
   },
   sync: {
     load: async () => new (await import('./commands/sync-command.js')).SyncCommand(),
     description: 'Rebuild the SQLite cache from markdown files (idempotent)',
+    advanced: true,
   },
   archive: {
     load: async () => new (await import('./commands/archive-command.js')).ArchiveCommand(),
     description: 'Move mirrors of old DONE/CANCELED tasks into backlog/.archive/ (never deletes)',
+    advanced: true,
   },
   upgrade: {
     load: async () => new (await import('./commands/upgrade-command.js')).UpgradeCommand(),
@@ -215,14 +250,17 @@ const COMMAND_LOADERS: Readonly<Record<string, CommandSpec>> = {
   destroy: {
     load: async () => new (await import('./commands/destroy-command.js')).DestroyCommand(),
     description: 'Remove every Mnema artefact from the current directory (destructive)',
+    advanced: true,
   },
   migration: {
     load: async () => new (await import('./commands/migration-command.js')).MigrationCommand(),
     description: 'Manage SQLite migrations (generate / apply)',
+    advanced: true,
   },
   migrate: {
     load: async () => new (await import('./commands/migration-command.js')).MigrateCommand(),
     description: 'Apply every pending migration (alias of `migration apply`)',
+    advanced: true,
   },
 };
 
@@ -245,8 +283,26 @@ export function createCli(): Command {
   // below validates and forwards.
   program.allowUnknownOption(false).enablePositionalOptions();
 
+  // First-time users drown in a flat list of ~45 commands. By default
+  // `mnema --help` shows only the everyday set; advanced/recovery/plumbing
+  // commands are hidden from that list (still fully runnable when invoked
+  // directly). `mnema help --all` (or `mnema --help --all`) reveals them.
+  const showAll = process.argv.includes('--all');
+
+  let hiddenCount = 0;
   for (const [name, spec] of Object.entries(COMMAND_LOADERS)) {
-    registerLazyCommand(program, name, spec);
+    const hide = spec.advanced === true && !showAll;
+    if (hide) hiddenCount++;
+    registerLazyCommand(program, name, spec, hide);
+  }
+
+  // Footer that points at the hidden set, so the curation is discoverable
+  // rather than a dead end. Omitted once everything is already shown.
+  if (!showAll && hiddenCount > 0) {
+    program.addHelpText(
+      'after',
+      `\n${hiddenCount} more advanced/recovery command(s) are hidden. Run \`mnema help --all\` to list every command.`,
+    );
   }
 
   return program;
@@ -263,14 +319,20 @@ export function createCli(): Command {
  * raises *before* dispatching unknown subcommands, replace the stub,
  * and re-parse. The user sees no difference.
  */
-function registerLazyCommand(program: Command, name: string, spec: CommandSpec): void {
+function registerLazyCommand(
+  program: Command,
+  name: string,
+  spec: CommandSpec,
+  hidden = false,
+): void {
   // The stub is a passthrough: any args after `mnema <name>` flow
   // straight into the eventual real command's parser via `parseAsync`.
-  // The stub is *visible* in `mnema --help` so first-time users
-  // discover what is available; the real subcommand tree only loads
-  // when the user actually invokes `mnema <name>`.
+  // A visible stub appears in `mnema --help` so first-time users
+  // discover what is available; a `hidden` stub (advanced/recovery) is
+  // omitted from that list but stays fully runnable. Either way the real
+  // subcommand tree only loads when the user actually invokes `mnema <name>`.
   const stub = program
-    .command(`${name} [args...]`)
+    .command(`${name} [args...]`, { hidden })
     .allowUnknownOption(true)
     .helpOption(false)
     .action(async () => {
