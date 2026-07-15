@@ -24,7 +24,7 @@ export class DriftCommand {
   register(program: Command): void {
     program
       .command('drift')
-      .description('List commits on this branch not tied to any task')
+      .description('Governance: list commits on this branch not tied to any task')
       .option('--json', 'Print the scan as JSON', false)
       .option('--base <ref>', 'Scan only commits ahead of this ref (e.g. main)')
       .option('--limit <n>', 'When no base is given, how many recent commits to scan')

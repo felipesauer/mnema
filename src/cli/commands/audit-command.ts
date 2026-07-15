@@ -234,7 +234,10 @@ export class AuditCommand {
       });
 
     group
-      .command('reattest')
+      // Rare recovery mutator: hidden from `--help` so a first-user sees only
+      // the happy path (query/verify/upgrade/doctor/drift). Still fully
+      // runnable by name; `mnema doctor` points here when it's actually needed.
+      .command('reattest', { hidden: true })
       .description(
         'Emit committed attestations (.att) over the unattested tail of the audit chain, so an ' +
           'anonymous clone can verify authenticity with no secret. Dry-run by default (shows the ' +
@@ -320,7 +323,7 @@ export class AuditCommand {
       });
 
     group
-      .command('reconcile')
+      .command('reconcile', { hidden: true })
       .description(
         'Recover audit_state (the SQLite mirror) from a from-scratch walk of the on-disk ' +
           'chain, for when they have drifted apart by more than one event — the shape a ' +
@@ -416,7 +419,7 @@ export class AuditCommand {
       );
 
     group
-      .command('accept-truncation')
+      .command('accept-truncation', { hidden: true })
       .description(
         'Explicitly accept a GENUINE truncation of the audit chain — history you deliberately ' +
           'rewrote below a signed checkpoint. Re-baselines audit_state to the verified on-disk ' +
@@ -552,7 +555,7 @@ export class AuditCommand {
       );
 
     group
-      .command('diagnose')
+      .command('diagnose', { hidden: true })
       .description(
         'Read-only forensic report on the audit chain: every prev_hash discontinuity found, ' +
           'and — for each — whether the CONTENT of the events around it is authentic. ' +
@@ -636,7 +639,7 @@ export class AuditCommand {
       });
 
     group
-      .command('repair')
+      .command('repair', { hidden: true })
       .description(
         'Read-only, single-pass recovery planner for the audit chain. Runs every ' +
           'precondition the recovery commands check — malformed lines, prev_hash breaks and ' +
