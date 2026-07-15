@@ -89,4 +89,43 @@ describe('MemoryStalenessService', () => {
     const verdict = service.assess('See src/foo.ts.', 'not-a-date');
     expect(verdict.stale).toBe(false);
   });
+
+  describe('session cache (keyed by slug + updatedAt)', () => {
+    it('reuses the cached verdict for the same slug + updatedAt (no second git call)', () => {
+      const runner = vi.fn(gitRunner(new Set(['src/foo.ts'])));
+      const service = new MemoryStalenessService('/repo', runner);
+      const first = service.assess('See src/foo.ts:42.', WRITTEN_AT, 'my-memory');
+      const second = service.assess('See src/foo.ts:42.', WRITTEN_AT, 'my-memory');
+      expect(second).toEqual(first);
+      expect(second.stale).toBe(true);
+      // Warm cache: the second assess must not re-spawn git.
+      expect(runner).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-assesses when updatedAt changes (an edited memory is not served stale)', () => {
+      const runner = vi.fn(gitRunner(new Set(['src/foo.ts'])));
+      const service = new MemoryStalenessService('/repo', runner);
+      service.assess('See src/foo.ts:42.', WRITTEN_AT, 'my-memory');
+      service.assess('See src/foo.ts:42.', '2026-02-02T00:00:00.000Z', 'my-memory');
+      // Different key (updatedAt moved) → a fresh assessment.
+      expect(runner).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not cache across different slugs', () => {
+      const runner = vi.fn(gitRunner(new Set(['src/foo.ts'])));
+      const service = new MemoryStalenessService('/repo', runner);
+      service.assess('See src/foo.ts:42.', WRITTEN_AT, 'memory-a');
+      service.assess('See src/foo.ts:42.', WRITTEN_AT, 'memory-b');
+      expect(runner).toHaveBeenCalledTimes(2);
+    });
+
+    it('bypasses the cache when no key is given (still correct)', () => {
+      const runner = vi.fn(gitRunner(new Set(['src/foo.ts'])));
+      const service = new MemoryStalenessService('/repo', runner);
+      service.assess('See src/foo.ts:42.', WRITTEN_AT);
+      service.assess('See src/foo.ts:42.', WRITTEN_AT);
+      // No key → no memoisation, both calls hit git.
+      expect(runner).toHaveBeenCalledTimes(2);
+    });
+  });
 });
