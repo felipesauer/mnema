@@ -9,7 +9,7 @@ import { writeFileAtomic } from './atomic-write.js';
  * local, git-ignored, best-effort logs (crash log, usage counter) that must
  * not grow without bound — they are diagnostics, not durable records.
  *
- * Fast path: below the cap, a plain append (no read). Only at/over the cap do
+ * Fast path: below the cap, a plain append (no rewrite). Only at/over the cap do
  * we read the file, keep the newest `maxEntries - 1` lines plus the new one,
  * and rewrite it atomically ({@link writeFileAtomic} — temp then rename) so a
  * crash mid-rewrite can never truncate the log.
