@@ -13,6 +13,10 @@ import { inspectAuditIntegrity, reconcileAuditState } from '../../services/audit
 import { MachineKeyService } from '../../services/machine-key.js';
 import { ProjectSecretService } from '../../services/project-secret.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
+import {
+  RemediationRunner,
+  type RemediationStep,
+} from '../../storage/sqlite/remediation-runner.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '../../storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
@@ -189,6 +193,24 @@ export class UpgradeCommand {
     const { config, projectRoot, container } = ctx;
     const steps: UpgradeStep[] = [];
 
+    // The one-shot DATA remediations below (gitattributes retrofit, markdown
+    // ingest, audit-mirror reconcile, scope backfill) run through a
+    // run-once-and-record ledger so a step that has already run becomes a
+    // verifiable no-op. Names already recorded are read once here; a recorded
+    // step is neither listed nor run. `run()` routes through the runner so it
+    // records itself on success. Expiry is gated by kind inside the runner: a
+    // clone-condition step never expires (the git-ignored DB is rebuilt empty
+    // on every clone and needs the step again), only a version-jump step does.
+    const remediations = new RemediationRunner();
+    const appliedRemediations = new Set(remediations.loadApplied(container.adapter));
+    const remediationStep = (descriptor: RemediationStep, label: string): UpgradeStep => ({
+      label,
+      run: () => {
+        const [outcome] = remediations.run(container.adapter, [descriptor], config.mnema_version);
+        return outcome?.message ?? `${descriptor.name} already up to date`;
+      },
+    });
+
     // Filled by the ingest step's run() with the task keys it refused to
     // ingest because they are mirrored in more than one state dir. Read by the
     // orphan-prune step's run() (which executes AFTER ingest in the same phase)
@@ -204,15 +226,25 @@ export class UpgradeCommand {
     // server-side squash) — the authoritative guards are the sync
     // duplicate-mirror check and doctor's duplicate/delta checks. Fires only
     // when the marker is absent, and is idempotent.
-    if (!hasGitattributesUnion(projectRoot, config.paths.audit)) {
-      steps.push({
-        label:
+    if (
+      !appliedRemediations.has('gitattributes-retrofit') &&
+      !hasGitattributesUnion(projectRoot, config.paths.audit)
+    ) {
+      steps.push(
+        remediationStep(
+          {
+            name: 'gitattributes-retrofit',
+            kind: 'version-jump',
+            introducedIn: '0.13.0',
+            retiresAfter: '0.13.0',
+            run: () => {
+              const outcome = ensureGitattributes(projectRoot, config.paths.audit);
+              return `.gitattributes ${outcome}`;
+            },
+          },
           'add the audit-log `merge=union` .gitattributes (defense-in-depth for parallel branches)',
-        run: () => {
-          const outcome = ensureGitattributes(projectRoot, config.paths.audit);
-          return `.gitattributes ${outcome}`;
-        },
-      });
+        ),
+      );
     }
 
     // Ingest committed markdown into the cache (markdown → DB), FIRST among
@@ -240,53 +272,65 @@ export class UpgradeCommand {
     // reporting "already up to date" — a fully-synced project would always
     // carry this one step. The probe is a shallow readdir, not a full walk, so
     // it never re-parses the files; the step's run() does the real work.
-    if (hasIngestibleMarkdown(projectRoot, config)) {
-      steps.push({
-        label: 'ingest committed markdown into the cache (idempotent)',
-        run: () => {
-          const summary = container.syncRebuild.run(config.project.key);
-          const upserted =
-            summary.tasksUpserted +
-            summary.epics.upserted +
-            summary.sprints.upserted +
-            summary.decisions.upserted +
-            summary.observations.upserted;
-          if (summary.conflicts.length === 0) {
-            return `ingested ${upserted} row(s) from committed markdown`;
-          }
-          // Record the conflicted keys so the orphan-prune step (later this
-          // phase) does not delete their mirrors — they have no row, so a
-          // naive prune would treat them as orphans and destroy the copies the
-          // human needs to resolve the duplicate.
-          for (const conflict of summary.conflicts) conflictedTaskKeys.add(conflict.key);
-          // Conflicts are surfaced loudly; the rows we could safely ingest
-          // still count. Two shapes reach here and their remedies differ, so
-          // the message names both accurately:
-          //   - The key ALREADY has a cached row (e.g. a squash-merge stranded
-          //     a stale copy in a second state dir). `doctor
-          //     --rebuild-mirrors --prune-orphans` QUARANTINES the non-canonical
-          //     copy and keeps the DB-state one — the assisted path.
-          //   - The key has NO row (a fresh clone whose committed markdown is
-          //     itself duplicated). There is no canonical state to quarantine
-          //     against, so that same doctor run would DELETE BOTH copies. The
-          //     only safe fix is a human one: remove the wrong copy from version
-          //     control, keep the correct state.
-          // We lead with the always-safe manual step and offer doctor for the
-          // row-backed case, rather than blanket-recommending a command that is
-          // destructive in the no-row case.
-          const detail = summary.conflicts
-            .map((c) => `${c.key} in [${c.states.join(', ')}]`)
-            .join('; ');
-          return (
-            `ingested ${upserted} row(s); ${pc.yellow('⚠')} ${summary.conflicts.length} ` +
-            `task(s) mirrored in more than one state dir were LEFT UNTOUCHED ` +
-            `(no state guessed, nothing regressed): ${detail}. Resolve by deleting the stale ` +
-            `copy from the wrong state folder (e.g. \`git rm\`) and keeping the correct one, ` +
-            `then re-run \`mnema upgrade\`. If the task already has a tracked state, ` +
-            `\`mnema doctor --rebuild-mirrors --prune-orphans\` quarantines the stale copy for you.`
-          );
-        },
-      });
+    if (!appliedRemediations.has('mirror-ingest') && hasIngestibleMarkdown(projectRoot, config)) {
+      steps.push(
+        remediationStep(
+          {
+            name: 'mirror-ingest',
+            // Clone-condition: `.mnema/state/` is git-ignored, so every fresh
+            // clone rebuilds an empty DB that lacks these rows regardless of
+            // version — the step must run again on each clone and can never
+            // expire. Permanent by construction (no retiresAfter; the type
+            // forbids one on a clone-condition step).
+            kind: 'clone-condition',
+            introducedIn: '0.13.0',
+            run: () => {
+              const summary = container.syncRebuild.run(config.project.key);
+              const upserted =
+                summary.tasksUpserted +
+                summary.epics.upserted +
+                summary.sprints.upserted +
+                summary.decisions.upserted +
+                summary.observations.upserted;
+              if (summary.conflicts.length === 0) {
+                return `ingested ${upserted} row(s) from committed markdown`;
+              }
+              // Record the conflicted keys so the orphan-prune step (later this
+              // phase) does not delete their mirrors — they have no row, so a
+              // naive prune would treat them as orphans and destroy the copies the
+              // human needs to resolve the duplicate.
+              for (const conflict of summary.conflicts) conflictedTaskKeys.add(conflict.key);
+              // Conflicts are surfaced loudly; the rows we could safely ingest
+              // still count. Two shapes reach here and their remedies differ, so
+              // the message names both accurately:
+              //   - The key ALREADY has a cached row (e.g. a squash-merge stranded
+              //     a stale copy in a second state dir). `doctor
+              //     --rebuild-mirrors --prune-orphans` QUARANTINES the non-canonical
+              //     copy and keeps the DB-state one — the assisted path.
+              //   - The key has NO row (a fresh clone whose committed markdown is
+              //     itself duplicated). There is no canonical state to quarantine
+              //     against, so that same doctor run would DELETE BOTH copies. The
+              //     only safe fix is a human one: remove the wrong copy from version
+              //     control, keep the correct state.
+              // We lead with the always-safe manual step and offer doctor for the
+              // row-backed case, rather than blanket-recommending a command that is
+              // destructive in the no-row case.
+              const detail = summary.conflicts
+                .map((c) => `${c.key} in [${c.states.join(', ')}]`)
+                .join('; ');
+              return (
+                `ingested ${upserted} row(s); ${pc.yellow('⚠')} ${summary.conflicts.length} ` +
+                `task(s) mirrored in more than one state dir were LEFT UNTOUCHED ` +
+                `(no state guessed, nothing regressed): ${detail}. Resolve by deleting the stale ` +
+                `copy from the wrong state folder (e.g. \`git rm\`) and keeping the correct one, ` +
+                `then re-run \`mnema upgrade\`. If the task already has a tracked state, ` +
+                `\`mnema doctor --rebuild-mirrors --prune-orphans\` quarantines the stale copy for you.`
+              );
+            },
+          },
+          'ingest committed markdown into the cache (idempotent)',
+        ),
+      );
     }
 
     // Reconcile the audit mirror when it sits BEHIND the on-disk chain (the
@@ -306,46 +350,66 @@ export class UpgradeCommand {
     const auditDir = path.join(projectRoot, config.paths.audit);
     const diskChainedCount = walkChainedEvents(auditDir).chained.length;
     const mirrorCount = new AuditStateRepository(container.adapter).read().eventCount;
-    if (diskChainedCount > mirrorCount) {
-      steps.push({
-        label: `reconcile the audit mirror to the ${diskChainedCount} chained event(s) on disk (was ${mirrorCount})`,
-        run: () => {
-          const secret = new ProjectSecretService(projectRoot, config.project.key);
-          const state = new AuditStateRepository(container.adapter);
-          const signatures = new AuditHeadSignatureRepository(container.adapter);
-          const signature = signatures.read();
-          // Re-attest at the new baseline if the correction drops the count
-          // below the recorded signed checkpoint (interior drift) — no signer
-          // → returns false and reconcile still corrects audit_state.
-          const actor = container.identity.resolveDefaultActor().actor;
-          const reSign = buildHeadReSigner(projectRoot, actor, signatures);
-          // apply=true; acceptLegacyBreaks=null (never launder a real break
-          // during an upgrade); gitCwd=projectRoot for the anchor check —
-          // exactly as `mnema audit reconcile --force` calls it. A refusal
-          // (broken chain, malformed line, attestation over a truncation) is
-          // reported but does NOT fail the upgrade: it is a real integrity
-          // signal the human must resolve with `mnema audit diagnose`, not
-          // something the orchestrator should paper over or abort on.
-          const result = reconcileAuditState(
-            auditDir,
-            state,
-            secret.read(),
-            signature !== null
-              ? { eventCountAt: signature.eventCountAt, coveredHeadHash: signature.coveredHeadHash }
-              : null,
-            true,
-            null,
-            projectRoot,
-            undefined,
-            reSign,
-          );
-          if (!result.ok) {
-            return `${pc.yellow('⚠')} could not reconcile the audit mirror: ${result.reason} — run \`mnema audit diagnose\` to inspect`;
-          }
-          if (!result.changed) return 'audit mirror already matched disk';
-          return `audit mirror reconciled: event_count ${result.beforeEventCount} → ${result.afterEventCount}`;
-        },
-      });
+    if (!appliedRemediations.has('mirror-reconcile') && diskChainedCount > mirrorCount) {
+      steps.push(
+        remediationStep(
+          {
+            name: 'mirror-reconcile',
+            // Clone-condition: the git-ignored DB is rebuilt empty on every
+            // clone (event_count 0) while the committed `.audit/*.jsonl` holds
+            // the chain, so a fresh clone always needs this again — permanent,
+            // never expires (no retiresAfter; the type forbids one here).
+            kind: 'clone-condition',
+            introducedIn: '0.13.0',
+            run: () => {
+              const secret = new ProjectSecretService(projectRoot, config.project.key);
+              const state = new AuditStateRepository(container.adapter);
+              const signatures = new AuditHeadSignatureRepository(container.adapter);
+              const signature = signatures.read();
+              // Re-attest at the new baseline if the correction drops the count
+              // below the recorded signed checkpoint (interior drift) — no signer
+              // → returns false and reconcile still corrects audit_state.
+              const actor = container.identity.resolveDefaultActor().actor;
+              const reSign = buildHeadReSigner(projectRoot, actor, signatures);
+              // apply=true; acceptLegacyBreaks=null (never launder a real break
+              // during an upgrade); gitCwd=projectRoot for the anchor check —
+              // exactly as `mnema audit reconcile --force` calls it. A refusal
+              // (broken chain, malformed line, attestation over a truncation) is
+              // reported but does NOT fail the upgrade: it is a real integrity
+              // signal the human must resolve with `mnema audit diagnose`, not
+              // something the orchestrator should paper over or abort on.
+              const result = reconcileAuditState(
+                auditDir,
+                state,
+                secret.read(),
+                signature !== null
+                  ? {
+                      eventCountAt: signature.eventCountAt,
+                      coveredHeadHash: signature.coveredHeadHash,
+                    }
+                  : null,
+                true,
+                null,
+                projectRoot,
+                undefined,
+                reSign,
+              );
+              if (!result.ok) {
+                // Not applied → NOT recorded, so it is offered again next time
+                // (once the human resolves the integrity break), matching the
+                // pre-registry re-offer while the mirror stays behind disk.
+                return {
+                  applied: false,
+                  message: `${pc.yellow('⚠')} could not reconcile the audit mirror: ${result.reason} — run \`mnema audit diagnose\` to inspect`,
+                };
+              }
+              if (!result.changed) return 'audit mirror already matched disk';
+              return `audit mirror reconciled: event_count ${result.beforeEventCount} → ${result.afterEventCount}`;
+            },
+          },
+          `reconcile the audit mirror to the ${diskChainedCount} chained event(s) on disk (was ${mirrorCount})`,
+        ),
+      );
     }
 
     // Adopt optional layout components this version ships that the project is
@@ -439,14 +503,25 @@ export class UpgradeCommand {
     // folder is only a lossy projection). Read-only detection here; the
     // rewrite runs on confirmation. Scopeless memories are untouched.
     const scopeBackfill = container.memory.scopeBackfillCandidates();
-    if (scopeBackfill.length > 0) {
-      steps.push({
-        label: `backfill scope into ${scopeBackfill.length} memory mirror(s) missing it`,
-        run: () => {
-          const done = container.memory.backfillScopeInMirrors();
-          return `added the scope field to ${done.length} memory mirror(s)`;
-        },
-      });
+    if (!appliedRemediations.has('backfill-scope') && scopeBackfill.length > 0) {
+      steps.push(
+        remediationStep(
+          {
+            name: 'backfill-scope',
+            // Version-jump: mirrors written before scope was persisted. A
+            // project past the introducing version can no longer produce a
+            // scopeless-but-scoped mirror, so it is expiry-eligible.
+            kind: 'version-jump',
+            introducedIn: '0.13.0',
+            retiresAfter: '0.13.0',
+            run: () => {
+              const done = container.memory.backfillScopeInMirrors();
+              return `added the scope field to ${done.length} memory mirror(s)`;
+            },
+          },
+          `backfill scope into ${scopeBackfill.length} memory mirror(s) missing it`,
+        ),
+      );
     }
 
     // Orphan mirrors — `.md` files with no live SQLite row. Left
