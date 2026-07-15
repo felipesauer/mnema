@@ -58,4 +58,25 @@ describe('metrics-counter', () => {
     recordCounter(dir, 'doctor_ran', '2026-01-01T00:00:00Z'); // creates the file
     expect(() => recordCounter(asFile, 'doctor_ran', '2026-01-02T00:00:00Z')).not.toThrow();
   });
+
+  describe('cap', () => {
+    it('caps at 500 entries, dropping the oldest and keeping the newest', () => {
+      for (let i = 0; i < 620; i += 1) {
+        // Encode the ordinal in the timestamp so we can assert the window.
+        recordCounter(dir, 'doctor_ran', `2026-01-01T00:00:${String(i).padStart(4, '0')}Z`);
+      }
+      const entries = readCounters(dir);
+      expect(entries).toHaveLength(500);
+      // Newest kept, oldest dropped, contiguous window = [total-500 .. total-1].
+      expect(entries.at(-1)?.at).toBe('2026-01-01T00:00:0619Z');
+      expect(entries[0]?.at).toBe('2026-01-01T00:00:0120Z');
+    });
+
+    it('leaves a below-cap log untouched', () => {
+      for (let i = 0; i < 10; i += 1) {
+        recordCounter(dir, 'doctor_ran', `2026-01-01T00:00:${String(i).padStart(2, '0')}Z`);
+      }
+      expect(readCounters(dir)).toHaveLength(10);
+    });
+  });
 });

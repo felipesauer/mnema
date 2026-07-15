@@ -1,5 +1,14 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+
+import { appendCappedJsonl } from '../utils/capped-jsonl.js';
+
+/**
+ * Cap on the local usage counter: like the crash log it is best-effort,
+ * git-ignored, never-transmitted diagnostics, so it must not grow without
+ * bound. Same drop-oldest rotation and value as the error log.
+ */
+const MAX_COUNTER_ENTRIES = 500;
 
 /**
  * A single recorded use of a read-only command. These live in a LOCAL
@@ -33,8 +42,9 @@ function counterFile(stateDir: string): string {
  */
 export function recordCounter(stateDir: string, kind: string, at: string): void {
   try {
-    if (!existsSync(stateDir)) mkdirSync(stateDir, { recursive: true });
-    appendFileSync(counterFile(stateDir), `${JSON.stringify({ kind, at })}\n`, 'utf-8');
+    // Capped drop-oldest append (crash-safe rewrite at the cap): the counter
+    // is a bounded local tally, not a durable log.
+    appendCappedJsonl(counterFile(stateDir), JSON.stringify({ kind, at }), MAX_COUNTER_ENTRIES);
   } catch {
     // Best-effort: never let a usage tally break the command.
   }

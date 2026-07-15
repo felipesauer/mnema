@@ -1,7 +1,8 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { appendCappedJsonl } from '../utils/capped-jsonl.js';
 import { VERSION } from '../utils/version.js';
 
 /**
@@ -98,29 +99,10 @@ export function recordError(
       node_version: process.version,
       argv: options.argv ?? process.argv.slice(1),
     };
-    if (!existsSync(stateDir)) mkdirSync(stateDir, { recursive: true });
-    const file = errorLogFile(stateDir);
-    const line = `${JSON.stringify(entry)}\n`;
-
-    // Fast path: below the cap, a plain append. Only pay to read+rewrite when
-    // the log is at/over the cap, and then keep the most recent entries.
-    const existing = existsSync(file) ? readFileSync(file, 'utf-8') : '';
-    const lineCount = existing.length === 0 ? 0 : existing.replace(/\n$/, '').split('\n').length;
-    if (lineCount < MAX_ERROR_LOG_ENTRIES) {
-      appendFileSync(file, line, 'utf-8');
-      return;
-    }
-    // At/over the cap: keep the newest (MAX-1) existing lines + the new one.
-    const kept = existing
-      .replace(/\n$/, '')
-      .split('\n')
-      .slice(-(MAX_ERROR_LOG_ENTRIES - 1));
-    // Crash-safe: write the full new content to a temp file, then rename over
-    // the target (atomic on the same filesystem) so a crash mid-write never
-    // truncates the log.
-    const tmp = `${file}.tmp`;
-    writeFileSync(tmp, `${[...kept, line.replace(/\n$/, '')].join('\n')}\n`, 'utf-8');
-    renameSync(tmp, file);
+    // Capped drop-oldest append (crash-safe rewrite at the cap). The crash
+    // log is best-effort diagnostics, not a durable record, so it must not
+    // grow without bound.
+    appendCappedJsonl(errorLogFile(stateDir), JSON.stringify(entry), MAX_ERROR_LOG_ENTRIES);
   } catch {
     // Best-effort: never let logging a crash break crash reporting.
   }
