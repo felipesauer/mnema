@@ -19,7 +19,9 @@ export function App(): ReactElement {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('./api/dashboard')
+    // Absolute path: the API is mounted at the server root, not under /app/.
+    // A relative './api/dashboard' would resolve to /app/api/dashboard (404).
+    fetch('/api/dashboard')
       .then((res) => {
         if (!res.ok) throw new Error(`/api/dashboard returned ${res.status}`);
         return res.json() as Promise<DashboardContract>;

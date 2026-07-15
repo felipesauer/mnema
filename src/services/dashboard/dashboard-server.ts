@@ -222,7 +222,19 @@ export async function createDashboardServer(
     // The Vite-built SPA (ADR-66), served under /app so it coexists with the
     // legacy string-rendered shell at / (the bridge, per ADR-65). A missing
     // bundle (SPA not built) is a plain 404, not a crash.
-    if (url === '/app' || url === '/app/' || url.startsWith('/app/')) {
+    //
+    // `/app` (no trailing slash) MUST redirect to `/app/`: the bundle's
+    // index.html references assets relatively (`./assets/…`, from Vite's
+    // base:'./'), and a browser at `/app` resolves `./` against `/` — asking
+    // for `/assets/…`, which this server does not serve, leaving a blank page.
+    // At `/app/` the same relative ref resolves to `/app/assets/…`, which it
+    // does serve. So normalise before serving.
+    if (url === '/app') {
+      res.writeHead(301, { location: '/app/' });
+      res.end();
+      return;
+    }
+    if (url === '/app/' || url.startsWith('/app/')) {
       serveSpa(url, res);
       return;
     }
@@ -234,11 +246,11 @@ export async function createDashboardServer(
   /**
    * Serves a file from the built SPA bundle, defending against path traversal
    * by resolving inside {@link SPA_DIR} and refusing anything that escapes it.
-   * `/app` and `/app/` map to the SPA's index.html so a deep link still boots
-   * the app.
+   * `/app/` maps to the SPA's index.html so a deep link still boots the app
+   * (the caller has already redirected the slashless `/app` to `/app/`).
    */
   function serveSpa(url: string, res: ServerResponse): void {
-    const rel = url === '/app' || url === '/app/' ? 'index.html' : url.slice('/app/'.length);
+    const rel = url === '/app/' ? 'index.html' : url.slice('/app/'.length);
     // Strip any query/hash, then resolve and confirm containment.
     const clean = rel.split('?')[0]?.split('#')[0] ?? 'index.html';
     const resolved = path.resolve(SPA_DIR, clean);
