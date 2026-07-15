@@ -5,12 +5,14 @@ import { describe, expect, it } from 'vitest';
 import { PACKAGE_ROOT } from '@/utils/asset-paths.js';
 
 /**
- * Locks the product's integrity claim to what MNEMA-ADR-37 approved and
- * guards it against drift. The chain is **tamper-evident** (it detects
- * edits) — it is NOT "tamper-proof" (it does not prevent them), and until
- * the ADR-37 cryptographic layers (per-project HMAC + per-machine Ed25519
- * + optional anchor, EPIC-10) ship, a motivated local editor can still
- * recompute a consistent forged chain. So the docs must say
+ * Locks the product's integrity claim and guards it against drift. The
+ * chain is **tamper-evident** (it detects edits) — it is NOT "tamper-proof"
+ * (it does not prevent them). The cryptographic layers (per-project HMAC +
+ * per-machine Ed25519 + optional anchor + content attestation) have now
+ * shipped, which is what makes a deliberate rewrite detectable rather than
+ * a break an attacker could repair. The claim stays "tamper-evident", never
+ * an unqualified "tamper-proof": content attestation is opt-in, and a full
+ * host compromise defeats even the keys. So the docs must say
  * "tamper-evident" and must never claim an unqualified "tamper-proof".
  *
  * package.json, README, and scripts/publish-check.sh are all tracked, so

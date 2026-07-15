@@ -81,9 +81,15 @@ A real provider stamps the signed head into an external, independently
 verifiable timestamp — off the write path, fail-open (a slow or failed anchor
 never blocks or fails an audit write).
 
+`git-signed` and `rfc3161` ship; `opentimestamps` is **not implemented yet**
+(selecting it is rejected at config load). `rfc3161` verification is
+**advisory**: it confirms the returned token imprints the signed head, but
+does not yet validate the TSA's CMS signature or certificate chain — so it
+proves *a* TSA stamped this head, not that a *trusted* TSA did.
+
 | Key | Type | Default | Why |
 |---|---|---|---|
-| `audit.anchor.provider` | `"none" \| "git-signed" \| "opentimestamps" \| "rfc3161"` | `"none"` | Which anchor backend to use; `none` disables anchoring. |
+| `audit.anchor.provider` | `"none" \| "git-signed" \| "rfc3161" \| "opentimestamps"` | `"none"` | Which anchor backend to use; `none` disables anchoring. `opentimestamps` is not implemented yet. |
 | `audit.anchor.interval.events` | positive int | optional | Anchor after this many events; falls back to the checkpoint interval when unset. |
 | `audit.anchor.interval.seconds` | positive int | optional | …or after this many seconds. |
 | `audit.anchor.tsa` | `https://` URL | optional | Time-Stamp Authority endpoint. **Required** when `provider` is `rfc3161`. Locked to `https://` to avoid an SSRF/local-file vector, since the repo config is agent-writable. |
