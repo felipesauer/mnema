@@ -1,6 +1,6 @@
 import { createHash, createHmac } from 'node:crypto';
 
-import type { AuditEvent } from './audit-writer.js';
+import type { AuditEvent } from './audit-types.js';
 
 /**
  * Canonicalises an event for hashing: `JSON.stringify` over the event

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 
+import type { HeadCheckpointer } from '../../storage/audit/audit-types.js';
 import type {
   AuditHeadSignatureRepository,
   HeadSignature,
@@ -38,7 +39,7 @@ export interface CheckpointSigner {
  * live in one testable place, and so the writer stays free of the machine
  * key + signature repository.
  */
-export class HeadCheckpointService {
+export class HeadCheckpointService implements HeadCheckpointer {
   constructor(
     private readonly signatures: AuditHeadSignatureRepository,
     private readonly resolveSigner: () => CheckpointSigner | null,

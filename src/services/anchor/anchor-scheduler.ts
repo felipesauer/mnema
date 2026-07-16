@@ -1,3 +1,4 @@
+import type { SignedHeadListener } from '../../storage/audit/audit-types.js';
 import type { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import type { AnchorProvider } from './anchor-provider.js';
 import { NONE_PROVIDER } from './none-anchor-provider.js';
@@ -24,7 +25,7 @@ export interface AnchorInterval {
  * Inert for the `none` provider: `onSignedHead` returns immediately and
  * records nothing, so a local-first project pays nothing.
  */
-export class AnchorScheduler {
+export class AnchorScheduler implements SignedHeadListener {
   /**
    * In-flight stamp promises, tracked ONLY so a test (or a graceful
    * shutdown) can await settlement. Production callers fire and forget.
