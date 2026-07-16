@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { buildArtifact } from '@/services/audit/attestation-artifact.js';
+import { attestPath, writeArtifact } from '@/services/audit/attestation-store.js';
 import { applyPrune, buildPrunePlan, PrunePlanError } from '@/services/audit/prune-apply.js';
 import { pruneWaiverPath, readPruneWaiver } from '@/services/audit/prune-store.js';
 import { verifyPruneWaiver } from '@/services/audit/prune-waiver.js';
@@ -196,6 +198,43 @@ describe('prune apply', () => {
     expect(reSigned).toBe(false);
     // Waiver is still written — an anonymous verifier relies on it.
     expect(existsSync(pruneWaiverPath(auditDir))).toBe(true);
+  });
+
+  it('removes the covered .att files in the same destructive pass', () => {
+    const { chain } = layout();
+    // An .att covering [0, 3) is entirely inside the dropped prefix (cut=5).
+    const s = signer();
+    writeArtifact(
+      auditDir,
+      buildArtifact({
+        events: chain.slice(0, 3),
+        from: 0,
+        to: 3,
+        signerActor: 'felipesauer',
+        signerFingerprint: s.fingerprint,
+        projectHmacId: hmacId,
+        sign: s.sign,
+      }),
+    );
+    expect(existsSync(attestPath(auditDir, 3))).toBe(true);
+
+    const cut = computeCutPoint(auditDir, 'local', 12, NOW);
+    const plan = buildPrunePlan(auditDir, cut);
+    applyPrune({
+      auditDir,
+      plan,
+      droppedFiles: cut.dropped.map((d) => d.file),
+      attToRemove: [attestPath(auditDir, 3)],
+      signerActor: 'felipesauer',
+      signerFingerprint: s.fingerprint,
+      projectHmacId: hmacId,
+      sign: s.sign,
+      forceReconcile: () => {},
+      reSignHead: () => true,
+      now: () => NOW,
+    });
+    // No .att is left over the removed prefix.
+    expect(existsSync(attestPath(auditDir, 3))).toBe(false);
   });
 
   it('buildPrunePlan refuses a cut with no cut point', () => {
