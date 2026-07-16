@@ -113,7 +113,10 @@ Growth is modest and bounded per month: one compact JSON line per mutation
 (JSONL compresses well under git's packing), and completed-task markdown stays
 as small per-task files. Even on a large project history, verifying the full
 chain (`mnema doctor`) takes single-digit milliseconds and a mirror rebuild
-(`mnema sync`) well under a second — measured by `pnpm bench:scale`. The
-`audit_strategy` and `audit_retention_months` config keys are reserved for a
-future compaction pass; they are accepted today but not yet enforced — the
-chain is append-only, so nothing is dropped regardless of their value.
+(`mnema sync`) well under a second — measured by `pnpm bench:scale`. To bound
+growth, `audit_strategy` / `audit_retention_months` drive retention: `recent`
+archives months past the window (kept verifiable), and `local` lets
+`mnema audit prune` delete them and re-baseline the surviving chain onto a
+signed prune anchor. Pruning is opt-in (dry-run by default) and stays
+verifiable offline — an anonymous clone confirms the re-baseline from the
+committed signed anchor without any secret.

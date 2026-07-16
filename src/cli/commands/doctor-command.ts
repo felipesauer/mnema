@@ -1619,13 +1619,18 @@ export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking')
 }
 
 /**
- * Flags the reserved-but-inert audit-retention config. `audit_strategy` and
- * `audit_retention_months` are accepted and validated but nothing prunes the
- * append-only chain yet (enforcement is a destructive re-baseline tracked as
- * its own epic). A user who set `strategy` to `recent`/`local` — or any finite
- * retention — is expecting old history to be dropped; surface that it is a
- * no-op today so the expectation is not silently unmet. `full` means "keep
- * everything", which is exactly what happens, so it passes without noise.
+ * Reports the audit-retention posture. Enforcement now exists (ADR-68), so the
+ * three strategies each have a real, distinct behavior — none is a silent
+ * no-op:
+ *
+ * - `full` keeps everything → exactly what happens, reported without noise.
+ * - `recent` keeps the last N months hot but ARCHIVES (never deletes) older
+ *   segments, so they stay committed and verifiable. Reported as an ok,
+ *   informational line so the operator sees retention is in effect.
+ * - `local` PRUNES: `mnema audit prune` deletes archived months below the
+ *   window and re-baselines the chain onto a signed anchor. The prune is
+ *   opt-in (never automatic), so the line points at the command rather than
+ *   asserting pruning already ran.
  *
  * @param strategy - Configured `audit_strategy`
  * @param retentionMonths - Configured `audit_retention_months`
@@ -1634,18 +1639,28 @@ export function inspectAuditRetention(
   strategy: 'full' | 'recent' | 'local',
   retentionMonths: number,
 ): DoctorCheck[] {
-  // `full` = keep everything = today's actual behavior → no expectation to miss.
+  // `full` = keep everything = today's actual behavior → no line needed.
   if (strategy === 'full') return [];
+  if (strategy === 'recent') {
+    return [
+      {
+        name: 'audit retention',
+        ok: true,
+        detail:
+          `audit_strategy="recent": the last ${retentionMonths} months stay hot; older ` +
+          'segments are archived (kept committed and verifiable), never deleted.',
+      },
+    ];
+  }
+  // `local`: pruning is available but opt-in — point at the command.
   return [
     {
       name: 'audit retention',
-      ok: false,
-      severity: 'warning',
+      ok: true,
       detail:
-        `audit_strategy="${strategy}" (retain ${retentionMonths} months) is reserved but ` +
-        'not yet enforced — the audit chain is append-only, so no old history is ' +
-        'pruned. Set audit_strategy to "full" to match actual behavior, or track the ' +
-        'retention epic if you need pruning.',
+        `audit_strategy="local" (keep ${retentionMonths} months): run \`mnema audit prune\` to ` +
+        'delete archived months below the window and re-baseline the chain onto a signed ' +
+        'anchor. Pruning is opt-in and never runs automatically.',
     },
   ];
 }
