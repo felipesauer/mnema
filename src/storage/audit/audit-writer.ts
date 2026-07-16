@@ -11,12 +11,11 @@ import path from 'node:path';
 
 import lockfile from 'proper-lockfile';
 
-import type { AnchorScheduler } from '../../services/anchor/anchor-scheduler.js';
-import type { HeadCheckpointService } from '../../services/integrity/head-checkpoint.js';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
 import { SQLITE_BUSY_TIMEOUT_MS } from '../sqlite/sqlite-adapter.js';
 import { orderedAuditFiles } from './audit-files.js';
 import { hashEvent, hmacEvent } from './audit-hash.js';
+import type { AuditEvent, HeadCheckpointer, SignedHeadListener } from './audit-types.js';
 
 /**
  * Cross-process lock policy for the chained write path. Mirrors the sync
@@ -46,40 +45,9 @@ const LOCK_OPTIONS = {
   },
 } as const;
 
-/**
- * Append-only event written to the audit log.
- *
- * The shape mirrors the canonical structure documented in DESIGN.md
- * §10.5 and ARCHITECTURE.md §3.4. From schema `v: 2` every event also
- * carries `prev_hash` and `hash`, forming a per-file SHA-256 chain
- * that `mnema doctor` validates to detect tampering.
- */
-export interface AuditEvent {
-  /** Schema version for the event envelope. */
-  readonly v: number;
-  /** ISO8601 timestamp of when the event was emitted. */
-  readonly at: string;
-  /** Event kind, e.g. `"task_transitioned"`. */
-  readonly kind: string;
-  /** Handle of the human actor responsible. */
-  readonly actor: string;
-  /** Handle of the agent that performed the work, when applicable. */
-  readonly via?: string;
-  /** Identifier of the agent run, when applicable. */
-  readonly run?: string;
-  /** Event-specific payload. */
-  readonly data: Readonly<Record<string, unknown>>;
-  /**
-   * Hash of the previous line in the same file, or `null` for the
-   * genesis line. Present on every event from schema `v: 2`.
-   */
-  readonly prev_hash?: string | null;
-  /**
-   * SHA-256 of this event with `hash` omitted, computed before the
-   * line was appended. Present on every event from schema `v: 2`.
-   */
-  readonly hash?: string;
-}
+// AuditEvent moved to ./audit-types.ts (leaf) to clear the last madge
+// type-cycle; re-exported here so existing importers keep working.
+export type { AuditEvent } from './audit-types.js';
 
 /**
  * Append-only writer for the audit log in JSONL format.
@@ -135,8 +103,8 @@ export class AuditWriter {
     private readonly state: AuditStateRepository | null = null,
     now: () => Date = () => new Date(),
     private readonly secretProvider: (() => Buffer | null) | null = null,
-    private readonly headCheckpoint: HeadCheckpointService | null = null,
-    private readonly anchorScheduler: AnchorScheduler | null = null,
+    private readonly headCheckpoint: HeadCheckpointer | null = null,
+    private readonly anchorScheduler: SignedHeadListener | null = null,
     // Fire-and-forget hook invoked (outside the lock) when a checkpoint signs a
     // new head, so the attestation layer can materialise the `.att` for the
     // freshly-closed batch off the hot path. `null` disables auto-attestation
