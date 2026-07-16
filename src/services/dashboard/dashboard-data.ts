@@ -1,14 +1,10 @@
-import path from 'node:path';
-
-import type { Config } from '../../config/config-schema.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import type { SlaBreach, WipBreach } from '../backlog/inbox-service.js';
-import { type IntegrityCheck, inspectAuditIntegrity } from '../integrity/audit-integrity.js';
+import type { IntegrityCheck } from '../integrity/audit-integrity.js';
 import { parseTimeBound } from '../integrity/audit-query.js';
-import { ProjectSecretService } from '../integrity/project-secret.js';
 import type { FlowMetrics } from '../metrics/flow-metrics-service.js';
-import type { ServiceContainer } from '../service-container.js';
 import type { DependencyGraph } from '../snapshot/dependency-graph-service.js';
+import type { DashboardReadModel } from './dashboard-read-model.js';
 import {
   activityByDay,
   eventsByKind,
@@ -123,68 +119,51 @@ export interface BuildOptions {
 }
 
 /**
- * Composes {@link DashboardData} from an open container — the single read
- * point for the dashboard. Strictly read-only: it calls existing read
- * services and derives time-series from the audit stream (no new
- * collection, see MNEMA-ADR-35).
+ * Composes {@link DashboardData} from the read-model seam — the single read
+ * point for the dashboard. Strictly read-only: it calls the seam's reads and
+ * derives time-series from the audit stream (no new collection, see
+ * MNEMA-ADR-35). Takes {@link DashboardReadModel}, not the container or the
+ * raw SQLite adapter, so internal frontends (SPA/real-time) build against the
+ * seam rather than reaching into internals.
  *
- * @param container - An open service container
- * @param config - The loaded project config
- * @param projectRoot - Absolute project root (to locate the audit dir)
- * @param options - Recent-limit and metrics window
+ * @param model - The dashboard read-model seam (see {@link buildDashboardReadModel})
+ * @param options - Recent-limit, metrics window, and optional cached integrity
  * @returns The composed dashboard data
  */
 export function buildDashboardData(
-  container: ServiceContainer,
-  config: Config,
-  projectRoot: string,
+  model: DashboardReadModel,
   options: BuildOptions = {},
 ): DashboardData {
   const limit = options.limit ?? DEFAULT_RECENT_LIMIT;
   const window = options.window ?? DEFAULT_METRICS_WINDOW;
 
-  const graphResult = container.dependencyGraph.forScope({ kind: 'project' });
-  // The project graph is derived from the same repos the rest of the
-  // container reads; a failure here is a programming error, not user
-  // input, so surface it rather than rendering a half-empty page.
-  if (!graphResult.ok) {
-    throw new Error(`dependency graph unavailable: ${graphResult.error.kind}`);
-  }
-
-  const auditDir = path.join(projectRoot, config.paths.audit);
-  const dataSecret = new ProjectSecretService(projectRoot, config.project.key);
-  const integrity =
-    options.integrity ??
-    inspectAuditIntegrity(
-      container.adapter,
-      auditDir,
-      dataSecret.read(),
-      dataSecret.readFingerprint() !== null,
-    );
-  const inbox = container.inbox.view();
-  const flow = container.flowMetrics.compute({ since: window });
-  const display = container.identity.getDisplayFor.bind(container.identity);
-  const terminal = new Set(container.stateMachine.terminalStates());
+  const graph = model.dependencyGraph();
+  // A hot caller (the live dashboard) can pass a cached hash-chain result to
+  // avoid re-hashing the whole log per request; otherwise the seam computes it.
+  const integrity = options.integrity ?? model.integrity();
+  const inbox = model.inbox();
+  const flow = model.flow(window);
+  const display = (handle: string) => model.displayFor(handle);
+  const terminal = new Set(model.terminalStates());
 
   // A SINGLE read of the trail powers both the feed and the series — each
-  // AuditQuery.run() reads and parses every audit file, so reading twice
-  // would double the IO/CPU on a large log. `run()` returns events sorted
-  // oldest-first: the series use the whole set (filtered to the window),
-  // and the feed is the newest `limit` (the tail), newest activity first.
-  const allEvents = container.auditQuery.run();
+  // read parses every audit file, so reading twice would double the IO/CPU on
+  // a large log. Events are oldest-first: the series use the whole set
+  // (filtered to the window), the feed is the newest `limit` (the tail).
+  const allEvents = model.auditEvents();
   const windowMs = windowStartMs(window);
   const windowEvents =
     windowMs === null ? allEvents : allEvents.filter((e) => Date.parse(e.at) >= windowMs);
   const recent = allEvents.slice(-limit).map((e) => toRecentEvent(e, display));
 
   return {
-    projectKey: config.project.key,
+    projectKey: model.projectKey,
     generatedAt: new Date().toISOString(),
     window,
     integrity,
-    graph: graphResult.value,
+    graph,
     recent,
-    schemaDrift: container.pendingMigrations.length > 0,
+    schemaDrift: model.hasSchemaDrift(),
     flow,
     inbox: {
       slaBreaches: inbox.slaBreaches,

@@ -16,6 +16,7 @@ import {
   DEFAULT_METRICS_WINDOW,
   DEFAULT_RECENT_LIMIT,
 } from './dashboard-data.js';
+import { buildDashboardReadModel } from './dashboard-read-model.js';
 
 /** Loopback host the server binds to by default. Never `0.0.0.0`. */
 export const DEFAULT_HOST = '127.0.0.1';
@@ -136,9 +137,13 @@ export async function createDashboardServer(
     () => buildContentAttestation(projectRoot, auditDir),
   );
 
+  // The read-model seam the snapshot builds against — the SPA and any future
+  // internal frontend target this, never the container/adapter directly.
+  const readModel = buildDashboardReadModel(container, config, projectRoot);
+
   /** Composes a fresh snapshot for a request. */
   function snapshot() {
-    return buildDashboardData(container, config, projectRoot, {
+    return buildDashboardData(readModel, {
       limit,
       window,
       integrity: integrityCache.get(),
