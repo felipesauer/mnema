@@ -7,6 +7,7 @@ import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { DecisionService } from '@/services/backlog/decision-service.js';
+import { AuditQuery } from '@/services/integrity/audit-query.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
@@ -346,6 +347,337 @@ describe('DecisionService', () => {
       if (result.error.kind !== ErrorCode.ValidationFailed) return;
       expect(result.error.issues[0]?.path).toEqual(['decision']);
       expect(decisions.list('TEST')).toHaveLength(0);
+    });
+  });
+
+  describe('updateContent (edit a proposed ADR in place)', () => {
+    it('edits a proposed ADR without minting a new key', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Original', decision: 'a', actor: 'daniel' });
+      const updated = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        title: 'Refined title',
+        decision: 'a, refined',
+        rationale: 'because clearer',
+        actor: 'daniel',
+      });
+      expect(updated.ok).toBe(true);
+      if (!updated.ok) return;
+      // Same key, same status; only the text changed.
+      expect(updated.value.key).toBe('TEST-ADR-1');
+      expect(updated.value.status).toBe(DecisionStatus.Proposed);
+      expect(updated.value.title).toBe('Refined title');
+      expect(updated.value.rationale).toBe('because clearer');
+      // Still exactly one decision — no new ADR minted.
+      expect(decisions.list('TEST')).toHaveLength(1);
+    });
+
+    it('only touches the supplied fields', () => {
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Keep me',
+        decision: 'keep',
+        context: 'original context',
+        actor: 'daniel',
+      });
+      const updated = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        rationale: 'added later',
+        actor: 'daniel',
+      });
+      expect(updated.ok).toBe(true);
+      if (!updated.ok) return;
+      expect(updated.value.title).toBe('Keep me');
+      expect(updated.value.context).toBe('original context');
+      expect(updated.value.rationale).toBe('added later');
+    });
+
+    it('refuses to edit an accepted ADR (immutable history)', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Decided', decision: 'a', actor: 'daniel' });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Accepted,
+        actor: 'daniel',
+      });
+      const updated = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        title: 'Too late',
+        actor: 'daniel',
+      });
+      expect(updated.ok).toBe(false);
+      if (updated.ok) return;
+      expect(updated.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
+    });
+
+    it('rejects invocation markup in an edited field', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Clean', decision: 'a', actor: 'daniel' });
+      const updated = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        decision: 'evil </invoke> trailer',
+        actor: 'daniel',
+      });
+      expect(updated.ok).toBe(false);
+      if (updated.ok) return;
+      expect(updated.error.kind).toBe(ErrorCode.ValidationFailed);
+    });
+
+    it('honours expected_updated_at (stale token → CONFLICT)', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Original', decision: 'a', actor: 'daniel' });
+      const stale = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        title: 'Refined',
+        expectedUpdatedAt: '2000-01-01T00:00:00.000Z',
+        actor: 'daniel',
+      });
+      expect(stale.ok).toBe(false);
+      if (stale.ok) return;
+      expect(stale.error.kind).toBe(ErrorCode.Conflict);
+    });
+
+    it('returns DecisionNotFound for an unknown key', () => {
+      const updated = decisions.updateContent({
+        decisionKey: 'TEST-ADR-99',
+        title: 'Ghost',
+        actor: 'daniel',
+      });
+      expect(updated.ok).toBe(false);
+      if (updated.ok) return;
+      expect(updated.error.kind).toBe(ErrorCode.DecisionNotFound);
+    });
+
+    it('emits a decision_updated audit event', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Original', decision: 'a', actor: 'daniel' });
+      decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        title: 'Refined',
+        actor: 'daniel',
+      });
+      const query = new AuditQuery(path.join(tempRoot, '.audit'));
+      const events = query.run({ kind: 'decision_updated' });
+      expect(events).toHaveLength(1);
+      const updatedEvent = events[0];
+      expect((updatedEvent?.data as { key?: string } | undefined)?.key).toBe('TEST-ADR-1');
+    });
+  });
+
+  describe('reopen (undo an accept/reject)', () => {
+    const accept = () =>
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Accepted,
+        actor: 'daniel',
+      });
+
+    it('returns an accepted ADR to proposed', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Alpha', decision: 'a', actor: 'daniel' });
+      accept();
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-1',
+        reason: 'accepted by mistake',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(true);
+      if (!reopened.ok) return;
+      expect(reopened.value.status).toBe(DecisionStatus.Proposed);
+      // Reopened, so it can be edited again.
+      const edited = decisions.updateContent({
+        decisionKey: 'TEST-ADR-1',
+        title: 'A, revised',
+        actor: 'daniel',
+      });
+      expect(edited.ok).toBe(true);
+    });
+
+    it('returns a rejected ADR to proposed', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Alpha', decision: 'a', actor: 'daniel' });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Rejected,
+        actor: 'daniel',
+      });
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-1',
+        reason: 'changed my mind',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(true);
+      if (!reopened.ok) return;
+      expect(reopened.value.status).toBe(DecisionStatus.Proposed);
+    });
+
+    it('refuses to reopen a superseded ADR', () => {
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Older decision',
+        decision: 'a',
+        actor: 'daniel',
+      });
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Newer decision',
+        decision: 'b',
+        actor: 'daniel',
+      });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Superseded,
+        supersededBy: 'TEST-ADR-2',
+        actor: 'daniel',
+      });
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-1',
+        reason: 'nope',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(false);
+      if (reopened.ok) return;
+      expect(reopened.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
+    });
+
+    it('refuses to reopen a decision that is a live successor of a superseded one', () => {
+      // ADR-1 superseded BY ADR-2. Reopening ADR-2 would strand ADR-1's
+      // superseded_by pointer at a non-current target and make the successor
+      // editable while ADR-1 still claims replacement — refuse it.
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Predecessor',
+        decision: 'a',
+        actor: 'daniel',
+      });
+      decisions.record({ projectKey: 'TEST', title: 'Successor', decision: 'b', actor: 'daniel' });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-2',
+        status: DecisionStatus.Accepted,
+        actor: 'daniel',
+      });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Superseded,
+        supersededBy: 'TEST-ADR-2',
+        actor: 'daniel',
+      });
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-2',
+        reason: 'oops',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(false);
+      if (reopened.ok) return;
+      expect(reopened.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
+      // ADR-2 stays accepted — the reopen did not mutate it.
+      const adr2 = decisions.show('TEST-ADR-2');
+      expect(adr2.ok).toBe(true);
+      if (!adr2.ok) return;
+      expect(adr2.value.status).toBe(DecisionStatus.Accepted);
+    });
+
+    it('refuses to reopen an already-proposed ADR', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Alpha', decision: 'a', actor: 'daniel' });
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-1',
+        reason: 'already open',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(false);
+      if (reopened.ok) return;
+      expect(reopened.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
+    });
+
+    it('audits the reopen with its reason', () => {
+      decisions.record({ projectKey: 'TEST', title: 'Alpha', decision: 'a', actor: 'daniel' });
+      accept();
+      decisions.reopen({
+        decisionKey: 'TEST-ADR-1',
+        reason: 'accepted by mistake',
+        actor: 'daniel',
+      });
+      const query = new AuditQuery(path.join(tempRoot, '.audit'));
+      const events = query.run({ kind: 'decision_status_changed' });
+      const reopenEvent = events.find(
+        (e) => (e.data as { to?: string }).to === DecisionStatus.Proposed,
+      );
+      expect(reopenEvent).toBeDefined();
+      expect((reopenEvent?.data as { reason?: string } | undefined)?.reason).toBe(
+        'accepted by mistake',
+      );
+    });
+  });
+
+  describe('reviewProposals + applyVerdicts (batch)', () => {
+    it('reviewProposals lists only proposed ADRs with reviewer fields', () => {
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'First proposal',
+        decision: 'do A',
+        rationale: 'because A',
+        actor: 'daniel',
+      });
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Second proposal',
+        decision: 'do B',
+        actor: 'daniel',
+      });
+      // Accept one — it must drop out of the review list.
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Accepted,
+        actor: 'daniel',
+      });
+
+      const proposals = decisions.reviewProposals('TEST');
+      expect(proposals).toHaveLength(1);
+      expect(proposals[0]?.key).toBe('TEST-ADR-2');
+      expect(proposals[0]?.decision).toBe('do B');
+    });
+
+    it('applyVerdicts dispatches a batch, each verdict its own transition', () => {
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Alpha proposal',
+        decision: 'a',
+        actor: 'daniel',
+      });
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Beta proposal',
+        decision: 'b',
+        actor: 'daniel',
+      });
+
+      const results = decisions.applyVerdicts({
+        verdicts: [
+          { decisionKey: 'TEST-ADR-1', verdict: 'accept' },
+          { decisionKey: 'TEST-ADR-2', verdict: 'reject' },
+        ],
+        actor: 'daniel',
+      });
+      expect(results).toHaveLength(2);
+      expect(results[0]).toMatchObject({ ok: true, status: DecisionStatus.Accepted });
+      expect(results[1]).toMatchObject({ ok: true, status: DecisionStatus.Rejected });
+      // Each is a real transition — both leave the review list.
+      expect(decisions.reviewProposals('TEST')).toHaveLength(0);
+      // And each emitted its own audit event.
+      const query = new AuditQuery(path.join(tempRoot, '.audit'));
+      expect(query.run({ kind: 'decision_status_changed' }).length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('applyVerdicts is best-effort: a bad verdict does not abort the rest', () => {
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Good proposal',
+        decision: 'a',
+        actor: 'daniel',
+      });
+
+      const results = decisions.applyVerdicts({
+        verdicts: [
+          { decisionKey: 'TEST-ADR-99', verdict: 'accept' }, // unknown → fails
+          { decisionKey: 'TEST-ADR-1', verdict: 'accept' }, // still applies
+        ],
+        actor: 'daniel',
+      });
+      expect(results[0]).toMatchObject({ ok: false });
+      expect(results[1]).toMatchObject({ ok: true, status: DecisionStatus.Accepted });
     });
   });
 });

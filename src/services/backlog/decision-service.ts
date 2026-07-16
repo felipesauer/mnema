@@ -90,6 +90,54 @@ export interface TransitionDecisionInput {
   readonly expectedUpdatedAt?: string;
 }
 
+/**
+ * Input for editing a PROPOSED decision's text in place. Only the supplied
+ * fields change; the status/supersededBy pointer are never touched here (they
+ * move through {@link DecisionService.transition}). An accepted/rejected/
+ * superseded decision is immutable history — editing is refused there.
+ */
+export interface UpdateDecisionInput {
+  readonly decisionKey: string;
+  readonly title?: string;
+  readonly context?: string | null;
+  readonly decision?: string;
+  readonly rationale?: string | null;
+  readonly consequences?: string | null;
+  readonly impacts?: readonly string[];
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+  /** Optimistic-concurrency token; defaults to the row's current updatedAt. */
+  readonly expectedUpdatedAt?: string;
+}
+
+/** One proposed ADR projected to the fields a batch reviewer reads. */
+export interface DecisionReviewItem {
+  readonly key: string;
+  readonly title: string;
+  readonly context: string | null;
+  readonly decision: string;
+  readonly rationale: string | null;
+  readonly consequences: string | null;
+  readonly impacts: readonly string[];
+  readonly updatedAt: string;
+}
+
+/** The outcome of one verdict in an {@link DecisionService.applyVerdicts} batch. */
+export type DecisionVerdictResult =
+  | {
+      readonly decisionKey: string;
+      readonly verdict: 'accept' | 'reject';
+      readonly ok: true;
+      readonly status: DecisionStatus;
+    }
+  | {
+      readonly decisionKey: string;
+      readonly verdict: 'accept' | 'reject';
+      readonly ok: false;
+      readonly error: MnemaError;
+    };
+
 const VALID_TRANSITIONS: Readonly<Record<DecisionStatus, readonly DecisionStatus[]>> = {
   [DecisionStatus.Proposed]: [
     DecisionStatus.Accepted,
@@ -429,6 +477,211 @@ export class DecisionService {
   }
 
   /**
+   * Edits a PROPOSED decision's text in place (title/context/decision/
+   * rationale/consequences/impacts). Refused once the decision is
+   * accepted/rejected/superseded — that text is immutable history; use
+   * {@link transition}/supersede instead. The edit is audited
+   * (`decision_updated`), not a silent rewrite, and mints no new key.
+   *
+   * @param input - The fields to change + identity tuple
+   * @returns The updated decision or a structured error
+   */
+  updateContent(input: UpdateDecisionInput): Result<Decision, MnemaError> {
+    const decision = this.decisions.findByKey(input.decisionKey);
+    if (decision === null) {
+      return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+    }
+
+    // Editable only while proposed — the decision analog of task_update's
+    // terminal-state refusal. accepted/rejected/superseded is the record.
+    if (decision.status !== DecisionStatus.Proposed) {
+      return Err({
+        kind: ErrorCode.DecisionInvalidStatus,
+        decisionKey: decision.key,
+        fromStatus: decision.status,
+        toStatus: decision.status,
+      });
+    }
+
+    // Validate the SUPPLIED fields at the service (CLI + any non-MCP caller),
+    // mirroring record()'s bounds + markup screen.
+    const issues: ErrorIssue[] = [];
+    // `!= null` (not `!== undefined`) so a stray null from an untyped caller is
+    // guarded too, never a `null.length` TypeError.
+    if (input.title != null) {
+      if (input.title.length < 3) {
+        issues.push({ path: ['title'], message: 'must be at least 3 characters' });
+      } else if (input.title.length > 200) {
+        issues.push({ path: ['title'], message: 'must be at most 200 characters' });
+      }
+    }
+    if (input.decision != null && input.decision.length < 1) {
+      issues.push({ path: ['decision'], message: 'must be at least 1 character' });
+    }
+    for (const [field, value] of [
+      ['title', input.title],
+      ['decision', input.decision],
+      ['context', input.context],
+      ['rationale', input.rationale],
+      ['consequences', input.consequences],
+    ] as const) {
+      if (value !== undefined && value !== null && hasInvocationMarkup(value)) {
+        issues.push({
+          path: [field],
+          message: 'contains tool-invocation markup; pass each field as its own argument',
+        });
+      }
+    }
+    if (issues.length > 0) {
+      return Err({ kind: ErrorCode.ValidationFailed, issues });
+    }
+
+    // `updateFields` has no concurrency guard, so do the read-check-write in a
+    // transaction (like task-service.updateContent) to honour expectedUpdatedAt.
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : decision.updatedAt;
+
+    type UpdateOutcome =
+      | { readonly kind: 'ok'; readonly decision: Decision }
+      | { readonly kind: 'conflict'; readonly currentUpdatedAt: string };
+
+    const outcome = this.decisions.runInTransactionImmediate((): UpdateOutcome => {
+      const current = this.decisions.findById(decision.id);
+      if (current === null || current.updatedAt !== expectedUpdatedAt) {
+        return {
+          kind: 'conflict',
+          currentUpdatedAt: current?.updatedAt ?? decision.updatedAt,
+        };
+      }
+      const updated = this.decisions.updateFields(decision.id, {
+        title: input.title,
+        context: input.context,
+        decision: input.decision,
+        rationale: input.rationale,
+        consequences: input.consequences,
+        impacts: input.impacts,
+      });
+      return { kind: 'ok', decision: updated };
+    });
+
+    if (outcome.kind === 'conflict') {
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'decision',
+        taskKey: decision.key,
+        currentUpdatedAt: outcome.currentUpdatedAt,
+      });
+    }
+    const updated = outcome.decision;
+
+    this.audit.write({
+      kind: 'decision_updated',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { key: updated.key },
+    });
+
+    this.mirror?.writeDecision(updated, this.supersededByKey(updated));
+
+    return Ok(updated);
+  }
+
+  /**
+   * Reopens an accepted/rejected ADR back to `proposed` so it can be edited or
+   * re-decided — the undo for a mis-click or a changed mind. Refused on a
+   * `superseded` decision (that would resurrect a replaced ADR; use the
+   * successor) and on one already `proposed`. The reopen is audited with its
+   * reason (`decision_status_changed`, to `proposed`), so it is a recorded
+   * move, not a silent rewrite. Optimistic-concurrency via `expectedUpdatedAt`.
+   *
+   * @param input - The decision key, reason, and identity tuple
+   * @returns The reopened decision or a structured error
+   */
+  reopen(input: {
+    readonly decisionKey: string;
+    readonly reason: string;
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+    readonly expectedUpdatedAt?: string;
+  }): Result<Decision, MnemaError> {
+    const decision = this.decisions.findByKey(input.decisionKey);
+    if (decision === null) {
+      return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+    }
+
+    // Only accepted/rejected can be reopened. proposed is already open;
+    // superseded must not be resurrected (it has a live successor).
+    if (
+      decision.status !== DecisionStatus.Accepted &&
+      decision.status !== DecisionStatus.Rejected
+    ) {
+      return Err({
+        kind: ErrorCode.DecisionInvalidStatus,
+        decisionKey: decision.key,
+        fromStatus: decision.status,
+        toStatus: DecisionStatus.Proposed,
+      });
+    }
+
+    // Guard the OTHER side of supersedure: if a superseded predecessor points
+    // at THIS decision as its successor, reopening it would strand that
+    // pointer at a no-longer-current target (and make the successor's text
+    // editable while a predecessor still claims replacement). Refuse — the
+    // predecessor must be handled first.
+    if (this.decisions.isReferencedAsSuccessor(decision.id)) {
+      return Err({
+        kind: ErrorCode.DecisionInvalidStatus,
+        decisionKey: decision.key,
+        fromStatus: decision.status,
+        toStatus: DecisionStatus.Proposed,
+      });
+    }
+
+    const expectedUpdatedAt =
+      input.expectedUpdatedAt !== undefined ? input.expectedUpdatedAt : decision.updatedAt;
+
+    // Clear supersededBy defensively (accepted/rejected carry none, but the
+    // UPDATE sets it in lockstep with status, so pass null explicitly).
+    const result = this.decisions.updateStatus(
+      decision.id,
+      DecisionStatus.Proposed,
+      null,
+      expectedUpdatedAt,
+    );
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.DecisionNotFound, decisionKey: input.decisionKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'decision',
+        taskKey: decision.key,
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
+    }
+    const updated = result.decision;
+
+    this.audit.write({
+      kind: 'decision_status_changed',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: {
+        key: updated.key,
+        from: decision.status,
+        to: updated.status,
+        reason: input.reason,
+      },
+    });
+
+    this.mirror?.writeDecision(updated, this.supersededByKey(updated));
+
+    return Ok(updated);
+  }
+
+  /**
    * Returns a decision by its human key.
    *
    * @param decisionKey - Decision key (e.g. `WEBAPP-ADR-7`)
@@ -510,5 +763,70 @@ export class DecisionService {
    */
   listPending(projectKey: string): readonly Decision[] {
     return this.list(projectKey, DecisionStatus.Proposed);
+  }
+
+  /**
+   * Lists every proposed ADR with the fields a reviewer needs to decide, in
+   * one call — the decision-side analog of `skill_review_proposals`. Read-only:
+   * it dispatches nothing (apply verdicts with {@link applyVerdicts}). Mirrors
+   * the listing ergonomics so a client/agent can present the batch together.
+   *
+   * @param projectKey - Project key
+   * @returns Proposed decisions projected to their reviewer fields
+   */
+  reviewProposals(projectKey: string): readonly DecisionReviewItem[] {
+    return this.listPending(projectKey).map((d) => ({
+      key: d.key,
+      title: d.title,
+      context: d.context,
+      decision: d.decision,
+      rationale: d.rationale,
+      consequences: d.consequences,
+      impacts: d.impacts,
+      updatedAt: d.updatedAt,
+    }));
+  }
+
+  /**
+   * Applies a batch of accept/reject verdicts to proposed ADRs. Best-effort:
+   * each verdict is a full {@link transition} (so it emits its own audit event
+   * — batch is a throughput affordance, NOT an audit bypass), and a failure on
+   * one decision does not abort the rest. Returns a per-verdict outcome so the
+   * caller sees exactly which applied and which failed.
+   *
+   * @param input - The verdicts + identity tuple
+   * @returns One result per verdict, in input order
+   */
+  applyVerdicts(input: {
+    readonly verdicts: readonly {
+      readonly decisionKey: string;
+      readonly verdict: 'accept' | 'reject';
+    }[];
+    readonly actor: string;
+    readonly via?: string;
+    readonly runId?: string;
+  }): readonly DecisionVerdictResult[] {
+    return input.verdicts.map((v) => {
+      const result = this.transition({
+        decisionKey: v.decisionKey,
+        status: v.verdict === 'accept' ? DecisionStatus.Accepted : DecisionStatus.Rejected,
+        actor: input.actor,
+        via: input.via,
+        runId: input.runId,
+      });
+      return result.ok
+        ? {
+            decisionKey: v.decisionKey,
+            verdict: v.verdict,
+            ok: true as const,
+            status: result.value.status,
+          }
+        : {
+            decisionKey: v.decisionKey,
+            verdict: v.verdict,
+            ok: false as const,
+            error: result.error,
+          };
+    });
   }
 }

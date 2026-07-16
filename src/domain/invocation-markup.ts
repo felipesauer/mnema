@@ -47,7 +47,8 @@ const STRONG_TOKEN = String.raw`<(?:[\w.-]+:)?invoke\b[^<>\n]*>?|<\/(?:[\w.-]+:)
 // tool accepts as free text. `content` and `topics` cover the observation /
 // memory record shapes (`…body</content>\n<topics>[…]`), the rest cover the
 // decision shapes. Shared by the weak introducer and the envelope-pair form.
-const FIELD_TAG = String.raw`(?:decision|context|rationale|consequences|title|parameter|content|topics|observation|slug)`;
+const FIELD_TAG =
+  '(?:decision|context|rationale|consequences|title|parameter|content|topics|observation|slug)';
 
 // A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
 // `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it

@@ -138,6 +138,24 @@ export class DecisionRepository {
   }
 
   /**
+   * True when any (non-deleted) decision points at `decisionId` as its
+   * successor (`superseded_by`). Guards the reopen/reject of a decision that
+   * a superseded predecessor still relies on being live — reopening or
+   * rejecting it would strand that predecessor's `superseded_by` pointer at a
+   * non-current target.
+   *
+   * @param decisionId - Internal UUID of the candidate successor
+   * @returns Whether some predecessor was superseded by it
+   */
+  isReferencedAsSuccessor(decisionId: string): boolean {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT 1 FROM decisions WHERE superseded_by = ? AND deleted_at IS NULL LIMIT 1')
+      .get(decisionId);
+    return row !== undefined;
+  }
+
+  /**
    * Lists every decision of a project ordered by record time.
    *
    * @param projectId - Internal project id
