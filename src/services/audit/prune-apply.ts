@@ -2,6 +2,7 @@ import { rmSync } from 'node:fs';
 
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import { walkChainedEvents } from './audit-chain-walk.js';
+import { removeCoveredAtts } from './prune-att-lockstep.js';
 import { writePruneWaiver } from './prune-store.js';
 import { buildPruneWaiver, type PruneWaiver } from './prune-waiver.js';
 import type { CutPoint } from './retention-cut-point.js';
@@ -106,6 +107,10 @@ export function buildPrunePlan(auditDir: string, cut: CutPoint): PrunePlan {
  * @param params.plan - The plan from {@link buildPrunePlan}
  * @param params.droppedFiles - Absolute paths of the segment files to delete
  *   (the cut point's `dropped[].file`)
+ * @param params.attToRemove - Absolute paths of committed `.att` files to
+ *   delete in the SAME destructive pass (from the `.att` lockstep decision),
+ *   so no attestation is ever left over a removed tail. The command gates on
+ *   the lockstep NOT being blocked before calling this.
  * @param params.signerActor - The actor handle owning the signing key
  * @param params.signerFingerprint - Full fingerprint of the signer's key
  * @param params.projectHmacId - The committed `sha256(secret)` id
@@ -120,6 +125,7 @@ export function applyPrune(params: {
   auditDir: string;
   plan: PrunePlan;
   droppedFiles: readonly string[];
+  attToRemove?: readonly string[];
   signerActor: string;
   signerFingerprint: string;
   projectHmacId: string;
@@ -132,6 +138,7 @@ export function applyPrune(params: {
     auditDir,
     plan,
     droppedFiles,
+    attToRemove = [],
     signerActor,
     signerFingerprint,
     projectHmacId,
@@ -152,10 +159,12 @@ export function applyPrune(params: {
     sign,
   });
 
-  // 2. Delete the dropped segment files.
+  // 2. Delete the dropped segment files AND the covered .att files in lockstep,
+  //    so no attestation is ever left over a removed tail.
   for (const file of droppedFiles) {
     rmSync(file, { force: true });
   }
+  removeCoveredAtts(attToRemove);
 
   // 3. Reconcile audit_state down to the surviving tail.
   forceReconcile(plan.keptEventCount, plan.survivingHeadHash, plan.survivingHeadAt);
