@@ -13,6 +13,12 @@ import type { CutPoint } from './retention-cut-point.js';
  * destructive happens.
  */
 export interface PrunePlan {
+  /**
+   * The cut: the chained-event index the prune drops below (`[0, cut)` goes).
+   * Equals `droppedEvents.length`; carried explicitly so the `.att` / anchor
+   * lockstep gates address the same boundary without re-deriving it.
+   */
+  readonly cut: number;
   /** The dropped events `[0, cut)`, in chain order (needed to sign the waiver). */
   readonly droppedEvents: readonly AuditEvent[];
   /** `hash` of the first surviving event (the new genesis). */
@@ -77,6 +83,7 @@ export function buildPrunePlan(auditDir: string, cut: CutPoint): PrunePlan {
   }
 
   return {
+    cut: cutIndex,
     droppedEvents,
     genesisHash,
     survivingHeadHash,
@@ -118,8 +125,15 @@ export function buildPrunePlan(auditDir: string, cut: CutPoint): PrunePlan {
  * @param params.forceReconcile - Re-points audit_state to the surviving tail
  * @param params.reSignHead - Re-signs the head at the new count; returns
  *   whether a signer was available
+ * @param params.deleteAnchorsBelow - Deletes committed anchor rows whose
+ *   `event_count_at` is at or below the cut (their receipts covered a removed
+ *   head), in the SAME destructive pass; returns the count removed. Optional —
+ *   omitted when anchoring is off. Unlike `.att`, a surviving anchor is
+ *   verified by its head_hash (intact on disk), so anchors ABOVE the cut need
+ *   no re-basing and this never blocks.
  * @param params.now - Clock for the waiver's acceptedAt (injectable for tests)
- * @returns The written waiver and whether the head was re-signed
+ * @returns The written waiver, whether the head was re-signed, and how many
+ *   anchors were removed
  */
 export function applyPrune(params: {
   auditDir: string;
@@ -132,8 +146,9 @@ export function applyPrune(params: {
   sign: (message: Buffer) => Buffer;
   forceReconcile: (eventCount: number, headHash: string, lastAt: string | null) => void;
   reSignHead: (newHeadHash: string, newEventCount: number) => boolean;
+  deleteAnchorsBelow?: (cut: number) => number;
   now: () => Date;
-}): { readonly waiver: PruneWaiver; readonly reSigned: boolean } {
+}): { readonly waiver: PruneWaiver; readonly reSigned: boolean; readonly anchorsRemoved: number } {
   const {
     auditDir,
     plan,
@@ -145,6 +160,7 @@ export function applyPrune(params: {
     sign,
     forceReconcile,
     reSignHead,
+    deleteAnchorsBelow,
     now,
   } = params;
 
@@ -159,12 +175,13 @@ export function applyPrune(params: {
     sign,
   });
 
-  // 2. Delete the dropped segment files AND the covered .att files in lockstep,
-  //    so no attestation is ever left over a removed tail.
+  // 2. Delete the dropped segment files AND the covered .att / anchor rows in
+  //    lockstep, so no attestation or receipt is ever left over a removed tail.
   for (const file of droppedFiles) {
     rmSync(file, { force: true });
   }
   removeCoveredAtts(attToRemove);
+  const anchorsRemoved = deleteAnchorsBelow?.(plan.cut) ?? 0;
 
   // 3. Reconcile audit_state down to the surviving tail.
   forceReconcile(plan.keptEventCount, plan.survivingHeadHash, plan.survivingHeadAt);
@@ -175,5 +192,5 @@ export function applyPrune(params: {
   // 5. Write the committed waiver last.
   writePruneWaiver(auditDir, waiver);
 
-  return { waiver, reSigned };
+  return { waiver, reSigned, anchorsRemoved };
 }

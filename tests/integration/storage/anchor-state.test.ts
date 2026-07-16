@@ -99,4 +99,64 @@ describe('AnchorRepository (migration 023)', () => {
   it('reads null for an unknown (head, provider)', () => {
     expect(repo.read(head, 'rfc3161')).toBeNull();
   });
+
+  describe('deleteBelowEventCount (prune lockstep, ADR-68)', () => {
+    const h = (n: number) => String(n).padStart(64, '0');
+
+    it('removes anchors whose event_count_at is at or below the cut, keeps the rest', () => {
+      repo.upsert({
+        headHash: h(1),
+        provider: 'git-signed',
+        status: 'anchored',
+        receipt: 'r',
+        eventCountAt: 3,
+      });
+      repo.upsert({
+        headHash: h(2),
+        provider: 'git-signed',
+        status: 'anchored',
+        receipt: 'r',
+        eventCountAt: 5,
+      });
+      repo.upsert({
+        headHash: h(3),
+        provider: 'git-signed',
+        status: 'anchored',
+        receipt: 'r',
+        eventCountAt: 8,
+      });
+      // cut = 5: anchors at event_count_at 3 and 5 stamped heads inside [0, 5) → removed.
+      const removed = repo.deleteBelowEventCount(5);
+      expect(removed).toBe(2);
+      const survivors = repo.listAll().map((a) => a.eventCountAt);
+      expect(survivors).toEqual([8]);
+    });
+
+    it('never deletes a NULL event_count_at anchor (time-only interval)', () => {
+      repo.upsert({ headHash: h(1), provider: 'rfc3161', status: 'anchored', receipt: 'r' }); // no eventCountAt → NULL
+      repo.upsert({
+        headHash: h(2),
+        provider: 'rfc3161',
+        status: 'anchored',
+        receipt: 'r',
+        eventCountAt: 2,
+      });
+      const removed = repo.deleteBelowEventCount(10);
+      expect(removed).toBe(1); // only the eventCountAt=2 row
+      expect(repo.listAll()).toHaveLength(1);
+      expect(repo.listAll()[0]?.eventCountAt).toBeNull();
+    });
+
+    it('removes nothing when every anchor is above the cut', () => {
+      repo.upsert({
+        headHash: h(1),
+        provider: 'git-signed',
+        status: 'anchored',
+        receipt: 'r',
+        eventCountAt: 20,
+      });
+      expect(repo.deleteBelowEventCount(5)).toBe(0);
+      expect(repo.listAll()).toHaveLength(1);
+    });
+  });
 });
