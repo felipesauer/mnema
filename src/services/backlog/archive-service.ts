@@ -76,17 +76,19 @@ export class ArchiveService {
   ) {}
 
   /**
-   * Selects terminal tasks whose `updated_at` is older than the cutoff
+   * Selects terminal tasks whose close time is older than the cutoff
    * (`now` minus `months`) and moves each one's mirror from
    * `backlog/<STATE>/<KEY>.md` to `backlog/.archive/<STATE>/<KEY>.md`.
    *
-   * `updated_at` is the age signal — `closed_at` is declared but never written
-   * for tasks, so it cannot be relied on. A move uses `renameSync` (like the
-   * quarantine sweep); on a name collision in the archive the destination gets
-   * a `.N` suffix before `.md`. Both source and destination are asserted to
-   * stay within the backlog root, so a hostile state string cannot steer a
-   * move outside it. A mirror whose file is already absent is skipped (the row
-   * is authoritative; a missing file is not an error here).
+   * The age signal is `closed_at` (stamped when the task entered its terminal
+   * state), falling back to `updated_at` for tasks closed before it was
+   * recorded — so re-editing a long-closed task no longer resets its clock. A
+   * move uses `renameSync` (like the quarantine sweep); on a name collision in
+   * the archive the destination gets a `.N` suffix before `.md`. Both source
+   * and destination are asserted to stay within the backlog root, so a hostile
+   * state string cannot steer a move outside it. A mirror whose file is already
+   * absent is skipped (the row is authoritative; a missing file is not an error
+   * here).
    *
    * @param options - Cutoff in months, dry-run flag, and injectable clock
    * @returns The plan (dry run) or the moves performed, in the shared shape

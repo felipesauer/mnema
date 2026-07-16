@@ -3,6 +3,7 @@ import { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import type {
   ClaimResult,
+  ClosedAtChange,
   ITaskRepository,
   LeanTask,
   LeanTaskFilter,
@@ -18,6 +19,7 @@ import type { SqliteAdapter } from '../sqlite-adapter.js';
 // definitions live in the port (ports/task-repository.port.ts).
 export type {
   ClaimResult,
+  ClosedAtChange,
   LeanTask,
   LeanTaskFilter,
   TaskFieldUpdates,
@@ -94,19 +96,21 @@ export class TaskRepository implements ITaskRepository {
   }
 
   /**
-   * Lists active tasks in a terminal state (DONE/CANCELED) whose
-   * `updated_at` is strictly older than `cutoff`, ordered by key. Backs the
-   * opt-in terminal-mirror archival: DONE/CANCELED rows are never deleted
-   * (deletion is soft-delete-gated), so their mirrors accumulate — this is
-   * the age-and-state selection that decides which mirrors are old enough to
-   * move out of the active state folders.
+   * Lists active tasks in a terminal state (DONE/CANCELED) whose close time is
+   * strictly older than `cutoff`, ordered by key. Backs the opt-in
+   * terminal-mirror archival: DONE/CANCELED rows are never deleted (deletion is
+   * soft-delete-gated), so their mirrors accumulate — this is the age-and-state
+   * selection that decides which mirrors are old enough to move out of the
+   * active state folders.
    *
-   * `updated_at` is the age signal (not `closed_at`, which is declared but
-   * never written for tasks). Comparison is lexicographic on the ISO8601
-   * string, which is a valid chronological ordering for the `Z`-suffixed,
-   * fixed-width timestamps {@link isoNow} produces.
+   * The age signal is `closed_at` (stamped when the task entered its terminal
+   * state), falling back to `updated_at` for tasks that reached terminal before
+   * `closed_at` was recorded. Using `closed_at` means a later edit to a
+   * long-closed task no longer resets its archival clock. Comparison is
+   * lexicographic on the ISO8601 string, a valid chronological ordering for the
+   * `Z`-suffixed, fixed-width timestamps {@link isoNow} produces.
    *
-   * @param cutoff - ISO8601 instant; rows with `updated_at < cutoff` match
+   * @param cutoff - ISO8601 instant; rows whose close time is `< cutoff` match
    * @returns Matching terminal tasks (possibly empty), ordered by key
    */
   findTerminalUpdatedBefore(cutoff: string): Task[] {
@@ -114,7 +118,7 @@ export class TaskRepository implements ITaskRepository {
       .getDatabase()
       .prepare(
         `SELECT * FROM tasks
-          WHERE state IN (?, ?) AND updated_at < ? AND deleted_at IS NULL
+          WHERE state IN (?, ?) AND COALESCE(closed_at, updated_at) < ? AND deleted_at IS NULL
           ORDER BY key`,
       )
       .all(TaskState.Done, TaskState.Canceled, cutoff) as TaskRow[];
@@ -300,6 +304,7 @@ export class TaskRepository implements ITaskRepository {
     taskId: string,
     newState: string,
     expectedUpdatedAt: string | null = null,
+    closedAt: ClosedAtChange = 'leave',
   ): UpdateStateResult {
     const db = this.adapter.getDatabase();
     const current = db
@@ -315,11 +320,30 @@ export class TaskRepository implements ITaskRepository {
       };
     }
 
-    db.prepare(
-      `UPDATE tasks
-          SET state = ?, updated_at = ?
-        WHERE id = ?`,
-    ).run(newState, isoNow(), taskId);
+    const now = isoNow();
+    // `closed_at` follows the terminal boundary: stamp it entering a terminal
+    // state, clear it on reopen, leave it untouched for any other move. Mirror
+    // of how the sprint/epic repos stamp their own closed_at.
+    if (closedAt === 'stamp') {
+      db.prepare('UPDATE tasks SET state = ?, updated_at = ?, closed_at = ? WHERE id = ?').run(
+        newState,
+        now,
+        now,
+        taskId,
+      );
+    } else if (closedAt === 'clear') {
+      db.prepare('UPDATE tasks SET state = ?, updated_at = ?, closed_at = NULL WHERE id = ?').run(
+        newState,
+        now,
+        taskId,
+      );
+    } else {
+      db.prepare('UPDATE tasks SET state = ?, updated_at = ? WHERE id = ?').run(
+        newState,
+        now,
+        taskId,
+      );
+    }
 
     const reloaded = this.findById(taskId);
     if (reloaded === null) {
