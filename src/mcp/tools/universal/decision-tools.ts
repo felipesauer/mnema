@@ -81,6 +81,54 @@ export class DecisionTools {
     );
 
     server.registerTool(
+      'decision_update',
+      {
+        description:
+          'Edit a PROPOSED ADR in place (title/context/decision/rationale/consequences/impacts). Refused once accepted/rejected/superseded — that text is immutable history; supersede instead. Only supplied fields change; mints no new key. Requires an active agent run.',
+        inputSchema: {
+          decision_key: z.string().describe('The ADR key, e.g. MYAPP-ADR-3'),
+          title: z.string().min(3).max(200).optional(),
+          decision: z.string().min(1).optional().describe('What was decided'),
+          context: z.string().optional().describe('Why this decision was needed'),
+          rationale: z.string().optional().describe('Why this choice over alternatives'),
+          consequences: z.string().optional().describe('What follows from this decision'),
+          impacts: z
+            .array(z.string().min(1))
+            .optional()
+            .describe('Paths/keys of artefacts this decision affects (replaces the set)'),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe('Optimistic-concurrency token; omitted = last write wins'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.updateContent({
+          decisionKey: input.decision_key,
+          title: input.title,
+          decision: input.decision,
+          context: input.context,
+          rationale: input.rationale,
+          consequences: input.consequences,
+          impacts: input.impacts,
+          expectedUpdatedAt: input.expected_updated_at,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
+      },
+    );
+
+    server.registerTool(
       'decision_promote_from_note',
       {
         description:
@@ -194,6 +242,61 @@ export class DecisionTools {
     );
 
     server.registerTool(
+      'decisions_review',
+      {
+        description:
+          'List every PROPOSED ADR with the fields a reviewer needs (title, context, decision, rationale, consequences, impacts) in one call, so a batch can be presented together. Read-only — apply verdicts with `decisions_apply`.',
+        inputSchema: {},
+      },
+      () => ok({ proposals: this.decisions.reviewProposals(this.config.project.key) }),
+    );
+
+    server.registerTool(
+      'decisions_apply',
+      {
+        description:
+          'Apply a batch of accept/reject verdicts to proposed ADRs. Best-effort: each verdict is a full transition emitting its own audit event (batch is a throughput affordance, not an audit bypass), and one failure does not abort the rest. Returns a per-verdict outcome. Requires an active agent run.',
+        inputSchema: {
+          verdicts: z
+            .array(
+              z.object({
+                decision_key: z.string().describe('The ADR key, e.g. WEBAPP-ADR-7'),
+                verdict: z.enum(['accept', 'reject']),
+              }),
+            )
+            .min(1)
+            .describe('Accept/reject verdicts to apply, in order'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const results = this.decisions.applyVerdicts({
+          verdicts: input.verdicts.map((v) => ({
+            decisionKey: v.decision_key,
+            verdict: v.verdict,
+          })),
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        // Project each outcome to a serialisable shape (errors → their code).
+        return ok({
+          results: results.map((r) =>
+            r.ok
+              ? { decision_key: r.decisionKey, verdict: r.verdict, ok: true, status: r.status }
+              : { decision_key: r.decisionKey, verdict: r.verdict, ok: false, error: r.error.kind },
+          ),
+        });
+      },
+    );
+
+    server.registerTool(
       'decisions_impacting',
       {
         description:
@@ -286,6 +389,41 @@ export class DecisionTools {
         const result = this.decisions.transition({
           decisionKey: input.decision_key,
           status: DecisionStatus.Rejected,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ decision: result.value });
+      },
+    );
+
+    server.registerTool(
+      'decision_reopen',
+      {
+        description:
+          'Reopen an accepted/rejected ADR back to `proposed` (the undo for a mis-click or changed mind), so it can be edited or re-decided. Refused on a superseded ADR. Requires an active agent run.',
+        inputSchema: {
+          decision_key: z.string().describe('The ADR being reopened, e.g. WEBAPP-ADR-7'),
+          reason: z.string().min(1).describe('Why it is being reopened (audited)'),
+          expected_updated_at: z
+            .string()
+            .optional()
+            .describe('Optimistic-concurrency token; omitted = last write wins'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.decisions.reopen({
+          decisionKey: input.decision_key,
+          reason: input.reason,
+          expectedUpdatedAt: input.expected_updated_at,
           actor: this.identity.getDefaultActor(),
           via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
           runId: runId ?? undefined,

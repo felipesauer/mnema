@@ -15,6 +15,16 @@ interface RecordOptions {
   readonly impact?: string[];
 }
 
+interface UpdateOptions {
+  readonly title?: string;
+  readonly decision?: string;
+  readonly context?: string;
+  readonly rationale?: string;
+  readonly consequences?: string;
+  readonly impact?: string[];
+  readonly expectedUpdatedAt?: string;
+}
+
 interface ListOptions {
   readonly status?: string;
 }
@@ -73,6 +83,36 @@ export class DecisionCommand {
       });
 
     group
+      .command('update <key>')
+      .description('Edit a `proposed` ADR in place (refused once accepted/rejected/superseded)')
+      .option('--title <title>', 'Decision title (3-200 chars)')
+      .option('--decision <text>', 'What was decided')
+      .option('--context <text>', 'Why this decision was needed')
+      .option('--rationale <text>', 'Why this choice over alternatives')
+      .option('--consequences <text>', 'What follows from this decision')
+      .option('--impact <ref...>', 'Artefact path/key this ADR affects (replaces the set)')
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the decision's current `updatedAt` or the edit is rejected with CONFLICT",
+      )
+      .action(async (key: string, options: UpdateOptions) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.decision.updateContent({
+            decisionKey: key,
+            title: options.title,
+            decision: options.decision,
+            context: options.context,
+            rationale: options.rationale,
+            consequences: options.consequences,
+            impacts: options.impact,
+            expectedUpdatedAt: options.expectedUpdatedAt,
+            actor: container.identity.getDefaultActor(),
+          });
+          renderDecision(result, 'updated');
+        });
+      });
+
+    group
       .command('show <key>')
       .description('Show a single ADR')
       .option('--json', 'Print raw entity as JSON', false)
@@ -115,6 +155,26 @@ export class DecisionCommand {
       });
 
     group
+      .command('review')
+      .description('List proposed ADRs with the fields a reviewer needs, to dispatch as a batch')
+      .action(async () => {
+        await withCliContext(({ container, config }) => {
+          const proposals = container.decision.reviewProposals(config.project.key);
+          if (proposals.length === 0) {
+            process.stdout.write(`${pc.dim('(no proposed decisions to review)')}\n`);
+            return;
+          }
+          const blocks = proposals.map((p) => {
+            const lines = [`${pc.bold(p.key)}  ${p.title}`, `  decision: ${p.decision}`];
+            if (p.rationale !== null) lines.push(`  rationale: ${p.rationale}`);
+            if (p.impacts.length > 0) lines.push(`  impacts: ${p.impacts.join(', ')}`);
+            return lines.join('\n');
+          });
+          process.stdout.write(`${blocks.join('\n\n')}\n`);
+        });
+      });
+
+    group
       .command('accept <key>')
       .description('Move a `proposed` ADR to `accepted`')
       .option(
@@ -151,6 +211,31 @@ export class DecisionCommand {
           renderDecision(result, 'rejected');
         });
       });
+
+    group
+      .command('reopen <key>')
+      .description('Reopen an accepted/rejected ADR back to `proposed` (undo a mis-click)')
+      .requiredOption('--reason <text>', 'Why it is being reopened (audited)')
+      .option(
+        '--expected-updated-at <iso>',
+        "Optimistic-concurrency token: must equal the decision's current `updatedAt` or the reopen is rejected with CONFLICT",
+      )
+      .action(
+        async (
+          key: string,
+          options: { readonly reason: string; readonly expectedUpdatedAt?: string },
+        ) => {
+          await withMutatingCliContext(({ container }) => {
+            const result = container.decision.reopen({
+              decisionKey: key,
+              reason: options.reason,
+              actor: container.identity.getDefaultActor(),
+              expectedUpdatedAt: options.expectedUpdatedAt,
+            });
+            renderDecision(result, 'reopened');
+          });
+        },
+      );
 
     group
       .command('supersede <key>')

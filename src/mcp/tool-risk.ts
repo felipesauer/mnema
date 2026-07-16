@@ -283,6 +283,12 @@ export const TOOL_RISK: Readonly<Record<string, ToolAnnotations>> = {
     idempotentHint: false, // mints a new ADR
     openWorldHint: false,
   },
+  decision_update: {
+    readOnlyHint: false,
+    destructiveHint: true, // overwrites the proposal's prior text
+    idempotentHint: false,
+    openWorldHint: false,
+  },
   decision_promote_from_note: {
     readOnlyHint: false,
     destructiveHint: false, // note stays put; a new ADR + edge
@@ -305,6 +311,24 @@ export const TOOL_RISK: Readonly<Record<string, ToolAnnotations>> = {
     readOnlyHint: false,
     destructiveHint: true, // discards the proposal's live status
     idempotentHint: true, // rejected stays rejected
+    openWorldHint: false,
+  },
+  decision_reopen: {
+    readOnlyHint: false,
+    destructiveHint: false, // status move back to proposed, no data loss
+    idempotentHint: false, // only valid from accepted/rejected; a second call is refused
+    openWorldHint: false,
+  },
+  decisions_review: {
+    readOnlyHint: true, // lists proposed ADRs; dispatches nothing
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  decisions_apply: {
+    readOnlyHint: false,
+    destructiveHint: true, // a reject verdict discards a proposal's live status
+    idempotentHint: false,
     openWorldHint: false,
   },
   decision_supersede: {

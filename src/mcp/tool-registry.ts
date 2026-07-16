@@ -98,6 +98,7 @@ export const PLANNING_SHARED_TOOL_NAMES: readonly string[] = [
  */
 export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'decision_record',
+  'decision_update',
   'decision_promote_from_note',
   'decision_promote_from_observation',
   'provenance',
@@ -107,6 +108,9 @@ export const KNOWLEDGE_TOOL_NAMES: readonly string[] = [
   'decision_supersede',
   'decision_accept',
   'decision_reject',
+  'decision_reopen',
+  'decisions_review',
+  'decisions_apply',
   'skill_record',
   'skill_show',
   'skill_diff',
