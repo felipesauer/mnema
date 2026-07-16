@@ -237,6 +237,53 @@ describe('prune apply', () => {
     expect(existsSync(attestPath(auditDir, 3))).toBe(false);
   });
 
+  it('deletes anchors below the cut in the same pass and reports the count', () => {
+    layout();
+    const cut = computeCutPoint(auditDir, 'local', 12, NOW);
+    const plan = buildPrunePlan(auditDir, cut);
+    let deletedBelow: number | null = null;
+    const s = signer();
+    const { anchorsRemoved } = applyPrune({
+      auditDir,
+      plan,
+      droppedFiles: cut.dropped.map((d) => d.file),
+      signerActor: 'felipesauer',
+      signerFingerprint: s.fingerprint,
+      projectHmacId: hmacId,
+      sign: s.sign,
+      forceReconcile: () => {},
+      reSignHead: () => true,
+      deleteAnchorsBelow: (c) => {
+        deletedBelow = c;
+        return 2; // pretend two anchor rows were below the cut
+      },
+      now: () => NOW,
+    });
+    // The cut passed to the anchor delete is the dropped-prefix length (5).
+    expect(deletedBelow).toBe(5);
+    expect(anchorsRemoved).toBe(2);
+  });
+
+  it('anchorsRemoved is 0 when anchoring is off (no deleteAnchorsBelow)', () => {
+    layout();
+    const cut = computeCutPoint(auditDir, 'local', 12, NOW);
+    const plan = buildPrunePlan(auditDir, cut);
+    const s = signer();
+    const { anchorsRemoved } = applyPrune({
+      auditDir,
+      plan,
+      droppedFiles: cut.dropped.map((d) => d.file),
+      signerActor: 'felipesauer',
+      signerFingerprint: s.fingerprint,
+      projectHmacId: hmacId,
+      sign: s.sign,
+      forceReconcile: () => {},
+      reSignHead: () => true,
+      now: () => NOW,
+    });
+    expect(anchorsRemoved).toBe(0);
+  });
+
   it('buildPrunePlan refuses a cut with no cut point', () => {
     layout();
     const noCut = computeCutPoint(auditDir, 'full', 12, NOW);

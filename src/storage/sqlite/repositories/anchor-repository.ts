@@ -124,6 +124,31 @@ export class AnchorRepository {
       .all() as AnchorRow[];
     return rows.map(toRecord);
   }
+
+  /**
+   * Deletes every anchor whose `event_count_at` is at or below `cut` — the
+   * anchors that stamped a head inside a pruned prefix (ADR-68 lockstep). An
+   * anchor at `event_count_at = N` covers the head at chained index `N - 1`, so
+   * `event_count_at <= cut` means the anchored head was in `[0, cut)` and is now
+   * deleted; leaving the row would keep a receipt over a removed tail.
+   *
+   * Anchors ABOVE the cut are untouched: an anchor is verified by its
+   * `head_hash` (which survives intact on disk), not by `event_count_at` — that
+   * field is only an ordering baseline, so a post-prune index shift does not
+   * invalidate a surviving anchor. Rows with a NULL `event_count_at` (time-only
+   * intervals) are never deleted — they name no event position to be below the
+   * cut.
+   *
+   * @param cut - The chained-event index the prune drops below
+   * @returns The number of anchor rows removed
+   */
+  deleteBelowEventCount(cut: number): number {
+    const result = this.adapter
+      .getDatabase()
+      .prepare(`DELETE FROM anchors WHERE event_count_at IS NOT NULL AND event_count_at <= ?`)
+      .run(cut);
+    return result.changes;
+  }
 }
 
 function toRecord(row: AnchorRow): AnchorRecord {
