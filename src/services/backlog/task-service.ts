@@ -9,7 +9,11 @@ import type { FieldSpec } from '../../domain/state-machine/workflow-meta-schema.
 import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { type ErrorIssue, fromZodIssues, type MnemaError } from '../../errors/mnema-error.js';
-import type { ITaskRepository, TaskFieldUpdates } from '../../ports/task-repository.port.js';
+import type {
+  ClosedAtChange,
+  ITaskRepository,
+  TaskFieldUpdates,
+} from '../../ports/task-repository.port.js';
 import type { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
 import type { TransitionRepository } from '../../storage/sqlite/repositories/transition-repository.js';
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
@@ -804,7 +808,20 @@ export class TaskService {
           }
         }
 
-        const result = this.tasks.updateState(task.id, to as TaskState, expectedUpdatedAt);
+        // Stamp closed_at entering a terminal state, clear it when a reopen
+        // leaves one; the repo is workflow-agnostic, so the terminal decision
+        // (which the state machine owns) is resolved here and passed in.
+        const closedAtChange: ClosedAtChange = enteringTerminal
+          ? 'stamp'
+          : this.stateMachine.isTerminal(task.state)
+            ? 'clear'
+            : 'leave';
+        const result = this.tasks.updateState(
+          task.id,
+          to as TaskState,
+          expectedUpdatedAt,
+          closedAtChange,
+        );
         if (!result.ok) {
           if (result.reason.kind === 'CONFLICT') {
             return { kind: 'conflict', currentUpdatedAt: result.reason.currentUpdatedAt };

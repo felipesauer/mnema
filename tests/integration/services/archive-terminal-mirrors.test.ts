@@ -17,9 +17,10 @@ import { MarkdownIo } from '@/storage/markdown/markdown-io.js';
  * backlog scanner, so an archived mirror survives a `syncRebuild.run()` and the
  * row is untouched.
  *
- * The fixture seeds task ROWS directly with a controlled `updated_at` (the age
- * signal) — `task.create` always stamps the current instant, so a row old
- * enough to archive cannot be minted through it — and writes each mirror via
+ * The fixture seeds task ROWS directly with controlled timestamps — the age
+ * signal is `closed_at`, falling back to `updated_at` when it is null —
+ * because `task.create` always stamps the current instant, so a row old enough
+ * to archive cannot be minted through it. Each mirror is written via
  * `MarkdownIo` so it is real, parseable frontmatter.
  */
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
@@ -151,6 +152,52 @@ describe('ArchiveService terminal-mirror archival', () => {
     expect(result.archived).toEqual([]);
     expect(existsSync(stateMirror('DONE', 'TEST-3'))).toBe(true);
     expect(existsSync(archiveMirror('DONE', 'TEST-3'))).toBe(false);
+  });
+
+  it('keys off closed_at: an old close with a recent edit is still archived', () => {
+    const now = Date.now();
+    // Closed 8 months ago (past the cutoff) but edited 1 month ago (within it).
+    // Keying off updated_at would keep it; keying off closed_at archives it.
+    const closedAt = new Date(now - 8 * MONTH).toISOString();
+    const updatedAt = new Date(now - 1 * MONTH).toISOString();
+    const db = container.adapter.getDatabase();
+    const project = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string };
+    let actor = db.prepare('SELECT id FROM actors LIMIT 1').get() as { id: string } | undefined;
+    if (actor === undefined) {
+      db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('act-1', 'daniel', 'human')").run();
+      actor = { id: 'act-1' };
+    }
+    db.prepare(
+      `INSERT INTO tasks (id, key, project_id, title, description, acceptance_criteria, state,
+         priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at, closed_at)
+       VALUES (?, ?, ?, ?, '', '[]', 'DONE', 3, ?, ?, 0, '{}', ?, ?, ?)`,
+    ).run(
+      'id-TEST-9',
+      'TEST-9',
+      project.id,
+      'Task TEST-9',
+      actor.id,
+      actor.id,
+      closedAt,
+      updatedAt,
+      closedAt,
+    );
+    mkdirSync(path.dirname(stateMirror('DONE', 'TEST-9')), { recursive: true });
+    markdownIo.write(stateMirror('DONE', 'TEST-9'), {
+      mnemaData: { key: 'TEST-9', state: 'DONE', title: 'Task TEST-9', updated_at: updatedAt },
+      otherFrontmatter: {},
+      content: '# Task TEST-9\n',
+    });
+
+    const result = container.archive.archiveTerminalMirrors({
+      months: 6,
+      dryRun: false,
+      now: new Date(now),
+    });
+
+    expect(result.movedCount).toBe(1);
+    expect(existsSync(stateMirror('DONE', 'TEST-9'))).toBe(false);
+    expect(existsSync(archiveMirror('DONE', 'TEST-9'))).toBe(true);
   });
 
   it('never archives a non-terminal mirror, however old', () => {

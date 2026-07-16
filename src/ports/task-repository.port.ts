@@ -33,6 +33,7 @@ export interface ITaskRepository {
     taskId: string,
     newState: string,
     expectedUpdatedAt?: string | null,
+    closedAt?: ClosedAtChange,
   ): UpdateStateResult;
   updateFields(taskId: string, fields: TaskFieldUpdates): Task;
   incrementReopenCount(taskId: string): Task | null;
@@ -121,6 +122,14 @@ export interface TaskFieldUpdates {
   readonly assigneeId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
+
+/**
+ * What a state change does to `closed_at`. The repository is workflow-agnostic
+ * — the caller (which knows the workflow's terminal set) decides: `stamp` when
+ * entering a terminal state, `clear` when leaving one (a reopen), `leave`
+ * otherwise. Defaults to `leave` so existing callers keep their behaviour.
+ */
+export type ClosedAtChange = 'stamp' | 'clear' | 'leave';
 
 /** Reason an `updateState` call failed. */
 export type UpdateStateFailure =

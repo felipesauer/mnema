@@ -704,6 +704,90 @@ mnema:
     }
   });
 
+  it('stamps closed_at when a task reaches DONE and preserves it across a fresh-clone rebuild', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Delivered task',
+      description: 'driven to done and re-cloned',
+      acceptanceCriteria: ['it works'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    // A freshly-created task carries no close time.
+    expect(created.value.closedAt).toBeNull();
+
+    const move = (action: string, payload: Record<string, unknown>) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok).toBe(true);
+    };
+    move('submit', {});
+    move('start', { assignee_id: 'daniel' });
+    move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
+    move('approve', { approval_note: 'lgtm' });
+
+    const before = container.task.findByKey(key);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    // Entering the terminal state stamped closed_at.
+    expect(before.value.state).toBe('DONE');
+    expect(before.value.closedAt).not.toBeNull();
+    const closedAt = before.value.closedAt;
+
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.task.findByKey(key);
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      // The stamped close time survives the mirror → fresh-DB round-trip.
+      expect(after.value.state).toBe('DONE');
+      expect(after.value.closedAt).toBe(closedAt);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('clears closed_at when a terminal task is reopened', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Reopened task',
+      description: 'done then reopened',
+      acceptanceCriteria: ['it works'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const key = created.value.key;
+    const move = (action: string, payload: Record<string, unknown>) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok, `${action} should succeed`).toBe(true);
+    };
+    move('submit', {});
+    move('start', { assignee_id: 'daniel' });
+    move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
+    move('approve', { approval_note: 'lgtm' });
+
+    const done = container.task.findByKey(key);
+    expect(done.ok).toBe(true);
+    if (!done.ok) return;
+    expect(done.value.closedAt).not.toBeNull();
+
+    // Reopening leaves the terminal state, so the close time is cleared.
+    move('reopen', { reason: 'regressed in QA' });
+    const reopened = container.task.findByKey(key);
+    expect(reopened.ok).toBe(true);
+    if (!reopened.ok) return;
+    expect(reopened.value.state).not.toBe('DONE');
+    expect(reopened.value.closedAt).toBeNull();
+  });
+
   it('reconstructs the provenance graph from the audit on a fresh clone', () => {
     // An observation promoted to a decision builds an observation → decision
     // edge in the (git-ignored) provenance_links cache.
