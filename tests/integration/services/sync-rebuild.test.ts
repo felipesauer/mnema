@@ -1033,4 +1033,84 @@ mnema:
     // The pre-existing row-id pointer is preserved for existing readers.
     expect(typeof data.superseded_by).toBe('string');
   });
+
+  // MNEMA-343: the task mirror must serialise assignee/reporter as stable
+  // HANDLES, not regenerated actor UUIDs. Before the fix a task with an
+  // assignee was non-idempotent (every sync re-drifted assigneeId) and a
+  // fresh clone rebound it to a bogus actor whose handle was a UUID string.
+  it('a task with an assignee is idempotent across sync (no assignee drift)', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Assigned task',
+      description: 'x',
+      acceptanceCriteria: ['a'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    if (!created.ok) return;
+    const key = created.value.key;
+    const move = (action: string, payload: Record<string, unknown>) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok, `${action} should succeed`).toBe(true);
+    };
+    move('submit', {});
+    move('start', { assignee_id: 'daniel' }); // assigns the actor
+
+    const first = container.syncRebuild.run('TEST');
+    const second = container.syncRebuild.run('TEST');
+    // Before the fix the mirror held the assignee UUID, read back as a handle,
+    // upserting a new actor each run → a phantom upsert every sync.
+    expect(first.tasksUpserted).toBe(0);
+    expect(second.tasksUpserted).toBe(0);
+  });
+
+  it('rebinds an assigned task to the SAME actor on a fresh clone (handle round-trip)', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Assigned + cloned',
+      description: 'x',
+      acceptanceCriteria: ['a'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    if (!created.ok) return;
+    const key = created.value.key;
+    container.task.transition({
+      taskKey: key,
+      action: 'submit',
+      payload: {},
+      actor: 'daniel',
+    });
+    container.task.transition({
+      taskKey: key,
+      action: 'start',
+      payload: { assignee_id: 'daniel' },
+      actor: 'daniel',
+    });
+    const before = container.task.findByKey(key);
+    if (!before.ok) return;
+    expect(before.value.assigneeId).not.toBeNull();
+
+    // Fresh clone: drop the (git-ignored) state cache and rebuild from mirrors.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.task.findByKey(key);
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      // Still assigned after the clone…
+      expect(after.value.assigneeId).not.toBeNull();
+      // …and 'daniel' is a real actor in the roster, NOT replaced by a bogus
+      // actor whose handle is a UUID string (the bug's signature).
+      const roster = fresh.identity.listActors();
+      expect(roster.some((a) => a.handle === 'daniel')).toBe(true);
+      const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
+      expect(roster.some((a) => uuidLike.test(a.handle))).toBe(false);
+    } finally {
+      fresh.close();
+    }
+  });
 });

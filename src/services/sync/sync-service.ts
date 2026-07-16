@@ -59,6 +59,16 @@ export type TaskLabelResolver = (task: Task) => readonly string[];
 export type TaskDependencyResolver = (task: Task) => readonly string[];
 
 /**
+ * Resolves an actor id (UUID) to its stable HANDLE for the task mirror.
+ * The mirror must serialise the handle, not the id: actor ids are regenerated
+ * on a fresh clone, so a serialised id read back as a handle would upsert a
+ * bogus actor (the id-string becomes the handle). Serialising the handle lets
+ * the rebuild's `actors.upsert(handle)` round-trip to the same actor. Returns
+ * the id unchanged if it cannot be resolved (defensive; keeps a value).
+ */
+export type ActorHandleResolver = (actorId: string) => string;
+
+/**
  * Auto-flush thresholds. The MCP server overrides these from
  * `mnema.config.json`.
  */
@@ -100,6 +110,10 @@ export class SyncService {
     private readonly resolveLabels: TaskLabelResolver | null = null,
     // Optional for the same reason; when absent `depends_on` is written as [].
     private readonly resolveDependencies: TaskDependencyResolver | null = null,
+    // Optional for the same reason; when absent the actor id is written as-is
+    // (pre-fix behaviour). When present, assignee/reporter serialise as handles
+    // so they round-trip to the same actor on a fresh clone.
+    private readonly resolveActorHandle: ActorHandleResolver | null = null,
   ) {}
 
   /**
@@ -286,8 +300,16 @@ export class SyncService {
     const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
     const labels = this.resolveLabels?.(task) ?? [];
     const dependsOn = this.resolveDependencies?.(task) ?? [];
+    // Serialise actors as stable HANDLES, not regenerated ids, so they survive
+    // a fresh clone. Falls back to the id when no resolver is wired.
+    const resolveHandle = this.resolveActorHandle;
+    const actors = {
+      assignee:
+        task.assigneeId === null ? null : (resolveHandle?.(task.assigneeId) ?? task.assigneeId),
+      reporter: resolveHandle?.(task.reporterId) ?? task.reporterId,
+    };
     this.markdownIo.write(targetPath, {
-      mnemaData: serialiseTask(task, links, labels, dependsOn),
+      mnemaData: serialiseTask(task, links, labels, dependsOn, actors),
       otherFrontmatter: existing.otherFrontmatter,
       content: existing.content.length > 0 ? existing.content : `# ${task.title}\n`,
     });
@@ -347,6 +369,8 @@ function serialiseTask(
   links: { readonly epicKey: string | null; readonly sprintKey: string | null },
   labels: readonly string[],
   dependsOn: readonly string[],
+  // Actor HANDLES (not ids) so assignee/reporter round-trip on a fresh clone.
+  actors: { readonly assignee: string | null; readonly reporter: string },
 ): Record<string, unknown> {
   return {
     key: task.key,
@@ -359,8 +383,8 @@ function serialiseTask(
     estimate: task.estimate,
     context_budget: task.contextBudget,
     priority: task.priority,
-    assignee: task.assigneeId,
-    reporter: task.reporterId,
+    assignee: actors.assignee,
+    reporter: actors.reporter,
     epic_key: links.epicKey,
     sprint_key: links.sprintKey,
     reopen_count: task.reopenCount,

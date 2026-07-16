@@ -457,6 +457,11 @@ export function createServiceContainer(
         .filter((dep) => dep.kind === 'blocks')
         .map((dep) => tasks.findById(dep.blocksTaskId)?.key ?? null)
         .filter((key): key is string => key !== null),
+    // Resolve a task's assignee/reporter UUID to its stable HANDLE for the
+    // frontmatter. Actor ids are regenerated on a fresh clone; the handle is
+    // what `rebuildTasks` upserts against, so serialising the handle round-trips
+    // to the same actor. Falls back to the id if the actor row is gone.
+    (actorId) => actors.findById(actorId)?.handle ?? actorId,
   );
   sync.setFlushPolicy({
     volume: config.sync.agent_buffer_flush_count,
