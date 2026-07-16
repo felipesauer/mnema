@@ -1,7 +1,5 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import {
   CORE_TOOL_NAMES,
   describeToolSurface,
@@ -12,12 +10,13 @@ import {
   SPRINT_TOOL_NAMES,
   UNIVERSAL_TOOL_NAMES,
 } from '@/mcp/tool-registry.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const ALL = { epics: true, sprints: true, knowledge: true } as const;
 const AUDIT_ONLY = { epics: false, sprints: false, knowledge: false } as const;
 
 function loadWorkflow(name: string) {
-  return new WorkflowLoader().load(path.resolve('workflows', `${name}.json`));
+  return loadWorkflowFile(path.resolve('workflows', `${name}.json`));
 }
 
 describe('listAvailableToolNames', () => {

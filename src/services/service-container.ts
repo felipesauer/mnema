@@ -4,7 +4,6 @@ import type { Config } from '../config/config-schema.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import type { EnforcementMode } from '../domain/enums/enforcement-mode.js';
 import { StateMachine } from '../domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '../domain/state-machine/workflow-loader.js';
 import { listAvailableToolNames } from '../mcp/tool-registry.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
@@ -34,6 +33,7 @@ import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evid
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '../storage/workflow-file.js';
 import { migrationsDir as assetPathsMigrationsDir } from '../utils/asset-paths.js';
 import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent/agent-plan-service.js';
@@ -249,7 +249,7 @@ export function createServiceContainer(
   trace.mark('migrations checked');
 
   const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
-  const workflow = new WorkflowLoader().load(workflowPath);
+  const workflow = loadWorkflowFile(workflowPath);
   const stateMachine = new StateMachine(workflow);
   trace.mark('workflow + state machine');
 

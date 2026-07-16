@@ -5,8 +5,8 @@ import {
   type GitCommandRunner,
   type GitResult,
   GitSignedAnchorProvider,
-  isSafeAnchorRemote,
 } from '@/services/anchor/git-signed-anchor-provider.js';
+import { isSafeAnchorRemote } from '@/utils/anchor-remote.js';
 
 const head = 'a'.repeat(64);
 const OK = (stdout = ''): GitResult => ({ status: 0, stdout, stderr: '' });

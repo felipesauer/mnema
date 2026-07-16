@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { z } from 'zod';
 
-import { isSafeAnchorRemote } from '../services/anchor/git-signed-anchor-provider.js';
+import { isSafeAnchorRemote } from '../utils/anchor-remote.js';
 
 /**
  * A path entry under `paths.*`. Every Mnema artefact directory is

@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generateUuid } from '@/domain/id-generator.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditQuery } from '@/services/integrity/audit-query.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
@@ -18,6 +17,7 @@ import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repositor
 import { TaskEvidenceRepository } from '@/storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -55,9 +55,7 @@ describe('WorkGraphLintService', () => {
     epics = new EpicRepository(adapter);
     tasks = new TaskRepository(adapter);
     evidence = new TaskEvidenceRepository(adapter);
-    const stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
     lint = new WorkGraphLintService(
       sprints,
       epics,

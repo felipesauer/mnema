@@ -7,7 +7,6 @@ import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { DecisionStatus } from '@/domain/enums/decision-status.js';
 import { TaskState } from '@/domain/enums/task-state.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { DecisionService } from '@/services/backlog/decision-service.js';
 import { InboxService } from '@/services/backlog/inbox-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
@@ -20,6 +19,7 @@ import { NoteRepository } from '@/storage/sqlite/repositories/note-repository.js
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -55,7 +55,7 @@ describe('InboxService', () => {
     decisions = new DecisionService(decisionRepo, projects, identity, audit, notes, tasks);
 
     const workflowPath = path.resolve('workflows/default.json');
-    const stateMachine = new StateMachine(new WorkflowLoader().load(workflowPath));
+    const stateMachine = new StateMachine(loadWorkflowFile(workflowPath));
     inbox = new InboxService(tasks, decisions, 'TEST', stateMachine, {
       staleAfterDays: 9999,
       slaDays: {},
@@ -106,9 +106,7 @@ describe('InboxService', () => {
   });
 
   it('1.4 sweep: under `lean` workflow (no review/blocked features) returns empty review/blocked queues', () => {
-    const leanMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/lean.json')),
-    );
+    const leanMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/lean.json')));
     const leanInbox = new InboxService(tasks, decisions, 'TEST', leanMachine, {
       staleAfterDays: 9999,
       slaDays: {},

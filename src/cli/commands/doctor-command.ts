@@ -5,7 +5,6 @@ import { ConfigLoader } from '../../config/config-loader.js';
 import {
   formatWorkflowIssues,
   WorkflowInvalidError,
-  WorkflowLoader,
 } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode, ExitCode, type ExitCodeValue } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
@@ -31,6 +30,7 @@ import { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import { AuditHeadSignatureRepository } from '../../storage/sqlite/repositories/audit-head-signature-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '../../storage/workflow-file.js';
 import { migrationDirs } from '../../utils/asset-paths.js';
 import { pc } from '../../utils/colors.js';
 import { managedBlockIgnores } from '../../utils/gitignore.js';
@@ -527,9 +527,10 @@ export class DoctorCommand {
 
     const projectRoot = resolveProjectRoot(configFile);
     const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
-    let loadedWorkflow: ReturnType<WorkflowLoader['load']> | null = null;
+    let loadedWorkflow: import('../../domain/state-machine/state-machine.js').Workflow | null =
+      null;
     try {
-      loadedWorkflow = new WorkflowLoader().load(workflowPath);
+      loadedWorkflow = loadWorkflowFile(workflowPath);
       checks.push({ name: 'workflow loads', ok: true, detail: workflowPath });
     } catch (error) {
       if (error instanceof WorkflowInvalidError) {

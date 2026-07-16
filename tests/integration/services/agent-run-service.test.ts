@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentRunStatus } from '@/domain/enums/agent-run-status.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { AGENT_RUN_DEPTH_LIMIT, AgentRunService } from '@/services/agent/agent-run-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
@@ -18,6 +17,7 @@ import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repo
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -42,9 +42,7 @@ describe('AgentRunService', () => {
     const identity = new IdentityService(actors);
     const auditDir = path.join(tempRoot, '.audit');
     const audit = new AuditService(new AuditWriter(auditDir));
-    stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
     const tasks = new TaskRepository(adapter);
     service = new AgentRunService(
       runs,

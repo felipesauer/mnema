@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentRunStatus } from '@/domain/enums/agent-run-status.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { AgentRunService } from '@/services/agent/agent-run-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
@@ -18,6 +17,7 @@ import { AgentRunRepository } from '@/storage/sqlite/repositories/agent-run-repo
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 const HOUR = 3_600_000;
@@ -47,7 +47,7 @@ describe('OrphanRunService', () => {
       new AgentPlanRepository(adapter),
       new TransitionRepository(adapter),
       new TaskRepository(adapter),
-      new StateMachine(new WorkflowLoader().load(path.resolve('workflows/default.json'))),
+      new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json'))),
     );
     orphan = new OrphanRunService(runs, agentRun);
   });
