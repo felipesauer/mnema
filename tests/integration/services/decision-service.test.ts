@@ -533,6 +533,43 @@ describe('DecisionService', () => {
       expect(reopened.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
     });
 
+    it('refuses to reopen a decision that is a live successor of a superseded one', () => {
+      // ADR-1 superseded BY ADR-2. Reopening ADR-2 would strand ADR-1's
+      // superseded_by pointer at a non-current target and make the successor
+      // editable while ADR-1 still claims replacement — refuse it.
+      decisions.record({
+        projectKey: 'TEST',
+        title: 'Predecessor',
+        decision: 'a',
+        actor: 'daniel',
+      });
+      decisions.record({ projectKey: 'TEST', title: 'Successor', decision: 'b', actor: 'daniel' });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-2',
+        status: DecisionStatus.Accepted,
+        actor: 'daniel',
+      });
+      decisions.transition({
+        decisionKey: 'TEST-ADR-1',
+        status: DecisionStatus.Superseded,
+        supersededBy: 'TEST-ADR-2',
+        actor: 'daniel',
+      });
+      const reopened = decisions.reopen({
+        decisionKey: 'TEST-ADR-2',
+        reason: 'oops',
+        actor: 'daniel',
+      });
+      expect(reopened.ok).toBe(false);
+      if (reopened.ok) return;
+      expect(reopened.error.kind).toBe(ErrorCode.DecisionInvalidStatus);
+      // ADR-2 stays accepted — the reopen did not mutate it.
+      const adr2 = decisions.show('TEST-ADR-2');
+      expect(adr2.ok).toBe(true);
+      if (!adr2.ok) return;
+      expect(adr2.value.status).toBe(DecisionStatus.Accepted);
+    });
+
     it('refuses to reopen an already-proposed ADR', () => {
       decisions.record({ projectKey: 'TEST', title: 'Alpha', decision: 'a', actor: 'daniel' });
       const reopened = decisions.reopen({

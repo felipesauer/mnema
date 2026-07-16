@@ -506,14 +506,16 @@ export class DecisionService {
     // Validate the SUPPLIED fields at the service (CLI + any non-MCP caller),
     // mirroring record()'s bounds + markup screen.
     const issues: ErrorIssue[] = [];
-    if (input.title !== undefined) {
+    // `!= null` (not `!== undefined`) so a stray null from an untyped caller is
+    // guarded too, never a `null.length` TypeError.
+    if (input.title != null) {
       if (input.title.length < 3) {
         issues.push({ path: ['title'], message: 'must be at least 3 characters' });
       } else if (input.title.length > 200) {
         issues.push({ path: ['title'], message: 'must be at most 200 characters' });
       }
     }
-    if (input.decision !== undefined && input.decision.length < 1) {
+    if (input.decision != null && input.decision.length < 1) {
       issues.push({ path: ['decision'], message: 'must be at least 1 character' });
     }
     for (const [field, value] of [
@@ -615,6 +617,20 @@ export class DecisionService {
       decision.status !== DecisionStatus.Accepted &&
       decision.status !== DecisionStatus.Rejected
     ) {
+      return Err({
+        kind: ErrorCode.DecisionInvalidStatus,
+        decisionKey: decision.key,
+        fromStatus: decision.status,
+        toStatus: DecisionStatus.Proposed,
+      });
+    }
+
+    // Guard the OTHER side of supersedure: if a superseded predecessor points
+    // at THIS decision as its successor, reopening it would strand that
+    // pointer at a no-longer-current target (and make the successor's text
+    // editable while a predecessor still claims replacement). Refuse — the
+    // predecessor must be handled first.
+    if (this.decisions.isReferencedAsSuccessor(decision.id)) {
       return Err({
         kind: ErrorCode.DecisionInvalidStatus,
         decisionKey: decision.key,
