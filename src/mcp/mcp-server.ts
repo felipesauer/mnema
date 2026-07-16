@@ -238,8 +238,13 @@ export class MnemaMcpServer {
     );
     return {
       version: VERSION,
-      // The running package.json under dist/ — its mtime bumps on a rebuild.
-      distMtimeMs: mtime(path.resolve(PACKAGE_ROOT, 'package.json')),
+      // A real build artefact — `dist/index.js` mtime bumps on every `pnpm
+      // build`, which is the dogfooding case. (Do NOT stat package.json: its
+      // mtime does not change on a rebuild, and PACKAGE_ROOT resolves to the
+      // repo root even when running from dist/, so it would be inert.) In a
+      // src/tsx dev run dist may be absent → null, which compares equal to a
+      // later null, so no false stale.
+      distMtimeMs: mtime(path.resolve(PACKAGE_ROOT, 'dist', 'index.js')),
       workflowMtimeMs: mtime(workflowPath),
     };
   }
