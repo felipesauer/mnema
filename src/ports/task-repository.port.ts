@@ -121,6 +121,14 @@ export interface TaskFieldUpdates {
   readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /**
+   * The close timestamp, reconciled from the authoritative markdown on a
+   * sync rebuild. Distinct from the {@link ClosedAtChange} boundary logic in
+   * `updateState` (which stamps `now` / clears): here the exact committed
+   * value is written back, because on rebuild the mirror is the source of
+   * truth. `null` clears it (a task reopened on disk).
+   */
+  readonly closedAt?: string | null;
 }
 
 /**
