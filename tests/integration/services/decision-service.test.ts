@@ -454,7 +454,8 @@ describe('DecisionService', () => {
       const query = new AuditQuery(path.join(tempRoot, '.audit'));
       const events = query.run({ kind: 'decision_updated' });
       expect(events).toHaveLength(1);
-      expect((events[0]?.data as { key?: string }).key).toBe('TEST-ADR-1');
+      const updatedEvent = events[0];
+      expect((updatedEvent?.data as { key?: string } | undefined)?.key).toBe('TEST-ADR-1');
     });
   });
 
@@ -558,7 +559,9 @@ describe('DecisionService', () => {
         (e) => (e.data as { to?: string }).to === DecisionStatus.Proposed,
       );
       expect(reopenEvent).toBeDefined();
-      expect((reopenEvent?.data as { reason?: string }).reason).toBe('accepted by mistake');
+      expect((reopenEvent?.data as { reason?: string } | undefined)?.reason).toBe(
+        'accepted by mistake',
+      );
     });
   });
 
