@@ -65,4 +65,45 @@ describe('NeedsYou panel', () => {
     expect(html).toContain('Nothing needs your attention');
     expect(html).not.toContain('Awaiting review');
   });
+
+  it('does NOT show the empty state when only an SLA breach is present (inbox parity)', () => {
+    // The three headline queues are empty, but the CLI `mnema inbox` still
+    // reports the SLA breach — the panel must not claim "nothing".
+    const html = renderToStaticMarkup(
+      <NeedsYou
+        inbox={inbox({
+          slaBreaches: [{ key: 'PAY-7', title: 'Stuck in review', age_days: 5, sla_days: 2 }],
+        })}
+      />,
+    );
+    expect(html).not.toContain('Nothing needs your attention');
+    expect(html).toContain('SLA breaches');
+    expect(html).toContain('PAY-7');
+    expect(html).toContain('5d / 2d');
+    expect(html).toMatch(/data-count="sla-breaches">1</);
+  });
+
+  it('surfaces WIP breaches with the count over the limit', () => {
+    const html = renderToStaticMarkup(
+      <NeedsYou
+        inbox={inbox({
+          wipBreaches: [{ state: 'IN_PROGRESS', count: 6, limit: 3 }],
+        })}
+      />,
+    );
+    expect(html).not.toContain('Nothing needs your attention');
+    expect(html).toContain('WIP breaches');
+    expect(html).toContain('IN_PROGRESS');
+    expect(html).toContain('6 / 3');
+    expect(html).toMatch(/data-count="wip-breaches">1</);
+  });
+
+  it('does not render the breaches row when there are no breaches', () => {
+    const html = renderToStaticMarkup(
+      <NeedsYou inbox={inbox({ blocked: [{ key: 'X-1', title: 't', state: 'BLOCKED' }] })} />,
+    );
+    // A normal non-empty inbox with no breaches shows no breach cards.
+    expect(html).not.toContain('SLA breaches');
+    expect(html).not.toContain('WIP breaches');
+  });
 });
