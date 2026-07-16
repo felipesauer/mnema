@@ -4,7 +4,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { CoverageService } from '@/services/backlog/coverage-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
@@ -13,6 +12,7 @@ import { ProjectRepository } from '@/storage/sqlite/repositories/project-reposit
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -43,9 +43,7 @@ describe('CoverageService', () => {
     epics = new EpicRepository(adapter);
     sprints = new SprintRepository(adapter);
     tasks = new TaskRepository(adapter);
-    const stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
     coverage = new CoverageService(epics, sprints, tasks, stateMachine);
   });
 

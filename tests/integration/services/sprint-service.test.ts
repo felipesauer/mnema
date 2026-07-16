@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { SprintState } from '@/domain/enums/sprint-state.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { SprintService } from '@/services/backlog/sprint-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
@@ -16,6 +15,7 @@ import { SprintMetricRepository } from '@/storage/sqlite/repositories/sprint-met
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -35,9 +35,7 @@ describe('SprintService', () => {
     const sprintRepo = new SprintRepository(adapter);
     tasks = new TaskRepository(adapter);
     projects = new ProjectRepository(adapter);
-    const stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
 
     sprints = new SprintService(
       sprintRepo,
@@ -304,7 +302,7 @@ describe('SprintService', () => {
     it('refuses to plan a sprint on a workflow that declares features.sprints=false', () => {
       const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-kanban')));
       const kanbanMachine = new StateMachine(
-        new WorkflowLoader().load(path.resolve('workflows/kanban.json')),
+        loadWorkflowFile(path.resolve('workflows/kanban.json')),
       );
       const sprintsKanban = new SprintService(
         new SprintRepository(adapter),

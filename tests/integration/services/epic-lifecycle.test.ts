@@ -4,7 +4,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { EpicService } from '@/services/backlog/epic-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
@@ -13,6 +12,7 @@ import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -41,9 +41,7 @@ describe('EpicService derived lifecycle', () => {
 
     epicRepo = new EpicRepository(adapter);
     tasks = new TaskRepository(adapter);
-    const stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
     epics = new EpicService(epicRepo, tasks, projects, audit, stateMachine);
   });
 

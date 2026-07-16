@@ -2,7 +2,7 @@ import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { StateMachine, type Workflow } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const defaultWorkflowPath = path.resolve('workflows', 'default.json');
 
@@ -11,7 +11,7 @@ describe('StateMachine (default workflow)', () => {
   let machine: StateMachine;
 
   beforeAll(() => {
-    workflow = new WorkflowLoader().load(defaultWorkflowPath);
+    workflow = loadWorkflowFile(defaultWorkflowPath);
     machine = new StateMachine(workflow);
   });
 

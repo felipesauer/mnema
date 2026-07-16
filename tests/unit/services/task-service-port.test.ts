@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import type { Task } from '@/domain/entities/task.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import type {
   ClaimResult,
   ITaskRepository,
@@ -14,6 +13,7 @@ import type {
   UpdateStateResult,
 } from '@/ports/task-repository.port.js';
 import { TaskService } from '@/services/backlog/task-service.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 /**
  * Proof that the persistence PORT works: TaskService is driven here with an
@@ -138,9 +138,7 @@ class InMemoryTaskRepository implements ITaskRepository {
 
 /** Build a TaskService whose only real collaborator is the in-memory port. */
 function serviceWithFakeRepo(fake: ITaskRepository): TaskService {
-  const stateMachine = new StateMachine(
-    new WorkflowLoader().load(path.resolve('workflows/default.json')),
-  );
+  const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
   const projects = {
     findByKey: (key: string) => ({ id: 'proj-1', key, name: 'Test' }),
   };

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import type { z } from 'zod';
 
 import { jsonRequiresToZod } from './json-requires-to-zod.js';
@@ -7,6 +6,10 @@ import { type WorkflowMeta, WorkflowMetaSchema } from './workflow-meta-schema.js
 
 /**
  * Thrown when a workflow JSON file cannot be located.
+ *
+ * Reading the file is the caller's job (the loader is a pure domain unit and
+ * does no disk I/O); a caller that fails to read should throw this so the
+ * failure surfaces through the same channel as before.
  */
 export class WorkflowNotFoundError extends Error {
   constructor(public readonly path: string) {
@@ -37,25 +40,21 @@ export class WorkflowInvalidError extends Error {
  */
 export class WorkflowLoader {
   /**
-   * Loads a workflow JSON file, validates it against the meta-schema and
-   * compiles each transition's `requires` block into a Zod object.
+   * Validates already-read workflow JSON against the meta-schema and compiles
+   * each transition's `requires` block into a Zod object. The domain layer
+   * does no disk I/O: the caller reads the file (throwing
+   * {@link WorkflowNotFoundError} if it can't) and passes the text here.
    *
-   * @param path - Absolute or relative path to the workflow JSON file
+   * @param contents - The workflow JSON text
+   * @param path - Source path, used only for error messages
    * @returns Fully-loaded workflow with compiled gate schemas
-   * @throws WorkflowNotFoundError if the file cannot be read
-   * @throws WorkflowInvalidError if the content violates the meta-schema
+   * @throws WorkflowInvalidError if the content is not valid JSON or violates
+   *   the meta-schema
    */
-  load(path: string): Workflow {
-    let raw: string;
-    try {
-      raw = readFileSync(path, 'utf-8');
-    } catch {
-      throw new WorkflowNotFoundError(path);
-    }
-
+  load(contents: string, path: string): Workflow {
     let json: unknown;
     try {
-      json = JSON.parse(raw);
+      json = JSON.parse(contents);
     } catch (error) {
       // Reuse the WorkflowInvalidError shape so a syntactically broken
       // workflow surfaces through the same error printer as a
@@ -67,7 +66,7 @@ export class WorkflowLoader {
           code: 'custom',
           path: [],
           message: `JSON parse error: ${message}`,
-          input: raw,
+          input: contents,
         } as z.core.$ZodIssue,
       ]);
     }

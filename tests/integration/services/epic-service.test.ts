@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { EpicState } from '@/domain/enums/epic-state.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
-import { WorkflowLoader } from '@/domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { EpicService } from '@/services/backlog/epic-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
@@ -15,6 +14,7 @@ import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('src/storage/sqlite/migrations');
 
@@ -43,9 +43,7 @@ describe('EpicService', () => {
       .run(actorId);
 
     tasks = new TaskRepository(adapter);
-    const stateMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/default.json')),
-    );
+    const stateMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/default.json')));
     epics = new EpicService(new EpicRepository(adapter), tasks, projects, audit, stateMachine);
   });
 
@@ -137,9 +135,7 @@ describe('EpicService', () => {
 
   it('refuses to create an epic on a workflow with features.epics=false', () => {
     const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-lean')));
-    const leanMachine = new StateMachine(
-      new WorkflowLoader().load(path.resolve('workflows/lean.json')),
-    );
+    const leanMachine = new StateMachine(loadWorkflowFile(path.resolve('workflows/lean.json')));
     const projects = new ProjectRepository(adapter);
     const epicsLean = new EpicService(
       new EpicRepository(adapter),

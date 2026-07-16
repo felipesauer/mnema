@@ -12,7 +12,6 @@ import { Err, Ok, type Result } from '../../common/result.js';
 import { CONFIG_FILE_RELATIVE } from '../../config/config-loader.js';
 import type { Config } from '../../config/config-schema.js';
 import { ConfigSchema } from '../../config/config-schema.js';
-import { WorkflowLoader } from '../../domain/state-machine/workflow-loader.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { printError } from '../../errors/error-printer.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -26,6 +25,7 @@ import { ActorRepository } from '../../storage/sqlite/repositories/actor-reposit
 import { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '../../storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
+import { loadWorkflowFile } from '../../storage/workflow-file.js';
 import { migrationDirs, workflowsDir } from '../../utils/asset-paths.js';
 import { ensureGitattributes } from '../../utils/gitattributes.js';
 import { ensureGitignore } from '../../utils/gitignore.js';
@@ -42,7 +42,7 @@ type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
  * wizard shows these to the user, so they must be sourced from the same
  * file `init` actually copies — hard-coded label strings silently drift
  * from the JSON (they had, for every preset). Kept deliberately small:
- * the full {@link WorkflowLoader} pulls in Zod compilation we do not need
+ * the full {@link loadWorkflowFile} compile pulls in Zod work we do not need
  * just to list state names.
  */
 function workflowStates(name: WorkflowName): readonly string[] {
@@ -404,7 +404,7 @@ function writeJson(filePath: string, data: unknown): void {
  * matching directories on next `mnema sync` (or manual init).
  */
 function createBacklogStateDirs(cwd: string, config: Config, workflowFile: string): void {
-  const workflow = new WorkflowLoader().load(workflowFile);
+  const workflow = loadWorkflowFile(workflowFile);
   const root = path.join(cwd, config.paths.backlog);
   for (const state of workflow.states) {
     mkdirSync(path.join(root, state), { recursive: true });
