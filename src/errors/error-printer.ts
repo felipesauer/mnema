@@ -272,6 +272,19 @@ export function formatError(error: MnemaError): string {
       break;
     }
 
+    case ErrorCode.ServerStale: {
+      lines.push('The mnema MCP server is stale — its tool schema was snapshotted at boot and');
+      lines.push('has since diverged from disk:');
+      for (const what of error.changed) {
+        lines.push(`  - ${what}`);
+      }
+      lines.push(
+        `${pc.dim('hint:')} Restart \`mnema mcp serve\` (the tool definitions are fixed at ` +
+          'startup and cannot hot-reload). Read-only tools keep working meanwhile',
+      );
+      break;
+    }
+
     case ErrorCode.SkillNotFound:
       lines.push(`Skill not found: ${error.slug}`);
       lines.push(`${pc.dim('hint:')} Run \`mnema skill list\` to see recorded skills`);
@@ -446,6 +459,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.VersionMismatch:
     case ErrorCode.AlreadyInitialized:
     case ErrorCode.SchemaOutOfDate:
+    case ErrorCode.ServerStale:
     case ErrorCode.TerminalState:
     case ErrorCode.InvalidTransition:
     case ErrorCode.SprintInvalidState:
@@ -569,6 +583,8 @@ export function recoveryHint(error: MnemaError): string | null {
       return 'List recorded memories with memories_list; record one with memory_record.';
     case ErrorCode.SchemaOutOfDate:
       return 'Run `mnema upgrade` to apply pending migrations and sync the project (or `mnema migrate` for just the migrations), then retry — read-only tools keep working meanwhile.';
+    case ErrorCode.ServerStale:
+      return 'The mnema MCP server is serving a boot-time tool schema that no longer matches disk (dist rebuilt or workflow edited). Restart `mnema mcp serve` — tool definitions are fixed at startup and cannot hot-reload. Read-only tools keep working meanwhile.';
     default:
       return null;
   }

@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -454,5 +454,51 @@ describe('MnemaMcpServer under workflow=lean (1.4 sweep)', () => {
     expect(Object.keys(stats.by_state).sort()).toEqual(['DOING', 'DONE', 'TODO']);
     // in_progress matches the DOING count (initially 0 — no tasks yet).
     expect(stats.in_progress).toBe(0);
+  });
+
+  describe('stale-server signal (MNEMA-325)', () => {
+    /** Touch the active workflow's mtime to a future instant → schema diverged. */
+    function touchWorkflow(h: Harness): void {
+      const wf = path.join(h.projectRoot, h.config.paths.workflows, `${h.config.workflow}.json`);
+      const future = new Date(Date.now() + 60_000);
+      utimesSync(wf, future, future);
+    }
+
+    it('returns SERVER_STALE on a mutating call after the schema inputs diverge', async () => {
+      touchWorkflow(harness);
+      // task_create is a mutation — the stale gate fires before the handler
+      // (so it does not even need an active run to trip).
+      const result = await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'anything' },
+      });
+      expect(result.isError).toBe(true);
+      const payload = parsePayload(result as CallToolResult);
+      expect(payload.error).toBe('SERVER_STALE');
+      expect(Array.isArray(payload.changed)).toBe(true);
+      expect((payload.changed as string[]).join(' ')).toMatch(/workflow/i);
+      // The hint tells the agent what to do.
+      expect(String(payload.hint)).toMatch(/restart/i);
+    });
+
+    it('leaves read-only tools working when the server is stale', async () => {
+      touchWorkflow(harness);
+      // A read (tasks_list) must NOT be blocked by the stale gate.
+      const result = await harness.client.callTool({ name: 'tasks_list', arguments: {} });
+      expect(result.isError).toBeFalsy();
+      const payload = parsePayload(result as CallToolResult);
+      expect(payload.error).toBeUndefined();
+    });
+
+    it('does not block mutations when the schema is fresh', async () => {
+      // No touch: fingerprint matches. A mutation gets past the stale gate and
+      // fails for its OWN reason (no active run), not SERVER_STALE.
+      const result = await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'anything' },
+      });
+      const payload = parsePayload(result as CallToolResult);
+      expect(payload.error).not.toBe('SERVER_STALE');
+    });
   });
 });

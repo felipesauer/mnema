@@ -55,6 +55,31 @@ task is already in the target state). It is `destructive: true` only when it
 forward move (`start`, `submit`, `approve`) loses nothing and is
 `destructive: false`.
 
+## Stale server — restart after a rebuild
+
+`mnema mcp serve` is a long-lived process. It builds every tool's schema **once
+at startup** from the installed build (`dist/`) and the active workflow JSON,
+and the MCP SDK cannot swap a tool's schema in place. So if you **rebuild
+mnema** or **edit the workflow** while the server is running, it keeps serving
+the boot-time tool definitions.
+
+When that happens, a **mutating** call returns a clear signal instead of an
+opaque validation failure:
+
+```json
+{ "error": "SERVER_STALE", "changed": ["the mnema build (dist/) was rebuilt"],
+  "hint": "…Restart `mnema mcp serve`… Read-only tools keep working meanwhile." }
+```
+
+The fix is to **restart `mnema mcp serve`**. Read-only tools are never blocked,
+so you can still inspect while stale. (This is distinct from `SCHEMA_OUT_OF_DATE`,
+which is about pending **database migrations** and self-heals per request once
+you run `mnema migrate` — no restart needed there.)
+
+If you are dogfooding mnema on itself and a mutation suddenly fails right after
+a `pnpm build`, this is almost certainly the cause — restart the server rather
+than chasing a phantom code bug.
+
 ## Keeping it honest
 
 A completeness test fails the build if a registered tool has no entry in the
