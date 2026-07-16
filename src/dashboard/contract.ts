@@ -208,8 +208,18 @@ export interface DashboardContract {
     readonly awaitingReview: ReadonlyArray<{ key: string; title: string; state: string }>;
     readonly blocked: ReadonlyArray<{ key: string; title: string; state: string }>;
     readonly pendingDecisions: number;
-    readonly slaBreaches: readonly unknown[];
-    readonly wipBreaches: readonly unknown[];
+    // Mirrors the server SlaBreach/WipBreach (only the fields the panel reads).
+    readonly slaBreaches: ReadonlyArray<{
+      readonly key: string;
+      readonly title: string;
+      readonly age_days: number;
+      readonly sla_days: number;
+    }>;
+    readonly wipBreaches: ReadonlyArray<{
+      readonly state: string;
+      readonly count: number;
+      readonly limit: number;
+    }>;
   };
   readonly graph: DashboardGraph;
   readonly series: {

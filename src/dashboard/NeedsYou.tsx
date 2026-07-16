@@ -12,9 +12,16 @@ import type { DashboardContract } from './contract.js';
  * titles. Data-attributes are kept for the regression tests.
  */
 export function NeedsYou({ inbox }: { inbox: DashboardContract['inbox'] }): ReactElement {
-  const { awaitingReview, blocked, pendingDecisions } = inbox;
+  const { awaitingReview, blocked, pendingDecisions, slaBreaches, wipBreaches } = inbox;
+  // Empty-state parity with `mnema inbox`: the CLI counts SLA + WIP breaches
+  // too (inbox-command.ts), so the panel must not say "nothing" while the CLI
+  // still shows a breach.
   const nothingPending =
-    awaitingReview.length === 0 && blocked.length === 0 && pendingDecisions === 0;
+    awaitingReview.length === 0 &&
+    blocked.length === 0 &&
+    pendingDecisions === 0 &&
+    slaBreaches.length === 0 &&
+    wipBreaches.length === 0;
 
   if (nothingPending) {
     return (
@@ -27,6 +34,8 @@ export function NeedsYou({ inbox }: { inbox: DashboardContract['inbox'] }): Reac
       </section>
     );
   }
+
+  const hasBreaches = slaBreaches.length > 0 || wipBreaches.length > 0;
 
   return (
     <section aria-label="Needs you" data-panel="needs-you">
@@ -50,6 +59,55 @@ export function NeedsYou({ inbox }: { inbox: DashboardContract['inbox'] }): Reac
           </p>
         </div>
       </div>
+      {hasBreaches && (
+        <div className="grid g2" style={{ marginTop: '14px' }}>
+          <div className="card queue blocked" data-queue="sla-breaches">
+            <div className="qh">
+              <span className="t">SLA breaches</span>
+              <span className="n" data-count="sla-breaches">
+                {slaBreaches.length}
+              </span>
+            </div>
+            {slaBreaches.length === 0 ? (
+              <p className="q-empty">None.</p>
+            ) : (
+              <div className="qlist">
+                {slaBreaches.map((b) => (
+                  <div className="qitem" key={b.key} data-bar={b.key}>
+                    <span className="key">{b.key}</span>
+                    <span className="ttl">{b.title}</span>
+                    <span className="num" data-num>
+                      {b.age_days}d / {b.sla_days}d
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="card queue blocked" data-queue="wip-breaches">
+            <div className="qh">
+              <span className="t">WIP breaches</span>
+              <span className="n" data-count="wip-breaches">
+                {wipBreaches.length}
+              </span>
+            </div>
+            {wipBreaches.length === 0 ? (
+              <p className="q-empty">None.</p>
+            ) : (
+              <div className="qlist">
+                {wipBreaches.map((b) => (
+                  <div className="qitem" key={b.state} data-bar={b.state}>
+                    <span className="key">{b.state}</span>
+                    <span className="num" data-num>
+                      {b.count} / {b.limit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
