@@ -16,6 +16,9 @@ import {
 } from '../../services/audit/attestation-store.js';
 import { walkChainedEvents } from '../../services/audit/audit-chain-walk.js';
 import { diagnoseAuditChain, writeTruncationWaiver } from '../../services/audit/audit-diagnose.js';
+import { applyPrune, buildPrunePlan, type PrunePlan } from '../../services/audit/prune-apply.js';
+import { decideAttLockstep } from '../../services/audit/prune-att-lockstep.js';
+import { computeCutPoint } from '../../services/audit/retention-cut-point.js';
 import type { GitCommandRunner } from '../../services/git/git-commit-service.js';
 import {
   assessAuditChain,
@@ -25,7 +28,10 @@ import {
 } from '../../services/integrity/audit-integrity.js';
 import { createAttestationSource } from '../../services/integrity/head-checkpoint.js';
 import { MachineKeyService } from '../../services/integrity/machine-key.js';
-import { ProjectSecretService } from '../../services/integrity/project-secret.js';
+import {
+  ProjectSecretService,
+  readCommittedProjectHmacId,
+} from '../../services/integrity/project-secret.js';
 import { AnchorRepository } from '../../storage/sqlite/repositories/anchor-repository.js';
 import {
   AuditHeadSignatureRepository,
@@ -686,6 +692,160 @@ export class AuditCommand {
             }
           }
         });
+      });
+
+    group
+      .command('prune')
+      .description(
+        'Enforce audit retention: delete whole archived months below the configured window ' +
+          '(audit_strategy=local) and re-baseline the surviving chain onto a signed prune anchor ' +
+          'so it stays verifiable. Dry-run by default; --force applies. Fail-closed: refuses on ' +
+          'any tamper signal, on a strategy that does not prune (full/recent), and when a ' +
+          'committed .att covers events across or above the cut. Does NOT run for audit_strategy ' +
+          'other than "local".',
+      )
+      .option('--force', 'Apply the prune (without it, only report the plan)', false)
+      .action(async (options: { readonly force?: boolean }) => {
+        let hasError = false;
+        await withCliContext(({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, config.paths.audit);
+          const secretService = new ProjectSecretService(projectRoot, config.project.key);
+          const secret = secretService.read();
+          const apply = options.force === true;
+
+          const refuse = (reason: string): void => {
+            process.stdout.write(`${pc.red('✘')}  cannot prune: ${reason}\n`);
+            hasError = true;
+          };
+
+          // Gate 0 — the strategy must actually prune. full/recent never delete.
+          if (config.audit_strategy !== 'local') {
+            return refuse(
+              `audit_strategy is "${config.audit_strategy}" — only "local" deletes segments. ` +
+                `"recent" keeps the last ${config.audit_retention_months} months hot but archives (never deletes) older ones; "full" keeps everything.`,
+            );
+          }
+
+          // Gate 1 — same tamper refusals as accept-truncation, from the SHARED
+          // walk: never prune a malformed line or a content-invalid/broken chain.
+          const chain = assessAuditChain(auditDir, secret);
+          if (chain.malformedLines > 0) {
+            return refuse(
+              `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
+            );
+          }
+          if (chain.chainBroken) {
+            return refuse(
+              `on-disk chain is not internally consistent: ${chain.chainBreakDetail} — resolve that before pruning. Run \`mnema audit diagnose\` first.`,
+            );
+          }
+
+          // Gate 2 — compute the cut point from strategy + retention months.
+          const cut = computeCutPoint(
+            auditDir,
+            config.audit_strategy,
+            config.audit_retention_months,
+            new Date(),
+          );
+          if (!cut.hasCut) {
+            process.stdout.write(
+              `${pc.green('✔')}  nothing to prune — all history is within the ${config.audit_retention_months}-month window\n`,
+            );
+            return;
+          }
+
+          // Gate 3 — .att lockstep: never prune across or above a committed .att.
+          const attDecision = decideAttLockstep(auditDir, cut.keepFromIndex);
+          if (attDecision.blocked) {
+            return refuse(attDecision.blockReason ?? 'a committed attestation blocks the prune');
+          }
+
+          // Build the plan (fail-closed on a boundary that disagrees with disk).
+          let plan: PrunePlan;
+          try {
+            plan = buildPrunePlan(auditDir, cut);
+          } catch (error) {
+            return refuse((error as Error).message);
+          }
+
+          const droppedMonths = cut.dropped.map((d) => d.month ?? 'current').join(', ');
+          const anchorRepo = new AnchorRepository(container.adapter);
+          const anchorsBelow = anchorRepo
+            .listAll()
+            .filter((a) => a.eventCountAt !== null && a.eventCountAt <= plan.cut).length;
+
+          // Dry run: describe the plan, mutate nothing.
+          if (!apply) {
+            process.stdout.write(
+              `${pc.yellow('⚠')}  would prune ${cut.dropped.length} archived month(s) [${droppedMonths}]: ` +
+                `${plan.cut} event(s) dropped, ${plan.keptEventCount} kept, re-baselined onto a signed prune anchor\n` +
+                `${attDecision.toRemove.length} committed .att and ${anchorsBelow} anchor(s) removed in lockstep\n` +
+                `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+            );
+            return;
+          }
+
+          // Resolve the signer. Without a machine key we cannot sign the waiver,
+          // and an unsigned prune is indistinguishable from tampering — refuse.
+          const actor = container.identity.resolveDefaultActor().actor;
+          if (actor === null) {
+            return refuse(
+              'no default actor configured — a prune must be signed; run `mnema identity set` first',
+            );
+          }
+          let machineKey: MachineKeyService;
+          try {
+            machineKey = new MachineKeyService(projectRoot, actor);
+          } catch {
+            return refuse(
+              `no machine signing key for "${actor}" on this host — a prune must be signed; run it where the signer key lives`,
+            );
+          }
+          const projectHmacId = readCommittedProjectHmacId(projectRoot);
+          if (projectHmacId === null) {
+            return refuse(
+              'no committed project fingerprint (.mnema/keys/project.hmac-id) — cannot bind the prune waiver to this project',
+            );
+          }
+          const { fingerprint } = machineKey.getOrCreate();
+          const state = new AuditStateRepository(container.adapter);
+          const signatures = new AuditHeadSignatureRepository(container.adapter);
+
+          const { reSigned, anchorsRemoved } = applyPrune({
+            auditDir,
+            plan,
+            droppedFiles: cut.dropped.map((d) => d.file),
+            attToRemove: attDecision.toRemove,
+            signerActor: actor,
+            signerFingerprint: fingerprint,
+            projectHmacId,
+            sign: (message) => machineKey.sign(message),
+            forceReconcile: (count, head, lastAt) => state.forceReconcile(count, head, lastAt),
+            reSignHead: buildHeadReSigner(projectRoot, actor, signatures),
+            deleteAnchorsBelow: (c) => anchorRepo.deleteBelowEventCount(c),
+            now: () => new Date(),
+          });
+
+          process.stdout.write(
+            `${pc.green('✔')}  pruned ${cut.dropped.length} month(s) [${droppedMonths}]: ` +
+              `re-baselined audit_state to event ${plan.keptEventCount}, recorded a signed prune waiver` +
+              `${attDecision.toRemove.length > 0 ? `, removed ${attDecision.toRemove.length} .att` : ''}` +
+              `${anchorsRemoved > 0 ? `, removed ${anchorsRemoved} anchor(s)` : ''}\n`,
+          );
+          if (reSigned) {
+            process.stdout.write(
+              `${pc.green('✔')}  re-signed head at event ${plan.keptEventCount} as ${actor}\n`,
+            );
+          } else {
+            process.stdout.write(
+              `${pc.dim('note: head could not be re-signed (no machine key) — the waiver is written; run `mnema audit reattest` where the signer key lives')}\n`,
+            );
+          }
+          process.stdout.write(
+            `${pc.dim('commit .mnema/audit/ so the prune waiver and re-baselined chain are shared.')}\n`,
+          );
+        });
+        if (hasError) process.exitCode = 1;
       });
   }
 }
