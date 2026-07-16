@@ -160,15 +160,55 @@ interface AuditChainWalk {
 }
 
 /**
+ * A re-baselined genesis a validated prune waiver authorises. When the very
+ * first chained event on disk carries `prev_hash === anchorPrevHash` and its
+ * own `hash === genesisHash`, the walk treats the missing prior segment as an
+ * ACCEPTED prune rather than a `prev_hash` break — the surviving chain was
+ * deliberately re-based by a retention prune.
+ *
+ * NOTE on `anchorPrevHash`: a prune does NOT rewrite the surviving genesis's
+ * `prev_hash` (that would change its hashed bytes — no cascade re-hash). So
+ * the genesis on disk still points at the hash of the LAST DROPPED event, and
+ * `anchorPrevHash` is exactly that value — the waiver's `prunedHeadHash`, NOT
+ * its `anchorDigest`. The `anchorDigest` is the waiver's separate,
+ * recomputable-from-content attestation of the deleted prefix; it is verified
+ * by the signature in `prune-waiver.ts`, not matched here.
+ *
+ * This is a PRE-VERIFIED verdict: the caller reads the committed waiver,
+ * checks its Ed25519 signature, the project pin, and that the on-disk genesis
+ * matches it (all in `prune-waiver.ts`), then hands the walk only the two
+ * boundary hashes to match. The walk itself never touches the waiver file or
+ * any crypto — same separation the content-attestation check uses, so the walk
+ * stays pure and cheap on the hot path.
+ */
+export interface AcceptedRebaseline {
+  /**
+   * What the surviving genesis's on-disk `prev_hash` must equal — i.e. the
+   * waiver's `prunedHeadHash` (the last dropped event's hash), since the prune
+   * does not rewrite the genesis. NOT the anchor digest.
+   */
+  readonly anchorPrevHash: string;
+  /** The waiver's genesis hash — what the first surviving event's `hash` must equal. */
+  readonly genesisHash: string;
+}
+
+/**
  * Walks every audit JSONL file under `auditDir`, in chain order, verifying
  * the per-line hash chain end to end (across rotated segments) and tallying
  * the shape of what it finds. Pure and read-only.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @param acceptedRebaseline - A pre-verified prune re-baseline to accept at the
+ *   genesis instead of flagging the absent prior segment as tamper, or `null`
+ *   (the default) to treat any missing prior segment as a break
  * @returns The walk result
  */
-function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk {
+function walkAuditChain(
+  auditDir: string,
+  secret: Buffer | null,
+  acceptedRebaseline: AcceptedRebaseline | null = null,
+): AuditChainWalk {
   const files = orderedAuditFiles(auditDir);
 
   // Events that belong to the hash chain (v >= 2). `audit_state.event_count`
@@ -220,6 +260,10 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
 
       const v = typeof event.v === 'number' ? event.v : 1;
       if (v >= 2) {
+        // Whether this is the very first chained event on disk — the genesis.
+        // Only the genesis may carry an accepted prune re-baseline; an interior
+        // break can never be laundered by a waiver.
+        const isGenesis = !chainEverStarted;
         chainEverStarted = true;
         chainedLines += 1;
         if (v >= 3) anyV3 = true;
@@ -255,7 +299,19 @@ function walkAuditChain(auditDir: string, secret: Buffer | null): AuditChainWalk
             chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
           }
         }
-        if (prev !== prevHash) {
+        // An accepted prune re-baseline: the genesis event's prev_hash points
+        // at the committed anchor digest (not a hash on disk) and its own hash
+        // is the one the waiver was signed for. The waiver's signature/project
+        // pin/genesis match were already verified by the caller — here we only
+        // confirm the two boundary hashes line up, so a deleted prefix reads as
+        // a deliberate prune, not a break. Restricted to the genesis: an
+        // interior break can never be waived.
+        const rebaselinedGenesis =
+          isGenesis &&
+          acceptedRebaseline !== null &&
+          prev === acceptedRebaseline.anchorPrevHash &&
+          hash === acceptedRebaseline.genesisHash;
+        if (prev !== prevHash && !rebaselinedGenesis) {
           chainBroken = true;
           prevHashBreakCount += 1;
           // A break on the first line of a rotated segment means the
@@ -340,8 +396,12 @@ export interface ChainAssessment {
  * @param secret - Per-project HMAC secret for verifying v3 lines
  * @returns The assessment
  */
-export function assessAuditChain(auditDir: string, secret: Buffer | null): ChainAssessment {
-  const walk = walkAuditChain(auditDir, secret);
+export function assessAuditChain(
+  auditDir: string,
+  secret: Buffer | null,
+  acceptedRebaseline: AcceptedRebaseline | null = null,
+): ChainAssessment {
+  const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
   return {
     chainedLines: walk.chainedLines,
     lastHash: walk.lastHash,
@@ -361,6 +421,7 @@ export function inspectAuditIntegrity(
   hasFingerprint = false,
   attestation: AttestationSource | null = null,
   contentAttestation: IntegrityCheck | null = null,
+  acceptedRebaseline: AcceptedRebaseline | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -390,7 +451,7 @@ export function inspectAuditIntegrity(
     return checks;
   }
 
-  const walk = walkAuditChain(auditDir, secret);
+  const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
   const {
     chainedLines,
     legacyLines,
