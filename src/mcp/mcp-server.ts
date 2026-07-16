@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import path from 'node:path';
 
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -5,11 +6,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { Config } from '../config/config-schema.js';
+import { ErrorCode } from '../errors/error-codes.js';
 import { createAttestationSource } from '../services/integrity/head-checkpoint.js';
 import { ProjectSecretService } from '../services/integrity/project-secret.js';
 import type { ServiceContainer } from '../services/service-container.js';
 import { SyncMode } from '../services/sync/sync-service.js';
 import { AuditHeadSignatureRepository } from '../storage/sqlite/repositories/audit-head-signature-repository.js';
+import { PACKAGE_ROOT } from '../utils/asset-paths.js';
 import { logger } from '../utils/logger.js';
 import { VERSION } from '../utils/version.js';
 import {
@@ -17,6 +20,7 @@ import {
   McpServerStatus,
   McpSessionContext,
 } from './mcp-session-context.js';
+import { err } from './mcp-tool-result.js';
 import { TOOL_RISK } from './tool-risk.js';
 import { TransitionToolsRegistrar } from './tools/transition-tools.js';
 import { AgentPlanTools } from './tools/universal/agent-plan-tools.js';
@@ -68,6 +72,20 @@ const HARD_SHUTDOWN_MS = 5_000;
 const WAL_CHECKPOINT_INTERVAL_MS = 5 * 60_000;
 
 /**
+ * A cheap snapshot of the on-disk inputs the boot-time tool schemas were built
+ * from. `version` catches a reinstalled/rebuilt package; `distMtime` catches a
+ * `dist` rebuild at the same version (the dogfooding case); `workflowMtime`
+ * catches an edited workflow JSON (which changes the generated transition
+ * tools). Each field is independently comparable so the staleness message can
+ * name exactly what diverged.
+ */
+interface SchemaFingerprint {
+  readonly version: string;
+  readonly distMtimeMs: number | null;
+  readonly workflowMtimeMs: number | null;
+}
+
+/**
  * High-level wrapper around the MCP SDK that wires Mnema services to
  * the JSON-RPC stdio transport.
  *
@@ -88,6 +106,17 @@ export class MnemaMcpServer {
   private shuttingDown = false;
   private inflight = 0;
   private walCheckpointTimer: ReturnType<typeof setInterval> | null = null;
+  /**
+   * Disk fingerprint captured at boot. The generated tool schemas are built
+   * ONCE in `registerTools()` from the running `dist` + the active workflow
+   * JSON, and the MCP SDK cannot swap a tool's schema in place — so once the
+   * dist is rebuilt or the workflow edited, this long-lived process keeps
+   * serving the boot-time shape. Comparing this snapshot to disk per mutating
+   * request lets us return a clear SERVER_STALE ("restart the server") signal
+   * instead of an opaque validation failure. (Migration drift is a separate
+   * axis that already self-heals via `detectPendingMigrations`.)
+   */
+  private bootFingerprint: SchemaFingerprint | null = null;
 
   constructor(
     private readonly config: Config,
@@ -158,6 +187,20 @@ export class MnemaMcpServer {
         return originalSet(schema, handler);
       }
       const wrapped = async (request: unknown, extra: unknown): Promise<CallToolResult> => {
+        // Before dispatch, block a MUTATING call when the on-disk schema inputs
+        // have diverged from the boot snapshot — the server is serving stale
+        // tool definitions and the write would fail opaquely (or worse, no-op
+        // against a shape that no longer matches). Read-only tools stay live
+        // (mirrors requireFreshSchema's contract). The signal names what to do:
+        // restart the server. Gated on TOOL_RISK so an unmapped/read tool is
+        // never blocked.
+        const toolName = (request as { params?: { name?: string } }).params?.name;
+        if (toolName !== undefined && TOOL_RISK[toolName]?.readOnlyHint !== true) {
+          const changed = this.describeStaleness();
+          if (changed.length > 0) {
+            return err({ kind: ErrorCode.ServerStale, changed });
+          }
+        }
         // Bracket every tools/call so `waitInflight` can hold graceful
         // shutdown open until in-flight writes settle. The finally must run
         // even when the handler throws, or a failed call would leak the
@@ -172,6 +215,60 @@ export class MnemaMcpServer {
       };
       return originalSet(schema, wrapped);
     };
+  }
+
+  /**
+   * Cheap snapshot of the on-disk inputs the tool schemas are built from.
+   * A `statSync` failure (file absent) yields `null` for that field, which
+   * compares equal to a later `null` — so a genuinely-missing input never
+   * reads as "diverged". Never throws.
+   */
+  private computeFingerprint(): SchemaFingerprint {
+    const mtime = (p: string): number | null => {
+      try {
+        return statSync(p).mtimeMs;
+      } catch {
+        return null;
+      }
+    };
+    const workflowPath = path.join(
+      this.projectRoot,
+      this.config.paths.workflows,
+      `${this.config.workflow}.json`,
+    );
+    return {
+      version: VERSION,
+      // A real build artefact — `dist/index.js` mtime bumps on every `pnpm
+      // build`, which is the dogfooding case. (Do NOT stat package.json: its
+      // mtime does not change on a rebuild, and PACKAGE_ROOT resolves to the
+      // repo root even when running from dist/, so it would be inert.) In a
+      // src/tsx dev run dist may be absent → null, which compares equal to a
+      // later null, so no false stale.
+      distMtimeMs: mtime(path.resolve(PACKAGE_ROOT, 'dist', 'index.js')),
+      workflowMtimeMs: mtime(workflowPath),
+    };
+  }
+
+  /**
+   * Compares the live disk fingerprint to the boot snapshot and returns a
+   * human-readable list of what diverged (empty when fresh). Drives the
+   * SERVER_STALE signal. Before the boot fingerprint is captured (i.e. before
+   * `start()`), reports nothing.
+   */
+  private describeStaleness(): string[] {
+    if (this.bootFingerprint === null) return [];
+    const now = this.computeFingerprint();
+    const changed: string[] = [];
+    if (now.version !== this.bootFingerprint.version) {
+      changed.push(`installed version changed (${this.bootFingerprint.version} → ${now.version})`);
+    }
+    if (now.distMtimeMs !== this.bootFingerprint.distMtimeMs) {
+      changed.push('the mnema build (dist/) was rebuilt');
+    }
+    if (now.workflowMtimeMs !== this.bootFingerprint.workflowMtimeMs) {
+      changed.push(`the active workflow (${this.config.workflow}.json) was edited`);
+    }
+    return changed;
   }
 
   /**
@@ -234,6 +331,13 @@ export class MnemaMcpServer {
    * handlers without stdio.
    */
   registerTools(): void {
+    // Snapshot the disk inputs the tool schemas are built from, at the moment
+    // they are built — so a later dist rebuild / workflow edit is detectable
+    // per mutating request (MNEMA-325). Captured here (not in start()) because
+    // this is where the schemas are frozen, and the test harness registers
+    // tools without going through start().
+    this.bootFingerprint = this.computeFingerprint();
+
     // Computed once, up front: the list of unapplied migration files. Every
     // tool that touches a Sprint-5 column/table is constructed with this so a
     // drifted (upgraded-but-unmigrated) DB returns a structured

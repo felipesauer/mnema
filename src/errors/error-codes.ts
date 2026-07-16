@@ -51,6 +51,13 @@ export enum ErrorCode {
 
   SchemaOutOfDate = 'SCHEMA_OUT_OF_DATE',
 
+  /** The long-running `mnema mcp serve` process is serving a tool schema
+   * snapshotted at boot that has since diverged from disk (dist rebuilt or
+   * the active workflow edited). Distinct from SCHEMA_OUT_OF_DATE (which is
+   * about pending DB migrations and self-heals per request): tool schemas are
+   * frozen at boot, so the only remedy is restarting the server. */
+  ServerStale = 'SERVER_STALE',
+
   SkillNotFound = 'SKILL_NOT_FOUND',
   MemoryNotFound = 'MEMORY_NOT_FOUND',
 
