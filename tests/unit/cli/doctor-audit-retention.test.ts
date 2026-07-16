@@ -3,40 +3,42 @@ import { describe, expect, it } from 'vitest';
 import { inspectAuditRetention } from '@/cli/commands/doctor-command.js';
 
 /**
- * `audit_strategy` / `audit_retention_months` are accepted and validated but
- * not yet enforced — the audit chain is append-only, so nothing is pruned.
- * doctor must surface an inert-but-expectant setting (recent/local, or any
- * finite retention) as a warning so it isn't mistaken for active retention,
- * while `full` (keep everything = today's real behavior) passes silently.
+ * With retention enforcement shipped (ADR-68), the three strategies each have a
+ * real behavior and none is a silent no-op: `full` keeps everything (reported
+ * silently), `recent` archives old segments (kept verifiable), and `local`
+ * prunes via the opt-in `mnema audit prune`. doctor reports recent/local as
+ * informational ok lines — no longer "reserved but inert" warnings.
  */
 describe('inspectAuditRetention', () => {
   it('passes full silently (keep-everything matches actual behavior)', () => {
     expect(inspectAuditRetention('full', 12)).toEqual([]);
   });
 
-  it('flags recent as a not-ok warning that names the no-op and the escape hatch', () => {
+  it('reports recent as an ok line: archives old months, keeps them verifiable', () => {
     const [check] = inspectAuditRetention('recent', 12);
     expect(check?.name).toBe('audit retention');
-    expect(check?.ok).toBe(false);
-    expect(check?.severity).toBe('warning');
+    expect(check?.ok).toBe(true);
     expect(check?.detail).toContain('recent');
-    expect(check?.detail).toContain('not yet enforced');
-    expect(check?.detail).toContain('full'); // points at the behavior-matching value
+    expect(check?.detail).toContain('12 months');
+    expect(check?.detail).toMatch(/archiv/i);
+    // No longer calls it a no-op / not-yet-enforced.
+    expect(check?.detail).not.toMatch(/not yet enforced|no-op/i);
   });
 
-  it('flags local as a not-ok warning too', () => {
+  it('reports local as an ok line that points at the prune command', () => {
     const [check] = inspectAuditRetention('local', 6);
-    expect(check?.ok).toBe(false);
-    expect(check?.severity).toBe('warning');
-    // The configured retention window is echoed so the warning is concrete.
+    expect(check?.ok).toBe(true);
     expect(check?.detail).toContain('6 months');
+    expect(check?.detail).toContain('mnema audit prune');
+    expect(check?.detail).toMatch(/opt-in|never runs automatically/i);
   });
 
-  it('keeps the warning from raising the exit code (severity warning, not error)', () => {
-    // doctor derives its exit code from `!ok && (severity ?? 'error') === 'error'`.
-    const [check] = inspectAuditRetention('recent', 12);
-    const countsAsError =
-      check !== undefined && !check.ok && (check.severity ?? 'error') === 'error';
-    expect(countsAsError).toBe(false);
+  it('never raises the doctor exit code (ok lines, no error severity)', () => {
+    for (const strategy of ['recent', 'local'] as const) {
+      const [check] = inspectAuditRetention(strategy, 12);
+      const countsAsError =
+        check !== undefined && !check.ok && (check.severity ?? 'error') === 'error';
+      expect(countsAsError).toBe(false);
+    }
   });
 });
