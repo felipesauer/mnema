@@ -1154,6 +1154,15 @@ function collectTaskContentDrift(
     changed = true;
   }
 
+  // closed_at is authoritative from the mirror on rebuild: a task completed
+  // on disk must carry its committed close time into the cache, and one
+  // reopened on disk (closed_at: null) must have a stale cached value cleared.
+  const closedAt = readString(data, 'closed_at');
+  if (closedAt !== existing.closedAt) {
+    updates.closedAt = closedAt;
+    changed = true;
+  }
+
   return changed ? updates : null;
 }
 

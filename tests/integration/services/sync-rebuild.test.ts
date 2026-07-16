@@ -788,6 +788,118 @@ mnema:
     expect(reopened.value.closedAt).toBeNull();
   });
 
+  // Incremental sync-rebuild over an already-populated DB must reconcile
+  // closed_at from the authoritative mirror, not just state. Regression for
+  // the reopen-on-disk (stale close retained) and complete-on-disk (disk
+  // close dropped) cases.
+  const markdownIo = new MarkdownIo();
+  const stateMirror = (state: string, key: string) =>
+    path.join(root, '.mnema/backlog', state, `${key}.md`);
+
+  function driveToDone(key: string): void {
+    const move = (action: string, payload: Record<string, unknown>) => {
+      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      expect(r.ok, `${action} should succeed`).toBe(true);
+    };
+    move('submit', {});
+    move('start', { assignee_id: 'daniel' });
+    move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
+    move('approve', { approval_note: 'lgtm' });
+  }
+
+  it('reconcile: clears closed_at when a task is reopened on disk', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Disk-reopened task',
+      description: 'done in cache, reopened in the mirror',
+      acceptanceCriteria: ['it works'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    if (!created.ok) return;
+    const key = created.value.key;
+    driveToDone(key);
+    const done = container.task.findByKey(key);
+    if (!done.ok) return;
+    expect(done.value.closedAt).not.toBeNull();
+
+    // Edit the mirror on disk: move it to IN_PROGRESS and drop closed_at,
+    // as a merge/hand-edit would. Remove the stale DONE mirror so the walk
+    // sees the row in exactly one state dir.
+    rmSync(stateMirror('DONE', key), { force: true });
+    mkdirSync(path.dirname(stateMirror('IN_PROGRESS', key)), { recursive: true });
+    markdownIo.write(stateMirror('IN_PROGRESS', key), {
+      mnemaData: {
+        key,
+        state: 'IN_PROGRESS',
+        title: 'Disk-reopened task',
+        closed_at: null,
+        updated_at: new Date(Date.parse(done.value.updatedAt) + 1000).toISOString(),
+      },
+      otherFrontmatter: {},
+      content: '# task\n',
+    });
+
+    container.syncRebuild.run('TEST');
+
+    const after = container.task.findByKey(key);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    expect(after.value.state).toBe('IN_PROGRESS');
+    // Before the fix the cache kept the stale DONE close time.
+    expect(after.value.closedAt).toBeNull();
+  });
+
+  it('reconcile: carries closed_at into the cache when a task is completed on disk', () => {
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Disk-completed task',
+      description: 'submitted in cache, marked done in the mirror',
+      acceptanceCriteria: ['it works'],
+      estimate: 1,
+      actor: 'daniel',
+    });
+    if (!created.ok) return;
+    const key = created.value.key;
+    // Move it to a non-terminal live state so the row starts with a null close.
+    const submit = container.task.transition({
+      taskKey: key,
+      action: 'submit',
+      payload: {},
+      actor: 'daniel',
+    });
+    expect(submit.ok).toBe(true);
+    const before = container.task.findByKey(key);
+    if (!before.ok) return;
+    expect(before.value.closedAt).toBeNull();
+
+    // The mirror says DONE with an explicit close time (a merge landed the
+    // completed snapshot). Remove the READY mirror; write the DONE one.
+    rmSync(stateMirror('READY', key), { force: true });
+    const diskClosedAt = '2026-01-02T03:04:05.000Z';
+    mkdirSync(path.dirname(stateMirror('DONE', key)), { recursive: true });
+    markdownIo.write(stateMirror('DONE', key), {
+      mnemaData: {
+        key,
+        state: 'DONE',
+        title: 'Disk-completed task',
+        closed_at: diskClosedAt,
+        updated_at: diskClosedAt,
+      },
+      otherFrontmatter: {},
+      content: '# task\n',
+    });
+
+    container.syncRebuild.run('TEST');
+
+    const after = container.task.findByKey(key);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    expect(after.value.state).toBe('DONE');
+    // Before the fix the disk close time was dropped (row stayed null).
+    expect(after.value.closedAt).toBe(diskClosedAt);
+  });
+
   it('reconstructs the provenance graph from the audit on a fresh clone', () => {
     // An observation promoted to a decision builds an observation → decision
     // edge in the (git-ignored) provenance_links cache.

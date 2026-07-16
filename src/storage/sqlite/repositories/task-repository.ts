@@ -606,6 +606,10 @@ export class TaskRepository implements ITaskRepository {
       sets.push('metadata = ?');
       values.push(JSON.stringify(fields.metadata));
     }
+    if (fields.closedAt !== undefined) {
+      sets.push('closed_at = ?');
+      values.push(fields.closedAt);
+    }
 
     if (sets.length === 0) {
       const reloaded = this.findById(taskId);
