@@ -50,7 +50,13 @@ describe('head-signature checkpoint', () => {
   /** A writer wired with the given checkpoint signer. */
   function writer(checkpoint: HeadCheckpointService): AuditService {
     return new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
   }
 

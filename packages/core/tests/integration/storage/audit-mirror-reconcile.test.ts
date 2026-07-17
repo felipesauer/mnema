@@ -39,7 +39,7 @@ describe('audit mirror reconciliation on boot', () => {
   });
 
   const state = () => new AuditStateRepository(adapter);
-  const newWriter = () => new AuditWriter(auditDir, state());
+  const newWriter = () => new AuditWriter(auditDir, state(), () => Buffer.alloc(32, 7));
 
   function writeTwoEvents(): void {
     const audit = new AuditService(newWriter());

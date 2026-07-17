@@ -12,6 +12,9 @@ import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
+const secrets = { read: () => FIXTURE_SECRET, readFingerprint: () => 'fp' };
+
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
 /**
@@ -34,7 +37,9 @@ describe('CachedAuditIntegrity', () => {
     mkdirSync(auditDir, { recursive: true });
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
-    const writer = new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    const writer = new AuditWriter(auditDir, new AuditStateRepository(adapter), () =>
+      Buffer.alloc(32, 7),
+    );
     audit = new AuditService(writer);
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-2' } });
@@ -48,7 +53,7 @@ describe('CachedAuditIntegrity', () => {
   const currentFile = (): string => path.join(auditDir, 'current.jsonl');
 
   it('returns the identical cached result across repeated calls with no change', () => {
-    const cache = new CachedAuditIntegrity(adapter, auditDir);
+    const cache = new CachedAuditIntegrity(adapter, auditDir, secrets);
     const first = cache.get();
     const second = cache.get();
     const third = cache.get();
@@ -60,7 +65,7 @@ describe('CachedAuditIntegrity', () => {
   });
 
   it('recomputes after a new event is appended (signature changes)', () => {
-    const cache = new CachedAuditIntegrity(adapter, auditDir);
+    const cache = new CachedAuditIntegrity(adapter, auditDir, secrets);
     const before = cache.get();
 
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-3' } });
@@ -71,7 +76,7 @@ describe('CachedAuditIntegrity', () => {
   });
 
   it('still detects an in-place edit of a past line between calls (tamper, size unchanged)', () => {
-    const cache = new CachedAuditIntegrity(adapter, auditDir);
+    const cache = new CachedAuditIntegrity(adapter, auditDir, secrets);
     expect(cache.get().find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
 
     // Tamper: flip a character in a past line WITHOUT changing the file
@@ -87,7 +92,7 @@ describe('CachedAuditIntegrity', () => {
     const chain = after.find((c) => c.name === 'audit hash chain');
     expect(chain?.ok).toBe(false);
     // Parity with a direct (uncached) verification of the same tampered log.
-    const direct = inspectAuditIntegrity(adapter, auditDir).find(
+    const direct = inspectAuditIntegrity(adapter, auditDir, FIXTURE_SECRET).find(
       (c) => c.name === 'audit hash chain',
     );
     expect(chain?.ok).toBe(direct?.ok);

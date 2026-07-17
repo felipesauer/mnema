@@ -1,81 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
-import { hashEvent, hmacEvent } from '../../storage/audit/audit-hash.js';
+import { EVENT_FORMAT_VERSION, hmacEvent } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import { defaultGitRunner, type GitCommandRunner } from '../git/git-commit-service.js';
 
 /**
- * Filename (relative to `auditDir`) recording a human's decision to accept
- * legacy `prev_hash` breaks up to a cutoff date. Committed like the audit log
- * itself — the file's presence AND every field in it is re-verified on every
- * read (never blindly trusted), so it can never silently launder a NEW break
- * or a content edit introduced after the waiver was written.
- */
-const LEGACY_BREAKS_WAIVER_FILE = 'legacy-breaks-accepted.json';
-
-/** The recorded acceptance of legacy `prev_hash` breaks up to a cutoff. */
-export interface LegacyBreaksWaiver {
-  /** ISO date/time: breaks at or before this are covered. */
-  readonly acceptedCutoff: string;
-  /** When the waiver was written (informational only). */
-  readonly acceptedAt: string;
-}
-
-/** Absolute path to the legacy-breaks waiver file for an audit dir. */
-export function legacyBreaksWaiverPath(auditDir: string): string {
-  return path.join(auditDir, LEGACY_BREAKS_WAIVER_FILE);
-}
-
-/**
- * Reads the committed legacy-breaks waiver, or `null` when absent or
- * malformed (a malformed file is treated as no waiver — never as a crash and
- * never as an accidental accept-everything).
- *
- * @param auditDir - Absolute path to `.mnema/audit/`
- * @returns The waiver, or `null`
- */
-export function readLegacyBreaksWaiver(auditDir: string): LegacyBreaksWaiver | null {
-  const file = legacyBreaksWaiverPath(auditDir);
-  if (!existsSync(file)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(file, 'utf-8')) as Partial<LegacyBreaksWaiver>;
-    if (typeof raw.acceptedCutoff !== 'string' || Number.isNaN(Date.parse(raw.acceptedCutoff))) {
-      return null;
-    }
-    return {
-      acceptedCutoff: raw.acceptedCutoff,
-      acceptedAt: typeof raw.acceptedAt === 'string' ? raw.acceptedAt : '',
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Writes the legacy-breaks waiver. Called ONLY by `reconcile
- * --accept-legacy-breaks` after it has independently verified every break is
- * content-valid, at/before the cutoff, and the disk matches git HEAD — this
- * function itself performs no verification, so it must never be called on
- * unverified input.
- *
- * @param auditDir - Absolute path to `.mnema/audit/`
- * @param cutoffIso - The accepted cutoff date, already validated by the caller
- */
-export function writeLegacyBreaksWaiver(auditDir: string, cutoffIso: string): void {
-  const waiver: LegacyBreaksWaiver = {
-    acceptedCutoff: cutoffIso,
-    acceptedAt: new Date().toISOString(),
-  };
-  writeFileSync(legacyBreaksWaiverPath(auditDir), `${JSON.stringify(waiver, null, 2)}\n`, 'utf-8');
-}
-
-/**
  * Filename (relative to `auditDir`) recording a human's decision to accept a
  * GENUINE truncation of the audit chain — history the operator deliberately
- * rewrote below a signed checkpoint. Distinct from the legacy-breaks waiver:
- * that covers a sequence-only discontinuity in a chain still at its full
- * length; this covers a chain that was made SHORTER than an attested
+ * rewrote below a signed checkpoint, making the chain SHORTER than an attested
  * high-water mark. Committed like the audit log; every field is re-verified
  * against the CURRENT disk on every read (never blindly trusted), so it can
  * never launder a LATER truncation than the one the human reviewed.
@@ -86,7 +19,7 @@ const TRUNCATION_WAIVER_FILE = 'truncation-accepted.json';
 export interface TruncationWaiver {
   /** `hash` of the disk tail at the moment the truncation was accepted. */
   readonly acceptedHeadHash: string;
-  /** Chained (v>=2) line count on disk at acceptance. */
+  /** Chained line count on disk at acceptance. */
   readonly acceptedEventCount: number;
   /** When the waiver was written (informational only). */
   readonly acceptedAt: string;
@@ -160,22 +93,21 @@ export function writeTruncationWaiver(
  * altered. A break with fully-valid content hashes is the signature of
  * concurrent writers racing to append without a cross-process lock —
  * corruption of order, not of data. A break where a content hash ALSO fails
- * to verify is the signature of a real edit, and must never be laundered by
- * a "legacy" story.
+ * to verify is the signature of a real edit, and is never treated as benign.
  */
 export interface ChainBreak {
   /** File the break's line is in (basename, e.g. `2026-06.jsonl`). */
   readonly file: string;
   /** 1-based line number within that file. */
   readonly line: number;
-  /** 0-based position in the chained (v>=2) sequence. */
+  /** 0-based position in the chained sequence. */
   readonly chainedIndex: number;
   /** ISO timestamp of the event at the break. */
   readonly at: string | null;
   /**
    * `true` when every event's own content hash matches its content, in a
-   * window around the break (see {@link CONTENT_WINDOW}). `null` when a
-   * v3 line in the window could not be checked (no project secret).
+   * window around the break (see {@link CONTENT_WINDOW}). `null` when a line
+   * in the window could not be checked (no project secret).
    */
   readonly contentValidAroundBreak: boolean | null;
 }
@@ -185,7 +117,7 @@ const CONTENT_WINDOW = 5;
 
 /** Full diagnostic report produced by {@link diagnoseAuditChain}. */
 export interface AuditDiagnosis {
-  /** Total chained (v>=2) events walked. */
+  /** Total chained events walked. */
   readonly totalChained: number;
   /** Every discontinuity found, in chain order. */
   readonly breaks: readonly ChainBreak[];
@@ -218,8 +150,8 @@ export interface AuditDiagnosis {
  * depend on, so a bug here can degrade only diagnosis, never the actual gate.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
- * @param secret - Per-project HMAC secret for verifying v3 lines' content, or
- *   `null` when unavailable (a v3 line's content validity is then `null`,
+ * @param secret - Per-project HMAC secret for verifying each line's content,
+ *   or `null` when unavailable (a line's content validity is then `null`,
  *   never assumed valid)
  * @param gitCwd - Working directory to run `git` from, or `null` to skip the
  *   git-anchor check entirely (report `matchesCommittedHead: null`)
@@ -260,19 +192,16 @@ export function diagnoseAuditChain(
     }
   }
 
-  const chained = parsed.filter((p) => {
-    const v = typeof p.event.v === 'number' ? p.event.v : 1;
-    return v >= 2;
-  });
+  const chained = parsed.filter(
+    (p) => (typeof p.event.v === 'number' ? p.event.v : 0) === EVENT_FORMAT_VERSION,
+  );
 
   const contentValid = (p: Parsed): boolean | null => {
-    const v = typeof p.event.v === 'number' ? p.event.v : 1;
     const hash = typeof p.event.hash === 'string' ? p.event.hash : null;
-    if (v >= 3) {
-      if (secret === null) return null;
-      return hash === hmacEvent(p.event as unknown as AuditEvent, secret);
-    }
-    return hash === hashEvent(p.event as unknown as AuditEvent);
+    // Each line is HMAC-keyed: unverifiable without the secret (a clone),
+    // else the HMAC must recompute.
+    if (secret === null) return null;
+    return hash === hmacEvent(p.event as unknown as AuditEvent, secret);
   };
 
   const breaks: ChainBreak[] = [];
@@ -285,7 +214,7 @@ export function diagnoseAuditChain(
       const to = Math.min(chained.length, idx + CONTENT_WINDOW + 1);
       const window = chained.slice(from, to);
       const verdicts = window.map(contentValid);
-      // Unknown (v3, no secret) is NOT the same as valid: report null rather
+      // Unknown (no secret) is NOT the same as valid: report null rather
       // than quietly upgrading an unverifiable window to "valid".
       const contentValidAroundBreak = verdicts.some((v) => v === false)
         ? false

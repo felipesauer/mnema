@@ -34,7 +34,7 @@ describe('inspectAuditIntegrity', () => {
     new MigrationRunner().run(adapter, migrationsDir);
 
     const state = new AuditStateRepository(adapter);
-    writer = new AuditWriter(auditDir, state);
+    writer = new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7));
     audit = new AuditService(writer);
   });
 
@@ -73,7 +73,7 @@ describe('inspectAuditIntegrity', () => {
     lines[1] = JSON.stringify(second);
     writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
 
-    const checks = inspectAuditIntegrity(adapter, auditDir);
+    const checks = inspectAuditIntegrity(adapter, auditDir, Buffer.alloc(32, 7));
     expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
   });
 
@@ -81,7 +81,7 @@ describe('inspectAuditIntegrity', () => {
     writeSampleEvents();
     const file = path.join(auditDir, 'current.jsonl');
     const forged = {
-      v: 2,
+      v: 1,
       at: new Date().toISOString(),
       kind: 'task_transitioned',
       actor: 'mallory',
@@ -91,7 +91,7 @@ describe('inspectAuditIntegrity', () => {
     };
     writeFileSync(file, `${JSON.stringify(forged)}\n`, { flag: 'a' });
 
-    const checks = inspectAuditIntegrity(adapter, auditDir);
+    const checks = inspectAuditIntegrity(adapter, auditDir, Buffer.alloc(32, 7));
     expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
   });
 
@@ -166,37 +166,34 @@ describe('inspectAuditIntegrity', () => {
     expect(count?.detail).toMatch(/masked interior deletion|malformed/i);
   });
 
-  it('reports legacy mode when no events have been written yet', () => {
+  it('reports a dormant chain when no events have been written yet', () => {
     // No events written through the writer; chain head is null.
     const checks = inspectAuditIntegrity(adapter, auditDir);
     const integrity = checks.find((c) => c.name === 'audit integrity');
     expect(integrity?.ok).toBe(true);
-    expect(integrity?.detail).toContain('legacy');
+    expect(integrity?.detail).toMatch(/no audit events yet|activates on the first write/);
   });
 
-  it('does not count archived legacy (pre-chain) lines against audit_state', () => {
-    // An archived month written before the hash chain existed: plain v1
-    // lines with no hash. `audit_state.event_count` never tracked these.
-    const legacy = [
-      { v: 1, at: '2026-05-01T00:00:00.000Z', kind: 'task_created', actor: 'old', data: {} },
-      { v: 1, at: '2026-05-02T00:00:00.000Z', kind: 'task_created', actor: 'old', data: {} },
-    ]
-      .map((e) => JSON.stringify(e))
-      .join('\n');
-    writeFileSync(path.join(auditDir, '2026-05.jsonl'), `${legacy}\n`, 'utf-8');
-
-    // Then a normal chained current month.
+  it('treats a line whose version tag is not the event format as malformed', () => {
+    // A line whose `v` is not the event format tag is not a chained event: it
+    // must surface as malformed (a possible smokescreen), never silently
+    // counted or ignored.
     writeSampleEvents();
+    const stray = JSON.stringify({
+      v: 99,
+      at: '2026-05-01T00:00:00.000Z',
+      kind: 'task_created',
+      actor: 'old',
+      data: {},
+    });
+    const file = path.join(auditDir, 'current.jsonl');
+    writeFileSync(file, `${readFileSync(file, 'utf-8')}${stray}\n`, 'utf-8');
 
-    const checks = inspectAuditIntegrity(adapter, auditDir);
-    const count = checks.find((c) => c.name === 'audit event count');
-    // The 2 legacy lines must not inflate the comparison: 3 chained
-    // events match audit_state, even though 5 lines sit on disk.
-    expect(count?.ok).toBe(true);
-    expect(count?.detail).toContain('3 chained events');
-    expect(count?.detail).toContain('2 legacy pre-chain');
-    // The chain itself is unaffected by the archived legacy file.
-    expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
+    const parse = inspectAuditIntegrity(adapter, auditDir, Buffer.alloc(32, 7)).find(
+      (c) => c.name === 'audit lines parse',
+    );
+    expect(parse?.ok).toBe(false);
+    expect(parse?.severity).toBe('warning');
   });
 
   /**
@@ -246,7 +243,7 @@ describe('inspectAuditIntegrity', () => {
     const archive = path.join(auditDir, '2026-05.jsonl');
     writeFileSync(archive, readFileSync(archive, 'utf-8').replace('"daniel"', '"mallory"'));
 
-    const chain = inspectAuditIntegrity(adapter, auditDir).find(
+    const chain = inspectAuditIntegrity(adapter, auditDir, Buffer.alloc(32, 7)).find(
       (c) => c.name === 'audit hash chain',
     );
     expect(chain?.ok).toBe(false);
@@ -272,12 +269,18 @@ describe('inspectAuditIntegrity', () => {
       );
       // A writer that signs every event (checkpoint interval = 1).
       const signedAudit = new AuditService(
-        new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+        new AuditWriter(
+          auditDir,
+          new AuditStateRepository(adapter),
+          () => Buffer.alloc(32, 7),
+          undefined,
+          checkpoint,
+        ),
       );
       signedAudit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
 
       const attest = createAttestationSource(projectRoot, signatures);
-      const verdict = inspectAuditIntegrity(adapter, auditDir, null, false, attest).find(
+      const verdict = inspectAuditIntegrity(adapter, auditDir, null, attest).find(
         (c) => c.name === 'audit machine attestation',
       );
       expect(verdict?.ok).toBe(true);
@@ -287,7 +290,7 @@ describe('inspectAuditIntegrity', () => {
     it('warns (no signature yet) when nothing has signed', () => {
       writeSampleEvents(); // written through the unsigned writer
       const attest = createAttestationSource(tempRoot, new AuditHeadSignatureRepository(adapter));
-      const verdict = inspectAuditIntegrity(adapter, auditDir, null, false, attest).find(
+      const verdict = inspectAuditIntegrity(adapter, auditDir, null, attest).find(
         (c) => c.name === 'audit machine attestation',
       );
       expect(verdict?.ok).toBe(true);

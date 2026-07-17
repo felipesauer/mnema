@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { inspectAuditIntegrity } from '@/services/integrity/audit-integrity.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
+import { EVENT_FORMAT_VERSION } from '@/storage/audit/audit-hash.js';
 import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
@@ -12,13 +13,12 @@ import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
 /**
- * A writer wired with a project secret seals v3 (HMAC-keyed) events, and
- * the verifier recomputes them with the same secret (ADR-37 layer 2).
- * With the wrong/absent secret the same on-disk lines are NOT falsely
- * flagged as tampered — authenticity is reported unverifiable while chain
- * consistency still holds.
+ * A writer wired with a project secret seals HMAC-keyed events, and the
+ * verifier recomputes them with the same secret. With the wrong/absent secret
+ * the same on-disk lines are NOT falsely flagged as tampered — authenticity is
+ * reported unverifiable while chain consistency still holds.
  */
-describe('v3 HMAC audit chain', () => {
+describe('HMAC audit chain', () => {
   let tempRoot: string;
   let auditDir: string;
   let adapter: SqliteAdapter;
@@ -38,10 +38,10 @@ describe('v3 HMAC audit chain', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  /** Writes 3 events through a secret-wired writer (v3). */
-  function writeV3(): void {
+  /** Writes 3 events through a secret-wired writer. */
+  function writeEvents(): void {
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, () => secret),
+      new AuditWriter(auditDir, new AuditStateRepository(adapter), () => secret),
     );
     audit.write({ kind: 'task_created', actor: 'alice', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'bob', data: { key: 'T-2' } });
@@ -52,14 +52,14 @@ describe('v3 HMAC audit chain', () => {
     });
   }
 
-  it('writes v3 lines and verifies them with the correct secret', () => {
-    writeV3();
-    // Every chained line is v3.
+  it('writes keyed lines and verifies them with the correct secret', () => {
+    writeEvents();
+    // Every chained line carries the event format tag.
     const versions = readFileSync(path.join(auditDir, 'current.jsonl'), 'utf-8')
       .split('\n')
       .filter((l) => l.length > 0)
       .map((l) => (JSON.parse(l) as { v: number }).v);
-    expect(versions).toEqual([3, 3, 3]);
+    expect(versions).toEqual([EVENT_FORMAT_VERSION, EVENT_FORMAT_VERSION, EVENT_FORMAT_VERSION]);
 
     const checks = inspectAuditIntegrity(adapter, auditDir, secret);
     expect(checks.find((c) => c.name === 'audit event count')?.ok).toBe(true);
@@ -69,7 +69,7 @@ describe('v3 HMAC audit chain', () => {
   });
 
   it('adds a wrong-secret hint (without hiding the tamper error) with the WRONG secret', () => {
-    writeV3();
+    writeEvents();
     const checks = inspectAuditIntegrity(adapter, auditDir, wrong);
     // The hash-chain error is NOT suppressed — a wrong-secret shape is
     // cryptographically indistinguishable from a full content forgery, so the
@@ -85,9 +85,9 @@ describe('v3 HMAC audit chain', () => {
     expect(auth?.detail).toMatch(/cannot be distinguished from a content forgery/i);
   });
 
-  it('distinguishes wrong-secret (all v3 fail) from a partial in-place forgery', () => {
-    // Wrong secret: hash-chain error PLUS the wrong-secret hint (all v3 fail).
-    writeV3();
+  it('distinguishes wrong-secret (all lines fail) from a partial in-place forgery', () => {
+    // Wrong secret: hash-chain error PLUS the wrong-secret hint (all lines fail).
+    writeEvents();
     const wrongChecks = inspectAuditIntegrity(adapter, auditDir, wrong);
     expect(wrongChecks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
     expect(
@@ -96,7 +96,7 @@ describe('v3 HMAC audit chain', () => {
       ),
     ).toBeDefined();
 
-    // Genuine PARTIAL tamper (verified with the RIGHT secret): only some v3
+    // Genuine PARTIAL tamper (verified with the RIGHT secret): only some
     // lines fail, so it is a hash-chain error WITHOUT the wrong-secret hint —
     // the operator is not misdirected toward a key problem.
     const file = path.join(auditDir, 'current.jsonl');
@@ -109,7 +109,7 @@ describe('v3 HMAC audit chain', () => {
     writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
     const tamperChecks = inspectAuditIntegrity(adapter, auditDir, secret);
     expect(tamperChecks.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
-    // NOT accompanied by the wrong-secret hint (only 1 of 3 v3 lines failed).
+    // NOT accompanied by the wrong-secret hint (only 1 of 3 lines failed).
     expect(
       tamperChecks.find(
         (c) => c.name === 'audit authenticity' && /wrong project secret/i.test(c.detail),
@@ -118,7 +118,7 @@ describe('v3 HMAC audit chain', () => {
   });
 
   it('reports authenticity UNVERIFIABLE (not tampered) with no secret', () => {
-    writeV3();
+    writeEvents();
     const checks = inspectAuditIntegrity(adapter, auditDir, null);
     // Chain consistency (prev_hash continuity, count) still holds…
     expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
@@ -130,8 +130,8 @@ describe('v3 HMAC audit chain', () => {
     expect(auth?.detail).toMatch(/project secret not present/i);
   });
 
-  it('still detects an in-place tamper of a v3 line (with the secret)', () => {
-    writeV3();
+  it('still detects an in-place tamper of a line (with the secret)', () => {
+    writeEvents();
     const file = path.join(auditDir, 'current.jsonl');
     const lines = readFileSync(file, 'utf-8')
       .split('\n')

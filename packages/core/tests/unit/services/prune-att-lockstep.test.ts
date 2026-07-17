@@ -42,7 +42,7 @@ describe('.att prune lockstep', () => {
     let prev: string | null = null;
     for (let i = 0; i < n; i++) {
       const ev: AuditEvent = {
-        v: 3,
+        v: 1,
         at: `2026-07-07T00:00:0${i}.000Z`,
         kind: 'k',
         actor: 'a',

@@ -12,8 +12,10 @@ import { verifyPruneWaiver } from '@/services/audit/prune-waiver.js';
 import { computeCutPoint } from '@/services/audit/retention-cut-point.js';
 import { assessAuditChain } from '@/services/integrity/audit-integrity.js';
 import { MachineKeyService } from '@/services/integrity/machine-key.js';
-import { hashEvent } from '@/storage/audit/audit-hash.js';
+import { hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
+
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
 
 /**
  * The prune apply step (ADR-68 / MNEMA-347): delete the dropped segments, sign
@@ -47,14 +49,14 @@ describe('prune apply', () => {
     let prev: string | null = null;
     for (let i = 0; i < n; i++) {
       const base: AuditEvent = {
-        v: 2,
+        v: 1,
         at: `2026-07-07T00:00:${String(i).padStart(2, '0')}.000Z`,
         kind: 'task_created',
         actor: 'felipesauer',
         data: { id: `T-${i}` },
         prev_hash: prev,
       };
-      const hash = hashEvent(base);
+      const hash = hmacEvent(base, FIXTURE_SECRET);
       rows.push({ ...base, hash });
       prev = hash;
     }

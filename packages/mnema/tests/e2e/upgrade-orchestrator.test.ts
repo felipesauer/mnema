@@ -317,7 +317,7 @@ function countChainedLines(jsonlPath: string): number {
     if (line.length === 0) continue;
     try {
       const event = JSON.parse(line) as { v?: unknown };
-      if (typeof event.v === 'number' && event.v >= 2) n += 1;
+      if (typeof event.v === 'number' && event.v === 1) n += 1;
     } catch {
       // ignore unparseable lines
     }

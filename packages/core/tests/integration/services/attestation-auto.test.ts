@@ -68,7 +68,7 @@ describe('auto-attestation on checkpoint', () => {
         signer: { machineKey, actor: 'felipesauer' },
         projectHmacId: secret.readFingerprint(),
         chainHealthy: chainHealthyForAttest(
-          inspectAuditIntegrity(adapter, auditDir, secret.read(), true),
+          inspectAuditIntegrity(adapter, auditDir, secret.read()),
         ),
         signedEventCountAt: new AuditHeadSignatureRepository(adapter).read()?.eventCountAt ?? null,
         headCount: eventCount,
@@ -79,8 +79,8 @@ describe('auto-attestation on checkpoint', () => {
       new AuditWriter(
         auditDir,
         state,
-        undefined,
         () => secret.getOrCreate(),
+        undefined,
         checkpoint,
         null,
         onCheckpoint,
@@ -125,8 +125,8 @@ describe('auto-attestation on checkpoint', () => {
       new AuditWriter(
         auditDir,
         state,
-        undefined,
         () => secret.getOrCreate(),
+        undefined,
         checkpoint,
         null,
         (_head: string, eventCount: number) =>

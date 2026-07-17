@@ -346,13 +346,12 @@ export class UpgradeCommand {
               // → returns false and reconcile still corrects audit_state.
               const actor = container.identity.resolveDefaultActor().actor;
               const reSign = buildHeadReSigner(projectRoot, actor, signatures);
-              // apply=true; acceptLegacyBreaks=null (never launder a real break
-              // during an upgrade); gitCwd=projectRoot for the anchor check —
-              // exactly as `mnema audit reconcile --force` calls it. A refusal
-              // (broken chain, malformed line, attestation over a truncation) is
-              // reported but does NOT fail the upgrade: it is a real integrity
-              // signal the human must resolve with `mnema audit diagnose`, not
-              // something the orchestrator should paper over or abort on.
+              // apply=true — exactly as `mnema audit reconcile --force` calls
+              // it. A refusal (broken chain, malformed line, attestation over a
+              // truncation) is reported but does NOT fail the upgrade: it is a
+              // real integrity signal the human must resolve with `mnema audit
+              // diagnose`, not something the orchestrator should paper over or
+              // abort on.
               const result = reconcileAuditState(
                 auditDir,
                 state,
@@ -364,9 +363,6 @@ export class UpgradeCommand {
                     }
                   : null,
                 true,
-                null,
-                projectRoot,
-                undefined,
                 reSign,
               );
               if (!result.ok) {
@@ -567,12 +563,7 @@ export class UpgradeCommand {
           signer,
           projectHmacId: secret.readFingerprint(),
           chainHealthy: chainHealthyForAttest(
-            inspectAuditIntegrity(
-              container.adapter,
-              auditDir,
-              secret.read(),
-              secret.readFingerprint() !== null,
-            ),
+            inspectAuditIntegrity(container.adapter, auditDir, secret.read()),
           ),
           signedEventCountAt:
             new AuditHeadSignatureRepository(container.adapter).read()?.eventCountAt ?? null,
@@ -690,14 +681,7 @@ function printPostUpgradeHealth(ctx: CliContext): void {
   );
   // read() not getOrCreate(): the summary verifies, it never mints a secret.
   const secret = new ProjectSecretService(projectRoot, config.project.key);
-  checks.push(
-    ...inspectAuditIntegrity(
-      container.adapter,
-      auditDir,
-      secret.read(),
-      secret.readFingerprint() !== null,
-    ),
-  );
+  checks.push(...inspectAuditIntegrity(container.adapter, auditDir, secret.read()));
   checks.push(...inspectAuditDiskDelta(container.adapter, auditDir, projectRoot));
 
   process.stdout.write(`\n${pc.bold('post-upgrade health')} ${pc.dim('(read-only)')}\n`);

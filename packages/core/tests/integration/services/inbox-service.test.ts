@@ -11,7 +11,6 @@ import { DecisionService } from '@/services/backlog/decision-service.js';
 import { InboxService } from '@/services/backlog/inbox-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repository.js';
@@ -20,6 +19,7 @@ import { ProjectRepository } from '@/storage/sqlite/repositories/project-reposit
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -48,7 +48,7 @@ describe('InboxService', () => {
     if (actor === null) throw new Error('precondition: actor exists');
     actorId = actor.id;
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const decisionRepo = new DecisionRepository(adapter);
     tasks = new TaskRepository(adapter);
     const notes = new NoteRepository(adapter);

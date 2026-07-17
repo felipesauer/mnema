@@ -62,7 +62,6 @@ export class AuditVerifyTool {
           this.adapter,
           this.auditDir,
           this.secrets?.read() ?? null,
-          this.secrets?.readFingerprint() != null,
           this.attestation,
           buildContentAttestation(this.projectRoot, this.auditDir),
         );

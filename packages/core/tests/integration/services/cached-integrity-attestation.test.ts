@@ -59,7 +59,13 @@ describe('CachedAuditIntegrity with attestation', () => {
       { events: 1, seconds: 100_000 },
     );
     new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     ).write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
   }
 

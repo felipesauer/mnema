@@ -31,46 +31,56 @@ const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations'
 describe('AuditWriter rotation hardening', () => {
   let tempRoot: string;
   let auditDir: string;
+  let adapter: SqliteAdapter;
+
+  const secret = () => Buffer.alloc(32, 7);
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-audit-rot-'));
     auditDir = path.join(tempRoot, '.audit');
     mkdirSync(auditDir, { recursive: true });
+    adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
+    new MigrationRunner().run(adapter, migrationsDir);
   });
 
   afterEach(() => {
+    adapter.close();
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
+  const state = () => new AuditStateRepository(adapter);
+
   it('A1: refuses to overwrite an existing archived month and keeps it intact', () => {
-    // Seed current.jsonl in a January-dated file, and a pre-existing
-    // January archive that a rotation would collide with.
+    // Seed a January-dated current.jsonl and a pre-existing January archive
+    // the rotation would collide with. Rotation is decided by the file's
+    // month vs now(), independent of line contents.
     const currentPath = path.join(auditDir, 'current.jsonl');
-    writeFileSync(currentPath, '{"v":1,"kind":"x","actor":"a","data":{}}\n', 'utf-8');
+    writeFileSync(currentPath, 'x\n', 'utf-8');
     const january = new Date('2026-01-15T12:00:00Z');
     utimesSync(currentPath, january, january);
 
     const archivePath = path.join(auditDir, '2026-01.jsonl');
-    const archiveContent = '{"v":1,"kind":"archived","actor":"a","data":{}}\n';
+    const archiveContent = 'archived\n';
     writeFileSync(archivePath, archiveContent, 'utf-8');
 
-    // Now() is February, so the writer wants to rotate current → 2026-01.
+    // now() is February, so the writer wants to rotate current → 2026-01.
     // The constructor triggers an immediate rotation check, so the throw
     // surfaces there; either way it must refuse and leave the archive intact.
     const february = new Date('2026-02-10T12:00:00Z');
-    expect(() => new AuditWriter(auditDir, null, () => february)).toThrow(/already exists/);
+    expect(() => new AuditWriter(auditDir, state(), secret, () => february)).toThrow(
+      /already exists/,
+    );
     expect(readFileSync(archivePath, 'utf-8')).toBe(archiveContent);
   });
 
   it('A1: rotates normally when the destination is absent', () => {
     const currentPath = path.join(auditDir, 'current.jsonl');
-    writeFileSync(currentPath, '{"v":1,"kind":"x","actor":"a","data":{}}\n', 'utf-8');
+    writeFileSync(currentPath, 'x\n', 'utf-8');
     const january = new Date('2026-01-15T12:00:00Z');
     utimesSync(currentPath, january, january);
 
     const february = new Date('2026-02-10T12:00:00Z');
-    const writer = new AuditWriter(auditDir, null, () => february);
-    writer.checkRotation();
+    new AuditWriter(auditDir, state(), secret, () => february);
 
     const files = readdirSync(auditDir).sort();
     expect(files).toContain('2026-01.jsonl');
@@ -90,7 +100,12 @@ describe('AuditWriter rotation hardening', () => {
     try {
       // First write in January.
       const january = new Date('2026-01-20T12:00:00Z');
-      const janWriter = new AuditWriter(auditDir, state, () => january);
+      const janWriter = new AuditWriter(
+        auditDir,
+        state,
+        () => Buffer.alloc(32, 7),
+        () => january,
+      );
       new AuditService(janWriter).write({ kind: 'task_created', actor: 'a', data: { key: 'T-1' } });
 
       // Age current.jsonl into January, then write in February: the write
@@ -100,7 +115,12 @@ describe('AuditWriter rotation hardening', () => {
       utimesSync(currentPath, january, january);
 
       const february = new Date('2026-02-05T12:00:00Z');
-      const febWriter = new AuditWriter(auditDir, state, () => february);
+      const febWriter = new AuditWriter(
+        auditDir,
+        state,
+        () => Buffer.alloc(32, 7),
+        () => february,
+      );
       new AuditService(febWriter).write({ kind: 'task_created', actor: 'b', data: { key: 'T-2' } });
 
       // January line archived; February line in the fresh current.jsonl.
@@ -112,7 +132,7 @@ describe('AuditWriter rotation hardening', () => {
       expect(JSON.parse(current[0] as string).data.key).toBe('T-2');
 
       // The chain verifies end-to-end across the rotation boundary.
-      const checks = inspectAuditIntegrity(adapter, auditDir);
+      const checks = inspectAuditIntegrity(adapter, auditDir, Buffer.alloc(32, 7));
       expect(checks.find((c) => c.name === 'audit event count')?.ok).toBe(true);
       expect(checks.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
     } finally {

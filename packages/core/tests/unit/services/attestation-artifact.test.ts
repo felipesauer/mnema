@@ -39,7 +39,7 @@ describe('attestation artifact (mnema-attest/v1)', () => {
     let prev: string | null = null;
     for (let i = 0; i < n; i++) {
       const ev: AuditEvent = {
-        v: 3,
+        v: 1,
         at: `2026-07-07T00:00:0${i}.000Z`,
         kind: 'task_created',
         actor: 'felipesauer',
@@ -195,7 +195,7 @@ describe('attestation artifact (mnema-attest/v1)', () => {
     // batches would flip to "content root mismatch". This vector fails loudly
     // instead, before that ships.
     const fixed: AuditEvent = {
-      v: 3,
+      v: 1,
       at: '2026-07-07T00:00:00.000Z',
       kind: 'task_created',
       actor: 'felipesauer',
@@ -204,7 +204,7 @@ describe('attestation artifact (mnema-attest/v1)', () => {
       hash: 'ignored-by-canonicalise',
     };
     expect(computeLeaf(fixed).toString('hex')).toBe(
-      '10195ae1d19dd2bb2d3cd704622254f9ba9065895f281d360d09fe85347c58aa',
+      '0524a923a492065cf9bc495f753d2826ea350a1ddd1f9dc80cecbf57522101ea',
     );
     // The `hash` field must NOT affect the leaf (canonicalise strips it), so a
     // different hash on the same content yields the same leaf.

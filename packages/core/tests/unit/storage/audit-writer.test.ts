@@ -3,8 +3,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { EVENT_FORMAT_VERSION } from '@/storage/audit/audit-hash.js';
 import { type AuditEvent, AuditWriter, LOCK_STALE_MS } from '@/storage/audit/audit-writer.js';
-import { SQLITE_BUSY_TIMEOUT_MS } from '@/storage/sqlite/sqlite-adapter.js';
+import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
+import { AuditStateRepository } from '@/storage/sqlite/repositories/audit-state-repository.js';
+import { SQLITE_BUSY_TIMEOUT_MS, SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+
+const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
 
 function makeEvent(kind: string): AuditEvent {
   return {
@@ -18,26 +24,37 @@ function makeEvent(kind: string): AuditEvent {
 
 describe('AuditWriter', () => {
   let dir: string;
+  let adapter: SqliteAdapter;
+
+  /** A real chained, HMAC-keyed writer — the only kind that exists. */
+  function makeWriter(now: () => Date = () => new Date()): AuditWriter {
+    return new AuditWriter(dir, new AuditStateRepository(adapter), () => FIXTURE_SECRET, now);
+  }
 
   beforeEach(() => {
     dir = mkdtempSync(path.join(tmpdir(), 'mnema-audit-'));
+    adapter = new SqliteAdapter(path.join(dir, 'state.db'));
+    new MigrationRunner().run(adapter, migrationsDir);
   });
 
   afterEach(() => {
+    adapter.close();
     rmSync(dir, { recursive: true, force: true });
   });
 
   it('creates the audit dir if missing', () => {
-    rmSync(dir, { recursive: true, force: true });
-
-    const writer = new AuditWriter(dir);
+    const auditDir = path.join(dir, 'audit');
+    const writer = new AuditWriter(
+      auditDir,
+      new AuditStateRepository(adapter),
+      () => FIXTURE_SECRET,
+    );
     writer.write(makeEvent('test'));
-
-    expect(existsSync(path.join(dir, 'current.jsonl'))).toBe(true);
+    expect(existsSync(path.join(auditDir, 'current.jsonl'))).toBe(true);
   });
 
-  it('appends events as one JSON object per line', () => {
-    const writer = new AuditWriter(dir);
+  it('appends events as one sealed JSON object per line', () => {
+    const writer = makeWriter();
     writer.write(makeEvent('a'));
     writer.write(makeEvent('b'));
 
@@ -48,19 +65,28 @@ describe('AuditWriter', () => {
     const parsed = lines.map((line) => JSON.parse(line) as AuditEvent);
     expect(parsed[0]?.kind).toBe('a');
     expect(parsed[1]?.kind).toBe('b');
+    // Every line is a keyed event with a hash and a prev_hash link.
+    expect(parsed.every((e) => e.v === EVENT_FORMAT_VERSION && typeof e.hash === 'string')).toBe(
+      true,
+    );
+    expect(parsed[0]?.prev_hash).toBeNull();
+    expect(parsed[1]?.prev_hash).toBe(parsed[0]?.hash);
+  });
+
+  it('refuses to seal without a project secret (mandatory-keyed)', () => {
+    const writer = new AuditWriter(dir, new AuditStateRepository(adapter), () => null);
+    expect(() => writer.write(makeEvent('nope'))).toThrow(/project secret is not available/);
   });
 
   it('rotates current.jsonl when its month differs from now', () => {
-    const writer = new AuditWriter(dir);
-    writer.write(makeEvent('first'));
+    makeWriter().write(makeEvent('first'));
 
     const currentPath = path.join(dir, 'current.jsonl');
     const fakeJanuary = new Date('2026-01-15T12:00:00Z');
     utimesSync(currentPath, fakeJanuary, fakeJanuary);
 
     const february = new Date('2026-02-10T12:00:00Z');
-    const rotating = new AuditWriter(dir, null, () => february);
-    rotating.write(makeEvent('second'));
+    makeWriter(() => february).write(makeEvent('second'));
 
     const files = readdirSync(dir).sort();
     expect(files).toContain('2026-01.jsonl');
@@ -76,10 +102,11 @@ describe('AuditWriter', () => {
 
   it('does not rotate when the month matches', () => {
     const today = new Date();
-    const writer = new AuditWriter(dir, null, () => today);
-    writer.write(makeEvent('only'));
+    makeWriter(() => today).write(makeEvent('only'));
 
-    const files = readdirSync(dir).sort();
+    const files = readdirSync(dir)
+      .filter((f) => f.endsWith('.jsonl'))
+      .sort();
     expect(files).toEqual(['current.jsonl']);
   });
 

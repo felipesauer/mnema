@@ -41,7 +41,7 @@ describe('contentAttestationCheck (fail-closed verdict)', () => {
     for (let i = 0; i < n; i++) {
       lines.push(
         JSON.stringify({
-          v: 3,
+          v: 1,
           at: `2026-07-07T00:00:0${i}.000Z`,
           kind: 'k',
           actor: 'felipesauer',
