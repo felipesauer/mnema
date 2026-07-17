@@ -17,8 +17,21 @@
   "bugs": {
     "url": "https://github.com/felipesauer/mnema/issues"
   },
-  "//": "Transitional broad export map so the product package can deep-import while the container is being sliced; the curated subpath map replaces it in the follow-up.",
+  "//": "The named subpaths are the curated public surface; the trailing wildcard is INTERNAL-transitional for the product package's deep imports and narrows as the surfaces are rebuilt in later waves.",
   "exports": {
+    ".": "./dist/index.js",
+    "./backlog": "./dist/exports/backlog.js",
+    "./knowledge": "./dist/exports/knowledge.js",
+    "./audit": "./dist/exports/audit.js",
+    "./sync": "./dist/exports/sync.js",
+    "./git": "./dist/exports/git.js",
+    "./agent": "./dist/exports/agent.js",
+    "./metrics": "./dist/exports/metrics.js",
+    "./domain": "./dist/exports/domain.js",
+    "./config": "./dist/exports/config.js",
+    "./storage": "./dist/exports/storage.js",
+    "./errors": "./dist/exports/errors.js",
+    "./utils": "./dist/exports/utils.js",
     "./*": "./dist/*"
   },
   "scripts": {
