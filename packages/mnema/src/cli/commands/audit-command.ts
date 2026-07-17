@@ -270,11 +270,27 @@ export class AuditCommand {
         await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
-          const walk = walkChainedEvents(auditDir);
+          // A reattest signs with THIS machine's key, so it can only attest THIS
+          // machine's tail — the events another machine wrote are its to attest.
+          // Scope the walk, the existing `.att`, and the writes to the local
+          // tail; its chain is indexed from 0 independently of any sibling tail.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
+          const walk = walkChainedEvents(localTailDir);
 
           // Chain soundness gate — treats truncation-shaped warnings as
           // blocking (chainHealthyForAttest), not just errors.
-          const integrity = inspectAuditIntegrity(container.adapter, auditDir, secret.read());
+          const integrity = inspectAuditIntegrity(
+            container.adapter,
+            auditDir,
+            secret.read(),
+            null,
+            null,
+            null,
+            localTailDir,
+          );
           const headSig = new AuditHeadSignatureRepository(container.adapter).read();
 
           // Resolve the signer; a null OR malformed actor is a clean refusal,
@@ -294,7 +310,7 @@ export class AuditCommand {
 
           const plan = planReattest({
             walk,
-            existing: listArtifacts(auditDir),
+            existing: listArtifacts(localTailDir),
             resolvePublicKeyPem: committedSignerResolver(projectRoot),
             signer,
             projectHmacId: secret.readFingerprint(),
@@ -326,7 +342,7 @@ export class AuditCommand {
             );
           }
           if (options.write === true) {
-            for (const artifact of plan.artifacts) writeArtifact(auditDir, artifact);
+            for (const artifact of plan.artifacts) writeArtifact(localTailDir, artifact);
             process.stdout.write(
               `${pc.green('✔')}  wrote ${plan.artifacts.length} attestation(s) — commit them with the .mnema/ trail\n`,
             );
@@ -345,9 +361,9 @@ export class AuditCommand {
           'missing cross-process write lock could leave behind (two ' +
           'concurrent writers committing the mirror in one order but appending to disk in ' +
           'another). Refuses when the on-disk chain itself shows signs of real tampering ' +
-          '(a broken prev_hash link, a hash mismatch, a version downgrade, or a malformed ' +
-          'line) — those are never fixed by reconciling, only laundered. Does NOT modify ' +
-          'the JSONL files; only the SQLite mirror is corrected.',
+          '(a broken prev_hash link, a hash mismatch, or a malformed line) — those are ' +
+          'never fixed by reconciling, only laundered. Does NOT modify the JSONL files; ' +
+          'only the SQLite mirror is corrected.',
       )
       .option(
         '--force',
@@ -358,6 +374,14 @@ export class AuditCommand {
         let hasError = false;
         await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, LAYOUT.audit);
+          // The mirror tracks THIS machine's tail, so reconcile rebuilds it
+          // from the LOCAL tail's chain — never the project-wide total, which a
+          // git-merged sibling tail would inflate, writing a cross-tail count
+          // and head into the single local mirror row.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const state = new AuditStateRepository(container.adapter);
           const signatures = new AuditHeadSignatureRepository(container.adapter);
@@ -371,7 +395,7 @@ export class AuditCommand {
           const reSign = buildHeadReSigner(projectRoot, actor, signatures);
 
           const result = reconcileAuditState(
-            auditDir,
+            localTailDir,
             state,
             secret.read(),
             signature !== null
@@ -443,6 +467,15 @@ export class AuditCommand {
           let hasError = false;
           await withCliContext(async ({ config, projectRoot, container }) => {
             const auditDir = path.join(projectRoot, LAYOUT.audit);
+            // A truncation is accepted against THIS machine's tail: it
+            // re-baselines the local mirror and re-signs the local head, so the
+            // walk, the git-anchor diagnosis, the `.att` overreach check, and
+            // the waiver are all scoped to the local tail — never the
+            // project-wide chain, which a git-merged sibling tail would inflate.
+            const localTailDir = path.join(
+              auditDir,
+              tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+            );
             const secret = new ProjectSecretService(projectRoot, config.project.key);
             const state = new AuditStateRepository(container.adapter);
             const signatures = new AuditHeadSignatureRepository(container.adapter);
@@ -456,7 +489,7 @@ export class AuditCommand {
 
             // Gate 1 — same tamper refusals as reconcile, from the SHARED walk:
             // never launder a malformed line or a content-invalid/broken chain.
-            const chain = assessAuditChain(auditDir, secret.read());
+            const chain = assessAuditChain(localTailDir, secret.read());
             if (chain.malformedLines > 0) {
               return refuse(
                 `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
@@ -468,7 +501,7 @@ export class AuditCommand {
               );
             }
             if (!chain.chainEverStarted || chain.lastHash === null) {
-              return refuse('no chained (v>=2) events on disk yet — nothing to baseline to');
+              return refuse('no chained events on disk yet — nothing to baseline to');
             }
 
             // Gate 2 — this command is ONLY for a genuine truncation: a signed
@@ -495,7 +528,7 @@ export class AuditCommand {
             // git HEAD, or a human could be staring at exactly the tampered
             // state this whole gate exists to catch. Fail-closed.
             if (options.requireCommitted === true) {
-              const diag = diagnoseAuditChain(auditDir, secret.read(), projectRoot);
+              const diag = diagnoseAuditChain(localTailDir, secret.read(), projectRoot);
               if (diag.matchesCommittedHead !== true) {
                 return refuse(
                   diag.matchesCommittedHead === null
@@ -509,7 +542,7 @@ export class AuditCommand {
             // proves the chain reached PAST the count we are about to accept.
             // Baselining below it would orphan proven coverage — refuse and name
             // the offending artifact (`to` is one-past-the-last-covered index).
-            const overreaching = listArtifacts(auditDir).find((a) => a.to > chain.chainedLines);
+            const overreaching = listArtifacts(localTailDir).find((a) => a.to > chain.chainedLines);
             if (overreaching !== undefined) {
               return refuse(
                 `committed attestation attest/${overreaching.to}.att covers events up to index ${overreaching.to} (> the new tail count ${chain.chainedLines}) — accepting truncation below it would orphan proven coverage. Remove or reconcile that .att first.`,
@@ -538,7 +571,7 @@ export class AuditCommand {
             // on the re-sign above, not on reading this file in the verify hot
             // path (simpler, and a stale waiver can never suppress a fresh
             // retreat). Written last, after audit_state and the re-sign.
-            writeTruncationWaiver(auditDir, chain.lastHash, chain.chainedLines);
+            writeTruncationWaiver(localTailDir, chain.lastHash, chain.chainedLines);
             process.stdout.write(
               `${pc.green('✔')}  accepted truncation: re-baselined audit_state to event ${chain.chainedLines} and recorded a waiver\n`,
             );
@@ -642,13 +675,21 @@ export class AuditCommand {
       .action(async () => {
         await withCliContext(({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, LAYOUT.audit);
+          // The repair plan compares the on-disk chain against the LOCAL mirror
+          // and recommends the local-tail recovery commands, so it must assess
+          // THIS machine's tail — never the project-wide chain, which a merged
+          // sibling tail would inflate into a phantom mirror-vs-disk delta.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const plan = planAuditRepair({
-            auditDir,
+            auditDir: localTailDir,
             secret: secret.read(),
             mirrorCount: new AuditStateRepository(container.adapter).read().eventCount,
             signature: new AuditHeadSignatureRepository(container.adapter).read(),
-            attestationArtifacts: listArtifacts(auditDir),
+            attestationArtifacts: listArtifacts(localTailDir),
           });
 
           process.stdout.write(
@@ -687,6 +728,14 @@ export class AuditCommand {
         let hasError = false;
         await withCliContext(({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, LAYOUT.audit);
+          // A prune re-baselines a chain and re-signs its head with THIS
+          // machine's key, so it operates on THIS machine's tail — its own
+          // chain, its own `.att`, its own waiver. Pruning a sibling machine's
+          // tail would need that machine's signer key, which is not here.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
           const secretService = new ProjectSecretService(projectRoot, config.project.key);
           const secret = secretService.read();
           const apply = options.force === true;
@@ -706,7 +755,7 @@ export class AuditCommand {
 
           // Gate 1 — same tamper refusals as accept-truncation, from the SHARED
           // walk: never prune a malformed line or a content-invalid/broken chain.
-          const chain = assessAuditChain(auditDir, secret);
+          const chain = assessAuditChain(localTailDir, secret);
           if (chain.malformedLines > 0) {
             return refuse(
               `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
@@ -720,7 +769,7 @@ export class AuditCommand {
 
           // Gate 2 — compute the cut point from strategy + retention months.
           const cut = computeCutPoint(
-            auditDir,
+            localTailDir,
             config.audit.retention.strategy,
             config.audit.retention.months,
             new Date(),
@@ -733,7 +782,7 @@ export class AuditCommand {
           }
 
           // Gate 3 — .att lockstep: never prune across or above a committed .att.
-          const attDecision = decideAttLockstep(auditDir, cut.keepFromIndex);
+          const attDecision = decideAttLockstep(localTailDir, cut.keepFromIndex);
           if (attDecision.blocked) {
             return refuse(attDecision.blockReason ?? 'a committed attestation blocks the prune');
           }
@@ -741,7 +790,7 @@ export class AuditCommand {
           // Build the plan (fail-closed on a boundary that disagrees with disk).
           let plan: PrunePlan;
           try {
-            plan = buildPrunePlan(auditDir, cut);
+            plan = buildPrunePlan(localTailDir, cut);
           } catch (error) {
             return refuse((error as Error).message);
           }
@@ -790,7 +839,7 @@ export class AuditCommand {
           const signatures = new AuditHeadSignatureRepository(container.adapter);
 
           const { reSigned, anchorsRemoved } = applyPrune({
-            auditDir,
+            auditDir: localTailDir,
             plan,
             droppedFiles: cut.dropped.map((d) => d.file),
             attToRemove: attDecision.toRemove,
@@ -893,7 +942,7 @@ export function planAuditRepair(input: {
   // Nothing chained yet — nothing to recover.
   if (!chain.chainEverStarted) {
     return {
-      findings: [...findings, { severity: 'ok', text: 'no chained (v>=2) events on disk yet' }],
+      findings: [...findings, { severity: 'ok', text: 'no chained events on disk yet' }],
       recommendation: 'Nothing to repair — the chain has not started.',
       commands: [],
     };

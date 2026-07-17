@@ -429,12 +429,12 @@ export class UpgradeCommand {
       });
     }
 
-    // Unattested audit tail (ADR-41): a project that predates content
-    // attestation — or that just adopted this version — has chained events
-    // with no committed `.att`, so an anonymous clone cannot verify their
-    // authenticity. `upgrade` offers to emit the attestations once, so the
-    // feature reaches an EXISTING project without the user hunting for the
-    // command. Only surfaced when there is actually an unattested tail AND an
+    // Unattested audit tail: a project that just adopted this version has
+    // chained events with no committed `.att`, so an anonymous clone cannot
+    // verify their authenticity. `upgrade` offers to emit the attestations
+    // once, so the feature reaches an EXISTING project without the user
+    // hunting for the command. Only surfaced when there is actually an
+    // unattested tail AND an
     // identity to sign with; the emit itself reuses the same fail-closed
     // policy as `mnema audit reattest`, so a tampered chain is refused, not
     // papered over.
@@ -456,10 +456,14 @@ export class UpgradeCommand {
   private attestationStep(ctx: CliContext): UpgradeStep | null {
     const { config, projectRoot, container } = ctx;
     const auditDir = path.join(projectRoot, LAYOUT.audit);
+    // A reattest signs with THIS machine's key, so it attests only THIS
+    // machine's tail; scope every read/write to the local tail, whose chain is
+    // indexed from 0 independently of any sibling tail.
+    const localTailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
 
     // Count events past the last committed `.att` — the unattested tail.
-    const total = walkChainedEvents(auditDir).chained.length;
-    const artifacts = listArtifacts(auditDir);
+    const total = walkChainedEvents(localTailDir).chained.length;
+    const artifacts = listArtifacts(localTailDir);
     const attestedTo = artifacts.reduce((max, a) => Math.max(max, a.to), 0);
     const tail = total - attestedTo;
     if (tail <= 0) return null;
@@ -481,18 +485,27 @@ export class UpgradeCommand {
         }
         autoAttest({
           projectRoot,
-          auditDir,
+          auditDir: localTailDir,
           signer,
           projectHmacId: secret.readFingerprint(),
           chainHealthy: chainHealthyForAttest(
-            inspectAuditIntegrity(container.adapter, auditDir, secret.read()),
+            inspectAuditIntegrity(
+              container.adapter,
+              auditDir,
+              secret.read(),
+              null,
+              null,
+              null,
+              localTailDir,
+            ),
           ),
           signedEventCountAt:
             new AuditHeadSignatureRepository(container.adapter).read()?.eventCountAt ?? null,
           headCount: total,
           batchSize: config.audit.checkpoint.events,
         });
-        const remaining = walkChainedEvents(auditDir).chained.length - attestedToAfter(auditDir);
+        const remaining =
+          walkChainedEvents(localTailDir).chained.length - attestedToAfter(localTailDir);
         return remaining > 0
           ? `attested up to the last checkpoint; ${remaining} tail event(s) remain (refused or below the interval)`
           : 'all audit events attested — commit the new .att files with the .mnema/ trail';
@@ -501,9 +514,9 @@ export class UpgradeCommand {
   }
 }
 
-/** Highest `to` across committed attestations (0 when none). */
-function attestedToAfter(auditDir: string): number {
-  return listArtifacts(auditDir).reduce((max, a) => Math.max(max, a.to), 0);
+/** Highest `to` across committed attestations in a tail (0 when none). */
+function attestedToAfter(tailDir: string): number {
+  return listArtifacts(tailDir).reduce((max, a) => Math.max(max, a.to), 0);
 }
 
 /**

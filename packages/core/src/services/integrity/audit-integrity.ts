@@ -623,15 +623,18 @@ export function inspectAuditIntegrity(
   // Machine attestation: the latest recorded head signature, verified
   // against the committed public key of its signer. This is SEPARATE from
   // chain consistency and HMAC authenticity — it attests WHICH machine
-  // advanced the head. Only meaningful once the chain has started, so it
-  // is skipped for an empty log above.
+  // advanced the head. The head signature and the mirror head/count are BOTH
+  // the local tail's, so the ancestry oracle must be the local tail's hashes
+  // (`localWalk`), never the project-wide concatenation — a sibling tail's
+  // hash must not be able to vouch for THIS tail's signed head. Only
+  // meaningful once the chain has started, so it is skipped for an empty log.
   if (attestation !== null) {
     checks.push(
       attestationCheck(
         attestation,
         stateRow.chain_head_hash,
         stateRow.event_count,
-        walk.chainedHashes,
+        localWalk.chainedHashes,
       ),
     );
   }

@@ -1,9 +1,11 @@
+import path from 'node:path';
+import { auditTailDirs } from '../../storage/audit/audit-files.js';
 import type { IntegrityCheck } from '../integrity/audit-integrity.js';
 import { readCommittedProjectHmacId } from '../integrity/project-secret.js';
 import type { AttestationSigner } from './attestation-emitter.js';
 import { planReattestIncremental } from './attestation-reattest.js';
 import { committedSignerResolver, listArtifacts, writeArtifact } from './attestation-store.js';
-import { contentAttestationCheck } from './attestation-verify.js';
+import { CONTENT_ATTESTATION_CHECK, contentAttestationCheck } from './attestation-verify.js';
 import { walkChainedEvents, walkChainedTail } from './audit-chain-walk.js';
 
 /**
@@ -24,7 +26,7 @@ const CHAIN_SOUNDNESS_WARNINGS = new Set(['audit event count', 'audit hash chain
  * - blocks on ANY `error`-severity failure — including the early-return hard
  *   errors that carry a name outside the soundness set (e.g. the
  *   `audit_state`-row-missing "audit integrity" error), which a name-only
- *   allowlist would have let through (ADR-41 review, finding 1);
+ *   allowlist would have let through;
  * - ALSO blocks on the warning-severity truncation shapes (count / hash chain
  *   not ok), which a naive `every(severity !== 'error')` would have blessed.
  *
@@ -41,19 +43,81 @@ const CHAIN_SOUNDNESS_WARNINGS = new Set(['audit event count', 'audit hash chain
  * The single place that assembles walk + committed `.att` + signer resolver,
  * so every integrity surface (`audit verify`, `doctor`, the `audit_verify` MCP
  * tool) shows the SAME verdict rather than only the one that happened to wire
- * it (ADR-41 review, finding 2).
+ * it.
  *
  * @param projectRoot - Absolute project root (holds `.mnema/keys/`)
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @returns The content-attestation integrity check
  */
 export function buildContentAttestation(projectRoot: string, auditDir: string): IntegrityCheck {
-  return contentAttestationCheck(
-    walkChainedEvents(auditDir),
-    listArtifacts(auditDir),
-    committedSignerResolver(projectRoot),
-    readCommittedProjectHmacId(projectRoot),
-  );
+  const resolver = committedSignerResolver(projectRoot);
+  const projectHmacId = readCommittedProjectHmacId(projectRoot);
+  const tails = auditTailDirs(auditDir);
+
+  // Each machine tail is its own chain with its own `.att` set — verify each
+  // independently (the range indices are per-tail, so a merged global check
+  // would see false overlaps/gaps at index 0). A degenerate single-tail
+  // project folds to exactly one check, identical to the old flat behaviour.
+  if (tails.length === 0) {
+    // No tail on disk yet — an empty walk yields the dormant "no chained
+    // events yet" verdict, identical to a fresh project.
+    return contentAttestationCheck(walkChainedEvents(auditDir), [], resolver, projectHmacId);
+  }
+  const perTail = tails.map((tail) => {
+    const walk = walkChainedEvents(tail);
+    return {
+      tail,
+      isEmpty: walk.chained.length === 0,
+      check: contentAttestationCheck(walk, listArtifacts(tail), resolver, projectHmacId),
+    };
+  });
+
+  // The project verdict is the WORST tail verdict, so a single tail can never
+  // hide behind a greener sibling. The ranking is fail-closed and finer than a
+  // severity sort, because two very different states BOTH surface as a
+  // `warning`:
+  //   3 error            — a tamper or a wrong-project `.att`; blocks.
+  //   2 partial (!ok)    — a tail with SOME events unattested (`ok:false`,
+  //                        warning): the anonymous promise does not hold for
+  //                        the tail, so it must outrank a merely-dormant one —
+  //                        a plain severity sort would let a dormant sibling
+  //                        that sorts first mask this via the tie-break.
+  //   1 dormant (ok)     — a NON-EMPTY tail with no `.att` yet (`ok:true`,
+  //                        warning): opt-in, but it keeps the project short of
+  //                        a clean green.
+  //   0 green / EMPTY    — fully attested, OR a tail with zero events (its
+  //                        "no events yet" warning is about a fresh chain, not
+  //                        unattested content — it must NOT drag a clean-green
+  //                        sibling down to a warning).
+  const rank = (t: (typeof perTail)[number]): number => {
+    const c = t.check;
+    if (!c.ok && (c.severity ?? 'error') === 'error') return 3;
+    if (t.isEmpty) return 0;
+    if (!c.ok) return 2; // partial coverage (warning + not ok)
+    if ((c.severity ?? 'error') === 'warning') return 1; // dormant, has events
+    return 0; // clean green
+  };
+  const worst = perTail.reduce((acc, cur) => (rank(cur) > rank(acc) ? cur : acc));
+  if (rank(worst) > 0) {
+    // Qualify by which tail (the degenerate root tail IS `auditDir`, no prefix).
+    const qualified =
+      worst.tail === auditDir
+        ? worst.check.detail
+        : `${path.basename(worst.tail)}: ${worst.check.detail}`;
+    return { ...worst.check, detail: qualified };
+  }
+  // Every non-empty tail is fully attested (clean green). A single tail keeps
+  // its own detail verbatim (unchanged for the common single-machine project);
+  // multiple tails get a rolled-up line.
+  const attestedTails = perTail.filter((t) => !t.isEmpty).length;
+  return {
+    name: CONTENT_ATTESTATION_CHECK,
+    ok: true,
+    detail:
+      perTail.length === 1
+        ? (perTail[0] as (typeof perTail)[number]).check.detail
+        : `all chained events attested across ${attestedTails} machine tail(s)`,
+  };
 }
 
 export function chainHealthyForAttest(checks: readonly IntegrityCheck[]): boolean {

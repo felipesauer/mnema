@@ -91,12 +91,17 @@ export function auditFilesSignature(auditDir: string): string {
 }
 
 /**
- * A `stat`-based change signature for the committed attestations under
- * `<auditDir>/attest/*.att`. The counterpart to {@link auditFilesSignature},
+ * A `stat`-based change signature for the committed attestations under each
+ * machine tail's `attest/*.att`. The counterpart to {@link auditFilesSignature},
  * which covers only `*.jsonl` and so never flips when an `.att` is
  * added/edited/removed. A cache keyed on the integrity verdict must fold this
  * in, or it would serve a stale content-attestation verdict after a `reattest`
  * (or a tamper of an `.att`) that left the JSONL untouched.
+ *
+ * Covers EVERY tail (`m-<id>/attest/`): the `.att` live per tail, so a
+ * signature that only listed a single flat `attest/` would never flip on a
+ * per-tail reattest. Each entry is qualified by its tail so two tails cannot
+ * alias to the same key.
  *
  * Same residual as {@link auditFilesSignature}: an in-place edit that keeps
  * the size AND resets the mtime (`touch -m`) would not flip the key, so a
@@ -104,22 +109,27 @@ export function auditFilesSignature(auditDir: string): string {
  * stat-based signature (a content hash would close it); the authoritative,
  * non-cached path (`audit verify`, `doctor`) always recomputes and catches it.
  *
- * @param auditDir - Directory holding the audit log files
- * @returns A signature string (`""` when the attest dir is absent/empty)
+ * @param auditDir - Directory holding the audit tails
+ * @returns A signature string (`""` when no attest dir is present)
  */
 export function attestFilesSignature(auditDir: string): string {
-  const dir = path.join(auditDir, 'attest');
-  if (!existsSync(dir)) return '';
-  return readdirSync(dir)
-    .filter((name) => name.endsWith('.att'))
-    .sort()
-    .map((name) => {
-      try {
-        const s = statSync(path.join(dir, name));
-        return `${name}:${s.mtimeMs}:${s.size}`;
-      } catch {
-        return `${name}:gone`;
-      }
+  if (!existsSync(auditDir)) return '';
+  return auditTailDirs(auditDir)
+    .flatMap((tail) => {
+      const dir = path.join(tail, 'attest');
+      if (!existsSync(dir)) return [];
+      const label = path.basename(tail);
+      return readdirSync(dir)
+        .filter((name) => name.endsWith('.att'))
+        .sort()
+        .map((name) => {
+          try {
+            const s = statSync(path.join(dir, name));
+            return `${label}/${name}:${s.mtimeMs}:${s.size}`;
+          } catch {
+            return `${label}/${name}:gone`;
+          }
+        });
     })
     .join('|');
 }
