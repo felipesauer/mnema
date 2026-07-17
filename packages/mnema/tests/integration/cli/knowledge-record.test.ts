@@ -1,10 +1,25 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const DIST_ENTRY = path.resolve('packages/mnema/dist/index.js');
+
+/**
+ * Concatenates every machine tail's `current.jsonl` under a project audit dir.
+ * Writes land in `audit/m-<id>/`, so a test reading the on-disk trail must go
+ * through the tail(s), not the flat `audit/current.jsonl`.
+ */
+function readTailLogs(auditDir: string): string {
+  return readdirSync(auditDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name))
+    .map((d) => {
+      const file = path.join(auditDir, d.name, 'current.jsonl');
+      return existsSync(file) ? readFileSync(file, 'utf-8') : '';
+    })
+    .join('');
+}
 
 /**
  * The knowledge CLI was read/curation-only; recording lived only on the
@@ -37,8 +52,7 @@ describe.skipIf(!existsSync(DIST_ENTRY))(
       });
     }
 
-    const auditLog = (): string =>
-      readFileSync(path.join(projectRoot, '.mnema', 'audit', 'current.jsonl'), 'utf-8');
+    const auditLog = (): string => readTailLogs(path.join(projectRoot, '.mnema', 'audit'));
 
     beforeEach(() => {
       projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-krec-'));

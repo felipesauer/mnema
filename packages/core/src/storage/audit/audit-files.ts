@@ -70,16 +70,23 @@ export function auditTailDirs(auditDir: string): string[] {
  */
 export function auditFilesSignature(auditDir: string): string {
   if (!existsSync(auditDir)) return '';
-  return orderedAuditFiles(auditDir)
-    .map((file) => {
-      try {
-        const s = statSync(file);
-        return `${path.basename(file)}:${s.mtimeMs}:${s.size}`;
-      } catch {
-        // Raced away between listing and stat — treat as a change.
-        return `${path.basename(file)}:gone`;
-      }
-    })
+  // Cover EVERY machine tail: the JSONL lives under `m-<id>/`, so a signature
+  // that only listed the root dir would never flip when an event is appended
+  // to a tail — a cache keyed on it would serve a stale verdict. Qualify each
+  // entry with its tail so two tails cannot alias to the same key.
+  return auditTailDirs(auditDir)
+    .flatMap((tail) =>
+      orderedAuditFiles(tail).map((file) => {
+        const label = `${path.basename(tail)}/${path.basename(file)}`;
+        try {
+          const s = statSync(file);
+          return `${label}:${s.mtimeMs}:${s.size}`;
+        } catch {
+          // Raced away between listing and stat — treat as a change.
+          return `${label}:gone`;
+        }
+      }),
+    )
     .join('|');
 }
 

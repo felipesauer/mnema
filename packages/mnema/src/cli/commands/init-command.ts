@@ -16,9 +16,11 @@ import { printError } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
 import { AuditService } from '@mnema/core/services/integrity/audit-service.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
+import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { AdoptionService } from '@mnema/core/services/knowledge/adoption-service.js';
 import { SkillService } from '@mnema/core/services/knowledge/skill-service.js';
+import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { AuditWriter } from '@mnema/core/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@mnema/core/storage/sqlite/repositories/actor-repository.js';
@@ -89,9 +91,9 @@ export interface InitOutcome {
  *   plus `sprints/`, `roadmap/`, `memory/`, `skills/`. Workflow-specific
  *   state directories are derived from the workflow JSON, not hardcoded.
  * - `init --minimal` creates only the essentials: `mnema.config.json`,
- *   `AGENTS.md`, `.app/state.db`, `workflows/<workflow>.json`,
- *   `.audit/current.jsonl` and `.gitignore`. Adoption commands fill the
- *   rest in later.
+ *   `AGENTS.md`, `.app/state.db`, `workflows/<workflow>.json`, this machine's
+ *   audit tail (`audit/m-<id>/current.jsonl`) and `.gitignore`. Adoption
+ *   commands fill the rest in later.
  *
  * `init` is non-destructive by default: when conflicting paths exist it
  * lists them and aborts with `INIT_CONFLICT`. Pass `--force` to ignore.
@@ -188,6 +190,7 @@ export class InitCommand {
 
     const stateDir = path.join(cwd, LAYOUT.state);
     const auditDir = path.join(cwd, LAYOUT.audit);
+    const tailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
     const workflowsDest = path.join(cwd, LAYOUT.workflows);
 
     mkdirSync(stateDir, { recursive: true });
@@ -283,10 +286,11 @@ export class InitCommand {
       // the trail should say so (and init must not create a user actor row
       // as a side effect).
       if (!minimal) {
-        // Seed events enter the REAL chain (v3, HMAC-keyed): mint the
-        // project secret and write through the chained+mirrored writer, so
-        // a fresh `init` produces a keyed chain from its very first line —
-        // no unchained standalone path exists anymore.
+        // Seed events enter the REAL chain, HMAC-keyed: mint the project
+        // secret and write through the chained+mirrored writer, so a fresh
+        // `init` produces a keyed chain from its very first line. Writes land
+        // in this machine's tail (`audit/m-<id>/`), the same directory every
+        // later write and the aggregating readers use.
         const secret = new ProjectSecretService(cwd, options.key);
         new SkillService(
           path.join(cwd, LAYOUT.skills),
@@ -294,9 +298,7 @@ export class InitCommand {
           new SkillRepository(adapter),
           identity,
           new AuditService(
-            new AuditWriter(auditDir, new AuditStateRepository(adapter), () =>
-              secret.getOrCreate(),
-            ),
+            new AuditWriter(tailDir, new AuditStateRepository(adapter), () => secret.getOrCreate()),
           ),
         ).importSeeds('system');
       }
@@ -304,8 +306,9 @@ export class InitCommand {
       adapter.close();
     }
 
-    const auditFile = path.join(auditDir, 'current.jsonl');
+    const auditFile = path.join(tailDir, 'current.jsonl');
     if (!existsSync(auditFile)) {
+      mkdirSync(tailDir, { recursive: true });
       writeFileSync(auditFile, '', 'utf-8');
     }
 

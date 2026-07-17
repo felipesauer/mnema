@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
+import { auditTailDirs, orderedAuditFiles } from '../../storage/audit/audit-files.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 
 /**
@@ -83,45 +83,49 @@ export class AuditQuery {
 
     const sinceMs = parseTimeBound(filter.since);
     const untilMs = parseTimeBound(filter.until);
-    const files = orderedAuditFiles(this.auditDir);
     const matches: AuditEvent[] = [];
     const malformedByFile = new Map<string, number>();
     let malformedLines = 0;
 
-    for (const file of files) {
-      // Skip an archived monthly segment whose entire month falls outside
-      // the [since, until] window — a `since=30d` query on a project with
-      // years of archives should not read every segment. Only files named
-      // `YYYY-MM.jsonl` are candidates; `current.jsonl` (and any other
-      // name) is always read. A month that straddles a bound is kept.
-      if (monthlyFileOutOfWindow(path.basename(file), sinceMs, untilMs)) continue;
+    // Read every machine tail and merge by `at` — each tail is an independent
+    // chain, but for QUERY (display) the events are one chronological stream.
+    // The cryptographic per-tail truth lives in the integrity walk, not here.
+    for (const tail of auditTailDirs(this.auditDir)) {
+      for (const file of orderedAuditFiles(tail)) {
+        // Skip an archived monthly segment whose entire month falls outside
+        // the [since, until] window — a `since=30d` query on a project with
+        // years of archives should not read every segment. Only files named
+        // `YYYY-MM.jsonl` are candidates; `current.jsonl` (and any other
+        // name) is always read. A month that straddles a bound is kept.
+        if (monthlyFileOutOfWindow(path.basename(file), sinceMs, untilMs)) continue;
 
-      const lines = readFileSync(file, 'utf-8').split('\n');
-      for (const line of lines) {
-        if (line.length === 0) continue;
-        let event: AuditEvent;
-        try {
-          event = JSON.parse(line) as AuditEvent;
-        } catch {
-          malformedLines += 1;
-          malformedByFile.set(file, (malformedByFile.get(file) ?? 0) + 1);
-          continue;
+        const lines = readFileSync(file, 'utf-8').split('\n');
+        for (const line of lines) {
+          if (line.length === 0) continue;
+          let event: AuditEvent;
+          try {
+            event = JSON.parse(line) as AuditEvent;
+          } catch {
+            malformedLines += 1;
+            malformedByFile.set(file, (malformedByFile.get(file) ?? 0) + 1);
+            continue;
+          }
+
+          if (filter.kind !== undefined && event.kind !== filter.kind) continue;
+          if (filter.actor !== undefined && event.actor !== filter.actor) continue;
+          if (filter.via !== undefined && event.via !== filter.via) continue;
+          if (filter.run !== undefined && event.run !== filter.run) continue;
+          if (filter.taskKey !== undefined && !matchesTaskKey(event, filter.taskKey)) continue;
+
+          if (sinceMs !== null || untilMs !== null) {
+            const eventMs = Date.parse(event.at);
+            if (Number.isNaN(eventMs)) continue;
+            if (sinceMs !== null && eventMs < sinceMs) continue;
+            if (untilMs !== null && eventMs > untilMs) continue;
+          }
+
+          matches.push(event);
         }
-
-        if (filter.kind !== undefined && event.kind !== filter.kind) continue;
-        if (filter.actor !== undefined && event.actor !== filter.actor) continue;
-        if (filter.via !== undefined && event.via !== filter.via) continue;
-        if (filter.run !== undefined && event.run !== filter.run) continue;
-        if (filter.taskKey !== undefined && !matchesTaskKey(event, filter.taskKey)) continue;
-
-        if (sinceMs !== null || untilMs !== null) {
-          const eventMs = Date.parse(event.at);
-          if (Number.isNaN(eventMs)) continue;
-          if (sinceMs !== null && eventMs < sinceMs) continue;
-          if (untilMs !== null && eventMs > untilMs) continue;
-        }
-
-        matches.push(event);
       }
     }
 

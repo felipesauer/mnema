@@ -8,7 +8,9 @@ import { buildContentAttestation } from '@mnema/core/services/audit/attestation-
 import { CachedAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
 import { AuditTail } from '@mnema/core/services/integrity/audit-tail.js';
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
+import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
+import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import type { ServiceContainer } from '@mnema/core/services/service-container.js';
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { LAYOUT } from '@mnema/core/utils/layout.js';
@@ -116,6 +118,10 @@ export async function createDashboardServer(
   const limit = options.limit ?? DEFAULT_RECENT_LIMIT;
   const window = options.window ?? DEFAULT_METRICS_WINDOW;
   const auditDir = path.join(projectRoot, LAYOUT.audit);
+  // Live-follow this machine's own tail: events from other machines arrive by
+  // git pull (a file appearing, not an in-process append), so the local tail
+  // is the one `fs.watch` can stream in real time.
+  const localTailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
   const display = container.identity.getDisplayFor.bind(container.identity);
 
   // Verify the hash chain at most once per audit-file change, not once per
@@ -136,6 +142,9 @@ export async function createDashboardServer(
     // audit-integrity does not import the attestation layer (cycle); the cache
     // key folds the attest-dir signature so a new/edited .att invalidates it.
     () => buildContentAttestation(projectRoot, auditDir),
+    // The mirror tracks this machine's tail, so the count check compares
+    // against the local tail, not the project-wide total.
+    localTailDir,
   );
 
   // The read-model seam the snapshot builds against — the SPA and any future
@@ -484,7 +493,7 @@ export async function createDashboardServer(
   // on any tick (it does not consume rendered HTML). Only the event `kind` is
   // sent — a stable enum token, so no recorded free-text reaches the wire and
   // CR/LF cannot break the SSE framing.
-  const tail = new AuditTail(auditDir, (event) => {
+  const tail = new AuditTail(localTailDir, (event) => {
     if (clients.size === 0) return;
     const frame = `data: ${JSON.stringify({ kind: event.kind })}\n\n`;
     for (const res of clients) writeToClient(res, frame);

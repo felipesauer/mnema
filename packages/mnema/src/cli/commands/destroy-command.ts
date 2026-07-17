@@ -18,6 +18,7 @@ import { CONFIG_FILE_RELATIVE, ConfigLoader } from '@mnema/core/config/config-lo
 import { ErrorCode, ExitCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import { workflowsDir } from '@mnema/core/utils/asset-paths.js';
+import { gitattributesLines } from '@mnema/core/utils/gitattributes.js';
 import { LAYOUT } from '@mnema/core/utils/layout.js';
 import { resolveProjectRoot } from '../project-root.js';
 import { isPromptAbort } from '../prompt-helpers.js';
@@ -384,19 +385,6 @@ function gitignoreBlocks(statePath: string, auditPath: string): string[] {
 }
 
 /**
- * The exact `.gitattributes` block `init` writes today (see init-command's
- * `gitattributesLines`) — the audit-log `merge=union` line and its comment.
- */
-function gitattributesBlock(auditPath: string): string {
-  const dir = auditPath.replace(/\/$/, '');
-  return [
-    '# mnema: the audit log is append-only; merge with union so parallel',
-    '# branches keep both sides instead of conflicting on the tail.',
-    `${dir}/*.jsonl merge=union`,
-  ].join('\n');
-}
-
-/**
  * Removes a Mnema-managed block from a git dotfile. Conservative: it removes
  * only a block byte-for-byte identical to one `init` writes (with an optional
  * leading blank-line separator, which init prepends when extending an existing
@@ -452,5 +440,5 @@ function stripGitignoreEntry(
  * wrote.
  */
 function stripGitattributesEntry(projectRoot: string, auditPath: string): string | null {
-  return stripManagedGitFileBlock(projectRoot, '.gitattributes', [gitattributesBlock(auditPath)]);
+  return stripManagedGitFileBlock(projectRoot, '.gitattributes', [gitattributesLines(auditPath)]);
 }

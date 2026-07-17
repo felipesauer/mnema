@@ -25,7 +25,9 @@ import { inspectAuditIntegrity } from '@mnema/core/services/integrity/audit-inte
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
 import { HookTrustService } from '@mnema/core/services/integrity/hook-trust.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
+import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
+import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { recordCounter } from '@mnema/core/services/metrics/metrics-counter.js';
 import { findOrphanRuns } from '@mnema/core/services/metrics/orphan-run-service.js';
 import { orderedAuditFiles } from '@mnema/core/storage/audit/audit-files.js';
@@ -601,30 +603,38 @@ export class DoctorCommand {
             }),
           );
           // read() not getOrCreate(): doctor verifies, it never mints a
-          // secret. A clone without it → v3 lines report 'unverifiable';
-          // the committed fingerprint still forces v3 (downgrade detection).
+          // secret. A clone without it → lines report 'unverifiable'; the
+          // committed fingerprint still forces keyed verification.
           const doctorSecret = new ProjectSecretService(projectRoot, config.project.key);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
+          // The SQLite mirror tracks only THIS machine's tail, so the count
+          // and delta checks compare against the local tail's on-disk count —
+          // never the project-wide total across every machine's tail.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
           checks.push(
             ...inspectAuditIntegrity(
               adapter,
-              path.join(projectRoot, LAYOUT.audit),
+              auditDir,
               doctorSecret.read(),
               // Machine attestation: verify the recorded head signature
               // against the committed public key. Offline (no network) — it
               // reads .mnema/keys and the local SQLite only.
               createAttestationSource(projectRoot, new AuditHeadSignatureRepository(adapter)),
-              // Content attestation (ADR-41): committed .att coverage, so
-              // doctor surfaces the same anonymous-verifiability verdict as
+              // Content attestation: committed .att coverage, so doctor
+              // surfaces the same anonymous-verifiability verdict as
               // `audit verify` rather than a false all-clear.
-              buildContentAttestation(projectRoot, path.join(projectRoot, LAYOUT.audit)),
+              buildContentAttestation(projectRoot, auditDir),
+              null,
+              localTailDir,
             ),
           );
           // Explicit DB-vs-disk delta with the culprit commit — the signal
           // that a git rewind of the tracked audit log left the mirror
           // counting events no longer on disk (read-only; git archaeology).
-          checks.push(
-            ...inspectAuditDiskDelta(adapter, path.join(projectRoot, LAYOUT.audit), projectRoot),
-          );
+          checks.push(...inspectAuditDiskDelta(adapter, localTailDir, projectRoot));
           // Temporal anchoring (layer 3): offline status only — how many
           // heads are anchored vs pending. Verifying receipts against a
           // provider is the online `audit verify --verify-anchors` path, so

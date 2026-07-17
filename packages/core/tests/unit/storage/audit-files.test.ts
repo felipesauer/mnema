@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { orderedAuditFiles } from '@/storage/audit/audit-files.js';
+import {
+  auditFilesSignature,
+  auditTailDirs,
+  orderedAuditFiles,
+} from '@/storage/audit/audit-files.js';
 
 /**
  * Pins the single source of truth for audit-file ordering that both the
@@ -83,5 +87,59 @@ describe('orderedAuditFiles', () => {
     rmSync(dir, { recursive: true, force: true });
     expect(orderedAuditFiles(dir)).toEqual([]);
     mkdirSync(dir, { recursive: true }); // so afterEach cleanup is a no-op-safe
+  });
+});
+
+describe('auditTailDirs', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'mnema-tails-'));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('treats a root dir holding .jsonl directly as one degenerate tail', () => {
+    writeFileSync(path.join(dir, 'current.jsonl'), '', 'utf-8');
+    expect(auditTailDirs(dir)).toEqual([dir]);
+  });
+
+  it('lists each machine tail, sorted by name', () => {
+    mkdirSync(path.join(dir, 'm-000000000002'));
+    mkdirSync(path.join(dir, 'm-000000000001'));
+    expect(auditTailDirs(dir)).toEqual([
+      path.join(dir, 'm-000000000001'),
+      path.join(dir, 'm-000000000002'),
+    ]);
+  });
+
+  it('ignores non-tail subdirectories (e.g. attest/)', () => {
+    mkdirSync(path.join(dir, 'm-00000000abcd'));
+    mkdirSync(path.join(dir, 'attest'));
+    expect(auditTailDirs(dir)).toEqual([path.join(dir, 'm-00000000abcd')]);
+  });
+});
+
+describe('auditFilesSignature', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'mnema-sig-'));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('flips when a line is appended inside a machine tail (cache invalidation)', () => {
+    // The regression this guards: a signature that only listed the root dir
+    // would never change when an event landed in `m-<id>/`, so a cache keyed
+    // on it would serve a stale integrity verdict.
+    const tail = path.join(dir, 'm-00000000feed');
+    mkdirSync(tail);
+    writeFileSync(path.join(tail, 'current.jsonl'), 'a\n', 'utf-8');
+    const before = auditFilesSignature(dir);
+    writeFileSync(path.join(tail, 'current.jsonl'), 'a\nb\n', 'utf-8');
+    expect(auditFilesSignature(dir)).not.toBe(before);
   });
 });
