@@ -22,7 +22,7 @@ export interface CheckpointSigner {
 
 /**
  * Signs the audit chain head with the per-machine Ed25519 key at a
- * checkpoint interval (ADR-37 layer 2), OFF the per-event hot path. The
+ * checkpoint interval, OFF the per-event hot path. The
  * writer calls {@link maybeSign} after a chain advance; a signature is
  * produced only when the interval has elapsed — by event count OR by
  * wall-clock — since the last recorded checkpoint. Between checkpoints the
@@ -99,7 +99,7 @@ export class HeadCheckpointService implements HeadCheckpointer {
  * Builds an {@link AttestationSource} for `inspectAuditIntegrity`: reads the
  * latest recorded head signature and verifies it against the committed
  * public key of ITS signer, resolved by (actor, fingerprint) at
- * `.mnema/keys/<actor>.<fp12>.pub`. Verification returns `null` when that
+ * `.mnema/keys/<actor>.<fingerprint>.pub`. Verification returns `null` when that
  * public key is absent (a signer whose `.pub` was never committed / is
  * missing on this checkout), and `'fingerprint_mismatch'` when a file IS
  * there but carries a different full fingerprint — both mean "cannot
@@ -129,13 +129,12 @@ export function createAttestationSource(
         const pubPath = keyService.publicKeyPathFor(sig.signerFingerprint);
         if (!existsSync(pubPath)) return null;
         const record = MachineKeyService.parsePublicKey(readFileSync(pubPath, 'utf-8'));
-        // Bind the FULL fingerprint. The `.pub` is resolved by a short prefix
-        // (`<fp12>` names the file), so the resolved record could carry a key
-        // whose full fingerprint diverges from the one the signature row
-        // declared. Verifying against it would attest a signer the row never
-        // named. Require the recorded and declared fingerprints to match on
-        // all 256 bits before trusting the key. Still "cannot attest", not a
-        // tamper verdict — but distinct from the plain-null missing-file case,
+        // Bind the FULL fingerprint. The `.pub` is named by the full
+        // fingerprint, and `parsePublicKey` re-derives it from the key bytes,
+        // so a resolved record's fingerprint should already equal the declared
+        // one. This re-check is defence-in-depth: a hand-edited `.pub` (renamed
+        // to the declared fingerprint, key swapped inside) is caught here as
+        // "cannot attest" — distinct from the plain-null missing-file case,
         // because "no key committed" and "a key IS here but it is not the
         // recorded signer's" call for very different operator responses.
         if (record.fingerprint !== sig.signerFingerprint) return 'fingerprint_mismatch';

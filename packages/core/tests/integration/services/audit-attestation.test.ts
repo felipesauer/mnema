@@ -108,15 +108,14 @@ describe('audit machine attestation verdict', () => {
 
   it('does not attest when the declared fingerprint diverges from the resolved key', () => {
     writeSignedEvent();
-    // The .pub is resolved by a short prefix (<fp12>), so a signature row can
-    // name a full fingerprint that shares the prefix but diverges on the
-    // remaining bits — pointing verification at a key the row never named.
-    // Keep the real, VALID signature; only swap the declared full fingerprint
-    // to one that keeps the 12-char prefix (so the file still resolves) but
-    // differs beyond it. The bind must refuse to attest rather than verify
-    // against the mismatched key.
+    // The `.pub` is named by the FULL fingerprint, so a signature row naming a
+    // fingerprint the committed key does not own resolves to a filename that
+    // simply does not exist — verification returns "cannot attest", never
+    // silently verifying against some other key. (A hand-edited `.pub` renamed
+    // to the declared fingerprint but carrying a different key is separately
+    // caught by the fingerprint re-derivation in the bind.)
     const real = signatures.read() as HeadSignatureView;
-    const divergent = `${real.signerFingerprint.slice(0, 12)}${'0'.repeat(52)}`;
+    const divergent = `${'0'.repeat(63)}1`;
     expect(divergent).not.toBe(real.signerFingerprint);
     const forged: AttestationSource = {
       readHeadSignature: () => ({ ...real, signerFingerprint: divergent }),
