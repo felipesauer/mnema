@@ -227,7 +227,9 @@ export class SkillService {
 
   constructor(
     private readonly skillsDir: string,
-    private readonly knownTools: ReadonlySet<string>,
+    // Tool-name catalogue for lint; `null` skips the existence check
+    // (embedded use without an MCP surface to validate against).
+    private readonly knownTools: ReadonlySet<string> | null,
     private readonly repo: SkillRepository | null = null,
     private readonly identity: IdentityService | null = null,
     private readonly audit: AuditService | null = null,
@@ -869,7 +871,7 @@ export class SkillService {
     const front = validation.data;
 
     for (const tool of front.tools_used) {
-      if (!this.knownTools.has(tool)) {
+      if (this.knownTools !== null && !this.knownTools.has(tool)) {
         out.push({
           file: filePath,
           severity: 'error',

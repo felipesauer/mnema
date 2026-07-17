@@ -3,8 +3,7 @@ import path from 'node:path';
 import type { Config } from '../config/config-schema.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import type { EnforcementMode } from '../domain/enums/enforcement-mode.js';
-import { StateMachine } from '../domain/state-machine/state-machine.js';
-import { listAvailableToolNames } from '../mcp/tool-registry.js';
+import { StateMachine, type Workflow } from '../domain/state-machine/state-machine.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import { FileStore } from '../storage/files/file-store.js';
@@ -116,6 +115,13 @@ export interface ServiceContainerOptions {
    * without a real repository.
    */
   readonly commitRunner?: CommandRunner;
+  /**
+   * Resolve the set of tool names skill lint validates `tools_used`
+   * against. The catalogue is owned by the surface that advertises the
+   * tools (MCP), not by this container — callers that have one inject it
+   * here. When absent, the tool-existence check is skipped entirely.
+   */
+  readonly resolveKnownTools?: (workflow: Workflow) => ReadonlySet<string>;
 }
 
 /**
@@ -664,14 +670,9 @@ export function createServiceContainer(
   const searchService = new SearchService(adapter);
   const skillsDir = path.join(projectRoot, config.paths.skills);
   const memoryDir = path.join(projectRoot, config.paths.memory);
-  // Skill lint checks that a referenced tool *exists*, not that it is
-  // advertised under the current profile, so validate against the full
-  // catalogue (all groups enabled) plus this workflow's transition tools.
-  const knownTools = listAvailableToolNames(workflow, {
-    epics: true,
-    sprints: true,
-    knowledge: true,
-  });
+  // The tool catalogue belongs to the surface that advertises it; without
+  // an injected resolver the skill lint tool-existence check is skipped.
+  const knownTools = options.resolveKnownTools ? options.resolveKnownTools(workflow) : null;
   // User-level knowledge (`~/.config/mnema`) merges under the project's
   // own skills/memories — read-only, project always shadows. Tests
   // override this (or pass null) so they never read the real home dir.

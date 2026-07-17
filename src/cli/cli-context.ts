@@ -9,6 +9,7 @@ import {
 import { ErrorCode } from '../errors/error-codes.js';
 import { printError } from '../errors/error-printer.js';
 import { type ErrorIssue, fromZodIssues } from '../errors/mnema-error.js';
+import { listAvailableToolNames } from '../mcp/tool-registry.js';
 import { IdentityNotConfiguredError } from '../services/integrity/identity-service.js';
 import { createServiceContainer, type ServiceContainer } from '../services/service-container.js';
 import { migrationsDir } from '../utils/asset-paths.js';
@@ -71,6 +72,11 @@ export function openCliContext(): CliContext {
   try {
     container = createServiceContainer(config, projectRoot, {
       migrationsDir: migrationsDir(),
+      // Skill lint checks that a referenced tool *exists*, not that it is
+      // advertised under the current profile, so validate against the full
+      // catalogue (all groups enabled) plus this workflow's transition tools.
+      resolveKnownTools: (workflow) =>
+        listAvailableToolNames(workflow, { epics: true, sprints: true, knowledge: true }),
     });
   } catch (error) {
     // The workflow loader is the most common throw site during boot —
