@@ -49,3 +49,20 @@ export function getOrCreateMachineId(userDir: string): string {
 export function tailDirName(machineId: string): string {
   return `${TAIL_DIR_PREFIX}${machineId.slice(0, 12)}`;
 }
+
+/**
+ * Absolute path to THIS machine's audit tail (`<auditDir>/m-<id>/`), minting
+ * the machine id on first use. The single place that composes
+ * {@link getOrCreateMachineId} + {@link tailDirName} + the audit dir — the
+ * local mutators (write, reconcile, prune, reattest) and the mirror-scoped
+ * count checks all resolve their tail through here instead of repeating the
+ * three-call incantation.
+ *
+ * @param auditDir - The project audit dir (`.mnema/audit`)
+ * @param userDir - The machine-scoped user dir holding `machine-id` (the same
+ *   dir the project secret and machine key use; callers pass `userKnowledgeDir()`)
+ * @returns Absolute path to this machine's tail directory
+ */
+export function localTailDir(auditDir: string, userDir: string): string {
+  return path.join(auditDir, tailDirName(getOrCreateMachineId(userDir)));
+}

@@ -6,7 +6,7 @@ import { autoAttest, chainHealthyForAttest } from '@mnema/core/services/audit/at
 import { listArtifacts } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
 import { inspectAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { MachineKeyService } from '@mnema/core/services/integrity/machine-key.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import {
@@ -459,11 +459,11 @@ export class UpgradeCommand {
     // A reattest signs with THIS machine's key, so it attests only THIS
     // machine's tail; scope every read/write to the local tail, whose chain is
     // indexed from 0 independently of any sibling tail.
-    const localTailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
+    const tailDir = localTailDir(auditDir, userKnowledgeDir());
 
     // Count events past the last committed `.att` — the unattested tail.
-    const total = walkChainedEvents(localTailDir).chained.length;
-    const artifacts = listArtifacts(localTailDir);
+    const total = walkChainedEvents(tailDir).chained.length;
+    const artifacts = listArtifacts(tailDir);
     const attestedTo = artifacts.reduce((max, a) => Math.max(max, a.to), 0);
     const tail = total - attestedTo;
     if (tail <= 0) return null;
@@ -485,7 +485,7 @@ export class UpgradeCommand {
         }
         autoAttest({
           projectRoot,
-          auditDir: localTailDir,
+          auditDir: tailDir,
           signer,
           projectHmacId: secret.readFingerprint(),
           chainHealthy: chainHealthyForAttest(
@@ -496,7 +496,7 @@ export class UpgradeCommand {
               null,
               null,
               null,
-              localTailDir,
+              tailDir,
             ),
           ),
           signedEventCountAt:
@@ -504,8 +504,7 @@ export class UpgradeCommand {
           headCount: total,
           batchSize: config.audit.checkpoint.events,
         });
-        const remaining =
-          walkChainedEvents(localTailDir).chained.length - attestedToAfter(localTailDir);
+        const remaining = walkChainedEvents(tailDir).chained.length - attestedToAfter(tailDir);
         return remaining > 0
           ? `attested up to the last checkpoint; ${remaining} tail event(s) remain (refused or below the interval)`
           : 'all audit events attested — commit the new .att files with the .mnema/ trail';
@@ -618,19 +617,11 @@ function printPostUpgradeHealth(ctx: CliContext): void {
   const secret = new ProjectSecretService(projectRoot, config.project.key);
   // The mirror tracks this machine's tail, so count/delta compare against the
   // local tail, not the project-wide total across every machine's tail.
-  const localTailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
+  const tailDir = localTailDir(auditDir, userKnowledgeDir());
   checks.push(
-    ...inspectAuditIntegrity(
-      container.adapter,
-      auditDir,
-      secret.read(),
-      null,
-      null,
-      null,
-      localTailDir,
-    ),
+    ...inspectAuditIntegrity(container.adapter, auditDir, secret.read(), null, null, null, tailDir),
   );
-  checks.push(...inspectAuditDiskDelta(container.adapter, localTailDir, projectRoot));
+  checks.push(...inspectAuditDiskDelta(container.adapter, tailDir, projectRoot));
 
   process.stdout.write(`\n${pc.bold('post-upgrade health')} ${pc.dim('(read-only)')}\n`);
   for (const check of checks) {

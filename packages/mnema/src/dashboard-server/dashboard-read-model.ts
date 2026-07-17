@@ -6,7 +6,7 @@ import {
   type IntegrityCheck,
   inspectAuditIntegrity,
 } from '@mnema/core/services/integrity/audit-integrity.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import type { FlowMetrics } from '@mnema/core/services/metrics/flow-metrics-service.js';
@@ -86,10 +86,7 @@ export function buildDashboardReadModel(
       const secret = new ProjectSecretService(projectRoot, config.project.key);
       // The mirror tracks this machine's tail, so the count check compares
       // against the local tail, not the project-wide total across every tail.
-      const localTailDir = path.join(
-        auditDir,
-        tailDirName(getOrCreateMachineId(userKnowledgeDir())),
-      );
+      const tailDir = localTailDir(auditDir, userKnowledgeDir());
       return inspectAuditIntegrity(
         container.adapter,
         auditDir,
@@ -97,7 +94,7 @@ export function buildDashboardReadModel(
         null,
         null,
         null,
-        localTailDir,
+        tailDir,
       );
     },
   };

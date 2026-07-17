@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { parseTimeBound } from '@mnema/core/services/integrity/audit-query.js';
 import { AuditTail } from '@mnema/core/services/integrity/audit-tail.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import { LAYOUT } from '@mnema/core/utils/layout.js';
@@ -62,10 +62,7 @@ export class WatchCommand {
           // Live-follow this machine's own tail: cross-machine events arrive by
           // git pull, not an in-process append, so the local tail is the one
           // `fs.watch` streams in real time.
-          const localTailDir = path.join(
-            auditDir,
-            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
-          );
+          const tailDir = localTailDir(auditDir, userKnowledgeDir());
           const format = pickFormat(options);
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           const display = (handle: string): string => container.identity.getDisplayFor(handle);
@@ -104,7 +101,7 @@ export class WatchCommand {
           observeGit();
 
           const tail = new AuditTail(
-            localTailDir,
+            tailDir,
             (event) => {
               process.stdout.write(`${formatEvent(event, format, mode, display)}\n`);
               observeGit();

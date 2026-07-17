@@ -60,7 +60,9 @@ beforeAll(() => {
   if (!existsSync(cliEntry)) throw new Error(`CLI not built. Run pnpm build. Path: ${cliEntry}`);
 });
 
-describe('audit reconcile is scoped to the local machine tail (e2e)', () => {
+// Spawns several real `mnema` subprocesses (init + writes + reconcile +
+// doctor), so give it the same headroom the other CLI e2e suites use.
+describe('audit reconcile is scoped to the local machine tail (e2e)', { timeout: 30_000 }, () => {
   let projectRoot: string;
   let homeA: string;
 
