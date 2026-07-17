@@ -1,0 +1,51 @@
+{
+  "name": "@mnema/core",
+  "version": "0.1.0-beta.0",
+  "description": "Mnema core — the service layer, storage, workflow engine and integrity chain that own the .mnema/ store.",
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "type": "module",
+  "files": [
+    "dist/",
+    "workflows/"
+  ],
+  "homepage": "https://felipesauer.github.io/mnema/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "//": "Transitional broad export map so the product package can deep-import while the container is being sliced; the curated subpath map replaces it in the follow-up.",
+  "exports": {
+    "./*": "./dist/*"
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias && node scripts/copy-migrations.mjs",
+    "bench:scale": "tsx bench/scale-bench.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@peculiar/asn1-cms": "^2.8.0",
+    "@peculiar/asn1-schema": "^2.8.0",
+    "@peculiar/asn1-tsp": "^2.8.0",
+    "@peculiar/asn1-x509": "^2.8.0",
+    "better-sqlite3": "^12.9.0",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^5.2.0",
+    "picocolors": "^1.1.1",
+    "pino": "^10.3.1",
+    "proper-lockfile": "^4.1.2",
+    "semver": "^7.8.5",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
+  }
+}

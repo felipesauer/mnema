@@ -20,7 +20,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
-const cliEntry = path.join(repoRoot, 'dist', 'index.js');
+const cliEntry = path.join(repoRoot, 'packages', 'mnema', 'dist', 'index.js');
 
 if (!existsSync(cliEntry)) {
   process.stderr.write(`error: ${cliEntry} not found — run \`pnpm build\` first.\n`);

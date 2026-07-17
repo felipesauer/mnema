@@ -63,7 +63,7 @@ done
 ok "README + LICENSE + CHANGELOG present"
 
 step "10. Tarball ships exactly the bundled migrations"
-EXPECTED_MIGRATIONS=$(ls src/storage/sqlite/migrations/*.sql 2>/dev/null | wc -l)
+EXPECTED_MIGRATIONS=$(ls packages/core/src/storage/sqlite/migrations/*.sql 2>/dev/null | wc -l)
 SHIPPED_MIGRATIONS=$(tar -tzf "$TARBALL" | grep -E '^package/dist/storage/sqlite/migrations/.*\.sql$' | wc -l)
 if [ "$EXPECTED_MIGRATIONS" -ne "$SHIPPED_MIGRATIONS" ]; then
   fail "migration count drift: src has $EXPECTED_MIGRATIONS, tarball has $SHIPPED_MIGRATIONS"
@@ -89,11 +89,11 @@ ISOLATED="$(mktemp -d -t mnema-publish-check-XXXX)"
 trap 'rm -rf "$ISOLATED" "$PACK_DIR"' EXIT
 (
   cd "$ISOLATED"
-  node "$REPO_ROOT/dist/index.js" --version > /dev/null 2>&1 \
+  node "$REPO_ROOT/packages/mnema/dist/index.js" --version > /dev/null 2>&1 \
     || fail "compiled binary fails --version outside the repo"
-  node "$REPO_ROOT/dist/index.js" init --name "Publish Check" --key "PUBCHK" > /dev/null 2>&1 \
+  node "$REPO_ROOT/packages/mnema/dist/index.js" init --name "Publish Check" --key "PUBCHK" > /dev/null 2>&1 \
     || fail "compiled binary fails init outside the repo (migration resolver broken?)"
-  MNEMA_ACTOR=publish-check node "$REPO_ROOT/dist/index.js" doctor > /dev/null 2>&1 \
+  MNEMA_ACTOR=publish-check node "$REPO_ROOT/packages/mnema/dist/index.js" doctor > /dev/null 2>&1 \
     || fail "compiled binary fails doctor on a fresh project outside the repo"
 )
 ok "compiled CLI runs init + doctor from an isolated directory"

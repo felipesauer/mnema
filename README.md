@@ -380,7 +380,7 @@ the hash-chained audit log, verifiable forever.
 ```json
 {
   "version": "1.0",
-  "mnema_version": ">=0.10.0-alpha.0 <1.0.0",
+  "mnema_version": ">=0.1.0-beta.0 <1.0.0",
   "project": { "key": "MYAPP", "name": "My Application" },
   "workflow": "default"
 }
