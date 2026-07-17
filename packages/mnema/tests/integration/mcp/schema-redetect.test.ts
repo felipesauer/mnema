@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
@@ -31,21 +31,22 @@ describe('schema drift re-detection (MCP unblock without restart)', () => {
 
   it('lifts SCHEMA_OUT_OF_DATE after another connection applies the migration', () => {
     const runner = new MigrationRunner();
-    // The server booted against the CURRENT bundled schema (all applied).
+    // The runner walks exactly ONE directory, so the scenario stages a
+    // writable copy of the bundled set: the server boots against it fully
+    // applied, then a future migration "lands" in the same directory (a
+    // `git pull` bringing a schema bump) that the server has not applied.
+    const sources = path.join(tempRoot, 'bundled-migrations');
+    mkdirSync(sources, { recursive: true });
+    for (const file of readdirSync(migrationsDir)) {
+      copyFileSync(path.join(migrationsDir, file), path.join(sources, file));
+    }
     serverAdapter = new SqliteAdapter(dbPath);
-    runner.run(serverAdapter, [migrationsDir]);
+    runner.run(serverAdapter, sources);
 
-    // A future migration lands on disk (a `git pull` bringing a schema bump)
-    // that the server has not applied — genuine drift, additive so it applies
-    // cleanly. Its own directory so we control exactly one pending file.
-    const futureDir = path.join(tempRoot, 'future-migrations');
-    rmSync(futureDir, { recursive: true, force: true });
-    require('node:fs').mkdirSync(futureDir, { recursive: true });
     const futureSql =
       'CREATE TABLE redetect_probe (id INTEGER PRIMARY KEY);\n' +
       "INSERT INTO schema_migrations (version, applied_at) VALUES (999, strftime('%Y-%m-%dT%H:%M:%fZ','now'));\n";
-    writeFileSync(path.join(futureDir, '999_redetect_probe.sql'), futureSql);
-    const sources = [migrationsDir, futureDir];
+    writeFileSync(path.join(sources, '999_redetect_probe.sql'), futureSql);
 
     // The server's re-detect thunk (what the MCP tools call each mutation).
     const detect = (): readonly string[] =>

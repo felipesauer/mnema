@@ -87,14 +87,13 @@ export function createInfra(
   const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
   const adapter = new SqliteAdapter(dbPath);
 
-  // Migration sources: the bundled directory plus the project's own
-  // `.mnema/migrations/`. Auto-apply only on a virgin database (first
-  // boot); afterwards pending migrations are surfaced and applying is an
-  // explicit `mnema migrate` — the cooperative guard for shared-team
-  // scenarios where one machine pulls a schema bump before others notice.
-  const bundledMigrationsDir = migrationsDirOverride ?? assetPathsMigrationsDir();
-  const projectMigrationsDirAbs = path.join(projectRoot, '.mnema/migrations');
-  const migrationSources: readonly string[] = [bundledMigrationsDir, projectMigrationsDirAbs];
+  // ONE migration source: the bundled directory — the schema is mnema's
+  // exclusive concern (no project-local migrations). Auto-apply only on a
+  // virgin database (first boot); afterwards pending migrations are
+  // surfaced and applying is an explicit `mnema migrate` — the cooperative
+  // guard for shared-team scenarios where one machine pulls a schema bump
+  // before others notice.
+  const migrationSources = migrationsDirOverride ?? assetPathsMigrationsDir();
   const runner = new MigrationRunner();
   const isVirgin = runner.loadApplied(adapter).length === 0;
   if (isVirgin) {

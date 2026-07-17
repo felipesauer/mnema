@@ -20,7 +20,7 @@ describe('RemediationRunner', () => {
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-remediation-'));
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
-    // The runner reads/writes `applied_remediations`, created by migration 036.
+    // The runner reads/writes `applied_upgrades`, baked into the 001 baseline.
     new MigrationRunner().run(adapter, migrationsDir);
   });
 
@@ -112,7 +112,7 @@ describe('RemediationRunner', () => {
       expect(outcomes[0]?.recorded).toBe(true);
     });
 
-    it('a fresh clone (empty applied_remediations) re-runs a clone-condition step at a far-future version', () => {
+    it('a fresh clone (empty applied_upgrades) re-runs a clone-condition step at a far-future version', () => {
       const { descriptor, calls } = countingStep({
         name: 'clone-again',
         kind: 'clone-condition',
@@ -124,7 +124,7 @@ describe('RemediationRunner', () => {
       expect(calls()).toBe(1);
 
       // Simulate a fresh clone: git-ignored state/ is gone, so the DB (and its
-      // applied_remediations) is rebuilt empty. New adapter, new migrated DB.
+      // applied_upgrades) is rebuilt empty. New adapter, new migrated DB.
       adapter.close();
       const cloneRoot = mkdtempSync(path.join(tmpdir(), 'mnema-remediation-clone-'));
       const cloneAdapter = new SqliteAdapter(path.join(cloneRoot, 'state.db'));
@@ -229,9 +229,9 @@ describe('RemediationRunner', () => {
       expect(kindOf('mirror-reconcile')).toBe('clone-condition');
     });
 
-    it('backfill-scope and gitattributes-retrofit are version-jump (expiry-eligible)', () => {
-      expect(kindOf('backfill-scope')).toBe('version-jump');
-      expect(kindOf('gitattributes-retrofit')).toBe('version-jump');
+    it('the retired 0.13-era version-jump steps stay deleted (squash zeroed the history)', () => {
+      expect(kindOf('backfill-scope')).toBeNull();
+      expect(kindOf('gitattributes-retrofit')).toBeNull();
     });
   });
 

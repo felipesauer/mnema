@@ -200,8 +200,9 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
 
   it('--dry-run prints the plan and writes NOTHING', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    // Give the run concrete work: roll mnema_version back and add a pending
-    // project-local migration, so the plan is non-trivial.
+    // Give the run concrete work: roll mnema_version back so the plan is
+    // non-trivial. (Post-squash there is no stageable pending migration —
+    // migrations ship bundled, one dir, mnema-exclusive.)
     const configPath = path.join(projectRoot, '.mnema', 'mnema.config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
     writeFileSync(
@@ -209,30 +210,19 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
       `${JSON.stringify({ ...config, mnema_version: '^0.0.1-alpha.0' }, null, 2)}\n`,
       'utf-8',
     );
-    const migrationsDir = path.join(projectRoot, '.mnema', 'migrations');
-    mkdirSync(migrationsDir, { recursive: true });
-    writeFileSync(
-      path.join(migrationsDir, '950_dry_probe.sql'),
-      'CREATE TABLE IF NOT EXISTS dry_probe (id INTEGER PRIMARY KEY);\n',
-      'utf-8',
-    );
     const agentsBefore = readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8');
 
     const dry = runCli(['upgrade', '--dry-run'], projectRoot);
     expect(dry.status).toBe(0);
-    // The plan is shown, including the migration in phase 1 and the version bump.
+    // The plan is shown, including the version bump.
     expect(dry.stdout).toContain('dry run, nothing applied');
-    expect(dry.stdout).toContain('[migrations] apply 1 pending migration(s): 950_dry_probe.sql');
     expect(dry.stdout).toContain('set mnema_version');
 
     // Nothing was applied: the version is untouched...
     const after = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
     expect(after.mnema_version).toBe('^0.0.1-alpha.0');
-    // ...AGENTS.md is byte-for-byte unchanged...
+    // ...and AGENTS.md is byte-for-byte unchanged.
     expect(readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8')).toBe(agentsBefore);
-    // ...and the pending migration never ran (the table was not created).
-    const applied = readCreatedTables(path.join(projectRoot, '.mnema/state', 'state.db'));
-    expect(applied).not.toContain('dry_probe');
   });
 
   it('reconciles audit_state that a fresh clone left behind the on-disk chain', () => {
@@ -300,7 +290,7 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
 });
 
 /** Reads the names of user tables in a SQLite DB (best-effort, for assertions). */
-function readCreatedTables(dbPath: string): string[] {
+function _readCreatedTables(dbPath: string): string[] {
   if (!existsSync(dbPath)) return [];
   // Use the built CLI's own better-sqlite3 to avoid a duplicate dependency.
   const script =

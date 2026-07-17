@@ -37,13 +37,22 @@ describe('inspectMigrationDrift', () => {
     work = mkdtempSync(path.join(tmpdir(), 'mnema-doctor-drift-'));
     migrationsCopy = path.join(work, 'migrations');
     mkdirSync(migrationsCopy, { recursive: true });
-    for (const file of [
-      '001_initial.sql',
-      '002_fts_attachments.sql',
-      '003_agent_plans_and_identity.sql',
-    ]) {
-      copyFileSync(path.join(sourceMigrationsDir, file), path.join(migrationsCopy, file));
-    }
+    // Synthetic fixture migrations: drift detection only cares about the
+    // NNN version prefixes and the schema_migrations bookkeeping, so tiny
+    // self-recording files stand in for real ones (which are baselined).
+    const synthetic = (version, name) =>
+      [
+        `CREATE TABLE IF NOT EXISTS schema_migrations (`,
+        `  version INTEGER PRIMARY KEY,`,
+        `  applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+        `);`,
+        `CREATE TABLE fixture_${name} (id INTEGER PRIMARY KEY);`,
+        `INSERT INTO schema_migrations (version) VALUES (${version});`,
+        '',
+      ].join('\n');
+    writeFileSync(path.join(migrationsCopy, '001_alpha.sql'), synthetic(1, 'alpha'));
+    writeFileSync(path.join(migrationsCopy, '002_beta.sql'), synthetic(2, 'beta'));
+    writeFileSync(path.join(migrationsCopy, '003_gamma.sql'), synthetic(3, 'gamma'));
     dbPath = path.join(work, 'state.db');
     adapter = new SqliteAdapter(dbPath);
   });
@@ -67,7 +76,7 @@ describe('inspectMigrationDrift', () => {
     new MigrationRunner().run(adapter, migrationsCopy);
     // Drop a fresh migration on disk, but do *not* apply it.
     const newFile = path.join(migrationsCopy, '004_drift_demo.sql');
-    copyFileSync(path.join(migrationsCopy, '003_agent_plans_and_identity.sql'), newFile);
+    copyFileSync(path.join(migrationsCopy, '003_gamma.sql'), newFile);
 
     const checks = inspectMigrationDrift(adapter, migrationsCopy);
     const applied = checks.find((c) => c.name === 'migrations applied');
@@ -78,7 +87,7 @@ describe('inspectMigrationDrift', () => {
   it('flags an orphan version when the file disappears after being applied', () => {
     new MigrationRunner().run(adapter, migrationsCopy);
     // Simulate someone deleting an applied migration from the tree.
-    unlinkSync(path.join(migrationsCopy, '003_agent_plans_and_identity.sql'));
+    unlinkSync(path.join(migrationsCopy, '003_gamma.sql'));
 
     const checks = inspectMigrationDrift(adapter, migrationsCopy);
     const consistency = checks.find((c) => c.name === 'migrations consistent');

@@ -32,10 +32,7 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the directory containing .sql files
    * @returns List of migrations applied during this run, in order
    */
-  run(
-    adapter: SqliteAdapter,
-    migrationsDir: string | readonly string[],
-  ): readonly AppliedMigration[] {
+  run(adapter: SqliteAdapter, migrationsDir: string): readonly AppliedMigration[] {
     const database = adapter.getDatabase();
     const applied = new Set(this.loadAppliedVersions(adapter));
 
@@ -137,7 +134,7 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the migrations directory
    * @returns Migrations parsed from filenames, sorted by version
    */
-  listAvailable(migrationsDir: string | readonly string[]): readonly AppliedMigration[] {
+  listAvailable(migrationsDir: string): readonly AppliedMigration[] {
     return collectMigrationFiles(migrationsDir).map(({ file }) => ({
       version: parseVersion(file),
       file,
@@ -154,10 +151,7 @@ export class MigrationRunner {
    * @param migrationsDir - Absolute path to the migrations directory
    * @returns Sorted list of pending migrations (empty when in sync)
    */
-  detectDrift(
-    adapter: SqliteAdapter,
-    migrationsDir: string | readonly string[],
-  ): readonly AppliedMigration[] {
+  detectDrift(adapter: SqliteAdapter, migrationsDir: string): readonly AppliedMigration[] {
     const applied = new Set(this.loadAppliedVersions(adapter));
     if (applied.size === 0) return [];
 
@@ -198,35 +192,17 @@ export class MigrationRunner {
 }
 
 /**
- * Lists every `NNN_*.sql` file under one or more directories, merged
- * by ascending version. Used by the runner so a project's local
- * migrations (under `.mnema/migrations/`) ride alongside the bundled
- * set (under the package's `dist/storage/sqlite/migrations/`).
- *
- * - String input is treated as a single directory (legacy shape;
- *   most tests still call it this way).
- * - Array input is iterated in order; missing directories are
- *   silently skipped so a project that has not generated any custom
- *   migration is a no-op.
- * - Files are de-duplicated by name: if both the bundled and the
- *   project-local directory ship the same filename, the bundled one
- *   wins. The `MigrationRunner` then skips already-applied versions
- *   so duplicates never run twice.
+ * Lists every `NNN_*.sql` file in the bundled migrations directory,
+ * sorted by ascending version. The runner walks exactly ONE directory:
+ * the schema is mnema's exclusive concern, so there is no project-local
+ * migration source. A missing directory is an empty set.
  */
-function collectMigrationFiles(
-  dirs: string | readonly string[],
-): readonly { dir: string; file: string }[] {
-  const list = typeof dirs === 'string' ? [dirs] : dirs;
-  const seen = new Set<string>();
+function collectMigrationFiles(dir: string): readonly { dir: string; file: string }[] {
+  if (!existsSync(dir)) return [];
   const acc: { dir: string; file: string }[] = [];
-  for (const dir of list) {
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir)) {
-      if (!file.endsWith('.sql')) continue;
-      if (seen.has(file)) continue;
-      seen.add(file);
-      acc.push({ dir, file });
-    }
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith('.sql')) continue;
+    acc.push({ dir, file });
   }
   // Sort by filename (== version prefix) ascending.
   acc.sort((a, b) => a.file.localeCompare(b.file));

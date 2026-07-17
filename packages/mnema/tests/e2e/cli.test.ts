@@ -684,21 +684,14 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(second.stdout).toContain('already up to date');
   });
 
-  it('mnema upgrade applies a pending migration before inspecting the rest', async () => {
+  it('mnema upgrade runs healthily with the schema already at the baseline', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 
-    // A project-local migration the runner will see as pending. The
-    // upgrade must apply it (phase 1) before it reads any domain table
-    // for the mirror/AGENTS inspection (phase 2) — otherwise a migration
-    // that creates a table would make that inspection crash with
-    // "no such table". The bumped mnema_version gives phase 2 work to do.
-    const migrationsDir = path.join(projectRoot, '.mnema', 'migrations');
-    mkdirSync(migrationsDir, { recursive: true });
-    writeFileSync(
-      path.join(migrationsDir, '900_upgrade_probe.sql'),
-      'CREATE TABLE IF NOT EXISTS upgrade_probe (id INTEGER PRIMARY KEY);\n',
-      'utf-8',
-    );
+    // Post-squash there is no stageable pending migration for the real
+    // binary (migrations ship bundled, one dir, mnema-exclusive) — drift
+    // application is covered at the integration level. The e2e keeps the
+    // orchestrator path honest: a version bump gives phase 2 work while
+    // phase 1 (migrations) correctly reports nothing to do.
     const configPath = path.join(projectRoot, '.mnema', 'mnema.config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
     writeFileSync(
@@ -709,26 +702,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
     const result = runCli(['upgrade', '--yes'], projectRoot);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('applied 1 migration');
+    expect(result.stdout).not.toContain('pending migration');
     expect(result.stdout).toContain('set mnema_version');
     expect(result.stderr).not.toContain('no such table');
-
-    // Prove the migration actually hit the schema (phase 1), not just the
-    // stdout — the table the pending migration creates now exists.
-    const Database = (await import('better-sqlite3')).default;
-    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
-    try {
-      const row = db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='upgrade_probe'")
-        .get() as { name: string } | undefined;
-      expect(row?.name).toBe('upgrade_probe');
-    } finally {
-      db.close();
-    }
-
-    // And phase 2 ran against the now-current schema: the version was bumped.
-    const finalConfig = JSON.parse(readFileSync(configPath, 'utf-8')) as { mnema_version: string };
-    expect(finalConfig.mnema_version).not.toBe('^0.0.1-alpha.0');
   });
 
   it('mnema history shows aggregated activity for the day', () => {
@@ -1156,29 +1132,16 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
   it('migration guard: read-only commands work but mutations abort when schema drifts', async () => {
     runCli(['init', '--name', 'Drift', '--key', 'DRIFT'], projectRoot);
 
-    // Simulate drift by stamping a fake future version into
-    // schema_migrations (without dropping anything). This way the
-    // runner sees disk vs db disagreement without any real migration
-    // having been "lost", so the subsequent `mnema migrate` doesn't
-    // try to re-apply a non-idempotent ALTER TABLE.
-    //
-    // We pick version 999, well beyond current real versions, and
-    // drop it before running migrate so the runner has nothing to do.
+    // Simulate "pulled a schema bump but did not migrate" post-squash:
+    // demote the baseline stamp to version 0. The disk has 001 pending,
+    // the DB is NOT virgin (a row exists), and nothing was physically
+    // dropped — so read-only work is safe and `migrate` stays a no-op
+    // after the stamp is restored.
     const Database = (await import('better-sqlite3')).default;
-    const db = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
-    let fakeVersion = 999;
+    const dbFile = path.join(projectRoot, '.mnema/state', 'state.db');
+    const db = new Database(dbFile);
     try {
-      const versions = db
-        .prepare('SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1')
-        .all() as Array<{ version: number }>;
-      const latest = versions[0]?.version;
-      expect(latest).toBeDefined();
-      // Drop the latest applied row to simulate "i pulled the schema
-      // bump but forgot to migrate". Re-applying a non-idempotent
-      // migration would crash, so we use a tactic that lets `migrate`
-      // become a no-op below.
-      db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(latest);
-      fakeVersion = latest as number;
+      db.prepare('UPDATE schema_migrations SET version = 0 WHERE version = 1').run();
     } finally {
       db.close();
     }
@@ -1193,20 +1156,13 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(create.stderr).toContain('Schema is out of date');
     expect(create.stderr).toContain('mnema migrate');
 
-    // Restore the row before running migrate so the runner has
-    // nothing to apply (avoids re-running a non-idempotent migration).
-    const db2 = new Database(path.join(projectRoot, '.mnema/state', 'state.db'));
+    // Restore the stamp; drift gone, mutations succeed again.
+    const db2 = new Database(dbFile);
     try {
-      db2
-        .prepare(
-          "INSERT INTO schema_migrations (version, applied_at) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
-        )
-        .run(fakeVersion);
+      db2.prepare('UPDATE schema_migrations SET version = 1 WHERE version = 0').run();
     } finally {
       db2.close();
     }
-
-    // After restore, mutations succeed again (drift gone).
     const create2 = runCli(['task', 'create', '--title', 'Now OK'], projectRoot);
     expect(create2.status).toBe(0);
   });
