@@ -6,6 +6,7 @@ import { SyncRebuild } from '../services/sync/sync-rebuild.js';
 import { SyncMode, SyncService } from '../services/sync/sync-service.js';
 import { SyncBuffer } from '../storage/buffer/sync-buffer.js';
 import { MarkdownIo } from '../storage/markdown/markdown-io.js';
+import { LAYOUT } from '../utils/layout.js';
 import type { AuditCore } from './audit-core.js';
 import type { Infra } from './infra.js';
 
@@ -39,18 +40,18 @@ export function createSyncCore(
   syncMode?: SyncMode,
 ): SyncCore {
   const { repos } = infra;
-  const stateDir = path.join(projectRoot, config.paths.state);
+  const stateDir = path.join(projectRoot, LAYOUT.state);
   const syncBuffer = new SyncBuffer(stateDir);
   const roadmapMirror = new RoadmapMirror({
     projectRoot,
-    roadmapDir: config.paths.roadmap,
-    sprintsDir: config.paths.sprints,
+    roadmapDir: LAYOUT.roadmap,
+    sprintsDir: LAYOUT.sprints,
   });
 
   const sync = new SyncService(
     repos.tasks,
     new MarkdownIo(),
-    { projectRoot, backlogDir: config.paths.backlog },
+    { projectRoot, backlogDir: LAYOUT.backlog },
     syncBuffer,
     // Resolve a task's epic/sprint UUIDs to their stable human keys for
     // the markdown frontmatter; those keys survive a clone, the ids do not.
@@ -94,12 +95,12 @@ export function createSyncCore(
     repos.skills,
     {
       projectRoot,
-      backlogDir: config.paths.backlog,
-      roadmapDir: config.paths.roadmap,
-      sprintsDir: config.paths.sprints,
-      observationsDir: config.paths.observations,
-      memoryDir: config.paths.memory,
-      skillsDir: config.paths.skills,
+      backlogDir: LAYOUT.backlog,
+      roadmapDir: LAYOUT.roadmap,
+      sprintsDir: LAYOUT.sprints,
+      observationsDir: LAYOUT.observations,
+      memoryDir: LAYOUT.memory,
+      skillsDir: LAYOUT.skills,
     },
     new Set(infra.stateMachine.getWorkflow().states),
     auditCore.audit,

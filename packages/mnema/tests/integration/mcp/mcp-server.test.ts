@@ -41,7 +41,9 @@ async function setupHarness(
   const workflowName = options.workflow ?? 'default';
   copyFileSync(
     path.join(workflowName === 'default' ? workflowsSrc : fixtureWorkflows, `${workflowName}.json`),
-    path.join(projectRoot, '.mnema/workflows', `${workflowName}.json`),
+    // The runtime always loads default.json; a retired-preset fixture
+    // stands in AS default.json to exercise the feature-gating machinery.
+    path.join(projectRoot, '.mnema/workflows', 'default.json'),
   );
 
   const config = ConfigSchema.parse({
@@ -462,7 +464,7 @@ describe('MnemaMcpServer under workflow=lean (1.4 sweep)', () => {
   describe('stale-server signal (MNEMA-325)', () => {
     /** Touch the active workflow's mtime to a future instant → schema diverged. */
     function touchWorkflow(h: Harness): void {
-      const wf = path.join(h.projectRoot, h.config.paths.workflows, `${h.config.workflow}.json`);
+      const wf = path.join(h.projectRoot, '.mnema/workflows', 'default.json');
       const future = new Date(Date.now() + 60_000);
       utimesSync(wf, future, future);
     }

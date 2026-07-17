@@ -71,7 +71,7 @@ describe('transition fold-validation respects field_kind', () => {
       if (!existsSync(full)) mkdirSync(full, { recursive: true });
     }
     writeFileSync(
-      path.join(projectRoot, '.mnema/workflows', 'custom-validating.json'),
+      path.join(projectRoot, '.mnema/workflows', 'default.json'),
       JSON.stringify(CUSTOM_WORKFLOW),
     );
     container = createServiceContainer(makeConfig(), projectRoot, { migrationsDir });

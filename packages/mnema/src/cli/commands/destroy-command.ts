@@ -18,6 +18,7 @@ import { CONFIG_FILE_RELATIVE, ConfigLoader } from '@mnema/core/config/config-lo
 import { ErrorCode, ExitCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import { workflowsDir } from '@mnema/core/utils/asset-paths.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import { resolveProjectRoot } from '../project-root.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 
@@ -81,11 +82,7 @@ export class DestroyCommand {
           return;
         }
 
-        const removed = removeArtifacts(
-          projectRoot,
-          { ...config.paths, workflow: config.workflow },
-          decision,
-        );
+        const removed = removeArtifacts(projectRoot, { ...LAYOUT, workflow: 'default' }, decision);
         for (const target of removed) {
           process.stdout.write(`${pc.dim('removed')} ${target}\n`);
         }

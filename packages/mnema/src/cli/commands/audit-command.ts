@@ -43,6 +43,7 @@ import {
 } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/audit-state-repository.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
@@ -209,7 +210,7 @@ export class AuditCommand {
       .action(async (options: { readonly verifyAnchors?: boolean }) => {
         let hasError = false;
         await withCliContext(async ({ config, projectRoot, container }) => {
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           // Content attestation (ADR-41): committed .att coverage, verifiable
           // with no secret. The shared builder keeps this verdict identical
@@ -259,7 +260,7 @@ export class AuditCommand {
       .action(async (options: { readonly write?: boolean }) => {
         let failed = false;
         await withCliContext(async ({ config, projectRoot, container }) => {
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const walk = walkChainedEvents(auditDir);
 
@@ -362,7 +363,7 @@ export class AuditCommand {
         async (options: { readonly force?: boolean; readonly acceptLegacyBreaks?: string }) => {
           let hasError = false;
           await withCliContext(async ({ config, projectRoot, container }) => {
-            const auditDir = path.join(projectRoot, config.paths.audit);
+            const auditDir = path.join(projectRoot, LAYOUT.audit);
             const secret = new ProjectSecretService(projectRoot, config.project.key);
             const state = new AuditStateRepository(container.adapter);
             const signatures = new AuditHeadSignatureRepository(container.adapter);
@@ -451,7 +452,7 @@ export class AuditCommand {
         async (options: { readonly force?: boolean; readonly requireCommitted?: boolean }) => {
           let hasError = false;
           await withCliContext(async ({ config, projectRoot, container }) => {
-            const auditDir = path.join(projectRoot, config.paths.audit);
+            const auditDir = path.join(projectRoot, LAYOUT.audit);
             const secret = new ProjectSecretService(projectRoot, config.project.key);
             const state = new AuditStateRepository(container.adapter);
             const signatures = new AuditHeadSignatureRepository(container.adapter);
@@ -579,7 +580,7 @@ export class AuditCommand {
           const { diagnoseAuditChain } = await import(
             '@mnema/core/services/audit/audit-diagnose.js'
           );
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const report = diagnoseAuditChain(auditDir, secret.read(), projectRoot);
 
@@ -669,7 +670,7 @@ export class AuditCommand {
       )
       .action(async () => {
         await withCliContext(({ config, projectRoot, container }) => {
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           const plan = planAuditRepair({
             auditDir,
@@ -715,7 +716,7 @@ export class AuditCommand {
       .action(async (options: { readonly force?: boolean }) => {
         let hasError = false;
         await withCliContext(({ config, projectRoot, container }) => {
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secretService = new ProjectSecretService(projectRoot, config.project.key);
           const secret = secretService.read();
           const apply = options.force === true;

@@ -5,6 +5,7 @@ import {
 } from '@mnema/core/services/metrics/adoption-metrics.js';
 import { readCounters } from '@mnema/core/services/metrics/metrics-counter.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { withCliContext } from '../cli-context.js';
 
@@ -32,8 +33,8 @@ export class MetricsCommand {
       )
       .option('--json', 'Emit the raw adoption metrics as JSON', false)
       .action(async (options: MetricsOptions) => {
-        await withCliContext(({ container, config, projectRoot }) => {
-          const stateDir = path.join(projectRoot, config.paths.state);
+        await withCliContext(({ container, projectRoot }) => {
+          const stateDir = path.join(projectRoot, LAYOUT.state);
           const events = container.auditQuery.run();
           const counters = readCounters(stateDir);
           const terminal = new Set(container.stateMachine.terminalStates());

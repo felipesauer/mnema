@@ -25,6 +25,7 @@ import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/au
 import type { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import { CURATED_MEMORY_SUBFOLDERS } from '@mnema/core/utils/mirror-layout.js';
 import { VERSION } from '@mnema/core/utils/version.js';
 import type { Command } from 'commander';
@@ -246,7 +247,7 @@ export class UpgradeCommand {
     // reporting "already up to date" — a fully-synced project would always
     // carry this one step. The probe is a shallow readdir, not a full walk, so
     // it never re-parses the files; the step's run() does the real work.
-    if (!appliedRemediations.has('mirror-ingest') && hasIngestibleMarkdown(projectRoot, config)) {
+    if (!appliedRemediations.has('mirror-ingest') && hasIngestibleMarkdown(projectRoot)) {
       steps.push(
         remediationStep(
           {
@@ -321,7 +322,7 @@ export class UpgradeCommand {
     // healthy, and the mirror-ahead one-ahead shape is the crash window the
     // writer self-heals — neither belongs here. The count is the chained (v>=2)
     // line count, matching what `reconcileAuditState`'s own walk recomputes.
-    const auditDir = path.join(projectRoot, config.paths.audit);
+    const auditDir = path.join(projectRoot, LAYOUT.audit);
     const diskChainedCount = walkChainedEvents(auditDir).chained.length;
     const mirrorCount = new AuditStateRepository(container.adapter).read().eventCount;
     if (!appliedRemediations.has('mirror-reconcile') && diskChainedCount > mirrorCount) {
@@ -393,12 +394,12 @@ export class UpgradeCommand {
     // honest (a fully-adopted project adds no adopt step at all). Runs AFTER
     // ingest and BEFORE the AGENTS.md sync (adopting `memory` creates
     // memory/INDEX.md, which the AGENTS.md managed block imports).
-    const missingComponents = detectMissingComponents(projectRoot, config);
+    const missingComponents = detectMissingComponents(projectRoot);
     if (missingComponents.length > 0) {
       steps.push({
         label: `adopt missing layout component(s): ${missingComponents.join(', ')}`,
         run: () => {
-          const service = new AdoptionService(projectRoot, config);
+          const service = new AdoptionService(projectRoot);
           const added: string[] = [];
           let adoptedSkills = false;
           for (const component of missingComponents) {
@@ -447,12 +448,12 @@ export class UpgradeCommand {
 
     // Mirror drift — rows in SQLite with no `.md` on disk.
     const mirrorChecks = inspectMirrorDrift(container.adapter, {
-      skillsDir: path.join(projectRoot, config.paths.skills),
-      memoryDir: path.join(projectRoot, config.paths.memory),
-      roadmapDir: path.join(projectRoot, config.paths.roadmap),
-      sprintsDir: path.join(projectRoot, config.paths.sprints),
-      backlogDir: path.join(projectRoot, config.paths.backlog),
-      observationsDir: path.join(projectRoot, config.paths.observations),
+      skillsDir: path.join(projectRoot, LAYOUT.skills),
+      memoryDir: path.join(projectRoot, LAYOUT.memory),
+      roadmapDir: path.join(projectRoot, LAYOUT.roadmap),
+      sprintsDir: path.join(projectRoot, LAYOUT.sprints),
+      backlogDir: path.join(projectRoot, LAYOUT.backlog),
+      observationsDir: path.join(projectRoot, LAYOUT.observations),
     });
     if (mirrorChecks.some((c) => !c.ok && c.detail.includes('missing files'))) {
       steps.push({
@@ -488,12 +489,7 @@ export class UpgradeCommand {
           // row the ingest just created, so a fresh clone's committed tasks
           // are not mistaken for orphans. Conflicted keys (ingest refused
           // them, so they have no row) are protected so their mirrors survive.
-          const pruned = pruneAllOrphanMirrors(
-            container.adapter,
-            config,
-            projectRoot,
-            conflictedTaskKeys,
-          );
+          const pruned = pruneAllOrphanMirrors(container.adapter, projectRoot, conflictedTaskKeys);
           const protectedNote =
             conflictedTaskKeys.size > 0
               ? ` (kept ${conflictedTaskKeys.size} conflicted mirror(s) for you to resolve)`
@@ -541,7 +537,7 @@ export class UpgradeCommand {
    */
   private attestationStep(ctx: CliContext): UpgradeStep | null {
     const { config, projectRoot, container } = ctx;
-    const auditDir = path.join(projectRoot, config.paths.audit);
+    const auditDir = path.join(projectRoot, LAYOUT.audit);
 
     // Count events past the last committed `.att` — the unattested tail.
     const total = walkChainedEvents(auditDir).chained.length;
@@ -609,12 +605,12 @@ function attestedToAfter(auditDir: string): number {
  * @param projectRoot - Absolute project root
  * @param config - Validated project configuration
  */
-export function hasIngestibleMarkdown(projectRoot: string, config: Config): boolean {
+export function hasIngestibleMarkdown(projectRoot: string): boolean {
   const isEntityFile = (name: string): boolean =>
     name.endsWith('.md') && !name.startsWith('.') && name !== 'INDEX.md' && name !== 'README.md';
 
   // Backlog is nested one level: backlog/<STATE>/<KEY>.md.
-  const backlogRoot = path.join(projectRoot, config.paths.backlog);
+  const backlogRoot = path.join(projectRoot, LAYOUT.backlog);
   if (existsSync(backlogRoot)) {
     for (const entry of readdirSync(backlogRoot, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
@@ -624,7 +620,7 @@ export function hasIngestibleMarkdown(projectRoot: string, config: Config): bool
   }
 
   // Roadmap (epics + decisions), sprints and observations are flat dirs.
-  for (const dir of [config.paths.roadmap, config.paths.sprints, config.paths.observations]) {
+  for (const dir of [LAYOUT.roadmap, LAYOUT.sprints, LAYOUT.observations]) {
     const root = path.join(projectRoot, dir);
     if (existsSync(root) && readdirSync(root).some(isEntityFile)) return true;
   }
@@ -651,13 +647,13 @@ const ADOPTABLE_COMPONENTS: readonly AdoptableComponent[] = [
  * @param projectRoot - Absolute project root
  * @param config - Validated project configuration
  */
-export function detectMissingComponents(projectRoot: string, config: Config): AdoptableComponent[] {
+export function detectMissingComponents(projectRoot: string): AdoptableComponent[] {
   const dirFor: Record<AdoptableComponent, string> = {
-    skills: config.paths.skills,
-    memory: config.paths.memory,
-    roadmap: config.paths.roadmap,
-    commands: config.paths.commands,
-    templates: config.paths.templates,
+    skills: LAYOUT.skills,
+    memory: LAYOUT.memory,
+    roadmap: LAYOUT.roadmap,
+    commands: LAYOUT.commands,
+    templates: LAYOUT.templates,
   };
   return ADOPTABLE_COMPONENTS.filter((component) => {
     const dir = path.join(projectRoot, dirFor[component]);
@@ -679,17 +675,17 @@ export function detectMissingComponents(projectRoot: string, config: Config): Ad
  */
 function printPostUpgradeHealth(ctx: CliContext): void {
   const { config, projectRoot, container } = ctx;
-  const auditDir = path.join(projectRoot, config.paths.audit);
+  const auditDir = path.join(projectRoot, LAYOUT.audit);
   const checks: DoctorCheck[] = [];
 
   checks.push(
     ...inspectMirrorDrift(container.adapter, {
-      skillsDir: path.join(projectRoot, config.paths.skills),
-      memoryDir: path.join(projectRoot, config.paths.memory),
-      roadmapDir: path.join(projectRoot, config.paths.roadmap),
-      sprintsDir: path.join(projectRoot, config.paths.sprints),
-      backlogDir: path.join(projectRoot, config.paths.backlog),
-      observationsDir: path.join(projectRoot, config.paths.observations),
+      skillsDir: path.join(projectRoot, LAYOUT.skills),
+      memoryDir: path.join(projectRoot, LAYOUT.memory),
+      roadmapDir: path.join(projectRoot, LAYOUT.roadmap),
+      sprintsDir: path.join(projectRoot, LAYOUT.sprints),
+      backlogDir: path.join(projectRoot, LAYOUT.backlog),
+      observationsDir: path.join(projectRoot, LAYOUT.observations),
     }),
   );
   // read() not getOrCreate(): the summary verifies, it never mints a secret.
@@ -802,7 +798,6 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
  */
 function pruneAllOrphanMirrors(
   adapter: SqliteAdapter,
-  config: Config,
   projectRoot: string,
   protectedTaskKeys: ReadonlySet<string> = new Set(),
 ): number {
@@ -858,19 +853,14 @@ function pruneAllOrphanMirrors(
     // Skills and memories are foldered (MNEMA-ADR-51) — prune recursively.
     // Memory excludes the curated decisions/notes subfolders: those files are
     // human-authored, have no memory row, and must never be pruned as orphans.
-    ...pruneFolderedOrphanMirrors(join(config.paths.skills), skillSlugs, fs),
-    ...pruneFolderedOrphanMirrors(
-      join(config.paths.memory),
-      memorySlugs,
-      fs,
-      CURATED_MEMORY_SUBFOLDERS,
-    ),
-    ...pruneOrphanMirrors(join(config.paths.observations), observationIds, fs),
+    ...pruneFolderedOrphanMirrors(join(LAYOUT.skills), skillSlugs, fs),
+    ...pruneFolderedOrphanMirrors(join(LAYOUT.memory), memorySlugs, fs, CURATED_MEMORY_SUBFOLDERS),
+    ...pruneOrphanMirrors(join(LAYOUT.observations), observationIds, fs),
     // Epics and decisions share the roadmap dir; a file is an orphan
     // only when it belongs to neither set.
-    ...pruneOrphanMirrors(join(config.paths.roadmap), new Set([...epicKeys, ...decisionKeys]), fs),
-    ...pruneOrphanMirrors(join(config.paths.sprints), sprintKeys, fs),
-    ...pruneNestedOrphanMirrors(join(config.paths.backlog), taskKeys, fs),
+    ...pruneOrphanMirrors(join(LAYOUT.roadmap), new Set([...epicKeys, ...decisionKeys]), fs),
+    ...pruneOrphanMirrors(join(LAYOUT.sprints), sprintKeys, fs),
+    ...pruneNestedOrphanMirrors(join(LAYOUT.backlog), taskKeys, fs),
   ];
   return removed.length;
 }

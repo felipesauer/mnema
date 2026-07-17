@@ -16,6 +16,7 @@ import { MachineKeyService } from '../services/integrity/machine-key.js';
 import { ProjectSecretService } from '../services/integrity/project-secret.js';
 import { userKnowledgeDir } from '../services/knowledge/user-knowledge.js';
 import { AuditWriter } from '../storage/audit/audit-writer.js';
+import { LAYOUT } from '../utils/layout.js';
 import type { Infra } from './infra.js';
 
 /**
@@ -54,7 +55,7 @@ export function createAuditCore(
   projectRoot: string,
   userDirOverride?: string | null,
 ): AuditCore {
-  const auditDir = path.join(projectRoot, config.paths.audit);
+  const auditDir = path.join(projectRoot, LAYOUT.audit);
 
   // Per-project HMAC secret keys the v3 chain (ADR-37 layer 2), resolved
   // lazily on first write so read-only commands never mint it.

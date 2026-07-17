@@ -8,6 +8,7 @@ import type { ServiceContainer } from '@mnema/core/services/service-container.js
 import { SyncMode } from '@mnema/core/services/sync/sync-service.js';
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { PACKAGE_ROOT } from '@mnema/core/utils/asset-paths.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import { logger } from '@mnema/core/utils/logger.js';
 import { VERSION } from '@mnema/core/utils/version.js';
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -229,11 +230,7 @@ export class MnemaMcpServer {
         return null;
       }
     };
-    const workflowPath = path.join(
-      this.projectRoot,
-      this.config.paths.workflows,
-      `${this.config.workflow}.json`,
-    );
+    const workflowPath = path.join(this.projectRoot, LAYOUT.workflows, 'default.json');
     return {
       version: VERSION,
       // A real build artefact — `dist/index.js` mtime bumps on every `pnpm
@@ -264,7 +261,7 @@ export class MnemaMcpServer {
       changed.push('the mnema build (dist/) was rebuilt');
     }
     if (now.workflowMtimeMs !== this.bootFingerprint.workflowMtimeMs) {
-      changed.push(`the active workflow (${this.config.workflow}.json) was edited`);
+      changed.push('the active workflow (default.json) was edited');
     }
     return changed;
   }
@@ -395,7 +392,7 @@ export class MnemaMcpServer {
     new AuditQueryTool(this.services.auditQuery).register(this.sdk);
     new AuditVerifyTool(
       this.services.adapter,
-      path.join(this.projectRoot, this.config.paths.audit),
+      path.join(this.projectRoot, LAYOUT.audit),
       this.projectRoot,
       new ProjectSecretService(this.projectRoot, this.config.project.key),
       createAttestationSource(

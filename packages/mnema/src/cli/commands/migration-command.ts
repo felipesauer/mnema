@@ -6,6 +6,7 @@ import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js'
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { resolveProjectRoot } from '../project-root.js';
 
@@ -69,9 +70,8 @@ function runApply(): void {
   if (configFile === null) {
     process.exit(printError({ kind: ErrorCode.ConfigNotFound, currentDir: process.cwd() }));
   }
-  const config = loader.load();
   const projectRoot = resolveProjectRoot(configFile);
-  const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
+  const dbPath = path.join(projectRoot, LAYOUT.state, 'state.db');
   const adapter = new SqliteAdapter(dbPath);
   try {
     const applied = new MigrationRunner().run(adapter, migrationsDir());

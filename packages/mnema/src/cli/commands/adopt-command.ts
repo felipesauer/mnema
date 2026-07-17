@@ -56,7 +56,7 @@ export class AdoptCommand {
         }
 
         await withCliContext(({ config, projectRoot, container }) => {
-          const service = new AdoptionService(projectRoot, config);
+          const service = new AdoptionService(projectRoot);
           const results: AdoptionResult[] =
             component === 'all'
               ? [...service.adoptAll().results]

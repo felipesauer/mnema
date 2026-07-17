@@ -3,6 +3,7 @@ import { ErrorCode, ExitCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import { SkillService } from '@mnema/core/services/knowledge/skill-service.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { listAvailableToolNames } from '../../mcp/tool-registry.js';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
@@ -53,7 +54,7 @@ export class SkillCommand {
       .description('Lint skills/ — checks frontmatter, MCP tool refs, examples')
       .option('--json', 'Print diagnostics as JSON', false)
       .action(async (options: LintOptions) => {
-        await withCliContext(({ container, config, projectRoot }) => {
+        await withCliContext(({ container, projectRoot }) => {
           // Lint validates tool existence, so check against the full
           // catalogue (all groups), not the profile-gated subset.
           const knownTools = listAvailableToolNames(container.stateMachine.getWorkflow(), {
@@ -61,7 +62,7 @@ export class SkillCommand {
             sprints: true,
             knowledge: true,
           });
-          const skillsDir = path.join(projectRoot, config.paths.skills);
+          const skillsDir = path.join(projectRoot, LAYOUT.skills);
           const report = new SkillService(skillsDir, knownTools).lint();
 
           if (options.json === true) {

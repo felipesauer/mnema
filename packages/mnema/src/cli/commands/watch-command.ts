@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parseTimeBound } from '@mnema/core/services/integrity/audit-query.js';
 import { AuditTail } from '@mnema/core/services/integrity/audit-tail.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { withCliContext } from '../cli-context.js';
 import { formatEvent, type HistoryFormat } from '../formatters/history-formatter.js';
@@ -55,7 +56,7 @@ export class WatchCommand {
       )
       .action(async (options: WatchOptions) => {
         await withCliContext(async ({ config, projectRoot, container }) => {
-          const auditDir = path.join(projectRoot, config.paths.audit);
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
           const format = pickFormat(options);
           const mode: TimestampMode = options.iso === true ? 'iso' : 'relative';
           const display = (handle: string): string => container.identity.getDisplayFor(handle);

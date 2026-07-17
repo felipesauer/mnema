@@ -1,26 +1,6 @@
-import path from 'node:path';
-
 import { z } from 'zod';
 
 import { isSafeAnchorRemote } from '../utils/anchor-remote.js';
-
-/**
- * A path entry under `paths.*`. Every Mnema artefact directory is
- * resolved relative to the project root, so an entry with a `..` segment
- * or an absolute path could steer writes outside the project — a lever a
- * cloned repo's config should not have. Reject both; a leading `./` and
- * nested-but-contained relative paths stay valid.
- *
- * @param defaultValue - The default directory (already project-relative)
- */
-function relativePathField(defaultValue: string) {
-  return z
-    .string()
-    .default(defaultValue)
-    .refine((p) => !path.isAbsolute(p) && !p.split(/[/\\]/).includes('..'), {
-      message: 'must be a project-relative path without ".." segments',
-    });
-}
 
 /**
  * A single domain-event hook: an argv pair spawned WITHOUT a shell.
@@ -85,39 +65,11 @@ export const ConfigSchema = z.object({
     name: z.string().min(1),
     description: z.string().optional(),
   }),
-  paths: z
-    .object({
-      // Every Mnema-managed artefact lives under `.mnema/` by default
-      // so `mnema init` does not pollute the project root with eight
-      // top-level entries. Users who want a different layout (e.g.
-      // visible `backlog/` for GitHub) override individual entries.
-      state: relativePathField('.mnema/state'),
-      audit: relativePathField('.mnema/audit'),
-      backlog: relativePathField('.mnema/backlog'),
-      sprints: relativePathField('.mnema/sprints'),
-      roadmap: relativePathField('.mnema/roadmap'),
-      memory: relativePathField('.mnema/memory'),
-      observations: relativePathField('.mnema/observations'),
-      skills: relativePathField('.mnema/skills'),
-      commands: relativePathField('.mnema/commands'),
-      templates: relativePathField('.mnema/templates'),
-      workflows: relativePathField('.mnema/workflows'),
-    })
-    .prefault({}),
-  workflow: z.string().default('default'),
-  // `multi` is reserved for a future multi-project layout that has
-  // not been designed yet. The schema only accepts `single` so users
-  // don't quietly configure a value that does nothing.
-  mode: z.literal('single').default('single'),
-  // `audit_strategy` and `audit_retention_months` are RESERVED and inert
-  // today: they are accepted and validated, but no code reads them and the
-  // audit chain is append-only forever. Enforcing them means compacting old
-  // months behind a re-baselined chain head (a checkpoint that hashes the
-  // pruned prefix, then continues from there) — a destructive rewrite of the
-  // source of truth that is tracked as its own epic, not a config toggle.
-  // Kept in the schema so a project can express intent now and have it honored
-  // when enforcement lands; `mnema doctor` warns so no one mistakes them for
-  // active retention. See docs/configuration.md.
+  // TRANSITIONAL FLAT KEYS: `mnema audit prune` and doctor's retention
+  // check read these today. They move under `audit.retention.{strategy,
+  // months}` with the audit-format re-baseline (the config-shape change
+  // rides that wave's version bump), keeping the audit block the single
+  // home for audit knobs.
   audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
   audit_retention_months: z.number().int().positive().default(12),
   // Which observable signal marks an agent run as "guided" in `eval_report`.
@@ -149,7 +101,7 @@ export const ConfigSchema = z.object({
       // URL; git-signed may name a `remote`/`ref`.
       anchor: z
         .object({
-          provider: z.enum(['none', 'git-signed', 'opentimestamps', 'rfc3161']).default('none'),
+          provider: z.enum(['none', 'git-signed', 'rfc3161']).default('none'),
           // How often the scheduler anchors the head. Either bound may be
           // set; when neither is given the anchor cadence follows the
           // checkpoint interval (resolved by the scheduler, MNEMA-160).
@@ -200,21 +152,6 @@ export const ConfigSchema = z.object({
               message: 'audit.anchor.tsa (a TSA URL) is required when provider is "rfc3161"',
             });
           }
-          // `opentimestamps` is a declared-but-unshipped provider: the enum
-          // keeps it as documented intent (MNEMA-163), but no provider is
-          // registered yet, so resolving it at runtime would throw a raw
-          // "unknown anchor provider" deep in the anchor factory. Reject it at
-          // config load with an actionable message instead — fail closed at
-          // the earliest point, and drop this guard when the provider lands.
-          if (ctx.value.provider === 'opentimestamps') {
-            ctx.issues.push({
-              code: 'custom',
-              input: ctx.value,
-              path: ['provider'],
-              message:
-                'audit.anchor.provider "opentimestamps" is not implemented yet — use "none", "git-signed", or "rfc3161".',
-            });
-          }
         }),
     })
     .prefault({}),
@@ -235,16 +172,12 @@ export const ConfigSchema = z.object({
   enforcement_field_severity: z.record(z.string(), z.enum(['off', 'warn', 'block'])).prefault({}),
   sync: z
     .object({
-      mode: z.enum(['hybrid', 'push', 'buffer']).default('hybrid'),
       agent_buffer_flush_seconds: z.number().int().positive().default(30),
       agent_buffer_flush_count: z.number().int().positive().default(50),
-      agent_buffer_flush_on_plan_complete: z.boolean().default(true),
     })
     .prefault({}),
   features: z
     .object({
-      fts_search: z.boolean().default(true),
-      attachments: z.boolean().default(true),
       // Gates the knowledge surface (decisions/skills/memories/observations
       // and the provenance chain that links them) as MCP tools. Off in the
       // audit-only profile, where the point is a small core of audit + task
@@ -375,65 +308,35 @@ export const ConfigSchema = z.object({
 export type Config = z.infer<typeof ConfigSchema>;
 
 /**
- * Schema for the optional user-level config (`~/.config/mnema/config.json`).
- *
- * It carries only *behaviour preferences* — never project identity
- * (`project`, `version`, `mnema_version`), layout (`paths`) or the active
- * `workflow`, which are intrinsic to a project and must not leak across
- * them. Every field is optional: the file is a partial set of defaults
- * that a project config overrides key-by-key. `.strict()` rejects an
- * unknown or disallowed key (e.g. a stray `project`) so a mistake is a
- * loud error, not a silent global override.
+ * Keys the per-repo local override (`.mnema/config.local.json`) may NOT
+ * set: project identity/version are intrinsic to a project, and a hooks
+ * block must live in the committed, human-approved project config.
  */
-export const UserConfigSchema = z
-  .object({
-    audit_strategy: z.enum(['full', 'recent', 'local']).optional(),
-    audit_retention_months: z.number().int().positive().optional(),
-    enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).optional(),
-    sync: z
-      .object({
-        mode: z.enum(['hybrid', 'push', 'buffer']).optional(),
-        agent_buffer_flush_seconds: z.number().int().positive().optional(),
-        agent_buffer_flush_count: z.number().int().positive().optional(),
-        agent_buffer_flush_on_plan_complete: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    features: z
-      .object({
-        fts_search: z.boolean().optional(),
-        attachments: z.boolean().optional(),
-        knowledge: z.boolean().optional(),
-        update_check: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    aging: z
-      .object({
-        stale_after_days: z.number().int().positive().optional(),
-        orphan_run_after_hours: z.number().int().positive().optional(),
-        sla_days: z.record(z.string(), z.number().int().positive()).optional(),
-        wip_limits: z.record(z.string(), z.number().int().positive()).optional(),
-      })
-      .strict()
-      .optional(),
-    claims: z
-      .object({
-        lease_minutes: z.number().int().positive().optional(),
-        require_to_start: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    github: z
-      .object({
-        done_pr_policy: z.enum(['off', 'warn', 'block']).optional(),
-      })
-      .strict()
-      .optional(),
-  })
-  .strict();
+export const PROJECT_ONLY_KEYS = ['version', 'mnema_version', 'project', 'hooks'] as const;
+
+/** Defaults materialised from the schema itself — the shape's ground truth. */
+const SCHEMA_DEFAULTS: Record<string, unknown> = ConfigSchema.parse({
+  version: '1.0',
+  mnema_version: '0.0.0',
+  project: { key: 'XX', name: 'shape-probe' },
+});
 
 /**
- * Validated user-level config — a partial set of behaviour defaults.
+ * The behaviour keys a local override may set — DERIVED from the schema
+ * shape (every top-level key minus {@link PROJECT_ONLY_KEYS}), so the
+ * override surface can never drift from the config it overrides.
  */
-export type UserConfig = z.infer<typeof UserConfigSchema>;
+export const BEHAVIOUR_KEYS: readonly string[] = Object.keys(ConfigSchema.shape).filter(
+  (key) => !(PROJECT_ONLY_KEYS as readonly string[]).includes(key),
+);
+
+/**
+ * Top-level keys whose values deep-merge instead of replacing wholesale —
+ * DERIVED from the shape by the rule "every top-level object block
+ * deep-merges": a key is mergeable exactly when its schema default is a
+ * plain object. No hand-maintained list to forget a new block in.
+ */
+export const DEEP_MERGE_KEYS: readonly string[] = BEHAVIOUR_KEYS.filter((key) => {
+  const value = SCHEMA_DEFAULTS[key];
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+});

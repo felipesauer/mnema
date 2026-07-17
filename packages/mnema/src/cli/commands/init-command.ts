@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pc } from '@mnema/core/utils/colors.js';
 import type { Command } from 'commander';
@@ -28,43 +28,11 @@ import { loadWorkflowFile } from '@mnema/core/storage/workflow-file.js';
 import { migrationsDir, workflowsDir } from '@mnema/core/utils/asset-paths.js';
 import { ensureGitattributes } from '@mnema/core/utils/gitattributes.js';
 import { ensureGitignore } from '@mnema/core/utils/gitignore.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import { VERSION } from '@mnema/core/utils/version.js';
 import { isPromptAbort } from '../prompt-helpers.js';
 import { writeAgentsMd } from '../templates/agents-md.js';
 import { writeMnemaReadme } from '../templates/mnema-readme.js';
-
-const SUPPORTED_WORKFLOWS = ['default'] as const;
-type WorkflowName = (typeof SUPPORTED_WORKFLOWS)[number];
-
-/**
- * Reads the ordered `states` array from a bundled workflow's JSON. The
- * wizard shows these to the user, so they must be sourced from the same
- * file `init` actually copies — hard-coded label strings silently drift
- * from the JSON (they had, for every preset). Kept deliberately small:
- * the full {@link loadWorkflowFile} compile pulls in Zod work we do not need
- * just to list state names.
- */
-function workflowStates(name: WorkflowName): readonly string[] {
-  const raw = readFileSync(path.join(workflowsDir(), `${name}.json`), 'utf-8');
-  const states = (JSON.parse(raw) as { states?: unknown }).states;
-  if (!Array.isArray(states) || !states.every((s): s is string => typeof s === 'string')) {
-    throw new Error(`workflow ${name}.json has no string[] states array`);
-  }
-  return states;
-}
-
-/**
- * Builds the wizard's workflow-preset choices, deriving each state list
- * from its JSON via {@link workflowStates}. Iterating
- * {@link SUPPORTED_WORKFLOWS} means a future preset is covered the moment
- * its file ships — nothing to keep in sync by hand.
- */
-function buildWorkflowChoices(): { name: string; value: WorkflowName }[] {
-  return SUPPORTED_WORKFLOWS.map((name) => ({
-    name: `${name} — ${workflowStates(name).join('/')}`,
-    value: name,
-  }));
-}
 
 const SUPPORTED_PROFILES = ['full', 'audit-only'] as const;
 type ProfileName = (typeof SUPPORTED_PROFILES)[number];
@@ -73,7 +41,6 @@ interface InitOptions {
   readonly name?: string;
   readonly key?: string;
   readonly description?: string;
-  readonly workflow?: string;
   readonly profile?: string;
   readonly force?: boolean;
   readonly minimal?: boolean;
@@ -89,7 +56,6 @@ interface ResolvedInitOptions {
   readonly name: string;
   readonly key: string;
   readonly description?: string;
-  readonly workflow: string;
   /** Surface profile; defaults to `full` when omitted. */
   readonly profile?: ProfileName;
   readonly force: boolean;
@@ -141,7 +107,6 @@ export class InitCommand {
       .option('--name <name>', 'Human-readable project name')
       .option('--key <key>', 'Project key (uppercase, 2-10 chars)')
       .option('--description <text>', 'Optional project description')
-      .option('--workflow <name>', 'Workflow preset (default)')
       .option(
         '--profile <name>',
         'Surface profile: full (default) | audit-only (core audit + tasks; no epics/sprints/knowledge)',
@@ -206,7 +171,7 @@ export class InitCommand {
       return Err({ kind: ErrorCode.AlreadyInitialized, configPath });
     }
 
-    const config = buildConfig(options, validation.value);
+    const config = buildConfig(options);
     const minimal = options.minimal === true;
 
     // Note: there is no separate conflict-detection pass. Every write
@@ -219,9 +184,9 @@ export class InitCommand {
     mkdirSync(path.dirname(configPath), { recursive: true });
     writeJson(configPath, config);
 
-    const stateDir = path.join(cwd, config.paths.state);
-    const auditDir = path.join(cwd, config.paths.audit);
-    const workflowsDest = path.join(cwd, config.paths.workflows);
+    const stateDir = path.join(cwd, LAYOUT.state);
+    const auditDir = path.join(cwd, LAYOUT.audit);
+    const workflowsDest = path.join(cwd, LAYOUT.workflows);
 
     mkdirSync(stateDir, { recursive: true });
     mkdirSync(auditDir, { recursive: true });
@@ -229,23 +194,23 @@ export class InitCommand {
     // The backlog is essential in BOTH modes: `doctor` requires it
     // unconditionally, and the first `task create` would make it anyway — a
     // minimal init that immediately fails its own health check is a trap.
-    mkdirSync(path.join(cwd, config.paths.backlog), { recursive: true });
+    mkdirSync(path.join(cwd, LAYOUT.backlog), { recursive: true });
 
     if (!minimal) {
-      mkdirSync(path.join(cwd, config.paths.sprints), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.roadmap), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.memory), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.observations), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.skills), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.commands), { recursive: true });
-      mkdirSync(path.join(cwd, config.paths.templates), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.sprints), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.roadmap), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.memory), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.observations), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.skills), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.commands), { recursive: true });
+      mkdirSync(path.join(cwd, LAYOUT.templates), { recursive: true });
     }
 
-    ensureGitignore(cwd, config.paths.state, config.paths.audit);
-    ensureGitattributes(cwd, config.paths.audit);
+    ensureGitignore(cwd, LAYOUT.state, LAYOUT.audit);
+    ensureGitattributes(cwd, LAYOUT.audit);
 
-    const workflowSrc = path.join(workflowsDir(), `${config.workflow}.json`);
-    const workflowDestFile = path.join(workflowsDest, `${config.workflow}.json`);
+    const workflowSrc = path.join(workflowsDir(), 'default.json');
+    const workflowDestFile = path.join(workflowsDest, 'default.json');
     // Only copy when src and dest differ. The dogfood-on-self setup
     // resolves workflowsDir() and paths.workflows to the same on-disk
     // path; in that case the file is already in place (or genuinely
@@ -258,12 +223,12 @@ export class InitCommand {
     }
 
     if (!minimal) {
-      createBacklogStateDirs(cwd, config, workflowDestFile);
+      createBacklogStateDirs(cwd, workflowDestFile);
       // Seed the example skills at init, not only via `mnema adopt skills`
       // (which agents skip — the report's "skills born empty, stay empty").
       // Reuses the exact adopt content, so there is a single source and the
       // write is idempotent. --minimal skips this and keeps skills/ empty.
-      const adoption = new AdoptionService(cwd, config);
+      const adoption = new AdoptionService(cwd);
       adoption.adopt('skills');
       // Seed the slash commands too, so `.mnema/commands/` is not born empty
       // (the shortcut that makes the tool get used). Commands are pure files
@@ -287,7 +252,7 @@ export class InitCommand {
     // A committed source-of-truth map inside `.mnema/` — it travels with a
     // clone (the top-level README does not), so a teammate who opens the dir
     // can tell record from cache from public-key material. Non-destructive.
-    writeMnemaReadme(cwd, config);
+    writeMnemaReadme(cwd);
 
     const dbPath = path.join(stateDir, 'state.db');
     const adapter = new SqliteAdapter(dbPath);
@@ -317,7 +282,7 @@ export class InitCommand {
       // as a side effect).
       if (!minimal) {
         new SkillService(
-          path.join(cwd, config.paths.skills),
+          path.join(cwd, LAYOUT.skills),
           new Set(),
           new SkillRepository(adapter),
           identity,
@@ -337,7 +302,7 @@ export class InitCommand {
   }
 }
 
-function validateOptions(options: ResolvedInitOptions): Result<WorkflowName, MnemaError> {
+function validateOptions(options: ResolvedInitOptions): Result<undefined, MnemaError> {
   if (!/^[A-Z][A-Z0-9]{1,9}$/.test(options.key)) {
     return Err({
       kind: ErrorCode.ConfigInvalid,
@@ -357,23 +322,10 @@ function validateOptions(options: ResolvedInitOptions): Result<WorkflowName, Mne
       issues: [{ path: ['name'], message: 'must not be empty' }],
     });
   }
-  const wf = options.workflow ?? 'default';
-  if (!SUPPORTED_WORKFLOWS.includes(wf as WorkflowName)) {
-    return Err({
-      kind: ErrorCode.ConfigInvalid,
-      path: '<options>',
-      issues: [
-        {
-          path: ['workflow'],
-          message: `unknown workflow "${wf}"; choose one of ${SUPPORTED_WORKFLOWS.join(', ')}`,
-        },
-      ],
-    });
-  }
-  return Ok(wf as WorkflowName);
+  return Ok(undefined);
 }
 
-function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Config {
+function buildConfig(options: ResolvedInitOptions): Config {
   const raw = {
     version: '1.0' as const,
     mnema_version: `^${VERSION}`,
@@ -382,11 +334,9 @@ function buildConfig(options: ResolvedInitOptions, workflow: WorkflowName): Conf
       name: options.name,
       ...(options.description !== undefined ? { description: options.description } : {}),
     },
-    workflow,
     // audit-only trims the advertised surface to the core: the knowledge
-    // group (decisions/skills/memories/observations) is turned off here,
-    // and the lean-by-default workflow keeps epics/sprints off. Everything
-    // can be re-enabled later by flipping the flag / switching workflow.
+    // group (decisions/skills/memories/observations) is turned off here.
+    // Re-enable later by flipping the flag.
     ...(options.profile === 'audit-only' ? { features: { knowledge: false } } : {}),
   };
   return ConfigSchema.parse(raw);
@@ -402,9 +352,9 @@ function writeJson(filePath: string, data: unknown): void {
  * in lockstep with the workflow JSON so users editing the workflow get
  * matching directories on next `mnema sync` (or manual init).
  */
-function createBacklogStateDirs(cwd: string, config: Config, workflowFile: string): void {
+function createBacklogStateDirs(cwd: string, workflowFile: string): void {
   const workflow = loadWorkflowFile(workflowFile);
-  const root = path.join(cwd, config.paths.backlog);
+  const root = path.join(cwd, LAYOUT.backlog);
   for (const state of workflow.states) {
     mkdirSync(path.join(root, state), { recursive: true });
   }
@@ -441,15 +391,6 @@ function resolveProfile(raw: string | undefined): ProfileName {
   return raw as ProfileName;
 }
 
-/**
- * The default workflow for a profile when `--workflow` was not given.
- * Only `default` ships; `audit-only` is a config shortcut (it disables
- * the knowledge surface) and no longer pairs with a workflow preset.
- */
-function defaultWorkflowFor(_profile: ProfileName): WorkflowName {
-  return 'default';
-}
-
 async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions | null> {
   const profile = resolveProfile(options.profile);
 
@@ -462,7 +403,6 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
       name: options.name,
       key: options.key,
       description: options.description,
-      workflow: options.workflow ?? defaultWorkflowFor(profile),
       profile,
       force: options.force === true,
       minimal: options.minimal === true,
@@ -476,7 +416,6 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
       name: options.name,
       key: options.key,
       description: options.description,
-      workflow: options.workflow ?? defaultWorkflowFor(profile),
       profile,
       force: options.force === true,
       minimal: options.minimal === true,
@@ -487,7 +426,7 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
   process.stdout.write(`${pc.bold('Mnema init')} — answer a few questions to bootstrap.\n\n`);
 
   // Lazy: silent paths above never touch @inquirer/prompts.
-  const { confirm, input, select } = await import('@inquirer/prompts');
+  const { confirm, input } = await import('@inquirer/prompts');
 
   const name = await input({
     message: 'Project name',
@@ -511,12 +450,6 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
       default: '',
     }));
 
-  const workflow = await select<WorkflowName>({
-    message: 'Workflow preset',
-    default: (options.workflow as WorkflowName | undefined) ?? 'default',
-    choices: buildWorkflowChoices(),
-  });
-
   const minimal =
     options.minimal === true
       ? true
@@ -529,7 +462,6 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedInitOptions
     name,
     key,
     description: description.trim().length > 0 ? description : undefined,
-    workflow,
     profile,
     force: options.force === true,
     minimal,
@@ -559,6 +491,4 @@ export const _internal = {
   validateOptions,
   buildConfig,
   deriveKey,
-  workflowStates,
-  buildWorkflowChoices,
 };

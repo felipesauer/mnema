@@ -12,6 +12,7 @@ import { FileStore } from '../storage/files/file-store.js';
 import type { AppliedMigration } from '../storage/sqlite/migration-runner.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
+import { LAYOUT } from '../utils/layout.js';
 import { perfTrace } from '../utils/perf-trace.js';
 import { AgentPlanService } from './agent/agent-plan-service.js';
 import { AgentRunService } from './agent/agent-run-service.js';
@@ -206,7 +207,7 @@ export function createServiceContainer(
   const registry = createLazyRegistry();
   const { lazy } = registry;
 
-  const stateDir = path.join(projectRoot, config.paths.state);
+  const stateDir = path.join(projectRoot, LAYOUT.state);
 
   // --- the coupled lattices (build as units, lazily) -------------------
   const auditCore = lazy('audit-core', () =>
@@ -243,7 +244,7 @@ export function createServiceContainer(
   );
   const archive = lazy(
     'archive',
-    () => new ArchiveService(repos.tasks, { projectRoot, backlogDir: config.paths.backlog }),
+    () => new ArchiveService(repos.tasks, { projectRoot, backlogDir: LAYOUT.backlog }),
   );
   const sprint = lazy(
     'sprint',
@@ -365,7 +366,7 @@ export function createServiceContainer(
   );
   const taskTemplate = lazy(
     'taskTemplate',
-    () => new TaskTemplateService(path.join(projectRoot, config.paths.templates)),
+    () => new TaskTemplateService(path.join(projectRoot, LAYOUT.templates)),
   );
 
   // --- agent -------------------------------------------------------------
@@ -393,7 +394,7 @@ export function createServiceContainer(
   const orphanRun = lazy('orphanRun', () => new OrphanRunService(repos.agentRuns, agentRun()));
   const commandDefinition = lazy(
     'commandDefinition',
-    () => new CommandDefinitionService(path.join(projectRoot, config.paths.commands)),
+    () => new CommandDefinitionService(path.join(projectRoot, LAYOUT.commands)),
   );
 
   // --- knowledge ----------------------------------------------------------
@@ -402,7 +403,7 @@ export function createServiceContainer(
     // an injected resolver the skill lint tool-existence check is skipped.
     const knownTools = options.resolveKnownTools ? options.resolveKnownTools(workflow) : null;
     return new SkillService(
-      path.join(projectRoot, config.paths.skills),
+      path.join(projectRoot, LAYOUT.skills),
       knownTools,
       repos.skills,
       identity,
@@ -416,7 +417,7 @@ export function createServiceContainer(
     'memory',
     () =>
       new MemoryService(
-        path.join(projectRoot, config.paths.memory),
+        path.join(projectRoot, LAYOUT.memory),
         repos.memories,
         identity,
         auditCore().audit,
@@ -433,7 +434,7 @@ export function createServiceContainer(
         repos.tasks,
         identity,
         auditCore().audit,
-        path.join(projectRoot, config.paths.observations),
+        path.join(projectRoot, LAYOUT.observations),
       ),
   );
   const memoryStaleness = lazy('memoryStaleness', () => new MemoryStalenessService(projectRoot));
@@ -526,8 +527,8 @@ export function createServiceContainer(
     'wikilinkLint',
     () =>
       new WikilinkLintService(
-        path.join(projectRoot, config.paths.skills),
-        path.join(projectRoot, config.paths.memory),
+        path.join(projectRoot, LAYOUT.skills),
+        path.join(projectRoot, LAYOUT.memory),
         config.project.key,
         repos.skills,
         repos.memories,

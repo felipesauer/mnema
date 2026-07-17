@@ -29,6 +29,7 @@ import { TransitionRepository } from '../storage/sqlite/repositories/transition-
 import { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '../storage/workflow-file.js';
 import { migrationsDir as assetPathsMigrationsDir } from '../utils/asset-paths.js';
+import { LAYOUT } from '../utils/layout.js';
 
 /**
  * The eager substrate every container session needs: the open database
@@ -84,7 +85,7 @@ export function createInfra(
   projectRoot: string,
   migrationsDirOverride?: string,
 ): Infra {
-  const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
+  const dbPath = path.join(projectRoot, LAYOUT.state, 'state.db');
   const adapter = new SqliteAdapter(dbPath);
 
   // ONE migration source: the bundled directory — the schema is mnema's
@@ -105,7 +106,7 @@ export function createInfra(
   const detectPendingMigrations = (): readonly AppliedMigration[] =>
     runner.detectDrift(adapter, migrationSources);
 
-  const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
+  const workflowPath = path.join(projectRoot, LAYOUT.workflows, 'default.json');
   const workflow = loadWorkflowFile(workflowPath);
   const stateMachine = new StateMachine(workflow);
 

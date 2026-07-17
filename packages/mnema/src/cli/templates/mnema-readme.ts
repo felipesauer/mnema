@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import type { Config } from '@mnema/core/config/config-schema.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 
 /** File name of the committed source-of-truth map inside `.mnema/`. */
 const MNEMA_README = 'README.md';
@@ -15,10 +15,9 @@ const MNEMA_README = 'README.md';
  * teammate who opens `.mnema/` in a cloned repo can tell at a glance what is
  * safe to edit, what is regenerated, and where the secrets are NOT.
  *
- * @param config - Resolved project config (for the actual `paths.*`)
  */
-export function mnemaReadmeBody(config: Config): string {
-  const p = config.paths;
+export function mnemaReadmeBody(): string {
+  const p = LAYOUT;
   return [
     '# .mnema/',
     '',
@@ -69,11 +68,11 @@ export function mnemaReadmeBody(config: Config): string {
  * @param config - Resolved project config
  * @returns `'created'` when written, `'present'` when it already existed
  */
-export function writeMnemaReadme(cwd: string, config: Config): 'created' | 'present' {
+export function writeMnemaReadme(cwd: string): 'created' | 'present' {
   // `.mnema/` is the parent of the state dir (e.g. `.mnema/state` -> `.mnema`).
-  const mnemaDir = path.dirname(path.join(cwd, config.paths.state));
+  const mnemaDir = path.dirname(path.join(cwd, LAYOUT.state));
   const target = path.join(mnemaDir, MNEMA_README);
   if (existsSync(target)) return 'present';
-  writeFileSync(target, mnemaReadmeBody(config), 'utf-8');
+  writeFileSync(target, mnemaReadmeBody(), 'utf-8');
   return 'created';
 }

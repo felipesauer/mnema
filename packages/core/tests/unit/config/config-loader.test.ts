@@ -10,8 +10,6 @@ import {
   ConfigNotFoundError,
   LOCAL_CONFIG_RELATIVE,
   LocalConfigInvalidError,
-  USER_CONFIG_RELATIVE,
-  UserConfigInvalidError,
 } from '@/config/config-loader.js';
 
 const validConfig = {
@@ -78,14 +76,8 @@ describe('ConfigLoader', () => {
 
       expect(config.project.key).toBe('TEST');
       expect(config.project.name).toBe('Test project');
-      expect(config.workflow).toBe('default');
-      expect(config.mode).toBe('single');
-      // The default layout puts every Mnema-managed artefact under .mnema/.
-      expect(config.paths.state).toBe('.mnema/state');
-      expect(config.paths.audit).toBe('.mnema/audit');
-      expect(config.paths.backlog).toBe('.mnema/backlog');
       expect(config.sync.agent_buffer_flush_seconds).toBe(30);
-      expect(config.features.fts_search).toBe(true);
+      expect(config.features.knowledge).toBe(true);
       // The npm update check is opt-in and OFF by default (ADR-40) — the
       // offline / zero-telemetry default must hold without config.
       expect(config.features.update_check).toBe(false);
@@ -102,27 +94,6 @@ describe('ConfigLoader', () => {
         // validConfig has no `audit` block at all.
         writeConfig(tempRoot, validConfig);
         expect(() => loader.load(tempRoot)).not.toThrow();
-      });
-
-      it('rejects opentimestamps — declared in the enum but not implemented yet', () => {
-        // The provider is a documented-but-unshipped target (MNEMA-163): the
-        // enum keeps it, but selecting it must fail at config load with an
-        // actionable message rather than throwing a raw "unknown anchor
-        // provider" deep in the factory at first use.
-        writeConfig(tempRoot, {
-          ...validConfig,
-          audit: { anchor: { provider: 'opentimestamps', interval: { seconds: 86400 } } },
-        });
-        let caught: unknown;
-        try {
-          loader.load(tempRoot);
-        } catch (e) {
-          caught = e;
-        }
-        expect(caught).toBeInstanceOf(ConfigInvalidError);
-        // The issue must name the shortfall actionably, not just fail opaquely.
-        const issues = JSON.stringify((caught as ConfigInvalidError).issues);
-        expect(issues).toMatch(/not implemented yet/);
       });
 
       it('parses a valid git-signed config with remote and ref', () => {
@@ -236,33 +207,6 @@ describe('ConfigLoader', () => {
       expect((caught as ConfigInvalidError).issues).toBeTruthy();
     });
 
-    it('rejects a paths.* entry with a ".." segment (traversal)', () => {
-      writeConfig(tempRoot, {
-        ...validConfig,
-        project: { key: 'TEST', name: 'Test project' },
-        paths: { backlog: '../../../tmp/escape' },
-      });
-      expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
-    });
-
-    it('rejects a paths.* entry with an absolute path', () => {
-      writeConfig(tempRoot, {
-        ...validConfig,
-        project: { key: 'TEST', name: 'Test project' },
-        paths: { audit: '/etc/evil' },
-      });
-      expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
-    });
-
-    it('accepts a nested-but-contained relative paths.* entry', () => {
-      writeConfig(tempRoot, {
-        ...validConfig,
-        project: { key: 'TEST', name: 'Test project' },
-        paths: { backlog: './.mnema/sub/backlog' },
-      });
-      expect(() => loader.load(tempRoot)).not.toThrow();
-    });
-
     it('throws ConfigInvalidError (not a raw SyntaxError) on malformed JSON', () => {
       // Write raw, syntactically broken JSON — not JSON.stringify.
       const configPath = path.join(tempRoot, CONFIG_FILE_RELATIVE);
@@ -311,97 +255,6 @@ describe('ConfigLoader', () => {
     });
   });
 
-  describe('user-level config (~/.config/mnema/config.json)', () => {
-    let fakeHome: string;
-    let scopedLoader: ConfigLoader;
-
-    function writeUserConfig(payload: unknown): void {
-      const file = path.join(fakeHome, USER_CONFIG_RELATIVE);
-      mkdirSync(path.dirname(file), { recursive: true });
-      writeFileSync(file, JSON.stringify(payload));
-    }
-
-    beforeEach(() => {
-      // Isolate the home dir so the test never reads the real ~/.config.
-      fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-'));
-      scopedLoader = new ConfigLoader(() => fakeHome);
-    });
-
-    afterEach(() => {
-      rmSync(fakeHome, { recursive: true, force: true });
-    });
-
-    it('applies a user default when the project omits the key', () => {
-      writeConfig(tempRoot, validConfig); // no enforcement_mode
-      writeUserConfig({ enforcement_mode: 'blocking' });
-
-      const config = scopedLoader.load(tempRoot);
-      expect(config.enforcement_mode).toBe('blocking');
-    });
-
-    it('throws UserConfigInvalidError (not a raw SyntaxError) on malformed user JSON', () => {
-      writeConfig(tempRoot, validConfig);
-      const file = path.join(fakeHome, USER_CONFIG_RELATIVE);
-      mkdirSync(path.dirname(file), { recursive: true });
-      writeFileSync(file, '{ not valid json ');
-
-      let caught: unknown;
-      try {
-        scopedLoader.load(tempRoot);
-      } catch (error) {
-        caught = error;
-      }
-      expect(caught).toBeInstanceOf(UserConfigInvalidError);
-      expect(caught).not.toBeInstanceOf(SyntaxError);
-    });
-
-    it('lets the project override the user default', () => {
-      writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'advisory' });
-      writeUserConfig({ enforcement_mode: 'blocking' });
-
-      const config = scopedLoader.load(tempRoot);
-      expect(config.enforcement_mode).toBe('advisory');
-    });
-
-    it('deep-merges sync: project sub-fields win, user sub-fields fill the gaps', () => {
-      writeConfig(tempRoot, { ...validConfig, sync: { agent_buffer_flush_count: 99 } });
-      writeUserConfig({ sync: { mode: 'push', agent_buffer_flush_count: 10 } });
-
-      const config = scopedLoader.load(tempRoot);
-      expect(config.sync.agent_buffer_flush_count).toBe(99); // project wins
-      expect(config.sync.mode).toBe('push'); // user fills the gap
-    });
-
-    it('applies a user-level aging.stale_after_days when the project omits it', () => {
-      writeConfig(tempRoot, validConfig);
-      writeUserConfig({ aging: { stale_after_days: 9 } });
-
-      const config = scopedLoader.load(tempRoot);
-      expect(config.aging.stale_after_days).toBe(9);
-    });
-
-    it('lets the project override the user-level aging threshold', () => {
-      writeConfig(tempRoot, { ...validConfig, aging: { stale_after_days: 2 } });
-      writeUserConfig({ aging: { stale_after_days: 9 } });
-
-      const config = scopedLoader.load(tempRoot);
-      expect(config.aging.stale_after_days).toBe(2); // project wins
-    });
-
-    it('changes nothing when no user config exists', () => {
-      writeConfig(tempRoot, validConfig);
-      const config = scopedLoader.load(tempRoot);
-      expect(config.enforcement_mode).toBe('strict'); // schema default
-    });
-
-    it('rejects a user config that sets a project-only key', () => {
-      writeConfig(tempRoot, validConfig);
-      writeUserConfig({ project: { key: 'OTHER', name: 'Nope' } });
-
-      expect(() => scopedLoader.load(tempRoot)).toThrow(UserConfigInvalidError);
-    });
-  });
-
   describe('per-repo override (.mnema/config.local.json)', () => {
     function writeLocalConfig(payload: unknown): void {
       const file = path.join(tempRoot, LOCAL_CONFIG_RELATIVE);
@@ -426,13 +279,13 @@ describe('ConfigLoader', () => {
     it('deep-merges sync: local sub-fields win, project sub-fields fill the gaps', () => {
       writeConfig(tempRoot, {
         ...validConfig,
-        sync: { mode: 'push', agent_buffer_flush_count: 99 },
+        sync: { agent_buffer_flush_seconds: 7, agent_buffer_flush_count: 99 },
       });
       writeLocalConfig({ sync: { agent_buffer_flush_count: 5 } });
 
       const config = loader.load(tempRoot);
       expect(config.sync.agent_buffer_flush_count).toBe(5); // local wins
-      expect(config.sync.mode).toBe('push'); // project fills the gap
+      expect(config.sync.agent_buffer_flush_seconds).toBe(7); // project fills the gap
     });
 
     it('recursively merges a nested record (aging.sla_days) instead of replacing it', () => {
@@ -463,21 +316,36 @@ describe('ConfigLoader', () => {
       expect(config.claims.lease_minutes).toBe(10); // local wins
     });
 
-    it('sits on top of the whole stack: user < project < local', () => {
-      // user says blocking, project says strict, local says advisory → advisory
-      const fakeHome = mkdtempSync(path.join(tmpdir(), 'mnema-home-stack-'));
-      try {
-        const stackLoader = new ConfigLoader(() => fakeHome);
-        const userFile = path.join(fakeHome, USER_CONFIG_RELATIVE);
-        mkdirSync(path.dirname(userFile), { recursive: true });
-        writeFileSync(userFile, JSON.stringify({ enforcement_mode: 'blocking' }));
-        writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'strict' });
-        writeLocalConfig({ enforcement_mode: 'advisory' });
+    it('the stack is exactly two layers: project < local', () => {
+      writeConfig(tempRoot, { ...validConfig, enforcement_mode: 'strict' });
+      writeLocalConfig({ enforcement_mode: 'advisory' });
 
-        expect(stackLoader.load(tempRoot).enforcement_mode).toBe('advisory');
-      } finally {
-        rmSync(fakeHome, { recursive: true, force: true });
-      }
+      expect(loader.load(tempRoot).enforcement_mode).toBe('advisory');
+    });
+
+    it('deep-merges eval and archive too — every top-level object block merges by derivation', () => {
+      // The merge set is DERIVED from the schema shape, so blocks that a
+      // hand-written list once forgot (eval, archive) merge by construction.
+      writeConfig(tempRoot, { ...validConfig, archive: { terminal_after_months: 3 } });
+      writeLocalConfig({ eval: { guided_proxy: 'bootstrap' } });
+
+      const config = loader.load(tempRoot);
+      expect(config.eval.guided_proxy).toBe('bootstrap');
+      expect(config.archive.terminal_after_months).toBe(3);
+    });
+
+    it('rejects an unknown top-level key in the local override', () => {
+      writeConfig(tempRoot, validConfig);
+      writeLocalConfig({ not_a_real_key: true });
+
+      expect(() => loader.load(tempRoot)).toThrow(LocalConfigInvalidError);
+    });
+
+    it('a bad local VALUE fails post-merge with the schema error (single validation)', () => {
+      writeConfig(tempRoot, validConfig);
+      writeLocalConfig({ enforcement_mode: 'nonsense' });
+
+      expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
     });
 
     it('rejects a local override that sets a project-only key', () => {

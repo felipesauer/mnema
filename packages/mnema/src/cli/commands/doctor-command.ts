@@ -39,6 +39,7 @@ import { loadWorkflowFile } from '@mnema/core/storage/workflow-file.js';
 import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import { managedBlockIgnores } from '@mnema/core/utils/gitignore.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import {
   canonicalMirrorPath as buildMirrorPath,
   CURATED_MEMORY_SUBFOLDERS,
@@ -203,11 +204,11 @@ export class DoctorCommand {
       // before the SQLite-backed mirror rebuild runs. `mnema memory
       // consolidate` later walks `decisions/` and `notes/` and
       // reports "not initialised" when they are missing.
-      const memoryRoot = pathMod.join(projectRoot, config.paths.memory);
+      const memoryRoot = pathMod.join(projectRoot, LAYOUT.memory);
       fsMod.mkdirSync(pathMod.join(memoryRoot, 'decisions'), { recursive: true });
       fsMod.mkdirSync(pathMod.join(memoryRoot, 'notes'), { recursive: true });
-      fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.skills), { recursive: true });
-      fsMod.mkdirSync(pathMod.join(projectRoot, config.paths.observations), { recursive: true });
+      fsMod.mkdirSync(pathMod.join(projectRoot, LAYOUT.skills), { recursive: true });
+      fsMod.mkdirSync(pathMod.join(projectRoot, LAYOUT.observations), { recursive: true });
 
       const tasks = container.sync.rebuildMirrors();
       const skills = container.skill.rebuildMirrors();
@@ -250,12 +251,12 @@ export class DoctorCommand {
         // Foldered layout (MNEMA-ADR-51): skills and memories live under one
         // level of subfolders, so prune recursively.
         prunedSkills = pruneFolderedOrphanMirrors(
-          pathMod.join(projectRoot, config.paths.skills),
+          pathMod.join(projectRoot, LAYOUT.skills),
           skillSlugs,
           fsMod,
         );
         prunedMemories = pruneFolderedOrphanMirrors(
-          pathMod.join(projectRoot, config.paths.memory),
+          pathMod.join(projectRoot, LAYOUT.memory),
           memorySlugs,
           fsMod,
           CURATED_MEMORY_SUBFOLDERS,
@@ -272,7 +273,7 @@ export class DoctorCommand {
           ).map((r) => r.id),
         );
         prunedObservations = pruneOrphanMirrors(
-          pathMod.join(projectRoot, config.paths.observations),
+          pathMod.join(projectRoot, LAYOUT.observations),
           observationIds,
           fsMod,
         );
@@ -285,7 +286,7 @@ export class DoctorCommand {
           ).map((r) => r.key),
         );
         prunedTasks = pruneNestedOrphanMirrors(
-          pathMod.join(projectRoot, config.paths.backlog),
+          pathMod.join(projectRoot, LAYOUT.backlog),
           taskKeys,
           fsMod,
           rowlessDuplicateKeys,
@@ -306,7 +307,7 @@ export class DoctorCommand {
           ).map((r) => [r.key, r.state] as const),
         );
         quarantined = quarantineDuplicateTaskMirrors(
-          pathMod.join(projectRoot, config.paths.backlog),
+          pathMod.join(projectRoot, LAYOUT.backlog),
           stateByKey,
           fsMod,
         );
@@ -536,7 +537,7 @@ export class DoctorCommand {
     }
 
     const projectRoot = resolveProjectRoot(configFile);
-    const workflowPath = path.join(projectRoot, config.paths.workflows, `${config.workflow}.json`);
+    const workflowPath = path.join(projectRoot, LAYOUT.workflows, 'default.json');
     let loadedWorkflow:
       | import('@mnema/core/domain/state-machine/state-machine.js').Workflow
       | null = null;
@@ -557,10 +558,10 @@ export class DoctorCommand {
     }
 
     const requiredDirs = [
-      ['state', config.paths.state],
-      ['audit', config.paths.audit],
-      ['backlog', config.paths.backlog],
-      ['workflows', config.paths.workflows],
+      ['state', LAYOUT.state],
+      ['audit', LAYOUT.audit],
+      ['backlog', LAYOUT.backlog],
+      ['workflows', LAYOUT.workflows],
     ] as const;
     for (const [name, dir] of requiredDirs) {
       const fullPath = path.join(projectRoot, dir);
@@ -576,14 +577,10 @@ export class DoctorCommand {
     // any tracked file the current template now intends to ignore, with the
     // exact `git rm --cached` to fix it. Read-only; a no-op outside git.
     checks.push(
-      ...inspectTrackedIgnored(
-        listTrackedFiles(projectRoot),
-        config.paths.state,
-        config.paths.audit,
-      ),
+      ...inspectTrackedIgnored(listTrackedFiles(projectRoot), LAYOUT.state, LAYOUT.audit),
     );
 
-    const dbPath = path.join(projectRoot, config.paths.state, 'state.db');
+    const dbPath = path.join(projectRoot, LAYOUT.state, 'state.db');
     if (existsSync(dbPath)) {
       try {
         const adapter = new SqliteAdapter(dbPath);
@@ -592,12 +589,12 @@ export class DoctorCommand {
           checks.push(...inspectMigrationDrift(adapter, migrationsDir()));
           checks.push(
             ...inspectMirrorDrift(adapter, {
-              skillsDir: path.join(projectRoot, config.paths.skills),
-              memoryDir: path.join(projectRoot, config.paths.memory),
-              roadmapDir: path.join(projectRoot, config.paths.roadmap),
-              sprintsDir: path.join(projectRoot, config.paths.sprints),
-              backlogDir: path.join(projectRoot, config.paths.backlog),
-              observationsDir: path.join(projectRoot, config.paths.observations),
+              skillsDir: path.join(projectRoot, LAYOUT.skills),
+              memoryDir: path.join(projectRoot, LAYOUT.memory),
+              roadmapDir: path.join(projectRoot, LAYOUT.roadmap),
+              sprintsDir: path.join(projectRoot, LAYOUT.sprints),
+              backlogDir: path.join(projectRoot, LAYOUT.backlog),
+              observationsDir: path.join(projectRoot, LAYOUT.observations),
             }),
           );
           // read() not getOrCreate(): doctor verifies, it never mints a
@@ -607,7 +604,7 @@ export class DoctorCommand {
           checks.push(
             ...inspectAuditIntegrity(
               adapter,
-              path.join(projectRoot, config.paths.audit),
+              path.join(projectRoot, LAYOUT.audit),
               doctorSecret.read(),
               doctorSecret.readFingerprint() !== null,
               // Machine attestation: verify the recorded head signature
@@ -617,18 +614,14 @@ export class DoctorCommand {
               // Content attestation (ADR-41): committed .att coverage, so
               // doctor surfaces the same anonymous-verifiability verdict as
               // `audit verify` rather than a false all-clear.
-              buildContentAttestation(projectRoot, path.join(projectRoot, config.paths.audit)),
+              buildContentAttestation(projectRoot, path.join(projectRoot, LAYOUT.audit)),
             ),
           );
           // Explicit DB-vs-disk delta with the culprit commit — the signal
           // that a git rewind of the tracked audit log left the mirror
           // counting events no longer on disk (read-only; git archaeology).
           checks.push(
-            ...inspectAuditDiskDelta(
-              adapter,
-              path.join(projectRoot, config.paths.audit),
-              projectRoot,
-            ),
+            ...inspectAuditDiskDelta(adapter, path.join(projectRoot, LAYOUT.audit), projectRoot),
           );
           // Temporal anchoring (layer 3): offline status only — how many
           // heads are anchored vs pending. Verifying receipts against a
@@ -664,11 +657,7 @@ export class DoctorCommand {
     // Record this run in the LOCAL counter log (outside the audit chain,
     // never transmitted — see MNEMA-ADR-36) so `mnema metrics` can report
     // doctor adoption. Best-effort: it never affects doctor's verdict.
-    recordCounter(
-      path.join(projectRoot, config.paths.state),
-      'doctor_ran',
-      new Date().toISOString(),
-    );
+    recordCounter(path.join(projectRoot, LAYOUT.state), 'doctor_ran', new Date().toISOString());
     // Warnings keep exit 0; only errors fail the check.
     const hasError = checks.some((c) => !c.ok && (c.severity ?? 'error') === 'error');
     return hasError ? ExitCode.State : ExitCode.Success;
