@@ -1,0 +1,67 @@
+{
+  "name": "@mnema/mnema",
+  "version": "0.1.0-beta.0",
+  "description": "A tamper-evident, local-first audit trail for AI-agent work — an MCP server giving Claude Code, Cursor and other agents typed tools behind workflow gates, with every action recorded in a SHA-256 hash-chained log.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "audit-trail",
+    "tamper-evident",
+    "agent-governance",
+    "provenance",
+    "accountability",
+    "audit-log",
+    "claude-code",
+    "cursor",
+    "task-tracker",
+    "workflow",
+    "sqlite",
+    "local-first"
+  ],
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "type": "module",
+  "bin": {
+    "mnema": "./dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "homepage": "https://felipesauer.github.io/mnema/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git",
+    "directory": "packages/mnema"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias && vite build",
+    "typecheck:spa": "tsc -p tsconfig.dashboard.json",
+    "verify:spa": "node scripts/verify-spa-bundle.mjs",
+    "dev": "tsx src/index.ts",
+    "bench": "tsx bench/cli-bench.ts",
+    "bench:mcp": "tsx bench/mcp-bench.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
+    "@mnema/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^14.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^12.11.1"
+  }
+}

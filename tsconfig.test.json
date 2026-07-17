@@ -1,9 +1,9 @@
 {
+  "//": "Repo-level guard tests + shared setup only; each package has its own tsconfig.test.json for its test tree.",
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".",
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*", "tests/**/*", "bench/**/*", "vitest.config.ts"]
+  "include": ["tests/**/*", "vitest.config.ts"]
 }

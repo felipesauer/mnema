@@ -9,4 +9,4 @@
 # so that benchmarks / hot-loop testing stay fast.
 set -e
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec node "$HERE/dist/index.js" "$@"
+exec node "$HERE/packages/mnema/dist/index.js" "$@"
