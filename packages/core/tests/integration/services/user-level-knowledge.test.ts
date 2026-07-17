@@ -8,12 +8,12 @@ import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
 import { MemoryService } from '@/services/knowledge/memory-service.js';
 import { SkillService } from '@/services/knowledge/skill-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { MemoryRepository } from '@/storage/sqlite/repositories/memory-repository.js';
 import { SkillRepository } from '@/storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 /**
  * User-level skills/memories (`~/.config/mnema`) merge UNDER the
@@ -56,7 +56,7 @@ describe('user-level skills & memories', () => {
     adapter = new SqliteAdapter(path.join(projectRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(projectRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(projectRoot, '.audit')));
     const identity = new IdentityService(new ActorRepository(adapter));
     identity.ensureActor('daniel', ActorKind.Human);
 
@@ -140,7 +140,7 @@ describe('user-level skills & memories', () => {
       new Set(),
       new SkillRepository(adapter),
       new IdentityService(new ActorRepository(adapter)),
-      new AuditService(new AuditWriter(path.join(projectRoot, '.audit'))),
+      new AuditService(chainedAuditWriter(adapter, path.join(projectRoot, '.audit'))),
       null,
     );
     writeUserSkill('ignored', 'Ignored');

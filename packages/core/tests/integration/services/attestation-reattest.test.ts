@@ -9,6 +9,7 @@ import { planReattest } from '@/services/audit/attestation-reattest.js';
 import { committedSignerResolver } from '@/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@/services/audit/audit-chain-walk.js';
 import { MachineKeyService } from '@/services/integrity/machine-key.js';
+import { EVENT_FORMAT_VERSION } from '@/storage/audit/audit-hash.js';
 
 /**
  * planReattest is FAIL-CLOSED: it refuses to sign anything on any sign of real
@@ -42,7 +43,7 @@ describe('planReattest (fail-closed)', () => {
     for (let i = 0; i < n; i++) {
       lines.push(
         JSON.stringify({
-          v: 3,
+          v: 1,
           at: `2026-07-07T00:00:0${i}.000Z`,
           kind: 'k',
           actor: 'felipesauer',
@@ -219,9 +220,15 @@ describe('planReattest (fail-closed)', () => {
 
   it('refuses (not throws) when a chained line has no hash', () => {
     writeChain(5);
-    // Append a v2 line with no `hash` — the emitter would throw on it; the
-    // planner must return a structured refusal instead.
-    const noHash = JSON.stringify({ v: 2, at: 't', kind: 'k', actor: 'a', data: {} });
+    // Append a chained line with no `hash` — the emitter would throw on it;
+    // the planner must return a structured refusal instead.
+    const noHash = JSON.stringify({
+      v: EVENT_FORMAT_VERSION,
+      at: 't',
+      kind: 'k',
+      actor: 'a',
+      data: {},
+    });
     writeFileSync(path.join(auditDir, 'current.jsonl'), `${noHash}\n`, { flag: 'a' });
     let threw = false;
     let plan: ReturnType<typeof planReattest> | undefined;

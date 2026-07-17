@@ -4,8 +4,10 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { assessAuditChain } from '@/services/integrity/audit-integrity.js';
-import { hashEvent } from '@/storage/audit/audit-hash.js';
+import { hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
+
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
 
 /**
  * The walk's prune re-baseline gate (ADR-68 / MNEMA-346). After a retention
@@ -39,14 +41,14 @@ describe('walk prune re-baseline gate', () => {
     let prev: string | null = genesisPrev;
     for (let i = 0; i < n; i++) {
       const base: AuditEvent = {
-        v: 2,
+        v: 1,
         at: `2026-07-07T00:00:0${i}.000Z`,
         kind: 'task_created',
         actor: 'felipesauer',
         data: { id: `T-${i}` },
         prev_hash: prev,
       };
-      const hash = hashEvent(base);
+      const hash = hmacEvent(base, FIXTURE_SECRET);
       rows.push({ ...base, hash });
       prev = hash;
     }

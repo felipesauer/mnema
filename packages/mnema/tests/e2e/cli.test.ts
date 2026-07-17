@@ -327,7 +327,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     // Isolate the out-of-repo approval store (~/.config/mnema) inside the
     // temp project so `mnema hooks approve` can be exercised hermetically.
     const hookEnv = { HOME: projectRoot, USERPROFILE: projectRoot };
-    runCli(['init', '--name', 'Lean App', '--key', 'LEAN'], projectRoot);
+    // Init under the SAME home the transitions use, so the machine-local
+    // project secret is minted where the later commands resolve it (else
+    // mandatory-keyed refuses to seal — the secret would sit under a
+    // different home).
+    runCli(['init', '--name', 'Lean App', '--key', 'LEAN'], projectRoot, hookEnv);
 
     // A capture hook that writes its stdin (the event JSON) to a file, and
     // a second hook that fails — proving a failing hook is audited but never

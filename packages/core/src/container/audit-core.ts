@@ -121,8 +121,8 @@ export function createAuditCore(
   const auditWriter = new AuditWriter(
     auditDir,
     infra.repos.auditState,
-    undefined,
     () => projectSecret.getOrCreate(),
+    undefined,
     headCheckpoint,
     anchorScheduler,
     onCheckpoint,

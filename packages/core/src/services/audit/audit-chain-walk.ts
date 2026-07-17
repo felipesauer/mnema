@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
+import { EVENT_FORMAT_VERSION } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 
 /**
  * One chained (schema v>=2) event as seen on disk, carrying the index the
  * attestation layer addresses it by. That index is the position in the
  * CHAINED sequence — the same thing `audit_state.event_count` counts — NOT the
- * raw line number, so pre-chain legacy (v1) lines never shift it. An
+ * raw line number, so a stray non-keyed line never shifts it. An
  * attestation over `[from, to)` therefore covers `chainedEvents[from … to-1]`.
  */
 export interface ChainedEvent {
@@ -22,7 +23,7 @@ export interface ChainedEvent {
  *
  * This is DELIBERATELY narrower than the integrity walk in
  * `inspectAuditIntegrity`: that one verifies the hash chain and tallies
- * legacy/malformed/downgrade shapes for the doctor report; this one only needs
+ * malformed shapes for the doctor report; this one only needs
  * the chained events by index so a batch `[from, to)` can be reconstructed.
  * Kept separate so the attestation layer does not depend on — nor risk
  * changing — the integrity verdicts. A malformed line is skipped (it is not a
@@ -75,8 +76,8 @@ export function walkChainedEvents(auditDir: string): AuditChainWalk {
         malformedLines += 1;
         continue;
       }
-      const v = typeof event.v === 'number' ? event.v : 1;
-      if (v >= 2) {
+      const v = typeof event.v === 'number' ? event.v : 0;
+      if (v === EVENT_FORMAT_VERSION) {
         // Index every v>=2 line so the chained index stays aligned with
         // event_count (which counts them all). A v>=2 line with no string
         // `hash` is still indexed but tallied: the attestation planner refuses
@@ -85,8 +86,8 @@ export function walkChainedEvents(auditDir: string): AuditChainWalk {
         chained.push({ index, event: event as unknown as AuditEvent });
         index += 1;
       }
-      // Legacy (v1) lines carry no per-line chain and are not attested; they
-      // simply do not advance the chained index (same as the integrity walk).
+      // A non-keyed line (a stray pre-beta or forged shape) is not a chained
+      // event and does not advance the chained index (same as the integrity walk).
     }
   }
 
@@ -155,8 +156,8 @@ export function walkChainedTail(
         malformedLines += 1;
         continue;
       }
-      const v = typeof event.v === 'number' ? event.v : 1;
-      if (v >= 2) {
+      const v = typeof event.v === 'number' ? event.v : 0;
+      if (v === EVENT_FORMAT_VERSION) {
         if (typeof event.hash !== 'string') unhashedLines += 1;
         fileChained.push(event as unknown as AuditEvent);
       }

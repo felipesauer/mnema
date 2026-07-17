@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { diagnoseAuditChain } from '@/services/audit/audit-diagnose.js';
 import type { GitCommandRunner } from '@/services/git/git-commit-service.js';
-import { hashEvent, hmacEvent } from '@/storage/audit/audit-hash.js';
+import { hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
+
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
 
 /**
  * diagnoseAuditChain must distinguish the notagrafo shape (a prev_hash
@@ -26,20 +28,20 @@ describe('diagnoseAuditChain', () => {
   });
   afterEach(() => rmSync(tempRoot, { recursive: true, force: true }));
 
-  /** Builds n valid, correctly-chained v2 events and seals each with hashEvent. */
+  /** Builds n valid, correctly-chained v3 events sealed with the fixture secret. */
   function buildChain(n: number, startAt = 0): AuditEvent[] {
     const events: AuditEvent[] = [];
     let prevHash: string | null = null;
     for (let i = 0; i < n; i++) {
       const unsealed: AuditEvent = {
-        v: 2,
+        v: 1,
         at: `2026-06-01T00:00:${String(startAt + i).padStart(2, '0')}.000Z`,
         kind: 'task_created',
         actor: 'felipesauer',
         data: { key: `T-${startAt + i}` },
         prev_hash: prevHash,
       };
-      const hash = hashEvent(unsealed);
+      const hash = hmacEvent(unsealed, FIXTURE_SECRET);
       const sealed = { ...unsealed, hash };
       events.push(sealed);
       prevHash = hash;
@@ -58,7 +60,7 @@ describe('diagnoseAuditChain', () => {
   it('reports zero breaks on a cleanly-chained log', () => {
     const events = buildChain(10);
     writeLines(path.join(auditDir, 'current.jsonl'), events);
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
     expect(report.totalChained).toBe(10);
     expect(report.breaks).toHaveLength(0);
     expect(report.allBreaksContentValid).toBe(true); // vacuously — no breaks
@@ -72,7 +74,7 @@ describe('diagnoseAuditChain', () => {
     const events = [...first, ...second];
     writeLines(path.join(auditDir, 'current.jsonl'), events);
 
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
     expect(report.totalChained).toBe(10);
     expect(report.breaks).toHaveLength(1);
     expect(report.breaks[0]?.chainedIndex).toBe(5);
@@ -91,7 +93,7 @@ describe('diagnoseAuditChain', () => {
     events[6] = tampered;
     writeLines(path.join(auditDir, 'current.jsonl'), events);
 
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
     expect(report.breaks).toHaveLength(1);
     expect(report.breaks[0]?.contentValidAroundBreak).toBe(false);
     expect(report.allBreaksContentValid).toBe(false);
@@ -100,7 +102,7 @@ describe('diagnoseAuditChain', () => {
   it('treats a v3 line with no secret as unknown (null), never as valid', () => {
     const secret = Buffer.from('a'.repeat(32));
     const unsealed: AuditEvent = {
-      v: 3,
+      v: 1,
       at: '2026-06-01T00:00:00.000Z',
       kind: 'task_created',
       actor: 'felipesauer',
@@ -126,7 +128,7 @@ describe('diagnoseAuditChain', () => {
     const seg2 = buildChain(3, 200); // break #2, at the start of current.jsonl
     writeLines(path.join(auditDir, 'current.jsonl'), seg2);
 
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
     expect(report.breaks).toHaveLength(2);
     expect(report.breaks[0]?.file).toBe('2026-06.jsonl');
     expect(report.breaks[0]?.chainedIndex).toBe(3);
@@ -142,7 +144,7 @@ describe('diagnoseAuditChain', () => {
       `${events.map((e) => JSON.stringify(e)).join('\n')}\nnot valid json\n`,
       'utf-8',
     );
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
     expect(report.totalChained).toBe(3);
     expect(report.malformedLines).toBe(1);
   });
@@ -151,7 +153,7 @@ describe('diagnoseAuditChain', () => {
     it('is null when gitCwd is not passed (git check skipped entirely)', () => {
       const events = buildChain(3);
       writeLines(path.join(auditDir, 'current.jsonl'), events);
-      const report = diagnoseAuditChain(auditDir, null, null, noGit);
+      const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
       expect(report.matchesCommittedHead).toBeNull();
     });
 

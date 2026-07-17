@@ -62,13 +62,19 @@ describe('rollback / truncation below a signed checkpoint', () => {
       { events: 1, seconds: 100_000 },
     );
     return new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
   }
 
   const attestation = () => createAttestationSource(projectRoot, signatures);
   const attestVerdict = () =>
-    inspectAuditIntegrity(adapter, auditDir, null, false, attestation()).find(
+    inspectAuditIntegrity(adapter, auditDir, null, attestation()).find(
       (c) => c.name === 'audit machine attestation',
     );
 
@@ -89,7 +95,7 @@ describe('rollback / truncation below a signed checkpoint', () => {
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, -1).join('\n')}\n`, 'utf-8');
     // Boot a fresh writer → reconcileMirror rewinds the mirror to 2 events.
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
     expect(new AuditStateRepository(adapter).read().eventCount).toBe(2);
 
     // The attestation layer catches the retreat: a signature covers event 3
@@ -112,7 +118,7 @@ describe('rollback / truncation below a signed checkpoint', () => {
       .run('de'.repeat(32));
     // Boot reconciles the mirror back to 2 (the real tail). The signature
     // covers event 2, the chain holds 2 → no retreat, attestation ok.
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
     expect(new AuditStateRepository(adapter).read().eventCount).toBe(2);
     const verdict = attestVerdict();
     expect(verdict?.ok).toBe(true);
@@ -148,7 +154,13 @@ describe('rollback / truncation below a signed checkpoint', () => {
       { events: 2, seconds: 100_000 },
     );
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-2' } });
@@ -161,7 +173,7 @@ describe('rollback / truncation below a signed checkpoint', () => {
       .split('\n')
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, -1).join('\n')}\n`, 'utf-8');
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
     expect(new AuditStateRepository(adapter).read().eventCount).toBe(2);
 
     // The signature covers event 2, the chain holds 2 → no retreat detected.

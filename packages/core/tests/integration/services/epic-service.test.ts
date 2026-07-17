@@ -8,13 +8,13 @@ import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { EpicService } from '@/services/backlog/epic-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -31,7 +31,7 @@ describe('EpicService', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const projects = new ProjectRepository(adapter);
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     projectId = project.id;
@@ -136,7 +136,7 @@ describe('EpicService', () => {
   });
 
   it('refuses to create an epic on a workflow with features.epics=false', () => {
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-lean')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit-lean')));
     const leanMachine = new StateMachine(
       loadWorkflowFile(path.resolve('packages/core/tests/fixtures/workflows/lean.json')),
     );

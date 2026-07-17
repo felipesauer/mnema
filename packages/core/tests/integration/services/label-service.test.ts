@@ -7,12 +7,12 @@ import { ErrorCode } from '@/errors/error-codes.js';
 import { LabelService } from '@/services/backlog/label-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import type { SyncService } from '@/services/sync/sync-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { LabelRepository } from '@/storage/sqlite/repositories/label-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -29,7 +29,7 @@ describe('LabelService', () => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-label-svc-'));
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const projects = new ProjectRepository(adapter);
     projectId = projects.insert({ key: 'TEST', name: 'Test' }).id;
     adapter

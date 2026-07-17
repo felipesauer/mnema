@@ -8,11 +8,11 @@ import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
 import { AdoptionService } from '@/services/knowledge/adoption-service.js';
 import { SkillService } from '@/services/knowledge/skill-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { SkillRepository } from '@/storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const config = ConfigSchema.parse({
   version: '1.0',
@@ -95,7 +95,9 @@ describe('AdoptionService', () => {
       );
       const repo = new SkillRepository(adapter);
       const identity = new IdentityService(new ActorRepository(adapter));
-      const audit = new AuditService(new AuditWriter(path.join(projectRoot, '.mnema/audit')));
+      const audit = new AuditService(
+        chainedAuditWriter(adapter, path.join(projectRoot, '.mnema/audit')),
+      );
       const skills = new SkillService(
         path.join(projectRoot, '.mnema/skills'),
         new Set(),

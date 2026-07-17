@@ -70,7 +70,13 @@ describe('audit prune end-to-end', () => {
       seconds: 100_000,
     });
     return new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
   }
 
@@ -173,7 +179,7 @@ describe('audit prune end-to-end', () => {
     expect(assessAuditChain(auditDir, null).chainBroken).toBe(true);
 
     // inspectAuditIntegrity with the re-baseline reports the event-count check ok.
-    const report = inspectAuditIntegrity(adapter, auditDir, null, false, null, null, {
+    const report = inspectAuditIntegrity(adapter, auditDir, null, null, null, {
       anchorPrevHash: waiver.prunedHeadHash,
       genesisHash: waiver.genesisHash,
     });

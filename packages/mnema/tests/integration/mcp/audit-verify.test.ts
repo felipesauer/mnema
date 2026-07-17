@@ -175,7 +175,7 @@ describe('audit_verify MCP tool', () => {
       .filter((l) => l.length > 0);
     const idx = lines.findIndex((l) => {
       const e = JSON.parse(l) as { v?: number };
-      return typeof e.v === 'number' && e.v >= 2;
+      return typeof e.v === 'number' && e.v === 1;
     });
     expect(idx).toBeGreaterThanOrEqual(0);
     const event = JSON.parse(lines[idx] as string) as Record<string, unknown>;

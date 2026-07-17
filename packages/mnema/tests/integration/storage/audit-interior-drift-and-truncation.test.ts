@@ -80,7 +80,13 @@ describe('interior drift vs genuine truncation', () => {
       seconds: 100_000,
     });
     return new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
   }
 
@@ -102,11 +108,11 @@ describe('interior drift vs genuine truncation', () => {
   }
 
   const attestation = () => createAttestationSource(projectRoot, signatures);
-  const checks = () => inspectAuditIntegrity(adapter, auditDir, null, false, attestation());
+  const checks = () => inspectAuditIntegrity(adapter, auditDir, null, attestation());
   const countCheck = () => checks().find((c) => c.name === 'audit event count');
   const attestCheck = () => checks().find((c) => c.name === 'audit machine attestation');
 
-  const gitMatch: GitCommandRunner = (args) => {
+  const _gitMatch: GitCommandRunner = (args) => {
     if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
     return { status: 0, stdout: '', stderr: '' };
   };
@@ -191,9 +197,6 @@ describe('interior drift vs genuine truncation', () => {
         ? { eventCountAt: sig.eventCountAt, coveredHeadHash: sig.coveredHeadHash }
         : null,
       true,
-      null,
-      projectRoot,
-      gitMatch,
       reSign(),
     );
 
@@ -226,7 +229,7 @@ describe('interior drift vs genuine truncation', () => {
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
     // Boot reconciliation rewinds the mirror to the truncated tail (count 2).
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
     expect(state.read().eventCount).toBe(2);
 
     // reconcile still REFUSES: the signed head is absent from disk.
@@ -239,9 +242,6 @@ describe('interior drift vs genuine truncation', () => {
         ? { eventCountAt: sig.eventCountAt, coveredHeadHash: sig.coveredHeadHash }
         : null,
       true,
-      null,
-      projectRoot,
-      gitMatch,
       reSign(),
     );
     expect(refused.ok).toBe(false);
@@ -303,7 +303,7 @@ describe('interior drift vs genuine truncation', () => {
       .split('\n')
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
 
     const result = acceptTruncation({ apply: true });
     expect(result.ok).toBe(false);
@@ -323,7 +323,7 @@ describe('interior drift vs genuine truncation', () => {
       .split('\n')
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
 
     const gitDirty: GitCommandRunner = (args) => {
       if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
@@ -343,7 +343,7 @@ describe('interior drift vs genuine truncation', () => {
       .split('\n')
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
 
     const beforeCount = state.read().eventCount;
     const beforeSig = signatures.read();
@@ -359,9 +359,6 @@ describe('interior drift vs genuine truncation', () => {
         ? { eventCountAt: sig.eventCountAt, coveredHeadHash: sig.coveredHeadHash }
         : null,
       false,
-      null,
-      projectRoot,
-      gitMatch,
       reSign(),
     );
 
@@ -386,9 +383,6 @@ describe('interior drift vs genuine truncation', () => {
         ? { eventCountAt: sig.eventCountAt, coveredHeadHash: sig.coveredHeadHash }
         : null,
       true,
-      null,
-      projectRoot,
-      gitMatch,
       reSign(),
     );
   }
@@ -448,7 +442,7 @@ describe('interior drift vs genuine truncation', () => {
       .split('\n')
       .filter((l) => l.length > 0);
     writeFileSync(file, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
-    new AuditWriter(auditDir, new AuditStateRepository(adapter));
+    new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7));
 
     // Uncommitted truncation → --require-committed (real git) refuses.
     const before = acceptTruncation({ apply: false, requireCommitted: true });

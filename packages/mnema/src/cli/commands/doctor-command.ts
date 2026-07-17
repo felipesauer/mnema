@@ -29,6 +29,7 @@ import { ProjectSecretService } from '@mnema/core/services/integrity/project-sec
 import { recordCounter } from '@mnema/core/services/metrics/metrics-counter.js';
 import { findOrphanRuns } from '@mnema/core/services/metrics/orphan-run-service.js';
 import { orderedAuditFiles } from '@mnema/core/storage/audit/audit-files.js';
+import { EVENT_FORMAT_VERSION } from '@mnema/core/storage/audit/audit-hash.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@mnema/core/storage/sqlite/repositories/actor-repository.js';
 import { AgentRunRepository } from '@mnema/core/storage/sqlite/repositories/agent-run-repository.js';
@@ -608,7 +609,6 @@ export class DoctorCommand {
               adapter,
               path.join(projectRoot, LAYOUT.audit),
               doctorSecret.read(),
-              doctorSecret.readFingerprint() !== null,
               // Machine attestation: verify the recorded head signature
               // against the committed public key. Offline (no network) — it
               // reads .mnema/keys and the local SQLite only.
@@ -724,41 +724,39 @@ export function inspectMigrationDrift(adapter: SqliteAdapter, dir: string): Doct
  */
 /**
  * Tally of the on-disk audit lines by kind, matching walkAuditChain's
- * classification: `chained` are the hash-chained events (v >= 2) the mirror
- * counter tracks; `legacy` are pre-chain v1 lines; `malformed` failed to parse.
- * The legacy/malformed counts let the delta check tell the benign one-ahead
- * crash window (clean tail) from a masked interior deletion, the same way
- * inspectAuditIntegrity's oneAheadIsClean does.
+ * classification: `chained` are the hash-chained events the mirror counter
+ * tracks; `malformed` are lines that failed to parse or do not carry the
+ * event format tag. The malformed count lets the delta check tell the benign
+ * one-ahead crash window (clean tail) from a masked interior deletion, the
+ * same way inspectAuditIntegrity's oneAheadIsClean does.
  */
 interface DiskLineTally {
   readonly chained: number;
-  readonly legacy: number;
   readonly malformed: number;
 }
 
 function tallyDiskLines(auditDir: string): DiskLineTally {
   let chained = 0;
-  let legacy = 0;
   let malformed = 0;
   for (const file of orderedAuditFiles(auditDir)) {
     for (const line of readFileSync(file, 'utf-8').split('\n')) {
       if (line.length === 0) continue;
       try {
         const event = JSON.parse(line) as { v?: unknown };
-        if (typeof event.v === 'number' && event.v >= 2) chained += 1;
-        else legacy += 1;
+        if (event.v === EVENT_FORMAT_VERSION) chained += 1;
+        else malformed += 1;
       } catch {
         malformed += 1;
       }
     }
   }
-  return { chained, legacy, malformed };
+  return { chained, malformed };
 }
 
 /**
- * Reads `current.jsonl` at a git revision and counts its chained (v >= 2)
- * lines, or `null` when the file did not exist at that revision. Used only to
- * find the commit that shrank the on-disk chain.
+ * Reads `current.jsonl` at a git revision and counts its chained lines, or
+ * `null` when the file did not exist at that revision. Used only to find the
+ * commit that shrank the on-disk chain.
  */
 function chainedLinesAtRevision(
   gitCwd: string,
@@ -773,7 +771,7 @@ function chainedLinesAtRevision(
     if (line.length === 0) continue;
     try {
       const event = JSON.parse(line) as { v?: unknown };
-      if (typeof event.v === 'number' && event.v >= 2) count += 1;
+      if (event.v === EVENT_FORMAT_VERSION) count += 1;
     } catch {
       // ignore
     }
@@ -810,7 +808,7 @@ export function inspectAuditDiskDelta(
   if (row === undefined) return [];
 
   const dbCount = row.event_count;
-  const { chained: diskCount, legacy, malformed } = tallyDiskLines(auditDir);
+  const { chained: diskCount, malformed } = tallyDiskLines(auditDir);
   // Only the DB-ahead direction is the data-loss signal this check exists for.
   // Disk >= DB is either healthy (equal) or the disk-ahead crash window that
   // `mnema audit reconcile` already covers, so it is not flagged here.
@@ -827,16 +825,16 @@ export function inspectAuditDiskDelta(
 
   const delta = dbCount - diskCount;
 
-  // A delta of exactly ONE with a clean tail (no malformed or legacy lines) is
-  // the benign crash window: the writer commits the SQLite counter before
+  // A delta of exactly ONE with a clean tail (no malformed lines) is the
+  // benign crash window: the writer commits the SQLite counter before
   // appending the JSONL line, so a crash between the two leaves the mirror one
   // event ahead, and the next writer boot self-heals it (reconcileMirror). This
   // is the SAME shape inspectAuditIntegrity's `oneAheadIsClean` treats as a
   // warning, so match that calibration here instead of a hard error that would
   // send the operator to `reconcile` for something that needs no action. A
-  // larger delta, or a one-ahead with malformed/legacy lines (a masked interior
+  // larger delta, or a one-ahead with malformed lines (a masked interior
   // deletion), stays a hard error.
-  if (delta === 1 && malformed === 0 && legacy === 0) {
+  if (delta === 1 && malformed === 0) {
     return [
       {
         name: 'audit mirror vs disk',

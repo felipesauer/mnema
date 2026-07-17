@@ -14,7 +14,7 @@ import lockfile from 'proper-lockfile';
 import type { AuditStateRepository } from '../sqlite/repositories/audit-state-repository.js';
 import { SQLITE_BUSY_TIMEOUT_MS } from '../sqlite/sqlite-adapter.js';
 import { orderedAuditFiles } from './audit-files.js';
-import { hashEvent, hmacEvent } from './audit-hash.js';
+import { EVENT_FORMAT_VERSION, hmacEvent } from './audit-hash.js';
 import type { AuditEvent, HeadCheckpointer, SignedHeadListener } from './audit-types.js';
 
 /**
@@ -60,11 +60,10 @@ export type { AuditEvent } from './audit-types.js';
  * a different month than `now()`, it is renamed to `YYYY-MM.jsonl` and
  * a fresh `current.jsonl` is started.
  *
- * When an {@link AuditStateRepository} is wired in, the writer also
- * (1) chains lines via `prev_hash`/`hash` and (2) mirrors event count,
- * last `at`, and chain-head hash into SQLite. With no repository
- * (legacy / standalone tests) the writer falls back to the unchained
- * v1 format so existing call sites still work.
+ * The writer (1) chains lines via `prev_hash`/`hash`, (2) seals each line
+ * with the per-project HMAC secret, and (3) mirrors event count, last `at`,
+ * and chain-head hash into SQLite. Every write is chained and keyed — there
+ * is no unkeyed path.
  */
 export class AuditWriter {
   private readonly currentFile: string;
@@ -80,29 +79,28 @@ export class AuditWriter {
    * in the right month.
    *
    * @param auditDir - Absolute path to the audit directory
-   * @param state - Optional SQLite mirror; enables hash chain + invariants
+   * @param state - SQLite mirror backing the hash chain and its invariants
    * @param now - Optional clock; defaults to `() => new Date()`
-   * @param secretProvider - Optional lazy source of the per-project HMAC
-   *   secret. Resolved on the FIRST write (not at construction), so a
-   *   read-only command that never writes neither generates a secret nor
-   *   writes the committed fingerprint. When it yields a secret, events
-   *   are sealed as v3 (HMAC-keyed); when it yields `null` (e.g. a clone
-   *   without the secret), they stay v2 (SHA-256).
+   * @param secretProvider - Lazy source of the per-project HMAC secret.
+   *   Resolved on the FIRST write (not at construction), so a read-only
+   *   command that never writes neither generates a secret nor writes the
+   *   committed fingerprint. It must yield a secret at write time — a write
+   *   with no secret available is refused; there is no unkeyed fallback.
    * @param headCheckpoint - Optional machine-attestation signer. Called
    *   once AFTER each committed chain advance (still under the write lock,
    *   off the per-event hot path in the sense that it signs at most once
-   *   per checkpoint interval, not once per event). `null` disables layer-2
-   *   head signing.
-   * @param anchorScheduler - Optional temporal-anchoring scheduler (layer
-   *   3). When a checkpoint signs a new head, it is handed here AFTER the
-   *   write lock is released; the scheduler records it pending and stamps
-   *   asynchronously, fail-open. `null` disables anchoring.
+   *   per checkpoint interval, not once per event). `null` disables head
+   *   signing.
+   * @param anchorScheduler - Optional temporal-anchoring scheduler. When a
+   *   checkpoint signs a new head, it is handed here AFTER the write lock is
+   *   released; the scheduler records it pending and stamps asynchronously,
+   *   fail-open. `null` disables anchoring.
    */
   constructor(
     private readonly auditDir: string,
-    private readonly state: AuditStateRepository | null = null,
+    private readonly state: AuditStateRepository,
+    private readonly secretProvider: () => Buffer | null,
     now: () => Date = () => new Date(),
-    private readonly secretProvider: (() => Buffer | null) | null = null,
     private readonly headCheckpoint: HeadCheckpointer | null = null,
     private readonly anchorScheduler: SignedHeadListener | null = null,
     // Fire-and-forget hook invoked (outside the lock) when a checkpoint signs a
@@ -118,25 +116,21 @@ export class AuditWriter {
     }
     this.currentFile = path.join(auditDir, 'current.jsonl');
     this.lockTarget = path.join(auditDir, '.audit.lock');
-    // The chained write path takes a cross-process lock (only when a
-    // mirror is wired). The startup rotation shares that lock so two
-    // processes booting across a month boundary cannot race the rename.
-    if (this.state !== null) {
-      if (!existsSync(this.lockTarget)) writeFileSync(this.lockTarget, '', 'utf-8');
-      const release = this.acquireLock();
-      try {
-        this.checkRotation();
-        // Recover from a crash in the commit→append window: if the mirror is
-        // one event ahead of the on-disk tail (a committed head whose line
-        // never landed), rewind it to the real tail so the next write chains
-        // from a line that exists — otherwise it would fork the chain onto a
-        // phantom head. Done under the same boot lock as rotation.
-        this.reconcileMirror();
-      } finally {
-        release();
-      }
-    } else {
+    // The write path takes a cross-process lock; the startup rotation shares
+    // it so two processes booting across a month boundary cannot race the
+    // rename.
+    if (!existsSync(this.lockTarget)) writeFileSync(this.lockTarget, '', 'utf-8');
+    const release = this.acquireLock();
+    try {
       this.checkRotation();
+      // Recover from a crash in the commit→append window: if the mirror is
+      // one event ahead of the on-disk tail (a committed head whose line
+      // never landed), rewind it to the real tail so the next write chains
+      // from a line that exists — otherwise it would fork the chain onto a
+      // phantom head. Done under the same boot lock as rotation.
+      this.reconcileMirror();
+    } finally {
+      release();
     }
   }
 
@@ -155,7 +149,6 @@ export class AuditWriter {
    * already pays, run once per process start.
    */
   private reconcileMirror(): void {
-    if (this.state === null) return;
     let count = 0;
     let tailHash: string | null = null;
     let tailAt: string | null = null;
@@ -168,7 +161,7 @@ export class AuditWriter {
         } catch {
           continue; // malformed line: not a chained event
         }
-        if (typeof event.v === 'number' && event.v >= 2) {
+        if (typeof event.v === 'number' && event.v === EVENT_FORMAT_VERSION) {
           count += 1;
           tailHash = typeof event.hash === 'string' ? event.hash : null;
           tailAt = typeof event.at === 'string' ? event.at : null;
@@ -181,26 +174,14 @@ export class AuditWriter {
   /**
    * Appends an event to `current.jsonl`, performing a rotation check first.
    *
-   * When wired with an {@link AuditStateRepository}, fills in
-   * `prev_hash` from the SQLite mirror, computes `hash`, writes the
-   * line, and advances the mirror in a single sequence. The order
-   * matters: the line on disk includes the hash that the mirror
-   * records, so a subsequent doctor walk re-computes the same hash
-   * and matches.
+   * Fills in `prev_hash` from the SQLite mirror, computes `hash`, writes the
+   * line, and advances the mirror in a single sequence. The order matters:
+   * the line on disk includes the hash that the mirror records, so a
+   * subsequent doctor walk re-computes the same hash and matches.
    *
    * @param event - Event to append (will be JSON-serialised on a single line)
    */
   write(event: AuditEvent): void {
-    if (this.state === null) {
-      // Legacy path: no chain, no mirror, no lock. Rotation happens here
-      // since there is no critical section to fold it into. Kept so tests
-      // that mount the writer standalone keep working.
-      this.checkRotation();
-      const line = `${JSON.stringify(event)}\n`;
-      appendFileSync(this.currentFile, line, { flag: 'a' });
-      return;
-    }
-
     // A cross-process file lock wraps the WHOLE critical section —
     // rotation, the SQLite transaction, AND the post-commit append. The
     // SQLite `BEGIN IMMEDIATE` inside `withChainAdvance` only serialises
@@ -219,6 +200,17 @@ export class AuditWriter {
     // so a read-only command that never writes does not mint a secret or
     // the committed fingerprint.
     const secret = this.resolveSecret();
+    // Mandatory-keyed (AUD-2): a machine with no project secret REFUSES to
+    // seal rather than degrade to a weaker keyless line. The only event
+    // format is HMAC-keyed, so a write with no secret cannot be authenticated
+    // by anyone and must never masquerade as a chained line. Fail closed
+    // with an actionable message pointing at the secret import.
+    if (secret === null) {
+      throw new Error(
+        'cannot seal an audit event: the project secret is not available on this machine. ' +
+          'Import it with `mnema project secret import` before writing (see .mnema/keys).',
+      );
+    }
     // Set by the checkpoint below when a new head is signed; consumed after
     // the lock is released to kick off anchoring off the write path.
     let signedHead: { hash: string; eventCount: number } | null = null;
@@ -226,16 +218,15 @@ export class AuditWriter {
     try {
       this.state.withChainAdvance((currentHead) => {
         this.checkRotation();
-        // v3 (HMAC-keyed, project-authentic) when a secret is wired;
-        // otherwise the legacy v2 (keyless SHA-256). The canonical input
-        // is identical either way — only the version tag and the keying
-        // differ — so the verifier dispatches purely on `v`.
+        // The single event format is HMAC-keyed and project-authentic
+        // end to end. The secret is guaranteed present here (mandatory-keyed
+        // check above), so every sealed line is keyed.
         const chained: AuditEvent = {
           ...event,
-          v: secret !== null ? 3 : 2,
+          v: EVENT_FORMAT_VERSION,
           prev_hash: currentHead,
         };
-        const hash = secret !== null ? hmacEvent(chained, secret) : hashEvent(chained);
+        const hash = hmacEvent(chained, secret);
         const sealed: AuditEvent = { ...chained, hash };
         const line = `${JSON.stringify(sealed)}\n`;
         return {
