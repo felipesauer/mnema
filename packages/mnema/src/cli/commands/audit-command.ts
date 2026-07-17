@@ -706,10 +706,10 @@ export class AuditCommand {
       .command('prune')
       .description(
         'Enforce audit retention: delete whole archived months below the configured window ' +
-          '(audit_strategy=local) and re-baseline the surviving chain onto a signed prune anchor ' +
+          '(audit.retention.strategy=local) and re-baseline the surviving chain onto a signed prune anchor ' +
           'so it stays verifiable. Dry-run by default; --force applies. Fail-closed: refuses on ' +
           'any tamper signal, on a strategy that does not prune (full/recent), and when a ' +
-          'committed .att covers events across or above the cut. Does NOT run for audit_strategy ' +
+          'committed .att covers events across or above the cut. Does NOT run for audit.retention.strategy ' +
           'other than "local".',
       )
       .option('--force', 'Apply the prune (without it, only report the plan)', false)
@@ -727,10 +727,10 @@ export class AuditCommand {
           };
 
           // Gate 0 — the strategy must actually prune. full/recent never delete.
-          if (config.audit_strategy !== 'local') {
+          if (config.audit.retention.strategy !== 'local') {
             return refuse(
-              `audit_strategy is "${config.audit_strategy}" — only "local" deletes segments. ` +
-                `"recent" keeps the last ${config.audit_retention_months} months hot but archives (never deletes) older ones; "full" keeps everything.`,
+              `audit.retention.strategy is "${config.audit.retention.strategy}" — only "local" deletes segments. ` +
+                `"recent" keeps the last ${config.audit.retention.months} months hot but archives (never deletes) older ones; "full" keeps everything.`,
             );
           }
 
@@ -751,13 +751,13 @@ export class AuditCommand {
           // Gate 2 — compute the cut point from strategy + retention months.
           const cut = computeCutPoint(
             auditDir,
-            config.audit_strategy,
-            config.audit_retention_months,
+            config.audit.retention.strategy,
+            config.audit.retention.months,
             new Date(),
           );
           if (!cut.hasCut) {
             process.stdout.write(
-              `${pc.green('✔')}  nothing to prune — all history is within the ${config.audit_retention_months}-month window\n`,
+              `${pc.green('✔')}  nothing to prune — all history is within the ${config.audit.retention.months}-month window\n`,
             );
             return;
           }

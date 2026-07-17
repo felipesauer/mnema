@@ -3,7 +3,7 @@ import path from 'node:path';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
 
 /**
- * The audit retention strategy, mirroring `config.audit_strategy`:
+ * The audit retention strategy, mirroring `config.audit.retention.strategy`:
  *
  * - `full` — keep every segment forever. No cut point is ever produced.
  * - `recent` — keep the last N months hot but do NOT delete the older
@@ -162,8 +162,8 @@ function windowStartMonth(now: Date, retentionMonths: number): string {
  * walk can accept via a signed prune waiver.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
- * @param strategy - Configured `audit_strategy`
- * @param retentionMonths - Configured `audit_retention_months` (>= 1)
+ * @param strategy - Configured `audit.retention.strategy`
+ * @param retentionMonths - Configured `audit.retention.months` (>= 1)
  * @param now - Reference time (the current month anchors the window)
  * @returns The cut point
  */
