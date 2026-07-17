@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path, { isAbsolute } from 'node:path';
 import { cwd } from 'node:process';
 import { describe, expect, it } from 'vitest';
 
@@ -47,13 +48,18 @@ describe('asset-paths helpers', () => {
     // resolves to PACKAGE_ROOT-relative path. This is the precise
     // condition that exposed H-2 in production.
     const originalCwd = cwd();
+    // A unique dir that can never be a prefix of PACKAGE_ROOT — a literal
+    // like '/tmp' breaks when the repo itself is checked out under it
+    // (e.g. the fresh-clone gate).
+    const unrelated = mkdtempSync(path.join(tmpdir(), 'mnema-unrelated-'));
     try {
-      process.chdir('/tmp');
+      process.chdir(unrelated);
       const dir = migrationsDir();
       expect(dir.startsWith(PACKAGE_ROOT)).toBe(true);
-      expect(dir.startsWith('/tmp')).toBe(false);
+      expect(dir.startsWith(unrelated)).toBe(false);
     } finally {
       process.chdir(originalCwd);
+      rmSync(unrelated, { recursive: true, force: true });
     }
   });
 
