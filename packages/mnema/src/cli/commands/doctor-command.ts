@@ -36,7 +36,7 @@ import { AnchorRepository } from '@mnema/core/storage/sqlite/repositories/anchor
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@mnema/core/storage/workflow-file.js';
-import { migrationDirs } from '@mnema/core/utils/asset-paths.js';
+import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import { managedBlockIgnores } from '@mnema/core/utils/gitignore.js';
 import {
@@ -589,7 +589,7 @@ export class DoctorCommand {
         const adapter = new SqliteAdapter(dbPath);
         try {
           checks.push({ name: 'database opens', ok: true, detail: dbPath });
-          checks.push(...inspectMigrationDrift(adapter, migrationDirs(projectRoot)));
+          checks.push(...inspectMigrationDrift(adapter, migrationsDir()));
           checks.push(
             ...inspectMirrorDrift(adapter, {
               skillsDir: path.join(projectRoot, config.paths.skills),
@@ -694,10 +694,7 @@ export class DoctorCommand {
  * @param dir - Migrations directory to compare against
  * @returns Drift checks in the order doctor renders them
  */
-export function inspectMigrationDrift(
-  adapter: SqliteAdapter,
-  dir: string | readonly string[],
-): DoctorCheck[] {
+export function inspectMigrationDrift(adapter: SqliteAdapter, dir: string): DoctorCheck[] {
   const runner = new MigrationRunner();
   const onDisk = runner.listAvailable(dir);
   const applied = new Set(runner.loadApplied(adapter));

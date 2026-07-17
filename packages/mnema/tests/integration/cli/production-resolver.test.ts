@@ -65,16 +65,15 @@ describe('CLI production resolver (H-2 regression)', () => {
     });
 
     expect(doctor.status).toBe(0);
-    // The compiled binary ships 11 migrations as of this commit. If
-    // future migrations land, the assertion just needs the new count
-    // — bumping it intentionally is fine; an unexpected drop to 0
+    // The compiled binary ships the squashed 001 baseline (plus any
+    // forward migrations that land after it). An unexpected drop to 0
     // means the resolver regressed.
     expect(doctor.stdout).toMatch(/\b\d+ applied, \d+ on disk\b/);
     const match = doctor.stdout.match(/(\d+) applied, (\d+) on disk/);
     expect(match).not.toBeNull();
     if (match === null) return;
     const [, applied, onDisk] = match;
-    expect(Number(applied)).toBeGreaterThanOrEqual(11);
+    expect(Number(applied)).toBeGreaterThanOrEqual(1);
     expect(Number(applied)).toBe(Number(onDisk));
   });
 });

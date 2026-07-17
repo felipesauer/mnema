@@ -23,10 +23,8 @@ import {
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
 import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
-import { migrationDirs } from '@mnema/core/utils/asset-paths.js';
+import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
-import { ensureGitattributes, hasGitattributesUnion } from '@mnema/core/utils/gitattributes.js';
-import { ensureGitignore, hasCurrentGitignore } from '@mnema/core/utils/gitignore.js';
 import { CURATED_MEMORY_SUBFOLDERS } from '@mnema/core/utils/mirror-layout.js';
 import { VERSION } from '@mnema/core/utils/version.js';
 import type { Command } from 'commander';
@@ -173,14 +171,14 @@ export class UpgradeCommand {
    * @param ctx - Open CLI context
    */
   private migrationStep(ctx: CliContext): UpgradeStep | null {
-    const { projectRoot, container } = ctx;
+    const { container } = ctx;
     const pending = container.pendingMigrations;
     if (pending.length === 0) return null;
     const files = pending.map((m) => m.file).join(', ');
     return {
       label: `apply ${pending.length} pending migration(s): ${files}`,
       run: () => {
-        const applied = new MigrationRunner().run(container.adapter, migrationDirs(projectRoot));
+        const applied = new MigrationRunner().run(container.adapter, migrationsDir());
         return `applied ${applied.length} migration(s)`;
       },
     };
@@ -222,51 +220,6 @@ export class UpgradeCommand {
     // so those conflicted mirrors — which have no row — are NOT pruned as
     // orphans. Shared holder because both steps are independent closures.
     const conflictedTaskKeys = new Set<string>();
-
-    // Retrofit the audit `merge=union` .gitattributes onto a project that was
-    // initialised by a version predating it. Union keeps both sides when
-    // parallel branches append to the append-only log, blunting the
-    // stale-snapshot merge that can strand duplicate/rewound audit state. It is
-    // defense-in-depth (a driver, not a guarantee against every host's
-    // server-side squash) — the authoritative guards are the sync
-    // duplicate-mirror check and doctor's duplicate/delta checks. Fires only
-    // when the marker is absent, and is idempotent.
-    if (
-      !appliedRemediations.has('gitattributes-retrofit') &&
-      !hasGitattributesUnion(projectRoot, config.paths.audit)
-    ) {
-      steps.push(
-        remediationStep(
-          {
-            name: 'gitattributes-retrofit',
-            kind: 'version-jump',
-            introducedIn: '0.13.0',
-            retiresAfter: '0.13.0',
-            run: () => {
-              const outcome = ensureGitattributes(projectRoot, config.paths.audit);
-              return `.gitattributes ${outcome}`;
-            },
-          },
-          'add the audit-log `merge=union` .gitattributes (defense-in-depth for parallel branches)',
-        ),
-      );
-    }
-
-    // Retrofit the managed .gitignore block onto a project initialised by a
-    // version predating the current template — chiefly the later
-    // `.audit.lock*` line, so an early-vintage adopter stops committing the
-    // transient cross-process write lock. Same shape as the .gitattributes
-    // retrofit: fires only when the block is not already current, idempotent,
-    // and never touches user-added lines (it only appends what is missing).
-    if (!hasCurrentGitignore(projectRoot, config.paths.state, config.paths.audit)) {
-      steps.push({
-        label: 'reconcile the managed .gitignore block (e.g. ignore the transient .audit.lock)',
-        run: () => {
-          const outcome = ensureGitignore(projectRoot, config.paths.state, config.paths.audit);
-          return `.gitignore ${outcome}`;
-        },
-      });
-    }
 
     // Ingest committed markdown into the cache (markdown → DB), FIRST among
     // the sync steps. A fresh clone (or a project whose markdown drifted from
@@ -517,32 +470,6 @@ export class UpgradeCommand {
           return `rebuilt ${written.length} mirror file(s)`;
         },
       });
-    }
-
-    // Backfill the raw `scope` into scoped memory mirrors written before it
-    // was persisted, so a future clone recovers the scope on `sync` (the
-    // folder is only a lossy projection). Read-only detection here; the
-    // rewrite runs on confirmation. Scopeless memories are untouched.
-    const scopeBackfill = container.memory.scopeBackfillCandidates();
-    if (!appliedRemediations.has('backfill-scope') && scopeBackfill.length > 0) {
-      steps.push(
-        remediationStep(
-          {
-            name: 'backfill-scope',
-            // Version-jump: mirrors written before scope was persisted. A
-            // project past the introducing version can no longer produce a
-            // scopeless-but-scoped mirror, so it is expiry-eligible.
-            kind: 'version-jump',
-            introducedIn: '0.13.0',
-            retiresAfter: '0.13.0',
-            run: () => {
-              const done = container.memory.backfillScopeInMirrors();
-              return `added the scope field to ${done.length} memory mirror(s)`;
-            },
-          },
-          `backfill scope into ${scopeBackfill.length} memory mirror(s) missing it`,
-        ),
-      );
     }
 
     // Orphan mirrors — `.md` files with no live SQLite row. Left

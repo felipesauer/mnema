@@ -1,6 +1,5 @@
 /** Curated utils surface of @mnema/core. */
 export {
-  migrationDirs,
   migrationsDir,
   PACKAGE_ROOT,
   workflowsDir,

@@ -56,33 +56,6 @@ export function migrationsDir(): string {
 }
 
 /**
- * Absolute path to the project-local migrations directory.
- *
- * `mnema migration generate` writes here; the runner merges
- * project-local migrations on top of the bundled set so a custom
- * schema bump can ride alongside the package's shipped migrations
- * without modifying the global install.
- *
- * @param projectRoot - Absolute path to the project root
- * @returns Absolute path to `.mnema/migrations`
- */
-export function projectMigrationsDir(projectRoot: string): string {
-  return resolve(projectRoot, '.mnema/migrations');
-}
-
-/**
- * Returns the ordered list of migration directories the runner
- * should walk: bundled first (so its filenames always win on tie),
- * project-local second when it exists.
- *
- * @param projectRoot - Absolute path to the project root
- * @returns Array suitable for passing to `MigrationRunner.run`
- */
-export function migrationDirs(projectRoot: string): readonly string[] {
-  return [migrationsDir(), projectMigrationsDir(projectRoot)];
-}
-
-/**
  * Absolute path to the bundled `workflows/` directory.
  *
  * @returns Absolute path to the workflows directory

@@ -25,7 +25,7 @@ import { ProjectRepository } from '@mnema/core/storage/sqlite/repositories/proje
 import { SkillRepository } from '@mnema/core/storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@mnema/core/storage/workflow-file.js';
-import { migrationDirs, workflowsDir } from '@mnema/core/utils/asset-paths.js';
+import { migrationsDir, workflowsDir } from '@mnema/core/utils/asset-paths.js';
 import { ensureGitattributes } from '@mnema/core/utils/gitattributes.js';
 import { ensureGitignore } from '@mnema/core/utils/gitignore.js';
 import { VERSION } from '@mnema/core/utils/version.js';
@@ -293,7 +293,7 @@ export class InitCommand {
     const adapter = new SqliteAdapter(dbPath);
     let identityConfigured = false;
     try {
-      new MigrationRunner().run(adapter, migrationDirs(cwd));
+      new MigrationRunner().run(adapter, migrationsDir());
       const projects = new ProjectRepository(adapter);
       if (projects.findByKey(config.project.key) === null) {
         projects.insert({

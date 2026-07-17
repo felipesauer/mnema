@@ -88,7 +88,7 @@ export interface RemediationOutcome {
 
 /**
  * Runs one-shot DATA remediation steps with a run-once-and-record lifecycle,
- * mirroring {@link MigrationRunner} over `applied_remediations`.
+ * mirroring {@link MigrationRunner} over `applied_upgrades`.
  *
  * A step whose `name` already has a row is skipped (it has run before and is a
  * verifiable no-op). A `version-jump` step past its `retiresAfter` is skipped
@@ -100,7 +100,7 @@ export class RemediationRunner {
    * Runs the pending steps in the given order against `adapter`.
    *
    * @param adapter - SQLite adapter (its DB must already carry the
-   *   `applied_remediations` table — migration 036)
+   *   `applied_upgrades` table, baked into the 001 baseline)
    * @param steps - Step descriptors, in the order they should run
    * @param projectVersion - The project's current version, used to decide
    *   whether a `version-jump` step has retired. A `clone-condition` step
@@ -161,7 +161,7 @@ export class RemediationRunner {
   }
 
   /**
-   * Reads the names recorded in `applied_remediations`. Returns an empty array
+   * Reads the names recorded in `applied_upgrades`. Returns an empty array
    * when the table does not yet exist (a DB not migrated to 036).
    *
    * @param adapter - SQLite adapter to query
@@ -170,14 +170,12 @@ export class RemediationRunner {
   loadApplied(adapter: SqliteAdapter): readonly string[] {
     const database = adapter.getDatabase();
     const exists = database
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'applied_remediations'",
-      )
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'applied_upgrades'")
       .get();
     if (exists === undefined) return [];
 
     const rows = database
-      .prepare('SELECT name FROM applied_remediations ORDER BY name')
+      .prepare('SELECT script AS name FROM applied_upgrades ORDER BY script')
       .all() as Array<{ name: string }>;
     return rows.map((row) => row.name);
   }
@@ -186,7 +184,7 @@ export class RemediationRunner {
   private record(adapter: SqliteAdapter, name: string): void {
     adapter
       .getDatabase()
-      .prepare('INSERT OR IGNORE INTO applied_remediations (name) VALUES (?)')
+      .prepare('INSERT OR IGNORE INTO applied_upgrades (script) VALUES (?)')
       .run(name);
   }
 }
