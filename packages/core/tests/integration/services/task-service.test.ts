@@ -557,7 +557,7 @@ describe('TaskService reopen_count (jira-classic)', () => {
     }
     copyFileSync(
       path.join(fixtureWorkflows, 'jira-classic.json'),
-      path.join(projectRoot, '.mnema/workflows', 'jira-classic.json'),
+      path.join(projectRoot, '.mnema/workflows', 'default.json'),
     );
     const config = ConfigSchema.parse({
       version: '1.0',

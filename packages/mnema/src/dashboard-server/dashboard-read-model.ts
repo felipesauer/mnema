@@ -11,6 +11,7 @@ import type { FlowMetrics } from '@mnema/core/services/metrics/flow-metrics-serv
 import type { ServiceContainer } from '@mnema/core/services/service-container.js';
 import type { DependencyGraph } from '@mnema/core/services/snapshot/dependency-graph-service.js';
 import type { AuditEvent } from '@mnema/core/storage/audit/audit-writer.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 
 /**
  * The read-only seam internal frontends consume to build the dashboard
@@ -79,7 +80,7 @@ export function buildDashboardReadModel(
     auditEvents: () => container.auditQuery.run(),
     hasSchemaDrift: () => container.pendingMigrations.length > 0,
     integrity() {
-      const auditDir = path.join(projectRoot, config.paths.audit);
+      const auditDir = path.join(projectRoot, LAYOUT.audit);
       const secret = new ProjectSecretService(projectRoot, config.project.key);
       return inspectAuditIntegrity(
         container.adapter,

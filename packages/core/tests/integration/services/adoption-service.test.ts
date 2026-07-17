@@ -95,9 +95,9 @@ describe('AdoptionService', () => {
       );
       const repo = new SkillRepository(adapter);
       const identity = new IdentityService(new ActorRepository(adapter));
-      const audit = new AuditService(new AuditWriter(path.join(projectRoot, config.paths.audit)));
+      const audit = new AuditService(new AuditWriter(path.join(projectRoot, '.mnema/audit')));
       const skills = new SkillService(
-        path.join(projectRoot, config.paths.skills),
+        path.join(projectRoot, '.mnema/skills'),
         new Set(),
         repo,
         identity,

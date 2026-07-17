@@ -4,6 +4,7 @@ import { printError } from '@mnema/core/errors/error-printer.js';
 import { MemoryConsolidator } from '@mnema/core/services/knowledge/memory-consolidator.js';
 import { MemoryLinter } from '@mnema/core/services/knowledge/memory-linter.js';
 import { pc } from '@mnema/core/utils/colors.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
 import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { collectRepeatable } from '../option-helpers.js';
@@ -46,8 +47,8 @@ export class MemoryCommand {
       .command('consolidate')
       .description('Regenerate memory/INDEX.md and decisions/notes indices')
       .action(async () => {
-        await withCliContext(({ config, projectRoot }) => {
-          const memoryDir = path.join(projectRoot, config.paths.memory);
+        await withCliContext(({ projectRoot }) => {
+          const memoryDir = path.join(projectRoot, LAYOUT.memory);
           const summary = new MemoryConsolidator(memoryDir).run();
 
           const sections: { name: string; payload: typeof summary.memory }[] = [
@@ -72,8 +73,8 @@ export class MemoryCommand {
       .description('Validate ADRs in memory/decisions/ (frontmatter, canonical sections)')
       .option('--json', 'Print diagnostics as JSON', false)
       .action(async (options: LintOptions) => {
-        await withCliContext(({ config, projectRoot }) => {
-          const memoryDir = path.join(projectRoot, config.paths.memory);
+        await withCliContext(({ projectRoot }) => {
+          const memoryDir = path.join(projectRoot, LAYOUT.memory);
           const report = new MemoryLinter(memoryDir).lint();
 
           if (options.json === true) {

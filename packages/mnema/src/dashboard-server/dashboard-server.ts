@@ -11,6 +11,7 @@ import { createAttestationSource } from '@mnema/core/services/integrity/head-che
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import type { ServiceContainer } from '@mnema/core/services/service-container.js';
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 import {
   buildDashboardData,
   DEFAULT_METRICS_WINDOW,
@@ -114,7 +115,7 @@ export async function createDashboardServer(
   const port = options.port ?? DEFAULT_PORT;
   const limit = options.limit ?? DEFAULT_RECENT_LIMIT;
   const window = options.window ?? DEFAULT_METRICS_WINDOW;
-  const auditDir = path.join(projectRoot, config.paths.audit);
+  const auditDir = path.join(projectRoot, LAYOUT.audit);
   const display = container.identity.getDisplayFor.bind(container.identity);
 
   // Verify the hash chain at most once per audit-file change, not once per

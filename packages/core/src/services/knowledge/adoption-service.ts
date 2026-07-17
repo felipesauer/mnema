@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-
-import type { Config } from '../../config/config-schema.js';
+import { LAYOUT } from '../../utils/layout.js';
 import { BUILT_IN_TASK_TEMPLATES, TASK_TEMPLATE_KINDS } from '../backlog/task-template-service.js';
 
 /**
@@ -42,10 +41,7 @@ export interface AdoptionSummary {
  * customised never overwrites.
  */
 export class AdoptionService {
-  constructor(
-    private readonly projectRoot: string,
-    private readonly config: Config,
-  ) {}
+  constructor(private readonly projectRoot: string) {}
 
   /**
    * Installs a single component.
@@ -87,27 +83,27 @@ export class AdoptionService {
   }
 
   private installSkills(): AdoptionResult {
-    const dir = path.join(this.projectRoot, this.config.paths.skills);
+    const dir = path.join(this.projectRoot, LAYOUT.skills);
     return this.writeTemplates(dir, 'skills', skillsTemplates());
   }
 
   private installMemory(): AdoptionResult {
-    const dir = path.join(this.projectRoot, this.config.paths.memory);
+    const dir = path.join(this.projectRoot, LAYOUT.memory);
     return this.writeTemplates(dir, 'memory', memoryTemplates());
   }
 
   private installRoadmap(): AdoptionResult {
-    const dir = path.join(this.projectRoot, this.config.paths.roadmap);
+    const dir = path.join(this.projectRoot, LAYOUT.roadmap);
     return this.writeTemplates(dir, 'roadmap', roadmapTemplates());
   }
 
   private installCommands(): AdoptionResult {
-    const dir = path.join(this.projectRoot, this.config.paths.commands);
+    const dir = path.join(this.projectRoot, LAYOUT.commands);
     return this.writeTemplates(dir, 'commands', commandsTemplates());
   }
 
   private installTemplates(): AdoptionResult {
-    const dir = path.join(this.projectRoot, this.config.paths.templates);
+    const dir = path.join(this.projectRoot, LAYOUT.templates);
     return this.writeTemplates(dir, 'templates', taskTemplateFiles());
   }
 

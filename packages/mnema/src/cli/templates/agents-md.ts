@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from 
 import path from 'node:path';
 
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { LAYOUT } from '@mnema/core/utils/layout.js';
 
 /** Delimiters around the Mnema-managed block inside `AGENTS.md`. */
 export const AGENTS_MD_BEGIN = '<!-- MNEMA:START -->';
@@ -170,9 +171,9 @@ export function buildAgentsMd(config: Config): string {
       'to route around a gate; complete the fields it asks for.',
   );
   lines.push('');
-  lines.push(`## Workflow: \`${config.workflow}\``);
+  lines.push('## Workflow: `default`');
   lines.push('');
-  lines.push(workflowGuidance(config.workflow));
+  lines.push(workflowGuidance('default'));
   lines.push('');
   lines.push('## Dual identity');
   lines.push('');
@@ -269,7 +270,7 @@ export function buildAgentsMd(config: Config): string {
     // A whole-line `@path` directive, expanded by expandAgentsImports at
     // write time. If the index has not been generated yet, it degrades to a
     // "skipped" note rather than a dangling reference.
-    lines.push(`@${config.paths.memory}/INDEX.md`);
+    lines.push(`@${LAYOUT.memory}/INDEX.md`);
   }
   lines.push('');
   lines.push('## Useful CLI commands for the human');
@@ -283,34 +284,11 @@ export function buildAgentsMd(config: Config): string {
   return lines.join('\n');
 }
 
-function workflowGuidance(workflow: string): string {
-  switch (workflow) {
-    case 'lean':
-      return [
-        'States: TODO → DOING → DONE. The lean preset has no review step or',
-        'blocked state — keep tasks small enough that those stages are not',
-        'needed. Use `task_start` to pick something up and `task_complete`',
-        'when it is done.',
-      ].join('\n');
-    case 'kanban':
-      return [
-        'States: BACKLOG → READY → IN_PROGRESS → BLOCKED → DONE. Continuous',
-        'flow — there is no sprint cycle. Promote items to READY only when',
-        'they are well-scoped, then `task_start` to pull into work. Use',
-        '`task_block` whenever you are waiting on someone else.',
-      ].join('\n');
-    case 'jira-classic':
-      return [
-        'States: OPEN → IN_PROGRESS → RESOLVED → CLOSED, with REOPENED for',
-        'follow-ups. Resolutions require a textual `resolution` field. Reopen',
-        'should always carry a reason describing what regressed.',
-      ].join('\n');
-    default:
-      return [
-        'Default 7-state workflow: DRAFT → READY → IN_PROGRESS → IN_REVIEW',
-        '→ DONE, with BLOCKED and CANCELED branches. Submitting a draft',
-        'requires title, description, acceptance criteria and an estimate.',
-        'Code review is mandatory before DONE.',
-      ].join('\n');
-  }
+function workflowGuidance(_workflow: string): string {
+  return [
+    'Default 7-state workflow: DRAFT → READY → IN_PROGRESS → IN_REVIEW',
+    '→ DONE, with BLOCKED and CANCELED branches. Submitting a draft',
+    'requires title, description, acceptance criteria and an estimate.',
+    'Code review is mandatory before DONE.',
+  ].join('\n');
 }

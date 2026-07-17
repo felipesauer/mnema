@@ -32,7 +32,9 @@ async function setup(
   }
   copyFileSync(
     path.join(workflowName === 'default' ? workflowsSrc : fixtureWorkflows, `${workflowName}.json`),
-    path.join(projectRoot, '.mnema/workflows', `${workflowName}.json`),
+    // The runtime always loads default.json; a retired-preset fixture
+    // stands in AS default.json to exercise the feature-gating machinery.
+    path.join(projectRoot, '.mnema/workflows', 'default.json'),
   );
   const config = ConfigSchema.parse({
     version: '1.0',

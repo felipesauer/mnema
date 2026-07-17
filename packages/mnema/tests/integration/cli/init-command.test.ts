@@ -41,7 +41,9 @@ describe('InitCommand.run (silent mode)', () => {
     >;
     expect((config.project as { key: string }).key).toBe('MYAPP');
     expect((config.project as { name: string }).name).toBe('My App');
-    expect(config.workflow).toBe('default');
+    // The workflow field is gone from the config: only `default` exists
+    // and the runtime loads it unconditionally.
+    expect('workflow' in config).toBe(false);
     expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
   });
 
@@ -115,9 +117,7 @@ describe('InitCommand.run (silent mode)', () => {
     }
   });
 
-  it('the audit-only profile keeps the default workflow and disables knowledge', () => {
-    // audit-only is a config shortcut, not a workflow pairing: only
-    // `default` ships, and the profile's whole effect is features.knowledge.
+  it('the audit-only profile is a pure config shortcut (features.knowledge off)', () => {
     const result = new InitCommand().run({
       cwd: projectRoot,
       name: 'Audit App',
@@ -133,7 +133,6 @@ describe('InitCommand.run (silent mode)', () => {
       workflow: string;
       features?: { knowledge?: boolean };
     };
-    expect(config.workflow).toBe('default');
     expect(config.features?.knowledge).toBe(false);
   });
 

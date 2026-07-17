@@ -1,11 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import path from 'node:path';
 
-import { type Config, ConfigSchema, type UserConfig, UserConfigSchema } from './config-schema.js';
-
-/** User-level config location, relative to the home directory. */
-export const USER_CONFIG_RELATIVE = '.config/mnema/config.json';
+import {
+  BEHAVIOUR_KEYS,
+  type Config,
+  ConfigSchema,
+  DEEP_MERGE_KEYS,
+  PROJECT_ONLY_KEYS,
+} from './config-schema.js';
 
 /**
  * Canonical location of the configuration file, relative to the
@@ -16,10 +18,11 @@ export const CONFIG_FILE_RELATIVE = '.mnema/mnema.config.json';
 /**
  * Location of the optional per-repo personal override, relative to the
  * project root. Gitignored by `init`, so it carries local tweaks (a
- * looser `enforcement_mode` in dev, a personal `sync.mode`) without
- * touching the team's committed `mnema.config.json`. Constrained to
- * {@link UserConfigSchema}, so it can never change project identity,
- * paths or workflow — only behaviour preferences.
+ * looser `enforcement_mode` in dev, personal flush cadence) without
+ * touching the team's committed `mnema.config.json` — the coexistence
+ * primitive for N humans/machines sharing one repo. Constrained to the
+ * schema-derived {@link BEHAVIOUR_KEYS}, so it can never change project
+ * identity or hooks — only behaviour preferences.
  */
 export const LOCAL_CONFIG_RELATIVE = '.mnema/config.local.json';
 
@@ -46,23 +49,9 @@ export class ConfigInvalidError extends Error {
 }
 
 /**
- * Thrown when the user-level config (`~/.config/mnema/config.json`)
- * exists but violates {@link UserConfigSchema} — e.g. it tries to set a
- * project-only key. Kept distinct from {@link ConfigInvalidError} so the
- * error names the user file, not the project one.
- */
-export class UserConfigInvalidError extends Error {
-  constructor(public readonly issues: unknown) {
-    super(`${USER_CONFIG_RELATIVE} is invalid`);
-    this.name = 'UserConfigInvalidError';
-  }
-}
-
-/**
  * Thrown when the per-repo override (`.mnema/config.local.json`) exists
- * but violates {@link UserConfigSchema} — e.g. it tries to set a
- * project-only key. Kept distinct from {@link ConfigInvalidError} and
- * {@link UserConfigInvalidError} so the error names the local file.
+ * but is malformed JSON or sets a project-only key. Kept distinct from
+ * {@link ConfigInvalidError} so the error names the local file.
  */
 export class LocalConfigInvalidError extends Error {
   constructor(public readonly issues: unknown) {
@@ -75,15 +64,15 @@ export class LocalConfigInvalidError extends Error {
  * Loads and validates the project configuration by walking the
  * directory tree upward (mirroring how `git` discovers its repository
  * root).
+ *
+ * Two layers, lowest to highest precedence:
+ *   project `mnema.config.json`  <  per-repo `.mnema/config.local.json`
+ * The local override is structurally screened (behaviour keys only);
+ * full schema validation runs ONCE, on the merged object — so a bad
+ * local value fails with the same actionable message a bad project
+ * value does, and the override surface can never drift from the schema.
  */
 export class ConfigLoader {
-  /**
-   * @param home - Resolver for the home directory. Defaults to
-   *   `os.homedir`; tests inject a temp dir to exercise the user-level
-   *   config without touching the real `~/.config`.
-   */
-  constructor(private readonly home: () => string = homedir) {}
-
   /**
    * Searches for `.mnema/mnema.config.json` starting from the given
    * directory, walking up the parent chain until the filesystem root.
@@ -104,12 +93,15 @@ export class ConfigLoader {
   }
 
   /**
-   * Loads, parses and validates `mnema.config.json`.
+   * Loads, parses and validates `mnema.config.json` (plus the optional
+   * per-repo local override).
    *
    * @param startDir - Starting directory for the search
    * @returns Validated Config object with defaults applied
    * @throws ConfigNotFoundError if no config file is found
-   * @throws ConfigInvalidError if the config violates the schema
+   * @throws ConfigInvalidError if the merged config violates the schema
+   * @throws LocalConfigInvalidError if the local override is malformed
+   *   or sets a project-only key
    */
   load(startDir?: string): Config {
     const file = this.findConfigFile(startDir);
@@ -120,22 +112,8 @@ export class ConfigLoader {
       unknown
     >;
 
-    // Precedence, lowest to highest:
-    //   user-level defaults  <  project config  <  per-repo local override
-    // The project always wins over the user global; the local override
-    // wins over the project. Both the global and the local layer are
-    // constrained to UserConfigSchema (behaviour preferences only), so
-    // neither can change project identity/paths/workflow. Validation runs
-    // once, on the fully merged object.
-    const userDefaults = this.loadUserConfig();
-    const withUser =
-      userDefaults === null ? raw : deepMergeConfig(userDefaults as Record<string, unknown>, raw);
-
     const localOverride = this.loadLocalConfig(file);
-    const merged =
-      localOverride === null
-        ? withUser
-        : deepMergeConfig(withUser, localOverride as Record<string, unknown>);
+    const merged = localOverride === null ? raw : deepMergeConfig(raw, localOverride);
 
     const parsed = ConfigSchema.safeParse(merged);
     if (!parsed.success) throw new ConfigInvalidError(parsed.error.issues);
@@ -143,43 +121,36 @@ export class ConfigLoader {
   }
 
   /**
-   * Reads and validates the optional user-level config. Returns `null`
-   * when the file does not exist (the common case).
-   *
-   * @throws UserConfigInvalidError when the file exists but is malformed
-   *   or sets a disallowed key
-   */
-  loadUserConfig(): UserConfig | null {
-    const file = path.join(this.home(), USER_CONFIG_RELATIVE);
-    if (!existsSync(file)) return null;
-    const raw = readJsonFile(file, (cause) => new UserConfigInvalidError(cause));
-    const parsed = UserConfigSchema.safeParse(raw);
-    if (!parsed.success) throw new UserConfigInvalidError(parsed.error.issues);
-    return parsed.data;
-  }
-
-  /**
-   * Reads and validates the optional per-repo override that lives next to
-   * the project config (`.mnema/config.local.json`). Returns `null` when
-   * the file does not exist (the common case).
+   * Reads the optional per-repo override that lives next to the project
+   * config (`.mnema/config.local.json`). Returns `null` when the file
+   * does not exist (the common case). The override is screened
+   * structurally here — top-level keys must be schema-derived behaviour
+   * keys — and its VALUES are validated by the single post-merge
+   * `ConfigSchema` parse in {@link load}.
    *
    * @param configFile - Absolute path to the resolved project config file;
    *   the local override is looked up in the same directory
-   * @throws LocalConfigInvalidError when the file exists but is malformed
-   *   or sets a disallowed (project-only) key
+   * @throws LocalConfigInvalidError when the file is malformed JSON, is
+   *   not an object, or sets a project-only key
    */
-  loadLocalConfig(configFile: string): UserConfig | null {
+  loadLocalConfig(configFile: string): Record<string, unknown> | null {
     const file = path.join(path.dirname(configFile), 'config.local.json');
     if (!existsSync(file)) return null;
     const raw = readJsonFile(file, (cause) => new LocalConfigInvalidError(cause));
-    const parsed = UserConfigSchema.safeParse(raw);
-    if (!parsed.success) throw new LocalConfigInvalidError(parsed.error.issues);
-    return parsed.data;
+    if (!isPlainObject(raw)) {
+      throw new LocalConfigInvalidError('config.local.json must be a JSON object');
+    }
+    for (const key of Object.keys(raw)) {
+      if (!BEHAVIOUR_KEYS.includes(key)) {
+        const reason = (PROJECT_ONLY_KEYS as readonly string[]).includes(key)
+          ? `"${key}" is project-only and cannot be overridden locally`
+          : `unknown key "${key}"`;
+        throw new LocalConfigInvalidError(reason);
+      }
+    }
+    return raw;
   }
 }
-
-/** Sub-objects merged recursively instead of replaced wholesale. */
-const DEEP_MERGE_KEYS = ['sync', 'features', 'aging', 'github', 'claims'] as const;
 
 /** True for a plain object (mergeable), false for arrays / null / scalars. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -210,9 +181,8 @@ function readJsonFile(file: string, makeError: (cause: unknown) => Error): unkno
 /**
  * Recursively merges two plain objects: the override wins on every leaf,
  * nested plain objects merge key-by-key, and arrays/scalars replace
- * wholesale. Used for the {@link DEEP_MERGE_KEYS} sub-trees so that a
- * nested record like `aging.sla_days` keeps the base's per-state keys when
- * the override only sets one of them.
+ * wholesale — so a nested record like `aging.sla_days` keeps the base's
+ * per-state keys when the override only sets one of them.
  */
 function mergeObjectsDeep(
   base: Record<string, unknown>,
@@ -228,12 +198,10 @@ function mergeObjectsDeep(
 
 /**
  * Layers `override` on top of `base`: a top-level key present in
- * `override` wins; the {@link DEEP_MERGE_KEYS} sub-trees merge *recursively*
+ * `override` wins; every {@link DEEP_MERGE_KEYS} sub-tree (derived from
+ * the schema shape — every top-level object block) merges *recursively*
  * so an override that sets a single (possibly nested) sub-field doesn't
- * drop the others — e.g. a local `aging.sla_days: { IN_REVIEW: 1 }` keeps
- * the project's other per-state SLAs. Used for both merge steps
- * (user-under-project and project-under-local) since both are "the higher
- * layer wins key by key".
+ * drop the others.
  *
  * @param base - Lower-precedence object
  * @param override - Higher-precedence object (wins on every conflict)
