@@ -514,7 +514,9 @@ export class DoctorCommand {
     // Audit retention is declared but not yet enforced: warn when the config
     // asks for pruning ('recent'/'local' or a finite retention) so no one
     // mistakes an inert setting for an active guarantee.
-    checks.push(...inspectAuditRetention(config.audit_strategy, config.audit_retention_months));
+    checks.push(
+      ...inspectAuditRetention(config.audit.retention.strategy, config.audit.retention.months),
+    );
 
     // Domain-event hooks: surface how many commands are wired, and whether
     // the block is human-approved. An un-approved block is inert (it never
@@ -1629,8 +1631,8 @@ export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking')
  *   opt-in (never automatic), so the line points at the command rather than
  *   asserting pruning already ran.
  *
- * @param strategy - Configured `audit_strategy`
- * @param retentionMonths - Configured `audit_retention_months`
+ * @param strategy - Configured `audit.retention.strategy`
+ * @param retentionMonths - Configured `audit.retention.months`
  */
 export function inspectAuditRetention(
   strategy: 'full' | 'recent' | 'local',
@@ -1644,7 +1646,7 @@ export function inspectAuditRetention(
         name: 'audit retention',
         ok: true,
         detail:
-          `audit_strategy="recent": the last ${retentionMonths} months stay hot; older ` +
+          `audit.retention.strategy="recent": the last ${retentionMonths} months stay hot; older ` +
           'segments are archived (kept committed and verifiable), never deleted.',
       },
     ];
@@ -1655,7 +1657,7 @@ export function inspectAuditRetention(
       name: 'audit retention',
       ok: true,
       detail:
-        `audit_strategy="local" (keep ${retentionMonths} months): run \`mnema audit prune\` to ` +
+        `audit.retention.strategy="local" (keep ${retentionMonths} months): run \`mnema audit prune\` to ` +
         'delete archived months below the window and re-baseline the chain onto a signed ' +
         'anchor. Pruning is opt-in and never runs automatically.',
     },

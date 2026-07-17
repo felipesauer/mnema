@@ -65,13 +65,6 @@ export const ConfigSchema = z.object({
     name: z.string().min(1),
     description: z.string().optional(),
   }),
-  // TRANSITIONAL FLAT KEYS: `mnema audit prune` and doctor's retention
-  // check read these today. They move under `audit.retention.{strategy,
-  // months}` with the audit-format re-baseline (the config-shape change
-  // rides that wave's version bump), keeping the audit block the single
-  // home for audit knobs.
-  audit_strategy: z.enum(['full', 'recent', 'local']).default('recent'),
-  audit_retention_months: z.number().int().positive().default(12),
   // Which observable signal marks an agent run as "guided" in `eval_report`.
   // `skill_used`: the run emitted a skill_used event. `bootstrap`: the run was
   // opened after context_bootstrap ran (a bootstrap-guided solo run that
@@ -92,6 +85,17 @@ export const ConfigSchema = z.object({
         .object({
           events: z.number().int().positive().default(100),
           seconds: z.number().int().positive().default(3600),
+        })
+        .prefault({}),
+      // Retention policy for the audit chain — the knobs `mnema audit
+      // prune` and doctor's retention check read. `full` keeps everything
+      // hot; `recent` keeps the last `months` hot and archives the rest;
+      // `local` prunes the local copy behind a signed re-baseline (the
+      // committed chain in git remains the durable history).
+      retention: z
+        .object({
+          strategy: z.enum(['full', 'recent', 'local']).default('recent'),
+          months: z.number().int().positive().default(12),
         })
         .prefault({}),
       // Temporal anchoring (ADR-37 layer 3): pluggable, OPT-IN, default
