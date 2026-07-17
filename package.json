@@ -1,6 +1,7 @@
 {
   "name": "@felipesauer/mnema",
   "version": "0.14.0-alpha.0",
+  "private": true,
   "description": "A tamper-evident, local-first audit trail for AI-agent work — an MCP server giving Claude Code, Cursor and other agents typed tools behind workflow gates, with every action recorded in a SHA-256 hash-chained log.",
   "keywords": [
     "mcp",
@@ -73,6 +74,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.2",
+    "@changesets/cli": "^2.31.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.1.0",
