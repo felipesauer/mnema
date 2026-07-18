@@ -1,4 +1,5 @@
 import { buildContentAttestation } from '@mnema/core/services/audit/attestation-cli.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import {
   type AttestationSource,
   inspectAuditIntegrity,
@@ -69,7 +70,7 @@ export class AuditVerifyTool {
           this.secrets?.read() ?? null,
           this.attestation,
           buildContentAttestation(this.projectRoot, this.auditDir),
-          null,
+          rebaselineResolverFor(this.projectRoot),
           tailDir,
         );
         const intact = checks.every((check) => check.ok);

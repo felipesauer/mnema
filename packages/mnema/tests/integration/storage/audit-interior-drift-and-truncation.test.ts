@@ -3,12 +3,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { listArtifacts, writeArtifact } from '@mnema/core/services/audit/attestation-store.js';
+import { diagnoseAuditChain } from '@mnema/core/services/audit/audit-diagnose.js';
 import {
-  diagnoseAuditChain,
-  readTruncationWaiver,
-  truncationWaiverPath,
-  writeTruncationWaiver,
-} from '@mnema/core/services/audit/audit-diagnose.js';
+  readRebaselineWaiver,
+  rebaselineWaiverPath,
+  writeRebaselineWaiver,
+} from '@mnema/core/services/audit/rebaseline-store.js';
+import { buildTruncationWaiver } from '@mnema/core/services/audit/rebaseline-waiver.js';
 import type { GitCommandRunner } from '@mnema/core/services/git/git-commit-service.js';
 import {
   assessAuditChain,
@@ -156,7 +157,21 @@ describe('interior drift vs genuine truncation', () => {
     if (!opts.apply) return { ok: true, applied: false, reSigned: false };
     state.forceReconcile(chain.chainedLines, chain.lastHash, chain.lastAt);
     const reSigned = reSign()(chain.lastHash, chain.chainedLines);
-    writeTruncationWaiver(auditDir, chain.lastHash, chain.chainedLines);
+    // The accepted truncation now records a SIGNED re-baseline waiver (kind
+    // `truncation`) at `<tail>/rebaseline.json`, mirroring the CLI: the local
+    // machine key signs it and the committed project fingerprint pins it.
+    const { fingerprint } = machineKey.getOrCreate();
+    const waiver = buildTruncationWaiver({
+      newHeadHash: chain.lastHash,
+      newEventCount: chain.chainedLines,
+      tailId: path.basename(auditDir),
+      signerActor: ACTOR,
+      signerFingerprint: fingerprint,
+      projectHmacId: 'ab'.repeat(32),
+      acceptedAt: new Date().toISOString(),
+      sign: (message) => machineKey.sign(message),
+    });
+    writeRebaselineWaiver(auditDir, waiver);
     return { ok: true, applied: true, reSigned };
   }
 
@@ -262,9 +277,10 @@ describe('interior drift vs genuine truncation', () => {
     expect(signatures.read()?.eventCountAt).toBe(2);
     expect(signatures.read()?.coveredHeadHash).toBe(newTail);
     // The waiver was written and re-verifies against the current disk.
-    const waiver = readTruncationWaiver(auditDir);
-    expect(waiver?.acceptedEventCount).toBe(2);
-    expect(waiver?.acceptedHeadHash).toBe(newTail);
+    const waiver = readRebaselineWaiver(auditDir);
+    expect(waiver?.kind).toBe('truncation');
+    expect(waiver?.newEventCount).toBe(2);
+    expect(waiver?.newHeadHash).toBe(newTail);
 
     // doctor is green on count and attestation now.
     expect(countCheck()?.ok).toBe(true);
@@ -312,7 +328,7 @@ describe('interior drift vs genuine truncation', () => {
       expect(result.reason).toMatch(/overreach/i);
     }
     // Fail-closed: nothing written.
-    expect(existsSync(truncationWaiverPath(auditDir))).toBe(false);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(false);
     expect(signatures.read()?.eventCountAt).toBe(3); // untouched
   });
 
@@ -333,7 +349,7 @@ describe('interior drift vs genuine truncation', () => {
     const result = acceptTruncation({ apply: true, requireCommitted: true, gitRunner: gitDirty });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toMatch(/require-committed|git HEAD/i);
-    expect(existsSync(truncationWaiverPath(auditDir))).toBe(false);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(false);
   });
 
   it('DRY RUN writes nothing: audit_state, the signature row, and the waiver file are unchanged', () => {
@@ -369,7 +385,7 @@ describe('interior drift vs genuine truncation', () => {
 
     expect(state.read().eventCount).toBe(beforeCount);
     expect(signatures.read()).toEqual(beforeSig);
-    expect(existsSync(truncationWaiverPath(auditDir))).toBe(false);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(false);
   });
 
   /** Builds the reconcile call the way both tamper cases do (full arg list). */
@@ -399,7 +415,7 @@ describe('interior drift vs genuine truncation', () => {
     const acc = acceptTruncation({ apply: true });
     expect(acc.ok).toBe(false);
     if (!acc.ok) expect(acc.reason).toMatch(/unparseable/i);
-    expect(existsSync(truncationWaiverPath(auditDir))).toBe(false);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(false);
   });
 
   it('TAMPERING (content-invalid prev_hash break) still refuses under both reconcile and accept-truncation', () => {
@@ -420,7 +436,7 @@ describe('interior drift vs genuine truncation', () => {
     const acc = acceptTruncation({ apply: true });
     expect(acc.ok).toBe(false);
     if (!acc.ok) expect(acc.reason).toMatch(/broken/i);
-    expect(existsSync(truncationWaiverPath(auditDir))).toBe(false);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(false);
   });
 
   it('end-to-end with a REAL git repo: --require-committed accepts after commit', () => {
@@ -454,6 +470,8 @@ describe('interior drift vs genuine truncation', () => {
     const after = acceptTruncation({ apply: true, requireCommitted: true });
     expect(after.ok).toBe(true);
     if (after.ok) expect(after.reSigned).toBe(true);
-    expect(readTruncationWaiver(auditDir)?.acceptedEventCount).toBe(2);
+    const acceptedWaiver = readRebaselineWaiver(auditDir);
+    expect(acceptedWaiver?.kind).toBe('truncation');
+    expect(acceptedWaiver?.newEventCount).toBe(2);
   });
 });

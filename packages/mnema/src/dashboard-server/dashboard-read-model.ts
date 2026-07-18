@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import type { InboxView } from '@mnema/core/services/backlog/inbox-service.js';
 import {
   type IntegrityCheck,
@@ -93,7 +94,7 @@ export function buildDashboardReadModel(
         secret.read(),
         null,
         null,
-        null,
+        rebaselineResolverFor(projectRoot),
         tailDir,
       );
     },

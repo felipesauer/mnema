@@ -298,14 +298,17 @@ function walkTailChain(
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @param secret - Per-project HMAC secret for verifying the sealed lines
- * @param acceptedRebaseline - A pre-verified prune re-baseline to accept at a
- *   tail's genesis, or `null` to treat any missing prior segment as a break
+ * @param resolveRebaseline - Given a tail dir, returns the pre-verified
+ *   re-baseline to accept at that tail's genesis (from its committed, verified
+ *   waiver), or `null` to treat any missing prior segment as a break. Called
+ *   once per tail so each tail's own waiver governs its own genesis. `null`
+ *   (the default) accepts no re-baseline on any tail.
  * @returns The folded walk result for the whole project
  */
 function walkAuditChain(
   auditDir: string,
   secret: Buffer | null,
-  acceptedRebaseline: AcceptedRebaseline | null = null,
+  resolveRebaseline: ((tailDir: string) => AcceptedRebaseline | null) | null = null,
 ): AuditChainWalk {
   let chainedLines = 0;
   let malformedLines = 0;
@@ -322,7 +325,7 @@ function walkAuditChain(
   const chainedHashes: string[] = [];
 
   for (const tail of auditTailDirs(auditDir)) {
-    const walk = walkTailChain(tail, secret, acceptedRebaseline);
+    const walk = walkTailChain(tail, secret, resolveRebaseline?.(tail) ?? null);
     chainedLines += walk.chainedLines;
     malformedLines += walk.malformedLines;
     unverifiable += walk.unverifiable;
@@ -413,9 +416,9 @@ export interface ChainAssessment {
 export function assessAuditChain(
   auditDir: string,
   secret: Buffer | null,
-  acceptedRebaseline: AcceptedRebaseline | null = null,
+  resolveRebaseline: ((tailDir: string) => AcceptedRebaseline | null) | null = null,
 ): ChainAssessment {
-  const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
+  const walk = walkAuditChain(auditDir, secret, resolveRebaseline);
   return {
     chainedLines: walk.chainedLines,
     lastHash: walk.lastHash,
@@ -434,7 +437,7 @@ export function inspectAuditIntegrity(
   secret: Buffer | null = null,
   attestation: AttestationSource | null = null,
   contentAttestation: IntegrityCheck | null = null,
-  acceptedRebaseline: AcceptedRebaseline | null = null,
+  resolveRebaseline: ((tailDir: string) => AcceptedRebaseline | null) | null = null,
   localTailDir: string | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
@@ -465,7 +468,7 @@ export function inspectAuditIntegrity(
     return checks;
   }
 
-  const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
+  const walk = walkAuditChain(auditDir, secret, resolveRebaseline);
   const { malformedLines, unverifiable, lastHash, chainEverStarted } = walk;
   const chainBroken = walk.chainBroken;
   const chainBreakDetail = walk.chainBreakDetail;
@@ -478,7 +481,9 @@ export function inspectAuditIntegrity(
   // name a local tail (a clone with no tail of its own, or a degenerate
   // single-tail project), the whole walk IS the local count.
   const localWalk =
-    localTailDir !== null ? walkTailChain(localTailDir, secret, acceptedRebaseline) : walk;
+    localTailDir !== null
+      ? walkTailChain(localTailDir, secret, resolveRebaseline?.(localTailDir) ?? null)
+      : walk;
   const localChainedLines = localWalk.chainedLines;
   const localMalformedLines = localWalk.malformedLines;
 
@@ -747,8 +752,12 @@ export function reconcileAuditState(
   signedCheckpoint: { eventCountAt: number; coveredHeadHash: string } | null,
   apply: boolean,
   reSign?: (newHeadHash: string, newEventCount: number) => boolean,
+  resolveRebaseline: ((tailDir: string) => AcceptedRebaseline | null) | null = null,
 ): ReconcileResult {
-  const walk = walkAuditChain(auditDir, secret);
+  // A re-baselined genesis (a committed, verified prune/truncation waiver on
+  // this tail) must be accepted, or the walk reads its missing prior segment
+  // as a break and reconcile refuses a chain that is actually authorised.
+  const walk = walkAuditChain(auditDir, secret, resolveRebaseline);
 
   if (walk.malformedLines > 0) {
     return {
@@ -1009,6 +1018,11 @@ export class CachedAuditIntegrity {
     // This machine's tail, so the count check compares the mirror against the
     // local tail (not the project-wide total). `null` folds to the whole walk.
     private readonly localTailDir: string | null = null,
+    // Per-tail re-baseline resolver, so a pruned tail's verified waiver is
+    // accepted instead of reading as a break. `null` accepts no re-baseline.
+    private readonly resolveRebaseline:
+      | ((tailDir: string) => AcceptedRebaseline | null)
+      | null = null,
   ) {}
 
   /**
@@ -1046,7 +1060,7 @@ export class CachedAuditIntegrity {
       secret,
       this.attestation,
       this.buildContentAttestation?.() ?? null,
-      null,
+      this.resolveRebaseline,
       this.localTailDir,
     );
     this.signature = signature;

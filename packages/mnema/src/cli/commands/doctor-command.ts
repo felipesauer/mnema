@@ -13,6 +13,7 @@ import { printError } from '@mnema/core/errors/error-printer.js';
 // existing `doctor-command` importers working.
 import { anchorStatusCheck } from '@mnema/core/services/anchor/anchor-inspect.js';
 import { buildContentAttestation } from '@mnema/core/services/audit/attestation-cli.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import {
   ARCHIVE_DIRNAME,
   type ArchiveResult,
@@ -624,7 +625,9 @@ export class DoctorCommand {
               // surfaces the same anonymous-verifiability verdict as
               // `audit verify` rather than a false all-clear.
               buildContentAttestation(projectRoot, auditDir),
-              null,
+              // Accept a re-baselined genesis whose committed waiver verifies —
+              // else a legitimate prune reads as a `prev_hash` break in doctor.
+              rebaselineResolverFor(projectRoot),
               tailDir,
             ),
           );

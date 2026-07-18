@@ -5,6 +5,7 @@ import type { Config } from '@mnema/core/config/config-schema.js';
 import { autoAttest, chainHealthyForAttest } from '@mnema/core/services/audit/attestation-cli.js';
 import { listArtifacts } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import { inspectAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
 import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { MachineKeyService } from '@mnema/core/services/integrity/machine-key.js';
@@ -495,7 +496,7 @@ export class UpgradeCommand {
               secret.read(),
               null,
               null,
-              null,
+              rebaselineResolverFor(projectRoot),
               tailDir,
             ),
           ),
@@ -619,7 +620,15 @@ function printPostUpgradeHealth(ctx: CliContext): void {
   // local tail, not the project-wide total across every machine's tail.
   const tailDir = localTailDir(auditDir, userKnowledgeDir());
   checks.push(
-    ...inspectAuditIntegrity(container.adapter, auditDir, secret.read(), null, null, null, tailDir),
+    ...inspectAuditIntegrity(
+      container.adapter,
+      auditDir,
+      secret.read(),
+      null,
+      null,
+      rebaselineResolverFor(projectRoot),
+      tailDir,
+    ),
   );
   checks.push(...inspectAuditDiskDelta(container.adapter, tailDir, projectRoot));
 

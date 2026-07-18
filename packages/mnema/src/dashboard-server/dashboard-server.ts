@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import type { Config } from '@mnema/core/config/config-schema.js';
 import { buildContentAttestation } from '@mnema/core/services/audit/attestation-cli.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import { CachedAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
 import { AuditTail } from '@mnema/core/services/integrity/audit-tail.js';
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
@@ -145,6 +146,9 @@ export async function createDashboardServer(
     // The mirror tracks this machine's tail, so the count check compares
     // against the local tail, not the project-wide total.
     tailDir,
+    // Accept a re-baselined genesis whose committed waiver verifies, so a
+    // legitimate prune does not read as tamper on the dashboard.
+    rebaselineResolverFor(projectRoot),
   );
 
   // The read-model seam the snapshot builds against — the SPA and any future

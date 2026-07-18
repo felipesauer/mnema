@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Config } from '../config/config-schema.js';
 import { buildAnchorScheduler } from '../services/anchor/anchor-factory.js';
 import { autoAttest, chainHealthyForAttest } from '../services/audit/attestation-cli.js';
+import { rebaselineResolverFor } from '../services/audit/rebaseline-resolve.js';
 import { CachedAuditIntegrity } from '../services/integrity/audit-integrity.js';
 import { AuditQuery } from '../services/integrity/audit-query.js';
 import { AuditService } from '../services/integrity/audit-service.js';
@@ -113,6 +114,7 @@ export function createAuditCore(
     createAttestationSource(projectRoot, infra.repos.headSignatures),
     null,
     tailDir,
+    rebaselineResolverFor(projectRoot),
   );
   const onCheckpoint = (_head: string, eventCount: number): void => {
     autoAttest({

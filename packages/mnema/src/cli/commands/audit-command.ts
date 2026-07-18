@@ -12,18 +12,19 @@ import {
   writeArtifact,
 } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
-import {
-  diagnoseAuditChain,
-  writeTruncationWaiver,
-} from '@mnema/core/services/audit/audit-diagnose.js';
+import { diagnoseAuditChain } from '@mnema/core/services/audit/audit-diagnose.js';
 import {
   applyPrune,
   buildPrunePlan,
   type PrunePlan,
 } from '@mnema/core/services/audit/prune-apply.js';
 import { decideAttLockstep } from '@mnema/core/services/audit/prune-att-lockstep.js';
+import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
+import { writeRebaselineWaiver } from '@mnema/core/services/audit/rebaseline-store.js';
+import { buildTruncationWaiver } from '@mnema/core/services/audit/rebaseline-waiver.js';
 import { computeCutPoint } from '@mnema/core/services/audit/retention-cut-point.js';
 import {
+  type AcceptedRebaseline,
   assessAuditChain,
   type IntegrityCheck,
   inspectAuditIntegrity,
@@ -220,6 +221,10 @@ export class AuditCommand {
           // The mirror tracks this machine's tail, so the count check compares
           // against the local tail, not the project-wide total across every tail.
           const tailDir = localTailDir(auditDir, userKnowledgeDir());
+          // Accept a re-baselined genesis on any tail whose committed waiver
+          // verifies — without this a legitimate prune reads as a `prev_hash`
+          // break (tamper) in every verify.
+          const resolveRebaseline = rebaselineResolverFor(projectRoot);
           const checks = inspectAuditIntegrity(
             container.adapter,
             auditDir,
@@ -229,7 +234,7 @@ export class AuditCommand {
               new AuditHeadSignatureRepository(container.adapter),
             ),
             contentAttestation,
-            null,
+            resolveRebaseline,
             tailDir,
           );
           if (options.verifyAnchors === true) {
@@ -282,7 +287,7 @@ export class AuditCommand {
             secret.read(),
             null,
             null,
-            null,
+            rebaselineResolverFor(projectRoot),
             tailDir,
           );
           const headSig = new AuditHeadSignatureRepository(container.adapter).read();
@@ -384,6 +389,10 @@ export class AuditCommand {
           // still corrects audit_state (attestation just stays to be re-run).
           const actor = container.identity.resolveDefaultActor().actor;
           const reSign = buildHeadReSigner(projectRoot, actor, signatures);
+          // A prune on this tail leaves a committed waiver; accept the
+          // re-baselined genesis so reconcile does not refuse an authorised
+          // chain as a broken one.
+          const resolveRebaseline = rebaselineResolverFor(projectRoot);
 
           const result = reconcileAuditState(
             tailDir,
@@ -397,6 +406,7 @@ export class AuditCommand {
               : null,
             apply,
             reSign,
+            resolveRebaseline,
           );
           if (!result.ok) {
             process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
@@ -477,7 +487,11 @@ export class AuditCommand {
 
             // Gate 1 — same tamper refusals as reconcile, from the SHARED walk:
             // never launder a malformed line or a content-invalid/broken chain.
-            const chain = assessAuditChain(tailDir, secret.read());
+            const chain = assessAuditChain(
+              tailDir,
+              secret.read(),
+              rebaselineResolverFor(projectRoot),
+            );
             if (chain.malformedLines > 0) {
               return refuse(
                 `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
@@ -554,15 +568,45 @@ export class AuditCommand {
               actor,
               signatures,
             )(chain.lastHash, chain.chainedLines);
-            // The waiver is the AUDIT TRAIL of the human decision, re-verified
-            // against the current disk on every read; attestation passing relies
-            // on the re-sign above, not on reading this file in the verify hot
-            // path (simpler, and a stale waiver can never suppress a fresh
-            // retreat). Written last, after audit_state and the re-sign.
-            writeTruncationWaiver(tailDir, chain.lastHash, chain.chainedLines);
+            // The waiver is the committed, SIGNED record of the human decision:
+            // an anonymous clone reads it to tell an AUTHORISED truncation from
+            // an adversarial one (the head-signature row is gitignored, so it is
+            // the only committed evidence). Written last, after audit_state and
+            // the re-sign. Signing needs the local machine key + committed
+            // project fingerprint; without either, the re-baseline still stands
+            // in the mirror but the waiver is skipped (an anonymous clone then
+            // cannot distinguish it — surfaced to the operator below).
+            const projectHmacId = readCommittedProjectHmacId(projectRoot);
+            let waiverWritten = false;
+            if (actor !== null && projectHmacId !== null) {
+              try {
+                const machineKey = new MachineKeyService(projectRoot, actor);
+                const { fingerprint } = machineKey.getOrCreate();
+                const waiver = buildTruncationWaiver({
+                  newHeadHash: chain.lastHash,
+                  newEventCount: chain.chainedLines,
+                  tailId: path.basename(tailDir),
+                  signerActor: actor,
+                  signerFingerprint: fingerprint,
+                  projectHmacId,
+                  acceptedAt: new Date().toISOString(),
+                  sign: (message) => machineKey.sign(message),
+                });
+                writeRebaselineWaiver(tailDir, waiver);
+                waiverWritten = true;
+              } catch {
+                // No signing key resolvable on this host — leave the waiver
+                // unwritten; the mirror re-baseline above still applied.
+              }
+            }
             process.stdout.write(
-              `${pc.green('✔')}  accepted truncation: re-baselined audit_state to event ${chain.chainedLines} and recorded a waiver\n`,
+              `${pc.green('✔')}  accepted truncation: re-baselined audit_state to event ${chain.chainedLines}${waiverWritten ? ' and recorded a signed waiver' : ''}\n`,
             );
+            if (!waiverWritten) {
+              process.stdout.write(
+                `${pc.dim('note: no signed truncation waiver written (no machine key or project fingerprint) — an anonymous clone cannot distinguish this from an adversarial truncation until one is signed')}\n`,
+              );
+            }
             if (reSigned) {
               process.stdout.write(
                 `${pc.green('✔')}  re-signed head at event ${chain.chainedLines} as ${actor}\n`,
@@ -675,6 +719,7 @@ export class AuditCommand {
             mirrorCount: new AuditStateRepository(container.adapter).read().eventCount,
             signature: new AuditHeadSignatureRepository(container.adapter).read(),
             attestationArtifacts: listArtifacts(tailDir),
+            resolveRebaseline: rebaselineResolverFor(projectRoot),
           });
 
           process.stdout.write(
@@ -737,7 +782,10 @@ export class AuditCommand {
 
           // Gate 1 — same tamper refusals as accept-truncation, from the SHARED
           // walk: never prune a malformed line or a content-invalid/broken chain.
-          const chain = assessAuditChain(tailDir, secret);
+          // Pass the re-baseline resolver so an ALREADY-pruned tail (whose
+          // committed waiver verifies) is not read as a break — else a second
+          // retention prune on the same tail would be refused forever.
+          const chain = assessAuditChain(tailDir, secret, rebaselineResolverFor(projectRoot));
           if (chain.malformedLines > 0) {
             return refuse(
               `${chain.malformedLines} unparseable line(s) on disk — resolve those first (possible tampering smokescreen)`,
@@ -901,9 +949,11 @@ export function planAuditRepair(input: {
   readonly mirrorCount: number;
   readonly signature: { readonly eventCountAt: number; readonly coveredHeadHash: string } | null;
   readonly attestationArtifacts: ReadonlyArray<{ readonly to: number }>;
+  /** Accepts a verified re-baseline so a pruned tail is not read as a break. */
+  readonly resolveRebaseline?: ((tailDir: string) => AcceptedRebaseline | null) | null;
 }): AuditRepairPlan {
   const { auditDir, secret, mirrorCount, signature, attestationArtifacts } = input;
-  const chain = assessAuditChain(auditDir, secret);
+  const chain = assessAuditChain(auditDir, secret, input.resolveRebaseline ?? null);
   const findings: RepairFinding[] = [];
 
   // 1. Malformed lines — a hard blocker for every recovery path.
