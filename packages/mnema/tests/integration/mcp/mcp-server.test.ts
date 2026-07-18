@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { type Config, ConfigSchema } from '@mnema/core/config/config-schema.js';
@@ -504,6 +504,45 @@ describe('MnemaMcpServer under workflow=lean (1.4 sweep)', () => {
       });
       const payload = parsePayload(result as CallToolResult);
       expect(payload.error).not.toBe('SERVER_STALE');
+    });
+  });
+
+  describe('store-format guard', () => {
+    /** Commit a marker that cannot match this binary (a bogus hash). */
+    function writeDivergentMarker(h: Harness): void {
+      const marker = path.join(h.projectRoot, '.mnema/keys/store-format');
+      mkdirSync(path.dirname(marker), { recursive: true });
+      writeFileSync(marker, `${'0'.repeat(64)}\n`, 'utf-8');
+    }
+
+    it('returns STORE_FORMAT_MISMATCH on a mutating call when the marker diverges', async () => {
+      writeDivergentMarker(harness);
+      const result = await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'anything' },
+      });
+      expect(result.isError).toBe(true);
+      const payload = parsePayload(result as CallToolResult);
+      expect(payload.error).toBe('STORE_FORMAT_MISMATCH');
+      expect(Array.isArray(payload.diverged)).toBe(true);
+      expect(String(payload.hint)).toMatch(/migrate/i);
+    });
+
+    it('leaves read-only tools working when the marker diverges', async () => {
+      writeDivergentMarker(harness);
+      const result = await harness.client.callTool({ name: 'tasks_list', arguments: {} });
+      expect(result.isError).toBeFalsy();
+      expect(parsePayload(result as CallToolResult).error).toBeUndefined();
+    });
+
+    it('does not block mutations when there is no marker (fail-open)', async () => {
+      // No marker written: a pre-feature store. A mutation gets past the guard
+      // and fails for its OWN reason (no active run), not STORE_FORMAT_MISMATCH.
+      const result = await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'anything' },
+      });
+      expect(parsePayload(result as CallToolResult).error).not.toBe('STORE_FORMAT_MISMATCH');
     });
   });
 });

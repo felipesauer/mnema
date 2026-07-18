@@ -10,6 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
+import { checkStoreFormat } from '@mnema/core/services/integrity/store-format.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { _internal, InitCommand } from '@/cli/commands/init-command.js';
 
@@ -52,6 +53,10 @@ describe('InitCommand.run (silent mode)', () => {
     // and the runtime loads it unconditionally.
     expect('workflow' in config).toBe(false);
     expect(existsSync(path.join(projectRoot, '.mnema', 'state', 'state.db'))).toBe(true);
+    // init stamps the store-format marker, and it matches the binary that
+    // wrote it — so a mutation on a freshly-inited project is never refused.
+    expect(existsSync(path.join(projectRoot, '.mnema', 'keys', 'store-format'))).toBe(true);
+    expect(checkStoreFormat(projectRoot).ok).toBe(true);
   });
 
   it('embeds the memory index in AGENTS.md in one pass (full mode)', () => {

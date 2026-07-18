@@ -285,6 +285,18 @@ export function formatError(error: MnemaError): string {
       break;
     }
 
+    case ErrorCode.StoreFormatMismatch: {
+      lines.push('This store was written by a mnema with a different on-disk format:');
+      for (const what of error.diverged) {
+        lines.push(`  - ${what}`);
+      }
+      lines.push(
+        `${pc.dim('hint:')} Reads still work. Run \`mnema migrate\` on the binary that owns the ` +
+          'newer format to reconcile the store and clear the marker before mutating',
+      );
+      break;
+    }
+
     case ErrorCode.SkillNotFound:
       lines.push(`Skill not found: ${error.slug}`);
       lines.push(`${pc.dim('hint:')} Run \`mnema skill list\` to see recorded skills`);
@@ -460,6 +472,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.AlreadyInitialized:
     case ErrorCode.SchemaOutOfDate:
     case ErrorCode.ServerStale:
+    case ErrorCode.StoreFormatMismatch:
     case ErrorCode.TerminalState:
     case ErrorCode.InvalidTransition:
     case ErrorCode.SprintInvalidState:
@@ -585,6 +598,8 @@ export function recoveryHint(error: MnemaError): string | null {
       return 'Run `mnema upgrade` to apply pending migrations and sync the project (or `mnema migrate` for just the migrations), then retry — read-only tools keep working meanwhile.';
     case ErrorCode.ServerStale:
       return 'The mnema MCP server is serving a boot-time tool schema that no longer matches disk (dist rebuilt or workflow edited). Restart `mnema mcp serve` — tool definitions are fixed at startup and cannot hot-reload. Read-only tools keep working meanwhile.';
+    case ErrorCode.StoreFormatMismatch:
+      return 'This store was written by a mnema with a different on-disk format. Run `mnema migrate` on the binary that owns the newer format to reconcile it and clear the marker, then retry — read-only tools keep working meanwhile.';
     default:
       return null;
   }

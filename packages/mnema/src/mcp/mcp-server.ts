@@ -4,6 +4,7 @@ import type { Config } from '@mnema/core/config/config-schema.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
+import { checkStoreFormat } from '@mnema/core/services/integrity/store-format.js';
 import type { ServiceContainer } from '@mnema/core/services/service-container.js';
 import { SyncMode } from '@mnema/core/services/sync/sync-service.js';
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
@@ -198,6 +199,14 @@ export class MnemaMcpServer {
           const changed = this.describeStaleness();
           if (changed.length > 0) {
             return err({ kind: ErrorCode.ServerStale, changed });
+          }
+          // The store may carry a marker from a mnema with a different on-disk
+          // format. Reads are fine; refuse a MUTATING tool so two binaries
+          // never interleave writes under diverging formats. Fail-open when no
+          // marker exists (a pre-feature store). Same read-only skip as above.
+          const storeFormat = checkStoreFormat(this.projectRoot);
+          if (!storeFormat.ok) {
+            return err({ kind: ErrorCode.StoreFormatMismatch, diverged: storeFormat.diverged });
           }
         }
         // Bracket every tools/call so `waitInflight` can hold graceful

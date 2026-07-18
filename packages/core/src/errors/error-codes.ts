@@ -58,6 +58,13 @@ export enum ErrorCode {
    * frozen at boot, so the only remedy is restarting the server. */
   ServerStale = 'SERVER_STALE',
 
+  /** The committed store-format marker (`.mnema/keys/store-format`) was written
+   * by a binary whose format inputs differ from this one's — a store shaped by
+   * a different mnema. READS still work; every MUTATION is refused so two
+   * binaries never interleave writes under diverging formats. Cleared by
+   * running `mnema migrate` on the binary that owns the newer format. */
+  StoreFormatMismatch = 'STORE_FORMAT_MISMATCH',
+
   SkillNotFound = 'SKILL_NOT_FOUND',
   MemoryNotFound = 'MEMORY_NOT_FOUND',
 

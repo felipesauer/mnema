@@ -2,6 +2,7 @@ import path from 'node:path';
 import { ConfigLoader } from '@mnema/core/config/config-loader.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
+import { writeStoreFormatMarker } from '@mnema/core/services/integrity/store-format.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
@@ -75,6 +76,11 @@ function runApply(): void {
   const adapter = new SqliteAdapter(dbPath);
   try {
     const applied = new MigrationRunner().run(adapter, migrationsDir());
+    // migrate is the reconcile step: rewrite the store-format marker to THIS
+    // binary's format, unconditionally — the mismatch that blocked mutations
+    // may have been any input (config version, mirror layout), not only a
+    // pending migration, so an up-to-date schema still clears the marker.
+    writeStoreFormatMarker(projectRoot);
     if (applied.length === 0) {
       process.stdout.write(`${pc.dim('schema already up to date')}\n`);
       return;
