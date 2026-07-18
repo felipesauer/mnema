@@ -38,13 +38,13 @@ type LoadState =
   | { status: 'ready'; data: DashboardContract };
 
 /**
- * Dashboard shell (MNEMA-ADR-67, slice 1). The design-system frame every module
+ * Dashboard shell. The design-system frame every module
  * lives in: a module-grouped rail with the always-visible chain-integrity card,
  * a header with search + theme toggle, and a content area that switches views.
  *
- * This slice ships the frame + the three existing panels (Needs-you, Graph,
+ * The frame carries the three existing panels (Needs-you, Graph,
  * Charts) restyled into the system. The other modules are declared in the rail
- * and render a "coming soon" placeholder — the later slices fill them in. All
+ * and render a "coming soon" placeholder until they are filled in. All
  * data still comes from the single /api/dashboard contract.
  */
 
@@ -139,7 +139,7 @@ export function App(): ReactElement {
     };
   }, [load]);
 
-  // Real-time: refresh when the trail moves (ADR-67 slice 7).
+  // Real-time: refresh when the trail moves.
   useLiveRefresh(() => load());
 
   // ⌘K / Ctrl-K opens global search.

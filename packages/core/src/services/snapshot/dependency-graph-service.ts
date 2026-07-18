@@ -78,7 +78,7 @@ const BLOCKS = 'blocks';
  *  - **critical path**: the longest blocking chain — the sequence that
  *    bounds how fast the scope can finish.
  *
- * Read-only: no audit events (see MNEMA-ADR-20).
+ * Read-only: no audit events.
  */
 export class DependencyGraphService {
   constructor(

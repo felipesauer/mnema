@@ -49,7 +49,7 @@ interface BrokenDependencyRow {
  * Read-only linter over the work graph (sprints, epics, tasks,
  * dependencies). It never mutates state — it reports diagnostics the
  * way `skill lint` / `memory lint` do, so a human or agent can act on
- * them. See Sprint 5 item 6.
+ * them.
  *
  * Checks:
  * - `incomplete-tasks` (warning): the sprint/epic still holds tasks in a

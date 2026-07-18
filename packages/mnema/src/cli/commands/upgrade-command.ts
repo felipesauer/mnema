@@ -1,7 +1,8 @@
 import * as nodeFs from 'node:fs';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Config } from '@mnema/core/config/config-schema.js';
+import { reconcileConfigVersion } from '@mnema/core/config/config-loader.js';
+import { CONFIG_VERSION, type Config } from '@mnema/core/config/config-schema.js';
 import { autoAttest, chainHealthyForAttest } from '@mnema/core/services/audit/attestation-cli.js';
 import { listArtifacts } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
@@ -447,24 +448,28 @@ export class UpgradeCommand {
     const attestStep = this.attestationStep(ctx);
     if (attestStep !== null) steps.push(attestStep);
 
-    // upgrade is a reconcile path (like migrate), so it re-stamps the
-    // store-format marker to THIS binary's format. Include the step when it
-    // could have something to do: the marker is missing/stale NOW, or pending
-    // migrations may move the format hash once applied (the marker would then
-    // be stale and self-block every later mutation). Skip it entirely when the
-    // marker is already current and nothing is pending — so an up-to-date
-    // upgrade still reports "already up to date" with no spurious step.
+    // upgrade is a reconcile path (like migrate): it moves the config `version`
+    // up to the current shape AND re-stamps the store-format marker to THIS
+    // binary's format. Include the step when it could have something to do: the
+    // config is on an older version, the marker is missing/stale NOW, or pending
+    // migrations may move the format hash once applied (the marker would then be
+    // stale and self-block every later mutation). Skip it entirely when nothing
+    // is stale — so an up-to-date upgrade still reports "already up to date".
+    const configStale = config.version !== CONFIG_VERSION;
     const markerNeedsWork =
       readStoreFormatMarker(projectRoot) === null || !checkStoreFormat(projectRoot).ok;
-    if (markerNeedsWork || container.pendingMigrations.length > 0) {
+    if (configStale || markerNeedsWork || container.pendingMigrations.length > 0) {
       steps.push({
-        label: 'reconcile the store-format marker to this version',
+        label: 'reconcile the config version and store-format marker to this version',
         run: () => {
+          const movedConfig = reconcileConfigVersion(projectRoot);
           if (checkStoreFormat(projectRoot).ok && readStoreFormatMarker(projectRoot) !== null) {
-            return 'store-format marker already current';
+            return movedConfig ? 'config version reconciled' : 'store-format already current';
           }
           writeStoreFormatMarker(projectRoot);
-          return 'store-format marker updated';
+          return movedConfig
+            ? 'config version + store-format marker updated'
+            : 'store-format marker updated';
         },
       });
     }
@@ -809,7 +814,7 @@ function pruneAllOrphanMirrors(
 
   const join = (relative: string) => path.join(projectRoot, relative);
   const removed = [
-    // Skills and memories are foldered (MNEMA-ADR-51) — prune recursively.
+    // Skills and memories are foldered — prune recursively.
     // Memory excludes the curated decisions/notes subfolders: those files are
     // human-authored, have no memory row, and must never be pruned as orphans.
     ...pruneFolderedOrphanMirrors(join(LAYOUT.skills), skillSlugs, fs),

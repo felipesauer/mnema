@@ -53,7 +53,7 @@ const FIELD_TAG =
 // A WEAK introducer — a stray field-closing tag (`</decision>`) or a bare
 // `</parameter>` — appears in the real spill but ALSO in ordinary prose, so it
 // only counts as a leak when it directly precedes (optional whitespace) a
-// strong token. That preserves the ADR-28/29 shapes while letting prose that
+// strong token. That preserves the invocation-token shapes while letting prose that
 // merely mentions `</title>` or `</parameter>` pass.
 const WEAK_INTRODUCER = String.raw`<\/(?:[\w.-]+:)?${FIELD_TAG}>`;
 

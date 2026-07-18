@@ -37,7 +37,7 @@ export interface Task {
   /** ISO8601 timestamp the claim lease expires at; null when unclaimed. */
   readonly leaseExpiresAt: string | null;
   /**
-   * Git link (MNEMA-ADR-49), populated only by the opt-in `mnema watch
+   * Git link, populated only by the opt-in `mnema watch
    * --git` observer. `gitBranch` is the branch this task's work lives on;
    * `gitCommits` the commits linked to it; `gitPr` its pull request. All
    * empty/null until the observer runs, and never written by the hot path.

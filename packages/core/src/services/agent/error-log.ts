@@ -18,9 +18,8 @@ const MAX_ERROR_LOG_ENTRIES = 500;
  * deliberately OUTSIDE the SHA-256 audit chain: a crash trace is diagnostic
  * exhaust, not an audit record, and must never be able to fork or bloat the
  * tamper-evident trail. It is local-only and never transmitted
- * (zero-telemetry, see MNEMA-ADR-36/40), and lossy by design — recording a
- * crash must never change the exit code or mask the original error
- * (MNEMA-ADR-46).
+ * (zero-telemetry), and lossy by design — recording a
+ * crash must never change the exit code or mask the original error.
  *
  * Only genuinely unexpected crashes are logged. Structured `MnemaError`s
  * (gate failed, conflict, …) are expected business errors shown with a

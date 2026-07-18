@@ -149,7 +149,7 @@ export class AuditStateRepository {
    *     without the machine key.
    *   - Only events written AFTER the last checkpoint (not yet signed) can be
    *     truncated undetectably, and closing THAT would require signing every
-   *     event — which ADR-37 rejects to keep the write hot path cheap. The
+   *     event — which the design rejects to keep the write hot path cheap. The
    *     checkpoint interval is the knob that bounds this window.
    *
    * @param diskCount - Chained (keyed) lines actually present on disk

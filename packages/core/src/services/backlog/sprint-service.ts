@@ -470,7 +470,7 @@ export class SprintService {
 
   /**
    * Adds a measurable metric to a sprint. CLI-only mutation, in line
-   * with the rest of the sprint lifecycle (MNEMA-ADR-25).
+   * with the rest of the sprint lifecycle.
    *
    * @param input - Sprint key + metric fields + identity tuple
    * @returns The created metric or a structured error

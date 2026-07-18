@@ -4,7 +4,7 @@ import type { AgentsData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Agents panel (MNEMA-338 / ADR-67 slice 6). Surfaces orphaned (stale-open)
+ * Agents panel. Surfaces orphaned (stale-open)
  * agent runs from the /api/agents read (the existing orphan-run service).
  *
  * Note: a full "all runs with diff" list is intentionally NOT here — the

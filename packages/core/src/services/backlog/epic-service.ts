@@ -76,7 +76,7 @@ export interface EpicTaskInput {
 export interface EpicView {
   readonly epic: Epic;
   readonly taskKeys: readonly string[];
-  /** Derived progress label — see {@link EpicLifecycle} (MNEMA-ADR-24). */
+  /** Derived progress label — see {@link EpicLifecycle}. */
   readonly lifecycle: EpicLifecycle;
 }
 
@@ -422,7 +422,7 @@ export class EpicService {
 
   /**
    * Derives the epic's lifecycle label from its state and the states of
-   * its tasks. Never stored — always computed (MNEMA-ADR-24).
+   * its tasks. Never stored — always computed.
    */
   private deriveLifecycle(epic: Epic, taskKeys: readonly string[]): EpicLifecycle {
     if (epic.state === EpicState.Closed) return 'closed';

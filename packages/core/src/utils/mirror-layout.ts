@@ -54,7 +54,7 @@ export const PRUNE_PROTECTED_FILENAMES: ReadonlySet<string> = new Set([
   'README.md',
 ]);
 
-/** Skill origin subfolders (MNEMA-ADR-51). */
+/** Skill origin subfolders. */
 export const SKILL_DEFAULT_DIR = 'default';
 export const SKILL_AUTHORED_DIR = 'authored';
 
@@ -112,7 +112,7 @@ export function skillOriginDir(createdByHandle: string): string {
  * extension. Dotfiles and the curated indexes ({@link INDEX_FILENAMES}) are
  * skipped. Returns an empty array when `root` does not exist.
  *
- * `maxDepth = 1` (the default) covers the ADR-51 one-level layout plus any
+ * `maxDepth = 1` (the default) covers the one-level layout plus any
  * flat files still at the root (so a not-yet-migrated tree still scans). The
  * scan is basename-keyed, so the subfolder name is irrelevant to the result.
  */

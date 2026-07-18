@@ -43,7 +43,7 @@ export interface DependencyView {
  *
  * Readiness is a *query* ({@link ready}), never an auto-transition
  * side-effect — consistent with "Mnema records work, it does not execute
- * it". See MNEMA-ADR-18.
+ * it".
  */
 export class DependencyService {
   constructor(

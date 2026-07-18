@@ -226,7 +226,7 @@ export interface ReattestInput {
    * A disk chain SHORTER than this is a truncation and refuses the run. NOTE:
    * this is `null` for an anonymous clone (the checkpoint lives in gitignored
    * SQLite), so it defends the local machine, not the public verifier — tail
-   * truncation past the last committed `.att` is a known residual (ADR-41).
+   * truncation past the last committed `.att` is a known residual.
    */
   readonly signedEventCountAt: number | null;
   /**

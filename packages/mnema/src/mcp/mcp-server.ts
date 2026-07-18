@@ -337,13 +337,13 @@ export class MnemaMcpServer {
   registerTools(): void {
     // Snapshot the disk inputs the tool schemas are built from, at the moment
     // they are built — so a later dist rebuild / workflow edit is detectable
-    // per mutating request (MNEMA-325). Captured here (not in start()) because
+    // per mutating request. Captured here (not in start()) because
     // this is where the schemas are frozen, and the test harness registers
     // tools without going through start().
     this.bootFingerprint = this.computeFingerprint();
 
     // Computed once, up front: the list of unapplied migration files. Every
-    // tool that touches a Sprint-5 column/table is constructed with this so a
+    // tool that touches a migration-added column/table is constructed with this so a
     // drifted (upgraded-but-unmigrated) DB returns a structured
     // SCHEMA_OUT_OF_DATE result instead of a raw SqliteError.
     // A THUNK, not a boot snapshot: each mutating tool re-detects drift at

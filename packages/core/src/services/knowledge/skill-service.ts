@@ -272,7 +272,7 @@ export class SkillService {
     }
 
     const diagnostics: SkillDiagnostic[] = [];
-    // Foldered layout (MNEMA-ADR-51): lint default/ and authored/ plus any
+    // Foldered layout: lint default/ and authored/ plus any
     // flat files, indexes excluded by the shared scan.
     const files = listMirrorEntries(this.skillsDir);
 
@@ -302,7 +302,7 @@ export class SkillService {
   importSeeds(actor: string, via?: string, runId?: string): string[] {
     if (!existsSync(this.skillsDir)) return [];
     const imported: string[] = [];
-    // Foldered layout (MNEMA-ADR-51): scan default/ and authored/ as well as
+    // Foldered layout: scan default/ and authored/ as well as
     // any flat pre-migration files. Slug is the basename; the folder is
     // presentational and does not affect the recorded row.
     const files = listMirrorEntries(this.skillsDir);
@@ -724,7 +724,7 @@ export class SkillService {
     const rebuilt: string[] = [];
     for (const skill of repo.listLatest()) {
       // Rewrite when missing OR mislocated — the latter migrates a flat
-      // pre-ADR-51 file into default/ or authored/. writeMirror unlinks the
+      // legacy file into default/ or authored/. writeMirror unlinks the
       // old one.
       if (findMirror(this.skillsDir, skill.slug) !== this.canonicalMirrorPath(skill)) {
         this.writeMirror(skill);
@@ -738,7 +738,7 @@ export class SkillService {
     return findMirror(this.skillsDir, skill.slug) !== null;
   }
 
-  /** The canonical foldered path a skill's mirror belongs at (MNEMA-ADR-51). */
+  /** The canonical foldered path a skill's mirror belongs at. */
   private canonicalMirrorPath(skill: Skill): string {
     const handle = this.identity?.resolveHandle(skill.createdBy) ?? '';
     return buildMirrorPath(this.skillsDir, skill.slug, skillOriginDir(handle));
@@ -797,7 +797,7 @@ export class SkillService {
   }
 
   private writeMirror(skill: Skill): void {
-    // Foldered layout (MNEMA-ADR-51): seeds authored by the reserved `system`
+    // Foldered layout: seeds authored by the reserved `system`
     // handle mirror under `default/`, everything else under `authored/` (see
     // canonicalMirrorPath). Remove any existing mirror elsewhere in the tree
     // first so a row keeps exactly one mirror (e.g. a pre-migration flat file,

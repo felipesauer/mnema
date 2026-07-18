@@ -503,7 +503,7 @@ export class MemoryService {
     const rebuilt: string[] = [];
     for (const memory of this.repo.listAll()) {
       // Rewrite when the mirror is missing OR sits somewhere other than its
-      // canonical foldered path — the latter migrates a flat pre-ADR-51 file
+      // canonical foldered path — the latter migrates a flat legacy file
       // (or a stale scope folder) into place. writeMirror unlinks the old one.
       const current = findMirror(this.memoryDir, memory.slug, {
         excludeDirs: CURATED_MEMORY_SUBFOLDERS,
@@ -568,13 +568,13 @@ export class MemoryService {
     return pending;
   }
 
-  /** The canonical foldered path a memory's mirror belongs at (MNEMA-ADR-51). */
+  /** The canonical foldered path a memory's mirror belongs at. */
   private canonicalMirrorPath(memory: Memory): string {
     return buildMirrorPath(this.memoryDir, memory.slug, scopeFolder(memory.scope));
   }
 
   private writeMirror(memory: Memory): void {
-    // Foldered layout (MNEMA-ADR-51): a scoped memory mirrors under a
+    // Foldered layout: a scoped memory mirrors under a
     // presentational scope folder, a scopeless one at the root. Remove EVERY
     // existing mirror for this slug other than the target (a changed scope, a
     // flat pre-migration file, or a duplicate left by an interrupted migration)

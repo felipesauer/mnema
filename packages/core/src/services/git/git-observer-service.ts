@@ -23,7 +23,7 @@ export interface GitObserveResult {
 const COMMIT_SCAN_LIMIT = 30;
 
 /**
- * The opt-in git observer (MNEMA-ADR-49). While `mnema watch --git` runs,
+ * The opt-in git observer. While `mnema watch --git` runs,
  * one pass reads the repo READ-ONLY and, for the *unambiguous* case — a
  * single IN_PROGRESS task assigned to the acting actor — populates that
  * task's first-class git link (branch + commits) and returns the key.

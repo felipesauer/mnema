@@ -10,6 +10,7 @@ import {
   ConfigNotFoundError,
   LOCAL_CONFIG_RELATIVE,
   LocalConfigInvalidError,
+  reconcileConfigVersion,
 } from '@/config/config-loader.js';
 
 const validConfig = {
@@ -83,7 +84,24 @@ describe('ConfigLoader', () => {
       expect(config.features.update_check).toBe(false);
     });
 
-    describe('audit.anchor (layer 3)', () => {
+    it('loads a project on an older config version without rejecting it', () => {
+      // A project scaffolded by an earlier binary carries version "1.0". It
+      // must LOAD (reads keep working, no lock-out) — the store-format guard
+      // flags the drift on the next mutation, and migrate/upgrade move it up.
+      writeConfig(tempRoot, { ...validConfig, version: '1.0' });
+      const config = loader.load(tempRoot);
+      expect(config.version).toBe('1.0');
+    });
+
+    it('reconcileConfigVersion moves an older version up to the current shape', () => {
+      writeConfig(tempRoot, { ...validConfig, version: '1.0' });
+      expect(reconcileConfigVersion(tempRoot)).toBe(true);
+      expect(loader.load(tempRoot).version).toBe('2.0');
+      // Idempotent: a second run finds it current and does nothing.
+      expect(reconcileConfigVersion(tempRoot)).toBe(false);
+    });
+
+    describe('audit.anchor', () => {
       it('defaults the anchor provider to none', () => {
         writeConfig(tempRoot, validConfig);
         const config = loader.load(tempRoot);

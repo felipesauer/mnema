@@ -264,7 +264,7 @@ export class AuditWriter {
     if (signedHead !== null && this.anchorScheduler !== null) {
       this.anchorScheduler.onSignedHead(signedHead.hash, signedHead.eventCount);
     }
-    // Auto-attestation (ADR-41): materialise the `.att` for the batch a
+    // Auto-attestation: materialise the `.att` for the batch a
     // checkpoint just closed, off the write lock. Same fire-and-forget,
     // fail-open discipline as anchoring — a failure here must never surface to
     // the write that already succeeded; `reattest` can always backfill.

@@ -3,7 +3,7 @@ import { type ReactElement, useMemo, useRef, useState } from 'react';
 import type { DashboardGraph, GraphNode } from './contract.js';
 
 /**
- * Dependency-graph panel (MNEMA-290). The legacy string-rendered graph drew a
+ * Dependency-graph panel. The legacy string-rendered graph drew a
  * fixed-height SVG that stacked the ~90% of nodes with no blocking relation
  * into a ~10,700px vertical wall. This panel fixes the class of bug two ways:
  *
@@ -15,7 +15,7 @@ import type { DashboardGraph, GraphNode } from './contract.js';
  *    of a fixed-height image, so it stays usable as the project grows.
  *
  * No graph library — a hand-rolled layered layout keeps the offline-first
- * bundle small (ADR-8). Layout is deterministic: nodes are placed in columns
+ * bundle small. Layout is deterministic: nodes are placed in columns
  * by their longest-blocker depth, so an edge always points left→right.
  */
 export function Graph({ graph }: { graph: DashboardGraph }): ReactElement {

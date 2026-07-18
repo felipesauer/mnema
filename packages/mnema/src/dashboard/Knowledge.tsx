@@ -4,7 +4,7 @@ import type { KnowledgeData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Knowledge panel (MNEMA-338 / ADR-67 slice 6). Decisions/ADRs, skills (with
+ * Knowledge panel. Decisions/ADRs, skills (with
  * the quality loop flagging skills that preceded rework), and memories — from
  * the /api/knowledge read (existing decision/skill/skillQuality/memory
  * services), projected to identifiers/metadata only (no free text). No new

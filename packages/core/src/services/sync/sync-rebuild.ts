@@ -533,7 +533,7 @@ export class SyncRebuild {
           if (changed) upserted += 1;
         }
 
-        // Restore the serialized git link (ADR-49): branch + PR are stable and
+        // Restore the serialized git link: branch + PR are stable and
         // committed to the markdown, so a fresh clone keeps them across a
         // rebuild. Commits are NOT serialized (volatile) — preserve whatever
         // the cache already holds so a rebuild does not wipe the observer's
@@ -674,7 +674,7 @@ export class SyncRebuild {
   }
 
   /**
-   * Walks the foldered memory mirrors (`memory/[<scope>/]<slug>.md`, ADR-51)
+   * Walks the foldered memory mirrors (`memory/[<scope>/]<slug>.md`)
    * and re-inserts each into the cache so a fresh clone recovers its memories
    * — without this the .md exist on disk but `memory list`/`search`/bootstrap
    * see nothing. Unlike the backlog entities the mirror uses FLAT top-level
@@ -733,8 +733,8 @@ export class SyncRebuild {
   }
 
   /**
-   * Walks the foldered skill mirrors (`skills/{default,authored}/<slug>.md`,
-   * ADR-51) and re-inserts each into the cache so a fresh clone recovers its
+   * Walks the foldered skill mirrors (`skills/{default,authored}/<slug>.md`)
+   * and re-inserts each into the cache so a fresh clone recovers its
    * skills. Like memories the mirror uses flat frontmatter; the slug is the
    * filename basename and the origin folder decides the author (`default/` →
    * the reserved `system` seed handle, `authored/` → a human). The mirror

@@ -25,7 +25,7 @@ const ENVELOPE_PREFIX = 'mnema-hmac-secret/v1';
 /**
  * Where the committed, NON-SECRET fingerprint of the project secret lives,
  * relative to the project root. A clone reads this to learn which secret
- * it should hold (ADR-37); it never contains the secret itself.
+ * it should hold; it never contains the secret itself.
  */
 export const HMAC_ID_RELATIVE = path.join('.mnema', 'keys', 'project.hmac-id');
 
@@ -134,7 +134,7 @@ export class ProjectSecretService {
 
   /**
    * Serializes the current secret into a labelled, single-line envelope for
-   * out-of-band transmission to a teammate (ADR-39: the HMAC secret is a
+   * out-of-band transmission to a teammate (the HMAC secret is a
    * shareable team credential). The envelope embeds the project key so an
    * import into the wrong project is caught, not silently installed.
    *

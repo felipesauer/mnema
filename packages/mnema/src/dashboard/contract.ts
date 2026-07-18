@@ -1,7 +1,7 @@
 /**
  * The SPA-side view of the `/api/dashboard` JSON contract. This mirrors the
  * server's `DashboardData` (src/services/dashboard/dashboard-data.ts), proven
- * pure/serialisable by MNEMA-330. It is intentionally a SEPARATE declaration,
+ * pure/serialisable. It is intentionally a SEPARATE declaration,
  * not an import from the backend, so the SPA compilation unit never pulls in
  * Node/service code. Keep it in sync with the server type; the /api/dashboard
  * integration test guards the shape the panels rely on.

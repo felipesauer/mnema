@@ -3,7 +3,7 @@ import { type ReactElement, useEffect, useState } from 'react';
 import type { SearchData } from './contract.js';
 
 /**
- * Global search overlay (MNEMA-339 / ADR-67 slice 7). Opened by ⌘K or the
+ * Global search overlay. Opened by ⌘K or the
  * header search field; queries /api/search (existing FTS service) and lists
  * hits across tasks/decisions/notes/skills/memories/observations. Selecting a
  * hit is the drill-down entry point (delegated to onOpenKey).

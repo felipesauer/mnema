@@ -4,9 +4,9 @@ import type { BoardData, WorklinesData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Board panel (MNEMA-335 / ADR-67 slice 3, filters added in slice 7). Tasks
+ * Board panel. Tasks
  * grouped by workflow state, from the /api/board read (the existing portfolio
- * service). An optional epic filter (slice 7) is pushed to the server query —
+ * service). An optional epic filter is pushed to the server query —
  * an unknown key yields an honest empty result. No new source of truth.
  */
 export function Board(): ReactElement {

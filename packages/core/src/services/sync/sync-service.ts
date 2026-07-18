@@ -389,7 +389,7 @@ function serialiseTask(
     sprint_key: links.sprintKey,
     reopen_count: task.reopenCount,
     metadata: { ...task.metadata },
-    // Git link (ADR-49): persist the STABLE identifiers — branch and PR — so a
+    // Git link: persist the STABLE identifiers — branch and PR — so a
     // fresh clone keeps them across a `sync` rebuild. The commit list is
     // volatile (it would churn the markdown on every observer pass) and is
     // re-derived by `mnema watch --git`, so it is intentionally NOT serialized.

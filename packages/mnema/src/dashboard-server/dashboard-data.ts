@@ -121,8 +121,8 @@ export interface BuildOptions {
 /**
  * Composes {@link DashboardData} from the read-model seam — the single read
  * point for the dashboard. Strictly read-only: it calls the seam's reads and
- * derives time-series from the audit stream (no new collection, see
- * MNEMA-ADR-35). Takes {@link DashboardReadModel}, not the container or the
+ * derives time-series from the audit stream (no new collection).
+ * Takes {@link DashboardReadModel}, not the container or the
  * raw SQLite adapter, so internal frontends (SPA/real-time) build against the
  * seam rather than reaching into internals.
  *

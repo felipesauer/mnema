@@ -233,7 +233,7 @@ export function removeArtifacts(
     }
   }
 
-  // The commands dir (MNEMA-69) is versioned markdown like the trees
+  // The commands dir is versioned markdown like the trees
   // above, but `init` scaffolds it empty. Under keepMarkdown it is only
   // folded when empty (the scaffold), so user-authored commands survive;
   // otherwise it is removed outright.

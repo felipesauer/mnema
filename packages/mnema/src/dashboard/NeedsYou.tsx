@@ -3,10 +3,10 @@ import type { ReactElement } from 'react';
 import type { DashboardContract } from './contract.js';
 
 /**
- * The "Needs you" panel (MNEMA-291), styled into the redesign system (ADR-67):
+ * The "Needs you" panel, styled into the redesign system:
  * three severity-striped queue cards — awaiting review (warn), blocked (bad),
  * pending decisions (accent) — fed from the shared `/api/dashboard` contract
- * (no second SQLite path, per ADR-65). Values match `mnema inbox`.
+ * (no second SQLite path). Values match `mnema inbox`.
  *
  * A work list, not a stat line: the review/blocked queues list task keys +
  * titles. Data-attributes are kept for the regression tests.

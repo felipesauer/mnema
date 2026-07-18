@@ -4,7 +4,7 @@ import type { DriftData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Drift panel (MNEMA-337 / ADR-67 slice 5). Commits on this branch not tied to
+ * Drift panel. Commits on this branch not tied to
  * a task — the a-posteriori "untracked work" signal, from the on-demand
  * /api/drift read (the existing drift service). `checked=false` means git
  * could not be consulted → shown as "unknown", never "clean".

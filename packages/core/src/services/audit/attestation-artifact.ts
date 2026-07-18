@@ -10,7 +10,7 @@ import { MachineKeyService } from '../integrity/machine-key.js';
  * authenticity of a range of audit events offline, using only the committed
  * Ed25519 public key.
  *
- * The core idea (ADR-41): a per-machine Ed25519 key signs a root that is
+ * The core idea: a per-machine Ed25519 key signs a root that is
  * RECOMPUTABLE FROM THE CONTENT on disk. The verifier rebuilds each leaf from
  * the event's own bytes (via the SAME {@link canonicalise} the hash chain
  * uses), folds them into a root, and checks the signature against the

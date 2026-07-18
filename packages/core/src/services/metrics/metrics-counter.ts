@@ -13,10 +13,10 @@ const MAX_COUNTER_ENTRIES = 500;
 /**
  * A single recorded use of a read-only command. These live in a LOCAL
  * counter log, deliberately OUTSIDE the SHA-256 audit chain: read-only
- * operations must not write to the chain (MNEMA-ADR-20), and a usage tally
+ * operations must not write to the chain, and a usage tally
  * is not an audit record. It is local-only and never transmitted
  * (zero-telemetry), and lossy by design — recording a use must never fail
- * the command it counts. See MNEMA-ADR-36.
+ * the command it counts.
  */
 export interface CounterEntry {
   /** e.g. `doctor_ran`. */

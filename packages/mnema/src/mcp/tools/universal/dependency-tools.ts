@@ -27,7 +27,7 @@ const dependencyKindValues = [
  * `tasks_ready` and `task_dependencies` are read-only. Readiness is a
  * query: a task is ready when it is in the pickable state and every
  * `blocks` dependency points at a task in a terminal state — Mnema never
- * auto-transitions a task when its blocker completes (MNEMA-ADR-18).
+ * auto-transitions a task when its blocker completes.
  */
 export class DependencyTools {
   constructor(

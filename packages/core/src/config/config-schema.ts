@@ -58,14 +58,25 @@ export const HooksSchema = z
  * (project + version) is enough to bootstrap a project.
  */
 /**
- * The config-shape version: the single point of truth for the `version` field.
- * It is one input to the store-format hash and the hook for config
- * upgrade-scripts. Bumping it is a deliberate config-shape change.
+ * The config-shape version this binary WRITES and hashes: the single point of
+ * truth for a fresh `version` field, one input to the store-format hash, and
+ * the target a `migrate`/`upgrade` rewrites an older config up to.
  */
 export const CONFIG_VERSION = '2.0';
 
+/**
+ * The config-shape versions this binary LOADS. Kept broader than
+ * {@link CONFIG_VERSION} so a project written by an older binary is not
+ * rejected at load — it opens (read still works), the store-format guard flags
+ * the format drift on the next mutation, and `migrate`/`upgrade` rewrite the
+ * field up to {@link CONFIG_VERSION}. A hard `z.literal` here would deadlock:
+ * every command loads the config first, so an un-migratable `1.0` project could
+ * not even run the command that would fix it.
+ */
+export const SUPPORTED_CONFIG_VERSIONS = ['1.0', '2.0'] as const;
+
 export const ConfigSchema = z.object({
-  version: z.literal(CONFIG_VERSION),
+  version: z.enum(SUPPORTED_CONFIG_VERSIONS).default(CONFIG_VERSION),
   mnema_version: z.string(),
   project: z.object({
     key: z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/),
@@ -81,7 +92,7 @@ export const ConfigSchema = z.object({
       guided_proxy: z.enum(['skill_used', 'bootstrap', 'either']).default('either'),
     })
     .prefault({}),
-  // Machine attestation (ADR-37 layer 2): the chain head is signed with the
+  // Machine attestation: the chain head is signed with the
   // per-machine Ed25519 key at a checkpoint interval — NOT every event, to
   // spare the write hot path and cold-start. A checkpoint fires when EITHER
   // `events` new events have accrued since the last signature OR `seconds`
@@ -148,8 +159,8 @@ export const ConfigSchema = z.object({
   // it preserves the protection that matters without locking humans out.
   // `blocking` blocks everyone; `advisory` only warns.
   enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
-  // Per-gate-field severity, layered on top of `enforcement_mode` (see
-  // MNEMA-ADR-48). Maps a required gate FIELD name to how a *failure of that
+  // Per-gate-field severity, layered on top of `enforcement_mode`.
+  // Maps a required gate FIELD name to how a *failure of that
   // field* is treated: `block` always refuses, `warn` lets the transition
   // proceed with an advisory, `off` ignores the field entirely. A transition
   // blocks iff at least one failing field resolves to `block`; absent fields
@@ -172,7 +183,7 @@ export const ConfigSchema = z.object({
       // + run tools. The underlying stores still work if re-enabled — this
       // only controls what the agent sees.
       knowledge: z.boolean().default(true),
-      // Opt-in npm update check (ADR-40). Default OFF: Mnema is offline /
+      // Opt-in npm update check. Default OFF: Mnema is offline /
       // zero-telemetry by default, and a registry check is an outbound
       // request. When true, `mnema doctor` compares the installed version
       // against the latest published one and surfaces a hint (fail-open,
@@ -253,7 +264,7 @@ export const ConfigSchema = z.object({
       done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
     })
     .prefault({}),
-  // Git-observer settings (MNEMA-ADR-49). `watch` turns on the opt-in
+  // Git-observer settings. `watch` turns on the opt-in
   // git-observing mode of `mnema watch` persistently (same as passing
   // `--git`): while watching, the unambiguous in-progress task is linked to
   // the current branch + commits, read-only, never touching `.git`. Off by

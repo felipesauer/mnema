@@ -200,8 +200,8 @@ export class AuditCommand {
     group
       .command('verify')
       .description(
-        'Verify audit-log integrity: the hash chain and HMAC authenticity (layer 1+2, ' +
-          'offline) plus, with --verify-anchors, the temporal anchors online (layer 3). ' +
+        'Verify audit-log integrity: the hash chain and HMAC authenticity ' +
+          '(offline) plus, with --verify-anchors, the temporal anchors online. ' +
           'Exits non-zero when any error-severity check fails.',
       )
       .option(
@@ -774,7 +774,8 @@ export class AuditCommand {
       .option('--force', 'Apply the prune (without it, only report the plan)', false)
       .action(async (options: { readonly force?: boolean }) => {
         let hasError = false;
-        await withCliContext(({ config, projectRoot, container }) => {
+        await withCliContext((ctx) => {
+          const { config, projectRoot, container } = ctx;
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           // A prune re-baselines a chain and re-signs its head with THIS
           // machine's key, so it operates on THIS machine's tail — its own
@@ -859,6 +860,13 @@ export class AuditCommand {
             );
             return;
           }
+
+          // Real prune: it deletes segments, re-baselines audit_state, writes a
+          // waiver, and re-signs the head. Refuse if the store was written by a
+          // mnema with a different on-disk format — the same guard the other
+          // mutating audit-recovery commands carry, so a divergent binary never
+          // interleaves a prune under a foreign format.
+          enforceStoreFormat(ctx);
 
           // Resolve the signer. Without a machine key we cannot sign the waiver,
           // and an unsigned prune is indistinguishable from tampering — refuse.

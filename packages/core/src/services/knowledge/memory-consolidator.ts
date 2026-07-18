@@ -79,7 +79,7 @@ export class MemoryConsolidator {
   }
 
   /**
-   * The top-level `memory/INDEX.md`. Since MNEMA-ADR-51 a scoped memory-row
+   * The top-level `memory/INDEX.md`. A scoped memory-row
    * mirror lives under `memory/<scope>/<slug>.md`, so the root index walks one
    * level of scope subfolders (via {@link listMirrorEntries}) in addition to
    * the scopeless files at the root — otherwise scoped memories silently drop

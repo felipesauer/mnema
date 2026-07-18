@@ -14,7 +14,7 @@ const KIND_VALUES = ['observation', 'note', 'decision', 'memory'] as const satis
  * (observation / note / decision / memory) it resolves the lineage in
  * both directions — what led to it (upstream) and what it led to
  * (downstream). Makes the promotion/derivation chain traceable from
- * either end. No active-run requirement (MNEMA-ADR-20).
+ * either end. No active-run requirement.
  */
 export class ProvenanceTool {
   constructor(private readonly provenance: ProvenanceService) {}

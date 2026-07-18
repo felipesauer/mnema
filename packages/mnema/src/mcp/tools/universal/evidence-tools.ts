@@ -29,7 +29,7 @@ const evidenceKindValues = [
  * (mutation; links a criterion to a concrete artefact) and
  * `task_evidence` (read-only; pairs each criterion with its evidence).
  * Evidence is additive over the existing acceptance_criteria — it never
- * changes the criteria or gates a transition. See MNEMA-ADR-23.
+ * changes the criteria or gates a transition.
  */
 export class EvidenceTools {
   constructor(

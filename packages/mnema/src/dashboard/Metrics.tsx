@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import type { DashboardContract } from './contract.js';
 
 /**
- * Flow metrics panel (MNEMA-336 / ADR-67 slice 4). Throughput, lead/cycle
+ * Flow metrics panel. Throughput, lead/cycle
  * time, reopen rate, and per-sprint velocity — all from the `flow` section of
  * the /api/dashboard contract (server FlowMetrics). No new source of truth.
  */

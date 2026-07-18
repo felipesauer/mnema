@@ -37,7 +37,7 @@ interface SourceFile {
  * Validates `[[slug]]` wikilinks inside skill and memory markdown bodies
  * against the set of known targets (skill slugs, memory slugs, decision
  * keys, task keys), and answers "what references X". Read-only — it
- * reports, it never mutates. See MNEMA-ADR-21.
+ * reports, it never mutates.
  */
 export class WikilinkLintService {
   constructor(
@@ -123,7 +123,7 @@ export class WikilinkLintService {
 
   private readDir(dir: string): SourceFile[] {
     const out: SourceFile[] = [];
-    // Foldered layout (MNEMA-ADR-51): skills live under default/authored and
+    // Foldered layout: skills live under default/authored and
     // memories under scope folders, so walk recursively (indexes excluded by
     // the shared scan).
     for (const { filePath } of listMirrorEntries(dir)) {

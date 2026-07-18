@@ -13,7 +13,7 @@ import { err, ok } from '../../mcp-tool-result.js';
  * executive snapshot of an epic or sprint — coverage, the dependency
  * picture (cycles + critical path) and SLA breaches — returned both as
  * structured data and as rendered markdown. Composes existing services;
- * computes nothing new. No active-run requirement (MNEMA-ADR-20).
+ * computes nothing new. No active-run requirement.
  */
 export class SnapshotTool {
   constructor(private readonly snapshot: SnapshotService) {}

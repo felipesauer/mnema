@@ -38,7 +38,7 @@ export function useApi<T>(path: string): ApiState<T> {
 
 /**
  * Subscribes to the server's SSE `/stream` and invokes `onEvent` each time an
- * audit event lands — the real-time signal (ADR-67 slice 7). Callers use it to
+ * audit event lands — the real-time signal. Callers use it to
  * refetch the affected data. Debounced by the caller if needed; here we just
  * forward the tick. Reconnection is EventSource's built-in behaviour. A missing
  * EventSource (non-browser/test) is a no-op.

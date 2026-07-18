@@ -5,7 +5,7 @@ import type { CounterEntry } from './metrics-counter.js';
 /**
  * The local adoption report for the alpha. Every field is derived from
  * already-recorded local data — the audit log, the local counter log, and
- * flow metrics — with ZERO remote telemetry (MNEMA-ADR-36). Pure data.
+ * flow metrics — with ZERO remote telemetry. Pure data.
  */
 export interface AdoptionMetrics {
   /**
@@ -21,7 +21,7 @@ export interface AdoptionMetrics {
   /**
    * Which advanced features have been activated at least once, by the
    * presence of their audit event kind. `graph` is intentionally absent —
-   * viewing the graph is a pure read that records nothing (ADR-20); the
+   * viewing the graph is a pure read that records nothing; the
    * measurable proxy is `dependencies` (a link was created).
    */
   readonly featureActivation: {

@@ -17,7 +17,7 @@ interface MetricsOptions {
  * Registers `mnema metrics` — a LOCAL adoption report for the alpha. It
  * aggregates already-recorded local data (the audit log, the local counter
  * log, and flow metrics) into the alpha success metrics. Strictly local,
- * zero remote telemetry (see MNEMA-ADR-36). Read-only.
+ * zero remote telemetry. Read-only.
  */
 export class MetricsCommand {
   /**

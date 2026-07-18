@@ -2,7 +2,7 @@ import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Per-tool risk annotations, surfaced verbatim through `tools/list` so a
- * client can reason about a tool before calling it (MNEMA-ADR-36: everything
+ * client can reason about a tool before calling it (everything
  * local, no telemetry — these are static hints, not runtime signals).
  *
  * The four hints (all optional booleans, defined by the MCP SDK):
