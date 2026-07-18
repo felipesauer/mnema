@@ -11,11 +11,11 @@ import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 const FIXTURE_SECRET = Buffer.alloc(32, 7);
 
 /**
- * diagnoseAuditChain must distinguish the notagrafo shape (a prev_hash
- * discontinuity with fully authentic content around it — the signature of
- * concurrent writers racing the chain before the cross-process lock, fixed in
- * 43e7113) from a REAL edit (a content hash that fails to verify). Collapsing
- * both into "tampering" is exactly the false alarm this module exists to fix.
+ * diagnoseAuditChain must distinguish a benign prev_hash discontinuity (fully
+ * authentic content around it — the signature of concurrent writers racing the
+ * chain before the cross-process lock) from a REAL edit (a content hash that
+ * fails to verify). Collapsing both into "tampering" is exactly the false alarm
+ * this module exists to fix.
  */
 describe('diagnoseAuditChain', () => {
   let auditDir: string;
@@ -28,7 +28,7 @@ describe('diagnoseAuditChain', () => {
   });
   afterEach(() => rmSync(tempRoot, { recursive: true, force: true }));
 
-  /** Builds n valid, correctly-chained v3 events sealed with the fixture secret. */
+  /** Builds n valid, correctly-chained events sealed with the fixture secret. */
   function buildChain(n: number, startAt = 0): AuditEvent[] {
     const events: AuditEvent[] = [];
     let prevHash: string | null = null;
@@ -60,7 +60,7 @@ describe('diagnoseAuditChain', () => {
   it('reports zero breaks on a cleanly-chained log', () => {
     const events = buildChain(10);
     writeLines(path.join(auditDir, 'current.jsonl'), events);
-    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
     expect(report.totalChained).toBe(10);
     expect(report.breaks).toHaveLength(0);
     expect(report.allBreaksContentValid).toBe(true); // vacuously — no breaks
@@ -74,7 +74,7 @@ describe('diagnoseAuditChain', () => {
     const events = [...first, ...second];
     writeLines(path.join(auditDir, 'current.jsonl'), events);
 
-    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
     expect(report.totalChained).toBe(10);
     expect(report.breaks).toHaveLength(1);
     expect(report.breaks[0]?.chainedIndex).toBe(5);
@@ -93,7 +93,7 @@ describe('diagnoseAuditChain', () => {
     events[6] = tampered;
     writeLines(path.join(auditDir, 'current.jsonl'), events);
 
-    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
     expect(report.breaks).toHaveLength(1);
     expect(report.breaks[0]?.contentValidAroundBreak).toBe(false);
     expect(report.allBreaksContentValid).toBe(false);
@@ -114,8 +114,8 @@ describe('diagnoseAuditChain', () => {
     const sealed2 = { ...second, hash: hmacEvent(second, secret) };
     writeLines(path.join(auditDir, 'current.jsonl'), [sealed, sealed2]);
 
-    // No secret passed — content validity of the v3 window is unknown.
-    const report = diagnoseAuditChain(auditDir, null, null, noGit);
+    // No secret passed — content validity of the window is unknown.
+    const report = diagnoseAuditChain(auditDir, null, null, null, noGit);
     expect(report.breaks).toHaveLength(1);
     expect(report.breaks[0]?.contentValidAroundBreak).toBeNull();
     expect(report.allBreaksContentValid).toBe(false); // null never counts as valid
@@ -128,7 +128,7 @@ describe('diagnoseAuditChain', () => {
     const seg2 = buildChain(3, 200); // break #2, at the start of current.jsonl
     writeLines(path.join(auditDir, 'current.jsonl'), seg2);
 
-    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
     expect(report.breaks).toHaveLength(2);
     expect(report.breaks[0]?.file).toBe('2026-06.jsonl');
     expect(report.breaks[0]?.chainedIndex).toBe(3);
@@ -144,7 +144,7 @@ describe('diagnoseAuditChain', () => {
       `${events.map((e) => JSON.stringify(e)).join('\n')}\nnot valid json\n`,
       'utf-8',
     );
-    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+    const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
     expect(report.totalChained).toBe(3);
     expect(report.malformedLines).toBe(1);
   });
@@ -153,7 +153,7 @@ describe('diagnoseAuditChain', () => {
     it('is null when gitCwd is not passed (git check skipped entirely)', () => {
       const events = buildChain(3);
       writeLines(path.join(auditDir, 'current.jsonl'), events);
-      const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, noGit);
+      const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
       expect(report.matchesCommittedHead).toBeNull();
     });
 
@@ -161,7 +161,7 @@ describe('diagnoseAuditChain', () => {
       const events = buildChain(3);
       writeLines(path.join(auditDir, 'current.jsonl'), events);
       const notARepo: GitCommandRunner = () => ({ status: 128, stdout: '', stderr: 'not a repo' });
-      const report = diagnoseAuditChain(auditDir, null, tempRoot, notARepo);
+      const report = diagnoseAuditChain(auditDir, null, tempRoot, null, notARepo);
       expect(report.matchesCommittedHead).toBeNull();
     });
 
@@ -174,7 +174,7 @@ describe('diagnoseAuditChain', () => {
         if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
         return { status: 0, stdout: '', stderr: '' }; // diff --quiet: 0 = no diff
       };
-      const clean = diagnoseAuditChain(auditDir, null, tempRoot, cleanRunner);
+      const clean = diagnoseAuditChain(auditDir, null, tempRoot, null, cleanRunner);
       expect(clean.matchesCommittedHead).toBe(true);
       expect(calls.some((c) => c[0] === 'diff' && c.includes('HEAD'))).toBe(true);
 
@@ -182,7 +182,7 @@ describe('diagnoseAuditChain', () => {
         if (args[0] === 'rev-parse') return { status: 0, stdout: 'true\n', stderr: '' };
         return { status: 1, stdout: '', stderr: '' }; // diff --quiet: 1 = local diff
       };
-      const dirty = diagnoseAuditChain(auditDir, null, tempRoot, dirtyRunner);
+      const dirty = diagnoseAuditChain(auditDir, null, tempRoot, null, dirtyRunner);
       expect(dirty.matchesCommittedHead).toBe(false);
     });
 
@@ -201,7 +201,7 @@ describe('diagnoseAuditChain', () => {
         }
         return { status: 0, stdout: '', stderr: '' };
       };
-      const report = diagnoseAuditChain(auditDir, null, tempRoot, untrackedRunner);
+      const report = diagnoseAuditChain(auditDir, null, tempRoot, null, untrackedRunner);
       expect(report.matchesCommittedHead).toBe(false);
     });
 
@@ -213,8 +213,76 @@ describe('diagnoseAuditChain', () => {
         // Tracked (ls-files ok) and no diff (diff --quiet 0).
         return { status: 0, stdout: '', stderr: '' };
       };
-      const report = diagnoseAuditChain(auditDir, null, tempRoot, trackedCleanRunner);
+      const report = diagnoseAuditChain(auditDir, null, tempRoot, null, trackedCleanRunner);
       expect(report.matchesCommittedHead).toBe(true);
+    });
+  });
+
+  describe('per-machine tails', () => {
+    it('diagnoses events inside a machine tail, not just the flat root', () => {
+      // The chain lives under audit/m-<id>/, the real per-machine layout — a
+      // walk of the flat root would find nothing and call it clean.
+      const tail = path.join(auditDir, 'm-0123456789ab');
+      mkdirSync(tail, { recursive: true });
+      writeLines(path.join(tail, 'current.jsonl'), buildChain(5));
+
+      const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
+      expect(report.totalChained).toBe(5);
+      expect(report.breaks).toHaveLength(0);
+    });
+
+    it('names the break with its tail so a multi-machine report is unambiguous', () => {
+      const tail = path.join(auditDir, 'm-0123456789ab');
+      mkdirSync(tail, { recursive: true });
+      // A fresh chain start (break #1 at the tail genesis is expected: prev null)
+      // then a discontinuity inside the tail.
+      writeLines(path.join(tail, 'current.jsonl'), [...buildChain(3, 0), ...buildChain(2, 100)]);
+
+      const report = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
+      expect(report.breaks).toHaveLength(1);
+      expect(report.breaks[0]?.file).toBe('m-0123456789ab/current.jsonl');
+      expect(report.breaks[0]?.chainedIndex).toBe(3);
+    });
+
+    it('accepts a re-baselined tail genesis only when the resolver vouches for it', () => {
+      // A tail whose oldest surviving event points at a dropped prefix's head —
+      // the on-disk shape a retention prune leaves behind.
+      const tail = path.join(auditDir, 'm-0123456789ab');
+      mkdirSync(tail, { recursive: true });
+      const survivors = buildChain(4);
+      const droppedHead = 'a1'.repeat(32);
+      const genesis = { ...survivors[0], prev_hash: droppedHead } as AuditEvent;
+      genesis.hash = hmacEvent({ ...genesis, hash: undefined } as never, FIXTURE_SECRET);
+      // Re-link the survivors to the re-based genesis hash.
+      let prev = genesis.hash as string;
+      const chained: AuditEvent[] = [genesis];
+      for (let i = 1; i < 4; i++) {
+        const e = { ...survivors[i], prev_hash: prev } as AuditEvent;
+        e.hash = hmacEvent({ ...e, hash: undefined } as never, FIXTURE_SECRET);
+        prev = e.hash as string;
+        chained.push(e);
+      }
+      writeLines(path.join(tail, 'current.jsonl'), chained);
+
+      // Without a resolver the dropped prefix reads as a genesis break.
+      const bare = diagnoseAuditChain(auditDir, FIXTURE_SECRET, null, null, noGit);
+      expect(bare.breaks).toHaveLength(1);
+      expect(bare.breaks[0]?.chainedIndex).toBe(0);
+
+      // With a resolver that vouches for exactly this tail's re-baseline, the
+      // surviving genesis is accepted and the chain reads clean.
+      const ok = diagnoseAuditChain(
+        auditDir,
+        FIXTURE_SECRET,
+        null,
+        (t) =>
+          t.endsWith('m-0123456789ab')
+            ? { anchorPrevHash: droppedHead, genesisHash: genesis.hash as string }
+            : null,
+        noGit,
+      );
+      expect(ok.breaks).toHaveLength(0);
+      expect(ok.totalChained).toBe(4);
     });
   });
 });

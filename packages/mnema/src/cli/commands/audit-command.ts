@@ -530,7 +530,12 @@ export class AuditCommand {
             // git HEAD, or a human could be staring at exactly the tampered
             // state this whole gate exists to catch. Fail-closed.
             if (options.requireCommitted === true) {
-              const diag = diagnoseAuditChain(tailDir, secret.read(), projectRoot);
+              const diag = diagnoseAuditChain(
+                tailDir,
+                secret.read(),
+                projectRoot,
+                rebaselineResolverFor(projectRoot),
+              );
               if (diag.matchesCommittedHead !== true) {
                 return refuse(
                   diag.matchesCommittedHead === null
@@ -637,7 +642,12 @@ export class AuditCommand {
           );
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
-          const report = diagnoseAuditChain(auditDir, secret.read(), projectRoot);
+          const report = diagnoseAuditChain(
+            auditDir,
+            secret.read(),
+            projectRoot,
+            rebaselineResolverFor(projectRoot),
+          );
 
           process.stdout.write(`${pc.bold(`${report.totalChained} chained event(s) on disk`)}\n`);
           if (report.malformedLines > 0) {
