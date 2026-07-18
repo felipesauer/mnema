@@ -30,7 +30,7 @@ export interface AuditSegment {
   readonly month: string | null;
   /** Absolute path to the segment file. */
   readonly file: string;
-  /** Count of chained (v>=2) events in this segment. */
+  /** Count of chained (keyed) events in this segment. */
   readonly chainedEvents: number;
 }
 
@@ -69,12 +69,12 @@ export interface CutPoint {
 }
 
 /**
- * Counts the chained (v>=2) events in one segment file. A segment's events are
+ * Counts the chained (keyed) events in one segment file. A segment's events are
  * a contiguous run of the whole-chain index, so counting per file lets the cut
  * point land exactly on a segment boundary without walking the entire chain
  * twice.
  *
- * Malformed and legacy (v1) lines are not chained events and are not counted —
+ * Malformed and non-keyed lines are not chained events and are not counted —
  * consistent with {@link walkChainedEvents}, which never advances the chained
  * index for them. A cut is only ever taken on a healthy chain (the apply step
  * gates on `assessAuditChain` first), so this count matching `event_count` is
@@ -148,7 +148,7 @@ function windowStartMonth(now: Date, retentionMonths: number): string {
  * Computes the retention cut point for an audit log. Pure and read-only — it
  * only reads segment files to count their chained events; it never deletes,
  * re-baselines, or signs anything (the apply step and the waiver format do
- * that). Per ADR-68.
+ * that).
  *
  * Semantics:
  * - `full` → no cut, ever (`hasCut: false`).

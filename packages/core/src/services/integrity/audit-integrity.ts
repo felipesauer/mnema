@@ -119,11 +119,11 @@ interface AuditChainWalk {
  * `anchorPrevHash` is exactly that value — the waiver's `prunedHeadHash`, NOT
  * its `anchorDigest`. The `anchorDigest` is the waiver's separate,
  * recomputable-from-content attestation of the deleted prefix; it is verified
- * by the signature in `prune-waiver.ts`, not matched here.
+ * by the signature in `rebaseline-waiver.ts`, not matched here.
  *
  * This is a PRE-VERIFIED verdict: the caller reads the committed waiver,
  * checks its Ed25519 signature, the project pin, and that the on-disk genesis
- * matches it (all in `prune-waiver.ts`), then hands the walk only the two
+ * matches it (all in `rebaseline-waiver.ts`), then hands the walk only the two
  * boundary hashes to match. The walk itself never touches the waiver file or
  * any crypto — same separation the content-attestation check uses, so the walk
  * stays pure and cheap on the hot path.

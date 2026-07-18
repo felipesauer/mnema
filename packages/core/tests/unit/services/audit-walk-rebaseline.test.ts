@@ -17,14 +17,13 @@ const FIXTURE_SECRET = Buffer.alloc(32, 7);
 const accept = (rb: AcceptedRebaseline) => (): AcceptedRebaseline => rb;
 
 /**
- * The walk's prune re-baseline gate (ADR-68 / MNEMA-346). After a retention
- * prune deletes the oldest segments, the surviving genesis's prev_hash points
- * at the committed anchor digest, not at a hash on disk. Normally that is a
- * hard `prev_hash break (a prior segment may be missing)` — tamper. When a
- * caller passes a PRE-VERIFIED AcceptedRebaseline (the waiver's signature,
- * project pin, and genesis match were already checked in prune-waiver.ts), the
- * walk accepts the genesis and reports a clean chain. Without it, the same disk
- * still reads as tamper.
+ * The walk's prune re-baseline gate. After a retention prune deletes the oldest
+ * segments, the surviving genesis's prev_hash points at the committed anchor
+ * digest, not at a hash on disk. Normally that is a hard `prev_hash break (a
+ * prior segment may be missing)` — tamper. When a caller passes a PRE-VERIFIED
+ * AcceptedRebaseline (the waiver's signature, project pin, and genesis match
+ * were already checked in rebaseline-waiver.ts), the walk accepts the genesis
+ * and reports a clean chain. Without it, the same disk still reads as tamper.
  */
 describe('walk prune re-baseline gate', () => {
   let auditDir: string;

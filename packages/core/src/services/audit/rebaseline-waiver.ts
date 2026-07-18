@@ -17,7 +17,7 @@ import { computeLeaf, computeRoot } from './attestation-artifact.js';
  *   deleted from the prefix, so there is no `anchorDigest`; the record vouches
  *   that a trusted, project-bound key ACCEPTED the retreat to this new head.
  *
- * The problem it solves is the same in both directions (ADR-68 lineage): a
+ * The problem it solves is the same in both directions: a
  * genesis or head that moved leaves the on-disk chain looking truncated to any
  * verifier — indistinguishable from an adversary who removed history to hide
  * it. A bare move is always tamper. The fix is a SIGNED authorisation: because

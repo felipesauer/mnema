@@ -4,14 +4,14 @@ import { EVENT_FORMAT_VERSION } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 
 /**
- * One chained (schema v>=2) event as seen on disk, carrying the index the
+ * One chained (keyed) event as seen on disk, carrying the index the
  * attestation layer addresses it by. That index is the position in the
  * CHAINED sequence — the same thing `audit_state.event_count` counts — NOT the
  * raw line number, so a stray non-keyed line never shifts it. An
  * attestation over `[from, to)` therefore covers `chainedEvents[from … to-1]`.
  */
 export interface ChainedEvent {
-  /** 0-based position in the chained (v>=2) sequence. */
+  /** 0-based position in the chained (keyed) sequence. */
   readonly index: number;
   /** The parsed event, used to recompute its attestation leaf. */
   readonly event: AuditEvent;
@@ -31,14 +31,14 @@ export interface ChainedEvent {
  * without advancing the chained index.
  */
 export interface AuditChainWalk {
-  /** Every chained (v>=2) event, in order, indexed from 0. */
+  /** Every chained (keyed) event, in order, indexed from 0. */
   readonly chained: readonly ChainedEvent[];
   /** Count of unparseable lines encountered (skipped, not indexed). */
   readonly malformedLines: number;
   /**
-   * Count of chained (v>=2) events that carry NO string `hash`. They are still
+   * Count of chained (keyed) events that carry NO string `hash`. They are still
    * indexed (so the chained index stays aligned with `event_count`, which
-   * counts every v>=2 line), but a batch containing one cannot be attested:
+   * counts every keyed line), but a batch containing one cannot be attested:
    * its leaf/head derivation needs the `hash`. A caller (the reattest planner)
    * refuses when this is non-zero rather than letting the emitter throw.
    */
@@ -48,13 +48,13 @@ export interface AuditChainWalk {
 /**
  * Walks every audit JSONL file under `auditDir` in chain order (archived
  * `YYYY-MM.jsonl` segments oldest-first, then `current.jsonl`) and collects
- * the chained (v>=2) events with their chained-sequence index.
+ * the chained events with their chained-sequence index.
  *
- * A line is "chained" exactly when its `v` field is a number `>= 2` — the same
- * rule the integrity walk uses to populate `event_count`. Legacy (v1 or
- * version-less) lines and unparseable lines do not advance the chained index;
- * unparseable lines are tallied so a caller can refuse to act on a log that
- * may be hiding a deletion behind a garbage line.
+ * A line is "chained" exactly when its `v` field equals `EVENT_FORMAT_VERSION`
+ * — the same rule the integrity walk uses to populate `event_count`. A
+ * version-less or otherwise non-keyed line, and any unparseable line, does not
+ * advance the chained index; unparseable lines are tallied so a caller can
+ * refuse to act on a log that may be hiding a deletion behind a garbage line.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @returns The chained events by index, plus the malformed-line count
@@ -78,8 +78,8 @@ export function walkChainedEvents(auditDir: string): AuditChainWalk {
       }
       const v = typeof event.v === 'number' ? event.v : 0;
       if (v === EVENT_FORMAT_VERSION) {
-        // Index every v>=2 line so the chained index stays aligned with
-        // event_count (which counts them all). A v>=2 line with no string
+        // Index every keyed line so the chained index stays aligned with
+        // event_count (which counts them all). A keyed line with no string
         // `hash` is still indexed but tallied: the attestation planner refuses
         // a batch that contains one, instead of the emitter throwing on it.
         if (typeof event.hash !== 'string') unhashedLines += 1;
