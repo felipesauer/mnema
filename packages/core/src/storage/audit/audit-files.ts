@@ -28,6 +28,33 @@ export function orderedAuditFiles(auditDir: string): string[] {
 }
 
 /**
+ * The chain TAILS under a project audit dir. Each machine appends only
+ * to its own `m-<12 hex>/` sub-directory (the per-machine chain that
+ * makes the git union-merge interleaving impossible by construction).
+ * A directory whose top level itself holds `.jsonl` files is treated as
+ * one degenerate tail — the single-machine shape every existing fixture
+ * (and a freshly-migrated project) naturally has.
+ *
+ * @param auditDir - Directory holding the audit tails
+ * @returns Absolute tail-directory paths, root tail first, then `m-*`
+ *   tails sorted by name (deterministic aggregation order)
+ */
+export function auditTailDirs(auditDir: string): string[] {
+  if (!existsSync(auditDir)) return [];
+  const entries = readdirSync(auditDir, { withFileTypes: true });
+  const tails: string[] = [];
+  if (entries.some((d) => d.isFile() && d.name.endsWith('.jsonl'))) {
+    tails.push(auditDir);
+  }
+  const machineTails = entries
+    .filter((d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name))
+    .map((d) => d.name)
+    .sort();
+  tails.push(...machineTails.map((n) => path.join(auditDir, n)));
+  return tails;
+}
+
+/**
  * A cheap content-change signature for the audit files: each file's
  * `name:mtimeMs:size`, joined. Any mutation — an append, a rotation, or
  * an in-place edit of a past line — changes an mtime (and usually the
