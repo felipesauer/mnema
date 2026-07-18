@@ -25,13 +25,6 @@ import { userKnowledgeDir } from '../knowledge/user-knowledge.js';
 const PUBLIC_KEY_VERSION = '1.0';
 
 /**
- * Chars of the key fingerprint used to disambiguate the committed public
- * key's filename. Two machines that share one actor mint distinct keys, so
- * distinct fingerprints keep their `.pub` files from colliding.
- */
-const FINGERPRINT_SHORT_LEN = 12;
-
-/**
  * The handle grammar the identity service persists (kept in sync with
  * `identity-service`'s private `HANDLE_PATTERN`). A handle is already
  * path-safe by construction; this is re-checked here so a bad handle fails
@@ -65,13 +58,14 @@ export interface MachineKeyPair {
 
 /**
  * Manages the per-machine Ed25519 keypair that signs the periodic audit
- * chain head (ADR-37 layer 2 machine attestation). The keypair is bound to
- * the resolved actor: the SAME handle stamped on events also owns the key.
+ * chain head (machine attestation). The keypair is bound to the resolved
+ * actor: the SAME handle stamped on events also owns the key.
  *
  * The PRIVATE key lives OUTSIDE the repo at
  * `~/.config/mnema/keys/<actor>.ed25519` (0600) and NEVER leaves the
  * machine. The PUBLIC key is written into the repo at
- * `.mnema/keys/<actor>.<fp12>.pub` so any clone can verify signatures.
+ * `.mnema/keys/<actor>.<fingerprint>.pub` (the full fingerprint, so a whole
+ * fleet's keys never collide on a filename) so any clone can verify signatures.
  *
  * It mirrors {@link ProjectSecretService}'s storage discipline (injectable
  * `userDir`, atomic tmp→chmod 0600→rename, a committed repo-relative
@@ -115,10 +109,16 @@ export class MachineKeyService {
     return path.join(this.userDir, 'keys', `${this.actor}.ed25519`);
   }
 
-  /** Absolute path to the committed public-key record for a fingerprint. */
+  /**
+   * Absolute path to the committed public-key record for a fingerprint.
+   * The FULL fingerprint names the file, so two machines that share one actor
+   * can never collide on a filename (a short prefix could, and the second
+   * `.pub` would clobber the first). The resolver keys by the full fingerprint
+   * re-derived from the file's own contents, so the name is only a label —
+   * but a collision-free label is what lets a whole fleet's `.pub` coexist.
+   */
   publicKeyPathFor(fingerprint: string): string {
-    const short = fingerprint.slice(0, FINGERPRINT_SHORT_LEN);
-    return path.join(this.projectRoot, '.mnema', 'keys', `${this.actor}.${short}.pub`);
+    return path.join(this.projectRoot, '.mnema', 'keys', `${this.actor}.${fingerprint}.pub`);
   }
 
   /**

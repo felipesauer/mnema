@@ -70,12 +70,14 @@ describe('MachineKeyService', () => {
     }
   });
 
-  it('commits a public-key record under .mnema/keys/ named <actor>.<fp12>.pub', () => {
+  it('commits a public-key record under .mnema/keys/ named <actor>.<fingerprint>.pub', () => {
     const pair = svc.getOrCreate();
     const pubPath = svc.publicKeyPath();
     expect(path.dirname(pubPath)).toBe(path.join(projectRoot, '.mnema', 'keys'));
-    expect(path.basename(pubPath)).toMatch(/^felipesauer\.[0-9a-f]{12}\.pub$/);
-    expect(path.basename(pubPath)).toBe(`felipesauer.${pair.fingerprint.slice(0, 12)}.pub`);
+    // The FULL 64-hex fingerprint names the file — collision-free across a
+    // whole fleet, so two machines sharing one actor never clobber each other.
+    expect(path.basename(pubPath)).toMatch(/^felipesauer\.[0-9a-f]{64}\.pub$/);
+    expect(path.basename(pubPath)).toBe(`felipesauer.${pair.fingerprint}.pub`);
   });
 
   it('records actor + algorithm + SPKI-PEM key + sha256(DER) fingerprint in the .pub', () => {
