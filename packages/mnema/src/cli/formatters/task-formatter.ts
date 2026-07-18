@@ -86,7 +86,7 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
     }
   }
 
-  // Git link (ADR-49), surfaced only when the opt-in observer has populated
+  // Git link, surfaced only when the opt-in observer has populated
   // it — an untracked task renders exactly as before.
   if (task.gitBranch !== null || task.gitCommits.length > 0 || task.gitPr !== null) {
     const git: string[] = [];
@@ -105,7 +105,7 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
       // Branch/PR are serialized to the markdown and survive a clone; the
       // commit list is derived, not stored, so on a fresh clone it is empty
       // until the observer repopulates it. Say so rather than read as "no
-      // commits" — this is by design (ADR-49), not a lost link.
+      // commits" — this is by design, not a lost link.
       lines.push(`    ${pc.dim('commits derived on `mnema watch --git`')}`);
     }
   }

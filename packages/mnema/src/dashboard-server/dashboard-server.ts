@@ -40,11 +40,10 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 const ALLOWED_HOST_NAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
 /**
- * Absolute path to the built SPA bundle (Vite output, MNEMA-ADR-66). Resolved
+ * Absolute path to the built SPA bundle (Vite output). Resolved
  * relative to this compiled module so it works both from `dist/` at runtime
  * and from source during tests. The SPA is served under `/app`; the legacy
- * string-rendered shell keeps `/` as the bridge until the SPA reaches parity
- * (ADR-65).
+ * string-rendered shell keeps `/` as the bridge until the SPA reaches parity.
  */
 const SPA_DIR = fileURLToPath(new URL('../../dist/dashboard', import.meta.url));
 
@@ -138,7 +137,7 @@ export async function createDashboardServer(
     // but invisible here. The cache key folds the signature identity so a
     // signature change invalidates it.
     createAttestationSource(projectRoot, new AuditHeadSignatureRepository(container.adapter)),
-    // Content attestation (ADR-41) so the dashboard shows the same
+    // Content attestation so the dashboard shows the same
     // anonymous-verifiability verdict as verify/doctor. Passed as a builder so
     // audit-integrity does not import the attestation layer (cycle); the cache
     // key folds the attest-dir signature so a new/edited .att invalidates it.
@@ -166,7 +165,7 @@ export async function createDashboardServer(
 
   /**
    * The Board read: the backlog counted + listed by state (portfolio),
-   * optionally filtered (ADR-67 slice 7). Filters are echoed by the portfolio
+   * optionally filtered. Filters are echoed by the portfolio
    * service and pushed into its query — an unknown epic/sprint key yields an
    * honest empty result, not a silent ignore.
    */
@@ -339,7 +338,7 @@ export async function createDashboardServer(
       return;
     }
 
-    // The SPA (ADR-67) now owns the root. `/` serves the built index.html and
+    // The SPA now owns the root. `/` serves the built index.html and
     // `/assets/*` its bundle (Vite `base:'./'` → the page requests `/assets/…`
     // from the root). The legacy string-rendered dashboard has been retired.
     if (url === '/' || url === '/index.html') {
@@ -362,9 +361,9 @@ export async function createDashboardServer(
       return;
     }
 
-    // JSON contract for the SPA (ADR-65/ADR-8): the same composed snapshot the
-    // string-rendered shell uses, serialised verbatim. Proven pure/serialisable
-    // by MNEMA-330; integrity is injected from the cache, so this path never
+    // JSON contract for the SPA: the same composed snapshot the
+    // string-rendered shell uses, serialised verbatim. Proven pure/serialisable;
+    // integrity is injected from the cache, so this path never
     // reaches the raw SQLite adapter itself.
     if (url === '/api/dashboard') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -372,7 +371,7 @@ export async function createDashboardServer(
       return;
     }
 
-    // Work module (ADR-67 slice 3). Served on demand — kept off the always-on
+    // Work module. Served on demand — kept off the always-on
     // /api/dashboard payload so the Overview stays lean. Both read only the
     // existing services (no second source of truth).
     if (url.startsWith('/api/board')) {
@@ -395,7 +394,7 @@ export async function createDashboardServer(
       return;
     }
 
-    // Integrity module (ADR-67 slice 5). On-demand reads over existing services.
+    // Integrity module. On-demand reads over existing services.
     if (url === '/api/audit') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(auditData()));
@@ -407,7 +406,7 @@ export async function createDashboardServer(
       return;
     }
 
-    // Global search (ADR-67 slice 7): FTS over tasks/decisions/notes/skills/
+    // Global search: FTS over tasks/decisions/notes/skills/
     // memories/observations, via the existing search service. The query is the
     // `q` param; an empty/absent q returns no hits (not an error).
     if (url.startsWith('/api/search')) {
@@ -417,7 +416,7 @@ export async function createDashboardServer(
       return;
     }
 
-    // Knowledge + Agents modules (ADR-67 slice 6). On-demand, existing services.
+    // Knowledge + Agents modules. On-demand, existing services.
     if (url === '/api/knowledge') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(knowledgeData()));

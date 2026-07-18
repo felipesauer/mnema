@@ -1,8 +1,8 @@
 import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 /**
- * The latest machine-attestation signature over the audit chain head
- * (ADR-37 layer 2). Persisted by the writer at a checkpoint interval and
+ * The latest machine-attestation signature over the audit chain head.
+ * Persisted by the writer at a checkpoint interval and
  * read back by `inspectAuditIntegrity` to verify which machine advanced
  * the head.
  */

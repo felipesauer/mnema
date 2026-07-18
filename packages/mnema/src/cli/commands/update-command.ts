@@ -4,7 +4,7 @@ import type { Command } from 'commander';
 
 /**
  * Registers `mnema update`, whose `check` subcommand queries the npm
- * registry for a newer published version (ADR-40).
+ * registry for a newer published version.
  *
  * This is an EXPLICIT, on-demand network action: it runs regardless of the
  * `features.update_check` config flag (which only governs the automatic

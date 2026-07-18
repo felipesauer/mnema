@@ -13,8 +13,8 @@ interface ImportOptions {
 
 /**
  * Registers `mnema project`, the command group for project-scoped
- * credentials. Today it manages the per-project HMAC secret (ADR-37 layer 2;
- * a shareable team credential per ADR-39):
+ * credentials. Today it manages the per-project HMAC secret
+ * (a shareable team credential):
  *
  * - `secret export` prints the current secret as a labelled envelope for
  *   out-of-band transmission to a teammate;

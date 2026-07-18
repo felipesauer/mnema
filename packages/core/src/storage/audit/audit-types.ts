@@ -50,7 +50,7 @@ export interface AuditEvent {
  * behaviour-neutral — the writer already only used these two methods.
  */
 
-/** Signs the chain head when a checkpoint is due (ADR-37 layer 2). */
+/** Signs the chain head when a checkpoint is due. */
 export interface HeadCheckpointer {
   /**
    * Signs `headHash` and records a checkpoint when the interval has elapsed;
@@ -59,7 +59,7 @@ export interface HeadCheckpointer {
   maybeSign(headHash: string, eventCount: number): HeadSignature | null;
 }
 
-/** Receives a freshly-signed head for off-path temporal anchoring (layer 3). */
+/** Receives a freshly-signed head for off-path temporal anchoring. */
 export interface SignedHeadListener {
   /** Hand a newly-signed head to the anchor scheduler (fire-and-forget). */
   onSignedHead(head: string, eventCount: number): void;

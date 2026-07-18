@@ -61,7 +61,7 @@ const CAVEAT =
 
 /**
  * Derives a guided-vs-unguided metrics diff from the audit log, collecting
- * nothing new (MNEMA-ADR-36: local, zero-telemetry, read-only). It partitions
+ * nothing new (local, zero-telemetry, read-only). It partitions
  * agent runs into two cohorts by an OBSERVABLE guidance proxy — did the run
  * use a recorded skill — and reuses {@link FlowMetricsService} to compute
  * reopen rate, lead/cycle time and throughput over each cohort's events.

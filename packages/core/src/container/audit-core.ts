@@ -70,7 +70,7 @@ export function createAuditCore(
   // aggregate every tail, writes touch only this one.
   const tailDir = localTailDir(auditDir, secretUserDir);
 
-  // Machine attestation (ADR-37 layer 2): resolve the per-machine Ed25519
+  // Machine attestation: resolve the per-machine Ed25519
   // signer lazily per checkpoint, memoised per actor. Shared by the head
   // checkpoint and auto-attestation so both use the SAME keypair. A null
   // or malformed actor degrades to "no signer", never a throw.
@@ -97,13 +97,13 @@ export function createAuditCore(
     config.audit.checkpoint,
   );
 
-  // Temporal anchoring (ADR-37 layer 3): inert for the default `none`
+  // Temporal anchoring: inert for the default `none`
   // provider. Retries any anchor left pending by a prior process the
   // first time the audit path builds.
   const anchorScheduler = buildAnchorScheduler(config, projectRoot, infra.repos.anchors);
   if (infra.pendingMigrations.length === 0) anchorScheduler.retryPending();
 
-  // Auto-attestation (ADR-41): when a checkpoint signs a new head,
+  // Auto-attestation: when a checkpoint signs a new head,
   // materialise the `.att` for the just-closed batch off the write lock.
   // Chain-health resolves through a stat-signature cache so a checkpoint
   // following another integrity surface reuses its result.

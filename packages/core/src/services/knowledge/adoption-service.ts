@@ -418,7 +418,7 @@ function memoryTemplates(): Map<string, string> {
         '# Decisions (ADRs)',
         '',
         'Architecture decisions for this project. Record new ones with',
-        '`mnema decision record` (Phase 7+); link them from this index',
+        '`mnema decision record`; link them from this index',
         'after they are accepted.',
         '',
       ].join('\n'),

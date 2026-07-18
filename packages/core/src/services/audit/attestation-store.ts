@@ -76,7 +76,7 @@ export function writeArtifact(auditDir: string, artifact: AttestationArtifact): 
 /**
  * Builds the set of TRUSTED signer public keys from the committed `.pub`
  * records under `.mnema/keys/`, keyed by FULL fingerprint. This is the trust
- * anchor for anonymous verification (ADR-41): the committed `.pub` set IS the
+ * anchor for anonymous verification: the committed `.pub` set IS the
  * allowlist, and resolution is by the 256-bit fingerprint — never the 12-char
  * filename prefix — so a record whose declared fingerprint does not match the
  * key it contains simply never resolves.

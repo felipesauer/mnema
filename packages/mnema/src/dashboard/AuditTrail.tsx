@@ -5,7 +5,7 @@ import { IconCheck } from './icons.js';
 import { useApi } from './useApi.js';
 
 /**
- * Audit-trail panel (MNEMA-337 / ADR-67 slice 5) — the product's thesis. Two
+ * Audit-trail panel — the product's thesis. Two
  * parts: the chain-verification summary (from the `integrity` section of the
  * already-fetched /api/dashboard contract) and the navigable event trail (from
  * the on-demand /api/audit read, newest-first, hash-linked). Reads only

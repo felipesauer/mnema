@@ -11,7 +11,7 @@ import { err, ok } from '../../mcp-tool-result.js';
  * Registers the read-only `graph_dependencies` MCP tool: the navigable
  * `blocks`-graph for an epic, a sprint, or the whole project — cycle
  * detection, the ready/blocked frontier, and the critical path (longest
- * blocking chain). Pure read, no active-run requirement (MNEMA-ADR-20).
+ * blocking chain). Pure read, no active-run requirement.
  */
 export class DependencyGraphTool {
   constructor(private readonly graph: DependencyGraphService) {}

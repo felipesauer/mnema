@@ -59,8 +59,7 @@ export interface TaskEvidenceView {
 /**
  * Manages evidence linking a task's acceptance criteria to concrete
  * artefacts. Additive over the existing `acceptanceCriteria` string[] —
- * never touches the criteria themselves or the workflow gate. See
- * MNEMA-ADR-23.
+ * never touches the criteria themselves or the workflow gate.
  */
 export class TaskEvidenceService {
   constructor(

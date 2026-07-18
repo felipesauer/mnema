@@ -42,7 +42,7 @@ export interface Snapshot {
  * that prompted this had to be assembled by hand; this hands the same
  * cut back as data (and, via the renderers, as markdown/HTML).
  *
- * Read-only: no audit events (see MNEMA-ADR-20).
+ * Read-only: no audit events.
  */
 export class SnapshotService {
   constructor(

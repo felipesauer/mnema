@@ -48,7 +48,7 @@ export function reportUncaught(
   // Only genuinely unexpected crashes reach here (structured MnemaErrors
   // returned above). Persist them to the local, never-transmitted error log
   // so a bug report has something to attach — best-effort, never changes the
-  // exit code or masks the error (MNEMA-ADR-46).
+  // exit code or masks the error.
   recordError(error);
 
   const message = error instanceof Error ? error.message : String(error);

@@ -809,7 +809,7 @@ function pruneAllOrphanMirrors(
 
   const join = (relative: string) => path.join(projectRoot, relative);
   const removed = [
-    // Skills and memories are foldered (MNEMA-ADR-51) — prune recursively.
+    // Skills and memories are foldered — prune recursively.
     // Memory excludes the curated decisions/notes subfolders: those files are
     // human-authored, have no memory row, and must never be pruned as orphans.
     ...pruneFolderedOrphanMirrors(join(LAYOUT.skills), skillSlugs, fs),

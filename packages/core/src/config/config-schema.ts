@@ -81,7 +81,7 @@ export const ConfigSchema = z.object({
       guided_proxy: z.enum(['skill_used', 'bootstrap', 'either']).default('either'),
     })
     .prefault({}),
-  // Machine attestation (ADR-37 layer 2): the chain head is signed with the
+  // Machine attestation: the chain head is signed with the
   // per-machine Ed25519 key at a checkpoint interval — NOT every event, to
   // spare the write hot path and cold-start. A checkpoint fires when EITHER
   // `events` new events have accrued since the last signature OR `seconds`
@@ -148,8 +148,8 @@ export const ConfigSchema = z.object({
   // it preserves the protection that matters without locking humans out.
   // `blocking` blocks everyone; `advisory` only warns.
   enforcement_mode: z.enum(['advisory', 'strict', 'blocking']).default('strict'),
-  // Per-gate-field severity, layered on top of `enforcement_mode` (see
-  // MNEMA-ADR-48). Maps a required gate FIELD name to how a *failure of that
+  // Per-gate-field severity, layered on top of `enforcement_mode`.
+  // Maps a required gate FIELD name to how a *failure of that
   // field* is treated: `block` always refuses, `warn` lets the transition
   // proceed with an advisory, `off` ignores the field entirely. A transition
   // blocks iff at least one failing field resolves to `block`; absent fields
@@ -172,7 +172,7 @@ export const ConfigSchema = z.object({
       // + run tools. The underlying stores still work if re-enabled — this
       // only controls what the agent sees.
       knowledge: z.boolean().default(true),
-      // Opt-in npm update check (ADR-40). Default OFF: Mnema is offline /
+      // Opt-in npm update check. Default OFF: Mnema is offline /
       // zero-telemetry by default, and a registry check is an outbound
       // request. When true, `mnema doctor` compares the installed version
       // against the latest published one and surfaces a hint (fail-open,
@@ -253,7 +253,7 @@ export const ConfigSchema = z.object({
       done_pr_policy: z.enum(['off', 'warn', 'block']).default('off'),
     })
     .prefault({}),
-  // Git-observer settings (MNEMA-ADR-49). `watch` turns on the opt-in
+  // Git-observer settings. `watch` turns on the opt-in
   // git-observing mode of `mnema watch` persistently (same as passing
   // `--git`): while watching, the unambiguous in-progress task is linked to
   // the current branch + commits, read-only, never touching `.git`. Off by

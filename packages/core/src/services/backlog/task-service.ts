@@ -115,7 +115,7 @@ export class TaskService {
     // that don't pass it, and every single-agent flow, keep working; the
     // container supplies the configured `claims.require_to_start`.
     private readonly requireClaimToStart: boolean = false,
-    // Per-gate-field severity (MNEMA-ADR-48), layered on `enforcementMode`.
+    // Per-gate-field severity, layered on `enforcementMode`.
     // Maps a required gate field name to `off` | `warn` | `block`. Empty
     // (the default) reproduces the pure global behaviour.
     private readonly fieldSeverity: Readonly<Record<string, 'off' | 'warn' | 'block'>> = {},
@@ -635,8 +635,8 @@ export class TaskService {
       });
     }
 
-    // Apply enforcement when required fields are missing. Two layers
-    // (MNEMA-ADR-48): the global `enforcement_mode` decides the default for
+    // Apply enforcement when required fields are missing. Two layers:
+    // the global `enforcement_mode` decides the default for
     // the acting actor (`via` present ⇒ an agent drove this; `strict` holds
     // agents but lets a human force it), and an optional per-field severity
     // overrides that PER failing field. A transition blocks iff at least one

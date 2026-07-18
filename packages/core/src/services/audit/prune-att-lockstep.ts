@@ -3,8 +3,8 @@ import { rmSync } from 'node:fs';
 import { attestPath, listArtifacts } from './attestation-store.js';
 
 /**
- * The `.att` lockstep decision for a prune at chained-event index `cut`
- * (ADR-68). A committed attestation covers events `[from, to)` by ABSOLUTE
+ * The `.att` lockstep decision for a prune at chained-event index `cut`.
+ * A committed attestation covers events `[from, to)` by ABSOLUTE
  * chained index from the physical genesis, and the verifier addresses events
  * by that index (`walk.chained.slice(from, to)`), requiring contiguous
  * coverage from index 0. A prune deletes `[0, cut)` and the walk re-indexes

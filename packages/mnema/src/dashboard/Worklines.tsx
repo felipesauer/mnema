@@ -4,7 +4,7 @@ import type { CoverageSummary, WorklinesData } from './contract.js';
 import { useApi } from './useApi.js';
 
 /**
- * Epics & sprints panel (MNEMA-335 / ADR-67 slice 3). Lists epics and sprints
+ * Epics & sprints panel. Lists epics and sprints
  * with their coverage (terminal/total → percent), from the /api/epics read
  * (the existing epic/sprint + coverage services). No new source of truth.
  */

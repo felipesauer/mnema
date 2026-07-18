@@ -6,7 +6,7 @@ import type { AuditChainWalk } from './audit-chain-walk.js';
 export const CONTENT_ATTESTATION_CHECK = 'audit content attestation';
 
 /**
- * Produces the content-attestation verdict (ADR-41): does a chain of committed
+ * Produces the content-attestation verdict: does a chain of committed
  * `.att` cover every chained event, and does each verify against a committed
  * public key — WITH NO SECRET, so an anonymous clone gets a real answer.
  *
@@ -48,7 +48,7 @@ export function contentAttestationCheck(
   const total = walk.chained.length;
 
   if (artifacts.length === 0) {
-    // No .att at all is DORMANT, not a failure — content attestation (ADR-41)
+    // No .att at all is DORMANT, not a failure — content attestation
     // is opt-in, so a project that never ran `reattest` must not report "not
     // intact" (that would train users to ignore the signal). `ok: true` with a
     // warning that nudges adoption. Fail-closed kicks in the moment ANY .att

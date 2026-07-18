@@ -11,8 +11,7 @@ import { err, ok } from '../../mcp-tool-result.js';
  * Registers the read-only `file_collisions` MCP tool: within an epic or
  * sprint, warns when two tasks touch the same files (inferred from their
  * commit evidence) — the "parallel PRs all edited the same file" hazard.
- * Advisory; names the colliding tasks + files. No active-run requirement
- * (MNEMA-ADR-20).
+ * Advisory; names the colliding tasks + files. No active-run requirement.
  */
 export class FileCollisionTool {
   constructor(private readonly collisions: FileCollisionService) {}

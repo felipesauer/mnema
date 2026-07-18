@@ -5,7 +5,7 @@ import type { DashboardContract } from './contract.js';
 type Series = ReadonlyArray<{ label: string; value: number }>;
 
 /**
- * Charts panel (MNEMA-292). The legacy serve had two legibility bugs: a
+ * Charts panel. The legacy serve had two legibility bugs: a
  * category series (events-by-kind) showed only the top-12 of ~29 with NO
  * "+N more" hint, so the reader silently lost 17 categories; and a dense
  * scatter drew 228 points at r=4 in a 220px box (an illegible blob).

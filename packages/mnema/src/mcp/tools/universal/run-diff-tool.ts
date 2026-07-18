@@ -8,7 +8,7 @@ import { err, ok } from '../../mcp-tool-result.js';
  * grouped set of changes that run produced — transitions, evidence,
  * decisions, knowledge — so a whole agent session can be audited at
  * once. Works for completed and in-progress runs. Pure read, no
- * active-run requirement (MNEMA-ADR-20).
+ * active-run requirement.
  */
 export class RunDiffTool {
   constructor(private readonly runDiff: RunDiffService) {}

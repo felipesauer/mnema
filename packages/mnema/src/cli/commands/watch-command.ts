@@ -53,7 +53,7 @@ export class WatchCommand {
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .option(
         '--git',
-        'Also observe git (MNEMA-ADR-49): read-only, link the unambiguous in-progress task to the current branch + commits. Off by default; never writes .git.',
+        'Also observe git: read-only, link the unambiguous in-progress task to the current branch + commits. Off by default; never writes .git.',
         false,
       )
       .action(async (options: WatchOptions) => {
@@ -90,7 +90,7 @@ export class WatchCommand {
               const result = container.gitObserver.observe(projectRoot, actor);
               if (result.linkedTaskKey !== null) {
                 // Persist the branch/pr to the task markdown ONLY when the link
-                // actually changed, so it survives a fresh clone (ADR-49)
+                // actually changed, so it survives a fresh clone
                 // without churning the file on every idle observer pass.
                 if (result.changed) {
                   container.sync.syncTask(result.linkedTaskKey, { action: 'git_observed' });

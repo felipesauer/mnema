@@ -512,7 +512,7 @@ export class TaskRepository implements ITaskRepository {
   }
 
   /**
-   * Sets the first-class git link on a task (MNEMA-ADR-49). Written only by
+   * Sets the first-class git link on a task. Written only by
    * the opt-in git observer, never the hot path.
    *
    * NOTE on `updated_at`: any UPDATE to a task bumps `updated_at` via

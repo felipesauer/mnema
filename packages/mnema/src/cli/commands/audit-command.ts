@@ -200,8 +200,8 @@ export class AuditCommand {
     group
       .command('verify')
       .description(
-        'Verify audit-log integrity: the hash chain and HMAC authenticity (layer 1+2, ' +
-          'offline) plus, with --verify-anchors, the temporal anchors online (layer 3). ' +
+        'Verify audit-log integrity: the hash chain and HMAC authenticity ' +
+          '(offline) plus, with --verify-anchors, the temporal anchors online. ' +
           'Exits non-zero when any error-severity check fails.',
       )
       .option(

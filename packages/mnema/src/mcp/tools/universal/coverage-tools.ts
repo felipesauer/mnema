@@ -7,7 +7,7 @@ import { err, ok } from '../../mcp-tool-result.js';
  * Registers the read-only coverage MCP tools — `epic_coverage` and
  * `sprint_coverage`. Coverage is a computed aggregate (terminal/total
  * percent + the open task list), never a stored field, so these are
- * pure reads with no active-run requirement. See MNEMA-ADR-20.
+ * pure reads with no active-run requirement.
  */
 export class CoverageTools {
   constructor(private readonly coverage: CoverageService) {}

@@ -3,7 +3,7 @@
  *
  * Computed from the epic's `state` (OPEN/CLOSED) plus the progress of
  * its tasks, so it always reflects reality without a column that could
- * drift. See MNEMA-ADR-24.
+ * drift.
  *
  * - `closed`      — the epic's state is CLOSED.
  * - `empty`       — OPEN, with no tasks attached.

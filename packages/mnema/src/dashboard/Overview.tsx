@@ -4,7 +4,7 @@ import type { DashboardContract } from './contract.js';
 import { IconCheck } from './icons.js';
 
 /**
- * Overview landing (MNEMA-334 / ADR-67 slice 2). The dashboard's home: a row
+ * Overview landing. The dashboard's home: a row
  * of stat tiles (chain, needs-you, throughput, reopen), a condensed view of
  * the human-attention queues, and a live activity timeline. Every value comes
  * from the single /api/dashboard contract — no new source of truth.

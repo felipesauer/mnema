@@ -33,7 +33,7 @@ const BLOCKED_STATE = 'BLOCKED';
 
 /**
  * Computes epic/sprint coverage on demand. Read-only: queries are not
- * mutations, so no audit events are emitted. See MNEMA-ADR-20.
+ * mutations, so no audit events are emitted.
  */
 export class CoverageService {
   constructor(

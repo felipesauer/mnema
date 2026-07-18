@@ -252,7 +252,7 @@ export class DoctorCommand {
             }>
           ).map((r) => r.slug),
         );
-        // Foldered layout (MNEMA-ADR-51): skills and memories live under one
+        // Foldered layout: skills and memories live under one
         // level of subfolders, so prune recursively.
         prunedSkills = pruneFolderedOrphanMirrors(
           pathMod.join(projectRoot, LAYOUT.skills),
@@ -497,7 +497,7 @@ export class DoctorCommand {
       detail: versionCheck.message ?? `required: ${config.mnema_version}`,
     });
 
-    // Opt-in npm update check (ADR-40). Only runs when the project set
+    // Opt-in npm update check. Only runs when the project set
     // features.update_check — offline/zero-telemetry stays the default. The
     // outbound registry query is fail-open (a failure degrades to a warning,
     // never fails doctor) and a newer version is a warning, not an error.
@@ -635,7 +635,7 @@ export class DoctorCommand {
           // that a git rewind of the tracked audit log left the mirror
           // counting events no longer on disk (read-only; git archaeology).
           checks.push(...inspectAuditDiskDelta(adapter, tailDir, projectRoot));
-          // Temporal anchoring (layer 3): offline status only — how many
+          // Temporal anchoring: offline status only — how many
           // heads are anchored vs pending. Verifying receipts against a
           // provider is the online `audit verify --verify-anchors` path, so
           // doctor never contacts the network and a clone is never red for a
@@ -667,7 +667,7 @@ export class DoctorCommand {
     printChecks(checks);
     printMirrorHints(checks);
     // Record this run in the LOCAL counter log (outside the audit chain,
-    // never transmitted — see MNEMA-ADR-36) so `mnema metrics` can report
+    // never transmitted) so `mnema metrics` can report
     // doctor adoption. Best-effort: it never affects doctor's verdict.
     recordCounter(path.join(projectRoot, LAYOUT.state), 'doctor_ran', new Date().toISOString());
     // Warnings keep exit 0; only errors fail the check.
@@ -898,7 +898,7 @@ export function inspectMirrorDrift(
 ): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
 
-  // Foldered layout (MNEMA-ADR-51): the latest of every skill, with the author
+  // Foldered layout: the latest of every skill, with the author
   // handle so we know whether its canonical home is default/ or authored/.
   const skillRows = adapter
     .getDatabase()
@@ -1226,8 +1226,8 @@ export function isRoadmapMirrorStem(stem: string): boolean {
 }
 
 /**
- * Like {@link listMirrorOrphans} but for the foldered memory/skill layout
- * (MNEMA-ADR-51): walks one level of subfolders (scope folders, or
+ * Like {@link listMirrorOrphans} but for the foldered memory/skill layout:
+ * walks one level of subfolders (scope folders, or
  * default/authored) plus any flat files, matching each `.md` basename to a
  * known slug. Indexes and dotfiles are excluded by the shared scan;
  * `excludeDirs` skips curated top-level subfolders (memory decisions/notes),
@@ -1305,8 +1305,8 @@ export function pruneOrphanMirrors(
 }
 
 /**
- * Like {@link pruneOrphanMirrors} but for the foldered memory/skill layout
- * (MNEMA-ADR-51): deletes every `.md` under one level of subfolders (or flat)
+ * Like {@link pruneOrphanMirrors} but for the foldered memory/skill layout:
+ * deletes every `.md` under one level of subfolders (or flat)
  * whose slug has no SQLite row, then removes any subfolder left empty. Returns
  * the orphan slugs whose mirror was deleted.
  *
@@ -1626,7 +1626,7 @@ export function inspectEnforcementMode(mode: 'advisory' | 'strict' | 'blocking')
 }
 
 /**
- * Reports the audit-retention posture. Enforcement now exists (ADR-68), so the
+ * Reports the audit-retention posture. Enforcement now exists, so the
  * three strategies each have a real, distinct behavior — none is a silent
  * no-op:
  *

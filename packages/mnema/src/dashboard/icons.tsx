@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 /**
- * Inline stroke-SVG icons for the dashboard rail (MNEMA-ADR-67 — no emoji).
+ * Inline stroke-SVG icons for the dashboard rail (no emoji).
  * Each is a 24×24 lucide-style path set; the rail's CSS supplies stroke,
  * width, linecap via `.nav-i .ic svg`, so these only carry geometry.
  */
