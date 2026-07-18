@@ -30,13 +30,13 @@ export interface SyncPaths {
 
 /**
  * Resolves a task's epic/sprint links to their human keys for the
- * markdown frontmatter. The database stores internal UUIDs, but those are
- * regenerated on a fresh clone — the stable, version-controlled reference
- * is the key (e.g. `WEBAPP-EPIC-3`). Returns `null` for an unset link.
+ * markdown frontmatter. The link is the target's committed id — the id now
+ * survives a clone (the mirror carries it), so it is the collision-free,
+ * version-controlled reference. Returns `null` for an unset link.
  */
 export type TaskLinkResolver = (task: Task) => {
-  readonly epicKey: string | null;
-  readonly sprintKey: string | null;
+  readonly epicId: string | null;
+  readonly sprintId: string | null;
 };
 
 /**
@@ -297,7 +297,7 @@ export class SyncService {
     this.relocateIfStateChanged(task, targetPath);
 
     const existing = this.markdownIo.read(targetPath);
-    const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
+    const links = this.resolveLinks?.(task) ?? { epicId: null, sprintId: null };
     const labels = this.resolveLabels?.(task) ?? [];
     const dependsOn = this.resolveDependencies?.(task) ?? [];
     // Serialise actors as stable HANDLES, not regenerated ids, so they survive
@@ -366,7 +366,7 @@ export class SyncService {
 
 function serialiseTask(
   task: Task,
-  links: { readonly epicKey: string | null; readonly sprintKey: string | null },
+  links: { readonly epicId: string | null; readonly sprintId: string | null },
   labels: readonly string[],
   dependsOn: readonly string[],
   // Actor HANDLES (not ids) so assignee/reporter round-trip on a fresh clone.
@@ -389,8 +389,8 @@ function serialiseTask(
     priority: task.priority,
     assignee: actors.assignee,
     reporter: actors.reporter,
-    epic_key: links.epicKey,
-    sprint_key: links.sprintKey,
+    epic_id: links.epicId,
+    sprint_id: links.sprintId,
     reopen_count: task.reopenCount,
     metadata: { ...task.metadata },
     // Git link: persist the STABLE identifiers — branch and PR — so a

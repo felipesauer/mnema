@@ -59,11 +59,17 @@ function freshClone(): string {
     readFileSync(path.join(workflowsSrc, 'default.json'), 'utf-8'),
   );
 
+  // Committed identities: the epic/sprint links are by id now (the id survives
+  // the clone), so the task references these committed ids, not the human key.
+  const epicId = '019f7700-0000-7000-8000-000000000e01';
+  const sprintId = '019f7700-0000-7000-8000-000000000501';
+
   // A committed task markdown, in the shape `sync-service` writes,
-  // carrying its epic/sprint links by key.
+  // carrying its epic/sprint links by id.
   const taskMd = [
     '---',
     'mnema:',
+    '  id: 019f7700-0000-7000-8000-000000000101',
     '  key: CLONE-1',
     '  state: DRAFT',
     '  title: Survives the clone',
@@ -74,8 +80,8 @@ function freshClone(): string {
     '  priority: 2',
     '  assignee: null',
     '  reporter: alice',
-    '  epic_key: CLONE-EPIC-1',
-    '  sprint_key: CLONE-SPRINT-1',
+    `  epic_id: ${epicId}`,
+    `  sprint_id: ${sprintId}`,
     '  reopen_count: 0',
     '  metadata: {}',
     "  updated_at: '2026-06-01T00:00:00.000Z'",
@@ -90,6 +96,7 @@ function freshClone(): string {
   const epicMd = [
     '---',
     'mnema:',
+    `  id: ${epicId}`,
     '  key: CLONE-EPIC-1',
     '  kind: epic',
     '  state: OPEN',
@@ -129,6 +136,7 @@ function freshClone(): string {
   const sprintMd = [
     '---',
     'mnema:',
+    `  id: ${sprintId}`,
     '  key: CLONE-SPRINT-1',
     '  kind: sprint',
     '  state: PLANNED',
@@ -324,7 +332,7 @@ describe('fresh clone → sync', () => {
     });
   });
 
-  it('relinks the task to its epic and sprint by key', () => {
+  it('relinks the task to its epic and sprint by committed id', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
 
@@ -334,8 +342,10 @@ describe('fresh clone → sync', () => {
       expect(task.ok && epic.ok && sprint !== null).toBe(true);
       if (!task.ok || !epic.ok || sprint === null) return;
 
-      // The links survive the clone: the task points at the rehydrated
-      // epic/sprint rows even though their UUIDs were regenerated.
+      // The links survive the clone: the epic/sprint adopt their committed ids
+      // and the task points at exactly those, resolved from its `epic_id` /
+      // `sprint_id` frontmatter.
+      expect(epic.value.epic.id).toBe('019f7700-0000-7000-8000-000000000e01');
       expect(task.value.epicId).toBe(epic.value.epic.id);
       expect(task.value.sprintId).toBe(sprint.sprint.id);
     });

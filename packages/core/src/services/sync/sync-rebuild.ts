@@ -98,7 +98,7 @@ export interface RebuildSummary {
  * inventing past events.
  *
  * Order matters. Epics and sprints are rebuilt before tasks so a task's
- * `epic_key` / `sprint_key` can be resolved to a freshly-inserted row.
+ * `epic_id` / `sprint_id` link can be resolved to a freshly-inserted row.
  *
  * Upsert-only: it inserts or realigns a row for every markdown it finds,
  * but never deletes. Removing a `.md` is therefore not a delete signal —
@@ -457,11 +457,13 @@ export class SyncRebuild {
         // Resolve epic/sprint links by key — the rows exist already
         // because the roadmap was rebuilt first. An unknown key links to
         // nothing rather than failing the whole rebuild.
-        const epicKey = readString(data, 'epic_key');
-        const epicId = epicKey !== null ? (this.epics.findByKey(epicKey)?.id ?? null) : null;
-        const sprintKey = readString(data, 'sprint_key');
-        const sprintId =
-          sprintKey !== null ? (this.sprints.findByKey(sprintKey)?.id ?? null) : null;
+        // Links are committed ids now; resolve straight through (the epic/sprint
+        // was rebuilt first and adopts the same committed id). An unknown id
+        // links to nothing rather than failing the whole rebuild.
+        const epicId = resolveRefId(readString(data, 'epic_id'), (id) => this.epics.findById(id));
+        const sprintId = resolveRefId(readString(data, 'sprint_id'), (id) =>
+          this.sprints.findById(id),
+        );
 
         const existing = this.tasks.findByKey(key);
         let taskId: string;
@@ -1076,10 +1078,11 @@ export class SyncRebuild {
         const task = this.tasks.findByKey(key);
         if (task === null) continue;
 
-        for (const blockerKey of dependsOn) {
-          const blocker = this.tasks.findByKey(blockerKey);
-          // A dangling reference (blocker absent, or the task blocking
-          // itself) is skipped rather than crashing the rebuild.
+        for (const blockerId of dependsOn) {
+          // depends_on carries the blocker's committed id now. Resolve by id
+          // (it survives the clone). A dangling reference (blocker absent, or
+          // the task blocking itself) is skipped rather than crashing.
+          const blocker = this.tasks.findById(blockerId);
           if (blocker === null || blocker.id === task.id) continue;
           if (this.dependencies.exists(task.id, blocker.id, 'blocks')) continue;
           this.dependencies.insert({
@@ -1345,6 +1348,20 @@ function listMarkdownFiles(dir: string): string[] {
 function readString(data: Record<string, unknown>, key: string): string | null {
   const value = data[key];
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Resolves a committed reference id to a live id, confirming the target row
+ * exists via `lookup`. A `null` ref (unset link) or a dangling id (the target
+ * is not in this project's mirror) resolves to `null` — a broken link never
+ * fails the whole rebuild.
+ */
+function resolveRefId(
+  ref: string | null,
+  lookup: (id: string) => { readonly id: string } | null,
+): string | null {
+  if (ref === null) return null;
+  return lookup(ref)?.id ?? null;
 }
 
 function readNumber(data: Record<string, unknown>, key: string): number | null {

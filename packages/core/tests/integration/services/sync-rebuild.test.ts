@@ -719,6 +719,55 @@ mnema:
     }
   });
 
+  it('preserves the blocks dependency graph across a fresh-clone rebuild (by id)', () => {
+    // The depends_on frontmatter carries the blocker's committed id now, so the
+    // blocks edge relinks by id on a clone. This is the graph the plan warns
+    // evaporates silently if the reference does not survive.
+    const blocker = container.task.create({
+      projectKey: 'TEST',
+      title: 'Blocker',
+      acceptanceCriteria: ['x'],
+      actor: 'daniel',
+    });
+    const blocked = container.task.create({
+      projectKey: 'TEST',
+      title: 'Blocked',
+      acceptanceCriteria: ['x'],
+      actor: 'daniel',
+    });
+    expect(blocker.ok && blocked.ok).toBe(true);
+    if (!(blocker.ok && blocked.ok)) return;
+    const link = container.dependency.link({
+      taskKey: blocked.value.key,
+      blocksTaskKey: blocker.value.key,
+      kind: 'blocks',
+      actor: 'daniel',
+    });
+    expect(link.ok).toBe(true);
+    const blockerId = blocker.value.id;
+
+    // Re-mirror the blocked task so its `depends_on` reaches disk (linking a
+    // dependency updates the DB edge; the mirror follows on the next sync).
+    container.sync.syncTask(blocked.value.key);
+    container.sync.flushAll();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      // The edge survives, keyed on the committed blocker id — the same id, and
+      // the same edge, not a dangling reference silently dropped.
+      const view = fresh.dependency.listFor(blocked.value.key);
+      expect(view.ok).toBe(true);
+      if (!view.ok) return;
+      const blocks = view.value.dependsOn.filter((d) => d.kind === 'blocks');
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]?.blocksTaskId).toBe(blockerId);
+    } finally {
+      fresh.close();
+    }
+  });
+
   it('preserves a closed epic created_at + closed_at across a fresh-clone rebuild', () => {
     const created = container.epic.create({
       projectKey: 'TEST',
