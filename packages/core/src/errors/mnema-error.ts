@@ -28,6 +28,11 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.TaskNotFound; readonly taskKey: string }
   | {
+      readonly kind: ErrorCode.AmbiguousAlias;
+      readonly query: string;
+      readonly matches: readonly string[];
+    }
+  | {
       readonly kind: ErrorCode.GateFailed;
       readonly taskKey: string;
       readonly action: string;

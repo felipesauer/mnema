@@ -68,12 +68,53 @@ export function aliasMatches(query: string, kind: AliasKind, id: string): boolea
 
   const hash = aliasHash(id);
   const prefix = KIND_PREFIX[kind];
-  // `t-3a` → kind prefix + hex tail.
-  const kinded = q.match(/^([a-z])-([0-9a-f]+)$/);
+  // `t-3a` → kind prefix + hex tail. The tail may be empty (`t-`), which then
+  // matches every id of that kind — the maximally-ambiguous handle the resolver
+  // reports so the user types more, exactly like an empty git rev.
+  const kinded = q.match(/^([a-z])-([0-9a-f]*)$/);
   if (kinded !== null) {
     return kinded[1] === prefix && hash.startsWith(kinded[2] as string);
   }
   // Bare hex prefix, no kind — matches on the hash alone.
   if (/^[0-9a-f]+$/.test(q)) return hash.startsWith(q);
   return false;
+}
+
+/** A resolution candidate: an entity's committed id under a known kind. */
+export interface AliasCandidate {
+  readonly kind: AliasKind;
+  readonly id: string;
+}
+
+/**
+ * The outcome of resolving a query against a candidate set:
+ * - `unique` — exactly one candidate matched; `id` is the resolved entity.
+ * - `ambiguous` — more than one matched; `ids` lists every match so the caller
+ *   can tell the user to type more chars (git short-SHA style).
+ * - `none` — nothing matched.
+ */
+export type AliasResolution =
+  | { readonly status: 'unique'; readonly id: string }
+  | { readonly status: 'ambiguous'; readonly ids: readonly string[] }
+  | { readonly status: 'none' };
+
+/**
+ * Resolves `query` against `candidates` to a single committed id, or reports
+ * ambiguity/absence. Pure: the caller supplies the candidate set (usually every
+ * live entity of one kind in the project) and decides how to surface each
+ * outcome. Matching is {@link aliasMatches}, so a full id, a full or partial
+ * alias, and a bare hash prefix all resolve, and a shared prefix auto-lengthens
+ * by reporting `ambiguous` until the user types enough to single one out.
+ */
+export function resolveAlias(
+  query: string,
+  candidates: readonly AliasCandidate[],
+): AliasResolution {
+  const matches: string[] = [];
+  for (const candidate of candidates) {
+    if (aliasMatches(query, candidate.kind, candidate.id)) matches.push(candidate.id);
+  }
+  if (matches.length === 1) return { status: 'unique', id: matches[0] as string };
+  if (matches.length > 1) return { status: 'ambiguous', ids: matches };
+  return { status: 'none' };
 }

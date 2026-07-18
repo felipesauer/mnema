@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { aliasMatches, deriveAlias } from '@/domain/entity-alias.js';
+import {
+  type AliasCandidate,
+  aliasMatches,
+  deriveAlias,
+  resolveAlias,
+} from '@/domain/entity-alias.js';
 import { generateUuid } from '@/domain/id-generator.js';
 
 /**
@@ -59,5 +64,60 @@ describe('entity alias', () => {
     const hash = deriveAlias('task', id, 12).slice(2);
     const wrong = `${hash[0] === 'f' ? 'e' : 'f'}${hash.slice(1)}`;
     expect(aliasMatches(`t-${wrong}`, 'task', id)).toBe(false);
+  });
+});
+
+/**
+ * The resolver turns a user handle into exactly one id — or reports ambiguity so
+ * the caller asks for more characters. It is the collection layer over
+ * {@link aliasMatches}: match every candidate, then decide unique/ambiguous/none.
+ */
+describe('resolveAlias', () => {
+  const idA = '019f76e4-e277-773a-865e-76f4170a644e';
+  const idB = '019f76e4-e277-773a-865e-000000000000';
+  const candidates: AliasCandidate[] = [
+    { kind: 'task', id: idA },
+    { kind: 'task', id: idB },
+  ];
+
+  it('resolves a full id to a unique match', () => {
+    const r = resolveAlias(idA, candidates);
+    expect(r).toEqual({ status: 'unique', id: idA });
+  });
+
+  it('resolves a full alias to a unique match', () => {
+    const r = resolveAlias(deriveAlias('task', idB), candidates);
+    expect(r).toEqual({ status: 'unique', id: idB });
+  });
+
+  it('reports none when nothing matches', () => {
+    expect(resolveAlias('t-zzzz', candidates)).toEqual({ status: 'none' });
+    expect(resolveAlias('nope', candidates)).toEqual({ status: 'none' });
+  });
+
+  it('reports ambiguous with every match when a prefix is shared', () => {
+    // Force a shared prefix: two synthetic candidates whose alias hashes we make
+    // collide on the first char by searching a couple of ids is overkill — instead
+    // query the kind prefix alone, which every task alias shares.
+    const r = resolveAlias('t-', candidates);
+    expect(r.status).toBe('ambiguous');
+    if (r.status !== 'ambiguous') return;
+    expect([...r.ids].sort()).toEqual([idA, idB].sort());
+  });
+
+  it('auto-lengthens: enough characters single one out', () => {
+    // The full alias of A is unique among the two candidates.
+    const aliasA = deriveAlias('task', idA, 12);
+    const r = resolveAlias(aliasA, candidates);
+    expect(r).toEqual({ status: 'unique', id: idA });
+  });
+
+  it('a bare hash prefix matches across kinds but still resolves uniquely', () => {
+    const bare = deriveAlias('task', idA, 12).slice(2); // drop "t-"
+    const mixed: AliasCandidate[] = [
+      { kind: 'task', id: idA },
+      { kind: 'epic', id: idB },
+    ];
+    expect(resolveAlias(bare, mixed)).toEqual({ status: 'unique', id: idA });
   });
 });

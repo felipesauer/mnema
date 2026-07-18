@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 import { soleTailFile } from '../../setup/audit-writer.js';
@@ -570,6 +571,52 @@ describe('TaskService (integration)', () => {
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.error.kind).toBe(ErrorCode.TaskNotFound);
+    });
+  });
+
+  // A user-facing read takes whatever the user typed — committed id, short
+  // alias, hash prefix, or the legacy key — and resolves it to one task.
+  describe('handle resolution', () => {
+    it('resolves a task by its committed id, alias, hash prefix, and legacy key', () => {
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Resolve me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const { id, key } = created.value;
+      const alias = deriveAlias('task', id);
+
+      for (const handle of [id, alias, alias.slice(2), key]) {
+        const r = container.task.findByKey(handle);
+        expect(r.ok, `handle ${handle} should resolve`).toBe(true);
+        if (!r.ok) continue;
+        expect(r.value.id).toBe(id);
+      }
+    });
+
+    it('errors AmbiguousAlias when a short handle matches more than one task', () => {
+      const a = container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
+      const b = container.task.create({ projectKey: 'TEST', title: 'Task B', actor: 'daniel' });
+      expect(a.ok && b.ok).toBe(true);
+      if (!a.ok || !b.ok) return;
+
+      // The bare kind prefix `t-` matches every task alias — deterministically
+      // ambiguous with two tasks in the store.
+      const r = container.task.findByKey('t-');
+      expect(r.ok).toBe(false);
+      if (r.ok) return;
+      expect(r.error.kind).toBe(ErrorCode.AmbiguousAlias);
+      if (r.error.kind !== ErrorCode.AmbiguousAlias) return;
+      expect([...r.error.matches].sort()).toEqual([a.value.id, b.value.id].sort());
+    });
+
+    it('errors TaskNotFound when nothing resolves', () => {
+      const r = container.task.findByKey('t-zzzz');
+      expect(r.ok).toBe(false);
+      if (r.ok) return;
+      expect(r.error.kind).toBe(ErrorCode.TaskNotFound);
     });
   });
 });

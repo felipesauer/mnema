@@ -296,10 +296,11 @@ mnema:
     expect(summary.sprints.upserted).toBe(1);
 
     const reloaded = container.sprint.show(planned.value.key);
-    expect(reloaded).not.toBeNull();
-    expect(reloaded?.sprint.name).toBe('Sprint EDITED');
-    expect(reloaded?.sprint.goal).toBe('ship the EDITED');
-    expect(reloaded?.sprint.capacity).toBe(20);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.sprint.name).toBe('Sprint EDITED');
+    expect(reloaded.value.sprint.goal).toBe('ship the EDITED');
+    expect(reloaded.value.sprint.capacity).toBe(20);
   });
 
   it('applies decision content drift (title/rationale) from the committed markdown', () => {
@@ -707,13 +708,13 @@ mnema:
       const t = fresh.task.findByKey(keys.task); // value = Task
       const e = fresh.epic.show(keys.epic); // value = EpicView ({ epic, ... })
       const d = fresh.decision.show(keys.decision); // value = Decision
-      const s = fresh.sprint.show(keys.sprint); // SprintView | null ({ sprint, ... })
-      expect(t.ok && e.ok && d.ok).toBe(true);
-      if (!(t.ok && e.ok && d.ok)) return;
+      const s = fresh.sprint.show(keys.sprint); // value = SprintView ({ sprint, ... })
+      expect(t.ok && e.ok && d.ok && s.ok).toBe(true);
+      if (!(t.ok && e.ok && d.ok && s.ok)) return;
       expect(t.value.id).toBe(ids.task);
       expect(e.value.epic.id).toBe(ids.epic);
       expect(d.value.id).toBe(ids.decision);
-      expect(s?.sprint.id).toBe(ids.sprint);
+      expect(s.value.sprint.id).toBe(ids.sprint);
     } finally {
       fresh.close();
     }

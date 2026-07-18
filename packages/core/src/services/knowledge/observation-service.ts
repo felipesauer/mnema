@@ -9,6 +9,7 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import { MarkdownIo } from '../../storage/markdown/markdown-io.js';
 import type { ObservationRepository } from '../../storage/sqlite/repositories/observation-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { IdentityService } from '../integrity/identity-service.js';
 
@@ -114,11 +115,12 @@ export class ObservationService {
 
     let relatedTaskId: string | null = null;
     if (input.relatedTaskKey !== undefined && input.relatedTaskKey.length > 0) {
-      const task = this.tasks.findByKey(input.relatedTaskKey);
-      if (task === null) {
-        return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.relatedTaskKey });
-      }
-      relatedTaskId = task.id;
+      const resolved = resolveEntity(this.tasks, input.relatedTaskKey, (handle) => ({
+        kind: ErrorCode.TaskNotFound,
+        taskKey: handle,
+      }));
+      if (!resolved.ok) return Err(resolved.error);
+      relatedTaskId = resolved.value.id;
     }
 
     const createdBy = this.identity.ensureActor(input.actor, ActorKind.Human);
@@ -154,9 +156,13 @@ export class ObservationService {
   list(input: ObservationListInput = {}): readonly Observation[] {
     let relatedTaskId: string | undefined;
     if (input.relatedTaskKey !== undefined && input.relatedTaskKey.length > 0) {
-      const task = this.tasks.findByKey(input.relatedTaskKey);
-      if (task === null) return [];
-      relatedTaskId = task.id;
+      const resolved = resolveEntity(this.tasks, input.relatedTaskKey, (handle) => ({
+        kind: ErrorCode.TaskNotFound,
+        taskKey: handle,
+      }));
+      // A filter that resolves nowhere (or ambiguously) narrows to nothing.
+      if (!resolved.ok) return [];
+      relatedTaskId = resolved.value.id;
     }
 
     return this.repo.list({

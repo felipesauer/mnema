@@ -12,6 +12,7 @@ import type {
 } from '../storage/sqlite/repositories/attachment-repository.js';
 import type { DecisionRepository } from '../storage/sqlite/repositories/decision-repository.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
+import { resolveEntity } from './backlog/resolve-entity.js';
 import type { AuditService } from './integrity/audit-service.js';
 import type { IdentityService } from './integrity/identity-service.js';
 
@@ -101,10 +102,12 @@ export class AttachmentService {
       return Err({ kind: ErrorCode.AttachmentSourceNotFound, path: input.sourcePath });
     }
 
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const stored = this.fileStore.store(input.sourcePath);
     const filename = path.basename(input.sourcePath);
@@ -216,10 +219,12 @@ export class AttachmentService {
    * @returns Active attachments, or an error if the task is unknown
    */
   listForTask(taskKey: string): Result<readonly Attachment[], MnemaError> {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     return Ok(this.attachments.findByParent('task', task.id));
   }
 

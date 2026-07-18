@@ -190,7 +190,9 @@ describe('SprintService', () => {
     expect(added.value.sprintId).not.toBeNull();
 
     const view = sprints.show('TEST-SPRINT-1');
-    expect(view?.tasks.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(view.ok).toBe(true);
+    if (!view.ok) return;
+    expect(view.value.tasks.map((t) => t.key)).toEqual(['TEST-1']);
 
     const removed = sprints.removeTask({
       sprintKey: 'TEST-SPRINT-1',

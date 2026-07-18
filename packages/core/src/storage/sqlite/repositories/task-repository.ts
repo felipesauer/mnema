@@ -1,4 +1,5 @@
 import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
+import { type AliasResolution, resolveAlias } from '../../../domain/entity-alias.js';
 import { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import type {
@@ -75,6 +76,25 @@ export class TaskRepository implements ITaskRepository {
       .prepare('SELECT * FROM tasks WHERE key = ? AND deleted_at IS NULL')
       .get(key) as TaskRow | undefined;
     return row === undefined ? null : rowToTask(row);
+  }
+
+  /**
+   * Resolves a user-typed handle — full id, full or partial alias, or a bare
+   * hash prefix — to a single live task id, or reports ambiguity/absence. Only
+   * ids are read (the match is over the id hash), so no full row is hydrated
+   * until the caller loads the resolved one.
+   *
+   * @param query - The handle to resolve (id, alias, or hash prefix)
+   */
+  resolve(query: string): AliasResolution {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT id FROM tasks WHERE deleted_at IS NULL')
+      .all() as Array<{ id: string }>;
+    return resolveAlias(
+      query,
+      rows.map((r) => ({ kind: 'task', id: r.id })),
+    );
   }
 
   /**
@@ -660,6 +680,21 @@ export class TaskRepository implements ITaskRepository {
    */
   findByKeyIncludingDeleted(key: string): Task | null {
     const row = this.adapter.getDatabase().prepare('SELECT * FROM tasks WHERE key = ?').get(key) as
+      | TaskRow
+      | undefined;
+    return row === undefined ? null : rowToTask(row);
+  }
+
+  /**
+   * Looks up a task by id including soft-deleted rows — the id counterpart of
+   * {@link findByKeyIncludingDeleted}. Once a handle is resolved to an id, a
+   * post-mutation reload uses the id so it does not depend on the human key.
+   *
+   * @param id - Internal UUID of the task
+   * @returns The task (active or soft-deleted) or `null`
+   */
+  findByIdIncludingDeleted(id: string): Task | null {
+    const row = this.adapter.getDatabase().prepare('SELECT * FROM tasks WHERE id = ?').get(id) as
       | TaskRow
       | undefined;
     return row === undefined ? null : rowToTask(row);

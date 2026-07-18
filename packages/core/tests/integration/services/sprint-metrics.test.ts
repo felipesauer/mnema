@@ -116,8 +116,9 @@ describe('SprintService metrics', () => {
     sprints.addMetric({ sprintKey: 'TEST-SPRINT-1', name: 'a', target: 1, actor: 'daniel' });
     sprints.addMetric({ sprintKey: 'TEST-SPRINT-1', name: 'b', target: 2, actor: 'daniel' });
     const view = sprints.show('TEST-SPRINT-1');
-    expect(view).not.toBeNull();
-    expect(view?.metrics).toHaveLength(2);
+    expect(view.ok).toBe(true);
+    if (!view.ok) return;
+    expect(view.value.metrics).toHaveLength(2);
   });
 
   it('metricsFor returns the sprint metrics', () => {

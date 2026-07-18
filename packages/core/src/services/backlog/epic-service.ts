@@ -12,6 +12,7 @@ import type { TaskRepository } from '../../storage/sqlite/repositories/task-repo
 import type { AuditService } from '../integrity/audit-service.js';
 import type { RoadmapMirror } from '../sync/roadmap-mirror.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Input for {@link EpicService.create}.
@@ -112,6 +113,21 @@ export class EpicService {
   ) {}
 
   /**
+   * Resolves a user-typed handle to a single epic. Accepts the committed id, a
+   * short alias (`e-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
+   *
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveEpic(handle: string): Result<Epic, MnemaError> {
+    return resolveEntity(this.epics, handle, (epicKey) => ({
+      kind: ErrorCode.EpicNotFound,
+      epicKey,
+    }));
+  }
+
+  /**
    * Creates a new epic in `OPEN` state.
    *
    * @param input - Epic fields + identity tuple
@@ -175,10 +191,9 @@ export class EpicService {
    * @returns The updated epic or a structured error
    */
   close(input: CloseEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
     if (epic.state !== EpicState.Open) {
       return Err({
         kind: ErrorCode.EpicInvalidState,
@@ -220,10 +235,9 @@ export class EpicService {
    * @returns The updated epic or a structured error
    */
   update(input: UpdateEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
 
     if (input.title !== undefined) {
       const issues: ErrorIssue[] = [];
@@ -265,10 +279,9 @@ export class EpicService {
    * @returns The soft-deleted epic or a structured error
    */
   delete(input: DeleteEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
 
     const taskKeys = this.epics.listTaskKeys(epic.id);
     if (taskKeys.length > 0) {
@@ -313,14 +326,15 @@ export class EpicService {
    * @returns The updated task or a structured error
    */
   addTask(input: EpicTaskInput): Result<Task, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
     this.epics.addTask(epic.id, task.id);
 
     this.audit.write({
@@ -334,7 +348,7 @@ export class EpicService {
     // The epic link lives in the task's markdown, so rewrite it.
     this.sync?.syncTask(task.key, { action: 'epic_task_added', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -348,10 +362,12 @@ export class EpicService {
    * @returns The updated task or a structured error
    */
   removeTask(input: EpicTaskInput): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
     this.epics.removeTask(task.id);
 
     this.audit.write({
@@ -365,7 +381,7 @@ export class EpicService {
     // The epic link lives in the task's markdown, so rewrite it.
     this.sync?.syncTask(task.key, { action: 'epic_task_removed', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -379,10 +395,9 @@ export class EpicService {
    * @returns The epic view or a structured error when unknown
    */
   show(epicKey: string): Result<EpicView, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
+    const resolved = this.resolveEpic(epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
     const taskKeys = this.epics.listTaskKeys(epic.id);
     return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskKeys) });
   }
@@ -400,10 +415,9 @@ export class EpicService {
    * @returns The impact view or `EpicNotFound`
    */
   impact(epicKey: string): Result<EpicImpact, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
+    const resolved = this.resolveEpic(epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
     const taskKeys = this.epics.listTaskKeys(epic.id);
     const nonTerminal = taskKeys
       .map((key) => this.tasks.findByKey(key))

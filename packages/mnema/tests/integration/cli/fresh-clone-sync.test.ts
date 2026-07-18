@@ -321,8 +321,9 @@ describe('fresh clone → sync', () => {
       if (epic.ok) expect(epic.value.epic.title).toBe('The committed epic');
 
       const sprint = container.sprint.show('CLONE-SPRINT-1');
-      expect(sprint).not.toBeNull();
-      expect(sprint?.sprint.name).toBe('First cycle');
+      expect(sprint.ok).toBe(true);
+      if (!sprint.ok) return;
+      expect(sprint.value.sprint.name).toBe('First cycle');
 
       const decision = container.decision.show('CLONE-ADR-1');
       expect(decision.ok).toBe(true);
@@ -339,15 +340,15 @@ describe('fresh clone → sync', () => {
       const task = container.task.findByKey('CLONE-1');
       const epic = container.epic.show('CLONE-EPIC-1');
       const sprint = container.sprint.show('CLONE-SPRINT-1');
-      expect(task.ok && epic.ok && sprint !== null).toBe(true);
-      if (!task.ok || !epic.ok || sprint === null) return;
+      expect(task.ok && epic.ok && sprint.ok).toBe(true);
+      if (!task.ok || !epic.ok || !sprint.ok) return;
 
       // The links survive the clone: the epic/sprint adopt their committed ids
       // and the task points at exactly those, resolved from its `epic_id` /
       // `sprint_id` frontmatter.
       expect(epic.value.epic.id).toBe('019f7700-0000-7000-8000-000000000e01');
       expect(task.value.epicId).toBe(epic.value.epic.id);
-      expect(task.value.sprintId).toBe(sprint.sprint.id);
+      expect(task.value.sprintId).toBe(sprint.value.sprint.id);
     });
   });
 

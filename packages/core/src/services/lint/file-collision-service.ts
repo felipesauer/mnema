@@ -6,6 +6,7 @@ import type { EpicRepository } from '../../storage/sqlite/repositories/epic-repo
 import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskEvidenceRepository } from '../../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 import { type CommandRunner, defaultRunner } from '../git/github-pr-service.js';
 
 /** What the collision scan is scoped to. */
@@ -142,12 +143,20 @@ export class FileCollisionService {
   /** Resolves the scope to its active tasks. */
   private resolveScope(scope: CollisionScope): Result<Task[], MnemaError> {
     if (scope.kind === 'epic') {
-      const epic = this.epics.findByKey(scope.key);
-      if (epic === null) return Err({ kind: ErrorCode.EpicNotFound, epicKey: scope.key });
+      const epicResult = resolveEntity(this.epics, scope.key, (handle) => ({
+        kind: ErrorCode.EpicNotFound,
+        epicKey: handle,
+      }));
+      if (!epicResult.ok) return Err(epicResult.error);
+      const epic = epicResult.value;
       return Ok(this.tasks.findByEpic(epic.id));
     }
-    const sprint = this.sprints.findByKey(scope.key);
-    if (sprint === null) return Err({ kind: ErrorCode.SprintNotFound, sprintKey: scope.key });
+    const sprintResult = resolveEntity(this.sprints, scope.key, (handle) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey: handle,
+    }));
+    if (!sprintResult.ok) return Err(sprintResult.error);
+    const sprint = sprintResult.value;
     return Ok(this.sprints.listTasks(sprint.id));
   }
 }

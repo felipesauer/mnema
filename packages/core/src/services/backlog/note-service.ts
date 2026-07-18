@@ -8,6 +8,7 @@ import type { TaskRepository } from '../../storage/sqlite/repositories/task-repo
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { IdentityService } from '../integrity/identity-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Input for {@link NoteService.add}.
@@ -45,10 +46,12 @@ export class NoteService {
    * @returns The created note or a structured error
    */
   add(input: AddNoteInput): Result<Note, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const actorId = this.identity.ensureActor(input.actor, ActorKind.Human);
     const noteResult = tryMutation(() =>
@@ -81,10 +84,12 @@ export class NoteService {
    * @returns Notes ordered by `at`, or a structured error
    */
   listForTask(taskKey: string, kind?: NoteKind): Result<readonly Note[], MnemaError> {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     return Ok(this.notes.findByTask(task.id, kind));
   }
 }

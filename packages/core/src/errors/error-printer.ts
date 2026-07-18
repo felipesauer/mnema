@@ -43,6 +43,12 @@ export function formatError(error: MnemaError): string {
       lines.push(`${pc.dim('hint:')} List existing tasks with \`mnema task list\``);
       break;
 
+    case ErrorCode.AmbiguousAlias:
+      lines.push(`'${error.query}' matches ${error.matches.length} entities — be more specific`);
+      lines.push(`${pc.dim('hint:')} Add more characters to single one out:`);
+      for (const id of error.matches) lines.push(`  ${id}`);
+      break;
+
     case ErrorCode.GateFailed: {
       lines.push(`Cannot ${error.action} ${error.taskKey}: gate validation failed`);
       const fieldHints = new Set<string>();
@@ -495,6 +501,7 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.ConfigNotFound:
     case ErrorCode.ConfigInvalid:
     case ErrorCode.TaskNotFound:
+    case ErrorCode.AmbiguousAlias:
     case ErrorCode.GateFailed:
     case ErrorCode.TaskKeyExists:
     case ErrorCode.DependencyDuplicate:
@@ -586,6 +593,8 @@ export function recoveryHint(error: MnemaError): string | null {
       return 'Set the MNEMA_AGENT_HANDLE env var on the MCP server (mnema mcp install-instructions prints the full snippet).';
     case ErrorCode.TaskNotFound:
       return 'List existing tasks with tasks_list (or `mnema task list`) — the key may be from another project prefix.';
+    case ErrorCode.AmbiguousAlias:
+      return 'The handle matched more than one entity. Add more characters — the full id always resolves.';
     case ErrorCode.EpicNotFound:
       return 'List existing epics with epics_list.';
     case ErrorCode.SprintNotFound:

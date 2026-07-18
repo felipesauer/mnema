@@ -45,10 +45,9 @@ export class SprintTools {
       },
       ({ sprint_key: sprintKey }) => {
         // Read-only: drift-tolerant by policy (see requireFreshSchema docstring).
-        const view = this.sprints.show(sprintKey);
-        if (view === null) {
-          return ok({ sprint: null, tasks: [], metrics: [] });
-        }
+        const result = this.sprints.show(sprintKey);
+        if (!result.ok) return err(result.error);
+        const view = result.value;
         return ok({ sprint: view.sprint, tasks: view.tasks, metrics: view.metrics });
       },
     );

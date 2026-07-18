@@ -9,6 +9,7 @@ import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-
 import type { TaskEvidenceRepository } from '../../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 import type { AuditQuery } from '../integrity/audit-query.js';
 
 /**
@@ -83,10 +84,12 @@ export class WorkGraphLintService {
    * @returns The report or `SprintNotFound`
    */
   lintSprint(sprintKey: string): Result<WorkGraphLintReport, MnemaError> {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
-    }
+    const sprintResult = resolveEntity(this.sprints, sprintKey, (handle) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey: handle,
+    }));
+    if (!sprintResult.ok) return Err(sprintResult.error);
+    const sprint = sprintResult.value;
     return Ok(this.lintTasks(`sprint ${sprintKey}`, this.sprints.listTasks(sprint.id)));
   }
 
@@ -97,10 +100,12 @@ export class WorkGraphLintService {
    * @returns The report or `EpicNotFound`
    */
   lintEpic(epicKey: string): Result<WorkGraphLintReport, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
+    const epicResult = resolveEntity(this.epics, epicKey, (handle) => ({
+      kind: ErrorCode.EpicNotFound,
+      epicKey: handle,
+    }));
+    if (!epicResult.ok) return Err(epicResult.error);
+    const epic = epicResult.value;
     return Ok(this.lintTasks(`epic ${epicKey}`, this.tasksOfEpic(epic.id)));
   }
 

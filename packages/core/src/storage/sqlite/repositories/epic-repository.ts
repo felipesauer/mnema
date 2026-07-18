@@ -1,4 +1,5 @@
 import type { Epic } from '../../../domain/entities/epic.js';
+import { type AliasResolution, resolveAlias } from '../../../domain/entity-alias.js';
 import { EpicState } from '../../../domain/enums/epic-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
 import { isoNow } from '../../../utils/iso-now.js';
@@ -93,6 +94,23 @@ export class EpicRepository {
       .prepare('SELECT * FROM epics WHERE id = ? AND deleted_at IS NULL')
       .get(id) as EpicRow | undefined;
     return row === undefined ? null : rowToEpic(row);
+  }
+
+  /**
+   * Resolves a user-typed handle — full id, full or partial alias, or a bare
+   * hash prefix — to a single live epic id, or reports ambiguity/absence.
+   *
+   * @param query - The handle to resolve (id, alias, or hash prefix)
+   */
+  resolve(query: string): AliasResolution {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT id FROM epics WHERE deleted_at IS NULL')
+      .all() as Array<{ id: string }>;
+    return resolveAlias(
+      query,
+      rows.map((r) => ({ kind: 'epic', id: r.id })),
+    );
   }
 
   /**

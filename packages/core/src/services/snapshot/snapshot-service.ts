@@ -7,6 +7,7 @@ import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { CoverageReport, CoverageService } from '../backlog/coverage-service.js';
 import type { InboxService, SlaBreach } from '../backlog/inbox-service.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 import type { DependencyGraph, DependencyGraphService } from './dependency-graph-service.js';
 
 /** What the snapshot is scoped to. */
@@ -99,13 +100,21 @@ export class SnapshotService {
     scope: SnapshotScope,
   ): Result<{ title: string; scopeKeys: Set<string> }, MnemaError> {
     if (scope.kind === 'epic') {
-      const epic = this.epics.findByKey(scope.key);
-      if (epic === null) return Err({ kind: ErrorCode.EpicNotFound, epicKey: scope.key });
+      const epicResult = resolveEntity(this.epics, scope.key, (handle) => ({
+        kind: ErrorCode.EpicNotFound,
+        epicKey: handle,
+      }));
+      if (!epicResult.ok) return Err(epicResult.error);
+      const epic = epicResult.value;
       const keys = new Set(this.tasks.findByEpic(epic.id).map((t: Task) => t.key));
       return Ok({ title: epic.title, scopeKeys: keys });
     }
-    const sprint = this.sprints.findByKey(scope.key);
-    if (sprint === null) return Err({ kind: ErrorCode.SprintNotFound, sprintKey: scope.key });
+    const sprintResult = resolveEntity(this.sprints, scope.key, (handle) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey: handle,
+    }));
+    if (!sprintResult.ok) return Err(sprintResult.error);
+    const sprint = sprintResult.value;
     const keys = new Set(this.sprints.listTasks(sprint.id).map((t: Task) => t.key));
     return Ok({ title: sprint.name, scopeKeys: keys });
   }

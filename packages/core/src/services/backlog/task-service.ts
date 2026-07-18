@@ -19,6 +19,7 @@ import type { TransitionRepository } from '../../storage/sqlite/repositories/tra
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /** Matches a v4/v7 UUID so an assignee reference can be told apart from a handle. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -252,10 +253,9 @@ export class TaskService {
     readonly via?: string;
     readonly runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     const assignee = this.resolveAssignee(input.assignee);
     if (!assignee.ok) return assignee;
 
@@ -303,10 +303,9 @@ export class TaskService {
     readonly runId?: string;
     readonly expectedUpdatedAt?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     if (this.stateMachine.isTerminal(task.state)) {
       return Err({
@@ -397,10 +396,9 @@ export class TaskService {
     readonly runId?: string;
     readonly leaseMinutes: number;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const claimingActorId =
       input.via !== undefined
@@ -456,10 +454,9 @@ export class TaskService {
     readonly via?: string;
     readonly runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const releasingActorId =
       input.via !== undefined
@@ -479,7 +476,7 @@ export class TaskService {
       });
     }
 
-    const reloaded = this.tasks.findByKey(input.taskKey);
+    const reloaded = this.tasks.findById(task.id);
     if (reloaded === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -516,8 +513,9 @@ export class TaskService {
    * false for an unknown task.
    */
   wouldBeNoOp(taskKey: string, action: string, actor: string, via?: string): boolean {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) return false;
+    const resolved = this.resolveTask(taskKey);
+    if (!resolved.ok) return false;
+    const task = resolved.value;
     // A genuinely valid action from here is not a no-op even if it loops back
     // to the same state — only a retry (invalid-from-here + targets current).
     const validHere = this.stateMachine
@@ -566,10 +564,9 @@ export class TaskService {
   transition(input: TransitionInput): Result<Task, MnemaError> {
     // A previous call's override must never leak into this one.
     this.lastGateOverride = null;
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     // A "terminal" state is one with no declared outbound transitions —
     // any workflow that does declare them (e.g. jira-classic's
@@ -969,17 +966,28 @@ export class TaskService {
   }
 
   /**
-   * Returns a task by its human-readable key.
+   * Resolves a user-typed handle to a single task. Accepts the committed id, a
+   * short alias (`t-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
    *
-   * @param key - Task key (e.g. `"WEBAPP-42"`)
-   * @returns The task or a {@link ErrorCode.TaskNotFound} error
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveTask(handle: string): Result<Task, MnemaError> {
+    return resolveEntity(this.tasks, handle, (taskKey) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey,
+    }));
+  }
+
+  /**
+   * Returns a task by a user-typed handle — id, alias, hash prefix, or key.
+   *
+   * @param key - The handle the user supplied (e.g. `"t-3a9f"` or `"WEBAPP-42"`)
+   * @returns The task or a {@link ErrorCode.TaskNotFound}/{@link ErrorCode.AmbiguousAlias} error
    */
   findByKey(key: string): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(key);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: key });
-    }
-    return Ok(task);
+    return this.resolveTask(key);
   }
 
   /**
@@ -1025,10 +1033,9 @@ export class TaskService {
     via?: string;
     runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const ok = this.tasks.softDelete(task.id);
     if (!ok) {
@@ -1045,7 +1052,7 @@ export class TaskService {
 
     this.sync.syncTask(task.key);
 
-    const updated = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    const updated = this.tasks.findByIdIncludingDeleted(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -1084,7 +1091,7 @@ export class TaskService {
 
     this.sync.syncTask(task.key);
 
-    const restored = this.tasks.findByKey(input.taskKey);
+    const restored = this.tasks.findById(task.id);
     if (restored === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }

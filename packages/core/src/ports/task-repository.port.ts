@@ -1,4 +1,5 @@
 import type { GitCommitRef, GitPrRef, Task } from '../domain/entities/task.js';
+import type { AliasResolution } from '../domain/entity-alias.js';
 
 /**
  * Persistence PORT for {@link Task}.
@@ -20,7 +21,9 @@ import type { GitCommitRef, GitPrRef, Task } from '../domain/entities/task.js';
 export interface ITaskRepository {
   findByKey(key: string): Task | null;
   findById(id: string): Task | null;
+  resolve(query: string): AliasResolution;
   findByKeyIncludingDeleted(key: string): Task | null;
+  findByIdIncludingDeleted(id: string): Task | null;
   findByState(state: string): Task[];
   findByEpic(epicId: string): Task[];
   findAllActive(): Task[];

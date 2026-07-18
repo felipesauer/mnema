@@ -10,6 +10,7 @@ export enum ErrorCode {
   VersionMismatch = 'VERSION_MISMATCH',
 
   TaskNotFound = 'TASK_NOT_FOUND',
+  AmbiguousAlias = 'AMBIGUOUS_ALIAS',
   GateFailed = 'GATE_FAILED',
   InvalidTransition = 'INVALID_TRANSITION',
   TaskKeyExists = 'TASK_KEY_EXISTS',

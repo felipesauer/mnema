@@ -16,6 +16,7 @@ import { isIso8601 } from '../../utils/iso-date.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { RoadmapMirror } from '../sync/roadmap-mirror.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Upper bound for sprint capacity in story points; lifted from
@@ -123,6 +124,21 @@ export class SprintService {
   ) {}
 
   /**
+   * Resolves a user-typed handle to a single sprint. Accepts the committed id, a
+   * short alias (`s-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
+   *
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveSprint(handle: string): Result<Sprint, MnemaError> {
+    return resolveEntity(this.sprints, handle, (sprintKey) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey,
+    }));
+  }
+
+  /**
    * Plans a new sprint in `PLANNED` state.
    *
    * @param input - Sprint metadata + identity tuple
@@ -195,10 +211,9 @@ export class SprintService {
    * @returns The updated sprint or a structured error
    */
   start(input: SprintTransitionInput): Result<Sprint, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Planned) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
@@ -278,10 +293,9 @@ export class SprintService {
    * @returns The updated sprint or a structured error
    */
   close(input: SprintTransitionInput): Result<Sprint, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
@@ -342,10 +356,9 @@ export class SprintService {
         issues: [{ path: ['reason'], message: 'a cancel reason is required' }],
       });
     }
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Planned && sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
@@ -392,14 +405,15 @@ export class SprintService {
    * @returns The updated task or a structured error
    */
   addTask(input: SprintTaskInput): Result<Task, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
 
     this.sprints.addTask(sprint.id, task.id);
 
@@ -414,7 +428,7 @@ export class SprintService {
     // The sprint link lives in the task's markdown, so rewrite it.
     this.sync?.syncTask(task.key, { action: 'sprint_task_added', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -428,10 +442,12 @@ export class SprintService {
    * @returns The updated task or a structured error
    */
   removeTask(input: SprintTaskInput): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
 
     this.sprints.removeTask(task.id);
 
@@ -446,7 +462,7 @@ export class SprintService {
     // The sprint link lives in the task's markdown, so rewrite it.
     this.sync?.syncTask(task.key, { action: 'sprint_task_removed', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -456,17 +472,18 @@ export class SprintService {
   /**
    * Returns a sprint plus its current task list.
    *
-   * @param sprintKey - Sprint identifier
-   * @returns The sprint view or `null` if the sprint is unknown
+   * @param sprintKey - Sprint identifier (id, alias, hash prefix, or key)
+   * @returns The sprint view or a structured error if unknown/ambiguous
    */
-  show(sprintKey: string): SprintView | null {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) return null;
-    return {
+  show(sprintKey: string): Result<SprintView, MnemaError> {
+    const resolved = this.resolveSprint(sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
+    return Ok({
       sprint,
       tasks: this.sprints.listTasks(sprint.id),
       metrics: this.metrics.findBySprint(sprint.id),
-    };
+    });
   }
 
   /**
@@ -477,10 +494,9 @@ export class SprintService {
    * @returns The created metric or a structured error
    */
   addMetric(input: AddSprintMetricInput): Result<SprintMetric, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     const issues: ErrorIssue[] = [];
     checkRequiredFiniteNumber(input.target, 'target', issues);
     checkOptionalFiniteNumber(input.baseline ?? null, 'baseline', issues);
@@ -535,10 +551,9 @@ export class SprintService {
    * @returns Metrics or a structured error when the sprint is unknown
    */
   metricsFor(sprintKey: string): Result<SprintMetric[], MnemaError> {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
-    }
+    const resolved = this.resolveSprint(sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     return Ok(this.metrics.findBySprint(sprint.id));
   }
 

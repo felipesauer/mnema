@@ -70,6 +70,12 @@ async function setup(): Promise<Harness> {
   if (!dec.ok) throw new Error('seed decision failed');
   const task = container.task.create({ projectKey: 'TEST', title: 'Seed task', actor: 'daniel' });
   if (!task.ok) throw new Error('seed task failed');
+  const sprint = container.sprint.plan({
+    projectKey: 'TEST',
+    name: 'Seed sprint',
+    actor: 'daniel',
+  });
+  if (!sprint.ok) throw new Error('seed sprint failed');
 
   // A session whose run id is always present, so a NO_ACTIVE_RUN guard never
   // pre-empts the drift guard on the mutation assertions.

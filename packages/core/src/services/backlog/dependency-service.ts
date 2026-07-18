@@ -8,6 +8,7 @@ import type { DependencyRepository } from '../../storage/sqlite/repositories/dep
 import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from '../integrity/audit-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /** The only `pickable` state a ready task can be in (per the default workflow). */
 const READY_STATE = 'READY';
@@ -63,14 +64,18 @@ export class DependencyService {
   link(input: LinkDependencyInput): Result<Dependency, MnemaError> {
     const kind: DependencyKind = input.kind ?? 'blocks';
 
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
-    const blocker = this.tasks.findByKey(input.blocksTaskKey);
-    if (blocker === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.blocksTaskKey });
-    }
+    const taskResult = resolveEntity(this.tasks, input.taskKey, (taskKey) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey,
+    }));
+    if (!taskResult.ok) return Err(taskResult.error);
+    const task = taskResult.value;
+    const blockerResult = resolveEntity(this.tasks, input.blocksTaskKey, (taskKey) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey,
+    }));
+    if (!blockerResult.ok) return Err(blockerResult.error);
+    const blocker = blockerResult.value;
 
     if (task.id === blocker.id) {
       return Err({ kind: ErrorCode.DependencySelf, taskKey: input.taskKey });
@@ -121,10 +126,12 @@ export class DependencyService {
    * @returns The view or a structured error if the task is unknown
    */
   listFor(taskKey: string): Result<DependencyView, MnemaError> {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     return Ok({
       dependsOn: this.dependencies.findByTask(task.id),
       blocks: this.dependencies.findBlocking(task.id),
@@ -144,10 +151,12 @@ export class DependencyService {
     if (sprintKey === undefined) {
       candidates = this.tasks.findByState(READY_STATE);
     } else {
-      const sprint = this.sprints.findByKey(sprintKey);
-      if (sprint === null) {
-        return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
-      }
+      const resolved = resolveEntity(this.sprints, sprintKey, (handle) => ({
+        kind: ErrorCode.SprintNotFound,
+        sprintKey: handle,
+      }));
+      if (!resolved.ok) return Err(resolved.error);
+      const sprint = resolved.value;
       candidates = this.sprints.listTasks(sprint.id).filter((t) => t.state === READY_STATE);
     }
 

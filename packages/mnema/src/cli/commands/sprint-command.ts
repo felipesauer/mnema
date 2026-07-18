@@ -135,11 +135,11 @@ export class SprintCommand {
       .description('Show a sprint together with its tasks')
       .action(async (key: string) => {
         await withCliContext(({ container }) => {
-          const view = container.sprint.show(key);
-          if (view === null) {
-            process.stdout.write(`${pc.dim(`Sprint ${key} not found`)}\n`);
-            return;
+          const result = container.sprint.show(key);
+          if (!result.ok) {
+            process.exit(printError(result.error));
           }
+          const view = result.value;
           process.stdout.write(`${formatSprintView(view.sprint, view.tasks, view.metrics)}\n`);
         });
       });
