@@ -181,9 +181,9 @@ doctor` verifies layers 1–2 offline on every run:
   `mnema audit verify` **never shows green beyond the last attestation**,
   so an unattested tail is never mistaken for verified.
 - **Layer 3 — temporal anchoring (opt-in, default `none`).** A pluggable
-  provider (`git-signed`, `rfc3161`) stamps the signed head into external,
-  independently verifiable history, off the write path and fail-open —
-  proving the head existed at a point in time.
+  provider (`git-signed`) stamps the signed head into external, independently
+  verifiable history, off the write path and fail-open — proving the head
+  existed at a point in time.
 
 | Attack | Caught by |
 |---|---|

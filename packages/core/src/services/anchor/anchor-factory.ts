@@ -4,12 +4,12 @@ import { AnchorRegistry } from './anchor-registry.js';
 import { AnchorScheduler } from './anchor-scheduler.js';
 import { GIT_SIGNED_PROVIDER, GitSignedAnchorProvider } from './git-signed-anchor-provider.js';
 import { NoneAnchorProvider } from './none-anchor-provider.js';
-import { RFC3161_PROVIDER, Rfc3161AnchorProvider } from './rfc3161-anchor-provider.js';
 
 /**
- * Builds the anchor registry with every known provider registered. The
- * concrete network-backed providers (git-signed, opentimestamps, rfc3161)
- * register here as they land; `none` is always present as the default.
+ * Builds the anchor registry with every known provider registered. A concrete
+ * provider (today `git-signed`) registers here only when the project selects
+ * it; `none` is always present as the default. A new provider is one file plus
+ * one opt-in registration branch here.
  *
  * @param config - The project config (per-provider options live under
  *   `audit.anchor`)
@@ -32,16 +32,6 @@ export function buildAnchorRegistry(config: Config, projectRoot: string): Anchor
       ),
     );
   }
-  if (config.audit.anchor.provider === RFC3161_PROVIDER) {
-    // The schema guarantees `tsa` is present (https) for this provider, but
-    // guard rather than assert so a hand-edited config degrades to a clear
-    // error at resolve time instead of a runtime `undefined` URL.
-    const tsa = config.audit.anchor.tsa;
-    if (tsa !== undefined) {
-      registry.register(new Rfc3161AnchorProvider(tsa));
-    }
-  }
-  // opentimestamps registers here as it lands, same opt-in rule.
   return registry;
 }
 

@@ -206,7 +206,7 @@ export class AuditCommand {
       )
       .option(
         '--verify-anchors',
-        'Also verify recorded anchors against their provider (online; requires network for opentimestamps/rfc3161)',
+        'Also verify recorded anchors against their provider (a network-backed provider may need connectivity)',
         false,
       )
       .action(async (options: { readonly verifyAnchors?: boolean }) => {

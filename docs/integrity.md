@@ -62,10 +62,9 @@ provider stamps the signed head into an external, independently verifiable
 record, so you can prove the head *existed at a point in time* — defending
 against someone who controls the machine and its keys but can't rewrite
 external history. It runs **off the write path** and **fail-open** (a provider
-outage never blocks a mutation). The `git-signed` and `rfc3161` providers ship;
-`opentimestamps` is not implemented yet. `rfc3161` verification is advisory —
-it confirms the token imprints the signed head, but does not yet validate the
-TSA's CMS signature or certificate chain. See
+outage never blocks a mutation). The `git-signed` provider ships; anchoring is
+a pluggable extension point, so a network-backed provider can be added without
+touching the write path. See
 [the configuration reference](configuration#audit-anchor) to enable it.
 
 `mnema doctor` verifies layers 1 and 2 offline every run; `mnema audit verify

@@ -4,8 +4,8 @@ import type { AnchorProvider, AnchorReceipt, AnchorVerifyResult } from './anchor
 export const NONE_PROVIDER = 'none';
 
 /**
- * The default anchor provider (ADR-37: default `none`). A no-op that keeps
- * the product local-first with ZERO network by default: `stamp` records no
+ * The default anchor provider. A no-op that keeps the product local-first
+ * with ZERO network by default: `stamp` records no
  * anchor and does no I/O; `verify` reports `not-anchored` — a neutral
  * state, never an error. `doctor` renders this as "anchoring disabled",
  * not a warning.

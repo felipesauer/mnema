@@ -1,14 +1,14 @@
 /**
- * Layer 3 temporal anchoring (ADR-37). An {@link AnchorProvider} stamps the
- * signed audit chain head into an external, independently-verifiable
- * timestamp (a signed git commit, an OpenTimestamps `.ots` proof, an
- * RFC-3161 token) and later verifies it. Anchoring is PLUGGABLE, OPT-IN
- * (default `none`), and runs OFF the write hot path, fail-open — a failed
- * or slow anchor never blocks or fails an audit write.
+ * Temporal anchoring. An {@link AnchorProvider} stamps the signed audit chain
+ * head into an external, independently-verifiable timestamp (today a signed
+ * git commit; a network-backed provider is one more file plus one registry
+ * branch) and later verifies it. Anchoring is PLUGGABLE, OPT-IN (default
+ * `none`), and runs OFF the write hot path, fail-open — a failed or slow
+ * anchor never blocks or fails an audit write.
  *
  * Both methods are async so no provider can block synchronously on the hot
- * path even by accident; the scheduler (MNEMA-160) still calls them off the
- * write path and fail-open regardless.
+ * path even by accident; the scheduler still calls them off the write path and
+ * fail-open regardless.
  */
 export interface AnchorProvider {
   /** Stable name this provider is registered and configured under. */
@@ -18,8 +18,8 @@ export interface AnchorProvider {
    * Anchors `head` (the signed chain-head hash, hex) into the provider's
    * external timestamp. Returns an opaque receipt to persist; the provider
    * is the only thing that understands its own receipt format. May return a
-   * receipt whose proof is still maturing (e.g. OpenTimestamps before
-   * Bitcoin confirmation) — that is reported as `pending` at verify time,
+   * receipt whose proof is not yet confirmable (e.g. a push that has not
+   * landed on the remote) — that is reported as `pending` at verify time,
    * not a failure.
    *
    * @param head - The chain-head hash to anchor (hex)
@@ -41,9 +41,9 @@ export interface AnchorProvider {
 
 /**
  * An opaque, provider-specific proof. `blob` is the serialized receipt
- * persisted verbatim (an `.ots` proof, a commit sha, a base64 TSA token);
- * only the issuing provider interprets it. `status` is the provider's own
- * read of the proof at stamp time.
+ * persisted verbatim (e.g. a commit sha); only the issuing provider
+ * interprets it. `status` is the provider's own read of the proof at stamp
+ * time.
  */
 export interface AnchorReceipt {
   /** The provider that issued this receipt (must match on verify). */
@@ -58,8 +58,8 @@ export interface AnchorReceipt {
 
 /**
  * The lifecycle status of an anchor.
- * - `pending`: submitted but not yet confirmable (e.g. OTS maturing, or a
- *   push that has not landed) — retry/upgrade later; NOT a failure.
+ * - `pending`: submitted but not yet confirmable (e.g. a push that has not
+ *   landed) — retry/upgrade later; NOT a failure.
  * - `anchored`: confirmed and independently verifiable.
  * - `failed`: the stamp attempt failed (fail-open — the write still stood).
  */
@@ -75,7 +75,7 @@ export type AnchorStatus = 'pending' | 'anchored' | 'failed';
  * - `broken`: the proof does not match the head — tampering or a wrong
  *   receipt.
  * - `cannot-verify`: verification needs a resource not available here (e.g.
- *   offline, no Bitcoin/explorer access) — distinct from `broken`.
+ *   offline, no access to the remote) — distinct from `broken`.
  */
 export type AnchorVerifyState =
   | 'not-anchored'
