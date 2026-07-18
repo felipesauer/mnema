@@ -37,11 +37,11 @@ export interface AnchorUpsert {
 }
 
 /**
- * Persistence for {@link AnchorRecord} rows (ADR-37 layer 3). Multi-row: one
+ * Persistence for {@link AnchorRecord} rows. Multi-row: one
  * head may be anchored by several providers, and each anchor moves
  * `pending → anchored` over its life. Keyed by `(head_hash, provider)`, so
- * re-stamping the same head with the same provider upserts (e.g. an
- * OpenTimestamps upgrade completing the proof) rather than duplicating.
+ * re-stamping the same head with the same provider upserts (e.g. a later
+ * confirmation completing a pending proof) rather than duplicating.
  */
 export class AnchorRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
@@ -127,7 +127,7 @@ export class AnchorRepository {
 
   /**
    * Deletes every anchor whose `event_count_at` is at or below `cut` — the
-   * anchors that stamped a head inside a pruned prefix (ADR-68 lockstep). An
+   * anchors that stamped a head inside a pruned prefix (the prune lockstep). An
    * anchor at `event_count_at = N` covers the head at chained index `N - 1`, so
    * `event_count_at <= cut` means the anchored head was in `[0, cut)` and is now
    * deleted; leaving the row would keep a receipt over a removed tail.

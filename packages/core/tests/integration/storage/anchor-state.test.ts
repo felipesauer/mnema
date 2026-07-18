@@ -40,8 +40,8 @@ describe('AnchorRepository (migration 023)', () => {
   });
 
   it('round-trips a pending anchor (NULL receipt allowed)', () => {
-    repo.upsert({ headHash: head, provider: 'opentimestamps', status: 'pending', receipt: null });
-    const rec = repo.read(head, 'opentimestamps');
+    repo.upsert({ headHash: head, provider: 'git-signed', status: 'pending', receipt: null });
+    const rec = repo.read(head, 'git-signed');
     expect(rec?.status).toBe('pending');
     expect(rec?.receipt).toBeNull();
     expect(rec?.confirmedAt).toBeNull();
@@ -49,16 +49,16 @@ describe('AnchorRepository (migration 023)', () => {
   });
 
   it('persists a pending → anchored transition and stamps confirmed_at', () => {
-    repo.upsert({ headHash: head, provider: 'opentimestamps', status: 'pending', receipt: null });
-    // A large receipt blob (OTS proofs can be sizable) round-trips.
+    repo.upsert({ headHash: head, provider: 'git-signed', status: 'pending', receipt: null });
+    // A large receipt blob (a timestamp proof can be sizable) round-trips.
     const proof = 'x'.repeat(4096);
     repo.upsert({
       headHash: head,
-      provider: 'opentimestamps',
+      provider: 'git-signed',
       status: 'anchored',
       receipt: proof,
     });
-    const rec = repo.read(head, 'opentimestamps');
+    const rec = repo.read(head, 'git-signed');
     expect(rec?.status).toBe('anchored');
     expect(rec?.receipt).toBe(proof);
     expect(rec?.confirmedAt).toBeTruthy();
@@ -67,24 +67,24 @@ describe('AnchorRepository (migration 023)', () => {
   });
 
   it('holds multiple anchors for one head across providers', () => {
-    repo.upsert({ headHash: head, provider: 'opentimestamps', status: 'pending', receipt: null });
-    repo.upsert({ headHash: head, provider: 'rfc3161', status: 'anchored', receipt: 'token' });
-    expect(repo.read(head, 'opentimestamps')?.status).toBe('pending');
-    expect(repo.read(head, 'rfc3161')?.status).toBe('anchored');
+    repo.upsert({ headHash: head, provider: 'git-signed', status: 'pending', receipt: null });
+    repo.upsert({ headHash: head, provider: 'none', status: 'anchored', receipt: 'token' });
+    expect(repo.read(head, 'git-signed')?.status).toBe('pending');
+    expect(repo.read(head, 'none')?.status).toBe('anchored');
     expect(repo.listAll()).toHaveLength(2);
   });
 
   it('lists only pending anchors for the scheduler', () => {
-    repo.upsert({ headHash: head, provider: 'opentimestamps', status: 'pending', receipt: null });
+    repo.upsert({ headHash: head, provider: 'git-signed', status: 'pending', receipt: null });
     repo.upsert({
       headHash: 'b'.repeat(64),
-      provider: 'rfc3161',
+      provider: 'none',
       status: 'anchored',
       receipt: 't',
     });
     const pending = repo.listPending();
     expect(pending).toHaveLength(1);
-    expect(pending[0]?.provider).toBe('opentimestamps');
+    expect(pending[0]?.provider).toBe('git-signed');
   });
 
   it('rejects an invalid status via the CHECK constraint', () => {
@@ -97,10 +97,10 @@ describe('AnchorRepository (migration 023)', () => {
   });
 
   it('reads null for an unknown (head, provider)', () => {
-    expect(repo.read(head, 'rfc3161')).toBeNull();
+    expect(repo.read(head, 'git-signed')).toBeNull();
   });
 
-  describe('deleteBelowEventCount (prune lockstep, ADR-68)', () => {
+  describe('deleteBelowEventCount (prune lockstep)', () => {
     const h = (n: number) => String(n).padStart(64, '0');
 
     it('removes anchors whose event_count_at is at or below the cut, keeps the rest', () => {
@@ -133,10 +133,10 @@ describe('AnchorRepository (migration 023)', () => {
     });
 
     it('never deletes a NULL event_count_at anchor (time-only interval)', () => {
-      repo.upsert({ headHash: h(1), provider: 'rfc3161', status: 'anchored', receipt: 'r' }); // no eventCountAt → NULL
+      repo.upsert({ headHash: h(1), provider: 'none', status: 'anchored', receipt: 'r' }); // no eventCountAt → NULL
       repo.upsert({
         headHash: h(2),
-        provider: 'rfc3161',
+        provider: 'none',
         status: 'anchored',
         receipt: 'r',
         eventCountAt: 2,

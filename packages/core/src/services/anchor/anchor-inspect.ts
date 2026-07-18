@@ -15,7 +15,8 @@ import { NONE_PROVIDER } from './none-anchor-provider.js';
  *
  * A clone with no anchors, or the `none` provider, yields a single neutral
  * "anchoring disabled / none recorded" line — never an error, so a clone is
- * never red for a missing anchor (ADR-37 asymmetric verification).
+ * never red for a missing anchor (anchoring verifies asymmetrically: its
+ * presence strengthens the verdict, its absence never weakens it).
  *
  * @param anchors - The anchor-state repository
  * @param registry - Resolves a provider by name for online verification

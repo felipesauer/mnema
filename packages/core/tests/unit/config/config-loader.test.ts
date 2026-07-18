@@ -108,43 +108,10 @@ describe('ConfigLoader', () => {
         expect(config.audit.anchor.remote).toBe('origin');
       });
 
-      it('parses a valid rfc3161 config with a tsa url', () => {
-        writeConfig(tempRoot, {
-          ...validConfig,
-          audit: { anchor: { provider: 'rfc3161', tsa: 'https://tsa.example.com' } },
-        });
-        const config = loader.load(tempRoot);
-        expect(config.audit.anchor.tsa).toBe('https://tsa.example.com');
-      });
-
-      it('rejects rfc3161 without a tsa url', () => {
-        writeConfig(tempRoot, {
-          ...validConfig,
-          audit: { anchor: { provider: 'rfc3161' } },
-        });
-        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
-      });
-
       it('rejects an unknown provider', () => {
         writeConfig(tempRoot, {
           ...validConfig,
           audit: { anchor: { provider: 'blockchain-magic' } },
-        });
-        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
-      });
-
-      it('rejects a non-https tsa url (file:// — local-file/SSRF vector)', () => {
-        writeConfig(tempRoot, {
-          ...validConfig,
-          audit: { anchor: { provider: 'rfc3161', tsa: 'file:///etc/passwd' } },
-        });
-        expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
-      });
-
-      it('rejects a plain-http tsa url (loopback/metadata SSRF vector)', () => {
-        writeConfig(tempRoot, {
-          ...validConfig,
-          audit: { anchor: { provider: 'rfc3161', tsa: 'http://169.254.169.254/' } },
         });
         expect(() => loader.load(tempRoot)).toThrow(ConfigInvalidError);
       });

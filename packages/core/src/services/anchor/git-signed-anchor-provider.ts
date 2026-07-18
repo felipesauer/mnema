@@ -40,8 +40,8 @@ const ANCHOR_SUBJECT = 'mnema-anchor: ';
 
 /**
  * Anchors the head into a SIGNED git commit written to a dedicated ref
- * (default `refs/mnema/anchors`), optionally pushed to a remote (ADR-37: git
- * as transport, not the guarantee). The commit is built with `commit-tree`
+ * (default `refs/mnema/anchors`), optionally pushed to a remote (git is the
+ * transport, not the guarantee). The commit is built with `commit-tree`
  * over the empty tree, so it NEVER touches the working tree, index, HEAD, or
  * branch history. The receipt is the anchor commit's SHA.
  *

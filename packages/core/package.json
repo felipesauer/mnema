@@ -47,10 +47,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "@peculiar/asn1-cms": "^2.8.0",
-    "@peculiar/asn1-schema": "^2.8.0",
-    "@peculiar/asn1-tsp": "^2.8.0",
-    "@peculiar/asn1-x509": "^2.8.0",
     "better-sqlite3": "^12.9.0",
     "gray-matter": "^4.0.3",
     "js-yaml": "^5.2.0",

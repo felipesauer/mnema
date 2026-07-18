@@ -10,7 +10,7 @@ export interface AnchorInterval {
 }
 
 /**
- * Drives temporal anchoring OFF the write hot path (ADR-37 layer 3). When a
+ * Drives temporal anchoring OFF the write hot path. When a
  * new head is signed, {@link onSignedHead} records the head as `pending` and
  * calls the provider's `stamp()` asynchronously — the caller does NOT await
  * it. FAIL-OPEN: if `stamp` throws or hangs, the write already succeeded and
