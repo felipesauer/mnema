@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { CONFIG_VERSION } from '../../config/config-schema.js';
+import { WORKFLOW_SCHEMA_VERSION } from '../../domain/state-machine/workflow-meta-schema.js';
 import { EVENT_FORMAT_VERSION } from '../../storage/audit/audit-hash.js';
 import { MigrationRunner } from '../../storage/sqlite/migration-runner.js';
 import { migrationsDir } from '../../utils/asset-paths.js';
@@ -10,14 +11,6 @@ import { ATTEST_VERSION } from '../audit/attestation-artifact.js';
 
 /** The committed store-format marker, a single-line sha256 hex under keys/. */
 export const STORE_FORMAT_RELATIVE = path.join('.mnema', 'keys', 'store-format');
-
-/**
- * The active workflow's `schema_version`. Today it is a `z.literal` on
- * {@link WorkflowMeta}; it is folded in here as a constant so the hash stays
- * pure (no workflow file I/O). When the workflow becomes TS in a later wave,
- * this constant is where its version input lives.
- */
-const WORKFLOW_SCHEMA_VERSION = '1.0';
 
 /**
  * The format inputs whose combination the marker pins. Each is a fact about
@@ -79,19 +72,28 @@ export function storeFormatPath(projectRoot: string): string {
   return path.join(projectRoot, STORE_FORMAT_RELATIVE);
 }
 
+/** A valid marker is exactly one line of 64 lowercase hex (a sha256 digest). */
+const MARKER_PATTERN = /^[0-9a-f]{64}$/;
+
 /**
- * Reads the committed marker hex, or `null` when absent — an absent marker is
- * a pre-feature project and is treated fail-OPEN (never blocks a mutation).
+ * Reads the committed marker hex, or `null` when absent OR unreadable — an
+ * absent marker is a pre-feature project, and a marker that is empty or not a
+ * clean sha256 (a botched merge, a conflict marker, a truncated write) is
+ * treated the SAME: fail-OPEN, never a mutation lockout. A store-format
+ * MISMATCH is only ever reported against a well-formed marker that names a
+ * different format — never against corruption, which `mnema migrate` rewrites.
  */
 export function readStoreFormatMarker(projectRoot: string): string | null {
   const file = storeFormatPath(projectRoot);
   if (!existsSync(file)) return null;
-  return readFileSync(file, 'utf-8').trim();
+  const value = readFileSync(file, 'utf-8').trim();
+  return MARKER_PATTERN.test(value) ? value : null;
 }
 
 /**
  * Writes (or overwrites) the marker with THIS binary's format hash. Only the
- * store owners — `init` and `migrate` — call this; an ordinary mutation never
+ * store owners call this — `init`, and the reconcile paths (`migrate`,
+ * `upgrade`) that bring a store to this format. An ordinary mutation never
  * does, or the guard would forever agree with itself and never fire.
  */
 export function writeStoreFormatMarker(projectRoot: string, migrationsDirOverride?: string): void {

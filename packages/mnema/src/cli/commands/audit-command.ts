@@ -47,7 +47,7 @@ import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/au
 import { pc } from '@mnema/core/utils/colors.js';
 import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
-import { withCliContext } from '../cli-context.js';
+import { enforceStoreFormat, withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 import { parseTimeBoundOption } from '../option-helpers.js';
 import { parsePositiveInt } from '../option-parsers.js';
@@ -269,7 +269,8 @@ export class AuditCommand {
       .option('--write', 'Apply the plan (write .att files); without it, only report', false)
       .action(async (options: { readonly write?: boolean }) => {
         let failed = false;
-        await withCliContext(async ({ config, projectRoot, container }) => {
+        await withCliContext(async (ctx) => {
+          const { config, projectRoot, container } = ctx;
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
           // A reattest signs with THIS machine's key, so it can only attest THIS
@@ -341,6 +342,7 @@ export class AuditCommand {
             );
           }
           if (options.write === true) {
+            enforceStoreFormat(ctx);
             for (const artifact of plan.artifacts) writeArtifact(tailDir, artifact);
             process.stdout.write(
               `${pc.green('✔')}  wrote ${plan.artifacts.length} attestation(s) — commit them with the .mnema/ trail\n`,
@@ -371,7 +373,8 @@ export class AuditCommand {
       )
       .action(async (options: { readonly force?: boolean }) => {
         let hasError = false;
-        await withCliContext(async ({ config, projectRoot, container }) => {
+        await withCliContext(async (ctx) => {
+          const { config, projectRoot, container } = ctx;
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           // The mirror tracks THIS machine's tail, so reconcile rebuilds it
           // from the LOCAL tail's chain — never the project-wide total, which a
@@ -383,6 +386,8 @@ export class AuditCommand {
           const signatures = new AuditHeadSignatureRepository(container.adapter);
           const signature = signatures.read();
           const apply = options.force === true;
+          // Only --force writes; the default run is a read-only preview.
+          if (apply) enforceStoreFormat(ctx);
           // Re-attest at the new baseline if the correction drops the count
           // below the recorded signed checkpoint (interior drift). Signer
           // resolved like reattest; no signer → returns false and reconcile
@@ -466,7 +471,8 @@ export class AuditCommand {
       .action(
         async (options: { readonly force?: boolean; readonly requireCommitted?: boolean }) => {
           let hasError = false;
-          await withCliContext(async ({ config, projectRoot, container }) => {
+          await withCliContext(async (ctx) => {
+            const { config, projectRoot, container } = ctx;
             const auditDir = path.join(projectRoot, LAYOUT.audit);
             // A truncation is accepted against THIS machine's tail: it
             // re-baselines the local mirror and re-signs the local head, so the
@@ -479,6 +485,8 @@ export class AuditCommand {
             const signatures = new AuditHeadSignatureRepository(container.adapter);
             const signature = signatures.read();
             const apply = options.force === true;
+            // Only --force writes the waiver + re-baseline; default is a preview.
+            if (apply) enforceStoreFormat(ctx);
 
             const refuse = (reason: string): void => {
               process.stdout.write(`${pc.red('✘')}  cannot accept truncation: ${reason}\n`);

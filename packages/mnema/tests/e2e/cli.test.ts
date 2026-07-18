@@ -120,11 +120,24 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const read = runCli(['task', 'list'], projectRoot);
     expect(read.status).toBe(0);
 
-    // `mnema migrate` reconciles: it rewrites the marker to this binary's
-    // format, and mutations flow again.
+    // A mutating command that opens a READ context but writes (adopt) must
+    // also be refused — the guard is not limited to the mutating wrapper.
+    const adoptRefused = runCli(['adopt', 'skills'], projectRoot);
+    expect(adoptRefused.status).toBe(3);
+    expect(`${adoptRefused.stdout}${adoptRefused.stderr}`).toMatch(/different on-disk format/i);
+
+    // `mnema upgrade` is a reconcile path (like migrate): it re-stamps the
+    // marker to this binary's format, so mutations flow again afterwards.
+    const upgraded = runCli(['upgrade', '--yes'], projectRoot);
+    expect(upgraded.status).toBe(0);
+    const afterUpgrade = runCli(['task', 'create', '--title', 'third'], projectRoot);
+    expect(afterUpgrade.status).toBe(0);
+
+    // And `mnema migrate` is the other reconcile path — corrupt again, migrate.
+    writeFileSync(marker, `${'0'.repeat(64)}\n`, 'utf-8');
     const migrated = runCli(['migrate'], projectRoot);
     expect(migrated.status).toBe(0);
-    const afterFix = runCli(['task', 'create', '--title', 'third'], projectRoot);
+    const afterFix = runCli(['task', 'create', '--title', 'fourth'], projectRoot);
     expect(afterFix.status).toBe(0);
   });
 

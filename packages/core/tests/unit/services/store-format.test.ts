@@ -75,6 +75,19 @@ describe('store-format', () => {
     expect(check.ok).toBe(true);
   });
 
+  it('treats an empty or corrupt marker as fail-OPEN, never a lockout', () => {
+    // A botched merge can leave the marker empty, whitespace, a git conflict
+    // marker, or otherwise not a clean sha256. None of those must block a
+    // mutation — only a well-formed marker naming a different format does.
+    const markerPath = path.join(tempRoot, STORE_FORMAT_RELATIVE);
+    mkdirSync(path.dirname(markerPath), { recursive: true });
+    for (const corrupt of ['', '   \n', '<<<<<<< HEAD\n', 'not-a-hash', 'ab']) {
+      writeFileSync(markerPath, corrupt, 'utf-8');
+      expect(readStoreFormatMarker(tempRoot)).toBeNull();
+      expect(checkStoreFormat(tempRoot, migrationsDir).ok).toBe(true);
+    }
+  });
+
   it('checkStoreFormat refuses and names the inputs when the marker diverges', () => {
     // A marker written under a DIFFERENT format: an extra migration on disk at
     // write time, then removed, so the committed hash no longer matches.
