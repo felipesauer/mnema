@@ -244,7 +244,8 @@ export class TaskRepository implements ITaskRepository {
    * @returns The newly created task
    */
   insert(input: TaskInsertInput): Task {
-    const id = generateUuid();
+    // Adopt the committed id on a rebuild; mint a fresh one for a new task.
+    const id = input.id ?? generateUuid();
     const acceptance = JSON.stringify(input.acceptanceCriteria ?? []);
     const metadata = JSON.stringify(input.metadata ?? {});
 

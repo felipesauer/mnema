@@ -663,6 +663,62 @@ mnema:
     }
   });
 
+  it('preserves the committed id of every backlog entity across a fresh-clone rebuild', () => {
+    // Option C: the v7 UUID is the COMMITTED identity — it must survive the
+    // clone (the mirror carries it, the rebuild adopts it) rather than being
+    // re-minted, which is what made the id clone-local before.
+    const task = container.task.create({
+      projectKey: 'TEST',
+      title: 'Identity survives',
+      acceptanceCriteria: ['stable id'],
+      actor: 'daniel',
+    });
+    const epic = container.epic.create({ projectKey: 'TEST', title: 'An epic', actor: 'daniel' });
+    const sprint = container.sprint.plan({ projectKey: 'TEST', name: 'A sprint', actor: 'daniel' });
+    const decision = container.decision.record({
+      projectKey: 'TEST',
+      title: 'A decision',
+      decision: 'do the thing',
+      actor: 'daniel',
+    });
+    expect(task.ok && epic.ok && sprint.ok && decision.ok).toBe(true);
+    if (!(task.ok && epic.ok && sprint.ok && decision.ok)) return;
+    const ids = {
+      task: task.value.id,
+      epic: epic.value.id,
+      sprint: sprint.value.id,
+      decision: decision.value.id,
+    };
+    const keys = {
+      task: task.value.key,
+      epic: epic.value.key,
+      sprint: sprint.value.key,
+      decision: decision.value.key,
+    };
+
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      // Each entity is resolved by its human key, but its id is the SAME one
+      // committed to the mirror — not a fresh mint.
+      const t = fresh.task.findByKey(keys.task); // value = Task
+      const e = fresh.epic.show(keys.epic); // value = EpicView ({ epic, ... })
+      const d = fresh.decision.show(keys.decision); // value = Decision
+      const s = fresh.sprint.show(keys.sprint); // SprintView | null ({ sprint, ... })
+      expect(t.ok && e.ok && d.ok).toBe(true);
+      if (!(t.ok && e.ok && d.ok)) return;
+      expect(t.value.id).toBe(ids.task);
+      expect(e.value.epic.id).toBe(ids.epic);
+      expect(d.value.id).toBe(ids.decision);
+      expect(s?.sprint.id).toBe(ids.sprint);
+    } finally {
+      fresh.close();
+    }
+  });
+
   it('preserves a closed epic created_at + closed_at across a fresh-clone rebuild', () => {
     const created = container.epic.create({
       projectKey: 'TEST',

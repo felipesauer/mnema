@@ -467,6 +467,9 @@ export class SyncRebuild {
         let taskId: string;
         if (existing === null) {
           taskId = this.tasks.insert({
+            // Adopt the committed id so it survives the clone; a pre-Option-C
+            // mirror without one falls back to a fresh mint.
+            id: readString(data, 'id') ?? undefined,
             key,
             projectId,
             title: readString(data, 'title') ?? key,
@@ -893,6 +896,7 @@ export class SyncRebuild {
       // so a CLOSED epic keeps its original created_at/closed_at instead of
       // an updateState stamping a fresh now.
       this.epics.insert({
+        id: readString(data, 'id') ?? undefined,
         key,
         projectId,
         title: readString(data, 'title') ?? key,
@@ -925,6 +929,7 @@ export class SyncRebuild {
       // Insert directly in the committed state with the committed timestamps,
       // so a closed sprint keeps its original created_at/closed_at.
       this.sprints.insert({
+        id: readString(data, 'id') ?? undefined,
         key,
         projectId,
         name: readString(data, 'name') ?? key,
@@ -972,6 +977,7 @@ export class SyncRebuild {
       // accepted/superseded ADR keeps its original decision timestamp instead
       // of an updateStatus stamping a fresh now.
       this.decisions.insert({
+        id: readString(data, 'id') ?? undefined,
         key,
         projectId,
         title: readString(data, 'title') ?? key,

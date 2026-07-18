@@ -373,6 +373,10 @@ function serialiseTask(
   actors: { readonly assignee: string | null; readonly reporter: string },
 ): Record<string, unknown> {
   return {
+    // The committed identity: the v7 UUID, written first so it survives a
+    // clone (the rebuild adopts it instead of minting a new one). `key` stays
+    // for now as the human-facing sequential label until it is retired.
+    id: task.id,
     key: task.key,
     state: task.state,
     title: task.title,

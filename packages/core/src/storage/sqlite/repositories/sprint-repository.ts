@@ -67,6 +67,8 @@ interface TaskRow {
  * Input for {@link SprintRepository.insert}.
  */
 export interface SprintInsertInput {
+  /** Committed identity, preserved on a clone rebuild; minted when omitted. */
+  readonly id?: string;
   readonly key: string;
   readonly projectId: string;
   readonly name: string;
@@ -196,7 +198,7 @@ export class SprintRepository {
    * @returns The newly created sprint
    */
   insert(input: SprintInsertInput): Sprint {
-    const id = generateUuid();
+    const id = input.id ?? generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
     const now = isoNow();
 

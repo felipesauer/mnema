@@ -82,6 +82,12 @@ export interface LeanTaskFilter {
 
 /** Input shape for {@link ITaskRepository.insert}. */
 export interface TaskInsertInput {
+  /**
+   * The committed identity, preserved on a clone rebuild so the id survives
+   * (the mirror carries it). Omitted only for a genuinely new task, where the
+   * repository mints a fresh v7 UUID.
+   */
+  readonly id?: string;
   readonly key: string;
   readonly projectId: string;
   readonly title: string;

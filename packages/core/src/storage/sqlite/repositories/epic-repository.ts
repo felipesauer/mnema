@@ -21,6 +21,8 @@ interface EpicRow {
  * Input for {@link EpicRepository.insert}.
  */
 export interface EpicInsertInput {
+  /** Committed identity, preserved on a clone rebuild; minted when omitted. */
+  readonly id?: string;
   readonly key: string;
   readonly projectId: string;
   readonly title: string;
@@ -129,7 +131,7 @@ export class EpicRepository {
    * @returns The newly created epic
    */
   insert(input: EpicInsertInput): Epic {
-    const id = generateUuid();
+    const id = input.id ?? generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
 
     this.adapter
