@@ -6,7 +6,7 @@
 // fetches, and the site legitimately links to github.com / npmjs.com.
 // Run after `pnpm docs:build`. Exits non-zero (CI-failing) on a violation.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const DIST = path.resolve('docs/.vitepress/dist');

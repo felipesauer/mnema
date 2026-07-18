@@ -11,13 +11,13 @@ import {
   OBSERVATION_CONTENT_MAX,
   ObservationService,
 } from '@/services/knowledge/observation-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { ObservationRepository } from '@/storage/sqlite/repositories/observation-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -34,7 +34,7 @@ describe('ObservationService', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const repo = new ObservationRepository(adapter);
     tasks = new TaskRepository(adapter);
     const identity = new IdentityService(new ActorRepository(adapter));

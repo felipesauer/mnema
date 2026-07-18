@@ -46,7 +46,7 @@ describe('inspectAuditDiskDelta', () => {
   });
 
   const writeEvents = (n: number): void => {
-    const audit = new AuditService(new AuditWriter(auditDir, state));
+    const audit = new AuditService(new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7)));
     for (let i = 0; i < n; i += 1) {
       audit.write({ kind: 'task_created', actor: 'a', data: { key: `T-${i}` } });
     }

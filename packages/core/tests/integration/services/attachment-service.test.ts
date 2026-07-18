@@ -8,7 +8,6 @@ import { ErrorCode } from '@/errors/error-codes.js';
 import { AttachmentService } from '@/services/attachment-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { FileStore } from '@/storage/files/file-store.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
@@ -17,6 +16,7 @@ import { DecisionRepository } from '@/storage/sqlite/repositories/decision-repos
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -32,7 +32,7 @@ describe('AttachmentService + FileStore', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const actors = new ActorRepository(adapter);
     const projects = new ProjectRepository(adapter);
     const tasks = new TaskRepository(adapter);

@@ -21,7 +21,7 @@ const { SqliteAdapter } = await import(
 
 const adapter = new SqliteAdapter(statePath);
 const state = new AuditStateRepository(adapter);
-const writer = new AuditWriter(auditDir, state);
+const writer = new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7));
 const audit = new AuditService(writer);
 
 for (let i = 0; i < Number(count); i++) {

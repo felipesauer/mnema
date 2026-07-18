@@ -4,8 +4,6 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { InitCommand } from '@/cli/commands/init-command.js';
-
 const DIST_ENTRY = path.resolve('packages/mnema/dist/index.js');
 
 /**
@@ -44,14 +42,12 @@ describe.skipIf(!existsSync(DIST_ENTRY))(
 
     beforeEach(() => {
       projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-krec-'));
-      new InitCommand().run({
-        cwd: projectRoot,
-        name: 'Krec',
-        key: 'KREC',
-        workflow: 'default',
-        force: false,
-        minimal: false,
-      });
+      // Init through the SAME spawned CLI (HOME=projectRoot) the writes use,
+      // so the machine-local project secret is minted under the one home both
+      // init's seed and the later commands resolve — an in-process init would
+      // mint it under the developer's home and the spawned CLI could not find
+      // it (mandatory-keyed → refuse).
+      run(['init', '--name', 'Krec', '--key', 'KREC']);
     });
 
     afterEach(() => {

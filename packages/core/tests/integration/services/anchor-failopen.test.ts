@@ -141,7 +141,7 @@ describe('AnchorScheduler (off-path, fail-open)', () => {
     );
     const scheduler = new AnchorScheduler(anchors, provider);
     const audit = new AuditService(
-      new AuditWriter(auditDir, state, undefined, null, checkpoint, scheduler),
+      new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7), undefined, checkpoint, scheduler),
     );
 
     const start = Date.now();

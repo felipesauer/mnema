@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
+import { EVENT_FORMAT_VERSION } from '../../storage/audit/audit-hash.js';
 
 /**
  * The audit retention strategy, mirroring `config.audit.retention.strategy`:
@@ -90,8 +91,8 @@ function countChainedEvents(file: string): number {
     } catch {
       continue;
     }
-    const v = typeof event.v === 'number' ? event.v : 1;
-    if (v >= 2) count += 1;
+    const v = typeof event.v === 'number' ? event.v : 0;
+    if (v === EVENT_FORMAT_VERSION) count += 1;
   }
   return count;
 }

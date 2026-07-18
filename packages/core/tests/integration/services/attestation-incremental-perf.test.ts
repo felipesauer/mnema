@@ -79,7 +79,7 @@ describe('incremental attestation is batch-bound (flat in pre-existing size)', (
 
   function line(g: number): string {
     return JSON.stringify({
-      v: 3,
+      v: 1,
       at: `t-${g}`,
       kind: 'k',
       actor: 'felipesauer',

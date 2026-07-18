@@ -9,7 +9,6 @@ import { AgentRunService } from '@/services/agent/agent-run-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { IdentityService } from '@/services/integrity/identity-service.js';
 import { OrphanRunService } from '@/services/metrics/orphan-run-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@/storage/sqlite/repositories/actor-repository.js';
 import { AgentPlanRepository } from '@/storage/sqlite/repositories/agent-plan-repository.js';
@@ -18,6 +17,7 @@ import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js
 import { TransitionRepository } from '@/storage/sqlite/repositories/transition-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 const HOUR = 3_600_000;
@@ -38,7 +38,7 @@ describe('OrphanRunService', () => {
     const actors = new ActorRepository(adapter);
     runs = new AgentRunRepository(adapter);
     const identity = new IdentityService(actors);
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     agentRun = new AgentRunService(
       runs,
       actors,

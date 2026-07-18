@@ -35,7 +35,7 @@ describe('AuditWriter cross-process lock', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
     const state = new AuditStateRepository(adapter);
-    writer = new AuditWriter(auditDir, state);
+    writer = new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7));
     audit = new AuditService(writer);
   });
 

@@ -59,9 +59,7 @@ describe('upgrade attestation step', () => {
   /** Writes n events with NO checkpoint signer, so nothing auto-attests. */
   function writeUnattested(n: number): void {
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, () =>
-        secret.getOrCreate(),
-      ),
+      new AuditWriter(auditDir, new AuditStateRepository(adapter), () => secret.getOrCreate()),
     );
     for (let i = 0; i < n; i++) {
       audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: `T-${i}` } });
@@ -82,9 +80,7 @@ describe('upgrade attestation step', () => {
       auditDir,
       signer: { machineKey, actor: 'felipesauer' },
       projectHmacId: secret.readFingerprint(),
-      chainHealthy: chainHealthyForAttest(
-        inspectAuditIntegrity(adapter, auditDir, secret.read(), true),
-      ),
+      chainHealthy: chainHealthyForAttest(inspectAuditIntegrity(adapter, auditDir, secret.read())),
       signedEventCountAt: null,
       headCount: walkChainedEvents(auditDir).chained.length,
       batchSize: 100,

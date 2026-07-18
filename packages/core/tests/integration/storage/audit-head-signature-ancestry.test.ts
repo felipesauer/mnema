@@ -60,13 +60,19 @@ describe('machine attestation: signed head must be an ancestor of the current ch
       { events: 1, seconds: 100_000 },
     );
     return new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
   }
 
   const attestation = () => createAttestationSource(projectRoot, signatures);
   const attestVerdict = () =>
-    inspectAuditIntegrity(adapter, auditDir, null, false, attestation()).find(
+    inspectAuditIntegrity(adapter, auditDir, null, attestation()).find(
       (c) => c.name === 'audit machine attestation',
     );
 

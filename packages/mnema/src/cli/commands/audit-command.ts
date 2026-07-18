@@ -23,7 +23,6 @@ import {
 } from '@mnema/core/services/audit/prune-apply.js';
 import { decideAttLockstep } from '@mnema/core/services/audit/prune-att-lockstep.js';
 import { computeCutPoint } from '@mnema/core/services/audit/retention-cut-point.js';
-import type { GitCommandRunner } from '@mnema/core/services/git/git-commit-service.js';
 import {
   assessAuditChain,
   type IntegrityCheck,
@@ -220,7 +219,6 @@ export class AuditCommand {
             container.adapter,
             auditDir,
             secret.read(),
-            secret.readFingerprint() !== null,
             createAttestationSource(
               projectRoot,
               new AuditHeadSignatureRepository(container.adapter),
@@ -266,12 +264,7 @@ export class AuditCommand {
 
           // Chain soundness gate — treats truncation-shaped warnings as
           // blocking (chainHealthyForAttest), not just errors.
-          const integrity = inspectAuditIntegrity(
-            container.adapter,
-            auditDir,
-            secret.read(),
-            secret.readFingerprint() !== null,
-          );
+          const integrity = inspectAuditIntegrity(container.adapter, auditDir, secret.read());
           const headSig = new AuditHeadSignatureRepository(container.adapter).read();
 
           // Resolve the signer; a null OR malformed actor is a clean refusal,
@@ -351,84 +344,71 @@ export class AuditCommand {
         'Apply the correction (without this flag, only reports what would change)',
         false,
       )
-      .option(
-        '--accept-legacy-breaks <date>',
-        'Accept a chain broken by concurrent writers racing without a lock — a sequence-only ' +
-          'discontinuity, PROVIDED every break in the log is content-authentic and no later than ' +
-          'this ISO date, and the audit files match the committed git HEAD. Run ' +
-          '`mnema audit diagnose` first to confirm the shape. A real content edit or version ' +
-          'downgrade ALWAYS refuses regardless of this flag.',
-      )
-      .action(
-        async (options: { readonly force?: boolean; readonly acceptLegacyBreaks?: string }) => {
-          let hasError = false;
-          await withCliContext(async ({ config, projectRoot, container }) => {
-            const auditDir = path.join(projectRoot, LAYOUT.audit);
-            const secret = new ProjectSecretService(projectRoot, config.project.key);
-            const state = new AuditStateRepository(container.adapter);
-            const signatures = new AuditHeadSignatureRepository(container.adapter);
-            const signature = signatures.read();
-            const apply = options.force === true;
-            // Re-attest at the new baseline if the correction drops the count
-            // below the recorded signed checkpoint (interior drift). Signer
-            // resolved like reattest; no signer → returns false and reconcile
-            // still corrects audit_state (attestation just stays to be re-run).
-            const actor = container.identity.resolveDefaultActor().actor;
-            const reSign = buildHeadReSigner(projectRoot, actor, signatures);
+      .action(async (options: { readonly force?: boolean }) => {
+        let hasError = false;
+        await withCliContext(async ({ config, projectRoot, container }) => {
+          const auditDir = path.join(projectRoot, LAYOUT.audit);
+          const secret = new ProjectSecretService(projectRoot, config.project.key);
+          const state = new AuditStateRepository(container.adapter);
+          const signatures = new AuditHeadSignatureRepository(container.adapter);
+          const signature = signatures.read();
+          const apply = options.force === true;
+          // Re-attest at the new baseline if the correction drops the count
+          // below the recorded signed checkpoint (interior drift). Signer
+          // resolved like reattest; no signer → returns false and reconcile
+          // still corrects audit_state (attestation just stays to be re-run).
+          const actor = container.identity.resolveDefaultActor().actor;
+          const reSign = buildHeadReSigner(projectRoot, actor, signatures);
 
-            const result = reconcileAuditState(
-              auditDir,
-              state,
-              secret.read(),
-              signature !== null
-                ? {
-                    eventCountAt: signature.eventCountAt,
-                    coveredHeadHash: signature.coveredHeadHash,
-                  }
-                : null,
-              apply,
-              options.acceptLegacyBreaks ?? null,
-              projectRoot,
-              undefined,
-              reSign,
+          const result = reconcileAuditState(
+            auditDir,
+            state,
+            secret.read(),
+            signature !== null
+              ? {
+                  eventCountAt: signature.eventCountAt,
+                  coveredHeadHash: signature.coveredHeadHash,
+                }
+              : null,
+            apply,
+            reSign,
+          );
+          if (!result.ok) {
+            process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
+            hasError = true;
+            return;
+          }
+          if (!result.changed) {
+            process.stdout.write(
+              `${pc.green('✔')}  audit_state already matches disk — nothing to do\n`,
             );
-            if (!result.ok) {
-              process.stdout.write(`${pc.red('✘')}  cannot reconcile: ${result.reason}\n`);
-              hasError = true;
-              return;
-            }
-            if (!result.changed) {
+            return;
+          }
+          if (result.applied) {
+            process.stdout.write(
+              `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
+            );
+            // Report the attestation re-baseline honestly: green when the
+            // head was re-signed, a dim caveat when no signer was available
+            // (a machine without the key cannot re-attest — doctor will warn).
+            if (result.reSigned) {
               process.stdout.write(
-                `${pc.green('✔')}  audit_state already matches disk — nothing to do\n`,
+                `${pc.green('✔')}  re-signed head at event ${result.afterEventCount} as ${actor}\n`,
               );
-              return;
-            }
-            if (result.applied) {
+            } else if (signature !== null && result.afterEventCount < signature.eventCountAt) {
               process.stdout.write(
-                `${pc.green('✔')}  reconciled audit_state: event_count ${result.beforeEventCount} → ${result.afterEventCount}\n`,
-              );
-              // Report the attestation re-baseline honestly: green when the
-              // head was re-signed, a dim caveat when no signer was available
-              // (a machine without the key cannot re-attest — doctor will warn).
-              if (result.reSigned) {
-                process.stdout.write(
-                  `${pc.green('✔')}  re-signed head at event ${result.afterEventCount} as ${actor}\n`,
-                );
-              } else if (signature !== null && result.afterEventCount < signature.eventCountAt) {
-                process.stdout.write(
-                  `${pc.dim("note: attestation could not be re-signed (no machine key on this host) — run 'mnema audit reattest' where the signer key lives")}\n`,
-                );
-              }
-            } else {
-              process.stdout.write(
-                `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
-                  `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+                `${pc.dim("note: attestation could not be re-signed (no machine key on this host) — run 'mnema audit reattest' where the signer key lives")}\n`,
               );
             }
-          });
-          process.exit(hasError ? 1 : 0);
-        },
-      );
+          } else {
+            process.stdout.write(
+              `${pc.yellow('⚠')}  would set event_count: ${result.beforeEventCount} → ${result.afterEventCount}\n` +
+                `${pc.dim('(dry run — re-run with --force to apply)')}\n`,
+            );
+          }
+        });
+        process.exit(hasError ? 1 : 0);
+      });
 
     group
       .command('accept-truncation', { hidden: true })
@@ -622,32 +602,13 @@ export class AuditCommand {
           process.stdout.write(`${headLine}\n`);
 
           if (report.breaks.length > 0) {
-            if (report.allBreaksContentValid && report.matchesCommittedHead === true) {
-              const latest = report.breaks.reduce(
-                (max, b) => (b.at !== null && b.at > max ? b.at : max),
-                '',
-              );
-              // The cutoff is compared against the FULL timestamp of each
-              // break (Date.parse), so truncating to the calendar date of
-              // the latest break would make the suggestion reject that very
-              // break if it happened later that same day. Suggest the day
-              // AFTER the latest break instead, so the command it prints
-              // always actually works.
-              const latestParsed = latest !== '' ? new Date(latest) : null;
-              const suggestedCutoff =
-                latestParsed !== null && !Number.isNaN(latestParsed.getTime())
-                  ? new Date(latestParsed.getTime() + 24 * 60 * 60 * 1000)
-                      .toISOString()
-                      .slice(0, 10)
-                  : '<date>';
-              process.stdout.write(
-                `\n${pc.dim(`Every break is content-valid and the disk matches git HEAD — a candidate for:\n  mnema audit reconcile --force --accept-legacy-breaks ${suggestedCutoff}`)}\n`,
-              );
-            } else {
-              process.stdout.write(
-                `\n${pc.dim('Not a legacy-break recovery candidate — resolve the content/git issue above first.')}\n`,
-              );
-            }
+            // A broken chain is tampering, not mirror drift: there is no
+            // automatic acceptance path. The operator resolves the break (the
+            // per-break detail above locates it); a deliberate history rewrite
+            // is the explicit re-baseline path, never a reconcile flag.
+            process.stdout.write(
+              `\n${pc.dim('A broken chain is not a mirror-drift shape — resolve the break above; no automated reconcile can safely launder it.')}\n`,
+            );
           }
         });
       });
@@ -675,7 +636,6 @@ export class AuditCommand {
           const plan = planAuditRepair({
             auditDir,
             secret: secret.read(),
-            gitCwd: projectRoot,
             mirrorCount: new AuditStateRepository(container.adapter).read().eventCount,
             signature: new AuditHeadSignatureRepository(container.adapter).read(),
             attestationArtifacts: listArtifacts(auditDir),
@@ -879,9 +839,9 @@ export interface AuditRepairPlan {
  * commands enforce, so the plan tells the truth about what would happen:
  *
  *  1. malformed lines            → blocker (a deletion smokescreen); fix by hand
- *  2. chain break (prev_hash /   → if content-valid AND disk matches git HEAD,
- *     hash / version)               a legacy-break reconcile candidate; else a
- *                                    content/git blocker to resolve first
+ *  2. chain break (prev_hash /   → blocker: a broken chain is tampering, not
+ *     hash)                          mirror drift, so it is diagnosed and
+ *                                    resolved before any reconcile
  *  3. mirror vs disk delta        → equal: nothing; disk-ahead: reconcile;
  *                                    mirror-ahead-by-one clean: self-heals;
  *                                    mirror-ahead-by-more: reconcile
@@ -897,13 +857,11 @@ export interface AuditRepairPlan {
 export function planAuditRepair(input: {
   readonly auditDir: string;
   readonly secret: Buffer | null;
-  readonly gitCwd: string | null;
   readonly mirrorCount: number;
   readonly signature: { readonly eventCountAt: number; readonly coveredHeadHash: string } | null;
   readonly attestationArtifacts: ReadonlyArray<{ readonly to: number }>;
-  readonly gitRunner?: GitCommandRunner;
 }): AuditRepairPlan {
-  const { auditDir, secret, gitCwd, mirrorCount, signature, attestationArtifacts } = input;
+  const { auditDir, secret, mirrorCount, signature, attestationArtifacts } = input;
   const chain = assessAuditChain(auditDir, secret);
   const findings: RepairFinding[] = [];
 
@@ -932,42 +890,22 @@ export function planAuditRepair(input: {
   }
 
   // 2. Chain break — run the SAME content + git-anchor diagnosis reconcile uses.
-  let legacyBreakCutoff: string | null = null;
   if (chain.chainBroken) {
-    const diag = diagnoseAuditChain(auditDir, secret, gitCwd, input.gitRunner);
-    const gitOk = diag.matchesCommittedHead === true;
-    if (diag.allBreaksContentValid && gitOk) {
-      // Suggest the day AFTER the latest break so the printed cutoff works.
-      const latest = diag.breaks.reduce((max, b) => (b.at !== null && b.at > max ? b.at : max), '');
-      const parsed = latest !== '' ? new Date(latest) : null;
-      legacyBreakCutoff =
-        parsed !== null && !Number.isNaN(parsed.getTime())
-          ? new Date(parsed.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-          : null;
-      findings.push({
-        severity: 'warn',
-        text: `${diag.breaks.length} prev_hash break(s), all content-valid, and the disk matches git HEAD — a concurrent-writer seam, recoverable with an explicit legacy-breaks acceptance`,
-      });
-    } else {
-      const why = !diag.allBreaksContentValid
-        ? 'at least one break is NOT content-valid (a real edit, or unverifiable without the project secret)'
-        : diag.matchesCommittedHead === false
-          ? 'the audit files have local, uncommitted changes vs git HEAD'
-          : 'not a git work tree, so the git anchor of trust could not be confirmed';
-      findings.push({
-        severity: 'blocker',
-        text: `${chain.chainBreakDetail} — ${why}. This is not a mirror-drift shape; reconciling would hide it`,
-      });
-      return {
-        findings,
-        recommendation:
-          'Resolve the content/git issue above first (start with `mnema audit diagnose` for the per-break detail). No automated recovery is safe until the on-disk chain is internally consistent and committed.',
-        commands: ['mnema audit diagnose'],
-      };
-    }
-  } else {
-    findings.push({ severity: 'ok', text: 'chain linkage is internally consistent' });
+    // A broken chain is tampering, not mirror drift. Always route to
+    // diagnose: no automated recovery is safe until the chain is internally
+    // consistent.
+    findings.push({
+      severity: 'blocker',
+      text: `${chain.chainBreakDetail}. This is not a mirror-drift shape; reconciling would hide it`,
+    });
+    return {
+      findings,
+      recommendation:
+        'Resolve the break FIRST (start with `mnema audit diagnose` for the per-break detail). No automated recovery is safe until the on-disk chain is internally consistent and committed.',
+      commands: ['mnema audit diagnose'],
+    };
   }
+  findings.push({ severity: 'ok', text: 'chain linkage is internally consistent' });
 
   // 3. Mirror vs disk delta.
   const delta = mirrorCount - chain.chainedLines;
@@ -1024,11 +962,10 @@ export function planAuditRepair(input: {
   // Decide the recommendation from the strongest signal.
   const truncation = findings.some((f) => f.text.includes('ABSENT from disk'));
   if (truncation) {
-    // accept-truncation refuses a broken chain unconditionally (no
-    // legacy-break escape hatch, unlike reconcile), so recommending it while
-    // the chain is broken would hand the operator a command that immediately
-    // refuses. When both are present, the break must be resolved first — even
-    // a content-valid concurrent-writer seam blocks accept-truncation.
+    // accept-truncation refuses a broken chain unconditionally, so
+    // recommending it while the chain is broken would hand the operator a
+    // command that immediately refuses. When both are present, the break must
+    // be resolved first.
     if (chain.chainBroken) {
       return {
         findings,
@@ -1055,19 +992,17 @@ export function planAuditRepair(input: {
     };
   }
 
-  const needsReconcile = delta !== 0 || chain.chainBroken || interiorDrift;
+  // A broken chain already returned above, so here the chain is intact and
+  // only the mirror may need recovery.
+  const needsReconcile = delta !== 0 || interiorDrift;
   if (needsReconcile) {
-    const cmd =
-      legacyBreakCutoff !== null
-        ? `mnema audit reconcile --force --accept-legacy-breaks ${legacyBreakCutoff}`
-        : 'mnema audit reconcile --force';
     return {
       findings,
       recommendation:
-        delta === 1 && !chain.chainBroken
+        delta === 1
           ? 'A one-ahead mirror self-heals on the next write; run reconcile now only if you want it corrected immediately:'
           : 'Recover the mirror from the on-disk chain (rebuilds audit_state, re-signs the head if the count drops below a signed checkpoint):',
-      commands: [cmd],
+      commands: ['mnema audit reconcile --force'],
     };
   }
 

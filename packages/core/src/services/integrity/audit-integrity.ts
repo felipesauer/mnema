@@ -5,16 +5,10 @@ import {
   auditFilesSignature,
   orderedAuditFiles,
 } from '../../storage/audit/audit-files.js';
-import { hashEvent, hmacEvent } from '../../storage/audit/audit-hash.js';
+import { EVENT_FORMAT_VERSION, hmacEvent } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import type { AuditStateRepository } from '../../storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '../../storage/sqlite/sqlite-adapter.js';
-import {
-  diagnoseAuditChain,
-  readLegacyBreaksWaiver,
-  writeLegacyBreaksWaiver,
-} from '../audit/audit-diagnose.js';
-import { defaultGitRunner, type GitCommandRunner } from '../git/git-commit-service.js';
 
 /**
  * Severity bucket for a check. `error` fails the doctor exit code;
@@ -72,44 +66,6 @@ export interface IntegrityCheck {
 }
 
 /**
- * Walks every JSONL file under `auditDir` in chain order, parses each
- * line, and verifies the SHA-256 chain END TO END — across the rotated
- * `YYYY-MM.jsonl` segments and `current.jsonl` as one continuous sequence
- * — against the head hash stored in SQLite. Returns one or more
- * {@link IntegrityCheck} rows.
- *
- * The check covers four invariants:
- * - **count**: parseable lines on disk match `audit_state.event_count`.
- * - **chain head**: hash of the last line equals `chain_head_hash`.
- * - **chain continuity**: each line's `prev_hash` matches the previous
- *   line's `hash` (per-file).
- * - **strict parsing**: any line that failed `JSON.parse` is surfaced
- *   as a warning (a smokescreen for forged lines), not silently dropped.
- *
- * Projects whose audit log predates the integrity feature
- * (`chain_head_hash IS NULL` and `event_count = 0`) are reported as
- * `legacy` and skipped — the integrity check activates on the first
- * write through the new writer.
- *
- * @param adapter - Open SQLite adapter
- * @param auditDir - Absolute path to `.mnema/audit/`
- * @param secret - Per-project HMAC secret for verifying v3 lines. When
- *   omitted, v3 lines are not hash-verified (their authenticity is
- *   unverifiable without the secret) but their `prev_hash` continuity is
- *   still checked; a v2-only log is unaffected.
- * @param hasFingerprint - Whether the project has a committed HMAC
- *   fingerprint. When true the project has adopted v3, so an all-v2 chain
- *   is a total downgrade and is reported as tampering. Independent of
- *   `secret`: a clone without the secret still has the (committed)
- *   fingerprint, so it still detects a wholesale downgrade.
- * @param attestation - Optional machine-attestation source. When wired,
- *   the latest recorded head signature is verified against the committed
- *   public key of its signer and reported as a SEPARATE verdict (`audit
- *   machine attestation`), distinct from chain consistency and HMAC
- *   authenticity. `null` omits the check.
- * @returns Audit-integrity checks
- */
-/**
  * Result of a single linear walk of every JSONL file under `auditDir`, in
  * chain order. Shared by {@link inspectAuditIntegrity} (which turns it into
  * report lines) and {@link reconcileAuditState} (which uses it to recompute
@@ -118,37 +74,27 @@ export interface IntegrityCheck {
  */
 interface AuditChainWalk {
   readonly chainedLines: number;
-  readonly legacyLines: number;
   readonly malformedLines: number;
-  readonly v3Unverifiable: number;
-  readonly anyV3: boolean;
+  readonly unverifiable: number;
   readonly chainBroken: boolean;
   readonly chainBreakDetail: string;
   readonly lastHash: string | null;
   readonly lastAt: string | null;
   readonly chainEverStarted: boolean;
-  /**
-   * Count of version-downgrade lines found ACROSS THE WHOLE WALK (not just
-   * the last one `chainBreakDetail` names). A legacy-break recovery must
-   * refuse whenever this is nonzero even if the LAST break recorded was a
-   * plain `prev_hash` discontinuity — a downgrade earlier in the log is
-   * tampering, never a benign concurrent-writer artefact.
-   */
-  readonly versionDowngradeCount: number;
-  /** Count of content-hash mismatches found across the whole walk (same reasoning). */
+  /** Count of content-hash (HMAC) mismatches found across the whole walk. */
   readonly hashMismatchCount: number;
   /**
    * Count of prev_hash continuity breaks (a line whose prev_hash does not
    * match the running head). Tracked apart from {@link hashMismatchCount} so
-   * the verdict can tell a WRONG-SECRET chain (every v3 line fails the HMAC
-   * but continuity is intact) from an in-place forgery (which breaks
-   * continuity or fails only some lines).
+   * the verdict can tell a WRONG-SECRET chain (every line fails the HMAC but
+   * continuity is intact) from an in-place forgery (which breaks continuity
+   * or fails only some lines).
    */
   readonly prevHashBreakCount: number;
-  /** v3 lines that were HMAC-verified (secret present). */
-  readonly v3HmacChecked: number;
+  /** Lines that were HMAC-verified (secret present). */
+  readonly hmacChecked: number;
   /** …of those, how many failed the HMAC recomputation. */
-  readonly v3HmacFailed: number;
+  readonly hmacFailed: number;
   /**
    * Every chained line's own `hash`, in chain order. Each entry is the chain
    * head AS OF that event, so the set doubles as the ancestry oracle for a
@@ -198,7 +144,7 @@ export interface AcceptedRebaseline {
  * the shape of what it finds. Pure and read-only.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
- * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @param secret - Per-project HMAC secret for verifying the sealed lines
  * @param acceptedRebaseline - A pre-verified prune re-baseline to accept at the
  *   genesis instead of flagging the absent prior segment as tamper, or `null`
  *   (the default) to treat any missing prior segment as a break
@@ -211,27 +157,18 @@ function walkAuditChain(
 ): AuditChainWalk {
   const files = orderedAuditFiles(auditDir);
 
-  // Events that belong to the hash chain (v >= 2). `audit_state.event_count`
-  // tracks exactly these, so the count check compares against this — not
-  // the total line count, which also includes pre-chain legacy lines (v1)
-  // written before the integrity feature that never entered the counter.
-  // Counting all lines reports a false mismatch on any project with
-  // legacy history. Legacy lines are tallied separately for the report.
+  // Events that belong to the hash chain. `audit_state.event_count` tracks
+  // exactly these, so the count check compares against this, not the raw line
+  // count (which also counts malformed lines, tallied separately).
   let chainedLines = 0;
-  let legacyLines = 0;
   let malformedLines = 0;
-  let v3Unverifiable = 0;
-  let anyV3 = false;
-  // Highest chain version seen so far, to enforce monotonicity (the chain
-  // may migrate v2→v3 but must never regress v3→v2).
-  let maxVersionSeen = 0;
+  let unverifiable = 0;
   let chainBroken = false;
   let chainBreakDetail = '';
-  let versionDowngradeCount = 0;
   let hashMismatchCount = 0;
   let prevHashBreakCount = 0;
-  let v3HmacChecked = 0;
-  let v3HmacFailed = 0;
+  let hmacChecked = 0;
+  let hmacFailed = 0;
   let lastHash: string | null = null;
   let lastAt: string | null = null;
   let chainEverStarted = false;
@@ -241,9 +178,8 @@ function walkAuditChain(
   // The running chain head, carried ACROSS files. The chain is a single
   // sequence even though rotation splits it into `YYYY-MM.jsonl` segments
   // plus `current.jsonl`, so the first line of one file links to the tail
-  // of the previous one. Resetting per file (the old behaviour) reported a
-  // false `prev_hash break` at every rotation boundary. Genesis is `null`;
-  // a legacy (v1) line resets it since pre-chain lines have no hash.
+  // of the previous one. Resetting per file would report a false
+  // `prev_hash break` at every rotation boundary. Genesis is `null`.
   let prevHash: string | null = null;
 
   for (const file of files) {
@@ -258,99 +194,80 @@ function walkAuditChain(
         continue;
       }
 
-      const v = typeof event.v === 'number' ? event.v : 1;
-      if (v >= 2) {
-        // Whether this is the very first chained event on disk — the genesis.
-        // Only the genesis may carry an accepted prune re-baseline; an interior
-        // break can never be laundered by a waiver.
-        const isGenesis = !chainEverStarted;
-        chainEverStarted = true;
-        chainedLines += 1;
-        if (v >= 3) anyV3 = true;
-        // Version monotonicity: the chain version must never DECREASE. A
-        // v2 line after a v3 line is a downgrade — an attacker rewriting a
-        // v3 (HMAC) line as v2 (keyless SHA-256), which they can recompute
-        // without the secret, to strip authenticity. Legitimate migration
-        // only ever goes v2→v3, so a decrease is always tampering.
-        if (v < maxVersionSeen) {
-          chainBroken = true;
-          versionDowngradeCount += 1;
-          chainBreakDetail = `version downgrade to v${v} on a line in ${path.basename(file)} (a v${maxVersionSeen} line preceded it) — the chain cannot regress`;
-        }
-        maxVersionSeen = Math.max(maxVersionSeen, v);
-        const hash = typeof event.hash === 'string' ? event.hash : null;
-        const prev = (event.prev_hash ?? null) as string | null;
-        // Dispatch by version: v3 is HMAC-keyed (needs the secret), v2 is
-        // keyless SHA-256. A v3 line with no secret available cannot be
-        // hash-verified here — flag it as unverifiable rather than a false
-        // tamper; its prev_hash continuity is still checked below.
-        if (v >= 3 && secret === null) {
-          v3Unverifiable += 1;
-        } else {
-          const isV3 = v >= 3;
-          if (isV3) v3HmacChecked += 1;
-          const recomputed = isV3
-            ? hmacEvent(event as unknown as AuditEvent, secret as Buffer)
-            : hashEvent(event as unknown as AuditEvent);
-          if (hash !== recomputed) {
-            chainBroken = true;
-            hashMismatchCount += 1;
-            if (isV3) v3HmacFailed += 1;
-            chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
-          }
-        }
-        // An accepted prune re-baseline: the genesis event's prev_hash points
-        // at the committed anchor digest (not a hash on disk) and its own hash
-        // is the one the waiver was signed for. The waiver's signature/project
-        // pin/genesis match were already verified by the caller — here we only
-        // confirm the two boundary hashes line up, so a deleted prefix reads as
-        // a deliberate prune, not a break. Restricted to the genesis: an
-        // interior break can never be waived.
-        const rebaselinedGenesis =
-          isGenesis &&
-          acceptedRebaseline !== null &&
-          prev === acceptedRebaseline.anchorPrevHash &&
-          hash === acceptedRebaseline.genesisHash;
-        if (prev !== prevHash && !rebaselinedGenesis) {
-          chainBroken = true;
-          prevHashBreakCount += 1;
-          // A break on the first line of a rotated segment means the
-          // previous segment's tail is missing or altered (e.g. a whole
-          // archived month was deleted) — name that explicitly.
-          chainBreakDetail =
-            prevHash === null
-              ? `prev_hash break at the start of ${path.basename(file)} (a prior segment may be missing)`
-              : `prev_hash break on a line in ${path.basename(file)}`;
-        }
-        if (hash !== null) chainedHashes.push(hash);
-        prevHash = hash;
-        lastHash = hash;
-        lastAt = typeof event.at === 'string' ? event.at : lastAt;
-      } else {
-        // Legacy line: no per-line chain; counted separately so it does
-        // not inflate the chain-count comparison below.
-        legacyLines += 1;
-        prevHash = null;
+      // Events are HMAC-keyed with a version tag. Anything else on disk is not
+      // a chained event — a forged line, or garbage — and is counted as
+      // malformed, never validated.
+      const v = typeof event.v === 'number' ? event.v : 0;
+      if (v !== EVENT_FORMAT_VERSION) {
+        malformedLines += 1;
+        continue;
       }
+      // Whether this is the very first chained event on disk — the genesis.
+      // Only the genesis may carry an accepted prune re-baseline; an interior
+      // break can never be laundered.
+      const isGenesis = !chainEverStarted;
+      chainEverStarted = true;
+      chainedLines += 1;
+      const hash = typeof event.hash === 'string' ? event.hash : null;
+      const prev = (event.prev_hash ?? null) as string | null;
+      // Each line is HMAC-keyed. Without the secret (a clone that has not
+      // imported it) the line cannot be hash-verified — flag it unverifiable
+      // rather than a false tamper; its prev_hash continuity is still checked
+      // below.
+      if (secret === null) {
+        unverifiable += 1;
+      } else {
+        hmacChecked += 1;
+        const recomputed = hmacEvent(event as unknown as AuditEvent, secret);
+        if (hash !== recomputed) {
+          chainBroken = true;
+          hashMismatchCount += 1;
+          hmacFailed += 1;
+          chainBreakDetail = `hash mismatch on a line in ${path.basename(file)}`;
+        }
+      }
+      // An accepted prune re-baseline: the genesis event's prev_hash points
+      // at the committed anchor digest (not a hash on disk) and its own hash
+      // is the one the waiver was signed for. The waiver's signature/project
+      // pin/genesis match were verified by the caller — here we only confirm
+      // the two boundary hashes line up, so a deleted prefix reads as a
+      // deliberate prune, not a break. Restricted to the genesis.
+      const rebaselinedGenesis =
+        isGenesis &&
+        acceptedRebaseline !== null &&
+        prev === acceptedRebaseline.anchorPrevHash &&
+        hash === acceptedRebaseline.genesisHash;
+      if (prev !== prevHash && !rebaselinedGenesis) {
+        chainBroken = true;
+        prevHashBreakCount += 1;
+        // A break on the first line of a rotated segment means the previous
+        // segment's tail is missing or altered (e.g. a whole archived month
+        // was deleted) — name that explicitly.
+        chainBreakDetail =
+          prevHash === null
+            ? `prev_hash break at the start of ${path.basename(file)} (a prior segment may be missing)`
+            : `prev_hash break on a line in ${path.basename(file)}`;
+      }
+      if (hash !== null) chainedHashes.push(hash);
+      prevHash = hash;
+      lastHash = hash;
+      lastAt = typeof event.at === 'string' ? event.at : lastAt;
     }
   }
 
   return {
     chainedLines,
-    legacyLines,
     malformedLines,
-    v3Unverifiable,
-    anyV3,
+    unverifiable,
     chainBroken,
     chainBreakDetail,
     lastHash,
     lastAt,
     chainEverStarted,
-    versionDowngradeCount,
     hashMismatchCount,
     prevHashBreakCount,
-    v3HmacChecked,
-    v3HmacFailed,
+    hmacChecked,
+    hmacFailed,
     chainedHashes,
   };
 }
@@ -365,7 +282,7 @@ function walkAuditChain(
  * ancestor of the current chain.
  */
 export interface ChainAssessment {
-  /** Chained (v>=2) line count on disk. */
+  /** Chained line count on disk. */
   readonly chainedLines: number;
   /** `hash` of the last chained line, or `null` when the chain is empty. */
   readonly lastHash: string | null;
@@ -375,8 +292,8 @@ export interface ChainAssessment {
   readonly malformedLines: number;
   /**
    * True when the per-line chain is internally inconsistent — a `prev_hash`
-   * break, a content-hash mismatch, or a version downgrade. Any real tamper
-   * signal that reconcile refuses lands here.
+   * break or a content-hash mismatch. Any real tamper signal that reconcile
+   * refuses lands here.
    */
   readonly chainBroken: boolean;
   /** Human-readable detail of the last break, when `chainBroken`. */
@@ -393,7 +310,7 @@ export interface ChainAssessment {
  * `accept-truncation` command needs.
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
- * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @param secret - Per-project HMAC secret for verifying the sealed lines
  * @returns The assessment
  */
 export function assessAuditChain(
@@ -418,7 +335,6 @@ export function inspectAuditIntegrity(
   adapter: SqliteAdapter,
   auditDir: string,
   secret: Buffer | null = null,
-  hasFingerprint = false,
   attestation: AttestationSource | null = null,
   contentAttestation: IntegrityCheck | null = null,
   acceptedRebaseline: AcceptedRebaseline | null = null,
@@ -452,65 +368,41 @@ export function inspectAuditIntegrity(
   }
 
   const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
-  const {
-    chainedLines,
-    legacyLines,
-    malformedLines,
-    v3Unverifiable,
-    anyV3,
-    lastHash,
-    chainEverStarted,
-  } = walk;
-  let chainBroken = walk.chainBroken;
-  let chainBreakDetail = walk.chainBreakDetail;
+  const { chainedLines, malformedLines, unverifiable, lastHash, chainEverStarted } = walk;
+  const chainBroken = walk.chainBroken;
+  const chainBreakDetail = walk.chainBreakDetail;
 
   // Wrong-secret HINT (additive, never suppresses the tamper verdict). When
-  // EVERY v3 line fails the HMAC while the on-disk chain is otherwise
-  // internally consistent (prev_hash continuity intact, no downgrade, and the
-  // only hash mismatches are those v3 HMAC failures), the most likely cause
-  // is the WRONG project secret — an operator who imported another project's
-  // key. BUT this shape is NOT cryptographically distinguishable from a
-  // content forgery of every v3 line whose stored hashes were left
-  // self-consistent (an attacker without the secret can produce exactly this).
+  // EVERY line fails the HMAC while the on-disk chain is otherwise internally
+  // consistent (prev_hash continuity intact, and the only hash mismatches are
+  // those HMAC failures), the most likely cause is the WRONG project secret —
+  // an operator who imported another project's key. BUT this shape is NOT
+  // cryptographically distinguishable from a content forgery of every line
+  // whose stored hashes were left self-consistent (an attacker without the
+  // secret can produce exactly this).
   // So we do NOT clear `chainBroken`: the `audit hash chain` verdict stays a
   // hard error, and we ADD an authenticity line that names the wrong-secret
   // possibility as the likely-but-unproven cause. Relabelling here is
   // additive guidance, never a downgrade of the integrity signal.
   const wrongSecretLikely =
-    walk.v3HmacChecked > 0 &&
-    walk.v3HmacFailed === walk.v3HmacChecked &&
-    walk.hashMismatchCount === walk.v3HmacFailed &&
-    walk.prevHashBreakCount === 0 &&
-    walk.versionDowngradeCount === 0;
+    walk.hmacChecked > 0 &&
+    walk.hmacFailed === walk.hmacChecked &&
+    walk.hashMismatchCount === walk.hmacFailed &&
+    walk.prevHashBreakCount === 0;
 
-  // Fingerprint implies v3: a committed HMAC fingerprint means the project
-  // adopted keyed events, so a chain with chained lines but NO v3 line is a
-  // total downgrade — every v3 line rewritten to keyless v2. (Version
-  // monotonicity above catches a partial downgrade; this catches a
-  // wholesale one, where nothing remains as v3 to violate monotonicity.)
-  // The fingerprint is committed under versioned .mnema/keys, so removing
-  // it to evade this shows up in `git status`.
-  if (hasFingerprint && chainedLines > 0 && !anyV3) {
-    chainBroken = true;
-    chainBreakDetail =
-      'chain is entirely v2 but the project has a committed HMAC fingerprint — a wholesale v3→v2 downgrade (keyed events were stripped)';
-  }
-
-  // No new-format lines anywhere: the project predates the integrity
-  // feature. Report as warning so the user knows the check is dormant.
+  // An empty chain (fresh project, nothing written yet): the integrity
+  // check has nothing to verify. Report as a warning so the user knows it
+  // is dormant until the first event.
   if (!chainEverStarted && stateRow.chain_head_hash === null) {
     checks.push({
       name: 'audit integrity',
       ok: true,
-      detail: 'legacy audit log (no hash chain yet — activates on next event)',
+      detail: 'no audit events yet — the hash chain activates on the first write',
       severity: 'warning',
     });
     return checks;
   }
 
-  // Surface legacy lines so a human can still reconcile the disk total
-  // (chained + legacy = lines on disk).
-  const legacyNote = legacyLines > 0 ? ` (+${legacyLines} legacy pre-chain)` : '';
   // The writer commits the SQLite mirror BEFORE appending the JSONL line, so
   // a crash in that window leaves the mirror EXACTLY one event ahead of disk.
   // That is a recoverable state — BUT it is byte-for-byte indistinguishable
@@ -521,63 +413,45 @@ export function inspectAuditIntegrity(
   // silently green. Any other discrepancy (mirror behind disk, or ahead by
   // more than one) is unambiguous tampering/corruption and stays an error.
   // The one-ahead state is benign ONLY when it is a clean crash/truncation
-  // shape. If the log ALSO contains a malformed line or an interior legacy
-  // (v1) line, the count shortfall is exactly what an attacker uses to
-  // launder an interior deletion — a garbage line or a v1 chain-reset masks a
-  // removed chained line while keeping the count off-by-one. That is not the
-  // recoverable crash window; escalate to a hard error.
+  // shape. If the log ALSO contains a malformed line, the count shortfall is
+  // exactly what an attacker uses to launder an interior deletion — a garbage
+  // line masks a removed chained line while keeping the count off-by-one.
+  // That is not the recoverable crash window; escalate to a hard error.
   const mirrorOneAhead = stateRow.event_count === chainedLines + 1;
-  const oneAheadIsClean = mirrorOneAhead && malformedLines === 0 && legacyLines === 0;
+  const oneAheadIsClean = mirrorOneAhead && malformedLines === 0;
   if (chainedLines === stateRow.event_count) {
     checks.push({
       name: 'audit event count',
       ok: true,
-      detail: `${chainedLines} chained events match audit_state.event_count${legacyNote}`,
+      detail: `${chainedLines} chained events match audit_state.event_count`,
     });
   } else if (oneAheadIsClean) {
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}${legacyNote}) — either a crash between the mirror commit and the log append OR a truncation of the last line. A crash is reconciled at the next writer boot (the mirror is rewound to the on-disk tail); if this persists after a restart with no crash, investigate a truncation.`,
+      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}) — either a crash between the mirror commit and the log append OR a truncation of the last line. A crash is reconciled at the next writer boot (the mirror is rewound to the on-disk tail); if this persists after a restart with no crash, investigate a truncation.`,
       severity: 'warning',
     });
   } else {
     const maskNote = mirrorOneAhead
-      ? ' with malformed/legacy lines present — a possible masked interior deletion'
+      ? ' with malformed lines present — a possible masked interior deletion'
       : '';
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `disk has ${chainedLines} chained events${legacyNote}, audit_state has ${stateRow.event_count}${maskNote}`,
+      detail: `disk has ${chainedLines} chained events, audit_state has ${stateRow.event_count}${maskNote}`,
       severity: 'error',
     });
   }
 
   if (chainBroken) {
-    // A committed waiver (`mnema audit reconcile --accept-legacy-breaks`)
-    // downgrades this to a warning ONLY when re-verified right now: same
-    // content-valid, same before-the-accepted-cutoff shape. A NEW break, a
-    // content edit, or a downgrade appearing after the waiver was written
-    // makes this re-check fail and the error stands — the waiver never
-    // blindly silences the check, it only covers the exact situation a
-    // human already reviewed at write time.
-    const waiver = readLegacyBreaksWaiver(auditDir);
-    const stillCovered =
-      waiver !== null && contentValidAndBeforeCutoff(auditDir, secret, waiver.acceptedCutoff).ok;
     checks.push({
-      // Deliberately a DIFFERENT name when waiver-covered: this is not the
-      // ambiguous "one-ahead" truncation shape `chainHealthyForAttest`
-      // treats warnings under 'audit hash chain' as blocking for reattest —
-      // it is a human-reviewed, content-reverified acceptance, a genuinely
-      // different guarantee that must not be caught by that name-keyed set.
-      name: stillCovered ? 'audit hash chain (legacy-accepted)' : 'audit hash chain',
+      name: 'audit hash chain',
       ok: false,
-      detail: stillCovered
-        ? `${chainBreakDetail} — accepted as a legacy concurrent-writer artefact on ${waiver?.acceptedAt ?? 'unknown date'} (content re-verified authentic); see \`mnema audit diagnose\``
-        : // Name the next step, not just the verdict: the operator seeing this
-          // for the first time has no way to know the recovery tooling exists.
-          `${chainBreakDetail} — run \`mnema audit diagnose\` to locate the break; if it is mirror drift (not content tampering), \`mnema audit reconcile\` can heal it`,
-      severity: stillCovered ? 'warning' : 'error',
+      // Name the next step, not just the verdict: the operator seeing this
+      // for the first time has no way to know the recovery tooling exists.
+      detail: `${chainBreakDetail} — run \`mnema audit diagnose\` to locate the break; if it is mirror drift (not content tampering), \`mnema audit recover\` can heal it`,
+      severity: 'error',
     });
   } else if (lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
     // The mirror head points one past the disk tail — the same ambiguous
@@ -605,58 +479,42 @@ export function inspectAuditIntegrity(
     });
   }
 
-  // Wrong-secret hint: every v3 line failed the HMAC with intact continuity.
+  // Wrong-secret hint: every line failed the HMAC with intact continuity.
   // The `audit hash chain` verdict above already carries the hard error; this
   // ADDS the most likely explanation (wrong key) with its fix, WITHOUT
-  // claiming the chain is clean — because a content forgery of every v3 line
+  // claiming the chain is clean — because a content forgery of every line
   // is indistinguishable from a key mismatch by these counts. A warning, so
   // it does not double-count as a second blocking error over the same lines
   // (the hash-chain error is the blocking signal). Only meaningful when a
-  // secret was actually used (v3HmacChecked > 0), so it never fires for the
+  // secret was actually used (hmacChecked > 0), so it never fires for the
   // no-secret unverifiable case below.
   if (wrongSecretLikely) {
     checks.push({
       name: 'audit authenticity',
       ok: false,
-      detail: `all ${walk.v3HmacChecked} HMAC-keyed (v3) line(s) failed verification while the chain is otherwise internally consistent — the LIKELY cause is the wrong project secret (e.g. another project's key was imported); verify you imported the correct secret (\`mnema project secret import\`). NOTE: this shape cannot be distinguished from a content forgery of every v3 line, so the hash-chain error above still stands until the correct secret verifies clean.`,
+      detail: `all ${walk.hmacChecked} line(s) failed HMAC verification while the chain is otherwise internally consistent — the LIKELY cause is the wrong project secret (e.g. another project's key was imported); verify you imported the correct secret (\`mnema project secret import\`). NOTE: this shape cannot be distinguished from a content forgery of every line, so the hash-chain error above still stands until the correct secret verifies clean.`,
       severity: 'warning',
     });
   }
 
-  // v3 lines are HMAC-keyed with the project secret. Without the secret
+  // Every line is HMAC-keyed with the project secret. Without the secret
   // (a clone that has not imported it) their authenticity cannot be
   // checked — report it as a warning, never a tamper error: the chain
   // consistency above still holds, only project-authenticity is unproven.
-  if (v3Unverifiable > 0) {
+  if (unverifiable > 0) {
     checks.push({
       name: 'audit authenticity',
       ok: false,
-      detail: `${v3Unverifiable} HMAC-keyed (v3) line(s) could not be verified — project secret not present. Import it with \`mnema project secret import\` to verify authenticity.`,
+      detail: `${unverifiable} line(s) could not be HMAC-verified — project secret not present. Import it with \`mnema project secret import\` to verify authenticity.`,
       severity: 'warning',
     });
   }
 
-  // Downgrade anchor present: the fingerprint-implies-v3 rule (above) can
-  // only catch a wholesale v3→v2 downgrade while the committed fingerprint
-  // survives. A chain that clearly adopted v3 but has NO committed
-  // fingerprint has lost that anchor — either it was never committed, or it
-  // was deleted to disable the downgrade defense. Warn so the user commits
-  // (or restores) it; without it a wholesale downgrade would pass silently.
-  if (anyV3 && !hasFingerprint) {
-    checks.push({
-      name: 'audit downgrade anchor',
-      ok: false,
-      detail:
-        'this project uses HMAC-keyed (v3) events but has no committed fingerprint (.mnema/keys/project.hmac-id) — the wholesale-downgrade defense is disarmed. Commit the fingerprint (and keep it tracked) so a v3→v2 downgrade cannot pass unnoticed.',
-      severity: 'warning',
-    });
-  }
-
-  // Machine attestation (ADR-37 layer 2): the latest recorded head
-  // signature, verified against the committed public key of its signer.
-  // This is SEPARATE from chain consistency (layer 1) and HMAC authenticity
-  // — it attests WHICH machine advanced the head. Only meaningful once the
-  // chain has started, so it is skipped for a legacy/empty log above.
+  // Machine attestation: the latest recorded head signature, verified
+  // against the committed public key of its signer. This is SEPARATE from
+  // chain consistency and HMAC authenticity — it attests WHICH machine
+  // advanced the head. Only meaningful once the chain has started, so it
+  // is skipped for an empty log above.
   if (attestation !== null) {
     checks.push(
       attestationCheck(
@@ -668,7 +526,7 @@ export function inspectAuditIntegrity(
     );
   }
 
-  // Content attestation (ADR-41): committed `.att` coverage over the chained
+  // Content attestation: committed `.att` coverage over the chained
   // events, verifiable by an anonymous clone with NO secret. Computed by the
   // caller (it needs the attestation modules) and passed in ready, so this
   // function gains no new dependency. The caller's builder does its OWN walk,
@@ -721,27 +579,25 @@ export type ReconcileResult =
  * default, used for a dry-run preview) it computes the same verdict but
  * never touches the database.
  *
- * This is the recovery path for the drift a pre-`43e7113` mnema (no
- * cross-process write lock on the mirror+append pair) could leave behind:
- * two concurrent writers commit the SQLite mirror in one order but append
- * their JSONL lines in the other, so the mirror ends up counting more events
- * than ever landed on disk. `AuditStateRepository.reconcileToDisk` only
- * self-heals the narrow one-ahead crash shape; a multi-event drift like that
- * is left for a human to resolve — this is that resolution, made safe by
- * refusing whenever the disk chain shows signs of real tampering rather than
- * mirror drift.
+ * This is the recovery path for mirror drift: when two concurrent writers
+ * commit the SQLite mirror in one order but append their JSONL lines in the
+ * other, the mirror can end up counting more events than ever landed on disk.
+ * `AuditStateRepository.reconcileToDisk` only self-heals the narrow one-ahead
+ * crash shape; a multi-event drift like that is left for a human to resolve —
+ * this is that resolution, made safe by refusing whenever the disk chain shows
+ * signs of real tampering rather than mirror drift.
  *
  * Refuses (returns `{ ok: false }`) when:
- * - the chain has no chained (v>=2) lines yet (nothing to reconcile against)
+ * - the chain has no chained lines yet (nothing to reconcile against)
  * - the on-disk chain is not internally consistent (a real `prev_hash`
- *   break, a hash mismatch, or a version downgrade) — reconciling would
- *   paper over genuine tampering rather than fix a benign mirror/disk split
+ *   break or a hash mismatch) — reconciling would paper over genuine
+ *   tampering rather than fix a benign mirror/disk split
  * - any line failed to parse — same reasoning as above (a possible
  *   smokescreen for a deleted line)
- * - a signed checkpoint (layer-2 machine attestation) attests a higher
- *   `event_count` than the walk found AND its covered head is ABSENT from the
- *   on-disk chain — a genuine truncation/fork, which only the explicit
- *   `audit accept-truncation` command may accept, never an automatic reconcile
+ * - a signed checkpoint (machine attestation) attests a higher `event_count`
+ *   than the walk found AND its covered head is ABSENT from the on-disk chain
+ *   — a genuine truncation/fork, which only the explicit `audit
+ *   accept-truncation` command may accept, never an automatic reconcile
  *
  * When a signed checkpoint attests a higher count but its covered head is
  * still PRESENT on the disk chain (its `coveredHeadHash` appears in
@@ -754,27 +610,13 @@ export type ReconcileResult =
  *
  * @param auditDir - Absolute path to `.mnema/audit/`
  * @param state - The mirror repository to correct
- * @param secret - Per-project HMAC secret for verifying v3 lines
+ * @param secret - Per-project HMAC secret for verifying the sealed lines
  * @param signedCheckpoint - The recorded head signature's `eventCountAt` and
  *   `coveredHeadHash`, or `null` when none is recorded. The covered hash is
  *   the ancestry oracle that separates interior drift (heal) from a genuine
  *   truncation of the signed head (refuse).
  * @param apply - When true, persist the correction; when false, only compute
  *   the verdict (dry run)
- * @param acceptLegacyBreaks - Opt-in recovery for a chain corrupted by
- *   concurrent writers racing to append without a cross-process lock: a
- *   `prev_hash` break with fully authentic content on both
- *   sides, no later than this ISO date. When provided, a `prev_hash`-only
- *   break is not an automatic refusal PROVIDED {@link diagnoseAuditChain}
- *   independently confirms EVERY break in the whole log (not just the last
- *   one `walkAuditChain` tracks) is content-valid and at or before this
- *   date, AND the audit files match the committed git `HEAD` (the anchor of
- *   trust — if the disk diverges from what was committed, this path refuses
- *   same as before). A hash mismatch or version downgrade ALWAYS refuses,
- *   regardless of this option — it exists only for the sequence-only shape.
- * @param gitCwd - Working directory for the git-anchor check (required to
- *   accept legacy breaks; ignored otherwise)
- * @param gitRunner - Injectable git runner (tests avoid a real repo)
  * @param reSign - Optional callback invoked AFTER an applied correction that
  *   dropped `event_count` below the recorded `signedCheckpoint.eventCountAt`.
  *   Given the new disk tail hash and count, it re-records the head signature
@@ -785,101 +627,12 @@ export type ReconcileResult =
  * @returns The outcome — on success, the event count before/after, whether a
  *   correction was needed and applied, and whether the head was re-signed
  */
-/**
- * The git-independent half of the legacy-break check: no version downgrade or
- * content-hash mismatch ANYWHERE in the log ({@link walkAuditChain} only
- * tracks the LAST break it saw, so this re-walks independently via
- * {@link diagnoseAuditChain} rather than trusting that single detail string),
- * every break's surrounding content authentic, and every break at or before
- * `cutoffIso`. Shared by {@link evaluateLegacyBreaks} (which adds the git
- * anchor check, run once when WRITING a waiver) and the read path in
- * {@link inspectAuditIntegrity} (which re-verifies an EXISTING waiver on
- * every call, deliberately WITHOUT re-running git each time — the git check
- * already protected the waiver file itself at write time).
- */
-function contentValidAndBeforeCutoff(
-  auditDir: string,
-  secret: Buffer | null,
-  cutoffIso: string,
-): { ok: true } | { ok: false; reason: string } {
-  const rewalk = walkAuditChain(auditDir, secret);
-  if (rewalk.versionDowngradeCount > 0) {
-    return { ok: false, reason: 'a version downgrade is present — never a legacy-break shape' };
-  }
-  if (rewalk.hashMismatchCount > 0) {
-    return { ok: false, reason: 'a content-hash mismatch is present — never a legacy-break shape' };
-  }
-  const diagnosis = diagnoseAuditChain(auditDir, secret, null);
-  if (diagnosis.breaks.length === 0) {
-    // walkAuditChain saw chainBroken from something diagnoseAuditChain does
-    // not model (it only tracks prev_hash breaks) — refuse rather than guess.
-    return { ok: false, reason: 'the break reported does not match a known legacy-break shape' };
-  }
-  const cutoff = Date.parse(cutoffIso);
-  if (Number.isNaN(cutoff)) {
-    return { ok: false, reason: `--accept-legacy-breaks date "${cutoffIso}" is not a valid date` };
-  }
-  for (const b of diagnosis.breaks) {
-    if (b.contentValidAroundBreak !== true) {
-      return {
-        ok: false,
-        reason: `break at ${b.file}:${b.line} has ${b.contentValidAroundBreak === null ? 'unverifiable (no secret)' : 'INVALID'} content around it — refusing`,
-      };
-    }
-    const at = b.at !== null ? Date.parse(b.at) : Number.NaN;
-    if (Number.isNaN(at) || at > cutoff) {
-      return {
-        ok: false,
-        reason: `break at ${b.file}:${b.line} (${b.at ?? 'unknown time'}) is after the cutoff ${cutoffIso}`,
-      };
-    }
-  }
-  return { ok: true };
-}
-
-/**
- * Decides whether every break in `auditDir` qualifies for the legacy-break
- * recovery path, ADDING the git-anchor check on top of
- * {@link contentValidAndBeforeCutoff}: the on-disk files must match the
- * committed git `HEAD` — if the working tree has a local, uncommitted
- * difference, a human could be looking at exactly the tampered state this
- * whole gate exists to catch. Run once, when WRITING a new waiver.
- */
-function evaluateLegacyBreaks(
-  auditDir: string,
-  secret: Buffer | null,
-  cutoffIso: string,
-  gitCwd: string | null,
-  gitRunner: GitCommandRunner,
-): { ok: true } | { ok: false; reason: string } {
-  if (gitCwd === null) {
-    return {
-      ok: false,
-      reason: '--accept-legacy-breaks requires running inside the project (no git directory given)',
-    };
-  }
-  const diagnosis = diagnoseAuditChain(auditDir, secret, gitCwd, gitRunner);
-  if (diagnosis.matchesCommittedHead !== true) {
-    return {
-      ok: false,
-      reason:
-        diagnosis.matchesCommittedHead === null
-          ? 'could not confirm the audit files match the committed git HEAD (not a git work tree, or no commits yet)'
-          : 'the audit files have local, uncommitted changes — the git anchor of trust does not hold',
-    };
-  }
-  return contentValidAndBeforeCutoff(auditDir, secret, cutoffIso);
-}
-
 export function reconcileAuditState(
   auditDir: string,
   state: AuditStateRepository,
   secret: Buffer | null,
   signedCheckpoint: { eventCountAt: number; coveredHeadHash: string } | null,
   apply: boolean,
-  acceptLegacyBreaks: string | null = null,
-  gitCwd: string | null = null,
-  gitRunner: GitCommandRunner = defaultGitRunner,
   reSign?: (newHeadHash: string, newEventCount: number) => boolean,
 ): ReconcileResult {
   const walk = walkAuditChain(auditDir, secret);
@@ -891,32 +644,16 @@ export function reconcileAuditState(
     };
   }
   if (walk.chainBroken) {
-    const legacy =
-      acceptLegacyBreaks !== null
-        ? evaluateLegacyBreaks(auditDir, secret, acceptLegacyBreaks, gitCwd, gitRunner)
-        : null;
-    if (legacy === null || !legacy.ok) {
-      return {
-        ok: false,
-        reason:
-          legacy !== null
-            ? `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — ${legacy.reason}`
-            : `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — this is tampering, not mirror drift; reconciling would hide it. Run \`mnema audit diagnose\` for a full report, and \`--accept-legacy-breaks <date>\` if every break is content-valid and no later than that date.`,
-      };
-    }
-    // Every break is a sequence-only discontinuity (concurrent writers,
-    // pre-lock), content-authentic throughout, no later than the cutoff, and
-    // the disk matches what was committed — fall through and reconcile.
-    // Persist the acceptance so `doctor`/`verify`/`reattest` (which all read
-    // through inspectAuditIntegrity) stop reporting a hard error for this
-    // SAME, already-reviewed situation. Written on apply only, never on a
-    // dry-run preview. It is re-verified on every read, never trusted blindly.
-    if (apply && acceptLegacyBreaks !== null) {
-      writeLegacyBreaksWaiver(auditDir, acceptLegacyBreaks);
-    }
+    // A broken chain is tampering, not mirror drift — reconciling would hide
+    // it. A deliberate re-baseline is the explicit `audit recover` path,
+    // never an automatic reconcile.
+    return {
+      ok: false,
+      reason: `on-disk chain is not internally consistent: ${walk.chainBreakDetail} — this is tampering, not mirror drift; reconciling would hide it. Run \`mnema audit diagnose\` for a full report.`,
+    };
   }
   if (!walk.chainEverStarted) {
-    return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to reconcile' };
+    return { ok: false, reason: 'no chained events on disk yet — nothing to reconcile' };
   }
   if (signedCheckpoint !== null && walk.chainedLines < signedCheckpoint.eventCountAt) {
     // The mirror/attestation high-water mark sits above the on-disk line
@@ -1170,7 +907,6 @@ export class CachedAuditIntegrity {
    */
   get(): IntegrityCheck[] {
     const secret = this.secrets?.read() ?? null;
-    const hasFingerprint = this.secrets?.readFingerprint() != null;
     // The attestation verdict depends on the recorded head signature, which
     // is SQLite state outside the audit files — fold its identity (covered
     // head + signer fingerprint) into the key so a signature change (or a
@@ -1184,7 +920,7 @@ export class CachedAuditIntegrity {
     // the JSONL untouched would serve a stale verdict.
     const attKey =
       this.buildContentAttestation === null ? 'none' : attestFilesSignature(this.auditDir);
-    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|f=${hasFingerprint}|a=${sigKey}|c=${attKey}`;
+    const signature = `${auditFilesSignature(this.auditDir)}|s=${secret !== null}|a=${sigKey}|c=${attKey}`;
     if (this.cached !== null && signature === this.signature) {
       return this.cached;
     }
@@ -1192,7 +928,6 @@ export class CachedAuditIntegrity {
       this.adapter,
       this.auditDir,
       secret,
-      hasFingerprint,
       this.attestation,
       this.buildContentAttestation?.() ?? null,
     );

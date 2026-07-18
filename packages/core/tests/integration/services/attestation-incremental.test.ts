@@ -48,7 +48,7 @@ describe('planReattestIncremental (tail-only, fail-closed)', () => {
     for (let i = 0; i < n; i++) {
       lines.push(
         JSON.stringify({
-          v: 3,
+          v: 1,
           at: `2026-07-07T00:00:00.${String(i).padStart(3, '0')}Z`,
           kind: 'k',
           actor: 'felipesauer',
@@ -271,7 +271,7 @@ describe('planReattestIncremental (tail-only, fail-closed)', () => {
         const g = base + i;
         lines.push(
           JSON.stringify({
-            v: 3,
+            v: 1,
             at: `t-${g}`,
             kind: 'k',
             actor: 'felipesauer',

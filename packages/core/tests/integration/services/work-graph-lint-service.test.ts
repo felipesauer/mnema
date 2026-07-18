@@ -9,7 +9,6 @@ import { ErrorCode } from '@/errors/error-codes.js';
 import { AuditQuery } from '@/services/integrity/audit-query.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { WorkGraphLintService } from '@/services/lint/work-graph-lint-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
@@ -18,6 +17,7 @@ import { TaskEvidenceRepository } from '@/storage/sqlite/repositories/task-evide
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -40,7 +40,7 @@ describe('WorkGraphLintService', () => {
     new MigrationRunner().run(adapter, migrationsDir);
 
     const auditDir = path.join(tempRoot, '.audit');
-    audit = new AuditService(new AuditWriter(auditDir));
+    audit = new AuditService(chainedAuditWriter(adapter, auditDir));
     auditQuery = new AuditQuery(auditDir);
 
     const projects = new ProjectRepository(adapter);

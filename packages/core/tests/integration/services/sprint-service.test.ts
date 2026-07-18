@@ -8,7 +8,6 @@ import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { SprintService } from '@/services/backlog/sprint-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
 import { SprintMetricRepository } from '@/storage/sqlite/repositories/sprint-metric-repository.js';
@@ -16,6 +15,7 @@ import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repositor
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -31,7 +31,7 @@ describe('SprintService', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const sprintRepo = new SprintRepository(adapter);
     tasks = new TaskRepository(adapter);
     projects = new ProjectRepository(adapter);
@@ -302,7 +302,9 @@ describe('SprintService', () => {
 
   describe('features.sprints enforcement', () => {
     it('refuses to plan a sprint on a workflow that declares features.sprints=false', () => {
-      const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit-kanban')));
+      const audit = new AuditService(
+        chainedAuditWriter(adapter, path.join(tempRoot, '.audit-kanban')),
+      );
       const kanbanMachine = new StateMachine(
         loadWorkflowFile(path.resolve('packages/core/tests/fixtures/workflows/kanban.json')),
       );

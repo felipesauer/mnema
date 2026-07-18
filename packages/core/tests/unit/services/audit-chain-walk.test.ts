@@ -4,13 +4,15 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { walkChainedEvents } from '@/services/audit/audit-chain-walk.js';
+import { EVENT_FORMAT_VERSION } from '@/storage/audit/audit-hash.js';
 
 /**
- * walkChainedEvents indexes events by their position in the CHAINED (v>=2)
- * sequence — the same count audit_state.event_count tracks — so an attestation
- * over [from, to) addresses the right events regardless of interleaved legacy
- * (v1) or malformed lines, and across rotated segments.
+ * walkChainedEvents indexes events by their position in the chained sequence —
+ * the same count audit_state.event_count tracks — so an attestation over
+ * [from, to) addresses the right events regardless of interleaved non-keyed or
+ * malformed lines, and across rotated segments.
  */
+const V = EVENT_FORMAT_VERSION;
 describe('walkChainedEvents', () => {
   let auditDir: string;
 
@@ -48,12 +50,12 @@ describe('walkChainedEvents', () => {
 
   it('tallies a v>=2 line with no hash but still indexes it (keeps event_count alignment)', () => {
     // A chained line without a `hash` must NOT shift the chained index (it is
-    // still a v>=2 event that event_count counts), but is tallied so the
+    // still a keyed event that event_count counts), but is tallied so the
     // attestation planner can refuse a batch containing it.
-    const noHash = JSON.stringify({ v: 2, at: 't', kind: 'k', actor: 'a', data: { id: 'X' } });
+    const noHash = JSON.stringify({ v: V, at: 't', kind: 'k', actor: 'a', data: { id: 'X' } });
     writeFileSync(
       path.join(auditDir, 'current.jsonl'),
-      `${ev(2, 'A')}\n${noHash}\n${ev(2, 'B')}\n`,
+      `${ev(V, 'A')}\n${noHash}\n${ev(V, 'B')}\n`,
       'utf-8',
     );
     const walk = walkChainedEvents(auditDir);
@@ -61,25 +63,26 @@ describe('walkChainedEvents', () => {
     expect(walk.unhashedLines).toBe(1);
   });
 
-  it('indexes only chained (v>=2) events, 0-based, in order', () => {
-    segment('current.jsonl', ev(2, 'A'), ev(3, 'B'), ev(2, 'C'));
+  it('indexes only chained events, 0-based, in order', () => {
+    segment('current.jsonl', ev(V, 'A'), ev(V, 'B'), ev(V, 'C'));
     const walk = walkChainedEvents(auditDir);
     expect(walk.chained.map((c) => c.index)).toEqual([0, 1, 2]);
     expect(walk.chained.map((c) => c.event.data.id)).toEqual(['A', 'B', 'C']);
     expect(walk.malformedLines).toBe(0);
   });
 
-  it('skips legacy (v1) lines without advancing the chained index', () => {
-    // A v1 line between chained events must NOT shift the chained index —
-    // event_count only counts v>=2, and the .att range must match.
-    segment('current.jsonl', ev(2, 'A'), ev(1, 'legacy'), ev(3, 'B'));
+  it('skips a non-keyed line without advancing the chained index', () => {
+    // A line whose version is not the event format tag is not a chained event
+    // — event_count only counts chained lines, and the .att range must match.
+    const stray = JSON.stringify({ v: 0, at: 't', kind: 'k', actor: 'a', data: { id: 'x' } });
+    segment('current.jsonl', ev(V, 'A'), stray, ev(V, 'B'));
     const walk = walkChainedEvents(auditDir);
     expect(walk.chained.map((c) => c.index)).toEqual([0, 1]);
     expect(walk.chained.map((c) => c.event.data.id)).toEqual(['A', 'B']);
   });
 
   it('tallies malformed lines and does not index them', () => {
-    segment('current.jsonl', ev(2, 'A'), 'this is not json', ev(2, 'B'));
+    segment('current.jsonl', ev(V, 'A'), 'this is not json', ev(V, 'B'));
     const walk = walkChainedEvents(auditDir);
     expect(walk.malformedLines).toBe(1);
     expect(walk.chained.map((c) => c.event.data.id)).toEqual(['A', 'B']);
@@ -89,9 +92,9 @@ describe('walkChainedEvents', () => {
   it('carries the chained index ACROSS rotated segments in chain order', () => {
     // Archived months come first (oldest-first), current.jsonl last; the
     // index is continuous across the boundary.
-    segment('2026-05.jsonl', ev(2, 'A'), ev(2, 'B'));
-    segment('2026-06.jsonl', ev(3, 'C'));
-    segment('current.jsonl', ev(3, 'D'), ev(3, 'E'));
+    segment('2026-05.jsonl', ev(V, 'A'), ev(V, 'B'));
+    segment('2026-06.jsonl', ev(V, 'C'));
+    segment('current.jsonl', ev(V, 'D'), ev(V, 'E'));
     const walk = walkChainedEvents(auditDir);
     expect(walk.chained.map((c) => c.event.data.id)).toEqual(['A', 'B', 'C', 'D', 'E']);
     expect(walk.chained.map((c) => c.index)).toEqual([0, 1, 2, 3, 4]);
@@ -100,7 +103,7 @@ describe('walkChainedEvents', () => {
   it('ignores blank lines', () => {
     writeFileSync(
       path.join(auditDir, 'current.jsonl'),
-      `${ev(2, 'A')}\n\n${ev(2, 'B')}\n`,
+      `${ev(V, 'A')}\n\n${ev(V, 'B')}\n`,
       'utf-8',
     );
     expect(walkChainedEvents(auditDir).chained.map((c) => c.event.data.id)).toEqual(['A', 'B']);

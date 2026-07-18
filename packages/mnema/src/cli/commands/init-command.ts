@@ -16,11 +16,13 @@ import { printError } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
 import { AuditService } from '@mnema/core/services/integrity/audit-service.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
+import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { AdoptionService } from '@mnema/core/services/knowledge/adoption-service.js';
 import { SkillService } from '@mnema/core/services/knowledge/skill-service.js';
 import { AuditWriter } from '@mnema/core/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { ActorRepository } from '@mnema/core/storage/sqlite/repositories/actor-repository.js';
+import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/audit-state-repository.js';
 import { ProjectRepository } from '@mnema/core/storage/sqlite/repositories/project-repository.js';
 import { SkillRepository } from '@mnema/core/storage/sqlite/repositories/skill-repository.js';
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
@@ -281,12 +283,21 @@ export class InitCommand {
       // the trail should say so (and init must not create a user actor row
       // as a side effect).
       if (!minimal) {
+        // Seed events enter the REAL chain (v3, HMAC-keyed): mint the
+        // project secret and write through the chained+mirrored writer, so
+        // a fresh `init` produces a keyed chain from its very first line —
+        // no unchained standalone path exists anymore.
+        const secret = new ProjectSecretService(cwd, options.key);
         new SkillService(
           path.join(cwd, LAYOUT.skills),
           new Set(),
           new SkillRepository(adapter),
           identity,
-          new AuditService(new AuditWriter(auditDir)),
+          new AuditService(
+            new AuditWriter(auditDir, new AuditStateRepository(adapter), () =>
+              secret.getOrCreate(),
+            ),
+          ),
         ).importSeeds('system');
       }
     } finally {

@@ -7,7 +7,6 @@ import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { DependencyService } from '@/services/backlog/dependency-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
-import { AuditWriter } from '@/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { DependencyRepository } from '@/storage/sqlite/repositories/dependency-repository.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
@@ -15,6 +14,7 @@ import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repositor
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
+import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
@@ -32,7 +32,7 @@ describe('DependencyService', () => {
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
 
-    const audit = new AuditService(new AuditWriter(path.join(tempRoot, '.audit')));
+    const audit = new AuditService(chainedAuditWriter(adapter, path.join(tempRoot, '.audit')));
     const projects = new ProjectRepository(adapter);
     projectId = projects.insert({ key: 'TEST', name: 'Test' }).id;
 

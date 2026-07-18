@@ -31,7 +31,9 @@ describe('audit crash-recovery reconciliation', () => {
     mkdirSync(auditDir, { recursive: true });
     adapter = new SqliteAdapter(path.join(tempRoot, 'state.db'));
     new MigrationRunner().run(adapter, migrationsDir);
-    audit = new AuditService(new AuditWriter(auditDir, new AuditStateRepository(adapter)));
+    audit = new AuditService(
+      new AuditWriter(auditDir, new AuditStateRepository(adapter), () => Buffer.alloc(32, 7)),
+    );
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-2' } });
   });

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { computeCutPoint, listAuditSegments } from '@/services/audit/retention-cut-point.js';
+import { EVENT_FORMAT_VERSION } from '@/storage/audit/audit-hash.js';
 
 /**
  * The retention cut-point math (ADR-68). Pure segment-boundary arithmetic:
@@ -26,7 +27,7 @@ describe('computeCutPoint', () => {
   function segment(name: string, count: number): void {
     const lines = Array.from({ length: count }, (_, i) =>
       JSON.stringify({
-        v: 2,
+        v: EVENT_FORMAT_VERSION,
         at: `t-${i}`,
         kind: 'k',
         actor: 'a',
@@ -167,7 +168,7 @@ describe('listAuditSegments', () => {
   function segment(name: string, count: number): void {
     const lines = Array.from({ length: count }, (_, i) =>
       JSON.stringify({
-        v: 2,
+        v: EVENT_FORMAT_VERSION,
         at: `t-${i}`,
         kind: 'k',
         actor: 'a',
@@ -187,14 +188,28 @@ describe('listAuditSegments', () => {
     expect(segs.map((s) => s.chainedEvents)).toEqual([3, 2, 1]);
   });
 
-  it('does not count legacy (v1) or malformed lines as chained', () => {
+  it('does not count non-keyed or malformed lines as chained', () => {
     writeFileSync(
       path.join(auditDir, 'current.jsonl'),
       [
-        JSON.stringify({ v: 2, at: 't', kind: 'k', actor: 'a', data: {}, hash: 'A' }),
-        JSON.stringify({ v: 1, at: 't', kind: 'k', actor: 'a', data: {} }),
+        JSON.stringify({
+          v: EVENT_FORMAT_VERSION,
+          at: 't',
+          kind: 'k',
+          actor: 'a',
+          data: {},
+          hash: 'A',
+        }),
+        JSON.stringify({ v: 0, at: 't', kind: 'k', actor: 'a', data: {} }),
         'not json',
-        JSON.stringify({ v: 3, at: 't', kind: 'k', actor: 'a', data: {}, hash: 'B' }),
+        JSON.stringify({
+          v: EVENT_FORMAT_VERSION,
+          at: 't',
+          kind: 'k',
+          actor: 'a',
+          data: {},
+          hash: 'B',
+        }),
       ].join('\n'),
       'utf-8',
     );

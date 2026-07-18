@@ -13,11 +13,10 @@ import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
 /**
- * `reconcileAuditState` is the recovery path for the drift a pre-`43e7113`
- * mnema (no cross-process write lock) could leave behind: two concurrent
- * writers commit the SQLite mirror in one order but append to disk in
- * another, so the mirror ends up counting MORE events than ever landed on
- * disk — a divergence bigger than the one-ahead crash shape
+ * `reconcileAuditState` is the recovery path for mirror drift: two concurrent
+ * writers commit the SQLite mirror in one order but append to disk in another,
+ * so the mirror ends up counting MORE events than ever landed on disk — a
+ * divergence bigger than the one-ahead crash shape
  * `AuditStateRepository.reconcileToDisk` already self-heals.
  */
 describe('reconcileAuditState', () => {
@@ -41,7 +40,7 @@ describe('reconcileAuditState', () => {
   });
 
   function writeThreeEvents(): void {
-    const audit = new AuditService(new AuditWriter(auditDir, state));
+    const audit = new AuditService(new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7)));
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-1' } });
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-2' } });
     audit.write({ kind: 'task_created', actor: 'a', data: { key: 'T-3' } });

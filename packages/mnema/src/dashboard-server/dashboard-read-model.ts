@@ -82,12 +82,7 @@ export function buildDashboardReadModel(
     integrity() {
       const auditDir = path.join(projectRoot, LAYOUT.audit);
       const secret = new ProjectSecretService(projectRoot, config.project.key);
-      return inspectAuditIntegrity(
-        container.adapter,
-        auditDir,
-        secret.read(),
-        secret.readFingerprint() !== null,
-      );
+      return inspectAuditIntegrity(container.adapter, auditDir, secret.read());
     },
   };
 }

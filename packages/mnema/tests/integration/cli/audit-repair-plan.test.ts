@@ -8,9 +8,11 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { GitCommandRunner } from '@mnema/core/services/git/git-commit-service.js';
 import { AuditService } from '@mnema/core/services/integrity/audit-service.js';
-import { hashEvent } from '@mnema/core/storage/audit/audit-hash.js';
+import { hmacEvent } from '@mnema/core/storage/audit/audit-hash.js';
+
+const FIXTURE_SECRET = Buffer.alloc(32, 7);
+
 import { type AuditEvent, AuditWriter } from '@mnema/core/storage/audit/audit-writer.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/audit-state-repository.js';
@@ -46,7 +48,7 @@ describe('planAuditRepair', () => {
   });
 
   const writeEvents = (n: number): void => {
-    const audit = new AuditService(new AuditWriter(auditDir, state));
+    const audit = new AuditService(new AuditWriter(auditDir, state, () => Buffer.alloc(32, 7)));
     for (let i = 0; i < n; i += 1) {
       audit.write({ kind: 'task_created', actor: 'a', data: { key: `T-${i}` } });
     }
@@ -58,7 +60,7 @@ describe('planAuditRepair', () => {
       if (line.length === 0) continue;
       try {
         const e = JSON.parse(line) as { v?: number; hash?: string };
-        if (typeof e.v === 'number' && e.v >= 2 && typeof e.hash === 'string') out.push(e.hash);
+        if (typeof e.v === 'number' && e.v === 1 && typeof e.hash === 'string') out.push(e.hash);
       } catch {
         /* ignore */
       }
@@ -79,14 +81,14 @@ describe('planAuditRepair', () => {
     for (let i = 0; i < n; i += 1) {
       const at = new Date(Date.UTC(2026, 5, 1, 0, 0, startAt + i)).toISOString();
       const unsealed: AuditEvent = {
-        v: 2,
+        v: 1,
         at,
         kind: 'task_created',
         actor: 'dev',
         data: { key: `T-${startAt + i}` },
         prev_hash: prevHash,
       };
-      const hash = hashEvent(unsealed);
+      const hash = hmacEvent(unsealed, FIXTURE_SECRET);
       events.push({ ...unsealed, hash });
       prevHash = hash;
     }
@@ -99,17 +101,11 @@ describe('planAuditRepair', () => {
       'utf-8',
     );
   };
-  // Satisfies matchesCommittedHead === true (git work tree, no local diff).
-  const gitMatch: GitCommandRunner = (args) =>
-    args[0] === 'rev-parse'
-      ? { status: 0, stdout: 'true\n', stderr: '' }
-      : { status: 0, stdout: '', stderr: '' };
 
   const plan = (over: Partial<Parameters<typeof planAuditRepair>[0]> = {}) =>
     planAuditRepair({
       auditDir,
       secret: null,
-      gitCwd: null,
       mirrorCount: state.read().eventCount,
       signature: null,
       attestationArtifacts: [],
@@ -175,30 +171,26 @@ describe('planAuditRepair', () => {
 
   it('never recommends accept-truncation while the chain is ALSO broken (it would refuse); routes to diagnose', () => {
     // The reachable combination the planner must not mishandle: a CONTENT-VALID
-    // concurrent-writer seam (which alone would be a legacy-breaks reconcile
-    // candidate) co-occurring with a genuine truncation (a signed checkpoint
-    // whose covered head is absent from disk). accept-truncation refuses ANY
-    // broken chain unconditionally — no legacy-break escape hatch, unlike
-    // reconcile — so recommending it here would hand the operator a command
-    // that immediately refuses. The plan must route to diagnose first instead.
+    // prev_hash seam co-occurring with a genuine truncation (a signed
+    // checkpoint whose covered head is absent from disk). accept-truncation
+    // refuses ANY broken chain unconditionally, so recommending it here would
+    // hand the operator a command that immediately refuses. The plan must
+    // route to diagnose first instead.
     const seamed = [...buildChain(5, 0), ...buildChain(4, 100)]; // one content-valid seam
     writeLines(seamed);
 
     const p = plan({
-      mirrorCount: 9,
-      gitCwd: tempRoot,
-      gitRunner: gitMatch, // matchesCommittedHead === true → the break is a legacy seam
+      mirrorCount: 9, // matchesCommittedHead === true → the break is a clean seam
       // A signed head that is not any on-disk hash → genuine truncation/fork.
       signature: { eventCountAt: 20, coveredHeadHash: 'deadbeef'.repeat(8) },
     });
 
-    // The truncation IS recognised in the findings…
-    expect(p.findings.some((f) => f.text.includes('ABSENT from disk'))).toBe(true);
-    // …but the broken chain means accept-truncation would refuse, so it is NOT
-    // recommended; the plan sends the operator to resolve the break first.
+    // A broken chain short-circuits to diagnose: accept-truncation would
+    // refuse a broken chain, so the plan sends the operator to resolve the
+    // break first — nothing else.
     expect(p.commands).not.toContain('mnema audit accept-truncation --require-committed --force');
     expect(p.commands).toEqual(['mnema audit diagnose']);
-    expect(p.recommendation).toContain('resolve the break FIRST');
+    expect(p.recommendation).toContain('Resolve the break FIRST');
   });
 
   it('tells the user to remove an overreaching .att before accepting a truncation', () => {

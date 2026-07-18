@@ -68,14 +68,20 @@ describe('audit machine attestation verdict', () => {
       },
     );
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, checkpoint),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        checkpoint,
+      ),
     );
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
   }
 
   const attestation = () => createAttestationSource(projectRoot, signatures);
   const attestationVerdict = (source: AttestationSource) =>
-    inspectAuditIntegrity(adapter, auditDir, null, false, source).find(
+    inspectAuditIntegrity(adapter, auditDir, null, source).find(
       (c) => c.name === 'audit machine attestation',
     );
 
@@ -151,7 +157,13 @@ describe('audit machine attestation verdict', () => {
   it('warns (no signature yet) on a chain with no checkpoint signed', () => {
     // Write an event with NO checkpoint signer, so nothing is signed.
     const audit = new AuditService(
-      new AuditWriter(auditDir, new AuditStateRepository(adapter), undefined, null, null),
+      new AuditWriter(
+        auditDir,
+        new AuditStateRepository(adapter),
+        () => Buffer.alloc(32, 7),
+        undefined,
+        null,
+      ),
     );
     audit.write({ kind: 'task_created', actor: 'felipesauer', data: { key: 'T-1' } });
     const verdict = attestationVerdict(attestation());
@@ -162,7 +174,7 @@ describe('audit machine attestation verdict', () => {
 
   it('is omitted entirely when no attestation source is wired', () => {
     writeSignedEvent();
-    const verdict = inspectAuditIntegrity(adapter, auditDir, null, false, null).find(
+    const verdict = inspectAuditIntegrity(adapter, auditDir, null, null).find(
       (c) => c.name === 'audit machine attestation',
     );
     expect(verdict).toBeUndefined();
