@@ -23,7 +23,7 @@ describe('computeCutPoint', () => {
     rmSync(path.dirname(path.dirname(auditDir)), { recursive: true, force: true });
   });
 
-  /** Writes chained (v>=2) events as lines to a segment file. */
+  /** Writes chained (keyed) events as lines to a segment file. */
   function segment(name: string, count: number): void {
     const lines = Array.from({ length: count }, (_, i) =>
       JSON.stringify({

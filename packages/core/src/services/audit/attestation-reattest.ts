@@ -79,7 +79,7 @@ export function planReattestIncremental(input: IncrementalReattestInput): Reatte
     };
   }
   if (headCount === 0) {
-    return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to attest' };
+    return { ok: false, reason: 'no chained events on disk yet — nothing to attest' };
   }
   if (input.signedEventCountAt !== null && headCount < input.signedEventCountAt) {
     return {
@@ -276,7 +276,7 @@ export function planReattest(input: ReattestInput): ReattestPlan {
     };
   }
   if (walk.unhashedLines > 0) {
-    // A v>=2 line with no `hash` cannot be attested (its leaf/head derivation
+    // A keyed line with no `hash` cannot be attested (its leaf/head derivation
     // needs it). Refuse cleanly rather than let the emitter throw on it.
     return {
       ok: false,
@@ -286,7 +286,7 @@ export function planReattest(input: ReattestInput): ReattestPlan {
 
   const total = walk.chained.length;
   if (total === 0) {
-    return { ok: false, reason: 'no chained (v>=2) events on disk yet — nothing to attest' };
+    return { ok: false, reason: 'no chained events on disk yet — nothing to attest' };
   }
   if (input.signedEventCountAt !== null && total < input.signedEventCountAt) {
     return {

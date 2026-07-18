@@ -145,7 +145,7 @@ describe('interior drift vs genuine truncation', () => {
       return { ok: false, reason: 'signed head still present — interior drift' };
     }
     if (opts.requireCommitted === true) {
-      const diag = diagnoseAuditChain(auditDir, null, projectRoot, opts.gitRunner);
+      const diag = diagnoseAuditChain(auditDir, null, projectRoot, null, opts.gitRunner);
       if (diag.matchesCommittedHead !== true) {
         return { ok: false, reason: 'require-committed: does not match git HEAD' };
       }

@@ -46,8 +46,8 @@ export function readCommittedProjectHmacId(projectRoot: string): string | null {
 }
 
 /**
- * Manages the per-project HMAC secret that keys the audit chain's v3
- * events (ADR-37 layer 2; shareable as a team credential per ADR-39).
+ * Manages the per-project HMAC secret that keys the audit chain's sealed
+ * events (shareable as a team credential).
  *
  * The raw secret lives OUTSIDE the repo at
  * `~/.config/mnema/projects/<key>/hmac.key` (0600) — out of the agent's
@@ -93,8 +93,9 @@ export class ProjectSecretService {
    * - committed fingerprint present but NO local secret → this is a clone
    *   that has not imported the secret. Return `null` — do NOT invent a
    *   new secret, which would fork the chain under a second key and
-   *   clobber the committed fingerprint. The caller writes v2 (degraded)
-   *   until the secret is imported (MNEMA-170);
+   *   clobber the committed fingerprint. Writes are mandatory-keyed, so the
+   *   caller refuses to seal (rather than degrading) until the secret is
+   *   imported;
    * - neither present → a genuinely new project: generate + persist both.
    *
    * @returns The 32-byte secret, or `null` when it exists but is not on

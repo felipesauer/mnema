@@ -77,7 +77,7 @@ describe.skipIf(!distBuilt)('AuditWriter: concurrent OS processes never fork the
     await Promise.all(children);
 
     const totalWritten = PROCESS_COUNT * EVENTS_PER_PROCESS;
-    const report = diagnoseAuditChain(auditDir, null, null, () => {
+    const report = diagnoseAuditChain(auditDir, null, null, null, () => {
       throw new Error('git should not be called (gitCwd is null)');
     });
 

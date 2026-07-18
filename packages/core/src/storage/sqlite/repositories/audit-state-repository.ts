@@ -152,7 +152,7 @@ export class AuditStateRepository {
    *     event — which ADR-37 rejects to keep the write hot path cheap. The
    *     checkpoint interval is the knob that bounds this window.
    *
-   * @param diskCount - Chained (v>=2) lines actually present on disk
+   * @param diskCount - Chained (keyed) lines actually present on disk
    * @param diskTailHash - `hash` of the last chained line on disk, or `null`
    *   when the disk chain is empty
    * @param lastAt - `at` of the last chained line on disk, or `null`
@@ -209,7 +209,7 @@ export class AuditStateRepository {
    * only ever re-points the mirror at a disk state already known to be
    * untampered. It must never be reached for a genuinely broken chain.
    *
-   * @param eventCount - Chained (v>=2) line count actually on disk
+   * @param eventCount - Chained (keyed) line count actually on disk
    * @param chainHeadHash - `hash` of the last chained line, or `null` if empty
    * @param lastEventAt - `at` of the last chained line, or `null` if empty
    */

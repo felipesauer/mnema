@@ -745,10 +745,10 @@ interface DiskLineTally {
   readonly malformed: number;
 }
 
-function tallyDiskLines(auditDir: string): DiskLineTally {
+function tallyDiskLines(tailDir: string): DiskLineTally {
   let chained = 0;
   let malformed = 0;
-  for (const file of orderedAuditFiles(auditDir)) {
+  for (const file of orderedAuditFiles(tailDir)) {
     for (const line of readFileSync(file, 'utf-8').split('\n')) {
       if (line.length === 0) continue;
       try {
@@ -800,13 +800,13 @@ function chainedLinesAtRevision(
  * needs to know it was a history rewrite, not a live bug. Strictly read-only.
  *
  * @param adapter - Open database adapter
- * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param tailDir - Absolute path to this machine's audit tail (`audit/m-<id>/`)
  * @param gitCwd - Project root for the git archaeology, or null to skip it
  * @param gitRunner - Injectable git runner (tests pass a stub)
  */
 export function inspectAuditDiskDelta(
   adapter: SqliteAdapter,
-  auditDir: string,
+  tailDir: string,
   gitCwd: string | null,
   gitRunner: GitCommandRunner = defaultGitRunner,
 ): DoctorCheck[] {
@@ -818,7 +818,7 @@ export function inspectAuditDiskDelta(
   if (row === undefined) return [];
 
   const dbCount = row.event_count;
-  const { chained: diskCount, malformed } = tallyDiskLines(auditDir);
+  const { chained: diskCount, malformed } = tallyDiskLines(tailDir);
   // Only the DB-ahead direction is the data-loss signal this check exists for.
   // Disk >= DB is either healthy (equal) or the disk-ahead crash window that
   // `mnema audit reconcile` already covers, so it is not flagged here.
@@ -860,7 +860,7 @@ export function inspectAuditDiskDelta(
     // Walk the commits that touched current.jsonl, newest first, and find the
     // first one where its chained-line count dropped relative to its parent —
     // the commit that removed audit history from disk.
-    const relPath = path.relative(gitCwd, path.join(auditDir, 'current.jsonl'));
+    const relPath = path.relative(gitCwd, path.join(tailDir, 'current.jsonl'));
     const log = gitRunner(['log', '--format=%H', '--', relPath], gitCwd);
     if (log.status === 0) {
       const shas = log.stdout.split('\n').filter((s) => s.length > 0);
