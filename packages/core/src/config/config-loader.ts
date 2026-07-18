@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
   BEHAVIOUR_KEYS,
+  CONFIG_VERSION,
   type Config,
   ConfigSchema,
   DEEP_MERGE_KEYS,
@@ -14,6 +15,33 @@ import {
  * project root.
  */
 export const CONFIG_FILE_RELATIVE = '.mnema/mnema.config.json';
+
+/**
+ * Rewrites the config's `version` field up to {@link CONFIG_VERSION} on disk
+ * when it is older, preserving every other field and the file's key order. This
+ * is the config half of the reconcile paths (`migrate`, `upgrade`): the schema
+ * LOADS an older version so a project is never locked out, and this MOVES it to
+ * the current shape so the store-format guard stops flagging config drift.
+ * Idempotent — a no-op (returns `false`) when already current or the file is
+ * absent/unreadable.
+ *
+ * @param projectRoot - Absolute project root holding `.mnema/mnema.config.json`
+ * @returns `true` when the file was rewritten, `false` when nothing changed
+ */
+export function reconcileConfigVersion(projectRoot: string): boolean {
+  const file = path.join(projectRoot, CONFIG_FILE_RELATIVE);
+  if (!existsSync(file)) return false;
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, unknown>;
+  } catch {
+    return false; // a malformed file is the loader's problem to report, not ours
+  }
+  if (raw.version === CONFIG_VERSION) return false;
+  raw.version = CONFIG_VERSION;
+  writeFileSync(file, `${JSON.stringify(raw, null, 2)}\n`, 'utf-8');
+  return true;
+}
 
 /**
  * Location of the optional per-repo personal override, relative to the

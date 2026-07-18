@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { ConfigLoader } from '@mnema/core/config/config-loader.js';
+import { ConfigLoader, reconcileConfigVersion } from '@mnema/core/config/config-loader.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import { writeStoreFormatMarker } from '@mnema/core/services/integrity/store-format.js';
@@ -76,10 +76,14 @@ function runApply(): void {
   const adapter = new SqliteAdapter(dbPath);
   try {
     const applied = new MigrationRunner().run(adapter, migrationsDir());
-    // migrate is the reconcile step: rewrite the store-format marker to THIS
-    // binary's format, unconditionally — the mismatch that blocked mutations
-    // may have been any input (config version, mirror layout), not only a
-    // pending migration, so an up-to-date schema still clears the marker.
+    // migrate is the reconcile step: move the config `version` up to the
+    // current shape, then rewrite the store-format marker to THIS binary's
+    // format — both unconditionally. The mismatch that blocked mutations may
+    // have been any input (config version, mirror layout), not only a pending
+    // migration, so an up-to-date schema still reconciles and clears the marker.
+    if (reconcileConfigVersion(projectRoot)) {
+      process.stdout.write(`${pc.dim('config version reconciled')}\n`);
+    }
     writeStoreFormatMarker(projectRoot);
     if (applied.length === 0) {
       process.stdout.write(`${pc.dim('schema already up to date')}\n`);

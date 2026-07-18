@@ -58,14 +58,25 @@ export const HooksSchema = z
  * (project + version) is enough to bootstrap a project.
  */
 /**
- * The config-shape version: the single point of truth for the `version` field.
- * It is one input to the store-format hash and the hook for config
- * upgrade-scripts. Bumping it is a deliberate config-shape change.
+ * The config-shape version this binary WRITES and hashes: the single point of
+ * truth for a fresh `version` field, one input to the store-format hash, and
+ * the target a `migrate`/`upgrade` rewrites an older config up to.
  */
 export const CONFIG_VERSION = '2.0';
 
+/**
+ * The config-shape versions this binary LOADS. Kept broader than
+ * {@link CONFIG_VERSION} so a project written by an older binary is not
+ * rejected at load — it opens (read still works), the store-format guard flags
+ * the format drift on the next mutation, and `migrate`/`upgrade` rewrite the
+ * field up to {@link CONFIG_VERSION}. A hard `z.literal` here would deadlock:
+ * every command loads the config first, so an un-migratable `1.0` project could
+ * not even run the command that would fix it.
+ */
+export const SUPPORTED_CONFIG_VERSIONS = ['1.0', '2.0'] as const;
+
 export const ConfigSchema = z.object({
-  version: z.literal(CONFIG_VERSION),
+  version: z.enum(SUPPORTED_CONFIG_VERSIONS).default(CONFIG_VERSION),
   mnema_version: z.string(),
   project: z.object({
     key: z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/),
