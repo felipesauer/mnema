@@ -8,7 +8,7 @@ import type { ServiceContainer } from '@mnema/core/services/service-container.js
 import type { TransitionWithKey } from '@mnema/core/storage/sqlite/repositories/transition-repository.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import type { Command } from 'commander';
-import { withCliContext } from '../cli-context.js';
+import { enforceStoreFormat, withCliContext } from '../cli-context.js';
 import { formatTimestamp, type TimestampMode } from '../formatters/timestamp-formatter.js';
 
 interface InspectOptions {
@@ -85,7 +85,8 @@ export class AgentCommand {
       .option('--apply', 'Actually abort the stale runs (otherwise just list them)', false)
       .option('--hours <n>', 'Override the orphan threshold in hours')
       .action(async (options: { apply?: boolean; hours?: string }) => {
-        await withCliContext(({ container, config }) => {
+        await withCliContext((ctx) => {
+          const { container, config } = ctx;
           const threshold =
             options.hours !== undefined
               ? Number.parseInt(options.hours, 10)
@@ -95,6 +96,7 @@ export class AgentCommand {
             process.exit(2);
           }
           if (options.apply === true) {
+            enforceStoreFormat(ctx);
             const result = container.orphanRun.closeStale(threshold);
             if (!result.ok) {
               process.exit(printError(result.error));
@@ -128,7 +130,9 @@ export class AgentCommand {
       .command('resume <runId>')
       .description('Reattach to an interrupted run and summarise what is still open')
       .action(async (runId: string) => {
-        await withCliContext(({ container }) => {
+        await withCliContext((ctx) => {
+          enforceStoreFormat(ctx);
+          const { container } = ctx;
           const actor = container.identity.getDefaultActor();
           const result = container.agentRun.resume({ runId, actor });
           if (!result.ok) {

@@ -6,7 +6,7 @@ import {
 } from '@mnema/core/services/knowledge/adoption-service.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import type { Command } from 'commander';
-import { withCliContext } from '../cli-context.js';
+import { enforceStoreFormat, withCliContext } from '../cli-context.js';
 import { writeAgentsMd } from '../templates/agents-md.js';
 
 const SUPPORTED: ReadonlyArray<AdoptableComponent | 'all'> = [
@@ -55,7 +55,9 @@ export class AdoptCommand {
           process.exit(2);
         }
 
-        await withCliContext(({ config, projectRoot, container }) => {
+        await withCliContext((ctx) => {
+          enforceStoreFormat(ctx);
+          const { config, projectRoot, container } = ctx;
           const service = new AdoptionService(projectRoot);
           const results: AdoptionResult[] =
             component === 'all'

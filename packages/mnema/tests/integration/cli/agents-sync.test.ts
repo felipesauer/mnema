@@ -11,7 +11,7 @@ import { buildAgentsMd, expandAgentsImports, writeAgentsMd } from '@/cli/templat
  */
 function makeConfig() {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'DEMO', name: 'Demo' },
     workflow: 'default',
@@ -27,7 +27,7 @@ describe('buildAgentsMd stays lean', () => {
 
   function bodyLines(knowledge: boolean): number {
     const config = ConfigSchema.parse({
-      version: '1.0',
+      version: '2.0',
       mnema_version: '^0.1.0',
       project: { key: 'DEMO', name: 'Demo' },
       workflow: 'default',
@@ -46,7 +46,7 @@ describe('buildAgentsMd stays lean', () => {
 
   it('keeps the load-bearing rules despite the trim', () => {
     const config = ConfigSchema.parse({
-      version: '1.0',
+      version: '2.0',
       mnema_version: '^0.1.0',
       project: { key: 'DEMO', name: 'Demo' },
       workflow: 'default',

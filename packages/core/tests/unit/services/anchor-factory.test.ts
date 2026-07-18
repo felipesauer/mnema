@@ -6,7 +6,7 @@ import { buildAnchorRegistry } from '@/services/anchor/anchor-factory.js';
 /** A minimal valid config with the given anchor provider. */
 function configWith(provider: string) {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '0.1.0',
     project: { key: 'TEST', name: 'Test' },
     audit: { anchor: { provider } },

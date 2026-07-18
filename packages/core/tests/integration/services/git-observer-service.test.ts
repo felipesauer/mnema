@@ -45,7 +45,7 @@ function fakeGit(script: {
 
 function makeConfig(): Config {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test' },
     workflow: 'default',

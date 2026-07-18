@@ -171,9 +171,15 @@ const FeaturesSchema = z
  * expressed purely structurally: the initial state must be declared, and
  * every terminal state must also be declared.
  */
+/**
+ * The workflow meta schema version. Exported so the store-format hash can fold
+ * it in without a hand-maintained copy — one source of truth for the value.
+ */
+export const WORKFLOW_SCHEMA_VERSION = '1.0';
+
 export const WorkflowMetaSchema = z
   .object({
-    schema_version: z.literal('1.0'),
+    schema_version: z.literal(WORKFLOW_SCHEMA_VERSION),
     name: z.string().min(1),
     description: z.string().optional(),
     states: z.array(z.string()).min(2),

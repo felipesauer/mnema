@@ -62,7 +62,7 @@ export const HooksSchema = z
  * It is one input to the store-format hash and the hook for config
  * upgrade-scripts. Bumping it is a deliberate config-shape change.
  */
-export const CONFIG_VERSION = '1.0';
+export const CONFIG_VERSION = '2.0';
 
 export const ConfigSchema = z.object({
   version: z.literal(CONFIG_VERSION),
@@ -304,7 +304,7 @@ export const PROJECT_ONLY_KEYS = ['version', 'mnema_version', 'project', 'hooks'
 
 /** Defaults materialised from the schema itself — the shape's ground truth. */
 const SCHEMA_DEFAULTS: Record<string, unknown> = ConfigSchema.parse({
-  version: '1.0',
+  version: CONFIG_VERSION,
   mnema_version: '0.0.0',
   project: { key: 'XX', name: 'shape-probe' },
 });

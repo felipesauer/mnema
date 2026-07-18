@@ -6,7 +6,7 @@ import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.
 import { pc } from '@mnema/core/utils/colors.js';
 import { LAYOUT } from '@mnema/core/utils/layout.js';
 import type { Command } from 'commander';
-import { withCliContext } from '../cli-context.js';
+import { enforceStoreFormat, withCliContext } from '../cli-context.js';
 import { formatEvent, type HistoryFormat } from '../formatters/history-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
 
@@ -57,7 +57,12 @@ export class WatchCommand {
         false,
       )
       .action(async (options: WatchOptions) => {
-        await withCliContext(async ({ config, projectRoot, container }) => {
+        await withCliContext(async (ctx) => {
+          // watch writes (it syncs the linked task on a git change), so the
+          // guard runs once at start-up — a divergent store never begins a
+          // watch that would append under a foreign format.
+          enforceStoreFormat(ctx);
+          const { config, projectRoot, container } = ctx;
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           // Live-follow this machine's own tail: cross-machine events arrive by
           // git pull, not an in-process append, so the local tail is the one

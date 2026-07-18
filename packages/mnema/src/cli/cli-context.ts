@@ -158,6 +158,34 @@ export async function withCliContext(
  *
  * @param handler - Async callback receiving the open CLI context
  */
+/**
+ * Refuses a mutation when the committed store-format marker names a format this
+ * binary does not produce — a store written by a different mnema (a divergent
+ * merge, a version skew across machines). Reads are always safe, so only
+ * mutating paths call this. Fail-open when no (or a corrupt) marker exists: a
+ * pre-feature or botched-marker store never locks the user out; only a
+ * well-formed marker naming a different format does. On mismatch it prints the
+ * error, closes the container, and exits — it never returns in that case.
+ *
+ * Used by {@link withMutatingCliContext} and, directly, by the mutating actions
+ * that legitimately open a read context but still write (adopt, archive, the
+ * agent apply paths, watch, the audit-recovery writes) — everything except the
+ * reconcile paths (`migrate`, `upgrade`) that REWRITE the marker.
+ *
+ * @param context - The open CLI context whose store is about to be mutated
+ */
+export function enforceStoreFormat(context: CliContext): void {
+  const storeFormat = checkStoreFormat(context.projectRoot);
+  if (!storeFormat.ok) {
+    const code = printError({
+      kind: ErrorCode.StoreFormatMismatch,
+      diverged: storeFormat.diverged,
+    });
+    context.container.close();
+    process.exit(code);
+  }
+}
+
 export async function withMutatingCliContext(
   handler: (context: CliContext) => Promise<void> | void,
 ): Promise<void> {
@@ -171,19 +199,7 @@ export async function withMutatingCliContext(
       context.container.close();
       process.exit(code);
     }
-    // The store may have been written by a mnema with a different on-disk
-    // format (a divergent merge, a version skew across machines). Reads are
-    // fine; refuse to MUTATE so two binaries never interleave writes under
-    // diverging formats. Fail-open when no marker exists (a pre-feature store).
-    const storeFormat = checkStoreFormat(context.projectRoot);
-    if (!storeFormat.ok) {
-      const code = printError({
-        kind: ErrorCode.StoreFormatMismatch,
-        diverged: storeFormat.diverged,
-      });
-      context.container.close();
-      process.exit(code);
-    }
+    enforceStoreFormat(context);
     await handler(context);
   } catch (error) {
     if (error instanceof IdentityNotConfiguredError) {

@@ -18,7 +18,7 @@ describe('upgrade detection helpers', () => {
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), 'mnema-upg-detect-'));
     config = ConfigSchema.parse({
-      version: '1.0',
+      version: '2.0',
       mnema_version: '^0.13.0-alpha.0',
       project: { key: 'DET', name: 'Detect' },
       workflow: 'default',

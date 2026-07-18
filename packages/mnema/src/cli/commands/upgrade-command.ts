@@ -11,6 +11,11 @@ import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { MachineKeyService } from '@mnema/core/services/integrity/machine-key.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import {
+  checkStoreFormat,
+  readStoreFormatMarker,
+  writeStoreFormatMarker,
+} from '@mnema/core/services/integrity/store-format.js';
+import {
   type AdoptableComponent,
   AdoptionService,
 } from '@mnema/core/services/knowledge/adoption-service.js';
@@ -441,6 +446,28 @@ export class UpgradeCommand {
     // papered over.
     const attestStep = this.attestationStep(ctx);
     if (attestStep !== null) steps.push(attestStep);
+
+    // upgrade is a reconcile path (like migrate), so it re-stamps the
+    // store-format marker to THIS binary's format. Include the step when it
+    // could have something to do: the marker is missing/stale NOW, or pending
+    // migrations may move the format hash once applied (the marker would then
+    // be stale and self-block every later mutation). Skip it entirely when the
+    // marker is already current and nothing is pending — so an up-to-date
+    // upgrade still reports "already up to date" with no spurious step.
+    const markerNeedsWork =
+      readStoreFormatMarker(projectRoot) === null || !checkStoreFormat(projectRoot).ok;
+    if (markerNeedsWork || container.pendingMigrations.length > 0) {
+      steps.push({
+        label: 'reconcile the store-format marker to this version',
+        run: () => {
+          if (checkStoreFormat(projectRoot).ok && readStoreFormatMarker(projectRoot) !== null) {
+            return 'store-format marker already current';
+          }
+          writeStoreFormatMarker(projectRoot);
+          return 'store-format marker updated';
+        },
+      });
+    }
 
     return steps;
   }

@@ -77,7 +77,7 @@ function freshClone(
 ): void {
   mkdirSync(path.join(projectRoot, '.mnema/workflows'), { recursive: true });
   const config = {
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.13.0-alpha.0',
     project: { key: 'CLONE', name: 'Clone Test' },
     workflow: 'default',

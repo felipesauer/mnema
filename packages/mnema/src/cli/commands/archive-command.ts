@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 
-import { withCliContext } from '../cli-context.js';
+import { enforceStoreFormat, withCliContext } from '../cli-context.js';
 import { printArchiveResult } from './doctor-command.js';
 
 /**
@@ -36,7 +36,10 @@ export class ArchiveCommand {
       )
       .option('--yes', 'Skip the dry run and actually move the mirrors', false)
       .action(async (options: { readonly yes?: boolean }) => {
-        await withCliContext(({ container, config }) => {
+        await withCliContext((ctx) => {
+          const { container, config } = ctx;
+          // Only the real move mutates; the dry run is a read-only preview.
+          if (options.yes === true) enforceStoreFormat(ctx);
           const result = container.archive.archiveTerminalMirrors({
             months: config.archive.terminal_after_months,
             dryRun: options.yes !== true,
