@@ -32,9 +32,22 @@ function runCli(
   };
 }
 
+/**
+ * Path to this machine's audit tail `current.jsonl`. Writes land in
+ * `audit/m-<id>/`, so an E2E test reading the on-disk trail resolves the sole
+ * tail rather than the flat `audit/current.jsonl`.
+ */
+function tailCurrentFile(projectRoot: string): string {
+  const auditDir = path.join(projectRoot, '.mnema/audit');
+  const tail = readdirSync(auditDir, { withFileTypes: true }).find(
+    (d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name),
+  );
+  return path.join(tail ? path.join(auditDir, tail.name) : auditDir, 'current.jsonl');
+}
+
 /** Parses every `hook_ran` event from a project's audit log, in order. */
 function readHookRan(projectRoot: string): { data: { outcome: string; exit_code: number } }[] {
-  const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+  const audit = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
   return audit
     .trim()
     .split('\n')
@@ -81,7 +94,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(existsSync(path.join(projectRoot, '.mnema/mnema.config.json'))).toBe(true);
     expect(existsSync(path.join(projectRoot, 'AGENTS.md'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/state', 'state.db'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'))).toBe(true);
+    expect(existsSync(tailCurrentFile(projectRoot))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/workflows', 'default.json'))).toBe(true);
     expect(existsSync(path.join(projectRoot, '.mnema/backlog', 'DRAFT'))).toBe(true);
 
@@ -201,7 +214,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(existsSync(draftFile)).toBe(false);
     expect(existsSync(readyFile)).toBe(true);
 
-    const audit = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    const audit = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
     expect(audit).toContain('task_created');
     expect(audit).toContain('task_transitioned');
   });
@@ -352,6 +365,8 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     // Drives the default workflow: DRAFT —submit→ READY —start→ IN_PROGRESS
     // —complete→ DONE, satisfying each gate's required fields.
     const driveToDone = (key: string, env: NodeJS.ProcessEnv = {}) => {
+      // Every step carries the SAME env: the machine id lives under $HOME, so
+      // mixing envs would scatter these events across two machine tails.
       runCli(
         [
           'task',
@@ -363,8 +378,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
           'estimate=1',
         ],
         projectRoot,
+        env,
       );
-      runCli(['task', 'move', key, 'start'], projectRoot);
+      runCli(['task', 'move', key, 'start'], projectRoot, env);
       return runCli(
         ['task', 'move', key, 'complete', 'completion_note=done via hook e2e'],
         projectRoot,
@@ -372,8 +388,8 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       );
     };
 
-    // --- Phase 1: un-approved block is INERT (MNEMA-100 regression) ---
-    runCli(['task', 'create', '--title', 'Ship it'], projectRoot);
+    // --- Phase 1: un-approved block is INERT ---
+    runCli(['task', 'create', '--title', 'Ship it'], projectRoot, hookEnv);
     const doneUnapproved = driveToDone('LEAN-1', hookEnv);
     expect(doneUnapproved.status).toBe(0);
     expect(existsSync(capturePath)).toBe(false); // nothing executed
@@ -391,10 +407,10 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(approve.status).toBe(0);
 
     // The approval is attested on the audit chain, not just on disk.
-    const auditLog = readFileSync(path.join(projectRoot, '.mnema/audit', 'current.jsonl'), 'utf-8');
+    const auditLog = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
     expect(auditLog).toContain('"kind":"hooks_approved"');
 
-    runCli(['task', 'create', '--title', 'Ship it again'], projectRoot);
+    runCli(['task', 'create', '--title', 'Ship it again'], projectRoot, hookEnv);
     const done = driveToDone('LEAN-2', hookEnv);
     expect(done.status).toBe(0);
     expect(done.stdout).toContain('DONE');

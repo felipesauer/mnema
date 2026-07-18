@@ -12,6 +12,7 @@ import {
   HeadCheckpointService,
 } from '../services/integrity/head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from '../services/integrity/hook-trust.js';
+import { getOrCreateMachineId, tailDirName } from '../services/integrity/machine-id.js';
 import { MachineKeyService } from '../services/integrity/machine-key.js';
 import { ProjectSecretService } from '../services/integrity/project-secret.js';
 import { userKnowledgeDir } from '../services/knowledge/user-knowledge.js';
@@ -57,10 +58,16 @@ export function createAuditCore(
 ): AuditCore {
   const auditDir = path.join(projectRoot, LAYOUT.audit);
 
-  // Per-project HMAC secret keys the v3 chain (ADR-37 layer 2), resolved
-  // lazily on first write so read-only commands never mint it.
+  // Per-project HMAC secret keys the chain, resolved lazily on first write so
+  // read-only commands never mint it.
   const secretUserDir = userDirOverride ?? userKnowledgeDir();
   const projectSecret = new ProjectSecretService(projectRoot, config.project.key, secretUserDir);
+
+  // This machine writes only its own tail (`audit/m-<id>/`), so the git
+  // union-merge can never interleave two machines' lines. The machine id is
+  // minted once in the same machine-scoped user dir as the secret; reads
+  // aggregate every tail, writes touch only this one.
+  const tailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(secretUserDir)));
 
   // Machine attestation (ADR-37 layer 2): resolve the per-machine Ed25519
   // signer lazily per checkpoint, memoised per actor. Shared by the head
@@ -104,6 +111,8 @@ export function createAuditCore(
     auditDir,
     projectSecret,
     createAttestationSource(projectRoot, infra.repos.headSignatures),
+    null,
+    tailDir,
   );
   const onCheckpoint = (_head: string, eventCount: number): void => {
     autoAttest({
@@ -119,7 +128,7 @@ export function createAuditCore(
   };
 
   const auditWriter = new AuditWriter(
-    auditDir,
+    tailDir,
     infra.repos.auditState,
     () => projectSecret.getOrCreate(),
     undefined,

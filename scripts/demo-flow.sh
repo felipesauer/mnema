@@ -44,9 +44,10 @@ mnema doctor
 sleep 2
 
 step "5. Now tamper: rewrite who did the work in a past audit line…"
-sed -i.bak '0,/"actor":"you"/s//"actor":"mallory"/' .mnema/audit/current.jsonl
-rm -f .mnema/audit/current.jsonl.bak
-echo "(edited .mnema/audit/current.jsonl by hand)"
+# Each machine writes its own tail (audit/m-<id>/); tamper the one on disk.
+# Kept to ONE command so the cast renderer (which runs each line in a fresh
+# shell) resolves the glob and edits in the same process.
+sed -i.bak '0,/"actor":"you"/s//"actor":"mallory"/' .mnema/audit/m-*/current.jsonl && rm -f .mnema/audit/m-*/current.jsonl.bak && echo "(edited the on-disk audit tail by hand)"
 sleep 1.5
 
 step "6. …and doctor catches it. The record can't be quietly altered."

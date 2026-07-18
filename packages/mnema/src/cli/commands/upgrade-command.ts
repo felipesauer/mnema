@@ -5,23 +5,21 @@ import type { Config } from '@mnema/core/config/config-schema.js';
 import { autoAttest, chainHealthyForAttest } from '@mnema/core/services/audit/attestation-cli.js';
 import { listArtifacts } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
-import {
-  inspectAuditIntegrity,
-  reconcileAuditState,
-} from '@mnema/core/services/integrity/audit-integrity.js';
+import { inspectAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
+import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
 import { MachineKeyService } from '@mnema/core/services/integrity/machine-key.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import {
   type AdoptableComponent,
   AdoptionService,
 } from '@mnema/core/services/knowledge/adoption-service.js';
+import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import {
   RemediationRunner,
   type RemediationStep,
 } from '@mnema/core/storage/sqlite/remediation-runner.js';
 import { AuditHeadSignatureRepository } from '@mnema/core/storage/sqlite/repositories/audit-head-signature-repository.js';
-import { AuditStateRepository } from '@mnema/core/storage/sqlite/repositories/audit-state-repository.js';
 import type { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { migrationsDir } from '@mnema/core/utils/asset-paths.js';
 import { pc } from '@mnema/core/utils/colors.js';
@@ -38,7 +36,6 @@ import {
   expandAgentsImports,
   writeAgentsMd,
 } from '../templates/agents-md.js';
-import { buildHeadReSigner } from './audit-command.js';
 import {
   type DoctorCheck,
   inspectAuditDiskDelta,
@@ -304,81 +301,6 @@ export class UpgradeCommand {
             },
           },
           'ingest committed markdown into the cache (idempotent)',
-        ),
-      );
-    }
-
-    // Reconcile the audit mirror when it sits BEHIND the on-disk chain (the
-    // fresh-clone shape). `.mnema/state/` is git-ignored, so a clone recreates
-    // an empty database whose `audit_state.event_count` is 0 while the
-    // committed `.audit/*.jsonl` already holds N chained events. Ingesting the
-    // domain markdown (above) rebuilds the task/roadmap rows but never touches
-    // audit_state, and the writer's boot-time self-heal only covers the
-    // opposite one-ahead crash window — so without this the post-upgrade health
-    // summary is permanently RED (`audit event count`, `audit hash chain`)
-    // after every clone.
-    //
-    // Gate: only when the mirror is strictly behind disk (disk-ahead). Equal is
-    // healthy, and the mirror-ahead one-ahead shape is the crash window the
-    // writer self-heals — neither belongs here. The count is the chained (v>=2)
-    // line count, matching what `reconcileAuditState`'s own walk recomputes.
-    const auditDir = path.join(projectRoot, LAYOUT.audit);
-    const diskChainedCount = walkChainedEvents(auditDir).chained.length;
-    const mirrorCount = new AuditStateRepository(container.adapter).read().eventCount;
-    if (!appliedRemediations.has('mirror-reconcile') && diskChainedCount > mirrorCount) {
-      steps.push(
-        remediationStep(
-          {
-            name: 'mirror-reconcile',
-            // Clone-condition: the git-ignored DB is rebuilt empty on every
-            // clone (event_count 0) while the committed `.audit/*.jsonl` holds
-            // the chain, so a fresh clone always needs this again — permanent,
-            // never expires (no retiresAfter; the type forbids one here).
-            kind: 'clone-condition',
-            introducedIn: '0.13.0',
-            run: () => {
-              const secret = new ProjectSecretService(projectRoot, config.project.key);
-              const state = new AuditStateRepository(container.adapter);
-              const signatures = new AuditHeadSignatureRepository(container.adapter);
-              const signature = signatures.read();
-              // Re-attest at the new baseline if the correction drops the count
-              // below the recorded signed checkpoint (interior drift) — no signer
-              // → returns false and reconcile still corrects audit_state.
-              const actor = container.identity.resolveDefaultActor().actor;
-              const reSign = buildHeadReSigner(projectRoot, actor, signatures);
-              // apply=true — exactly as `mnema audit reconcile --force` calls
-              // it. A refusal (broken chain, malformed line, attestation over a
-              // truncation) is reported but does NOT fail the upgrade: it is a
-              // real integrity signal the human must resolve with `mnema audit
-              // diagnose`, not something the orchestrator should paper over or
-              // abort on.
-              const result = reconcileAuditState(
-                auditDir,
-                state,
-                secret.read(),
-                signature !== null
-                  ? {
-                      eventCountAt: signature.eventCountAt,
-                      coveredHeadHash: signature.coveredHeadHash,
-                    }
-                  : null,
-                true,
-                reSign,
-              );
-              if (!result.ok) {
-                // Not applied → NOT recorded, so it is offered again next time
-                // (once the human resolves the integrity break), matching the
-                // pre-registry re-offer while the mirror stays behind disk.
-                return {
-                  applied: false,
-                  message: `${pc.yellow('⚠')} could not reconcile the audit mirror: ${result.reason} — run \`mnema audit diagnose\` to inspect`,
-                };
-              }
-              if (!result.changed) return 'audit mirror already matched disk';
-              return `audit mirror reconciled: event_count ${result.beforeEventCount} → ${result.afterEventCount}`;
-            },
-          },
-          `reconcile the audit mirror to the ${diskChainedCount} chained event(s) on disk (was ${mirrorCount})`,
         ),
       );
     }
@@ -681,8 +603,21 @@ function printPostUpgradeHealth(ctx: CliContext): void {
   );
   // read() not getOrCreate(): the summary verifies, it never mints a secret.
   const secret = new ProjectSecretService(projectRoot, config.project.key);
-  checks.push(...inspectAuditIntegrity(container.adapter, auditDir, secret.read()));
-  checks.push(...inspectAuditDiskDelta(container.adapter, auditDir, projectRoot));
+  // The mirror tracks this machine's tail, so count/delta compare against the
+  // local tail, not the project-wide total across every machine's tail.
+  const localTailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
+  checks.push(
+    ...inspectAuditIntegrity(
+      container.adapter,
+      auditDir,
+      secret.read(),
+      null,
+      null,
+      null,
+      localTailDir,
+    ),
+  );
+  checks.push(...inspectAuditDiskDelta(container.adapter, localTailDir, projectRoot));
 
   process.stdout.write(`\n${pc.bold('post-upgrade health')} ${pc.dim('(read-only)')}\n`);
   for (const check of checks) {

@@ -86,11 +86,15 @@ async function recordSomeHistory(client: Client): Promise<void> {
   await client.callTool({ name: 'task_create', arguments: { title: 'A task that emits events' } });
 }
 
-/** Find the single JSONL file the audit writer produced. */
+/** Find the single JSONL file the audit writer produced, inside its tail. */
 function auditFile(auditDir: string): string {
-  const files = readdirSync(auditDir).filter((f) => f.endsWith('.jsonl'));
+  const tail = readdirSync(auditDir, { withFileTypes: true }).find(
+    (d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name),
+  );
+  const dir = tail ? path.join(auditDir, tail.name) : auditDir;
+  const files = readdirSync(dir).filter((f) => f.endsWith('.jsonl'));
   if (files.length === 0) throw new Error('no audit jsonl file produced');
-  return path.join(auditDir, files[0] as string);
+  return path.join(dir, files[0] as string);
 }
 
 interface VerifyPayload {

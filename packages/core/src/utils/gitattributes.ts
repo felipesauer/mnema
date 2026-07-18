@@ -24,8 +24,9 @@ export function gitattributesLines(auditPath: string): string {
   const dir = auditPath.replace(/\/$/, '');
   return [
     '# mnema: the audit log is append-only; merge with union so parallel',
-    '# branches keep both sides instead of conflicting on the tail.',
-    `${dir}/*.jsonl merge=union`,
+    '# branches keep both sides instead of conflicting on the tail. The `**`',
+    "# covers each machine's per-machine tail directory (`m-<id>/`).",
+    `${dir}/**/*.jsonl merge=union`,
   ].join('\n');
 }
 
@@ -44,7 +45,7 @@ export function gitattributesLines(auditPath: string): string {
  */
 /** The exact `.gitattributes` rule line for an audit path (no comments). */
 function unionMarker(auditPath: string): string {
-  return `${auditPath.replace(/\/$/, '')}/*.jsonl merge=union`;
+  return `${auditPath.replace(/\/$/, '')}/**/*.jsonl merge=union`;
 }
 
 /**

@@ -7,6 +7,7 @@ import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
+import { soleTailFile } from '../../setup/audit-writer.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('packages/core/workflows');
@@ -129,7 +130,7 @@ describe('TaskService (integration)', () => {
   it('appends an audit event for task_created', () => {
     container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
 
-    const auditFile = path.join(projectRoot, '.mnema/audit', 'current.jsonl');
+    const auditFile = soleTailFile(path.join(projectRoot, '.mnema/audit'));
     expect(existsSync(auditFile)).toBe(true);
     const content = readFileSync(auditFile, 'utf-8').trim();
     expect(content.length).toBeGreaterThan(0);

@@ -224,14 +224,16 @@ describe('RemediationRunner', () => {
       return match?.[1] ?? null;
     };
 
-    it('mirror-ingest and mirror-reconcile are clone-condition (permanent)', () => {
+    it('mirror-ingest is clone-condition (permanent)', () => {
       expect(kindOf('mirror-ingest')).toBe('clone-condition');
-      expect(kindOf('mirror-reconcile')).toBe('clone-condition');
     });
 
-    it('the retired 0.13-era version-jump steps stay deleted (squash zeroed the history)', () => {
+    it('the retired version-jump / superseded steps stay deleted', () => {
       expect(kindOf('backfill-scope')).toBeNull();
       expect(kindOf('gitattributes-retrofit')).toBeNull();
+      // The per-machine tail makes a fresh clone's mirror correct by
+      // construction (its own tail is empty), so there is no reconcile step.
+      expect(kindOf('mirror-reconcile')).toBeNull();
     });
   });
 

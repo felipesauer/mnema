@@ -1,4 +1,4 @@
-import { existsSync, type FSWatcher, statSync, watch } from 'node:fs';
+import { existsSync, type FSWatcher, mkdirSync, statSync, watch } from 'node:fs';
 import { open } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -52,6 +52,12 @@ export class AuditTail {
    * {@link replaySince} for a catch-up pass before calling `start`.
    */
   async start(): Promise<void> {
+    // The tail directory (this machine's `audit/m-<id>/`) may not exist yet:
+    // it is created on the first write, and a watcher/dashboard can start
+    // before any event lands. `fs.watch` throws ENOENT on a missing dir, so
+    // create it up front — the first write then appends into the watched dir.
+    if (!existsSync(this.auditDir)) mkdirSync(this.auditDir, { recursive: true });
+
     const filePath = this.currentFilePath();
     if (existsSync(filePath)) {
       const stats = statSync(filePath);

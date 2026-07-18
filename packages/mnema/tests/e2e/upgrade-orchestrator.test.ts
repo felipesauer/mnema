@@ -1,8 +1,24 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
+/** The single machine tail's `current.jsonl` under a project audit dir. */
+function tailCurrent(auditDir: string): string {
+  const tail = readdirSync(auditDir, { withFileTypes: true }).find(
+    (d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name),
+  );
+  return path.join(tail ? path.join(auditDir, tail.name) : auditDir, 'current.jsonl');
+}
 
 /**
  * End-to-end coverage for the `mnema upgrade` orchestrator's completed
@@ -225,24 +241,27 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
     expect(readFileSync(path.join(projectRoot, 'AGENTS.md'), 'utf-8')).toBe(agentsBefore);
   });
 
-  it('reconciles audit_state that a fresh clone left behind the on-disk chain', () => {
-    // A real project that has written chained audit events, then a "clone":
-    // the git-ignored state DB is gone, so audit_state resets to 0 while the
-    // committed .audit/*.jsonl still holds the chained events.
-    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+  it('a fresh clone needs no audit-mirror reconcile (its own tail is empty)', () => {
+    // Machine A writes chained audit events into its tail (`audit/m-<A>/`).
+    const homeA = path.join(mkdtempSync(path.join(tmpdir(), 'mnema-homeA-')));
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot, { HOME: homeA });
+    runCli(['task', 'create', '--title', 'Real task'], projectRoot, { HOME: homeA });
     runCli(
       ['task', 'move', 'WEBAPP-1', 'submit', '--field', 'acceptance_criteria=done'],
       projectRoot,
+      { HOME: homeA },
     );
 
     const dbPath = path.join(projectRoot, '.mnema/state', 'state.db');
-    const diskChained = countChainedLines(path.join(projectRoot, '.mnema/audit/current.jsonl'));
+    const diskChained = countChainedLines(tailCurrent(path.join(projectRoot, '.mnema/audit')));
     expect(diskChained).toBeGreaterThan(0);
 
-    // Simulate the clone: remove the git-ignored state (db + wal/shm) and roll
-    // mnema_version back so the upgrade has a version bump to do as well.
+    // Clone onto machine B: the git-ignored state DB is gone, and a DIFFERENT
+    // machine id means B's own tail does not exist yet. B's mirror (0) already
+    // matches B's tail (empty) — A's committed tail is validated cryptographically
+    // but is not B's to mirror — so there is NOTHING to reconcile.
     for (const suffix of ['', '-wal', '-shm']) rmSync(`${dbPath}${suffix}`, { force: true });
+    const homeB = path.join(mkdtempSync(path.join(tmpdir(), 'mnema-homeB-')));
     const configPath = path.join(projectRoot, '.mnema', 'mnema.config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
     writeFileSync(
@@ -251,16 +270,13 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
       'utf-8',
     );
 
-    const upgrade = runCli(['upgrade', '--yes'], projectRoot);
+    const upgrade = runCli(['upgrade', '--yes'], projectRoot, { HOME: homeB });
     expect(upgrade.status).toBe(0);
-    // The reconcile step ran and moved the mirror from 0 up to the disk count.
-    expect(upgrade.stdout).toContain('reconcile the audit mirror');
-    expect(upgrade.stdout).toContain(`audit mirror reconciled: event_count 0 → ${diskChained}`);
+    // No reconcile step: the mirror-vs-local-tail invariant holds by construction.
+    expect(upgrade.stdout).not.toContain('reconcile the audit mirror');
 
-    // audit_state now equals the on-disk chained count...
-    expect(readAuditEventCount(dbPath)).toBe(diskChained);
-    // ...and the post-upgrade health summary's audit-count check is GREEN
-    // (no leading ✗ on the "audit event count" line).
+    // The post-upgrade health summary's audit-count check is GREEN: B's mirror
+    // (0) matches B's on-disk tail (empty).
     const auditCountLine = upgrade.stdout.split('\n').find((l) => l.includes('audit event count'));
     expect(auditCountLine).toBeDefined();
     expect(auditCountLine).toContain('✓');
@@ -309,7 +325,7 @@ function _readCreatedTables(dbPath: string): string[] {
   }
 }
 
-/** Counts the chained (schema v>=2) lines in an audit JSONL file. */
+/** Counts the chained lines in an audit JSONL file. */
 function countChainedLines(jsonlPath: string): number {
   if (!existsSync(jsonlPath)) return 0;
   let n = 0;
@@ -323,17 +339,4 @@ function countChainedLines(jsonlPath: string): number {
     }
   }
   return n;
-}
-
-/** Reads `audit_state.event_count` from a project's SQLite DB (0 when absent). */
-function readAuditEventCount(dbPath: string): number {
-  if (!existsSync(dbPath)) return 0;
-  const script =
-    "const D=require('better-sqlite3');const db=new D(process.argv[1]);" +
-    "const r=db.prepare('SELECT event_count FROM audit_state WHERE id=1').get();" +
-    'process.stdout.write(String(r?r.event_count:0));db.close();';
-  const res = spawnSync('node', ['-e', script, dbPath], { cwd: repoRoot, encoding: 'utf-8' });
-  if (res.status !== 0) return 0;
-  const parsed = Number.parseInt(res.stdout.trim(), 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
 }

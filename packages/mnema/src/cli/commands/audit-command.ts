@@ -30,11 +30,13 @@ import {
   reconcileAuditState,
 } from '@mnema/core/services/integrity/audit-integrity.js';
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
+import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
 import { MachineKeyService } from '@mnema/core/services/integrity/machine-key.js';
 import {
   ProjectSecretService,
   readCommittedProjectHmacId,
 } from '@mnema/core/services/integrity/project-secret.js';
+import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { AnchorRepository } from '@mnema/core/storage/sqlite/repositories/anchor-repository.js';
 import {
   AuditHeadSignatureRepository,
@@ -211,10 +213,16 @@ export class AuditCommand {
         await withCliContext(async ({ config, projectRoot, container }) => {
           const auditDir = path.join(projectRoot, LAYOUT.audit);
           const secret = new ProjectSecretService(projectRoot, config.project.key);
-          // Content attestation (ADR-41): committed .att coverage, verifiable
-          // with no secret. The shared builder keeps this verdict identical
-          // across verify / doctor / the MCP tool.
+          // Content attestation: committed .att coverage, verifiable with no
+          // secret. The shared builder keeps this verdict identical across
+          // verify / doctor / the MCP tool.
           const contentAttestation = buildContentAttestation(projectRoot, auditDir);
+          // The mirror tracks this machine's tail, so the count check compares
+          // against the local tail, not the project-wide total across every tail.
+          const localTailDir = path.join(
+            auditDir,
+            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
+          );
           const checks = inspectAuditIntegrity(
             container.adapter,
             auditDir,
@@ -224,6 +232,8 @@ export class AuditCommand {
               new AuditHeadSignatureRepository(container.adapter),
             ),
             contentAttestation,
+            null,
+            localTailDir,
           );
           if (options.verifyAnchors === true) {
             const anchors = new AnchorRepository(container.adapter);

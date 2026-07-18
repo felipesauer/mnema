@@ -12,7 +12,7 @@ import {
 describe('gitattributes util', () => {
   let cwd: string;
   const auditPath = '.mnema/audit';
-  const marker = '.mnema/audit/*.jsonl merge=union';
+  const marker = '.mnema/audit/**/*.jsonl merge=union';
 
   beforeEach(() => {
     cwd = mkdtempSync(path.join(tmpdir(), 'mnema-gitattr-'));
@@ -64,7 +64,7 @@ describe('gitattributes util', () => {
     const bareAudit = 'audit';
     writeFileSync(
       path.join(cwd, '.gitattributes'),
-      'packages/foo/audit/*.jsonl merge=union\n',
+      'packages/foo/audit/**/*.jsonl merge=union\n',
       'utf-8',
     );
     expect(hasGitattributesUnion(cwd, bareAudit)).toBe(false);
@@ -73,9 +73,9 @@ describe('gitattributes util', () => {
     expect(hasGitattributesUnion(cwd, bareAudit)).toBe(true);
     // …and the pre-existing deeper rule is untouched.
     const attrs = readFileSync(path.join(cwd, '.gitattributes'), 'utf-8');
-    expect(attrs).toContain('packages/foo/audit/*.jsonl merge=union');
+    expect(attrs).toContain('packages/foo/audit/**/*.jsonl merge=union');
     // Exactly one line equals the bare-audit marker.
-    const exact = attrs.split('\n').filter((l) => l.trim() === 'audit/*.jsonl merge=union');
+    const exact = attrs.split('\n').filter((l) => l.trim() === 'audit/**/*.jsonl merge=union');
     expect(exact).toHaveLength(1);
   });
 

@@ -10,6 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { CONFIG_FILE_RELATIVE } from '@mnema/core/config/config-loader.js';
+import { gitattributesLines } from '@mnema/core/utils/gitattributes.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type DestroyPaths, removeArtifacts } from '@/cli/commands/destroy-command.js';
 
@@ -212,11 +213,7 @@ describe('removeArtifacts', () => {
 
   it('strips the managed `.gitattributes` block (current format) and leaves user lines intact', () => {
     const userLine = '*.png binary\n';
-    const managed = [
-      '# mnema: the audit log is append-only; merge with union so parallel',
-      '# branches keep both sides instead of conflicting on the tail.',
-      `${PATHS.audit}/*.jsonl merge=union`,
-    ].join('\n');
+    const managed = gitattributesLines(PATHS.audit);
     writeFileSync(path.join(projectRoot, '.gitattributes'), `${userLine}\n${managed}\n`, 'utf-8');
 
     const removed = removeArtifacts(projectRoot, PATHS, {
@@ -231,11 +228,7 @@ describe('removeArtifacts', () => {
   });
 
   it('deletes `.gitattributes` when only the managed block remained', () => {
-    const managed = [
-      '# mnema: the audit log is append-only; merge with union so parallel',
-      '# branches keep both sides instead of conflicting on the tail.',
-      `${PATHS.audit}/*.jsonl merge=union`,
-    ].join('\n');
+    const managed = gitattributesLines(PATHS.audit);
     writeFileSync(path.join(projectRoot, '.gitattributes'), `${managed}\n`, 'utf-8');
 
     removeArtifacts(projectRoot, PATHS, { keepMarkdown: true, keepAudit: true });

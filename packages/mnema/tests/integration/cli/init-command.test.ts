@@ -1,5 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
@@ -223,7 +230,7 @@ describe('InitCommand.run (silent mode)', () => {
       minimal: false,
     });
     const attrs = readFileSync(path.join(projectRoot, '.gitattributes'), 'utf-8');
-    expect(attrs).toContain('.mnema/audit/*.jsonl merge=union');
+    expect(attrs).toContain('.mnema/audit/**/*.jsonl merge=union');
   });
 
   it('does not duplicate the gitignore/gitattributes blocks on a second init --force', () => {
@@ -266,7 +273,15 @@ describe('audit log merges append-only under the scaffolded .gitattributes', () 
     });
   }
 
-  const auditFile = () => path.join(repo, '.mnema', 'audit', 'current.jsonl');
+  // Writes land in this machine's tail (`audit/m-<id>/`); resolve it so the
+  // union-merge test appends to the file the writer actually uses.
+  const auditFile = (): string => {
+    const auditDir = path.join(repo, '.mnema', 'audit');
+    const tail = readdirSync(auditDir, { withFileTypes: true }).find(
+      (d) => d.isDirectory() && /^m-[0-9a-f]{12}$/.test(d.name),
+    );
+    return path.join(tail ? path.join(auditDir, tail.name) : auditDir, 'current.jsonl');
+  };
 
   beforeEach(() => {
     repo = mkdtempSync(path.join(tmpdir(), 'mnema-audit-merge-'));
@@ -290,12 +305,12 @@ describe('audit log merges append-only under the scaffolded .gitattributes', () 
   it('merges two branches that both appended to the audit log without a conflict', () => {
     // Branch A appends one event.
     git(['checkout', '-b', 'feature']);
-    appendFileSync(auditFile(), '{"v":2,"event":"A"}\n', 'utf-8');
+    appendFileSync(auditFile(), '{"event":"A"}\n', 'utf-8');
     git(['commit', '-am', 'event A']);
 
     // main appends a different event.
     git(['checkout', 'main']);
-    appendFileSync(auditFile(), '{"v":2,"event":"B"}\n', 'utf-8');
+    appendFileSync(auditFile(), '{"event":"B"}\n', 'utf-8');
     git(['commit', '-am', 'event B']);
 
     // The union driver must merge both tails without raising a conflict.
@@ -315,11 +330,11 @@ describe('audit log merges append-only under the scaffolded .gitattributes', () 
     git(['commit', '-am', 'drop gitattributes']);
 
     git(['checkout', '-b', 'feature']);
-    appendFileSync(auditFile(), '{"v":2,"event":"A"}\n', 'utf-8');
+    appendFileSync(auditFile(), '{"event":"A"}\n', 'utf-8');
     git(['commit', '-am', 'event A']);
 
     git(['checkout', 'main']);
-    appendFileSync(auditFile(), '{"v":2,"event":"B"}\n', 'utf-8');
+    appendFileSync(auditFile(), '{"event":"B"}\n', 'utf-8');
     git(['commit', '-am', 'event B']);
 
     // Without the union driver this merge must fail (conflict on the tail).

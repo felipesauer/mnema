@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   attestFilesSignature,
   auditFilesSignature,
+  auditTailDirs,
   orderedAuditFiles,
 } from '../../storage/audit/audit-files.js';
 import { EVENT_FORMAT_VERSION, hmacEvent } from '../../storage/audit/audit-hash.js';
@@ -139,23 +140,29 @@ export interface AcceptedRebaseline {
 }
 
 /**
- * Walks every audit JSONL file under `auditDir`, in chain order, verifying
- * the per-line hash chain end to end (across rotated segments) and tallying
- * the shape of what it finds. Pure and read-only.
+ * Walks ONE machine tail's JSONL files, in chain order, verifying the
+ * per-line hash chain end to end (across rotated segments) and tallying the
+ * shape of what it finds. Pure and read-only.
  *
- * @param auditDir - Absolute path to `.mnema/audit/`
+ * Each tail is an independent chain — its own genesis (`prev_hash: null`),
+ * its own linear `prev_hash` continuity, its own HMAC. So the chain-carrying
+ * state here NEVER spans tails; {@link walkAuditChain} runs this per tail and
+ * folds the tallies.
+ *
+ * @param tailDir - Absolute path to one tail (`audit/m-<id>/`, or a degenerate
+ *   root tail that directly holds `.jsonl` files)
  * @param secret - Per-project HMAC secret for verifying the sealed lines
  * @param acceptedRebaseline - A pre-verified prune re-baseline to accept at the
  *   genesis instead of flagging the absent prior segment as tamper, or `null`
  *   (the default) to treat any missing prior segment as a break
- * @returns The walk result
+ * @returns The walk result for this tail
  */
-function walkAuditChain(
-  auditDir: string,
+function walkTailChain(
+  tailDir: string,
   secret: Buffer | null,
   acceptedRebaseline: AcceptedRebaseline | null = null,
 ): AuditChainWalk {
-  const files = orderedAuditFiles(auditDir);
+  const files = orderedAuditFiles(tailDir);
 
   // Events that belong to the hash chain. `audit_state.event_count` tracks
   // exactly these, so the count check compares against this, not the raw line
@@ -273,6 +280,96 @@ function walkAuditChain(
 }
 
 /**
+ * Walks the project's audit chain by walking every machine tail under
+ * `auditDir` independently and folding the results. Each tail is its own
+ * chain (its own genesis and linear `prev_hash`), so a break is judged
+ * per tail and never across the boundary between two machines' tails — the
+ * project is intact only when EVERY tail is. Pure and read-only.
+ *
+ * Tallies sum across tails; `chainBroken` is the OR (the first tail's detail
+ * wins, tail-qualified); `chainedHashes` concatenates (the ancestry oracle a
+ * head signature is matched against). `lastAt`/`lastHash` track the most
+ * recent event across tails, for display only — the cryptographic truth is
+ * per tail.
+ *
+ * A degenerate single-tail project (JSONL directly under `auditDir`, the shape
+ * a freshly-migrated or single-machine project has) folds to exactly one walk,
+ * identical to walking `auditDir` flat.
+ *
+ * @param auditDir - Absolute path to `.mnema/audit/`
+ * @param secret - Per-project HMAC secret for verifying the sealed lines
+ * @param acceptedRebaseline - A pre-verified prune re-baseline to accept at a
+ *   tail's genesis, or `null` to treat any missing prior segment as a break
+ * @returns The folded walk result for the whole project
+ */
+function walkAuditChain(
+  auditDir: string,
+  secret: Buffer | null,
+  acceptedRebaseline: AcceptedRebaseline | null = null,
+): AuditChainWalk {
+  let chainedLines = 0;
+  let malformedLines = 0;
+  let unverifiable = 0;
+  let hashMismatchCount = 0;
+  let prevHashBreakCount = 0;
+  let hmacChecked = 0;
+  let hmacFailed = 0;
+  let chainEverStarted = false;
+  let chainBroken = false;
+  let chainBreakDetail = '';
+  let lastHash: string | null = null;
+  let lastAt: string | null = null;
+  const chainedHashes: string[] = [];
+
+  for (const tail of auditTailDirs(auditDir)) {
+    const walk = walkTailChain(tail, secret, acceptedRebaseline);
+    chainedLines += walk.chainedLines;
+    malformedLines += walk.malformedLines;
+    unverifiable += walk.unverifiable;
+    hashMismatchCount += walk.hashMismatchCount;
+    prevHashBreakCount += walk.prevHashBreakCount;
+    hmacChecked += walk.hmacChecked;
+    hmacFailed += walk.hmacFailed;
+    chainEverStarted ||= walk.chainEverStarted;
+    if (walk.chainBroken) {
+      chainBroken = true;
+      if (chainBreakDetail === '') {
+        // Qualify with the tail so a multi-machine report names WHICH chain
+        // broke; the degenerate root tail is `auditDir` itself, so skip the
+        // redundant prefix there.
+        chainBreakDetail =
+          tail === auditDir
+            ? walk.chainBreakDetail
+            : `${path.basename(tail)}: ${walk.chainBreakDetail}`;
+      }
+    }
+    chainedHashes.push(...walk.chainedHashes);
+    // Most-recent-across-tails wins for display; ISO timestamps sort
+    // lexicographically, so a plain string compare is correct.
+    if (walk.lastAt !== null && (lastAt === null || walk.lastAt > lastAt)) {
+      lastAt = walk.lastAt;
+      lastHash = walk.lastHash;
+    }
+  }
+
+  return {
+    chainedLines,
+    malformedLines,
+    unverifiable,
+    chainBroken,
+    chainBreakDetail,
+    lastHash,
+    lastAt,
+    chainEverStarted,
+    hashMismatchCount,
+    prevHashBreakCount,
+    hmacChecked,
+    hmacFailed,
+    chainedHashes,
+  };
+}
+
+/**
  * Read-only assessment of what the on-disk chain physically holds and whether
  * it carries a real tamper signal, from the SAME {@link walkAuditChain} the
  * reconcile gates use. Exposed so the `accept-truncation` recovery command can
@@ -338,6 +435,7 @@ export function inspectAuditIntegrity(
   attestation: AttestationSource | null = null,
   contentAttestation: IntegrityCheck | null = null,
   acceptedRebaseline: AcceptedRebaseline | null = null,
+  localTailDir: string | null = null,
 ): IntegrityCheck[] {
   const checks: IntegrityCheck[] = [];
   if (!existsSync(auditDir)) {
@@ -368,9 +466,21 @@ export function inspectAuditIntegrity(
   }
 
   const walk = walkAuditChain(auditDir, secret, acceptedRebaseline);
-  const { chainedLines, malformedLines, unverifiable, lastHash, chainEverStarted } = walk;
+  const { malformedLines, unverifiable, lastHash, chainEverStarted } = walk;
   const chainBroken = walk.chainBroken;
   const chainBreakDetail = walk.chainBreakDetail;
+
+  // The SQLite mirror tracks only THIS machine's tail (it is a per-machine
+  // cache), so the count check compares `audit_state.event_count` against the
+  // local tail's chained-line count — never the project-wide total, which a
+  // sibling machine's tail (arrived by git merge) would inflate, falsely
+  // flagging a drift the local writer never caused. When the caller does not
+  // name a local tail (a clone with no tail of its own, or a degenerate
+  // single-tail project), the whole walk IS the local count.
+  const localWalk =
+    localTailDir !== null ? walkTailChain(localTailDir, secret, acceptedRebaseline) : walk;
+  const localChainedLines = localWalk.chainedLines;
+  const localMalformedLines = localWalk.malformedLines;
 
   // Wrong-secret HINT (additive, never suppresses the tamper verdict). When
   // EVERY line fails the HMAC while the on-disk chain is otherwise internally
@@ -417,19 +527,19 @@ export function inspectAuditIntegrity(
   // exactly what an attacker uses to launder an interior deletion — a garbage
   // line masks a removed chained line while keeping the count off-by-one.
   // That is not the recoverable crash window; escalate to a hard error.
-  const mirrorOneAhead = stateRow.event_count === chainedLines + 1;
-  const oneAheadIsClean = mirrorOneAhead && malformedLines === 0;
-  if (chainedLines === stateRow.event_count) {
+  const mirrorOneAhead = stateRow.event_count === localChainedLines + 1;
+  const oneAheadIsClean = mirrorOneAhead && localMalformedLines === 0;
+  if (localChainedLines === stateRow.event_count) {
     checks.push({
       name: 'audit event count',
       ok: true,
-      detail: `${chainedLines} chained events match audit_state.event_count`,
+      detail: `${localChainedLines} chained events match audit_state.event_count`,
     });
   } else if (oneAheadIsClean) {
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${chainedLines}) — either a crash between the mirror commit and the log append OR a truncation of the last line. A crash is reconciled at the next writer boot (the mirror is rewound to the on-disk tail); if this persists after a restart with no crash, investigate a truncation.`,
+      detail: `audit_state is one event ahead of disk (${stateRow.event_count} vs ${localChainedLines}) — either a crash between the mirror commit and the log append OR a truncation of the last line. A crash is reconciled at the next writer boot (the mirror is rewound to the on-disk tail); if this persists after a restart with no crash, investigate a truncation.`,
       severity: 'warning',
     });
   } else {
@@ -439,7 +549,7 @@ export function inspectAuditIntegrity(
     checks.push({
       name: 'audit event count',
       ok: false,
-      detail: `disk has ${chainedLines} chained events, audit_state has ${stateRow.event_count}${maskNote}`,
+      detail: `disk has ${localChainedLines} chained events, audit_state has ${stateRow.event_count}${maskNote}`,
       severity: 'error',
     });
   }
@@ -453,18 +563,18 @@ export function inspectAuditIntegrity(
       detail: `${chainBreakDetail} — run \`mnema audit diagnose\` to locate the break; if it is mirror drift (not content tampering), \`mnema audit recover\` can heal it`,
       severity: 'error',
     });
-  } else if (lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
-    // The mirror head points one past the disk tail — the same ambiguous
-    // one-ahead state as the count check: a recoverable crash window OR a
-    // last-line truncation. Warning (not a hard error, not a clean pass) —
+  } else if (localWalk.lastHash !== stateRow.chain_head_hash && mirrorOneAhead) {
+    // The mirror head points one past the local tail's disk tail — the same
+    // ambiguous one-ahead state as the count check: a recoverable crash window
+    // OR a last-line truncation. Warning (not a hard error, not a clean pass) —
     // the per-line chain on disk is itself consistent (chainBroken is false).
     checks.push({
       name: 'audit hash chain',
       ok: false,
-      detail: `disk tail lags audit_state.chain_head_hash by one event (recoverable crash window, or a truncated last line); on-disk chain is self-consistent up to ${lastHash?.slice(0, 12) ?? '(empty)'}…`,
+      detail: `disk tail lags audit_state.chain_head_hash by one event (recoverable crash window, or a truncated last line); on-disk chain is self-consistent up to ${localWalk.lastHash?.slice(0, 12) ?? '(empty)'}…`,
       severity: 'warning',
     });
-  } else if (lastHash !== stateRow.chain_head_hash) {
+  } else if (localWalk.lastHash !== stateRow.chain_head_hash) {
     checks.push({
       name: 'audit hash chain',
       ok: false,
@@ -893,6 +1003,9 @@ export class CachedAuditIntegrity {
     private readonly secrets: SecretSource | null = null,
     private readonly attestation: AttestationSource | null = null,
     private readonly buildContentAttestation: (() => IntegrityCheck) | null = null,
+    // This machine's tail, so the count check compares the mirror against the
+    // local tail (not the project-wide total). `null` folds to the whole walk.
+    private readonly localTailDir: string | null = null,
   ) {}
 
   /**
@@ -930,6 +1043,8 @@ export class CachedAuditIntegrity {
       secret,
       this.attestation,
       this.buildContentAttestation?.() ?? null,
+      null,
+      this.localTailDir,
     );
     this.signature = signature;
     this.cached = checks;

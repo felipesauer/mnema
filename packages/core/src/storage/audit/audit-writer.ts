@@ -50,9 +50,12 @@ const LOCK_OPTIONS = {
 export type { AuditEvent } from './audit-types.js';
 
 /**
- * Append-only writer for the audit log in JSONL format.
+ * Append-only writer for one machine's audit tail in JSONL format.
  *
- * Files are kept under {@link AuditWriter}'s `auditDir`:
+ * Each machine writes ONLY its own tail directory (`audit/m-<id>/`), so the
+ * git union-merge can never interleave two machines' lines. The writer is
+ * agnostic about that: it is handed the tail directory as its `auditDir` and
+ * keeps its files directly under it:
  * - `current.jsonl` for the current month
  * - `YYYY-MM.jsonl` for archived months
  *
@@ -61,9 +64,9 @@ export type { AuditEvent } from './audit-types.js';
  * a fresh `current.jsonl` is started.
  *
  * The writer (1) chains lines via `prev_hash`/`hash`, (2) seals each line
- * with the per-project HMAC secret, and (3) mirrors event count, last `at`,
- * and chain-head hash into SQLite. Every write is chained and keyed — there
- * is no unkeyed path.
+ * with the per-project HMAC secret, and (3) mirrors this tail's event count,
+ * last `at`, and chain-head hash into SQLite. Every write is chained and
+ * keyed — there is no unkeyed path.
  */
 export class AuditWriter {
   private readonly currentFile: string;
@@ -78,8 +81,9 @@ export class AuditWriter {
    * triggers an immediate rotation check so the very first write lands
    * in the right month.
    *
-   * @param auditDir - Absolute path to the audit directory
-   * @param state - SQLite mirror backing the hash chain and its invariants
+   * @param auditDir - Absolute path to this machine's tail directory
+   *   (`audit/m-<id>/`); the writer's files live directly under it
+   * @param state - SQLite mirror backing this tail's chain and its invariants
    * @param now - Optional clock; defaults to `() => new Date()`
    * @param secretProvider - Lazy source of the per-project HMAC secret.
    *   Resolved on the FIRST write (not at construction), so a read-only
@@ -141,12 +145,12 @@ export class AuditWriter {
    * genuine truncation is separately caught by the attestation layer
    * (a signed checkpoint above the rewound count is flagged as a rollback).
    *
-   * The FULL chain is counted (all rotated segments + current), not just
-   * `current.jsonl`: the mirror's `event_count` is the project-wide total, so
-   * the one-ahead comparison needs the total. The tail hash/at always come
-   * from the last chained line (the crash only ever drops the current tail).
-   * This is one boot-time scan, under the write lock — the same cost `doctor`
-   * already pays, run once per process start.
+   * The whole tail is counted (all rotated segments + current), not just
+   * `current.jsonl`: the mirror's `event_count` tracks this machine's tail, so
+   * the one-ahead comparison needs its full count. The tail hash/at always
+   * come from the last chained line (the crash only ever drops the current
+   * tail). This is one boot-time scan, under the write lock — the same cost
+   * `doctor` already pays, run once per process start.
    */
   private reconcileMirror(): void {
     let count = 0;
@@ -289,7 +293,7 @@ export class AuditWriter {
    */
   private resolveSecret(): Buffer | null {
     if (!this.secretResolved) {
-      this.secret = this.secretProvider !== null ? this.secretProvider() : null;
+      this.secret = this.secretProvider();
       this.secretResolved = true;
     }
     return this.secret;
