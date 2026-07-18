@@ -166,6 +166,37 @@ describe('TaskService (integration)', () => {
       expect(moved.value.state).toBe('READY');
     });
 
+    it('stamps the committed id and the annotation payload onto the chain event', () => {
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Trace me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      // `cancel` declares a `reason` gate field (validating) — the annotation
+      // that must survive on the chain, not just in transitions.payload.
+      const moved = container.task.transition({
+        taskKey: created.value.key,
+        action: 'cancel',
+        payload: { reason: 'no longer needed for the release' },
+        actor: 'daniel',
+      });
+      expect(moved.ok).toBe(true);
+
+      // The chain — not just transitions.payload — now carries the id AND the
+      // reason, so a clone with only the committed chain can reconstruct WHY.
+      const events = container.auditQuery.run({
+        taskKey: created.value.key,
+        kind: 'task_transitioned',
+      });
+      expect(events).toHaveLength(1);
+      const data = events[0]?.data as { id?: string; payload?: { reason?: string } };
+      expect(data.id).toBe(created.value.id);
+      expect(data.payload?.reason).toBe('no longer needed for the release');
+    });
+
     it('moves the markdown file when state changes', () => {
       container.task.create({ projectKey: 'TEST', title: 'Move me', actor: 'daniel' });
 

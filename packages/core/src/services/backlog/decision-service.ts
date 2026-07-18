@@ -248,7 +248,8 @@ export class DecisionService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: decision.key, title: decision.title, status: decision.status },
+      // The committed id binds provenance to the clone-stable identity.
+      data: { id: decision.id, key: decision.key, title: decision.title, status: decision.status },
     });
 
     this.mirror?.writeDecision(decision);

@@ -159,7 +159,8 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: epic.key, title: epic.title },
+      // The committed id binds provenance to the clone-stable identity.
+      data: { id: epic.id, key: epic.key, title: epic.title },
     });
 
     this.mirror?.writeEpic(epic);

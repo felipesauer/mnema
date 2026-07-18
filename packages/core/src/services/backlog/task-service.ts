@@ -198,7 +198,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, title: task.title, state: task.state },
+      // The committed id is the stable provenance anchor — it survives a clone
+      // and never changes, so the chain binds by it (the key is kept too, for
+      // human-readable history and until it is retired).
+      data: { id: task.id, key: task.key, title: task.title, state: task.state },
     });
 
     this.sync.syncTask(task.key);
@@ -909,10 +912,18 @@ export class TaskService {
       via: input.via,
       run: input.runId,
       data: {
+        id: task.id,
         key: task.key,
         from: task.state,
         to,
         action: input.action,
+        // The transition's annotation payload (reason, approval_note, pr_url,
+        // gate fields) now rides ON the event, not only in `transitions.payload`
+        // — so a clone with just the chain can reconstruct WHY, and the
+        // projection of `transitions` from the chain keeps every reason.
+        ...(data !== null && typeof data === 'object' && Object.keys(data).length > 0
+          ? { payload: data }
+          : {}),
       },
     });
 

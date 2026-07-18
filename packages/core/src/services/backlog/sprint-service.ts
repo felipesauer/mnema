@@ -178,7 +178,8 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: sprint.key, name: sprint.name, goal: sprint.goal },
+      // The committed id binds provenance to the clone-stable identity.
+      data: { id: sprint.id, key: sprint.key, name: sprint.name, goal: sprint.goal },
     });
 
     this.mirror?.writeSprint(sprint);
