@@ -57,8 +57,15 @@ export const HooksSchema = z
  * All optional sections expose sensible defaults so a minimal config
  * (project + version) is enough to bootstrap a project.
  */
+/**
+ * The config-shape version: the single point of truth for the `version` field.
+ * It is one input to the store-format hash and the hook for config
+ * upgrade-scripts. Bumping it is a deliberate config-shape change.
+ */
+export const CONFIG_VERSION = '1.0';
+
 export const ConfigSchema = z.object({
-  version: z.literal('1.0'),
+  version: z.literal(CONFIG_VERSION),
   mnema_version: z.string(),
   project: z.object({
     key: z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/),

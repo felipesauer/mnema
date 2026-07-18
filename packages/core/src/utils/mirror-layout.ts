@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * The foldered `.md` mirror layout (MNEMA-ADR-51).
+ * The foldered `.md` mirror layout.
  *
  * Memory-row and skill mirrors live in ONE level of PRESENTATIONAL subfolders
  * instead of flat at the root:
@@ -19,6 +19,17 @@ import path from 'node:path';
  * scope↔folder encoding (scope is free-form and could collide with any
  * encoding), and keeps the recursive scanners bounded and simple.
  */
+
+/**
+ * Identifies the on-disk shape of the markdown mirror. It is an input to the
+ * store-format hash, so a change to how mirrors are laid out (a new folder
+ * convention, a different canonical path) bumps this tag and thereby the
+ * store-format marker — forcing a conscious `mnema migrate` before a machine on
+ * the old layout keeps writing. It is a LAYOUT identifier, never a per-row
+ * content version: the sync-rebuild's line-level supersede must stay out of the
+ * hash, or the guard would fire on every ordinary mirror write.
+ */
+export const MIRROR_LAYOUT_VERSION = 'mnema-mirror/v1';
 
 /** Shared empty set so a default `excludeDirs` arg does not allocate per call. */
 const EMPTY_DIR_SET: ReadonlySet<string> = new Set();

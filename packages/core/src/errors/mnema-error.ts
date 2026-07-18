@@ -152,6 +152,12 @@ export type MnemaError =
       /** Human-readable list of what diverged from the boot snapshot. */
       readonly changed: readonly string[];
     }
+  | {
+      readonly kind: ErrorCode.StoreFormatMismatch;
+      /** The format inputs that differ between this binary and the committed
+       * marker (e.g. `config.version`, `migration`, `mirror-layout`). */
+      readonly diverged: readonly string[];
+    }
   | { readonly kind: ErrorCode.SkillNotFound; readonly slug: string }
   | { readonly kind: ErrorCode.MemoryNotFound; readonly slug: string }
   | {

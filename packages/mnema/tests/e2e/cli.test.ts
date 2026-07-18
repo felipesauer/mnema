@@ -102,6 +102,32 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(gitignore).toContain('.mnema/state/');
   });
 
+  it('the store-format guard refuses CLI mutations on a divergent marker, migrate clears it', () => {
+    runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
+    const marker = path.join(projectRoot, '.mnema/keys/store-format');
+    expect(existsSync(marker)).toBe(true);
+
+    // A mutation on the freshly-inited project is allowed (marker matches).
+    const ok = runCli(['task', 'create', '--title', 'a task'], projectRoot);
+    expect(ok.status).toBe(0);
+
+    // Corrupt the marker to a hash no binary can match → a mutation is refused
+    // fail-closed with STORE_FORMAT_MISMATCH; a read still works.
+    writeFileSync(marker, `${'0'.repeat(64)}\n`, 'utf-8');
+    const refused = runCli(['task', 'create', '--title', 'another'], projectRoot);
+    expect(refused.status).toBe(3); // ExitCode.State
+    expect(`${refused.stdout}${refused.stderr}`).toMatch(/different on-disk format/i);
+    const read = runCli(['task', 'list'], projectRoot);
+    expect(read.status).toBe(0);
+
+    // `mnema migrate` reconciles: it rewrites the marker to this binary's
+    // format, and mutations flow again.
+    const migrated = runCli(['migrate'], projectRoot);
+    expect(migrated.status).toBe(0);
+    const afterFix = runCli(['task', 'create', '--title', 'third'], projectRoot);
+    expect(afterFix.status).toBe(0);
+  });
+
   it('mnema init seeds the example skills as rows, not just files (non-minimal)', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
 

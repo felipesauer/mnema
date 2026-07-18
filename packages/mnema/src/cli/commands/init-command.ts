@@ -18,6 +18,7 @@ import { AuditService } from '@mnema/core/services/integrity/audit-service.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
 import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
+import { writeStoreFormatMarker } from '@mnema/core/services/integrity/store-format.js';
 import { AdoptionService } from '@mnema/core/services/knowledge/adoption-service.js';
 import { SkillService } from '@mnema/core/services/knowledge/skill-service.js';
 import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
@@ -264,6 +265,10 @@ export class InitCommand {
     let identityConfigured = false;
     try {
       new MigrationRunner().run(adapter, migrationsDir());
+      // Stamp the store-format marker so this project's store declares the
+      // on-disk format the mutation guard checks. A fresh init is always in
+      // sync with the binary that created it.
+      writeStoreFormatMarker(cwd);
       const projects = new ProjectRepository(adapter);
       if (projects.findByKey(config.project.key) === null) {
         projects.insert({

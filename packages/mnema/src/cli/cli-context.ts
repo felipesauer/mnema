@@ -12,6 +12,7 @@ import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import { type ErrorIssue, fromZodIssues } from '@mnema/core/errors/mnema-error.js';
 import { IdentityNotConfiguredError } from '@mnema/core/services/integrity/identity-service.js';
+import { checkStoreFormat } from '@mnema/core/services/integrity/store-format.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -166,6 +167,19 @@ export async function withMutatingCliContext(
       const code = printError({
         kind: ErrorCode.SchemaOutOfDate,
         pending: context.container.pendingMigrations.map((m) => m.file),
+      });
+      context.container.close();
+      process.exit(code);
+    }
+    // The store may have been written by a mnema with a different on-disk
+    // format (a divergent merge, a version skew across machines). Reads are
+    // fine; refuse to MUTATE so two binaries never interleave writes under
+    // diverging formats. Fail-open when no marker exists (a pre-feature store).
+    const storeFormat = checkStoreFormat(context.projectRoot);
+    if (!storeFormat.ok) {
+      const code = printError({
+        kind: ErrorCode.StoreFormatMismatch,
+        diverged: storeFormat.diverged,
       });
       context.container.close();
       process.exit(code);
