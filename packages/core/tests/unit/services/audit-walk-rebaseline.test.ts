@@ -3,11 +3,18 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { assessAuditChain } from '@/services/integrity/audit-integrity.js';
+import { type AcceptedRebaseline, assessAuditChain } from '@/services/integrity/audit-integrity.js';
 import { hmacEvent } from '@/storage/audit/audit-hash.js';
 import type { AuditEvent } from '@/storage/audit/audit-writer.js';
 
 const FIXTURE_SECRET = Buffer.alloc(32, 7);
+
+/**
+ * Wraps a fixed re-baseline as the per-tail resolver `assessAuditChain` now
+ * takes — these unit tests exercise the walk's gate directly with one tail, so
+ * the resolver just returns the same boundary for whatever tail it is asked.
+ */
+const accept = (rb: AcceptedRebaseline) => (): AcceptedRebaseline => rb;
 
 /**
  * The walk's prune re-baseline gate (ADR-68 / MNEMA-346). After a retention
@@ -83,7 +90,7 @@ describe('walk prune re-baseline gate', () => {
     const evs = chain(3, anchor);
     writeChain(evs);
     const genesisHash = evs[0].hash as string;
-    const ok = assessAuditChain(auditDir, null, { anchorPrevHash: anchor, genesisHash });
+    const ok = assessAuditChain(auditDir, null, accept({ anchorPrevHash: anchor, genesisHash }));
     expect(ok.chainBroken).toBe(false);
     expect(ok.chainedLines).toBe(3);
   });
@@ -94,10 +101,14 @@ describe('walk prune re-baseline gate', () => {
     const genesisHash = evs[0].hash as string;
     // Waiver claims a different anchor than the one the genesis actually points
     // at — the gate must not accept it.
-    const bad = assessAuditChain(auditDir, null, {
-      anchorPrevHash: 'cd'.repeat(32),
-      genesisHash,
-    });
+    const bad = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: 'cd'.repeat(32),
+        genesisHash,
+      }),
+    );
     expect(bad.chainBroken).toBe(true);
   });
 
@@ -105,10 +116,14 @@ describe('walk prune re-baseline gate', () => {
     const evs = chain(3, anchor);
     writeChain(evs);
     // Correct anchor, but the waiver names a different genesis event — reject.
-    const bad = assessAuditChain(auditDir, null, {
-      anchorPrevHash: anchor,
-      genesisHash: 'deadbeef',
-    });
+    const bad = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: anchor,
+        genesisHash: 'deadbeef',
+      }),
+    );
     expect(bad.chainBroken).toBe(true);
   });
 
@@ -121,10 +136,14 @@ describe('walk prune re-baseline gate', () => {
     const tampered = evs.map((e, i) => (i === 1 ? { ...e, prev_hash: anchor } : e)) as AuditEvent[];
     writeChain(tampered);
     const genesis1 = tampered[1].hash as string;
-    const attempt = assessAuditChain(auditDir, null, {
-      anchorPrevHash: anchor,
-      genesisHash: genesis1,
-    });
+    const attempt = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: anchor,
+        genesisHash: genesis1,
+      }),
+    );
     expect(attempt.chainBroken).toBe(true);
   });
 
@@ -133,10 +152,14 @@ describe('walk prune re-baseline gate', () => {
     writeChain(evs);
     // Passing a re-baseline that does not describe this (null-prev) genesis must
     // not break a chain that was already clean.
-    const ok = assessAuditChain(auditDir, null, {
-      anchorPrevHash: anchor,
-      genesisHash: evs[0].hash as string,
-    });
+    const ok = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: anchor,
+        genesisHash: evs[0].hash as string,
+      }),
+    );
     expect(ok.chainBroken).toBe(false);
     expect(ok.chainedLines).toBe(3);
   });
@@ -146,10 +169,14 @@ describe('walk prune re-baseline gate', () => {
     // HMAC secret — an anonymous clone verifies the re-baseline structurally.
     const evs = chain(4, anchor);
     writeChain(evs);
-    const ok = assessAuditChain(auditDir, null, {
-      anchorPrevHash: anchor,
-      genesisHash: evs[0].hash as string,
-    });
+    const ok = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: anchor,
+        genesisHash: evs[0].hash as string,
+      }),
+    );
     expect(ok.chainBroken).toBe(false);
     expect(ok.chainedLines).toBe(4);
   });
@@ -176,10 +203,14 @@ describe('walk prune re-baseline gate', () => {
         .join('\n')}\n`,
       'utf-8',
     );
-    const ok = assessAuditChain(auditDir, null, {
-      anchorPrevHash: anchor,
-      genesisHash: evs[0].hash as string,
-    });
+    const ok = assessAuditChain(
+      auditDir,
+      null,
+      accept({
+        anchorPrevHash: anchor,
+        genesisHash: evs[0].hash as string,
+      }),
+    );
     expect(ok.chainBroken).toBe(false);
     expect(ok.chainedLines).toBe(4);
   });

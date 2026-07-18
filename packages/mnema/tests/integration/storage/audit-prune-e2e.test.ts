@@ -4,8 +4,9 @@ import path from 'node:path';
 import { committedSignerResolver } from '@mnema/core/services/audit/attestation-store.js';
 import { applyPrune, buildPrunePlan } from '@mnema/core/services/audit/prune-apply.js';
 import { decideAttLockstep } from '@mnema/core/services/audit/prune-att-lockstep.js';
-import { readPruneWaiver } from '@mnema/core/services/audit/prune-store.js';
-import { verifyPruneWaiver } from '@mnema/core/services/audit/prune-waiver.js';
+import { buildRebaselineResolver } from '@mnema/core/services/audit/rebaseline-resolve.js';
+import { readRebaselineWaiver } from '@mnema/core/services/audit/rebaseline-store.js';
+import { verifyRebaselineWaiver } from '@mnema/core/services/audit/rebaseline-waiver.js';
 import { computeCutPoint } from '@mnema/core/services/audit/retention-cut-point.js';
 import {
   assessAuditChain,
@@ -153,24 +154,33 @@ describe('audit prune end-to-end', () => {
 
     // The dropped months are gone; the surviving genesis is event index 5.
     const survivingGenesis = hashes[5];
-    expect(waiver.genesisHash).toBe(survivingGenesis);
+    expect(waiver.kind).toBe('prune');
+    expect(waiver.newHeadHash).toBe(survivingGenesis);
     expect(waiver.prunedHeadHash).toBe(hashes[4]);
 
     // The committed waiver verifies against the surviving genesis, no secret —
     // resolved via the SAME committed .pub resolver the verify path uses.
-    const stored = readPruneWaiver(auditDir);
+    const stored = readRebaselineWaiver(auditDir);
     expect(stored).not.toBeNull();
     const resolve = committedSignerResolver(projectRoot);
-    expect(verifyPruneWaiver(stored as never, survivingGenesis, projectHmacId, resolve)).toEqual({
+    expect(
+      verifyRebaselineWaiver(
+        stored as never,
+        survivingGenesis,
+        (stored as never as { tailId: string }).tailId,
+        projectHmacId,
+        resolve,
+      ),
+    ).toEqual({
       ok: true,
     });
 
     // The integrity walk reads CLEAN with the re-baseline (prunedHeadHash is
     // the on-disk genesis prev_hash), and audit_state matches the survivors.
-    const clean = assessAuditChain(auditDir, null, {
+    const clean = assessAuditChain(auditDir, null, () => ({
       anchorPrevHash: waiver.prunedHeadHash,
-      genesisHash: waiver.genesisHash,
-    });
+      genesisHash: waiver.newHeadHash,
+    }));
     expect(clean.chainBroken).toBe(false);
     expect(clean.chainedLines).toBe(3);
     expect(state.read().eventCount).toBe(3);
@@ -179,11 +189,31 @@ describe('audit prune end-to-end', () => {
     expect(assessAuditChain(auditDir, null).chainBroken).toBe(true);
 
     // inspectAuditIntegrity with the re-baseline reports the event-count check ok.
-    const report = inspectAuditIntegrity(adapter, auditDir, null, null, null, {
+    const report = inspectAuditIntegrity(adapter, auditDir, null, null, null, () => ({
       anchorPrevHash: waiver.prunedHeadHash,
-      genesisHash: waiver.genesisHash,
-    });
+      genesisHash: waiver.newHeadHash,
+    }));
     const countCheck = report.find((c) => c.name === 'audit event count');
     expect(countCheck?.ok).toBe(true);
+
+    // THE PRODUCTION WIRING: the same verify reads GREEN when handed the real
+    // resolver (which reads + verifies the committed waiver off disk), not a
+    // hand-built rebaseline. This is the fix — before it, every verify passed
+    // `null` here and a legitimate prune read as a `prev_hash` break (tamper).
+    const resolver = buildRebaselineResolver(projectHmacId, committedSignerResolver(projectRoot));
+    const prod = inspectAuditIntegrity(adapter, auditDir, null, null, null, resolver);
+    expect(prod.find((c) => c.name === 'audit hash chain')?.ok).toBe(true);
+    // And WITHOUT the resolver (the pre-fix behaviour) it still reads as tamper —
+    // proving the resolver is load-bearing, not cosmetic.
+    const noResolver = inspectAuditIntegrity(adapter, auditDir, null);
+    expect(noResolver.find((c) => c.name === 'audit hash chain')?.ok).toBe(false);
+
+    // The `audit prune` Gate-1 runs `assessAuditChain(tailDir, secret, resolver)`
+    // and REFUSES on chainBroken. On an ALREADY-pruned tail that gate must NOT
+    // fire, or a second retention prune is refused forever. With the resolver
+    // the surviving genesis is accepted (not a break); without it, it is not —
+    // this pins that the gate carries the resolver.
+    expect(assessAuditChain(auditDir, null, resolver).chainBroken).toBe(false);
+    expect(assessAuditChain(auditDir, null).chainBroken).toBe(true);
   });
 });

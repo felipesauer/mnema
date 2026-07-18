@@ -1,88 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { orderedAuditFiles } from '../../storage/audit/audit-files.js';
 import { EVENT_FORMAT_VERSION, hmacEvent } from '../../storage/audit/audit-hash.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import { defaultGitRunner, type GitCommandRunner } from '../git/git-commit-service.js';
-
-/**
- * Filename (relative to `auditDir`) recording a human's decision to accept a
- * GENUINE truncation of the audit chain — history the operator deliberately
- * rewrote below a signed checkpoint, making the chain SHORTER than an attested
- * high-water mark. Committed like the audit log; every field is re-verified
- * against the CURRENT disk on every read (never blindly trusted), so it can
- * never launder a LATER truncation than the one the human reviewed.
- */
-const TRUNCATION_WAIVER_FILE = 'truncation-accepted.json';
-
-/** The recorded acceptance of a deliberate truncation to a verified tail. */
-export interface TruncationWaiver {
-  /** `hash` of the disk tail at the moment the truncation was accepted. */
-  readonly acceptedHeadHash: string;
-  /** Chained line count on disk at acceptance. */
-  readonly acceptedEventCount: number;
-  /** When the waiver was written (informational only). */
-  readonly acceptedAt: string;
-}
-
-/** Absolute path to the truncation waiver file for an audit dir. */
-export function truncationWaiverPath(auditDir: string): string {
-  return path.join(auditDir, TRUNCATION_WAIVER_FILE);
-}
-
-/**
- * Reads the committed truncation waiver, or `null` when absent or malformed (a
- * malformed file is treated as no waiver — never a crash and never an
- * accidental accept-everything). Reading it does NOT itself confirm it still
- * applies: the caller must re-verify `acceptedHeadHash`/`acceptedEventCount`
- * against the CURRENT disk tail, so a truncation deeper than the accepted one
- * is never covered.
- *
- * @param auditDir - Absolute path to `.mnema/audit/`
- * @returns The waiver, or `null`
- */
-export function readTruncationWaiver(auditDir: string): TruncationWaiver | null {
-  const file = truncationWaiverPath(auditDir);
-  if (!existsSync(file)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(file, 'utf-8')) as Partial<TruncationWaiver>;
-    if (typeof raw.acceptedHeadHash !== 'string' || typeof raw.acceptedEventCount !== 'number') {
-      return null;
-    }
-    return {
-      acceptedHeadHash: raw.acceptedHeadHash,
-      acceptedEventCount: raw.acceptedEventCount,
-      acceptedAt: typeof raw.acceptedAt === 'string' ? raw.acceptedAt : '',
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Writes the truncation waiver. Called ONLY by `audit accept-truncation
- * --force` after it has independently verified the disk chain is
- * content-consistent, the signed head is genuinely absent from disk, no
- * committed `.att` reaches beyond the new tail, and (when required) the disk
- * matches git HEAD — this function itself performs no verification, so it must
- * never be called on unverified input.
- *
- * @param auditDir - Absolute path to `.mnema/audit/`
- * @param acceptedHeadHash - The disk tail hash being baselined to
- * @param acceptedEventCount - The disk chained-line count being baselined to
- */
-export function writeTruncationWaiver(
-  auditDir: string,
-  acceptedHeadHash: string,
-  acceptedEventCount: number,
-): void {
-  const waiver: TruncationWaiver = {
-    acceptedHeadHash,
-    acceptedEventCount,
-    acceptedAt: new Date().toISOString(),
-  };
-  writeFileSync(truncationWaiverPath(auditDir), `${JSON.stringify(waiver, null, 2)}\n`, 'utf-8');
-}
 
 /**
  * One `prev_hash` discontinuity found while walking the chain, with a verdict

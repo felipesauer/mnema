@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildArtifact } from '@/services/audit/attestation-artifact.js';
 import { attestPath, writeArtifact } from '@/services/audit/attestation-store.js';
 import { applyPrune, buildPrunePlan, PrunePlanError } from '@/services/audit/prune-apply.js';
-import { pruneWaiverPath, readPruneWaiver } from '@/services/audit/prune-store.js';
-import { verifyPruneWaiver } from '@/services/audit/prune-waiver.js';
+import { readRebaselineWaiver, rebaselineWaiverPath } from '@/services/audit/rebaseline-store.js';
+import { verifyRebaselineWaiver } from '@/services/audit/rebaseline-waiver.js';
 import { computeCutPoint } from '@/services/audit/retention-cut-point.js';
 import { assessAuditChain } from '@/services/integrity/audit-integrity.js';
 import { MachineKeyService } from '@/services/integrity/machine-key.js';
@@ -123,17 +123,20 @@ describe('prune apply', () => {
     expect(reSigned).toBe(true);
 
     // The waiver is committed and its anchor binds to the surviving genesis.
-    expect(existsSync(pruneWaiverPath(auditDir))).toBe(true);
-    expect(waiver.genesisHash).toBe(chain[5].hash);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(true);
+    expect(waiver.kind).toBe('prune');
+    expect(waiver.newHeadHash).toBe(chain[5].hash);
     expect(waiver.cut).toBe(5);
 
     // END-TO-END: the pruned chain now verifies CLEAN, but only WITH the
     // re-baseline the waiver authorises.
     const resolve = (fp: string) => (fp === s.fingerprint ? s.pem : null);
-    const stored = readPruneWaiver(auditDir);
+    const stored = readRebaselineWaiver(auditDir);
     expect(stored).not.toBeNull();
     const genesisOnDisk = chain[5].hash as string;
-    expect(verifyPruneWaiver(stored as never, genesisOnDisk, hmacId, resolve)).toEqual({
+    expect(
+      verifyRebaselineWaiver(stored as never, genesisOnDisk, waiver.tailId, hmacId, resolve),
+    ).toEqual({
       ok: true,
     });
 
@@ -141,10 +144,10 @@ describe('prune apply', () => {
     // last dropped event) — the prune does not rewrite it (no cascade re-hash).
     // So the walk matches against prunedHeadHash; the anchor digest is the
     // waiver's separate content attestation of the deleted prefix.
-    const clean = assessAuditChain(auditDir, null, {
+    const clean = assessAuditChain(auditDir, null, () => ({
       anchorPrevHash: waiver.prunedHeadHash,
-      genesisHash: waiver.genesisHash,
-    });
+      genesisHash: waiver.newHeadHash,
+    }));
     expect(clean.chainBroken).toBe(false);
     expect(clean.chainedLines).toBe(4);
     expect(waiver.prunedHeadHash).toBe(chain[4].hash);
@@ -175,7 +178,7 @@ describe('prune apply', () => {
       },
       now: () => NOW,
     });
-    order.push(`waiver-on-disk:${String(existsSync(pruneWaiverPath(auditDir)))}`);
+    order.push(`waiver-on-disk:${String(existsSync(rebaselineWaiverPath(auditDir)))}`);
     expect(order).toEqual(['reconcile', 'resign', 'waiver-on-disk:true']);
     void chain;
   });
@@ -199,7 +202,7 @@ describe('prune apply', () => {
     });
     expect(reSigned).toBe(false);
     // Waiver is still written — an anonymous verifier relies on it.
-    expect(existsSync(pruneWaiverPath(auditDir))).toBe(true);
+    expect(existsSync(rebaselineWaiverPath(auditDir))).toBe(true);
   });
 
   it('removes the covered .att files in the same destructive pass', () => {
@@ -324,8 +327,8 @@ describe('prune apply', () => {
       reSignHead: () => true,
       now: () => NOW,
     });
-    const raw = readFileSync(pruneWaiverPath(auditDir), 'utf-8');
+    const raw = readFileSync(rebaselineWaiverPath(auditDir), 'utf-8');
     expect(raw.endsWith('}\n')).toBe(true);
-    expect(raw).toContain('"version": "mnema-prune/v1"');
+    expect(raw).toContain('"version": "mnema-rebaseline/v1"');
   });
 });

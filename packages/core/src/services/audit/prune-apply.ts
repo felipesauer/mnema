@@ -1,10 +1,11 @@
 import { rmSync } from 'node:fs';
+import path from 'node:path';
 
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import { walkChainedEvents } from './audit-chain-walk.js';
 import { removeCoveredAtts } from './prune-att-lockstep.js';
-import { writePruneWaiver } from './prune-store.js';
-import { buildPruneWaiver, type PruneWaiver } from './prune-waiver.js';
+import { writeRebaselineWaiver } from './rebaseline-store.js';
+import { buildPruneWaiver, type RebaselineWaiver } from './rebaseline-waiver.js';
 import type { CutPoint } from './retention-cut-point.js';
 
 /**
@@ -148,7 +149,11 @@ export function applyPrune(params: {
   reSignHead: (newHeadHash: string, newEventCount: number) => boolean;
   deleteAnchorsBelow?: (cut: number) => number;
   now: () => Date;
-}): { readonly waiver: PruneWaiver; readonly reSigned: boolean; readonly anchorsRemoved: number } {
+}): {
+  readonly waiver: RebaselineWaiver;
+  readonly reSigned: boolean;
+  readonly anchorsRemoved: number;
+} {
   const {
     auditDir,
     plan,
@@ -164,10 +169,14 @@ export function applyPrune(params: {
     now,
   } = params;
 
-  // 1. Sign the waiver while the dropped content still exists.
+  // 1. Sign the waiver while the dropped content still exists. `auditDir` here
+  //    is this machine's tail, so its basename is the tail id bound into the
+  //    signature (a prune waiver cannot be replayed against a sibling tail).
   const waiver = buildPruneWaiver({
     droppedEvents: plan.droppedEvents,
     genesisHash: plan.genesisHash,
+    survivingEventCount: plan.keptEventCount,
+    tailId: path.basename(auditDir),
     signerActor,
     signerFingerprint,
     projectHmacId,
@@ -190,7 +199,7 @@ export function applyPrune(params: {
   const reSigned = reSignHead(plan.survivingHeadHash, plan.keptEventCount);
 
   // 5. Write the committed waiver last.
-  writePruneWaiver(auditDir, waiver);
+  writeRebaselineWaiver(auditDir, waiver);
 
   return { waiver, reSigned, anchorsRemoved };
 }
