@@ -13,7 +13,7 @@ import {
 } from '@/config/config-loader.js';
 
 const validConfig = {
-  version: '1.0',
+  version: '2.0',
   mnema_version: '0.1.0',
   project: { key: 'TEST', name: 'Test project' },
 };
@@ -160,7 +160,7 @@ describe('ConfigLoader', () => {
     });
 
     it('throws ConfigInvalidError when payload violates the schema', () => {
-      const broken = { version: '1.0', mnema_version: '0.1.0', project: { key: 'lowercase' } };
+      const broken = { version: '2.0', mnema_version: '0.1.0', project: { key: 'lowercase' } };
       writeConfig(tempRoot, broken);
 
       let caught: unknown;

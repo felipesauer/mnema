@@ -31,7 +31,7 @@ function timeIt(fn: () => void): number {
 const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-scale-'));
 try {
   const config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.0.0',
     project: { key: 'SCALE', name: 'Scale Bench' },
   });

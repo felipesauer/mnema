@@ -36,7 +36,7 @@ function build(): Built {
     path.join(projectRoot, '.mnema/workflows/default.json'),
   );
   const config: Config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'WD', name: 'Watchdog Test' },
     workflow: 'default',

@@ -77,7 +77,7 @@ function makeProject(): Harness {
   const root = mkdtempSync(path.join(tmpdir(), 'mnema-rt-'));
   mkdirSync(path.join(root, '.mnema/workflows'), { recursive: true });
   const config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: PROJECT_KEY, name: 'Round Trip' },
     workflow: 'default',
@@ -123,7 +123,7 @@ function roundTrip(h: Harness): Harness {
   rmSync(path.join(h.root, '.mnema/state'), { recursive: true, force: true });
 
   const config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: PROJECT_KEY, name: 'Round Trip' },
     workflow: 'default',

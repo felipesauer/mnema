@@ -15,7 +15,7 @@ import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { chainedAuditWriter } from '../../setup/audit-writer.js';
 
 const config = ConfigSchema.parse({
-  version: '1.0',
+  version: '2.0',
   mnema_version: '^0.1.0',
   project: { key: 'TEST', name: 'Test' },
   workflow: 'default',

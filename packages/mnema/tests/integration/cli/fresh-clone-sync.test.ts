@@ -43,7 +43,7 @@ function freshClone(): string {
   mkdirSync(path.join(projectRoot, '.mnema/skills/authored'), { recursive: true });
 
   const config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'CLONE', name: 'Clone Test' },
     workflow: 'default',
@@ -229,7 +229,7 @@ function freshClone(): string {
 
 function makeConfig() {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'CLONE', name: 'Clone Test' },
     workflow: 'default',

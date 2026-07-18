@@ -29,7 +29,7 @@ const MONTH = 31 * 86_400_000; // coarse upper bound on a calendar month, in ms
 
 function makeConfig() {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test' },
     workflow: 'default',

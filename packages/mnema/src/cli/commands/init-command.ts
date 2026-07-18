@@ -10,7 +10,7 @@ import type { Command } from 'commander';
 import { Err, Ok, type Result } from '@mnema/core/common/result.js';
 import { CONFIG_FILE_RELATIVE } from '@mnema/core/config/config-loader.js';
 import type { Config } from '@mnema/core/config/config-schema.js';
-import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { CONFIG_VERSION, ConfigSchema } from '@mnema/core/config/config-schema.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
@@ -346,7 +346,7 @@ function validateOptions(options: ResolvedInitOptions): Result<undefined, MnemaE
 
 function buildConfig(options: ResolvedInitOptions): Config {
   const raw = {
-    version: '1.0' as const,
+    version: CONFIG_VERSION,
     mnema_version: `^${VERSION}`,
     project: {
       key: options.key,

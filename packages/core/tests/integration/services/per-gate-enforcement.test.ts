@@ -14,7 +14,7 @@ const workflowsSrc = path.resolve('packages/core/workflows');
 /** Build a config with an optional per-field severity map. */
 function makeConfig(fieldSeverity: Record<string, 'off' | 'warn' | 'block'>): Config {
   return ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test' },
     workflow: 'default',

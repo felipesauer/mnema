@@ -39,7 +39,7 @@ async function setupHarness(policy: Policy, runner: CommandRunner): Promise<Harn
     path.join(projectRoot, '.mnema/workflows', 'default.json'),
   );
   const config = ConfigSchema.parse({
-    version: '1.0',
+    version: '2.0',
     mnema_version: '^0.1.0',
     project: { key: 'TEST', name: 'Test Project' },
     workflow: 'default',
