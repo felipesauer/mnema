@@ -1,10 +1,9 @@
-import path from 'node:path';
 import { buildContentAttestation } from '@mnema/core/services/audit/attestation-cli.js';
 import {
   type AttestationSource,
   inspectAuditIntegrity,
 } from '@mnema/core/services/integrity/audit-integrity.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import type { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import type { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
@@ -63,10 +62,7 @@ export class AuditVerifyTool {
         // and may be imported after this tool was constructed.
         // The mirror tracks this machine's tail, so the count check compares
         // against the local tail, not the project-wide total across every tail.
-        const localTailDir = path.join(
-          this.auditDir,
-          tailDirName(getOrCreateMachineId(userKnowledgeDir())),
-        );
+        const tailDir = localTailDir(this.auditDir, userKnowledgeDir());
         const checks = inspectAuditIntegrity(
           this.adapter,
           this.auditDir,
@@ -74,7 +70,7 @@ export class AuditVerifyTool {
           this.attestation,
           buildContentAttestation(this.projectRoot, this.auditDir),
           null,
-          localTailDir,
+          tailDir,
         );
         const intact = checks.every((check) => check.ok);
         return ok({ intact, checks });

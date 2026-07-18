@@ -25,7 +25,7 @@ import { inspectAuditIntegrity } from '@mnema/core/services/integrity/audit-inte
 import { createAttestationSource } from '@mnema/core/services/integrity/head-checkpoint.js';
 import { HookTrustService } from '@mnema/core/services/integrity/hook-trust.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { userKnowledgeDir } from '@mnema/core/services/knowledge/user-knowledge.js';
 import { recordCounter } from '@mnema/core/services/metrics/metrics-counter.js';
@@ -610,10 +610,7 @@ export class DoctorCommand {
           // The SQLite mirror tracks only THIS machine's tail, so the count
           // and delta checks compare against the local tail's on-disk count —
           // never the project-wide total across every machine's tail.
-          const localTailDir = path.join(
-            auditDir,
-            tailDirName(getOrCreateMachineId(userKnowledgeDir())),
-          );
+          const tailDir = localTailDir(auditDir, userKnowledgeDir());
           checks.push(
             ...inspectAuditIntegrity(
               adapter,
@@ -628,13 +625,13 @@ export class DoctorCommand {
               // `audit verify` rather than a false all-clear.
               buildContentAttestation(projectRoot, auditDir),
               null,
-              localTailDir,
+              tailDir,
             ),
           );
           // Explicit DB-vs-disk delta with the culprit commit — the signal
           // that a git rewind of the tracked audit log left the mirror
           // counting events no longer on disk (read-only; git archaeology).
-          checks.push(...inspectAuditDiskDelta(adapter, localTailDir, projectRoot));
+          checks.push(...inspectAuditDiskDelta(adapter, tailDir, projectRoot));
           // Temporal anchoring (layer 3): offline status only — how many
           // heads are anchored vs pending. Verifying receipts against a
           // provider is the online `audit verify --verify-anchors` path, so

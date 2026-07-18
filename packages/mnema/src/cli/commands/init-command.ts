@@ -16,7 +16,7 @@ import { printError } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
 import { AuditService } from '@mnema/core/services/integrity/audit-service.js';
 import { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
-import { getOrCreateMachineId, tailDirName } from '@mnema/core/services/integrity/machine-id.js';
+import { localTailDir } from '@mnema/core/services/integrity/machine-id.js';
 import { ProjectSecretService } from '@mnema/core/services/integrity/project-secret.js';
 import { AdoptionService } from '@mnema/core/services/knowledge/adoption-service.js';
 import { SkillService } from '@mnema/core/services/knowledge/skill-service.js';
@@ -190,7 +190,7 @@ export class InitCommand {
 
     const stateDir = path.join(cwd, LAYOUT.state);
     const auditDir = path.join(cwd, LAYOUT.audit);
-    const tailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(userKnowledgeDir())));
+    const tailDir = localTailDir(auditDir, userKnowledgeDir());
     const workflowsDest = path.join(cwd, LAYOUT.workflows);
 
     mkdirSync(stateDir, { recursive: true });

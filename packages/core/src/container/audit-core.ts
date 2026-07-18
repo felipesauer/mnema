@@ -12,7 +12,7 @@ import {
   HeadCheckpointService,
 } from '../services/integrity/head-checkpoint.js';
 import { HookTrustService, hasAnyHook } from '../services/integrity/hook-trust.js';
-import { getOrCreateMachineId, tailDirName } from '../services/integrity/machine-id.js';
+import { localTailDir } from '../services/integrity/machine-id.js';
 import { MachineKeyService } from '../services/integrity/machine-key.js';
 import { ProjectSecretService } from '../services/integrity/project-secret.js';
 import { userKnowledgeDir } from '../services/knowledge/user-knowledge.js';
@@ -67,7 +67,7 @@ export function createAuditCore(
   // union-merge can never interleave two machines' lines. The machine id is
   // minted once in the same machine-scoped user dir as the secret; reads
   // aggregate every tail, writes touch only this one.
-  const tailDir = path.join(auditDir, tailDirName(getOrCreateMachineId(secretUserDir)));
+  const tailDir = localTailDir(auditDir, secretUserDir);
 
   // Machine attestation (ADR-37 layer 2): resolve the per-machine Ed25519
   // signer lazily per checkpoint, memoised per actor. Shared by the head
