@@ -117,7 +117,10 @@ export function createAuditCore(
   const onCheckpoint = (_head: string, eventCount: number): void => {
     autoAttest({
       projectRoot,
-      auditDir,
+      // The checkpoint just advanced THIS machine's tail, and headCount is the
+      // local tail's count — so attest into the local tail's own `attest/` dir,
+      // never the project root.
+      auditDir: tailDir,
       signer: resolveSigner(),
       projectHmacId: projectSecret.readFingerprint(),
       chainHealthy: chainHealthyForAttest(checkpointIntegrity.get()),
