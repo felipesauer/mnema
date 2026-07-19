@@ -1071,7 +1071,12 @@ export class TaskService {
     via?: string;
     runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    // A soft-deleted task is invisible to the live alias resolver, so restore
+    // accepts the exact key or the full committed id (what the user has from the
+    // delete output or the mirror filename) over the including-deleted rows.
+    const task =
+      this.tasks.findByKeyIncludingDeleted(input.taskKey) ??
+      this.tasks.findByIdIncludingDeleted(input.taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }

@@ -576,6 +576,27 @@ describe('TaskService (integration)', () => {
       expect(existsSync(md)).toBe(true);
     });
 
+    it('restores a soft-deleted task by its committed id, not only its key', () => {
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task A',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const { id } = created.value;
+      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+
+      // The delete surface accepts an id/alias, so restore must too — a soft-
+      // deleted row is invisible to the live resolver, so the id path resolves
+      // it over the including-deleted rows.
+      const restored = container.task.restore({ taskKey: id, actor: 'daniel' });
+      expect(restored.ok).toBe(true);
+      if (!restored.ok) return;
+      expect(restored.value.id).toBe(id);
+      expect(restored.value.deletedAt).toBeNull();
+    });
+
     it('softDelete on a deleted task returns TASK_NOT_FOUND', () => {
       container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
       container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });

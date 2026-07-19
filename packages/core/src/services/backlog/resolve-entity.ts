@@ -26,6 +26,12 @@ export interface HandleResolvable<T> {
  * from the CLI or an MCP tool — internal reference lookups keep using
  * `findById`/`findByKey` directly.
  *
+ * An EXACT key match wins first, ahead of any prefix match. Without that, a key
+ * whose text is all hex (a project like `DEAD` → key `DEAD-42`, which lowercases
+ * to `dead-42`) could be read as an id PREFIX and resolve to a different entity
+ * whose id starts with `dead42…` — the exact key must never be shadowed by a
+ * prefix of something else.
+ *
  * @param repo - The repository slice that can resolve and load the entity
  * @param handle - The id, alias, hash prefix, or key the user supplied
  * @param notFound - Builds the entity-specific not-found error from the handle
@@ -35,11 +41,17 @@ export function resolveEntity<T>(
   handle: string,
   notFound: (handle: string) => MnemaError,
 ): Result<T, MnemaError> {
+  // Exact key is an unambiguous identity — take it before any prefix match.
+  const byKey = repo.findByKey(handle);
+  if (byKey !== null) return Ok(byKey);
+
   const resolution = repo.resolve(handle);
   if (resolution.status === 'ambiguous') {
     return Err({ kind: ErrorCode.AmbiguousAlias, query: handle, matches: resolution.ids });
   }
-  const entity =
-    resolution.status === 'unique' ? repo.findById(resolution.id) : repo.findByKey(handle);
-  return entity === null ? Err(notFound(handle)) : Ok(entity);
+  if (resolution.status === 'unique') {
+    const entity = repo.findById(resolution.id);
+    if (entity !== null) return Ok(entity);
+  }
+  return Err(notFound(handle));
 }
