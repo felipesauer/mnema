@@ -29,7 +29,7 @@ import path from 'node:path';
  * content version: the sync-rebuild's line-level supersede must stay out of the
  * hash, or the guard would fire on every ordinary mirror write.
  */
-export const MIRROR_LAYOUT_VERSION = 'mnema-mirror/v1';
+export const MIRROR_LAYOUT_VERSION = 'mnema-mirror/v2';
 
 /** Shared empty set so a default `excludeDirs` arg does not allocate per call. */
 const EMPTY_DIR_SET: ReadonlySet<string> = new Set();

@@ -51,10 +51,11 @@ function runCli(
 }
 
 /** Frontmatter a committed task mirror carries, in the shape sync writes. */
-function taskMd(key: string, state: string): string {
+function taskMd(id: string, key: string, state: string): string {
   return [
     '---',
     'mnema:',
+    `  id: ${id}`,
     `  key: ${key}`,
     `  state: ${state}`,
     `  title: Committed ${key}`,
@@ -64,6 +65,16 @@ function taskMd(key: string, state: string): string {
     `# Committed ${key}`,
     '',
   ].join('\n');
+}
+
+/**
+ * A deterministic committed id for a task key, so a fixture's filename (the id)
+ * and its `mnema.id` agree, and the duplicate-mirror fixture can put the SAME
+ * id in two state dirs (that is what a squash-merge strands).
+ */
+function idForKey(key: string): string {
+  const n = key.replace(/\D/g, '').padStart(12, '0');
+  return `019f7700-0000-7000-8000-${n}`;
 }
 
 /**
@@ -93,7 +104,10 @@ function freshClone(
   for (const { key, state } of tasks) {
     const dir = path.join(projectRoot, '.mnema/backlog', state);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(path.join(dir, `${key}.md`), taskMd(key, state));
+    // The mirror is named by the committed id (deterministic from the key), so
+    // a duplicate fixture (same key in two dirs) lands the SAME id file twice.
+    const id = idForKey(key);
+    writeFileSync(path.join(dir, `${id}.md`), taskMd(id, key, state));
   }
 }
 
@@ -152,9 +166,11 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
     expect(runCli(['task', 'show', 'CLONE-1'], projectRoot).status).not.toBe(0);
 
     // Neither committed copy was pruned: the orphan-prune protects the
-    // conflicted key so the human still has both to resolve the duplicate.
-    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DRAFT/CLONE-1.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DONE/CLONE-1.md'))).toBe(true);
+    // conflicted id so the human still has both to resolve the duplicate. Both
+    // copies share the committed id (that is the squash-merge shape).
+    const dupId = `${idForKey('CLONE-1')}.md`;
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DRAFT', dupId))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DONE', dupId))).toBe(true);
   });
 
   it('adopts a MISSING layout component and leaves present ones alone', () => {

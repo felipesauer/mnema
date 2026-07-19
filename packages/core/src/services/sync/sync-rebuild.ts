@@ -60,8 +60,11 @@ export interface RebuildCounts {
  * directory order is exactly the silent regression this guard prevents.
  */
 export interface MirrorConflict {
+  /** Committed id the duplicate mirrors share — the filename that collided. */
+  readonly id: string;
+  /** Human key, carried for a readable operator message (files are id-named). */
   readonly key: string;
-  /** The state directories the key was found in, in scan order. */
+  /** The state directories the id was found in, in scan order. */
   readonly states: readonly string[];
 }
 
@@ -389,7 +392,7 @@ export class SyncRebuild {
     // and choosing by it silently regressed DONE tasks to READY/DRAFT in the
     // field). These keys are recorded as conflicts and skipped entirely in
     // the pass below — never upserted from any copy.
-    const duplicateKeys = this.collectDuplicateTaskKeys(root, conflicts);
+    const duplicateIds = this.collectDuplicateTaskIds(root, conflicts);
 
     for (const stateDir of listDirs(root)) {
       const stateRoot = path.join(root, stateDir);
@@ -422,12 +425,22 @@ export class SyncRebuild {
           skipped.push({ file: filePath, reason: 'missing mnema.key' });
           continue;
         }
+        // The mirror is named by the committed id now; the key still lives in
+        // the frontmatter and carries the project prefix, but the filename is
+        // the id. A mirror without an id (or one that disagrees) predates this
+        // layout and is skipped fail-closed — the store-format guard forces a
+        // migrate before a rebuild ever sees it.
+        const id = readString(data, 'id');
+        if (id === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.id' });
+          continue;
+        }
 
-        const expectedKey = fileName.replace(/\.md$/, '');
-        if (key !== expectedKey) {
+        const expectedId = fileName.replace(/\.md$/, '');
+        if (id !== expectedId) {
           skipped.push({
             file: filePath,
-            reason: `mnema.key (${key}) does not match filename (${expectedKey})`,
+            reason: `mnema.id (${id}) does not match filename (${expectedId})`,
           });
           continue;
         }
@@ -438,11 +451,11 @@ export class SyncRebuild {
           continue;
         }
 
-        // A key mirrored in more than one state directory is ambiguous: the
+        // An id mirrored in more than one state directory is ambiguous: the
         // rebuild refuses to realign the cached row from any copy (recorded
         // as a conflict in the first pass). Leaving the row untouched is
         // fail-closed — it never moves a task backwards on a guess.
-        if (duplicateKeys.has(key)) {
+        if (duplicateIds.has(id)) {
           continue;
         }
 
@@ -454,24 +467,20 @@ export class SyncRebuild {
         const assigneeId =
           assigneeHandle !== null ? this.actors.upsert(assigneeHandle, ActorKind.Human) : null;
 
-        // Resolve epic/sprint links by key — the rows exist already
-        // because the roadmap was rebuilt first. An unknown key links to
-        // nothing rather than failing the whole rebuild.
         // Links are committed ids now; resolve straight through (the epic/sprint
         // was rebuilt first and adopts the same committed id). An unknown id
         // links to nothing rather than failing the whole rebuild.
-        const epicId = resolveRefId(readString(data, 'epic_id'), (id) => this.epics.findById(id));
-        const sprintId = resolveRefId(readString(data, 'sprint_id'), (id) =>
-          this.sprints.findById(id),
+        const epicId = resolveRefId(readString(data, 'epic_id'), (ref) => this.epics.findById(ref));
+        const sprintId = resolveRefId(readString(data, 'sprint_id'), (ref) =>
+          this.sprints.findById(ref),
         );
 
-        const existing = this.tasks.findByKey(key);
+        const existing = this.tasks.findById(id);
         let taskId: string;
         if (existing === null) {
           taskId = this.tasks.insert({
-            // Adopt the committed id so it survives the clone; a pre-Option-C
-            // mirror without one falls back to a fresh mint.
-            id: readString(data, 'id') ?? undefined,
+            // Adopt the committed id so it survives the clone.
+            id,
             key,
             projectId,
             title: readString(data, 'title') ?? key,
@@ -547,7 +556,7 @@ export class SyncRebuild {
         const gitBranch = readString(data, 'git_branch');
         const gitPr = readGitPr(data);
         if (gitBranch !== null || gitPr !== null) {
-          const currentTask = this.tasks.findByKey(key);
+          const currentTask = this.tasks.findById(id);
           this.tasks.setGitLink(taskId, {
             branch: gitBranch,
             commits: currentTask?.gitCommits ?? [],
@@ -567,19 +576,20 @@ export class SyncRebuild {
   }
 
   /**
-   * First pass over `backlog/<STATE>/*.md`: finds every task key mirrored in
-   * more than one valid state directory and returns the set of such keys,
+   * First pass over `backlog/<STATE>/*.md`: finds every task id mirrored in
+   * more than one valid state directory and returns the set of such ids,
    * appending a {@link MirrorConflict} for each to `conflicts`.
    *
    * Only copies that the main pass would actually act on are counted — the
    * state directory must be one the active workflow declares, and the
-   * frontmatter `key` must match the filename — so an already-skipped file
-   * (unknown state, key/filename mismatch) never fabricates a false
-   * conflict. A key seen once is not a conflict; the common single-mirror
+   * frontmatter `id` must match the filename — so an already-skipped file
+   * (unknown state, id/filename mismatch) never fabricates a false
+   * conflict. An id seen once is not a conflict; the common single-mirror
    * repo yields an empty set and the guard is a no-op.
    */
-  private collectDuplicateTaskKeys(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
-    const statesByKey = new Map<string, string[]>();
+  private collectDuplicateTaskIds(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
+    const statesById = new Map<string, string[]>();
+    const keyById = new Map<string, string>();
 
     for (const stateDir of listDirs(root)) {
       if (!this.validStates.has(stateDir)) continue;
@@ -587,22 +597,26 @@ export class SyncRebuild {
 
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
-        const key = readString(data, 'key');
-        // Mirror the main pass's guards: a key that is absent or disagrees
+        const id = readString(data, 'id');
+        // Mirror the main pass's guards: an id that is absent or disagrees
         // with the filename is skipped there, so it must not count here.
-        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+        if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
+        // The key is carried for a readable conflict message; a missing key is
+        // still counted for the id collision (the main pass would skip it, but
+        // the duplicate-id guard is about the filename).
+        keyById.set(id, readString(data, 'key') ?? id);
 
-        const states = statesByKey.get(key);
-        if (states === undefined) statesByKey.set(key, [stateDir]);
+        const states = statesById.get(id);
+        if (states === undefined) statesById.set(id, [stateDir]);
         else states.push(stateDir);
       }
     }
 
     const duplicates = new Set<string>();
-    for (const [key, states] of statesByKey) {
+    for (const [id, states] of statesById) {
       if (states.length > 1) {
-        duplicates.add(key);
-        conflicts.push({ key, states });
+        duplicates.add(id);
+        conflicts.push({ id, key: keyById.get(id) ?? id, states });
       }
     }
     return duplicates;
@@ -864,13 +878,32 @@ export class SyncRebuild {
         skipped.push({ file: filePath, reason: 'missing mnema.key' });
         continue;
       }
-      const expectedKey = fileName.replace(/\.md$/, '');
-      if (key !== expectedKey) {
-        skipped.push({
-          file: filePath,
-          reason: `mnema.key (${key}) does not match filename (${expectedKey})`,
-        });
-        continue;
+      // Epics and sprints are filed by their committed id (like observations);
+      // a decision is still filed by its human key (that boundary migrates in a
+      // later wave). The key stays the source for the project prefix and the
+      // upsert either way.
+      const stem = fileName.replace(/\.md$/, '');
+      if (kind === 'decision') {
+        if (key !== stem) {
+          skipped.push({
+            file: filePath,
+            reason: `mnema.key (${key}) does not match filename (${stem})`,
+          });
+          continue;
+        }
+      } else {
+        const id = readString(data, 'id');
+        if (id === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.id' });
+          continue;
+        }
+        if (id !== stem) {
+          skipped.push({
+            file: filePath,
+            reason: `mnema.id (${id}) does not match filename (${stem})`,
+          });
+          continue;
+        }
       }
       if (!key.startsWith(`${projectKey}-`)) {
         skipped.push({ file: filePath, reason: 'key prefix does not match project' });
@@ -1067,7 +1100,10 @@ export class SyncRebuild {
         const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
 
         const key = readString(data, 'key');
-        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+        const id = readString(data, 'id');
+        // The mirror is filed by id; the key still supplies the project prefix.
+        if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
+        if (key === null) continue;
 
         const dependsOn = readStringArray(data, 'depends_on');
         if (dependsOn.length === 0) continue;
@@ -1075,7 +1111,7 @@ export class SyncRebuild {
         const parsedKey = parseTaskKey(key);
         if (parsedKey === null || parsedKey.projectKey !== projectKey) continue;
 
-        const task = this.tasks.findByKey(key);
+        const task = this.tasks.findById(id);
         if (task === null) continue;
 
         for (const blockerId of dependsOn) {

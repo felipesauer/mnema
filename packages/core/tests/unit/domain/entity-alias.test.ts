@@ -65,6 +65,16 @@ describe('entity alias', () => {
     const wrong = `${hash[0] === 'f' ? 'e' : 'f'}${hash.slice(1)}`;
     expect(aliasMatches(`t-${wrong}`, 'task', id)).toBe(false);
   });
+
+  it('resolves a prefix of the id itself — copied off the mirror filename', () => {
+    const id = '019f76e4-e277-773a-865e-76f4170a644e';
+    // The user sees `019f76e4-….md` on disk and types the leading chars.
+    expect(aliasMatches('019f76e4', 'task', id)).toBe(true);
+    expect(aliasMatches('019f76e4-e277', 'task', id)).toBe(true); // with a dash
+    expect(aliasMatches('019f76e4e277', 'task', id)).toBe(true); // dashes stripped
+    // A wrong id prefix does not resolve.
+    expect(aliasMatches('aaaaaaaa', 'task', id)).toBe(false);
+  });
 });
 
 /**

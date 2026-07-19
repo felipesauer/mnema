@@ -301,7 +301,7 @@ export class EpicService {
     // `.md`, and a rebuild would re-insert the deleted epic as live — an
     // orphan that reads as live. This matches how task soft-delete drops the
     // markdown for a row it is about to remove from the active set.
-    this.mirror?.removeEpic(epic.key);
+    this.mirror?.removeEpic(epic.id);
 
     const deleted = this.epics.runInTransaction(() => this.epics.softDelete(epic.id));
     if (!deleted) {
@@ -475,7 +475,7 @@ export class EpicService {
     if (this.mirror === null) return [];
     const rebuilt: string[] = [];
     for (const epic of this.list(projectKey)) {
-      if (!this.mirror.hasEpic(epic.key)) {
+      if (!this.mirror.hasEpic(epic.id)) {
         this.mirror.writeEpic(epic);
         rebuilt.push(epic.key);
       }

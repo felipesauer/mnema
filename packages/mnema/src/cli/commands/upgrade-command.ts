@@ -219,12 +219,12 @@ export class UpgradeCommand {
       },
     });
 
-    // Filled by the ingest step's run() with the task keys it refused to
+    // Filled by the ingest step's run() with the task ids it refused to
     // ingest because they are mirrored in more than one state dir. Read by the
     // orphan-prune step's run() (which executes AFTER ingest in the same phase)
-    // so those conflicted mirrors — which have no row — are NOT pruned as
+    // so those conflicted mirrors (id-named, no row) — are NOT pruned as
     // orphans. Shared holder because both steps are independent closures.
-    const conflictedTaskKeys = new Set<string>();
+    const conflictedTaskIds = new Set<string>();
 
     // Ingest committed markdown into the cache (markdown → DB), FIRST among
     // the sync steps. A fresh clone (or a project whose markdown drifted from
@@ -274,11 +274,12 @@ export class UpgradeCommand {
               if (summary.conflicts.length === 0) {
                 return `ingested ${upserted} row(s) from committed markdown`;
               }
-              // Record the conflicted keys so the orphan-prune step (later this
+              // Record the conflicted ids so the orphan-prune step (later this
               // phase) does not delete their mirrors — they have no row, so a
               // naive prune would treat them as orphans and destroy the copies the
-              // human needs to resolve the duplicate.
-              for (const conflict of summary.conflicts) conflictedTaskKeys.add(conflict.key);
+              // human needs to resolve the duplicate. The mirror filename is the
+              // id, so the protection set must hold ids.
+              for (const conflict of summary.conflicts) conflictedTaskIds.add(conflict.id);
               // Conflicts are surfaced loudly; the rows we could safely ingest
               // still count. Two shapes reach here and their remedies differ, so
               // the message names both accurately:
@@ -410,14 +411,14 @@ export class UpgradeCommand {
       steps.push({
         label: `prune orphan markdown mirrors with no SQLite row (${orphanDetail})`,
         run: () => {
-          // Runs AFTER ingest: the live task keys it reads now include every
+          // Runs AFTER ingest: the live task ids it reads now include every
           // row the ingest just created, so a fresh clone's committed tasks
-          // are not mistaken for orphans. Conflicted keys (ingest refused
+          // are not mistaken for orphans. Conflicted ids (ingest refused
           // them, so they have no row) are protected so their mirrors survive.
-          const pruned = pruneAllOrphanMirrors(container.adapter, projectRoot, conflictedTaskKeys);
+          const pruned = pruneAllOrphanMirrors(container.adapter, projectRoot, conflictedTaskIds);
           const protectedNote =
-            conflictedTaskKeys.size > 0
-              ? ` (kept ${conflictedTaskKeys.size} conflicted mirror(s) for you to resolve)`
+            conflictedTaskIds.size > 0
+              ? ` (kept ${conflictedTaskIds.size} conflicted mirror(s) for you to resolve)`
               : '';
           return `pruned ${pruned} orphan mirror file(s)${protectedNote}`;
         },
@@ -753,17 +754,18 @@ function agentsBlockIsStale(projectRoot: string, config: Config): boolean {
  * the total number of files deleted. The slug/key sets are read from
  * SQLite, which is authoritative.
  *
- * `protectedTaskKeys` are task keys the caller knows must NOT be pruned even
- * though they have no row — the upgrade ingest passes the keys it refused to
+ * `protectedTaskIds` are task ids the caller knows must NOT be pruned even
+ * though they have no row — the upgrade ingest passes the ids it refused to
  * ingest because they are mirrored in more than one state directory
- * (conflicts). Those copies are the exact files the human needs to resolve the
- * conflict via `doctor` (which quarantines, not deletes); pruning them here
- * would destroy the only evidence and is the data loss this guard prevents.
+ * (conflicts). Those copies (the id-named mirror files) are the exact files the
+ * human needs to resolve the conflict via `doctor` (which quarantines, not
+ * deletes); pruning them here would destroy the only evidence and is the data
+ * loss this guard prevents.
  */
 function pruneAllOrphanMirrors(
   adapter: SqliteAdapter,
   projectRoot: string,
-  protectedTaskKeys: ReadonlySet<string> = new Set(),
+  protectedTaskIds: ReadonlySet<string> = new Set(),
 ): number {
   const db = adapter.getDatabase();
   const fs = nodeFs;
@@ -782,27 +784,29 @@ function pruneAllOrphanMirrors(
   const memorySlugs = new Set(
     (db.prepare('SELECT slug FROM memories').all() as Array<{ slug: string }>).map((r) => r.slug),
   );
-  const epicKeys = (
-    db.prepare('SELECT key FROM epics WHERE deleted_at IS NULL').all() as Array<{ key: string }>
-  ).map((r) => r.key);
+  // Epic and sprint mirrors are named by their committed id now; decisions
+  // are still named by their human key.
+  const epicIds = (
+    db.prepare('SELECT id FROM epics WHERE deleted_at IS NULL').all() as Array<{ id: string }>
+  ).map((r) => r.id);
   const decisionKeys = (
     db.prepare('SELECT key FROM decisions WHERE deleted_at IS NULL').all() as Array<{ key: string }>
   ).map((r) => r.key);
-  const sprintKeys = new Set(
+  const sprintIds = new Set(
     (
-      db.prepare('SELECT key FROM sprints WHERE deleted_at IS NULL').all() as Array<{ key: string }>
-    ).map((r) => r.key),
+      db.prepare('SELECT id FROM sprints WHERE deleted_at IS NULL').all() as Array<{ id: string }>
+    ).map((r) => r.id),
   );
-  const taskKeys = new Set(
+  const taskIds = new Set(
     (
-      db.prepare('SELECT key FROM tasks WHERE deleted_at IS NULL').all() as Array<{ key: string }>
-    ).map((r) => r.key),
+      db.prepare('SELECT id FROM tasks WHERE deleted_at IS NULL').all() as Array<{ id: string }>
+    ).map((r) => r.id),
   );
-  // Treat conflicted keys as "known" so the backlog prune below leaves their
+  // Treat conflicted ids as "known" so the backlog prune below leaves their
   // mirrors on disk. They have no row (the ingest refused them), so without
   // this they would read as orphans and be deleted — destroying the very
   // copies the human must inspect to resolve the duplicate.
-  for (const key of protectedTaskKeys) taskKeys.add(key);
+  for (const id of protectedTaskIds) taskIds.add(id);
   // Observation mirrors are keyed by row id; only active rows carry one.
   const observationIds = new Set(
     (
@@ -820,11 +824,11 @@ function pruneAllOrphanMirrors(
     ...pruneFolderedOrphanMirrors(join(LAYOUT.skills), skillSlugs, fs),
     ...pruneFolderedOrphanMirrors(join(LAYOUT.memory), memorySlugs, fs, CURATED_MEMORY_SUBFOLDERS),
     ...pruneOrphanMirrors(join(LAYOUT.observations), observationIds, fs),
-    // Epics and decisions share the roadmap dir; a file is an orphan
-    // only when it belongs to neither set.
-    ...pruneOrphanMirrors(join(LAYOUT.roadmap), new Set([...epicKeys, ...decisionKeys]), fs),
-    ...pruneOrphanMirrors(join(LAYOUT.sprints), sprintKeys, fs),
-    ...pruneNestedOrphanMirrors(join(LAYOUT.backlog), taskKeys, fs),
+    // Epics (id-named) and decisions (key-named) share the roadmap dir; a file
+    // is an orphan only when it belongs to neither set.
+    ...pruneOrphanMirrors(join(LAYOUT.roadmap), new Set([...epicIds, ...decisionKeys]), fs),
+    ...pruneOrphanMirrors(join(LAYOUT.sprints), sprintIds, fs),
+    ...pruneNestedOrphanMirrors(join(LAYOUT.backlog), taskIds, fs),
   ];
   return removed.length;
 }

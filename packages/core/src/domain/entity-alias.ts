@@ -46,18 +46,28 @@ export function deriveAlias(kind: AliasKind, id: string, length = DEFAULT_ALIAS_
   return `${KIND_PREFIX[kind]}-${aliasHash(id).slice(0, length)}`;
 }
 
+/** The id with its hyphens stripped, so a copied id-prefix matches uniformly. */
+function idHex(id: string): string {
+  return id.toLowerCase().replace(/-/g, '');
+}
+
 /**
  * Whether `query` resolves to the entity `{kind, id}`. Accepts, in order:
  * - the full id (`019f76e4-…`) — an exact id match;
  * - a full or PARTIAL alias (`t-3a9f`, `t-3a`) — the kind prefix must match and
  *   the hex tail must be a prefix of this id's alias hash;
- * - a bare hash prefix with no kind (`3a9f`) — matches any kind, hex-prefix only.
+ * - a bare hex prefix with no kind (`3a9f`) — matches any kind on either this
+ *   id's alias HASH or the id ITSELF (hyphen-insensitive), so a prefix copied
+ *   straight off the id-named mirror file resolves too.
  *
  * Partial matching is what lets the resolver behave like `git show <short-sha>`:
  * the caller collects every entity a query matches and only errors when more
- * than one does (ambiguous — the user types more chars).
+ * than one does (ambiguous — the user types more chars). Matching the id's own
+ * prefix reintroduces the v7 timestamp collision the alias hash avoids, but the
+ * ambiguity path handles it: two same-window ids share a prefix and the caller
+ * is told to type more.
  *
- * @param query - The user-typed handle (id, alias, or hash prefix)
+ * @param query - The user-typed handle (id, alias, or hash/id prefix)
  * @param kind - The candidate entity's kind
  * @param id - The candidate entity's committed id
  */
@@ -75,8 +85,12 @@ export function aliasMatches(query: string, kind: AliasKind, id: string): boolea
   if (kinded !== null) {
     return kinded[1] === prefix && hash.startsWith(kinded[2] as string);
   }
-  // Bare hex prefix, no kind — matches on the hash alone.
-  if (/^[0-9a-f]+$/.test(q)) return hash.startsWith(q);
+  // Bare hex prefix, no kind — matches the alias hash OR the id itself. Compare
+  // against the hyphen-stripped id so a prefix copied from the mirror filename
+  // resolves whether or not the user includes the dashes.
+  if (/^[0-9a-f]+$/.test(q)) return hash.startsWith(q) || idHex(id).startsWith(q);
+  // A hyphenated id prefix (`019f77c5-73a9`) copied off a filename.
+  if (/^[0-9a-f-]+$/.test(q)) return idHex(id).startsWith(idHex(q));
   return false;
 }
 

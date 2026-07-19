@@ -599,7 +599,7 @@ export class SprintService {
     if (this.mirror === null) return [];
     const rebuilt: string[] = [];
     for (const sprint of this.list(projectKey)) {
-      if (!this.mirror.hasSprint(sprint.key)) {
+      if (!this.mirror.hasSprint(sprint.id)) {
         this.mirror.writeSprint(sprint);
         rebuilt.push(sprint.key);
       }

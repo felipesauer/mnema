@@ -63,8 +63,10 @@ describe('SyncRebuild', () => {
     const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(draftDir, { recursive: true });
 
+    const id = '019f7700-0000-7000-8000-000000000001';
     const md = `---
 mnema:
+  id: ${id}
   key: TEST-1
   state: DRAFT
   title: Imported task
@@ -79,7 +81,7 @@ mnema:
 
 # Imported task
 `;
-    writeFileSync(path.join(draftDir, 'TEST-1.md'), md, 'utf-8');
+    writeFileSync(path.join(draftDir, `${id}.md`), md, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.tasksScanned).toBe(1);
@@ -107,14 +109,21 @@ mnema:
   });
 
   it('updates state when the markdown lives in a different state folder', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Move via fs', actor: 'daniel' });
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Move via fs',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
 
-    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${id}.md`);
     const readyDir = path.join(root, '.mnema/backlog', 'READY');
     mkdirSync(readyDir, { recursive: true });
 
     const original = readFileSync(draftFile, 'utf-8');
-    writeFileSync(path.join(readyDir, 'TEST-1.md'), original.replace('DRAFT', 'READY'), 'utf-8');
+    writeFileSync(path.join(readyDir, `${id}.md`), original.replace('DRAFT', 'READY'), 'utf-8');
     rmSync(draftFile, { force: true });
 
     const summary = container.syncRebuild.run('TEST');
@@ -147,6 +156,7 @@ mnema:
     expect(created.ok).toBe(true);
     if (!created.ok) return;
     const key = created.value.key;
+    const id = created.value.id;
     const move = (action: string, payload: Record<string, unknown>) => {
       const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
       expect(r.ok).toBe(true);
@@ -162,13 +172,13 @@ mnema:
     expect(doneReload.value.state).toBe('DONE');
 
     // …but a squash-merge left a stale mirror of it in READY/ too (the
-    // canonical DONE/ mirror stays in place). Two copies of one key now
-    // exist across state dirs.
-    const doneFile = path.join(root, '.mnema/backlog', 'DONE', `${key}.md`);
+    // canonical DONE/ mirror stays in place). Two copies of one id now
+    // exist across state dirs — same `<id>.md`, so the id dedup collides.
+    const doneFile = path.join(root, '.mnema/backlog', 'DONE', `${id}.md`);
     const readyDir = path.join(root, '.mnema/backlog', 'READY');
     mkdirSync(readyDir, { recursive: true });
     const doneMd = readFileSync(doneFile, 'utf-8');
-    writeFileSync(path.join(readyDir, `${key}.md`), doneMd.replace('DONE', 'READY'), 'utf-8');
+    writeFileSync(path.join(readyDir, `${id}.md`), doneMd.replace('DONE', 'READY'), 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
 
@@ -210,7 +220,7 @@ mnema:
     // The create wrote the mirror; edit the committed markdown the way a
     // merged PR would — new title, new priority, a new acceptance criterion.
     const markdownIo = new MarkdownIo();
-    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.key}.md`);
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
     const parsed = markdownIo.read(draftFile);
     markdownIo.write(draftFile, {
       ...parsed,
@@ -247,7 +257,7 @@ mnema:
 
     // Row already exists in the cache; a merged PR edits the committed markdown.
     const markdownIo = new MarkdownIo();
-    const file = path.join(root, '.mnema/roadmap', `${created.value.key}.md`);
+    const file = path.join(root, '.mnema/roadmap', `${created.value.id}.md`);
     const parsed = markdownIo.read(file);
     markdownIo.write(file, {
       ...parsed,
@@ -280,7 +290,7 @@ mnema:
     if (!planned.ok) return;
 
     const markdownIo = new MarkdownIo();
-    const file = path.join(root, '.mnema/sprints', `${planned.value.key}.md`);
+    const file = path.join(root, '.mnema/sprints', `${planned.value.id}.md`);
     const parsed = markdownIo.read(file);
     markdownIo.write(file, {
       ...parsed,
@@ -332,23 +342,28 @@ mnema:
     expect(reloaded.value.rationale).toBe('EDITED rationale');
   });
 
-  it('skips files whose mnema.key does not match the filename', () => {
+  it('skips files whose mnema.id does not match the filename', () => {
     const dir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(dir, { recursive: true });
 
+    // The mirror is named by the committed id. A file whose frontmatter id
+    // disagrees with its filename is skipped fail-closed — the rebuild never
+    // adopts a row whose committed identity does not match where it lives.
     const md = `---
 mnema:
-  key: TEST-99
+  id: 019f7700-0000-7000-8000-000000000099
+  key: TEST-1
   state: DRAFT
   title: wrong filename
 ---
 
 body
 `;
-    writeFileSync(path.join(dir, 'TEST-1.md'), md, 'utf-8');
+    writeFileSync(path.join(dir, '019f7700-0000-7000-8000-000000000001.md'), md, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.skipped.length).toBeGreaterThan(0);
+    expect(summary.skipped.some((s) => s.reason.includes('does not match filename'))).toBe(true);
     expect(existsSync(path.join(root, '.mnema/state', 'state.db'))).toBe(true);
 
     const list = container.task.list();
@@ -360,10 +375,12 @@ body
     // directory. Since migration 004 dropped the tasks.state CHECK, an
     // unknown state would otherwise persist and strand the task past the
     // workflow gates — the rebuild must refuse it.
+    const validId = '019f7700-0000-7000-8000-000000000001';
     const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(draftDir, { recursive: true });
     const validMd = `---
 mnema:
+  id: ${validId}
   key: TEST-1
   state: DRAFT
   title: Legit task
@@ -372,12 +389,14 @@ mnema:
 
 # Legit task
 `;
-    writeFileSync(path.join(draftDir, 'TEST-1.md'), validMd, 'utf-8');
+    writeFileSync(path.join(draftDir, `${validId}.md`), validMd, 'utf-8');
 
+    const bogusId = '019f7700-0000-7000-8000-000000000002';
     const bogusDir = path.join(root, '.mnema/backlog', 'NOTASTATE');
     mkdirSync(bogusDir, { recursive: true });
     const bogusMd = `---
 mnema:
+  id: ${bogusId}
   key: TEST-2
   state: NOTASTATE
   title: Smuggled task
@@ -386,14 +405,14 @@ mnema:
 
 # Smuggled task
 `;
-    writeFileSync(path.join(bogusDir, 'TEST-2.md'), bogusMd, 'utf-8');
+    writeFileSync(path.join(bogusDir, `${bogusId}.md`), bogusMd, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
 
     // The legit task is upserted; the smuggled one is reported skipped.
     const list = container.task.list();
     expect(list.map((t) => t.key)).toEqual(['TEST-1']);
-    expect(summary.skipped.some((s) => s.file.includes('TEST-2.md'))).toBe(true);
+    expect(summary.skipped.some((s) => s.file.includes(`${bogusId}.md`))).toBe(true);
     expect(summary.skipped.some((s) => s.reason.includes('NOTASTATE'))).toBe(true);
 
     // No row anywhere carries the invalid state.
@@ -899,8 +918,8 @@ mnema:
   // the reopen-on-disk (stale close retained) and complete-on-disk (disk
   // close dropped) cases.
   const markdownIo = new MarkdownIo();
-  const stateMirror = (state: string, key: string) =>
-    path.join(root, '.mnema/backlog', state, `${key}.md`);
+  const stateMirror = (state: string, id: string) =>
+    path.join(root, '.mnema/backlog', state, `${id}.md`);
 
   function driveToDone(key: string): void {
     const move = (action: string, payload: Record<string, unknown>) => {
@@ -924,6 +943,7 @@ mnema:
     });
     if (!created.ok) return;
     const key = created.value.key;
+    const id = created.value.id;
     driveToDone(key);
     const done = container.task.findByKey(key);
     if (!done.ok) return;
@@ -932,10 +952,11 @@ mnema:
     // Edit the mirror on disk: move it to IN_PROGRESS and drop closed_at,
     // as a merge/hand-edit would. Remove the stale DONE mirror so the walk
     // sees the row in exactly one state dir.
-    rmSync(stateMirror('DONE', key), { force: true });
-    mkdirSync(path.dirname(stateMirror('IN_PROGRESS', key)), { recursive: true });
-    markdownIo.write(stateMirror('IN_PROGRESS', key), {
+    rmSync(stateMirror('DONE', id), { force: true });
+    mkdirSync(path.dirname(stateMirror('IN_PROGRESS', id)), { recursive: true });
+    markdownIo.write(stateMirror('IN_PROGRESS', id), {
       mnemaData: {
+        id,
         key,
         state: 'IN_PROGRESS',
         title: 'Disk-reopened task',
@@ -967,6 +988,7 @@ mnema:
     });
     if (!created.ok) return;
     const key = created.value.key;
+    const id = created.value.id;
     // Move it to a non-terminal live state so the row starts with a null close.
     const submit = container.task.transition({
       taskKey: key,
@@ -981,11 +1003,12 @@ mnema:
 
     // The mirror says DONE with an explicit close time (a merge landed the
     // completed snapshot). Remove the READY mirror; write the DONE one.
-    rmSync(stateMirror('READY', key), { force: true });
+    rmSync(stateMirror('READY', id), { force: true });
     const diskClosedAt = '2026-01-02T03:04:05.000Z';
-    mkdirSync(path.dirname(stateMirror('DONE', key)), { recursive: true });
-    markdownIo.write(stateMirror('DONE', key), {
+    mkdirSync(path.dirname(stateMirror('DONE', id)), { recursive: true });
+    markdownIo.write(stateMirror('DONE', id), {
       mnemaData: {
+        id,
         key,
         state: 'DONE',
         title: 'Disk-completed task',

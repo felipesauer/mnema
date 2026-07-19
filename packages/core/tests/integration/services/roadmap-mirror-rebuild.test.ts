@@ -49,7 +49,11 @@ describe('roadmap mirror rebuild', () => {
   });
 
   /** Creates one epic, one sprint and one decision, then deletes their mirrors. */
-  function seedRowsWithoutMirrors(): { epic: string; sprint: string; decision: string } {
+  function seedRowsWithoutMirrors(): {
+    epic: { id: string; key: string };
+    sprint: { id: string; key: string };
+    decision: { key: string };
+  } {
     const epic = container.epic.create({ projectKey: 'TEST', title: 'An epic', actor: 'daniel' });
     const sprint = container.sprint.plan({ projectKey: 'TEST', name: 'A sprint', actor: 'daniel' });
     const decision = container.decision.record({
@@ -61,29 +65,34 @@ describe('roadmap mirror rebuild', () => {
     if (!epic.ok || !sprint.ok || !decision.ok) throw new Error('setup: create failed');
 
     // Simulate a project from before the mirror existed: rows present,
-    // files gone.
-    rmSync(path.join(roadmapDir(), `${epic.value.key}.md`), { force: true });
-    rmSync(path.join(sprintsDir(), `${sprint.value.key}.md`), { force: true });
+    // files gone. Epic/sprint mirrors are named by their committed id;
+    // decision mirrors are still named by key.
+    rmSync(path.join(roadmapDir(), `${epic.value.id}.md`), { force: true });
+    rmSync(path.join(sprintsDir(), `${sprint.value.id}.md`), { force: true });
     rmSync(path.join(roadmapDir(), `${decision.value.key}.md`), { force: true });
 
-    return { epic: epic.value.key, sprint: sprint.value.key, decision: decision.value.key };
+    return {
+      epic: { id: epic.value.id, key: epic.value.key },
+      sprint: { id: sprint.value.id, key: sprint.value.key },
+      decision: { key: decision.value.key },
+    };
   }
 
   it('recreates missing epic/sprint/decision mirrors', () => {
-    const keys = seedRowsWithoutMirrors();
-    expect(existsSync(path.join(roadmapDir(), `${keys.epic}.md`))).toBe(false);
+    const seeded = seedRowsWithoutMirrors();
+    expect(existsSync(path.join(roadmapDir(), `${seeded.epic.id}.md`))).toBe(false);
 
     const epics = container.epic.rebuildMirrors('TEST');
     const sprints = container.sprint.rebuildMirrors('TEST');
     const decisions = container.decision.rebuildMirrors('TEST');
 
-    expect(epics).toEqual([keys.epic]);
-    expect(sprints).toEqual([keys.sprint]);
-    expect(decisions).toEqual([keys.decision]);
+    expect(epics).toEqual([seeded.epic.key]);
+    expect(sprints).toEqual([seeded.sprint.key]);
+    expect(decisions).toEqual([seeded.decision.key]);
 
-    expect(existsSync(path.join(roadmapDir(), `${keys.epic}.md`))).toBe(true);
-    expect(existsSync(path.join(sprintsDir(), `${keys.sprint}.md`))).toBe(true);
-    expect(existsSync(path.join(roadmapDir(), `${keys.decision}.md`))).toBe(true);
+    expect(existsSync(path.join(roadmapDir(), `${seeded.epic.id}.md`))).toBe(true);
+    expect(existsSync(path.join(sprintsDir(), `${seeded.sprint.id}.md`))).toBe(true);
+    expect(existsSync(path.join(roadmapDir(), `${seeded.decision.key}.md`))).toBe(true);
   });
 
   it('is idempotent — a second rebuild writes nothing', () => {
@@ -98,13 +107,13 @@ describe('roadmap mirror rebuild', () => {
   });
 
   it('leaves an existing mirror untouched (only fills the gaps)', () => {
-    const keys = seedRowsWithoutMirrors();
+    const seeded = seedRowsWithoutMirrors();
     // Restore just the epic's mirror by rebuilding it once.
     container.epic.rebuildMirrors('TEST');
 
     // A fresh rebuild should now find the epic present and skip it.
     expect(container.epic.rebuildMirrors('TEST')).toEqual([]);
     // The sprint was never rebuilt, so it is still pending.
-    expect(container.sprint.rebuildMirrors('TEST')).toEqual([keys.sprint]);
+    expect(container.sprint.rebuildMirrors('TEST')).toEqual([seeded.sprint.key]);
   });
 });

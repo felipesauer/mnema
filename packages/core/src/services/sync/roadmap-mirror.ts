@@ -25,33 +25,35 @@ export interface RoadmapPaths {
  * canonical on-disk shape — {@link SyncRebuild} reads it back, so the two
  * must agree; keep them in this module's vocabulary.
  *
- * Each entity's human key is the filename and the `mnema:` frontmatter is
- * the source of truth on rebuild. The markdown body is a readable title
- * so the files are pleasant to review in a pull request.
+ * An epic's and a sprint's filename is its committed id (the v7 UUID),
+ * matching the observation mirrors; a decision's filename is still its human
+ * key (that boundary migrates in a later wave). The `mnema:` frontmatter is
+ * the source of truth on rebuild — the key lives there too. The markdown body
+ * is a readable title so the files are pleasant to review in a pull request.
  */
 export class RoadmapMirror {
   private readonly markdownIo = new MarkdownIo();
 
   constructor(private readonly paths: RoadmapPaths) {}
 
-  /** Absolute path an epic mirror lives at. */
-  epicPath(key: string): string {
-    return path.join(this.paths.projectRoot, this.paths.roadmapDir, `${key}.md`);
+  /** Absolute path an epic mirror lives at (`stem` is the committed id). */
+  epicPath(stem: string): string {
+    return path.join(this.paths.projectRoot, this.paths.roadmapDir, `${stem}.md`);
   }
 
-  /** Absolute path a decision mirror lives at. */
+  /** Absolute path a decision mirror lives at (`key` is the human key). */
   decisionPath(key: string): string {
     return path.join(this.paths.projectRoot, this.paths.roadmapDir, `${key}.md`);
   }
 
-  /** Absolute path a sprint mirror lives at. */
-  sprintPath(key: string): string {
-    return path.join(this.paths.projectRoot, this.paths.sprintsDir, `${key}.md`);
+  /** Absolute path a sprint mirror lives at (`stem` is the committed id). */
+  sprintPath(stem: string): string {
+    return path.join(this.paths.projectRoot, this.paths.sprintsDir, `${stem}.md`);
   }
 
   /** Writes (or rewrites) the markdown mirror for an epic. */
   writeEpic(epic: Epic): void {
-    this.writeFile(this.epicPath(epic.key), serialiseEpic(epic), epic.title);
+    this.writeFile(this.epicPath(epic.id), serialiseEpic(epic), epic.title);
   }
 
   /**
@@ -60,8 +62,8 @@ export class RoadmapMirror {
    * orphan (a file with no live row behind it). A no-op when the file is
    * already absent.
    */
-  removeEpic(key: string): void {
-    const target = this.epicPath(key);
+  removeEpic(epicId: string): void {
+    const target = this.epicPath(epicId);
     if (existsSync(target)) {
       unlinkSync(target);
     }
@@ -69,17 +71,17 @@ export class RoadmapMirror {
 
   /** Writes (or rewrites) the markdown mirror for a sprint. */
   writeSprint(sprint: Sprint): void {
-    this.writeFile(this.sprintPath(sprint.key), serialiseSprint(sprint), sprint.name);
+    this.writeFile(this.sprintPath(sprint.id), serialiseSprint(sprint), sprint.name);
   }
 
   /**
    * Writes (or rewrites) the markdown mirror for a decision.
    *
-   * `supersededByKey` is the successor's human key. The database stores
-   * that link as an internal UUID, but UUIDs are regenerated on a fresh
-   * clone — the stable, version-controlled reference is the key (as with
-   * a task's `epic_key`/`sprint_key`). The caller resolves the id to a key
-   * so this module stays decoupled from the decision repository.
+   * `supersededByKey` is the successor's human key — decisions still cross-
+   * reference by key (their filename and identity remain the key in this wave,
+   * unlike tasks/epics/sprints, which now link by their committed `*_id`). The
+   * caller resolves the successor's id to its key so this module stays
+   * decoupled from the decision repository.
    */
   writeDecision(decision: Decision, supersededByKey: string | null = null): void {
     this.writeFile(
@@ -90,13 +92,13 @@ export class RoadmapMirror {
   }
 
   /** True when an epic already has a markdown mirror on disk. */
-  hasEpic(key: string): boolean {
-    return existsSync(this.epicPath(key));
+  hasEpic(epicId: string): boolean {
+    return existsSync(this.epicPath(epicId));
   }
 
   /** True when a sprint already has a markdown mirror on disk. */
-  hasSprint(key: string): boolean {
-    return existsSync(this.sprintPath(key));
+  hasSprint(sprintId: string): boolean {
+    return existsSync(this.sprintPath(sprintId));
   }
 
   /** True when a decision already has a markdown mirror on disk. */

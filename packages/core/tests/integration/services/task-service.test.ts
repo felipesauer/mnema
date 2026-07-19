@@ -119,9 +119,11 @@ describe('TaskService (integration)', () => {
   });
 
   it('writes the task markdown on the filesystem after creation', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
+    const created = container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
 
-    const file = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+    const file = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, 'utf-8');
     expect(content).toContain('TEST-1');
@@ -199,7 +201,13 @@ describe('TaskService (integration)', () => {
     });
 
     it('moves the markdown file when state changes', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Move me', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Move me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
 
       container.task.transition({
         taskKey: 'TEST-1',
@@ -213,8 +221,8 @@ describe('TaskService (integration)', () => {
         actor: 'daniel',
       });
 
-      const draftFile = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
-      const readyFile = path.join(projectRoot, '.mnema/backlog', 'READY', 'TEST-1.md');
+      const draftFile = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
+      const readyFile = path.join(projectRoot, '.mnema/backlog', 'READY', `${created.value.id}.md`);
       expect(existsSync(draftFile)).toBe(false);
       expect(existsSync(readyFile)).toBe(true);
     });
@@ -531,8 +539,14 @@ describe('TaskService (integration)', () => {
 
   describe('soft delete', () => {
     it('soft-deletes a task, removing it from list() and the markdown', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
-      const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task A',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
       expect(existsSync(md)).toBe(true);
 
       const deleted = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
@@ -544,7 +558,13 @@ describe('TaskService (integration)', () => {
     });
 
     it('restores a soft-deleted task and brings the markdown back', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task A',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
       container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
 
       const restored = container.task.restore({ taskKey: 'TEST-1', actor: 'daniel' });
@@ -552,7 +572,7 @@ describe('TaskService (integration)', () => {
       if (!restored.ok) return;
       expect(restored.value.deletedAt).toBeNull();
       expect(container.task.list().map((t) => t.key)).toEqual(['TEST-1']);
-      const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+      const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
       expect(existsSync(md)).toBe(true);
     });
 

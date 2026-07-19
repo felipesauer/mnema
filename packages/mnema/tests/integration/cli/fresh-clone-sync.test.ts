@@ -89,7 +89,10 @@ function freshClone(): string {
     '# Survives the clone',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/backlog/DRAFT/CLONE-1.md'), taskMd);
+  writeFileSync(
+    path.join(projectRoot, '.mnema/backlog/DRAFT/019f7700-0000-7000-8000-000000000101.md'),
+    taskMd,
+  );
 
   // Committed roadmap: an epic and a decision share roadmap/, the sprint
   // lives under sprints/ — the shape `RoadmapMirror` writes.
@@ -109,7 +112,7 @@ function freshClone(): string {
     '# The committed epic',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/roadmap/CLONE-EPIC-1.md'), epicMd);
+  writeFileSync(path.join(projectRoot, `.mnema/roadmap/${epicId}.md`), epicMd);
 
   const decisionMd = [
     '---',
@@ -152,7 +155,7 @@ function freshClone(): string {
     '# First cycle',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/sprints/CLONE-SPRINT-1.md'), sprintMd);
+  writeFileSync(path.join(projectRoot, `.mnema/sprints/${sprintId}.md`), sprintMd);
 
   // Committed knowledge mirrors, in the FLAT-frontmatter shape the memory and
   // skill writers produce (not the nested `mnema:` block the backlog uses).

@@ -86,7 +86,7 @@ const DEFAULT_FLUSH_POLICY: SyncFlushPolicy = {
 
 /**
  * Synchronises SQLite state to markdown files, one file per task,
- * grouped by state under `backlogDir/<STATE>/<KEY>.md`.
+ * grouped by state under `backlogDir/<STATE>/<ID>.md`.
  *
  * In Push mode every mutation flushes synchronously; in Buffer mode the
  * service persists pending updates to the {@link SyncBuffer} and flushes
@@ -225,7 +225,7 @@ export class SyncService {
 
   /**
    * Recreates the markdown mirror for every active task whose `.md`
-   * file is missing from its expected `backlogDir/<STATE>/<KEY>.md`
+   * file is missing from its expected `backlogDir/<STATE>/<ID>.md`
    * path, rebuilding from the SQLite row (the source of truth). Existing
    * mirrors are left untouched — this only heals drift, it does not
    * reformat content a human may have edited locally. Returns the keys
@@ -273,7 +273,9 @@ export class SyncService {
    */
   pathForTask(task: Task): string {
     const backlogRoot = path.resolve(this.paths.projectRoot, this.paths.backlogDir);
-    const target = path.resolve(backlogRoot, task.state, `${task.key}.md`);
+    // The mirror is named by the committed id (like observations), so it
+    // survives a clone and never collides on a merge.
+    const target = path.resolve(backlogRoot, task.state, `${task.id}.md`);
     if (!isWithin(backlogRoot, target)) {
       throw new Error(
         `refusing to write task ${task.key}: state '${task.state}' escapes the backlog directory`,
@@ -318,11 +320,24 @@ export class SyncService {
   private removeMarkdownForKey(taskKey: string): void {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return;
+    // Mirrors are named by the committed id now. A soft-delete keeps the row
+    // (deleted_at stamped), so the id is still resolvable and the removal is a
+    // direct unlink; only a row that is truly gone from SQLite forces a scan
+    // that matches the mirror by its frontmatter key.
+    const id = this.taskRepository.findByKeyIncludingDeleted(taskKey)?.id ?? null;
     for (const stateDir of readdirSync(root, { withFileTypes: true })) {
       if (!stateDir.isDirectory()) continue;
-      const candidate = path.join(root, stateDir.name, `${taskKey}.md`);
-      if (existsSync(candidate)) {
-        unlinkSync(candidate);
+      const stateRoot = path.join(root, stateDir.name);
+      if (id !== null) {
+        const candidate = path.join(stateRoot, `${id}.md`);
+        if (existsSync(candidate)) unlinkSync(candidate);
+        continue;
+      }
+      for (const entry of readdirSync(stateRoot, { withFileTypes: true })) {
+        if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+        const filePath = path.join(stateRoot, entry.name);
+        const data = this.markdownIo.read(filePath).mnemaData;
+        if (data.key === taskKey) unlinkSync(filePath);
       }
     }
   }
@@ -353,7 +368,7 @@ export class SyncService {
     if (!existsSync(root)) return;
 
     for (const stateDir of safeReaddir(root)) {
-      const candidate = path.join(root, stateDir, `${task.key}.md`);
+      const candidate = path.join(root, stateDir, `${task.id}.md`);
       if (candidate === targetPath) continue;
       if (!existsSync(candidate)) continue;
 

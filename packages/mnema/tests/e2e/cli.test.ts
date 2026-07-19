@@ -248,10 +248,14 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(move.status).toBe(0);
     expect(move.stdout).toContain('READY');
 
-    const draftFile = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'WEBAPP-1.md');
-    const readyFile = path.join(projectRoot, '.mnema/backlog', 'READY', 'WEBAPP-1.md');
-    expect(existsSync(draftFile)).toBe(false);
-    expect(existsSync(readyFile)).toBe(true);
+    // The mirror is named by the committed id (not the key), so assert on the
+    // state dir contents: the task's markdown moved out of DRAFT into READY.
+    const mdIn = (state: string): string[] => {
+      const dir = path.join(projectRoot, '.mnema/backlog', state);
+      return existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.md')) : [];
+    };
+    expect(mdIn('DRAFT')).toHaveLength(0);
+    expect(mdIn('READY')).toHaveLength(1);
 
     const audit = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
     expect(audit).toContain('task_created');
@@ -590,7 +594,13 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     runCli(['task', 'create', '--title', 'Real task'], projectRoot);
 
     const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
-    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    // The real mirror is named by the committed id — discover it (the single
+    // `.md` the create wrote), rather than assume the key.
+    const realMirror = path.join(
+      draftDir,
+      readdirSync(draftDir).find((f) => f.endsWith('.md')) as string,
+    );
+    // An orphan under a state dir: any stem with no matching task id.
     const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
     expect(existsSync(realMirror)).toBe(true);
 
@@ -598,7 +608,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     rmSync(realMirror);
     writeFileSync(orphanMirror, '---\n---\nstray', 'utf-8');
 
-    // doctor surfaces both before the fix.
+    // doctor surfaces both before the fix — missing by key, orphan by stem.
     const doctor = runCli(['doctor'], projectRoot);
     expect(doctor.stdout).toContain('tasks mirrored');
     expect(doctor.stdout).toContain('missing files: WEBAPP-1');
@@ -609,8 +619,8 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(upgrade.stdout).toContain('rebuilt 1 mirror file(s)');
     expect(upgrade.stdout).toContain('pruned 1 orphan mirror file(s)');
 
-    // The real mirror is back; the orphan is gone.
-    expect(existsSync(realMirror)).toBe(true);
+    // The real mirror is back (one `.md` in DRAFT); the orphan is gone.
+    expect(readdirSync(draftDir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
     expect(existsSync(orphanMirror)).toBe(false);
   });
 
@@ -619,7 +629,10 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     runCli(['task', 'create', '--title', 'Real task'], projectRoot);
 
     const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
-    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    const realMirror = path.join(
+      draftDir,
+      readdirSync(draftDir).find((f) => f.endsWith('.md')) as string,
+    );
     const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
 
     // Simulate drift: the real task's mirror vanished; a stray orphan lingers.
@@ -628,11 +641,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
     const rebuild = runCli(['doctor', '--rebuild-mirrors', '--prune-orphans'], projectRoot);
     expect(rebuild.status).toBe(0);
+    // Rebuilt is reported by key; the pruned orphan by its stem.
     expect(rebuild.stdout).toContain('tasks mirrored: 1 — WEBAPP-1');
     expect(rebuild.stdout).toContain('tasks pruned: 1 — WEBAPP-999');
 
-    // The real mirror is back; the orphan is gone.
-    expect(existsSync(realMirror)).toBe(true);
+    // The real mirror is back (one `.md` in DRAFT); the orphan is gone.
+    expect(readdirSync(draftDir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
     expect(existsSync(orphanMirror)).toBe(false);
   });
 
