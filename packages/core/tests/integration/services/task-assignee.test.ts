@@ -106,7 +106,7 @@ describe('TaskService assignee resolution', () => {
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     expect(created.value.assigneeId).toBeNull();
 
     const mariaId = container.identity.findActorIdByHandle('maria');
@@ -129,7 +129,7 @@ describe('TaskService assignee resolution', () => {
     if (!created.ok) return;
 
     const result = container.task.assign({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       assignee: 'nobody',
       actor: 'daniel',
     });
@@ -149,13 +149,13 @@ describe('TaskService assignee resolution', () => {
     });
     if (!created.ok) throw new Error('setup: create failed');
     const submitted = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
     });
     if (!submitted.ok) throw new Error('setup: submit failed');
-    return created.value.key;
+    return created.value.id;
   }
 
   it('a transition gate (start) resolves a known assignee handle to its id', () => {
@@ -236,7 +236,7 @@ describe('TaskService assignee resolution', () => {
       if (!created.ok) return;
 
       const assigned = container.task.assign({
-        taskKey: created.value.key,
+        taskKey: created.value.id,
         assignee: 'self',
         actor: 'daniel',
       });

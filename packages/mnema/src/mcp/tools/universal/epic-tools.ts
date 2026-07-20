@@ -1,4 +1,5 @@
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { EpicState } from '@mnema/core/domain/enums/epic-state.js';
 import type { EpicService } from '@mnema/core/services/backlog/epic-service.js';
 import type { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
@@ -50,7 +51,7 @@ export class EpicTools {
         const result = this.epics.show(epicKey);
         if (!result.ok) return err(result.error);
         return ok({
-          epic: result.value.epic,
+          epic: { ...result.value.epic, key: deriveAlias('epic', result.value.epic.id) },
           task_keys: result.value.taskKeys,
           lifecycle: result.value.lifecycle,
         });
@@ -67,7 +68,7 @@ export class EpicTools {
       },
       ({ state }) => {
         const epics = this.epics.list(this.config.project.key, state);
-        return ok({ epics });
+        return ok({ epics: epics.map((e) => ({ ...e, key: deriveAlias('epic', e.id) })) });
       },
     );
 
@@ -97,7 +98,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ epic: result.value });
+        return ok({ epic: { ...result.value, key: deriveAlias('epic', result.value.id) } });
       },
     );
 
@@ -130,7 +131,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ epic: result.value });
+        return ok({ epic: { ...result.value, key: deriveAlias('epic', result.value.id) } });
       },
     );
 
@@ -159,7 +160,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return ok({ task: { ...result.value, key: deriveAlias('task', result.value.id) } });
       },
     );
 
@@ -195,7 +196,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ epic: result.value });
+        return ok({ epic: { ...result.value, key: deriveAlias('epic', result.value.id) } });
       },
     );
 
@@ -224,7 +225,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return ok({ task: { ...result.value, key: deriveAlias('task', result.value.id) } });
       },
     );
 
@@ -262,7 +263,7 @@ export class EpicTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ epic: result.value });
+        return ok({ epic: { ...result.value, key: deriveAlias('epic', result.value.id) } });
       },
     );
   }

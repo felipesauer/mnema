@@ -131,7 +131,7 @@ export class ObservationService {
       createdBy,
     });
 
-    this.writeMirror(observation, input.relatedTaskKey ?? null);
+    this.writeMirror(observation, relatedTaskId);
 
     this.audit.write({
       kind: 'observation_recorded',
@@ -140,7 +140,7 @@ export class ObservationService {
       run: input.runId,
       data: {
         topics: observation.topics,
-        related_task_key: input.relatedTaskKey ?? null,
+        related_task_id: relatedTaskId ?? null,
       },
     });
 
@@ -228,7 +228,7 @@ export class ObservationService {
     const rebuilt: string[] = [];
     for (const observation of this.repo.list({ includeArchived: false })) {
       if (!existsSync(this.mirrorPath(observation.id))) {
-        this.writeMirror(observation, this.relatedTaskKey(observation));
+        this.writeMirror(observation, observation.relatedTaskId);
         rebuilt.push(observation.id);
       }
     }
@@ -241,25 +241,15 @@ export class ObservationService {
   }
 
   /**
-   * Resolves an observation's `relatedTaskId` back to the task's stable
-   * human key for the mirror. UUIDs are regenerated on a fresh clone, so
-   * only the key is a durable on-disk reference (as with a task's
-   * `epic_key`). Returns `null` when there is no link or the task is gone.
-   */
-  private relatedTaskKey(observation: Observation): string | null {
-    if (observation.relatedTaskId === null) return null;
-    return this.tasks.findById(observation.relatedTaskId)?.key ?? null;
-  }
-
-  /**
    * Writes (or rewrites) the markdown mirror for an observation. The
    * canonical content lives in the `mnema:` frontmatter — the shape
    * {@link SyncRebuild} reads back, so the two must agree — since the
    * serialiser normalises a trailing newline into the body and would not
    * round-trip content byte-for-byte from there. The body carries the same
-   * text so the file is readable in a pull request.
+   * text so the file is readable in a pull request. The related task is
+   * referenced by its committed id, which survives a clone.
    */
-  private writeMirror(observation: Observation, relatedTaskKey: string | null): void {
+  private writeMirror(observation: Observation, relatedTaskId: string | null): void {
     mkdirSync(this.observationsDir, { recursive: true });
     this.markdownIo.write(this.mirrorPath(observation.id), {
       mnemaData: {
@@ -267,7 +257,7 @@ export class ObservationService {
         kind: 'observation',
         content: observation.content,
         topics: [...observation.topics],
-        related_task_key: relatedTaskKey,
+        related_task_id: relatedTaskId,
         created_by: observation.createdBy,
         at: observation.at,
         archived_at: observation.archivedAt,

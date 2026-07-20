@@ -22,13 +22,13 @@ describe('FTS5 search', () => {
     db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('a1', 'daniel', 'human')").run();
 
     db.prepare(
-      `INSERT INTO tasks (id, key, project_id, title, description, reporter_id)
+      `INSERT INTO tasks (id, project_id, title, description, reporter_id)
        VALUES
-         ('t1', 'WEBAPP-1', 'p1', 'Implement OAuth login',
+         ('t1', 'p1', 'Implement OAuth login',
             'Add support for Google OAuth flow',           'a1'),
-         ('t2', 'WEBAPP-2', 'p1', 'Refatorar autenticação',
+         ('t2', 'p1', 'Refatorar autenticação',
             'Reescrever a camada de sessão para o app',    'a1'),
-         ('t3', 'WEBAPP-3', 'p1', 'Fix login redirect',
+         ('t3', 'p1', 'Fix login redirect',
             'Users are bounced back to home',              'a1')`,
     ).run();
   });

@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -85,14 +86,15 @@ describe('context_bootstrap surfaces SLA breaches (MNEMA-85)', () => {
   it('reports an IN_REVIEW task past its 1-day SLA in aging.sla_breaches', async () => {
     // Create a task and drive it to IN_REVIEW (each transition carries the
     // fields its gate requires).
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: { title: 'Needs review', acceptance_criteria: ['ships'] },
-    });
+    })) as CallToolResult;
+    const taskId = (payload(created).task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Needs review',
         description: 'A task awaiting review.',
         acceptance_criteria: ['ships'],
@@ -101,19 +103,19 @@ describe('context_bootstrap surfaces SLA breaches (MNEMA-85)', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
     await harness.client.callTool({
       name: 'task_submit_review',
-      arguments: { task_key: 'TEST-1', pr_url: 'https://example.com/pr/1' },
+      arguments: { task_key: taskId, pr_url: 'https://example.com/pr/1' },
     });
 
     // Backdate updated_at 3 days (> the 1-day IN_REVIEW SLA).
     const at = new Date(Date.now() - 3 * 86_400_000).toISOString();
     harness.container.adapter
       .getDatabase()
-      .prepare('UPDATE tasks SET updated_at = ? WHERE key = ?')
-      .run(at, 'TEST-1');
+      .prepare('UPDATE tasks SET updated_at = ? WHERE id = ?')
+      .run(at, taskId);
 
     const bootstrap = (await harness.client.callTool({
       name: 'context_bootstrap',
@@ -121,7 +123,7 @@ describe('context_bootstrap surfaces SLA breaches (MNEMA-85)', () => {
     })) as CallToolResult;
     const aging = payload(bootstrap).aging as unknown as AgingPayload;
 
-    const breach = aging.sla_breaches.find((b) => b.key === 'TEST-1');
+    const breach = aging.sla_breaches.find((b) => b.key === deriveAlias('task', taskId));
     expect(breach).toBeDefined();
     expect(breach?.state).toBe('IN_REVIEW');
     expect(breach?.sla_days).toBe(1);

@@ -216,7 +216,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
               });
               expect(created.ok).toBe(true);
               if (!created.ok) return;
-              const key = created.value.key;
+              const key = created.value.id;
 
               const after = roundTrip(local);
               try {
@@ -272,7 +272,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
             });
             expect(created.ok).toBe(true);
             if (!created.ok) return;
-            const key = created.value.key;
+            const key = created.value.id;
             const after = roundTrip(local);
             try {
               const got = after.container.epic.show(key);
@@ -316,7 +316,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
             });
             expect(created.ok).toBe(true);
             if (!created.ok) return;
-            const key = created.value.key;
+            const key = created.value.id;
             const after = roundTrip(local);
             try {
               const got = after.container.sprint.show(key);

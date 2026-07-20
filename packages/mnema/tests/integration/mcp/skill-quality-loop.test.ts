@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -74,13 +75,22 @@ interface ListedSkill {
   review_flag: boolean;
 }
 
-/** Drive a fresh task all the way to DONE within the current run. */
-async function driveToDone(client: Client, key: string, title: string): Promise<void> {
-  await client.callTool({ name: 'task_create', arguments: { title, acceptance_criteria: ['ok'] } });
+/**
+ * Drive a fresh task all the way to DONE within the current run. Returns the
+ * committed id of the created task so the caller can reopen it later.
+ */
+async function driveToDone(client: Client, title: string): Promise<string> {
+  const created = payload(
+    (await client.callTool({
+      name: 'task_create',
+      arguments: { title, acceptance_criteria: ['ok'] },
+    })) as CallToolResult,
+  );
+  const id = (created.task as { id: string }).id;
   await client.callTool({
     name: 'task_submit',
     arguments: {
-      task_key: key,
+      task_key: id,
       title,
       description: `${title} — ready`,
       acceptance_criteria: ['ok'],
@@ -89,16 +99,17 @@ async function driveToDone(client: Client, key: string, title: string): Promise<
   });
   await client.callTool({
     name: 'task_start',
-    arguments: { task_key: key, assignee_id: 'daniel' },
+    arguments: { task_key: id, assignee_id: 'daniel' },
   });
   await client.callTool({
     name: 'task_submit_review',
-    arguments: { task_key: key, pr_url: 'https://example.com/pr/1' },
+    arguments: { task_key: id, pr_url: 'https://example.com/pr/1' },
   });
   await client.callTool({
     name: 'task_approve',
-    arguments: { task_key: key, approval_note: 'lgtm' },
+    arguments: { task_key: id, approval_note: 'lgtm' },
   });
+  return id;
 }
 
 describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () => {
@@ -125,19 +136,19 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
       });
     }
     await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'risky-skill' } });
-    await driveToDone(harness.client, 'TEST-1', 'Risky work');
+    const riskyTaskId = await driveToDone(harness.client, 'Risky work');
     await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
 
-    // Run B: use safe-skill, drive TEST-2 to DONE (stays clean).
+    // Run B: use safe-skill, drive the clean task to DONE (stays clean).
     await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'run B' } });
     await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'safe-skill' } });
-    await driveToDone(harness.client, 'TEST-2', 'Safe work');
+    await driveToDone(harness.client, 'Safe work');
 
-    // TEST-1 is reopened (in run B) → run A, which used risky-skill, now
-    // precedes rework; run B (safe-skill) touched only the clean TEST-2.
+    // The risky task is reopened (in run B) → run A, which used risky-skill,
+    // now precedes rework; run B (safe-skill) touched only the clean task.
     await harness.client.callTool({
       name: 'task_reopen',
-      arguments: { task_key: 'TEST-1', reason: 'a bug slipped through and needs rework' },
+      arguments: { task_key: riskyTaskId, reason: 'a bug slipped through and needs rework' },
     });
 
     const list = payload(
@@ -157,13 +168,13 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
       arguments: { slug: 'risky-skill', name: 'Risky', description: 'a skill', content: 'do it' },
     });
     await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'risky-skill' } });
-    await driveToDone(harness.client, 'TEST-1', 'Risky work');
+    const riskyTaskId = await driveToDone(harness.client, 'Risky work');
     await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
 
     await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'run B' } });
     await harness.client.callTool({
       name: 'task_reopen',
-      arguments: { task_key: 'TEST-1', reason: 'auth regression under load' },
+      arguments: { task_key: riskyTaskId, reason: 'auth regression under load' },
     });
 
     const res = payload(
@@ -182,7 +193,7 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
     expect(proposals).toHaveLength(1);
     const p = proposals[0];
     expect(p?.slug).toBe('risky-skill');
-    expect(p?.taskKey).toBe('TEST-1');
+    expect(p?.taskKey).toBe(deriveAlias('task', riskyTaskId));
     expect(p?.reopenCount).toBe(1);
     expect(p?.reopenReason).toBe('auth regression under load');
     expect(typeof p?.runId).toBe('string');
@@ -195,7 +206,7 @@ describe('skill quality loop flags skills that preceded rework (MNEMA-236)', () 
       arguments: { slug: 'safe-skill', name: 'Safe', description: 'a skill', content: 'do it' },
     });
     await harness.client.callTool({ name: 'skill_use', arguments: { slug: 'safe-skill' } });
-    await driveToDone(harness.client, 'TEST-1', 'Safe work');
+    await driveToDone(harness.client, 'Safe work');
 
     const res = payload(
       (await harness.client.callTool({

@@ -22,6 +22,7 @@ describe('NoteService', () => {
   let tempRoot: string;
   let adapter: SqliteAdapter;
   let notes: NoteService;
+  let taskId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-note-svc-'));
@@ -39,7 +40,8 @@ describe('NoteService', () => {
     if (actor === null) throw new Error('precondition: actor exists');
 
     const tasks = new TaskRepository(adapter);
-    tasks.insert({ key: 'TEST-1', projectId: project.id, title: 'A', reporterId: actor.id });
+    const task = tasks.insert({ projectId: project.id, title: 'A', reporterId: actor.id });
+    taskId = task.id;
 
     notes = new NoteService(new NoteRepository(adapter), tasks, identity, audit);
   });
@@ -51,7 +53,7 @@ describe('NoteService', () => {
 
   it('adds a comment to a task by default', () => {
     const result = notes.add({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       kind: 'comment',
       content: 'looks good to me',
       actor: 'daniel',
@@ -64,7 +66,7 @@ describe('NoteService', () => {
 
   it('honours non-default kinds (agent_observation)', () => {
     const result = notes.add({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       kind: 'agent_observation',
       content: 'spotted a regression in the cart total',
       actor: 'daniel',
@@ -87,21 +89,21 @@ describe('NoteService', () => {
   });
 
   it('lists notes ordered by record time and supports kind filter', () => {
-    notes.add({ taskKey: 'TEST-1', kind: 'comment', content: 'first', actor: 'daniel' });
+    notes.add({ taskKey: taskId, kind: 'comment', content: 'first', actor: 'daniel' });
     notes.add({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       kind: 'agent_observation',
       content: 'middle',
       actor: 'daniel',
     });
-    notes.add({ taskKey: 'TEST-1', kind: 'comment', content: 'last', actor: 'daniel' });
+    notes.add({ taskKey: taskId, kind: 'comment', content: 'last', actor: 'daniel' });
 
-    const all = notes.listForTask('TEST-1');
+    const all = notes.listForTask(taskId);
     expect(all.ok).toBe(true);
     if (!all.ok) return;
     expect(all.value.map((n) => n.content)).toEqual(['first', 'middle', 'last']);
 
-    const onlyComments = notes.listForTask('TEST-1', 'comment');
+    const onlyComments = notes.listForTask(taskId, 'comment');
     expect(onlyComments.ok).toBe(true);
     if (!onlyComments.ok) return;
     expect(onlyComments.value.map((n) => n.content)).toEqual(['first', 'last']);

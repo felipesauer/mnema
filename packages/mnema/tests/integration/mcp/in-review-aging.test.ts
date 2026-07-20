@@ -69,12 +69,12 @@ function parsePayload(result: CallToolResult): Record<string, unknown> {
 }
 
 /** Backdate a task's `updated_at` directly in SQLite to simulate aging. */
-function backdateTask(container: ServiceContainer, key: string, daysAgo: number): void {
+function backdateTask(container: ServiceContainer, id: string, daysAgo: number): void {
   const iso = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
   container.adapter
     .getDatabase()
-    .prepare('UPDATE tasks SET updated_at = ? WHERE key = ?')
-    .run(iso, key);
+    .prepare('UPDATE tasks SET updated_at = ? WHERE id = ?')
+    .run(iso, id);
 }
 
 interface AgingPayload {
@@ -102,12 +102,14 @@ describe('context_bootstrap IN_REVIEW aging', () => {
       name: 'task_create',
       arguments: { title: 'Stuck in limbo' },
     });
-    const agedKey = (parsePayload(agedRes as CallToolResult).task as { key: string }).key;
+    const agedTask = parsePayload(agedRes as CallToolResult).task as { id: string; key: string };
+    const agedId = agedTask.id;
+    const agedKey = agedTask.key;
 
     // Fresh task: stays at "now".
     await harness.client.callTool({ name: 'task_create', arguments: { title: 'Just created' } });
 
-    backdateTask(harness.container, agedKey, 5);
+    backdateTask(harness.container, agedId, 5);
 
     const bootstrap = await harness.client.callTool({
       name: 'context_bootstrap',
@@ -131,12 +133,14 @@ describe('context_bootstrap IN_REVIEW aging', () => {
       name: 'task_create',
       arguments: { title: 'Finished long ago' },
     });
-    const key = (parsePayload(created as CallToolResult).task as { key: string }).key;
+    const createdTask = parsePayload(created as CallToolResult).task as { id: string; key: string };
+    const id = createdTask.id;
+    const key = createdTask.key;
 
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: key,
+        task_key: id,
         title: 'Finished long ago',
         description: 'A task that has reached a terminal state.',
         acceptance_criteria: ['done'],
@@ -145,18 +149,18 @@ describe('context_bootstrap IN_REVIEW aging', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: key, assignee_id: 'daniel' },
+      arguments: { task_key: id, assignee_id: 'daniel' },
     });
     await harness.client.callTool({
       name: 'task_submit_review',
-      arguments: { task_key: key, pr_url: 'https://example.com/pr/1' },
+      arguments: { task_key: id, pr_url: 'https://example.com/pr/1' },
     });
     await harness.client.callTool({
       name: 'task_approve',
-      arguments: { task_key: key, approval_note: 'looks good' },
+      arguments: { task_key: id, approval_note: 'looks good' },
     });
 
-    backdateTask(harness.container, key, 30);
+    backdateTask(harness.container, id, 30);
 
     const bootstrap = await harness.client.callTool({
       name: 'context_bootstrap',
@@ -174,8 +178,10 @@ describe('context_bootstrap IN_REVIEW aging', () => {
       name: 'task_create',
       arguments: { title: 'Two days old' },
     });
-    const key = (parsePayload(created as CallToolResult).task as { key: string }).key;
-    backdateTask(harness.container, key, 2);
+    const createdTask = parsePayload(created as CallToolResult).task as { id: string; key: string };
+    const id = createdTask.id;
+    const key = createdTask.key;
+    backdateTask(harness.container, id, 2);
 
     const defaultBootstrap = await harness.client.callTool({
       name: 'context_bootstrap',
@@ -194,8 +200,13 @@ describe('context_bootstrap IN_REVIEW aging', () => {
       name: 'task_create',
       arguments: { title: 'Two days old, tight threshold' },
     });
-    const tightKey = (parsePayload(tightCreated as CallToolResult).task as { key: string }).key;
-    backdateTask(harness.container, tightKey, 2);
+    const tightTask = parsePayload(tightCreated as CallToolResult).task as {
+      id: string;
+      key: string;
+    };
+    const tightId = tightTask.id;
+    const tightKey = tightTask.key;
+    backdateTask(harness.container, tightId, 2);
 
     const tightBootstrap = await harness.client.callTool({
       name: 'context_bootstrap',

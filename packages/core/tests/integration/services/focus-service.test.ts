@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
@@ -48,27 +49,27 @@ describe('FocusService.current', () => {
   function inProgressFor(assignee: string, title: string): string {
     const created = container.task.create({ projectKey: 'TEST', title, actor: assignee });
     if (!created.ok) throw new Error('create failed');
-    const key = created.value.key;
+    const id = created.value.id;
     container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'submit',
       payload: { title, description: `${title} ready`, acceptance_criteria: ['ok'], estimate: 1 },
       actor: assignee,
     });
     container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'start',
       payload: { assignee_id: assignee },
       actor: assignee,
     });
-    return key;
+    return id;
   }
 
   it("resumes the actor's OWN in-progress task with activeIsMine=true", () => {
-    const key = inProgressFor('alice', 'Alice work');
+    const id = inProgressFor('alice', 'Alice work');
     const focus = container.focus.current('alice');
     expect(focus.focus).toBe('resume');
-    expect(focus.activeTask?.key).toBe(key);
+    expect(focus.activeTask?.key).toBe(deriveAlias('task', id));
     expect(focus.activeIsMine).toBe(true);
   });
 
@@ -77,17 +78,22 @@ describe('FocusService.current', () => {
     // (so a session sees there IS work), but `activeIsMine` must reveal it is
     // not the querying actor's — the signal `mnema guard` needs to avoid
     // authorising Alice's edit off Bob's task.
-    const bobKey = inProgressFor('bob', 'Bob work');
+    const bobId = inProgressFor('bob', 'Bob work');
     const focus = container.focus.current('alice');
     expect(focus.focus).toBe('resume');
-    expect(focus.activeTask?.key).toBe(bobKey);
+    expect(focus.activeTask?.key).toBe(deriveAlias('task', bobId));
     expect(focus.activeIsMine).toBe(false);
   });
 
   it('points at the top ready task with activeIsMine=false when nothing is in progress', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Ready one', actor: 'alice' });
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Ready one',
+      actor: 'alice',
+    });
+    if (!created.ok) throw new Error('create failed');
     container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: created.value.id,
       action: 'submit',
       payload: {
         title: 'Ready one',

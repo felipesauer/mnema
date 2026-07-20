@@ -151,26 +151,26 @@ export class SyncService {
    * mode the entry is appended to the persistent buffer and an
    * auto-flush check is performed.
    *
-   * @param taskKey - Task whose markdown should be regenerated
+   * @param taskId - Committed id of the task whose markdown should regenerate
    * @param meta - Optional context (action, run_id) recorded in buffer
    */
-  syncTask(taskKey: string, meta: { action?: string; runId?: string } = {}): void {
+  syncTask(taskId: string, meta: { action?: string; runId?: string } = {}): void {
     if (this.mode === SyncMode.Push) {
-      this.flushOne(taskKey);
+      this.flushOne(taskId);
       return;
     }
 
     if (this.buffer === null) {
       throw new Error('Buffer mode without a buffer instance — invariant violated');
     }
-    const task = this.taskRepository.findByKey(taskKey);
+    const task = this.taskRepository.findById(taskId);
     if (task === null) return;
 
     this.buffer.append({
       v: 1,
       at: new Date().toISOString(),
       kind: 'task_synced',
-      taskKey,
+      taskKey: taskId,
       mdTarget: this.pathForTask(task),
       action: meta.action,
       runId: meta.runId,
@@ -240,8 +240,8 @@ export class SyncService {
     const rebuilt: string[] = [];
     for (const task of this.taskRepository.findAllActive()) {
       if (existsSync(this.pathForTask(task))) continue;
-      this.flushOne(task.key);
-      rebuilt.push(task.key);
+      this.flushOne(task.id);
+      rebuilt.push(task.id);
     }
     return rebuilt;
   }
@@ -278,19 +278,19 @@ export class SyncService {
     const target = path.resolve(backlogRoot, task.state, `${task.id}.md`);
     if (!isWithin(backlogRoot, target)) {
       throw new Error(
-        `refusing to write task ${task.key}: state '${task.state}' escapes the backlog directory`,
+        `refusing to write task ${task.id}: state '${task.state}' escapes the backlog directory`,
       );
     }
     return target;
   }
 
-  private flushOne(taskKey: string): void {
-    const task = this.taskRepository.findByKey(taskKey);
+  private flushOne(taskId: string): void {
+    const task = this.taskRepository.findById(taskId);
     if (task === null) {
       // Either the row is unknown or it was just soft-deleted. In both
       // cases drop any markdown still sitting under the state folders so
       // the on-disk layout matches the database.
-      this.removeMarkdownForKey(taskKey);
+      this.removeMarkdownForId(taskId);
       return;
     }
 
@@ -317,28 +317,16 @@ export class SyncService {
     });
   }
 
-  private removeMarkdownForKey(taskKey: string): void {
+  private removeMarkdownForId(taskId: string): void {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return;
-    // Mirrors are named by the committed id now. A soft-delete keeps the row
-    // (deleted_at stamped), so the id is still resolvable and the removal is a
-    // direct unlink; only a row that is truly gone from SQLite forces a scan
-    // that matches the mirror by its frontmatter key.
-    const id = this.taskRepository.findByKeyIncludingDeleted(taskKey)?.id ?? null;
+    // The mirror is named by the committed id, so the removal is a direct
+    // unlink of `<id>.md` — it can only be in one state folder, but the folder
+    // is not known here (the row may be gone), so every state dir is checked.
     for (const stateDir of readdirSync(root, { withFileTypes: true })) {
       if (!stateDir.isDirectory()) continue;
-      const stateRoot = path.join(root, stateDir.name);
-      if (id !== null) {
-        const candidate = path.join(stateRoot, `${id}.md`);
-        if (existsSync(candidate)) unlinkSync(candidate);
-        continue;
-      }
-      for (const entry of readdirSync(stateRoot, { withFileTypes: true })) {
-        if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
-        const filePath = path.join(stateRoot, entry.name);
-        const data = this.markdownIo.read(filePath).mnemaData;
-        if (data.key === taskKey) unlinkSync(filePath);
-      }
+      const candidate = path.join(root, stateDir.name, `${taskId}.md`);
+      if (existsSync(candidate)) unlinkSync(candidate);
     }
   }
 
@@ -389,10 +377,9 @@ function serialiseTask(
 ): Record<string, unknown> {
   return {
     // The committed identity: the v7 UUID, written first so it survives a
-    // clone (the rebuild adopts it instead of minting a new one). `key` stays
-    // for now as the human-facing sequential label until it is retired.
+    // clone (the rebuild adopts it instead of minting a new one). It is the
+    // only identity — the human-facing handle is an alias derived from it.
     id: task.id,
-    key: task.key,
     state: task.state,
     title: task.title,
     description: task.description,

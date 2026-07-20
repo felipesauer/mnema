@@ -9,7 +9,6 @@ import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface SprintRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly name: string;
   readonly goal: string | null;
@@ -38,7 +37,6 @@ export type UpdateSprintStateResult =
 
 interface TaskRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly epic_id: string | null;
   readonly sprint_id: string | null;
@@ -70,7 +68,6 @@ interface TaskRow {
 export interface SprintInsertInput {
   /** Committed identity, preserved on a clone rebuild; minted when omitted. */
   readonly id?: string;
-  readonly key: string;
   readonly projectId: string;
   readonly name: string;
   readonly goal?: string | null;
@@ -104,43 +101,15 @@ export class SprintRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
-   * Returns the next sequential number to use for a sprint key.
-   *
-   * @param projectId - Internal project id
-   * @returns The next available sequence (starts at 1)
-   */
-  nextSequence(projectId: string): number {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT COUNT(*) AS n FROM sprints WHERE project_id = ?')
-      .get(projectId) as { n: number };
-    return row.n + 1;
-  }
-
-  /**
    * Runs `fn` inside a `BEGIN IMMEDIATE` transaction, taking the write lock
-   * up front so a `nextSequence` COUNT followed by an insert cannot race a
-   * second process into minting the same key.
+   * up front so a read-then-write create path cannot race a second process
+   * sharing the same `state.db`.
    *
    * @param fn - Synchronous callback executed inside the transaction
    * @returns Whatever `fn` returns
    */
   runInTransactionImmediate<T>(fn: () => T): T {
     return this.adapter.getDatabase().transaction(fn).immediate();
-  }
-
-  /**
-   * Looks up a sprint by its human-readable key.
-   *
-   * @param key - Sprint key, e.g. `WEBAPP-SPRINT-3`
-   * @returns The sprint or `null`
-   */
-  findByKey(key: string): Sprint | null {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT * FROM sprints WHERE key = ? AND deleted_at IS NULL')
-      .get(key) as SprintRow | undefined;
-    return row === undefined ? null : rowToSprint(row);
   }
 
   /**
@@ -224,13 +193,12 @@ export class SprintRepository {
       .getDatabase()
       .prepare(
         `INSERT INTO sprints (
-           id, key, project_id, name, goal,
+           id, project_id, name, goal,
            state, starts_at, ends_at, capacity, metadata, created_at, updated_at, closed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
-        input.key,
         input.projectId,
         input.name,
         input.goal ?? null,
@@ -389,7 +357,7 @@ export class SprintRepository {
    * Lists every active task currently assigned to a sprint.
    *
    * @param sprintId - Internal sprint id
-   * @returns Tasks ordered by key
+   * @returns Tasks ordered by creation
    */
   listTasks(sprintId: string): Task[] {
     const rows = this.adapter
@@ -397,7 +365,7 @@ export class SprintRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE sprint_id = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(sprintId) as TaskRow[];
     return rows.map(rowToTask);
@@ -407,7 +375,6 @@ export class SprintRepository {
 function rowToSprint(row: SprintRow): Sprint {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     name: row.name,
     goal: row.goal,
@@ -430,7 +397,6 @@ function rowToSprint(row: SprintRow): Sprint {
 function rowToTask(row: TaskRow): Task {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     epicId: row.epic_id,
     sprintId: row.sprint_id,

@@ -74,11 +74,11 @@ function mapUniqueConstraint(message: string): MnemaError | null {
   if (/sprint_metrics\.(sprint_id|name)/i.test(message)) {
     return { kind: ErrorCode.SprintMetricDuplicate, sprintKey: '', name: '' };
   }
-  // UNIQUE(key) on tasks/epics/sprints/decisions — two writers sharing one
-  // state.db each minted the same sequential key (COUNT(*)-based nextSequence
-  // is check-then-act). Surface a retryable KeyCollision instead of leaking the
-  // raw SqliteError, so a wrapper's retry loop (keyed off the Conflict exit
-  // code) gets a fresh key on the next attempt.
+  // UNIQUE(key) on decisions — the only entity that still mints a sequential
+  // key, so two writers sharing one state.db can each derive the same one
+  // (the COUNT(*)-based nextSequence is check-then-act). Surface a retryable
+  // KeyCollision instead of leaking the raw SqliteError, so a wrapper's retry
+  // loop (keyed off the Conflict exit code) gets a fresh key on the next attempt.
   const keyCollision = /UNIQUE constraint failed: (\w+)\.key\b/i.exec(message);
   if (keyCollision !== null) {
     return { kind: ErrorCode.KeyCollision, table: keyCollision[1] ?? '' };

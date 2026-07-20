@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -96,7 +97,7 @@ describe('run-end skill draft onboarding', () => {
       name: 'task_create',
       arguments: { title: 'Touched task' },
     });
-    const key = (parsePayload(created as CallToolResult).task as { key: string }).key;
+    const id = (parsePayload(created as CallToolResult).task as { id: string }).id;
 
     const ended = await harness.client.callTool({
       name: 'agent_run_end',
@@ -112,7 +113,7 @@ describe('run-end skill draft onboarding', () => {
     expect(draft).toBeDefined();
     expect(draft.name).toBe('Add the audit verify tool');
     expect(draft.slug).toBe('add-the-audit-verify-tool');
-    expect(draft.steps).toContain(`create task ${key}`);
+    expect(draft.steps).toContain(`create task ${deriveAlias('task', id)}`);
     // No misleading placeholder from the old template.
     expect(draft.steps).not.toContain('first step you took');
     expect(draft.steps).toContain('skill_record');
@@ -131,11 +132,11 @@ describe('run-end skill draft onboarding', () => {
           arguments: { title, acceptance_criteria: ['done'] },
         })) as CallToolResult,
       );
-      const key = (created.task as { key: string }).key;
+      const id = (created.task as { id: string }).id;
       await harness.client.callTool({
         name: 'task_submit',
         arguments: {
-          task_key: key,
+          task_key: id,
           title,
           description: `${title} — ready`,
           acceptance_criteria: ['done'],
@@ -144,7 +145,7 @@ describe('run-end skill draft onboarding', () => {
       });
       await harness.client.callTool({
         name: 'task_start',
-        arguments: { task_key: key, assignee_id: 'daniel' },
+        arguments: { task_key: id, assignee_id: 'daniel' },
       });
     }
 

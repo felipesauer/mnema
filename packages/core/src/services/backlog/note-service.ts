@@ -70,7 +70,7 @@ export class NoteService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { task_key: task.key, note_kind: note.kind, content_size: note.content.length },
+      data: { task_id: task.id, note_kind: note.kind, content_size: note.content.length },
     });
 
     return Ok(note);

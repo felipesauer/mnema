@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { reconcileConfigVersion } from '@mnema/core/config/config-loader.js';
 import { CONFIG_VERSION, type Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { autoAttest, chainHealthyForAttest } from '@mnema/core/services/audit/attestation-cli.js';
 import { listArtifacts } from '@mnema/core/services/audit/attestation-store.js';
 import { walkChainedEvents } from '@mnema/core/services/audit/audit-chain-walk.js';
@@ -296,7 +297,7 @@ export class UpgradeCommand {
               // row-backed case, rather than blanket-recommending a command that is
               // destructive in the no-row case.
               const detail = summary.conflicts
-                .map((c) => `${c.key} in [${c.states.join(', ')}]`)
+                .map((c) => `${deriveAlias('task', c.id)} in [${c.states.join(', ')}]`)
                 .join('; ');
               return (
                 `ingested ${upserted} row(s); ${pc.yellow('⚠')} ${summary.conflicts.length} ` +

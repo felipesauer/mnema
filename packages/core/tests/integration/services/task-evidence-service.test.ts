@@ -46,14 +46,14 @@ describe('TaskEvidenceService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function makeTask(key: string, criteria: string[]): void {
-    tasks.insert({ key, projectId, title: key, reporterId: actorId, acceptanceCriteria: criteria });
+  function makeTask(title: string, criteria: string[]): string {
+    return tasks.insert({ projectId, title, reporterId: actorId, acceptanceCriteria: criteria }).id;
   }
 
   it('attaches evidence to a valid criterion', () => {
-    makeTask('TEST-1', ['logs in', 'logs out']);
+    const t1 = makeTask('TEST-1', ['logs in', 'logs out']);
     const result = svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 0,
       kind: 'test',
       ref: 'tests/login.test.ts',
@@ -67,9 +67,9 @@ describe('TaskEvidenceService', () => {
   });
 
   it('rejects an out-of-range criterion index', () => {
-    makeTask('TEST-1', ['only one criterion']);
+    const t1 = makeTask('TEST-1', ['only one criterion']);
     const result = svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 3,
       ref: 'x',
       actor: 'daniel',
@@ -80,9 +80,9 @@ describe('TaskEvidenceService', () => {
   });
 
   it('re-attaching an identical edge is an idempotent no-op', () => {
-    makeTask('TEST-1', ['c']);
+    const t1 = makeTask('TEST-1', ['c']);
     const input = {
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 0,
       kind: 'route' as const,
       ref: '/login',
@@ -96,7 +96,7 @@ describe('TaskEvidenceService', () => {
     // Same row, flagged as a no-op — never a second insert, never an error.
     expect(dup.value.noOp).toBe(true);
     expect(dup.value.evidence.id).toBe(first.value.evidence.id);
-    const view = svc.forTask('TEST-1');
+    const view = svc.forTask(t1);
     expect(view.ok && view.value.criteria[0]?.evidence).toHaveLength(1);
   });
 
@@ -108,16 +108,16 @@ describe('TaskEvidenceService', () => {
   });
 
   it('forTask pairs each criterion with its evidence, empty where none', () => {
-    makeTask('TEST-1', ['has evidence', 'no evidence']);
+    const t1 = makeTask('TEST-1', ['has evidence', 'no evidence']);
     svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 0,
       kind: 'test',
       ref: 'tests/a.test.ts',
       actor: 'daniel',
     });
 
-    const result = svc.forTask('TEST-1');
+    const result = svc.forTask(t1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.criteria).toHaveLength(2);
@@ -127,17 +127,17 @@ describe('TaskEvidenceService', () => {
   });
 
   it('defaults kind to other', () => {
-    makeTask('TEST-1', ['c']);
-    const result = svc.attach({ taskKey: 'TEST-1', criterionIndex: 0, ref: 'x', actor: 'daniel' });
+    const t1 = makeTask('TEST-1', ['c']);
+    const result = svc.attach({ taskKey: t1, criterionIndex: 0, ref: 'x', actor: 'daniel' });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.evidence.kind).toBe('other');
   });
 
   it('surfaces evidence as orphaned (not dropped) when criteria shrink below its index', () => {
-    makeTask('TEST-1', ['login works', 'logout works']);
+    const t1 = makeTask('TEST-1', ['login works', 'logout works']);
     svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 1,
       kind: 'test',
       ref: 'tests/logout.test.ts',
@@ -146,10 +146,9 @@ describe('TaskEvidenceService', () => {
 
     // The criteria array is rewritten to a single item (what a `submit`
     // transition does), leaving the index-1 evidence row dangling.
-    const taskId = tasks.findByKey('TEST-1')?.id;
-    tasks.updateFields(taskId as string, { acceptanceCriteria: ['login works'] });
+    tasks.updateFields(t1, { acceptanceCriteria: ['login works'] });
 
-    const result = svc.forTask('TEST-1');
+    const result = svc.forTask(t1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.criteria).toHaveLength(1);
@@ -160,9 +159,9 @@ describe('TaskEvidenceService', () => {
   });
 
   it('evidence follows its criterion when the criteria are REORDERED', () => {
-    makeTask('TEST-1', ['login works', 'logout works']);
+    const t1 = makeTask('TEST-1', ['login works', 'logout works']);
     svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 1, // 'logout works'
       kind: 'test',
       ref: 'tests/logout.test.ts',
@@ -170,12 +169,11 @@ describe('TaskEvidenceService', () => {
     });
 
     // Reorder so 'logout works' is now at index 0.
-    const taskId = tasks.findByKey('TEST-1')?.id;
-    tasks.updateFields(taskId as string, {
+    tasks.updateFields(t1, {
       acceptanceCriteria: ['logout works', 'login works'],
     });
 
-    const result = svc.forTask('TEST-1');
+    const result = svc.forTask(t1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.orphaned).toHaveLength(0);
@@ -190,20 +188,19 @@ describe('TaskEvidenceService', () => {
   });
 
   it('treats evidence as orphaned when its criterion TEXT is edited away', () => {
-    makeTask('TEST-1', ['login works']);
+    const t1 = makeTask('TEST-1', ['login works']);
     svc.attach({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       criterionIndex: 0,
       kind: 'test',
       ref: 'tests/a.test.ts',
       actor: 'daniel',
     });
-    const taskId = tasks.findByKey('TEST-1')?.id;
     // Same length, but the criterion's text changed — the original criterion
     // no longer exists, so the evidence is a true orphan (not mis-attributed).
-    tasks.updateFields(taskId as string, { acceptanceCriteria: ['SSO works'] });
+    tasks.updateFields(t1, { acceptanceCriteria: ['SSO works'] });
 
-    const result = svc.forTask('TEST-1');
+    const result = svc.forTask(t1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.criteria[0]?.evidence).toHaveLength(0);
@@ -212,8 +209,7 @@ describe('TaskEvidenceService', () => {
   });
 
   it('falls back to positional matching for a legacy row with no criterion_text', () => {
-    makeTask('TEST-1', ['a', 'b']);
-    const taskId = tasks.findByKey('TEST-1')?.id as string;
+    const t1 = makeTask('TEST-1', ['a', 'b']);
     // Simulate a row written before migration 016: criterion_text is NULL.
     adapter
       .getDatabase()
@@ -222,9 +218,9 @@ describe('TaskEvidenceService', () => {
            (id, task_id, criterion_index, criterion_text, kind, ref, created_at)
          VALUES ('legacy1', ?, 1, NULL, 'test', 'tests/legacy.test.ts', '2026-06-23T00:00:00.000Z')`,
       )
-      .run(taskId);
+      .run(t1);
 
-    const result = svc.forTask('TEST-1');
+    const result = svc.forTask(t1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     // No criterion_text → positional: index 1 is in range, so it attributes

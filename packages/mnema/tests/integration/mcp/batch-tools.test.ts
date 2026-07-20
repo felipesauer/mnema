@@ -113,7 +113,7 @@ describe('batch + decision MCP tools', () => {
         arguments: { title: 'Sprint candidate' },
       })) as CallToolResult,
     );
-    const taskKey = (created.task as { key: string }).key;
+    const taskId = (created.task as { id: string }).id;
 
     const sprint = payload(
       (await harness.client.callTool({
@@ -121,12 +121,15 @@ describe('batch + decision MCP tools', () => {
         arguments: { name: 'Cycle 1' },
       })) as CallToolResult,
     );
-    const sprintKey = (sprint.sprint as { key: string }).key;
+    const sprintId = (sprint.sprint as { id: string }).id;
 
     const result = payload(
       (await harness.client.callTool({
         name: 'sprint_add_tasks',
-        arguments: { sprint_key: sprintKey, task_keys: [taskKey, 'TEST-9999'] },
+        arguments: {
+          sprint_key: sprintId,
+          task_keys: [taskId, '019f7700-0000-7000-8000-000000000099'],
+        },
       })) as CallToolResult,
     );
     expect(result.added_count).toBe(1);

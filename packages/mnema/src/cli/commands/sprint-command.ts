@@ -1,6 +1,7 @@
 import type { Sprint } from '@mnema/core/domain/entities/sprint.js';
 import type { SprintMetric } from '@mnema/core/domain/entities/sprint-metric.js';
 import type { Task } from '@mnema/core/domain/entities/task.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
 import { pc } from '@mnema/core/utils/colors.js';
@@ -271,12 +272,12 @@ function renderSprint(
     process.exit(printError(result.error));
   }
   process.stdout.write(
-    `${pc.green('✓')} sprint ${pc.bold(result.value.key)} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
+    `${pc.green('✓')} sprint ${pc.bold(deriveAlias('sprint', result.value.id))} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
   );
 }
 
 function formatSprintRow(sprint: Sprint): string {
-  return `${pc.bold(sprint.key.padEnd(22))} ${sprint.state.padEnd(8)} ${sprint.name}`;
+  return `${pc.bold(deriveAlias('sprint', sprint.id).padEnd(22))} ${sprint.state.padEnd(8)} ${sprint.name}`;
 }
 
 function formatSprintView(
@@ -285,7 +286,7 @@ function formatSprintView(
   metrics: readonly SprintMetric[],
 ): string {
   const lines: string[] = [];
-  lines.push(`${pc.bold('Sprint:')} ${sprint.key}`);
+  lines.push(`${pc.bold('Sprint:')} ${deriveAlias('sprint', sprint.id)}`);
   lines.push(`${pc.bold('Name:')} ${sprint.name}`);
   if (sprint.goal !== null) lines.push(`${pc.bold('Goal:')} ${sprint.goal}`);
   lines.push(`${pc.bold('State:')} ${sprint.state}`);
@@ -298,7 +299,9 @@ function formatSprintView(
     lines.push(`  ${pc.dim('(no tasks attached)')}`);
   } else {
     for (const task of tasks) {
-      lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.state.padEnd(13)} ${task.title}`);
+      lines.push(
+        `  ${pc.bold(deriveAlias('task', task.id).padEnd(12))} ${task.state.padEnd(13)} ${task.title}`,
+      );
     }
   }
   if (metrics.length > 0) {

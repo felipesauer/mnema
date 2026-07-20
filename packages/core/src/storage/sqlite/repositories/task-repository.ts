@@ -30,7 +30,6 @@ export type {
 
 interface TaskRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly epic_id: string | null;
   readonly sprint_id: string | null;
@@ -65,20 +64,6 @@ export class TaskRepository implements ITaskRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
-   * Finds a task by its human-readable key, excluding soft-deleted rows.
-   *
-   * @param key - Task key (e.g., `"WEBAPP-42"`)
-   * @returns The task if found, `null` otherwise
-   */
-  findByKey(key: string): Task | null {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT * FROM tasks WHERE key = ? AND deleted_at IS NULL')
-      .get(key) as TaskRow | undefined;
-    return row === undefined ? null : rowToTask(row);
-  }
-
-  /**
    * Resolves a user-typed handle — full id, full or partial alias, or a bare
    * hash prefix — to a single live task id, or reports ambiguity/absence. Only
    * ids are read (the match is over the id hash), so no full row is hydrated
@@ -109,7 +94,7 @@ export class TaskRepository implements ITaskRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE state = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(state) as TaskRow[];
     return rows.map(rowToTask);
@@ -139,7 +124,7 @@ export class TaskRepository implements ITaskRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE state IN (?, ?) AND COALESCE(closed_at, updated_at) < ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(TaskState.Done, TaskState.Canceled, cutoff) as TaskRow[];
     return rows.map(rowToTask);
@@ -157,7 +142,7 @@ export class TaskRepository implements ITaskRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE epic_id = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(epicId) as TaskRow[];
     return rows.map(rowToTask);
@@ -174,7 +159,7 @@ export class TaskRepository implements ITaskRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all() as TaskRow[];
     return rows.map(rowToTask);
@@ -210,12 +195,12 @@ export class TaskRepository implements ITaskRepository {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT id, key, title, description, state, priority,
+        `SELECT id, title, description, state, priority,
                 assignee_id, epic_id, sprint_id, created_at, updated_at,
                 claimed_by, lease_expires_at
            FROM tasks
           WHERE ${clauses.join(' AND ')}
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(...values) as LeanRow[];
     return rows.map(rowToLeanTask);
@@ -236,25 +221,10 @@ export class TaskRepository implements ITaskRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE project_id = ? AND title = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(projectId, title) as TaskRow[];
     return rows.map(rowToTask);
-  }
-
-  /**
-   * Returns the next sequential number to use for a task key in the
-   * given project.
-   *
-   * @param projectId - Internal project id
-   * @returns The next available sequence number (starts at 1)
-   */
-  nextSequence(projectId: string): number {
-    const row = this.adapter
-      .getDatabase()
-      .prepare(`SELECT COUNT(*) AS n FROM tasks WHERE project_id = ?`)
-      .get(projectId) as { n: number };
-    return row.n + 1;
   }
 
   /**
@@ -274,15 +244,14 @@ export class TaskRepository implements ITaskRepository {
       .getDatabase()
       .prepare(
         `INSERT INTO tasks (
-           id, key, project_id, epic_id, sprint_id,
+           id, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
            estimate, context_budget, priority, assignee_id, reporter_id, metadata,
            reopen_count, created_at, updated_at, closed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
-        input.key,
         input.projectId,
         input.epicId ?? null,
         input.sprintId ?? null,
@@ -304,7 +273,7 @@ export class TaskRepository implements ITaskRepository {
         input.closedAt ?? null,
       );
 
-    const created = this.findByKey(input.key);
+    const created = this.findById(id);
     if (created === null) {
       throw new Error('task insert succeeded but row not found');
     }
@@ -670,25 +639,9 @@ export class TaskRepository implements ITaskRepository {
   }
 
   /**
-   * Looks up a task by key including soft-deleted rows.
-   *
-   * Used by the restore path so a deleted task can still be located by
-   * its human key. Active reads keep using {@link findByKey}.
-   *
-   * @param key - Task key (e.g. `WEBAPP-42`)
-   * @returns The task (active or soft-deleted) or `null`
-   */
-  findByKeyIncludingDeleted(key: string): Task | null {
-    const row = this.adapter.getDatabase().prepare('SELECT * FROM tasks WHERE key = ?').get(key) as
-      | TaskRow
-      | undefined;
-    return row === undefined ? null : rowToTask(row);
-  }
-
-  /**
-   * Looks up a task by id including soft-deleted rows — the id counterpart of
-   * {@link findByKeyIncludingDeleted}. Once a handle is resolved to an id, a
-   * post-mutation reload uses the id so it does not depend on the human key.
+   * Looks up a task by id including soft-deleted rows. The restore path uses it
+   * so a deleted task — invisible to the live resolver — is still located by
+   * its committed id.
    *
    * @param id - Internal UUID of the task
    * @returns The task (active or soft-deleted) or `null`
@@ -749,14 +702,10 @@ export class TaskRepository implements ITaskRepository {
   }
 
   /**
-   * Runs the given function inside a `BEGIN IMMEDIATE` transaction, taking
-   * the write lock up front rather than lazily on first write.
-   *
-   * The create path reads `nextSequence` (a `COUNT(*)`) and then inserts the
-   * derived key. Under the default `BEGIN DEFERRED`, two processes sharing one
-   * `state.db` can both take that COUNT before either writes and mint the same
-   * key. `BEGIN IMMEDIATE` serialises them: the second writer blocks on the
-   * lock until the first commits, so its COUNT already sees the new row.
+   * Runs the given function inside a `BEGIN IMMEDIATE` transaction, taking the
+   * write lock up front rather than lazily on first write. A general primitive
+   * for a mutation that must serialise against concurrent writers on one
+   * `state.db` before any read-then-write it performs can race.
    *
    * @param fn - Synchronous callback executed inside the transaction
    * @returns Whatever `fn` returns
@@ -783,7 +732,6 @@ export class TaskRepository implements ITaskRepository {
 function rowToTask(row: TaskRow): Task {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     epicId: row.epic_id,
     sprintId: row.sprint_id,
@@ -813,7 +761,6 @@ function rowToTask(row: TaskRow): Task {
 /** The columns {@link TaskRepository.findActiveLean} projects. */
 interface LeanRow {
   readonly id: string;
-  readonly key: string;
   readonly title: string;
   readonly description: string | null;
   readonly state: string;
@@ -831,7 +778,6 @@ interface LeanRow {
 function rowToLeanTask(row: LeanRow): LeanTask {
   return {
     id: row.id,
-    key: row.key,
     title: row.title,
     description: row.description,
     state: row.state,

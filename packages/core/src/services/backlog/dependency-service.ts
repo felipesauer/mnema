@@ -112,7 +112,7 @@ export class DependencyService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { task_key: task.key, blocks_task_key: blocker.key, kind },
+      data: { task_id: task.id, blocks_task_id: blocker.id, kind },
     });
 
     return Ok(created);

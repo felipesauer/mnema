@@ -64,19 +64,21 @@ function payload(result: CallToolResult): Record<string, unknown> {
 
 describe('idempotent transitions (MNEMA-241)', () => {
   let harness: Harness;
+  let taskId: string;
 
   beforeEach(async () => {
     process.env.MNEMA_ACTOR = 'daniel';
     harness = await setup();
     await harness.client.callTool({ name: 'agent_run_start', arguments: { goal: 'idem setup' } });
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: { title: 'Retry target', acceptance_criteria: ['done'] },
-    });
+    })) as CallToolResult;
+    taskId = (payload(created).task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Retry target',
         description: 'a task to retry the start on',
         acceptance_criteria: ['done'],
@@ -85,7 +87,7 @@ describe('idempotent transitions (MNEMA-241)', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
   });
 
@@ -97,7 +99,7 @@ describe('idempotent transitions (MNEMA-241)', () => {
   it('a repeated task_start returns a no_op success, not INVALID_TRANSITION', async () => {
     const retry = (await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     })) as CallToolResult;
 
     expect(retry.isError ?? false).toBe(false);
@@ -111,7 +113,7 @@ describe('idempotent transitions (MNEMA-241)', () => {
     const bad = (await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Retry target',
         description: 'a task to retry the start on',
         acceptance_criteria: ['done'],

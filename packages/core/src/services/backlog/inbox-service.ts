@@ -1,5 +1,6 @@
 import type { Decision } from '../../domain/entities/decision.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import type {
   LeanTask,
@@ -21,6 +22,9 @@ export interface SlaConfig {
 
 /** A task that has sat in a non-terminal state past its SLA. */
 export interface SlaBreach {
+  /** Committed id — the stable identity for filtering/scoping. */
+  readonly id: string;
+  /** Short alias derived from the id, for display. */
   readonly key: string;
   readonly title: string;
   readonly state: string;
@@ -128,7 +132,7 @@ export class InboxService {
       if (terminal.has(task.state)) continue;
       if (limits[task.state] === undefined) continue;
       const list = keysByState.get(task.state) ?? [];
-      list.push(task.key);
+      list.push(deriveAlias('task', task.id));
       keysByState.set(task.state, list);
     }
 
@@ -165,7 +169,8 @@ export class InboxService {
       const ageDays = Math.floor((now - new Date(task.updatedAt).getTime()) / MS_PER_DAY);
       if (ageDays >= slaDays) {
         breaches.push({
-          key: task.key,
+          id: task.id,
+          key: deriveAlias('task', task.id),
           title: task.title,
           state: task.state,
           assignee_id: task.assigneeId,

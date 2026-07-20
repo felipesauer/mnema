@@ -33,15 +33,15 @@ describe('MigrationRunner (001 baseline)', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('applies the squashed baseline on an empty database', () => {
+  it('applies every pending migration on an empty database', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
-    expect(applied.map((a) => a.version)).toEqual([1]);
+    expect(applied.map((a) => a.version)).toEqual([1, 2]);
 
     const versions = adapter
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2]);
   });
 
   it('is idempotent — running twice does not duplicate', () => {
@@ -138,23 +138,24 @@ describe('MigrationRunner (001 baseline)', () => {
       runner.run(adapter, staged);
 
       // A synthetic table-rewrite in the exact shape historical rewrites
-      // used: FK toggle via the header, its own BEGIN/COMMIT.
+      // used: FK toggle via the header, its own BEGIN/COMMIT. Uses the next
+      // free version above the bundled set.
       writeFileSync(
-        path.join(staged, '002_synthetic_rewrite.sql'),
+        path.join(staged, '003_synthetic_rewrite.sql'),
         [
           '-- mnema:disable-foreign-keys',
           'BEGIN;',
           'CREATE TABLE anchors_new AS SELECT * FROM anchors;',
           'DROP TABLE anchors;',
           'ALTER TABLE anchors_new RENAME TO anchors;',
-          'INSERT INTO schema_migrations (version) VALUES (2);',
+          'INSERT INTO schema_migrations (version) VALUES (3);',
           'COMMIT;',
           '',
         ].join('\n'),
       );
 
       const applied = runner.run(adapter, staged);
-      expect(applied.map((a) => a.version)).toEqual([2]);
+      expect(applied.map((a) => a.version)).toEqual([3]);
       // FK enforcement is restored afterwards.
       const fk = adapter.getDatabase().pragma('foreign_keys', { simple: true });
       expect(fk).toBe(1);
@@ -166,13 +167,13 @@ describe('MigrationRunner (001 baseline)', () => {
       runner.run(adapter, staged);
 
       writeFileSync(
-        path.join(staged, '002_synthetic_failure.sql'),
+        path.join(staged, '003_synthetic_failure.sql'),
         [
           '-- mnema:disable-foreign-keys',
           'BEGIN;',
           'CREATE TABLE half_done (id INTEGER PRIMARY KEY);',
           'CREATE TABLE half_done (id INTEGER PRIMARY KEY); -- duplicate: throws',
-          'INSERT INTO schema_migrations (version) VALUES (2);',
+          'INSERT INTO schema_migrations (version) VALUES (3);',
           'COMMIT;',
           '',
         ].join('\n'),
@@ -185,7 +186,7 @@ describe('MigrationRunner (001 baseline)', () => {
       const versions = (
         db.prepare('SELECT version FROM schema_migrations').all() as Array<{ version: number }>
       ).map((v) => v.version);
-      expect(versions).toEqual([1]); // never stamped
+      expect(versions).toEqual([1, 2]); // the synthetic 003 never stamped
     });
   });
 

@@ -60,7 +60,7 @@ describe('SprintService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('plans a sprint in PLANNED state with key derived from project', () => {
+  it('plans a sprint in PLANNED state', () => {
     const result = sprints.plan({
       projectKey: 'TEST',
       name: 'Sprint 1',
@@ -69,39 +69,41 @@ describe('SprintService', () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.key).toBe('TEST-SPRINT-1');
     expect(result.value.state).toBe(SprintState.Planned);
     expect(result.value.goal).toBe('ship auth');
   });
 
   it('starts a planned sprint and forbids a second active sprint', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
-    sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    const first = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    const second = sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    if (!first.ok || !second.ok) throw new Error('precondition: both plans succeed');
 
-    const started = sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const started = sprints.start({ sprintKey: first.value.id, actor: 'daniel' });
     expect(started.ok).toBe(true);
 
-    const second = sprints.start({ sprintKey: 'TEST-SPRINT-2', actor: 'daniel' });
-    expect(second.ok).toBe(false);
-    if (second.ok) return;
-    expect(second.error.kind).toBe(ErrorCode.ActiveSprintExists);
+    const startSecond = sprints.start({ sprintKey: second.value.id, actor: 'daniel' });
+    expect(startSecond.ok).toBe(false);
+    if (startSecond.ok) return;
+    expect(startSecond.error.kind).toBe(ErrorCode.ActiveSprintExists);
   });
 
   it('rejects start on a non-planned sprint', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
-    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
+    sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
 
-    const restart = sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const restart = sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
     expect(restart.ok).toBe(false);
     if (restart.ok) return;
     expect(restart.error.kind).toBe(ErrorCode.SprintInvalidState);
   });
 
   it('closes an active sprint and stamps closed_at', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
-    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
+    sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
 
-    const closed = sprints.close({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const closed = sprints.close({ sprintKey: planned.value.id, actor: 'daniel' });
     expect(closed.ok).toBe(true);
     if (!closed.ok) return;
     expect(closed.value.state).toBe(SprintState.Closed);
@@ -109,19 +111,21 @@ describe('SprintService', () => {
   });
 
   it('rejects close on a planned sprint', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
 
-    const closed = sprints.close({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const closed = sprints.close({ sprintKey: planned.value.id, actor: 'daniel' });
     expect(closed.ok).toBe(false);
     if (closed.ok) return;
     expect(closed.error.kind).toBe(ErrorCode.SprintInvalidState);
   });
 
   it('cancels a planned sprint (retire without completing) and stamps closed_at', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
 
     const canceled = sprints.cancel({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: planned.value.id,
       reason: 'superseded; tasks delivered elsewhere',
       actor: 'daniel',
     });
@@ -132,10 +136,11 @@ describe('SprintService', () => {
   });
 
   it('cancels an active sprint too', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
-    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
+    sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
     const canceled = sprints.cancel({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: planned.value.id,
       reason: 'abandoned',
       actor: 'daniel',
     });
@@ -143,17 +148,19 @@ describe('SprintService', () => {
     if (!canceled.ok) return;
     expect(canceled.value.state).toBe(SprintState.Canceled);
     // A canceled sprint is not the active one — a new sprint can start.
-    sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
-    expect(sprints.start({ sprintKey: 'TEST-SPRINT-2', actor: 'daniel' }).ok).toBe(true);
+    const next = sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    if (!next.ok) throw new Error('precondition: second plan succeeds');
+    expect(sprints.start({ sprintKey: next.value.id, actor: 'daniel' }).ok).toBe(true);
   });
 
   it('rejects cancel on a closed sprint and requires a reason', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
-    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
-    sprints.close({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
+    sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
+    sprints.close({ sprintKey: planned.value.id, actor: 'daniel' });
 
     const onClosed = sprints.cancel({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: planned.value.id,
       reason: 'too late',
       actor: 'daniel',
     });
@@ -161,8 +168,9 @@ describe('SprintService', () => {
     if (onClosed.ok) return;
     expect(onClosed.error.kind).toBe(ErrorCode.SprintInvalidState);
 
-    sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
-    const noReason = sprints.cancel({ sprintKey: 'TEST-SPRINT-2', reason: '  ', actor: 'daniel' });
+    const next = sprints.plan({ projectKey: 'TEST', name: 'B', actor: 'daniel' });
+    if (!next.ok) throw new Error('precondition: second plan succeeds');
+    const noReason = sprints.cancel({ sprintKey: next.value.id, reason: '  ', actor: 'daniel' });
     expect(noReason.ok).toBe(false);
     if (noReason.ok) return;
     expect(noReason.error.kind).toBe(ErrorCode.ValidationFailed);
@@ -171,32 +179,32 @@ describe('SprintService', () => {
   it('attaches and removes tasks from a sprint', () => {
     const project = projects.findByKey('TEST');
     if (project === null) throw new Error('precondition: project exists');
-    tasks.insert({
-      key: 'TEST-1',
+    const task = tasks.insert({
       projectId: project.id,
       title: 'A',
       reporterId: 'a1',
     });
 
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
 
     const added = sprints.addTask({
-      sprintKey: 'TEST-SPRINT-1',
-      taskKey: 'TEST-1',
+      sprintKey: planned.value.id,
+      taskKey: task.id,
       actor: 'daniel',
     });
     expect(added.ok).toBe(true);
     if (!added.ok) return;
     expect(added.value.sprintId).not.toBeNull();
 
-    const view = sprints.show('TEST-SPRINT-1');
+    const view = sprints.show(planned.value.id);
     expect(view.ok).toBe(true);
     if (!view.ok) return;
-    expect(view.value.tasks.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(view.value.tasks.map((t) => t.id)).toEqual([task.id]);
 
     const removed = sprints.removeTask({
-      sprintKey: 'TEST-SPRINT-1',
-      taskKey: 'TEST-1',
+      sprintKey: planned.value.id,
+      taskKey: task.id,
       actor: 'daniel',
     });
     expect(removed.ok).toBe(true);
@@ -205,12 +213,13 @@ describe('SprintService', () => {
   });
 
   it('exposes the active sprint for a project', () => {
-    sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    const planned = sprints.plan({ projectKey: 'TEST', name: 'A', actor: 'daniel' });
+    if (!planned.ok) throw new Error('precondition: plan succeeds');
     expect(sprints.active('TEST')).toBeNull();
 
-    sprints.start({ sprintKey: 'TEST-SPRINT-1', actor: 'daniel' });
+    sprints.start({ sprintKey: planned.value.id, actor: 'daniel' });
     const active = sprints.active('TEST');
-    expect(active?.sprint.key).toBe('TEST-SPRINT-1');
+    expect(active?.sprint.id).toBe(planned.value.id);
   });
 
   describe('plan payload validation', () => {
@@ -276,7 +285,7 @@ describe('SprintService', () => {
       expect(planned.ok).toBe(true);
       if (!planned.ok) return;
       const started = sprints.start({
-        sprintKey: planned.value.key,
+        sprintKey: planned.value.id,
         actor: 'daniel',
         expectedUpdatedAt: planned.value.updatedAt,
       });
@@ -292,7 +301,7 @@ describe('SprintService', () => {
       expect(planned.ok).toBe(true);
       if (!planned.ok) return;
       const stale = sprints.start({
-        sprintKey: planned.value.key,
+        sprintKey: planned.value.id,
         actor: 'daniel',
         expectedUpdatedAt: '2020-01-01T00:00:00.000Z',
       });

@@ -1,4 +1,5 @@
 import type { Task } from '@mnema/core/domain/entities/task.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
 
@@ -51,7 +52,7 @@ export function formatTaskBlock(task: Task, deps: FormatTaskDeps | ActorHandleLo
   const opts: FormatTaskDeps = typeof deps === 'function' ? { resolveHandle: deps } : deps;
   const { resolveHandle, resolveSprintKey, resolveEpicKey, timestampMode = 'relative' } = opts;
 
-  const head = `${pc.bold(task.key)}  ${pc.cyan(task.state)}  ${task.title}`;
+  const head = `${pc.bold(deriveAlias('task', task.id))}  ${pc.cyan(task.state)}  ${task.title}`;
   const lines: string[] = [head];
 
   const meta: string[] = [];
@@ -132,7 +133,10 @@ export function formatTaskList(tasks: readonly Task[]): string {
   }
 
   return tasks
-    .map((t) => `${pc.bold(t.key.padEnd(12))} ${pc.cyan(t.state.padEnd(13))} ${t.title}`)
+    .map(
+      (t) =>
+        `${pc.bold(deriveAlias('task', t.id).padEnd(12))} ${pc.cyan(t.state.padEnd(13))} ${t.title}`,
+    )
     .join('\n');
 }
 

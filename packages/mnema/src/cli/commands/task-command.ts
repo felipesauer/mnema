@@ -143,7 +143,7 @@ export class TaskCommand {
           });
           if (result.ok && options.label !== undefined && options.label.length > 0) {
             const labelled = container.label.setLabels({
-              taskKey: result.value.key,
+              taskKey: result.value.id,
               labels: options.label,
               actor: container.identity.getDefaultActor(),
             });
@@ -337,7 +337,7 @@ export class TaskCommand {
           }
 
           const events = container.auditQuery.run({
-            taskKey: lookup.value.key,
+            taskKey: lookup.value.id,
             limit: options.limit,
           });
 

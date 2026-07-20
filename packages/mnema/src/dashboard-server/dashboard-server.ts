@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { buildContentAttestation } from '@mnema/core/services/audit/attestation-cli.js';
 import { rebaselineResolverFor } from '@mnema/core/services/audit/rebaseline-resolve.js';
 import { CachedAuditIntegrity } from '@mnema/core/services/integrity/audit-integrity.js';
@@ -281,9 +282,9 @@ export async function createDashboardServer(
   function worklineData() {
     const key = config.project.key;
     const epics = container.epic.list(key).map((e) => {
-      const cov = container.coverage.forEpic(e.key);
+      const cov = container.coverage.forEpic(e.id);
       return {
-        key: e.key,
+        key: deriveAlias('epic', e.id),
         title: e.title,
         state: e.state,
         coverage: cov.ok
@@ -292,9 +293,9 @@ export async function createDashboardServer(
       };
     });
     const sprints = container.sprint.list(key).map((s) => {
-      const cov = container.coverage.forSprint(s.key);
+      const cov = container.coverage.forSprint(s.id);
       return {
-        key: s.key,
+        key: deriveAlias('sprint', s.id),
         name: s.name,
         state: s.state,
         coverage: cov.ok

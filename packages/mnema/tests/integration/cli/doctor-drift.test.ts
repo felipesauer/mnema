@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { MigrationRunner } from '@mnema/core/storage/sqlite/migration-runner.js';
 import { SqliteAdapter } from '@mnema/core/storage/sqlite/sqlite-adapter.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -371,11 +372,11 @@ describe('inspectMirrorDrift', () => {
   });
 
   // Seeds a project + one task so the per-state backlog layout can be
-  // exercised. The mirror is named by the id (`t-<key>` here), so tests build
-  // the on-disk path from the returned id and assert the key only where the
-  // doctor reports a human key (missing files).
-  const seedTask = (key: string, state: string): string => {
-    const id = `t-${key}`;
+  // exercised. The mirror is named by the id (`t-<label>` here), so tests build
+  // the on-disk path from the returned id and assert the derived alias only
+  // where the doctor reports a human-facing handle (missing files).
+  const seedTask = (label: string, state: string): string => {
+    const id = `t-${label}`;
     adapter
       .getDatabase()
       .prepare(`INSERT OR IGNORE INTO projects (id, key, name) VALUES ('p1', 'PRJ', 'Project')`)
@@ -383,22 +384,24 @@ describe('inspectMirrorDrift', () => {
     adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO tasks (id, key, project_id, title, reporter_id, state)
-         VALUES (?, ?, 'p1', 'T', 'a1', ?)`,
+        `INSERT INTO tasks (id, project_id, title, reporter_id, state)
+         VALUES (?, 'p1', 'T', 'a1', ?)`,
       )
-      .run(id, key, state);
+      .run(id, state);
     return id;
   };
 
   it('reports a missing task mirror under "tasks mirrored" (nested layout)', () => {
-    seedTask('PRJ-1', 'DRAFT');
-    // No backlog/DRAFT/PRJ-1.md written — drift.
+    const id = seedTask('PRJ-1', 'DRAFT');
+    // No backlog/DRAFT/<id>.md written — drift.
 
     const checks = drift();
     const tasks = checks.find((c) => c.name === 'tasks mirrored');
     expect(tasks?.ok).toBe(false);
     expect(tasks?.severity).toBe('warning');
-    expect(tasks?.detail).toContain('missing files: PRJ-1');
+    // The doctor reports the human-facing alias, not the raw id, for a row
+    // whose mirror is missing.
+    expect(tasks?.detail).toContain(`missing files: ${deriveAlias('task', id)}`);
   });
 
   it('reports a green task mirror when the nested .md exists', () => {

@@ -1,5 +1,6 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -42,7 +43,7 @@ export interface WorkGraphLintReport {
 }
 
 interface BrokenDependencyRow {
-  readonly task_key: string;
+  readonly task_id: string;
   readonly blocks_task_id: string;
 }
 
@@ -111,14 +112,14 @@ export class WorkGraphLintService {
 
   /**
    * Active tasks attached to an epic. Resolved through the task
-   * repository's by-key lookup so the linter stays independent of any
+   * repository's by-id lookup so the linter stays independent of any
    * epic-scoped repository method that other features may add.
    */
   private tasksOfEpic(epicId: string): Task[] {
-    const keys = this.epics.listTaskKeys(epicId);
+    const ids = this.epics.listTaskIds(epicId);
     const tasks: Task[] = [];
-    for (const key of keys) {
-      const task = this.tasks.findByKey(key);
+    for (const id of ids) {
+      const task = this.tasks.findById(id);
       if (task !== null) tasks.push(task);
     }
     return tasks;
@@ -146,32 +147,32 @@ export class WorkGraphLintService {
         severity: 'warning',
         rule: 'incomplete-tasks',
         message: `${incomplete.length} task(s) not in a terminal state: ${incomplete
-          .map((t) => t.key)
+          .map((t) => deriveAlias('task', t.id))
           .join(', ')}`,
       });
     }
 
-    // Read the audit log ONCE and bucket task_transitioned events by key,
-    // rather than re-reading the whole log per terminal task.
-    const transitionsByKey = new Map<string, AuditEvent[]>();
+    // Read the audit log ONCE and bucket task_transitioned events by the
+    // committed id, rather than re-reading the whole log per terminal task.
+    const transitionsById = new Map<string, AuditEvent[]>();
     for (const e of this.auditQuery.run()) {
       if (e.kind !== 'task_transitioned') continue;
-      const key = (e.data as Record<string, unknown> | undefined)?.key;
-      if (typeof key !== 'string') continue;
-      const list = transitionsByKey.get(key);
-      if (list === undefined) transitionsByKey.set(key, [e]);
+      const id = (e.data as Record<string, unknown> | undefined)?.id;
+      if (typeof id !== 'string') continue;
+      const list = transitionsById.get(id);
+      if (list === undefined) transitionsById.set(id, [e]);
       else list.push(e);
     }
     for (const task of tasks) {
       if (
         this.stateMachine.isTerminal(task.state) &&
-        this.isSubagentBypass(transitionsByKey.get(task.key) ?? [], task.state)
+        this.isSubagentBypass(transitionsById.get(task.id) ?? [], task.state)
       ) {
         diagnostics.push({
           scope,
           severity: 'warning',
           rule: 'subagent-bypass',
-          message: `${task.key} reached a terminal state with no transition recorded under an agent run`,
+          message: `${deriveAlias('task', task.id)} reached a terminal state with no transition recorded under an agent run`,
         });
       }
     }
@@ -190,7 +191,7 @@ export class WorkGraphLintService {
           scope,
           severity: 'warning',
           rule: 'missing-evidence',
-          message: `${task.key} reached ${task.state} with no attached evidence`,
+          message: `${deriveAlias('task', task.id)} reached ${task.state} with no attached evidence`,
         });
       }
     }
@@ -200,7 +201,7 @@ export class WorkGraphLintService {
         scope,
         severity: 'error',
         rule: 'broken-dependency',
-        message: `${broken.task_key} depends on a task that no longer exists`,
+        message: `${deriveAlias('task', broken.task_id)} depends on a task that no longer exists`,
       });
     }
 
@@ -256,7 +257,7 @@ export class WorkGraphLintService {
         // relates_to/duplicates/parent_of edge to a soft-deleted task is
         // informational, not a broken-graph error. (blockersAllTerminal /
         // reachesViaBlocks both filter to 'blocks' too.)
-        `SELECT t.key AS task_key, d.blocks_task_id AS blocks_task_id
+        `SELECT t.id AS task_id, d.blocks_task_id AS blocks_task_id
            FROM dependencies d
            JOIN tasks t ON t.id = d.task_id
           WHERE d.task_id IN (${placeholders})

@@ -293,11 +293,15 @@ export class DecisionService {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: note.taskId });
     }
 
-    // Resolve the project key from the task so the caller doesn't have
-    // to know it; matches how `decision_record` is shaped at the MCP
+    // Resolve the project key from the task's project so the caller doesn't
+    // have to know it; matches how `decision_record` is shaped at the MCP
     // boundary (project is implicit from the active workspace).
+    const project = this.projects.findById(task.projectId);
+    if (project === null) {
+      return Err({ kind: ErrorCode.ProjectNotFound, projectKey: task.projectId });
+    }
     const recorded = this.record({
-      projectKey: task.key.split('-')[0] ?? '',
+      projectKey: project.key,
       title: input.title,
       decision: input.decision,
       context: input.context,
@@ -318,7 +322,7 @@ export class DecisionService {
       data: {
         decision_key: decision.key,
         note_id: note.id,
-        task_key: task.key,
+        task_id: task.id,
       },
     });
 

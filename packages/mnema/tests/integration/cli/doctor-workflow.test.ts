@@ -108,6 +108,7 @@ describe('inspectWorkflowShape', () => {
 describe('inspectTaskStateDrift', () => {
   let tempRoot: string;
   let adapter: SqliteAdapter;
+  let taskId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-task-drift-'));
@@ -118,10 +119,10 @@ describe('inspectTaskStateDrift', () => {
     const tasks = new TaskRepository(adapter);
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     const reporterId = actors.upsert('daniel', ActorKind.Human);
-    tasks.insert({ key: 'TEST-1', projectId: project.id, title: 'Live', reporterId });
+    taskId = tasks.insert({ projectId: project.id, title: 'Live', reporterId }).id;
     // Stuff a phantom state directly via SQL to simulate the
     // "workflow edit dropped a state" scenario.
-    adapter.getDatabase().prepare(`UPDATE tasks SET state = 'PHANTOM' WHERE key = 'TEST-1'`).run();
+    adapter.getDatabase().prepare(`UPDATE tasks SET state = 'PHANTOM' WHERE id = ?`).run(taskId);
   });
 
   afterEach(() => {
@@ -138,7 +139,7 @@ describe('inspectTaskStateDrift', () => {
   });
 
   it('reports clean when every task is in a declared state', () => {
-    adapter.getDatabase().prepare(`UPDATE tasks SET state = 'DRAFT' WHERE key = 'TEST-1'`).run();
+    adapter.getDatabase().prepare(`UPDATE tasks SET state = 'DRAFT' WHERE id = ?`).run(taskId);
     const checks = inspectTaskStateDrift(adapter, makeWorkflow());
     const drift = checks.find((c) => c.name === 'tasks states match workflow');
     expect(drift?.ok).toBe(true);

@@ -102,9 +102,9 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('sprint_cancel retires a planned sprint via MCP', async () => {
     const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'To cancel' }))
-      .sprint as { key: string };
+      .sprint as { id: string };
     const canceled = await call(harness.client, 'sprint_cancel', {
-      sprint_key: sprint.key,
+      sprint_key: sprint.id,
       reason: 'superseded',
     });
     expect(canceled.isError).toBeFalsy();
@@ -113,18 +113,18 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('epic_add_task → epic_remove → epic_close round-trips via MCP', async () => {
     const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Parity epic' }))
-      .epic as { key: string };
+      .epic as { id: string };
     const task = parsePayload(await call(harness.client, 'task_create', { title: 'A task' }))
-      .task as { key: string };
+      .task as { id: string };
 
-    await call(harness.client, 'epic_add_task', { epic_key: epic.key, task_key: task.key });
+    await call(harness.client, 'epic_add_task', { epic_key: epic.id, task_key: task.id });
     const removed = await call(harness.client, 'epic_remove', {
-      epic_key: epic.key,
-      task_key: task.key,
+      epic_key: epic.id,
+      task_key: task.id,
     });
     expect(removed.isError).toBeFalsy();
 
-    const closed = await call(harness.client, 'epic_close', { epic_key: epic.key });
+    const closed = await call(harness.client, 'epic_close', { epic_key: epic.id });
     expect(closed.isError).toBeFalsy();
     expect((parsePayload(closed).epic as { state: string }).state).toBe('CLOSED');
   });
@@ -132,17 +132,17 @@ describe('epic/sprint lifecycle MCP parity', () => {
   it('sprint_start → sprint_metric → sprint_remove → sprint_close round-trips via MCP', async () => {
     const sprint = parsePayload(
       await call(harness.client, 'sprint_create', { name: 'Parity sprint' }),
-    ).sprint as { key: string };
+    ).sprint as { id: string };
     const task = parsePayload(await call(harness.client, 'task_create', { title: 'Sprint task' }))
-      .task as { key: string };
-    await call(harness.client, 'sprint_add_task', { sprint_key: sprint.key, task_key: task.key });
+      .task as { id: string };
+    await call(harness.client, 'sprint_add_task', { sprint_key: sprint.id, task_key: task.id });
 
-    const started = await call(harness.client, 'sprint_start', { sprint_key: sprint.key });
+    const started = await call(harness.client, 'sprint_start', { sprint_key: sprint.id });
     expect(started.isError).toBeFalsy();
     expect((parsePayload(started).sprint as { state: string }).state).toBe('ACTIVE');
 
     const metric = await call(harness.client, 'sprint_metric', {
-      sprint_key: sprint.key,
+      sprint_key: sprint.id,
       name: 'p95 latency',
       target: 200,
       unit: 'ms',
@@ -151,22 +151,22 @@ describe('epic/sprint lifecycle MCP parity', () => {
     expect((parsePayload(metric).metric as { name: string }).name).toBe('p95 latency');
 
     const removed = await call(harness.client, 'sprint_remove', {
-      sprint_key: sprint.key,
-      task_key: task.key,
+      sprint_key: sprint.id,
+      task_key: task.id,
     });
     expect(removed.isError).toBeFalsy();
 
-    const closed = await call(harness.client, 'sprint_close', { sprint_key: sprint.key });
+    const closed = await call(harness.client, 'sprint_close', { sprint_key: sprint.id });
     expect(closed.isError).toBeFalsy();
     expect((parsePayload(closed).sprint as { state: string }).state).toBe('CLOSED');
   });
 
   it('a lifecycle mutation without an active run is rejected', async () => {
     const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'No-run epic' }))
-      .epic as { key: string };
+      .epic as { id: string };
     await harness.client.callTool({ name: 'agent_run_end', arguments: { status: 'completed' } });
 
-    const closed = await call(harness.client, 'epic_close', { epic_key: epic.key });
+    const closed = await call(harness.client, 'epic_close', { epic_key: epic.id });
     expect(closed.isError).toBe(true);
     expect(parsePayload(closed).error).toBe('NO_ACTIVE_RUN');
   });
@@ -176,18 +176,18 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('epic_close on an already-closed epic returns EPIC_INVALID_STATE', async () => {
     const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Twice closed' }))
-      .epic as { key: string };
-    await call(harness.client, 'epic_close', { epic_key: epic.key });
-    const again = await call(harness.client, 'epic_close', { epic_key: epic.key });
+      .epic as { id: string };
+    await call(harness.client, 'epic_close', { epic_key: epic.id });
+    const again = await call(harness.client, 'epic_close', { epic_key: epic.id });
     expect(again.isError).toBe(true);
     expect(parsePayload(again).error).toBe('EPIC_INVALID_STATE');
   });
 
   it('epic_remove with a non-existent task returns TASK_NOT_FOUND', async () => {
     const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Holder' }))
-      .epic as { key: string };
+      .epic as { id: string };
     const result = await call(harness.client, 'epic_remove', {
-      epic_key: epic.key,
+      epic_key: epic.id,
       task_key: 'TEST-9999',
     });
     expect(result.isError).toBe(true);
@@ -196,26 +196,26 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('sprint_start on an already-active sprint returns SPRINT_INVALID_STATE', async () => {
     const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Live once' }))
-      .sprint as { key: string };
-    await call(harness.client, 'sprint_start', { sprint_key: sprint.key }); // PLANNED → ACTIVE
-    const again = await call(harness.client, 'sprint_start', { sprint_key: sprint.key });
+      .sprint as { id: string };
+    await call(harness.client, 'sprint_start', { sprint_key: sprint.id }); // PLANNED → ACTIVE
+    const again = await call(harness.client, 'sprint_start', { sprint_key: sprint.id });
     expect(again.isError).toBe(true);
     expect(parsePayload(again).error).toBe('SPRINT_INVALID_STATE');
   });
 
   it('sprint_close on a PLANNED (never-started) sprint returns SPRINT_INVALID_STATE', async () => {
     const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Never live' }))
-      .sprint as { key: string };
-    const result = await call(harness.client, 'sprint_close', { sprint_key: sprint.key });
+      .sprint as { id: string };
+    const result = await call(harness.client, 'sprint_close', { sprint_key: sprint.id });
     expect(result.isError).toBe(true);
     expect(parsePayload(result).error).toBe('SPRINT_INVALID_STATE');
   });
 
   it('sprint_remove with a non-existent task returns TASK_NOT_FOUND', async () => {
     const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Holder' }))
-      .sprint as { key: string };
+      .sprint as { id: string };
     const result = await call(harness.client, 'sprint_remove', {
-      sprint_key: sprint.key,
+      sprint_key: sprint.id,
       task_key: 'TEST-9999',
     });
     expect(result.isError).toBe(true);
@@ -224,8 +224,8 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('sprint_metric with a duplicate name returns SPRINT_METRIC_DUPLICATE', async () => {
     const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Measured' }))
-      .sprint as { key: string };
-    const metric = { sprint_key: sprint.key, name: 'p95 latency', target: 200 };
+      .sprint as { id: string };
+    const metric = { sprint_key: sprint.id, name: 'p95 latency', target: 200 };
     await call(harness.client, 'sprint_metric', metric);
     const dup = await call(harness.client, 'sprint_metric', metric);
     expect(dup.isError).toBe(true);
@@ -235,9 +235,9 @@ describe('epic/sprint lifecycle MCP parity', () => {
   it('epic_update edits an epic description via MCP', async () => {
     const epic = parsePayload(
       await call(harness.client, 'epic_create', { title: 'Editable epic', description: 'before' }),
-    ).epic as { key: string };
+    ).epic as { id: string };
     const updated = await call(harness.client, 'epic_update', {
-      epic_key: epic.key,
+      epic_key: epic.id,
       description: 'after',
     });
     expect(updated.isError).toBeFalsy();
@@ -246,9 +246,9 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('task_update edits a task title via MCP', async () => {
     const task = parsePayload(await call(harness.client, 'task_create', { title: 'Before title' }))
-      .task as { key: string };
+      .task as { id: string };
     const updated = await call(harness.client, 'task_update', {
-      task_key: task.key,
+      task_key: task.id,
       title: 'After title',
     });
     expect(updated.isError).toBeFalsy();
@@ -257,19 +257,19 @@ describe('epic/sprint lifecycle MCP parity', () => {
 
   it('epic_delete removes an epic; deleting one with a task returns EPIC_HAS_TASKS', async () => {
     const empty = parsePayload(await call(harness.client, 'epic_create', { title: 'Empty epic' }))
-      .epic as { key: string };
-    const gone = await call(harness.client, 'epic_delete', { epic_key: empty.key });
+      .epic as { id: string };
+    const gone = await call(harness.client, 'epic_delete', { epic_key: empty.id });
     expect(gone.isError).toBeFalsy();
-    const shown = await call(harness.client, 'epic_show', { epic_key: empty.key });
+    const shown = await call(harness.client, 'epic_show', { epic_key: empty.id });
     expect(shown.isError).toBe(true);
     expect(parsePayload(shown).error).toBe('EPIC_NOT_FOUND');
 
     const held = parsePayload(await call(harness.client, 'epic_create', { title: 'Held epic' }))
-      .epic as { key: string };
+      .epic as { id: string };
     const task = parsePayload(await call(harness.client, 'task_create', { title: 'Held task' }))
-      .task as { key: string };
-    await call(harness.client, 'epic_add_task', { epic_key: held.key, task_key: task.key });
-    const refused = await call(harness.client, 'epic_delete', { epic_key: held.key });
+      .task as { id: string };
+    await call(harness.client, 'epic_add_task', { epic_key: held.id, task_key: task.id });
+    const refused = await call(harness.client, 'epic_delete', { epic_key: held.id });
     expect(refused.isError).toBe(true);
     expect(parsePayload(refused).error).toBe('EPIC_HAS_TASKS');
   });

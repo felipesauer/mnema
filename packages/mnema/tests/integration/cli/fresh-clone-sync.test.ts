@@ -26,6 +26,13 @@ import { inspectMirrorDrift } from '@/cli/commands/doctor-command.js';
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('packages/core/workflows');
 
+// Committed ids of the entities written into the clone. Tasks/epics/sprints have
+// no human key any more, so tests resolve them by the id that survives the clone.
+// The decision keeps its `CLONE-ADR-1` key.
+const TASK_ID = '019f7700-0000-7000-8000-000000000101';
+const EPIC_ID = '019f7700-0000-7000-8000-000000000e01';
+const SPRINT_ID = '019f7700-0000-7000-8000-000000000501';
+
 /** Builds a checkout that has everything git tracks but no `.mnema/state/`. */
 function freshClone(): string {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-clone-'));
@@ -61,16 +68,15 @@ function freshClone(): string {
 
   // Committed identities: the epic/sprint links are by id now (the id survives
   // the clone), so the task references these committed ids, not the human key.
-  const epicId = '019f7700-0000-7000-8000-000000000e01';
-  const sprintId = '019f7700-0000-7000-8000-000000000501';
+  const epicId = EPIC_ID;
+  const sprintId = SPRINT_ID;
 
   // A committed task markdown, in the shape `sync-service` writes,
   // carrying its epic/sprint links by id.
   const taskMd = [
     '---',
     'mnema:',
-    '  id: 019f7700-0000-7000-8000-000000000101',
-    '  key: CLONE-1',
+    `  id: ${TASK_ID}`,
     '  state: DRAFT',
     '  title: Survives the clone',
     '  description: A task that was committed as markdown',
@@ -89,10 +95,7 @@ function freshClone(): string {
     '# Survives the clone',
     '',
   ].join('\n');
-  writeFileSync(
-    path.join(projectRoot, '.mnema/backlog/DRAFT/019f7700-0000-7000-8000-000000000101.md'),
-    taskMd,
-  );
+  writeFileSync(path.join(projectRoot, `.mnema/backlog/DRAFT/${TASK_ID}.md`), taskMd);
 
   // Committed roadmap: an epic and a decision share roadmap/, the sprint
   // lives under sprints/ — the shape `RoadmapMirror` writes.
@@ -100,7 +103,6 @@ function freshClone(): string {
     '---',
     'mnema:',
     `  id: ${epicId}`,
-    '  key: CLONE-EPIC-1',
     '  kind: epic',
     '  state: OPEN',
     '  title: The committed epic',
@@ -140,7 +142,6 @@ function freshClone(): string {
     '---',
     'mnema:',
     `  id: ${sprintId}`,
-    '  key: CLONE-SPRINT-1',
     '  kind: sprint',
     '  state: PLANNED',
     '  name: First cycle',
@@ -291,7 +292,7 @@ describe('fresh clone → sync', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
 
-      const result = container.task.findByKey('CLONE-1');
+      const result = container.task.findByKey(TASK_ID);
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       expect(result.value.title).toBe('Survives the clone');
@@ -319,11 +320,11 @@ describe('fresh clone → sync', () => {
       expect(summary.sprints.upserted).toBe(1);
       expect(summary.decisions.upserted).toBe(1);
 
-      const epic = container.epic.show('CLONE-EPIC-1');
+      const epic = container.epic.show(EPIC_ID);
       expect(epic.ok).toBe(true);
       if (epic.ok) expect(epic.value.epic.title).toBe('The committed epic');
 
-      const sprint = container.sprint.show('CLONE-SPRINT-1');
+      const sprint = container.sprint.show(SPRINT_ID);
       expect(sprint.ok).toBe(true);
       if (!sprint.ok) return;
       expect(sprint.value.sprint.name).toBe('First cycle');
@@ -340,16 +341,16 @@ describe('fresh clone → sync', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
 
-      const task = container.task.findByKey('CLONE-1');
-      const epic = container.epic.show('CLONE-EPIC-1');
-      const sprint = container.sprint.show('CLONE-SPRINT-1');
+      const task = container.task.findByKey(TASK_ID);
+      const epic = container.epic.show(EPIC_ID);
+      const sprint = container.sprint.show(SPRINT_ID);
       expect(task.ok && epic.ok && sprint.ok).toBe(true);
       if (!task.ok || !epic.ok || !sprint.ok) return;
 
       // The links survive the clone: the epic/sprint adopt their committed ids
       // and the task points at exactly those, resolved from its `epic_id` /
       // `sprint_id` frontmatter.
-      expect(epic.value.epic.id).toBe('019f7700-0000-7000-8000-000000000e01');
+      expect(epic.value.epic.id).toBe(EPIC_ID);
       expect(task.value.epicId).toBe(epic.value.epic.id);
       expect(task.value.sprintId).toBe(sprint.value.sprint.id);
     });

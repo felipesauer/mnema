@@ -1,3 +1,4 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import type { Command } from 'commander';
 
@@ -35,7 +36,7 @@ export class SyncCommand {
           }
           for (const conflict of summary.conflicts) {
             process.stderr.write(
-              `${pc.red('✗')} ${conflict.key} mirrored in ${conflict.states.length} state dirs ` +
+              `${pc.red('✗')} ${deriveAlias('task', conflict.id)} mirrored in ${conflict.states.length} state dirs ` +
                 `(${conflict.states.join(', ')}) — state left unchanged. ` +
                 `Run ${pc.bold('mnema doctor')} to resolve the duplicate.\n`,
             );

@@ -19,17 +19,14 @@ import type { AliasResolution } from '../domain/entity-alias.js';
  * database or shipping a package — it is internal testability and reuse.
  */
 export interface ITaskRepository {
-  findByKey(key: string): Task | null;
   findById(id: string): Task | null;
   resolve(query: string): AliasResolution;
-  findByKeyIncludingDeleted(key: string): Task | null;
   findByIdIncludingDeleted(id: string): Task | null;
   findByState(state: string): Task[];
   findByEpic(epicId: string): Task[];
   findAllActive(): Task[];
   findActiveLean(filter?: LeanTaskFilter): LeanTask[];
   findByTitle(projectId: string, title: string): Task[];
-  nextSequence(projectId: string): number;
   countActive(): number;
   insert(input: TaskInsertInput): Task;
   updateState(
@@ -57,7 +54,6 @@ export interface ITaskRepository {
 /** Lean projection returned by {@link ITaskRepository.findActiveLean}. */
 export interface LeanTask {
   readonly id: string;
-  readonly key: string;
   readonly title: string;
   readonly description: string | null;
   readonly state: string;
@@ -91,7 +87,6 @@ export interface TaskInsertInput {
    * repository mints a fresh v7 UUID.
    */
   readonly id?: string;
-  readonly key: string;
   readonly projectId: string;
   readonly title: string;
   readonly reporterId: string;

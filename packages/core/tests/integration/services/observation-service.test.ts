@@ -72,7 +72,6 @@ describe('ObservationService', () => {
 
   it('records an observation linked to a task', () => {
     const task = tasks.insert({
-      key: 'TEST-1',
       projectId,
       title: 'something',
       reporterId: actorId,
@@ -80,7 +79,7 @@ describe('ObservationService', () => {
     });
     const result = service.record({
       content: 'noticed flakiness',
-      relatedTaskKey: 'TEST-1',
+      relatedTaskKey: task.id,
       actor: 'daniel',
     });
     expect(result.ok).toBe(true);
@@ -91,7 +90,7 @@ describe('ObservationService', () => {
   it('errors out when related task is unknown', () => {
     const result = service.record({
       content: 'x',
-      relatedTaskKey: 'TEST-999',
+      relatedTaskKey: '019f7700-0000-7000-8000-000000000099',
       actor: 'daniel',
     });
     expect(result.ok).toBe(false);

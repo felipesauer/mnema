@@ -77,10 +77,13 @@ describe('intent-diff preview before destructive mutation (MNEMA-228)', () => {
   });
 
   it('epic_delete preview reports attached tasks and refuses-would-be, without deleting', async () => {
-    await harness.client.callTool({
-      name: 'epic_create',
-      arguments: { title: 'Big epic' },
-    });
+    const epic = payload(
+      (await harness.client.callTool({
+        name: 'epic_create',
+        arguments: { title: 'Big epic' },
+      })) as CallToolResult,
+    );
+    const epicId = (epic.epic as { id: string }).id;
     // Two tasks attached to the epic.
     for (const title of ['Task one', 'Task two']) {
       const created = payload(
@@ -91,14 +94,14 @@ describe('intent-diff preview before destructive mutation (MNEMA-228)', () => {
       );
       await harness.client.callTool({
         name: 'epic_add_task',
-        arguments: { epic_key: 'TEST-EPIC-1', task_key: (created.task as { key: string }).key },
+        arguments: { epic_key: epicId, task_key: (created.task as { id: string }).id },
       });
     }
 
     const preview = payload(
       (await harness.client.callTool({
         name: 'epic_delete',
-        arguments: { epic_key: 'TEST-EPIC-1', preview: true },
+        arguments: { epic_key: epicId, preview: true },
       })) as CallToolResult,
     );
     expect(preview.preview).toBe(true);
@@ -114,7 +117,7 @@ describe('intent-diff preview before destructive mutation (MNEMA-228)', () => {
     const show = payload(
       (await harness.client.callTool({
         name: 'epic_show',
-        arguments: { epic_key: 'TEST-EPIC-1' },
+        arguments: { epic_key: epicId },
       })) as CallToolResult,
     );
     expect((show.epic as { state: string }).state).toBe('OPEN');
@@ -122,7 +125,13 @@ describe('intent-diff preview before destructive mutation (MNEMA-228)', () => {
   });
 
   it('epic_close preview flags non-terminal tasks a close would strand', async () => {
-    await harness.client.callTool({ name: 'epic_create', arguments: { title: 'Epic C' } });
+    const epic = payload(
+      (await harness.client.callTool({
+        name: 'epic_create',
+        arguments: { title: 'Epic C' },
+      })) as CallToolResult,
+    );
+    const epicId = (epic.epic as { id: string }).id;
     const created = payload(
       (await harness.client.callTool({
         name: 'task_create',
@@ -131,13 +140,13 @@ describe('intent-diff preview before destructive mutation (MNEMA-228)', () => {
     );
     await harness.client.callTool({
       name: 'epic_add_task',
-      arguments: { epic_key: 'TEST-EPIC-1', task_key: (created.task as { key: string }).key },
+      arguments: { epic_key: epicId, task_key: (created.task as { id: string }).id },
     });
 
     const preview = payload(
       (await harness.client.callTool({
         name: 'epic_close',
-        arguments: { epic_key: 'TEST-EPIC-1', preview: true },
+        arguments: { epic_key: epicId, preview: true },
       })) as CallToolResult,
     );
     const impact = preview.impact as { non_terminal_task_keys: string[] };

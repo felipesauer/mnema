@@ -98,12 +98,12 @@ export class LabelService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { task_key: task.key, labels: applied },
+      data: { task_id: task.id, labels: applied },
     });
 
     // Mirror the new label set to the task's markdown frontmatter, the
     // same way TaskService syncs after its own mutations.
-    this.sync.syncTask(task.key, { action: 'task_labels_set', runId: input.runId });
+    this.sync.syncTask(task.id, { action: 'task_labels_set', runId: input.runId });
 
     return Ok(applied);
   }

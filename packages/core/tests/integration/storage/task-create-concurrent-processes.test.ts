@@ -19,15 +19,15 @@ const childScript = fileURLToPath(
 );
 
 /**
- * REGRESSION for the cross-process key-sequence race: `nextSequence` is a
- * COUNT(*)-based check-then-act, so two `mnema mcp serve` processes sharing one
- * state.db can both read the same count and mint the SAME task key. The create
- * path now runs under `BEGIN IMMEDIATE`, taking the write lock before the COUNT
- * so the second writer's count already sees the first row. This spawns real
- * child processes (not worker threads) all minting a key against the SAME
- * state.db and asserts every key is distinct — never a duplicate, and never a
- * raw (unmapped) SqliteError. An in-process simulation can't exercise the
- * cross-process write serialisation that makes that true.
+ * REGRESSION for cross-process contention on the create path: two
+ * `mnema mcp serve` processes sharing one state.db each inserting a task. The
+ * create path runs under `BEGIN IMMEDIATE`, taking the write lock up front so
+ * concurrent creators serialise on the single state.db instead of racing a
+ * read-then-write. This spawns real child processes (not worker threads) all
+ * inserting a task against the SAME state.db and asserts every committed id is
+ * distinct — never a duplicate, and never a raw (unmapped) SqliteError. An
+ * in-process simulation can't exercise the cross-process write serialisation
+ * that makes that true.
  *
  * Skipped when `dist/` is missing or stale (children run the BUILT repository).
  */
@@ -47,8 +47,8 @@ function distFresh(): boolean {
 
 const distBuilt = distFresh();
 
-describe.skipIf(!distBuilt)('TaskRepository create: concurrent OS processes, distinct keys', () => {
-  it('N real processes minting a key against one state.db get N distinct keys', async () => {
+describe.skipIf(!distBuilt)('TaskRepository create: concurrent OS processes, distinct ids', () => {
+  it('N real processes inserting against one state.db get N distinct ids', async () => {
     const tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-create-'));
     const statePath = path.join(tempRoot, 'state.db');
 
@@ -62,13 +62,11 @@ describe.skipIf(!distBuilt)('TaskRepository create: concurrent OS processes, dis
 
     const PROCESS_COUNT = 12;
     const children = Array.from({ length: PROCESS_COUNT }, () => {
-      return new Promise<{ ok: boolean; key?: string; mappedKind?: string | null }>(
+      return new Promise<{ ok: boolean; id?: string; mappedKind?: string | null }>(
         (resolve, reject) => {
-          const child = fork(
-            childScript,
-            [distRoot, statePath, project.id, project.key, reporterId],
-            { stdio: 'pipe' },
-          );
+          const child = fork(childScript, [distRoot, statePath, project.id, reporterId], {
+            stdio: 'pipe',
+          });
           let stdout = '';
           let stderr = '';
           child.stdout?.on('data', (d) => {
@@ -88,9 +86,9 @@ describe.skipIf(!distBuilt)('TaskRepository create: concurrent OS processes, dis
 
     const results = await Promise.all(children);
 
-    // The core regression: every successful mint produced a distinct key.
-    const keys = results.filter((r) => r.ok).map((r) => r.key as string);
-    expect(new Set(keys).size).toBe(keys.length);
+    // The core regression: every successful insert produced a distinct id.
+    const ids = results.filter((r) => r.ok).map((r) => r.id as string);
+    expect(new Set(ids).size).toBe(ids.length);
 
     // Any failure must be a cleanly mapped, retryable error — never a raw
     // SqliteError leaking through (mappedKind === null).
@@ -98,12 +96,9 @@ describe.skipIf(!distBuilt)('TaskRepository create: concurrent OS processes, dis
       expect(failure.mappedKind).not.toBeNull();
     }
 
-    // With BEGIN IMMEDIATE serialising the mint, all writers should in fact
-    // succeed with the full run of sequential keys.
-    expect(keys.length).toBe(PROCESS_COUNT);
-    expect([...keys].sort()).toEqual(
-      Array.from({ length: PROCESS_COUNT }, (_, i) => `WEBAPP-${i + 1}`).sort(),
-    );
+    // With BEGIN IMMEDIATE serialising the write, all creators should in fact
+    // succeed — every one committing its own distinct id.
+    expect(ids.length).toBe(PROCESS_COUNT);
 
     rmSync(tempRoot, { recursive: true, force: true });
   }, 60_000);

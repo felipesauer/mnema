@@ -100,10 +100,10 @@ export class TransitionRepository {
   }
 
   /**
-   * Lists transitions caused by an agent run, in chronological order,
-   * each annotated with the human task key. The JOIN is done in SQL so
-   * a single round-trip materialises everything `agent inspect` needs
-   * to render the mutations table.
+   * Lists transitions caused by an agent run, in chronological order, each
+   * annotated with the task's committed id (the display layer derives a short
+   * alias from it). The `task_id` is already on the transition row, so no join
+   * is needed.
    *
    * @param runId - Agent run identifier
    * @returns Array of transitions emitted while the run was active
@@ -112,39 +112,39 @@ export class TransitionRepository {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT t.*, k.key AS task_key
+        `SELECT t.*
            FROM transitions t
-           JOIN tasks k ON k.id = t.task_id
           WHERE t.agent_run_id = ?
           ORDER BY t.at`,
       )
-      .all(runId) as Array<TransitionRow & { task_key: string }>;
-    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_key }));
+      .all(runId) as TransitionRow[];
+    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_id }));
   }
 
   /**
    * Returns every transition with the given action name, annotated with the
-   * task key, oldest first. Used by the evolution report to mine rework
-   * signals that do not depend on a reopen — e.g. `request_changes` on a
-   * review, or `cancel` to a terminal state — across all tasks. Excludes
-   * soft-deleted tasks so a cancelled-then-deleted task does not double-count.
+   * task's committed id, oldest first. Used by the evolution report to mine
+   * rework signals that do not depend on a reopen — e.g. `request_changes` on a
+   * review, or `cancel` to a terminal state — across all tasks. The join to
+   * `tasks` stays to exclude soft-deleted ones so a cancelled-then-deleted task
+   * does not double-count.
    *
    * @param action - The workflow action to match (e.g. `request_changes`)
-   * @returns Matching transitions with their task key, oldest first
+   * @returns Matching transitions with their task id, oldest first
    */
   findByAction(action: string): TransitionWithKey[] {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT t.*, k.key AS task_key
+        `SELECT t.*
            FROM transitions t
            JOIN tasks k ON k.id = t.task_id
           WHERE t.action = ?
             AND k.deleted_at IS NULL
           ORDER BY t.at`,
       )
-      .all(action) as Array<TransitionRow & { task_key: string }>;
-    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_key }));
+      .all(action) as TransitionRow[];
+    return rows.map((row) => ({ ...rowToTransition(row), taskKey: row.task_id }));
   }
 
   /**

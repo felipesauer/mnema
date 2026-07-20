@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
@@ -60,11 +61,11 @@ function setup(
  */
 function seedTask(
   container: ServiceContainer,
-  key: string,
+  handle: string,
   state: string,
   ageDays: number,
   now: number,
-): void {
+): string {
   const db = container.adapter.getDatabase();
   const project = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string };
   let actor = db.prepare('SELECT id FROM actors LIMIT 1').get() as { id: string } | undefined;
@@ -72,12 +73,14 @@ function seedTask(
     db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('act-1', 'daniel', 'human')").run();
     actor = { id: 'act-1' };
   }
+  const id = `id-${handle}`;
   const at = new Date(now - ageDays * DAY).toISOString();
   db.prepare(
-    `INSERT INTO tasks (id, key, project_id, title, description, acceptance_criteria, state,
+    `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
        priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
-     VALUES (?, ?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
-  ).run(`id-${key}`, key, project.id, `Task ${key}`, state, actor.id, actor.id, at, at);
+     VALUES (?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
+  ).run(id, project.id, `Task ${handle}`, state, actor.id, actor.id, at, at);
+  return id;
 }
 
 describe('InboxService SLA breaches', () => {
@@ -87,11 +90,11 @@ describe('InboxService SLA breaches', () => {
   it('flags a task past the per-state SLA, with age and threshold', () => {
     // IN_REVIEW SLA = 2 days; this task has sat 5 days → breach.
     h = setup({ IN_REVIEW: 2 });
-    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 5, h.now);
+    const id = seedTask(h.container, 'TEST-1', 'IN_REVIEW', 5, h.now);
     const breaches = h.container.inbox.slaBreaches(h.now);
     expect(breaches).toHaveLength(1);
     expect(breaches[0]).toMatchObject({
-      key: 'TEST-1',
+      key: deriveAlias('task', id),
       state: 'IN_REVIEW',
       age_days: 5,
       sla_days: 2,
@@ -123,9 +126,13 @@ describe('InboxService SLA breaches', () => {
 
   it('sorts breaches most-overdue first and surfaces them in view()', () => {
     h = setup({ IN_REVIEW: 1, BLOCKED: 1 });
-    seedTask(h.container, 'TEST-1', 'IN_REVIEW', 3, h.now);
-    seedTask(h.container, 'TEST-2', 'BLOCKED', 9, h.now);
+    const id1 = seedTask(h.container, 'TEST-1', 'IN_REVIEW', 3, h.now);
+    const id2 = seedTask(h.container, 'TEST-2', 'BLOCKED', 9, h.now);
     const view = h.container.inbox.view(h.now);
-    expect(view.slaBreaches.map((b) => b.key)).toEqual(['TEST-2', 'TEST-1']); // 9d before 3d
+    // 9d before 3d.
+    expect(view.slaBreaches.map((b) => b.key)).toEqual([
+      deriveAlias('task', id2),
+      deriveAlias('task', id1),
+    ]);
   });
 });

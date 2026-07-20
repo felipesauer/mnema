@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import type { Workflow } from '@/domain/state-machine/state-machine.js';
 import type { SprintService } from '@/services/backlog/sprint-service.js';
 import type { TaskService } from '@/services/backlog/task-service.js';
@@ -11,19 +12,29 @@ const HOUR = 3_600_000;
 const BASE = Date.parse('2026-01-01T00:00:00.000Z');
 const at = (hoursFromBase: number): string => new Date(BASE + hoursFromBase * HOUR).toISOString();
 
-function created(key: string, hours: number, run?: string): AuditEvent {
+// Stable example task ids — the audit log and the task rows join on the
+// committed id, so both sides reference the same uuid.
+const TASK = {
+  'NOTA-1': '019f7700-0000-7000-8000-000000000001',
+  'NOTA-2': '019f7700-0000-7000-8000-000000000002',
+  'NOTA-3': '019f7700-0000-7000-8000-000000000003',
+  'OLD-1': '019f7700-0000-7000-8000-00000000000a',
+  'NEW-1': '019f7700-0000-7000-8000-00000000000b',
+} as const;
+
+function created(id: string, hours: number, run?: string): AuditEvent {
   return {
     v: 2,
     at: at(hours),
     kind: 'task_created',
     actor: 'a',
     ...(run !== undefined ? { run } : {}),
-    data: { key, state: 'DRAFT' },
+    data: { id, state: 'DRAFT' },
   };
 }
 
 function transitioned(
-  key: string,
+  id: string,
   hours: number,
   from: string,
   to: string,
@@ -36,7 +47,7 @@ function transitioned(
     kind: 'task_transitioned',
     actor: 'a',
     ...(run !== undefined ? { run } : {}),
-    data: { key, from, to, action },
+    data: { id, from, to, action },
   };
 }
 
@@ -71,21 +82,25 @@ function fakeAudit(events: AuditEvent[]): AuditQuery {
 }
 
 interface TaskRow {
-  key: string;
+  id: string;
   estimate: number | null;
   sprintId: string | null;
 }
 
-/** Fake TaskService.list() with estimates and optional sprint membership. */
+/**
+ * Fake TaskService.list() with estimates and optional sprint membership.
+ * The record form keys by task id (the committed identity), matching the
+ * `data.id` the audit events carry.
+ */
 function fakeTasks(rows: Record<string, number | null> | TaskRow[]): TaskService {
   const list: TaskRow[] = Array.isArray(rows)
     ? rows
-    : Object.entries(rows).map(([key, estimate]) => ({ key, estimate, sprintId: null }));
+    : Object.entries(rows).map(([id, estimate]) => ({ id, estimate, sprintId: null }));
   return { list: () => list } as unknown as TaskService;
 }
 
 /** Fake SprintService.list() returning sprints in creation order. */
-function fakeSprints(sprints: { id: string; key: string; name: string }[] = []): SprintService {
+function fakeSprints(sprints: { id: string; name: string }[] = []): SprintService {
   return { list: () => sprints } as unknown as SprintService;
 }
 
@@ -100,18 +115,21 @@ function makeService(
 describe('FlowMetricsService', () => {
   it('computes lead time, cycle time, throughput and reopen rate from the log', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit'),
-      transitioned('NOTA-1', 10, 'IN_REVIEW', 'DONE', 'approve'),
-      created('NOTA-2', 0),
-      transitioned('NOTA-2', 1, 'DRAFT', 'READY', 'submit'),
-      transitioned('NOTA-2', 5, 'IN_REVIEW', 'DONE', 'approve'),
-      transitioned('NOTA-2', 6, 'DONE', 'IN_PROGRESS', 'reopen'),
-      transitioned('NOTA-2', 9, 'IN_REVIEW', 'DONE', 'approve'),
-      created('NOTA-3', 0),
-      transitioned('NOTA-3', 1, 'DRAFT', 'READY', 'submit'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 2, 'DRAFT', 'READY', 'submit'),
+      transitioned(TASK['NOTA-1'], 10, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-2'], 0),
+      transitioned(TASK['NOTA-2'], 1, 'DRAFT', 'READY', 'submit'),
+      transitioned(TASK['NOTA-2'], 5, 'IN_REVIEW', 'DONE', 'approve'),
+      transitioned(TASK['NOTA-2'], 6, 'DONE', 'IN_PROGRESS', 'reopen'),
+      transitioned(TASK['NOTA-2'], 9, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-3'], 0),
+      transitioned(TASK['NOTA-3'], 1, 'DRAFT', 'READY', 'submit'),
     ];
-    const m = makeService(events, fakeTasks({ 'NOTA-1': 8, 'NOTA-2': 2, 'NOTA-3': 5 })).compute();
+    const m = makeService(
+      events,
+      fakeTasks({ [TASK['NOTA-1']]: 8, [TASK['NOTA-2']]: 2, [TASK['NOTA-3']]: 5 }),
+    ).compute();
 
     expect(m.throughput).toBe(2);
     expect(m.lead_time.count).toBe(2);
@@ -127,14 +145,14 @@ describe('FlowMetricsService', () => {
     // NOTA-1 touched by run R1 (start@1, end@4 → 3h) and R2 (start@5, end@6 → 1h) = 4h actual.
     const events: AuditEvent[] = [
       runStarted('R1', 1),
-      created('NOTA-1', 0, 'R1'),
-      transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit', 'R1'),
+      created(TASK['NOTA-1'], 0, 'R1'),
+      transitioned(TASK['NOTA-1'], 2, 'DRAFT', 'READY', 'submit', 'R1'),
       runEnded('R1', 4),
       runStarted('R2', 5),
-      transitioned('NOTA-1', 6, 'IN_REVIEW', 'DONE', 'approve', 'R2'),
+      transitioned(TASK['NOTA-1'], 6, 'IN_REVIEW', 'DONE', 'approve', 'R2'),
       runEnded('R2', 6),
     ];
-    const m = makeService(events, fakeTasks({ 'NOTA-1': 2 })).compute();
+    const m = makeService(events, fakeTasks({ [TASK['NOTA-1']]: 2 })).compute();
 
     expect(m.estimate_vs_actual.samples).toHaveLength(1);
     const s = m.estimate_vs_actual.samples[0];
@@ -147,10 +165,10 @@ describe('FlowMetricsService', () => {
 
   it('falls back to lead time (flagged) when a done task has no run data', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 10, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 10, 'IN_REVIEW', 'DONE', 'approve'),
     ];
-    const m = makeService(events, fakeTasks({ 'NOTA-1': 5 })).compute();
+    const m = makeService(events, fakeTasks({ [TASK['NOTA-1']]: 5 })).compute();
     const s = m.estimate_vs_actual.samples[0];
     expect(s?.actual_source).toBe('lead_time');
     expect(s?.actual_hours).toBe(10);
@@ -160,33 +178,33 @@ describe('FlowMetricsService', () => {
 
   it('reports velocity (completed points) per sprint, newest first', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 5, 'IN_REVIEW', 'DONE', 'approve'),
-      created('NOTA-2', 0),
-      transitioned('NOTA-2', 6, 'IN_REVIEW', 'DONE', 'approve'),
-      created('NOTA-3', 0), // in sprint S1 but NOT done → excluded from velocity
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 5, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-2'], 0),
+      transitioned(TASK['NOTA-2'], 6, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-3'], 0), // in sprint S1 but NOT done → excluded from velocity
     ];
     const tasks = fakeTasks([
-      { key: 'NOTA-1', estimate: 3, sprintId: 'S1' },
-      { key: 'NOTA-2', estimate: 5, sprintId: 'S2' },
-      { key: 'NOTA-3', estimate: 8, sprintId: 'S1' },
+      { id: TASK['NOTA-1'], estimate: 3, sprintId: 'S1' },
+      { id: TASK['NOTA-2'], estimate: 5, sprintId: 'S2' },
+      { id: TASK['NOTA-3'], estimate: 8, sprintId: 'S1' },
     ]);
     const sprints = fakeSprints([
-      { id: 'S1', key: 'TEST-SPRINT-1', name: 'Sprint One' },
-      { id: 'S2', key: 'TEST-SPRINT-2', name: 'Sprint Two' },
+      { id: 'S1', name: 'Sprint One' },
+      { id: 'S2', name: 'Sprint Two' },
     ]);
     const m = makeService(events, tasks, sprints).compute();
 
     // Newest first → S2 then S1. NOTA-3 (not done) excluded from S1's points.
     expect(m.velocity).toEqual([
       {
-        sprint_key: 'TEST-SPRINT-2',
+        sprint_key: deriveAlias('sprint', 'S2'),
         sprint_name: 'Sprint Two',
         completed_points: 5,
         completed_tasks: 1,
       },
       {
-        sprint_key: 'TEST-SPRINT-1',
+        sprint_key: deriveAlias('sprint', 'S1'),
         sprint_name: 'Sprint One',
         completed_points: 3,
         completed_tasks: 1,
@@ -196,24 +214,24 @@ describe('FlowMetricsService', () => {
 
   it('returns empty velocity when no sprint has completed tasks', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 5, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 5, 'IN_REVIEW', 'DONE', 'approve'),
     ];
     // Task has no sprint; one sprint exists but owns no completed task.
     const m = makeService(
       events,
-      fakeTasks([{ key: 'NOTA-1', estimate: 3, sprintId: null }]),
-      fakeSprints([{ id: 'S1', key: 'TEST-SPRINT-1', name: 'Empty' }]),
+      fakeTasks([{ id: TASK['NOTA-1'], estimate: 3, sprintId: null }]),
+      fakeSprints([{ id: 'S1', name: 'Empty' }]),
     ).compute();
     expect(m.velocity).toEqual([]);
   });
 
   it('excludes tasks without a positive estimate from estimate-vs-actual', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 4, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 4, 'IN_REVIEW', 'DONE', 'approve'),
     ];
-    const m = makeService(events, fakeTasks({ 'NOTA-1': null })).compute();
+    const m = makeService(events, fakeTasks({ [TASK['NOTA-1']]: null })).compute();
     expect(m.throughput).toBe(1);
     expect(m.estimate_vs_actual.samples).toHaveLength(0);
     expect(m.estimate_vs_actual.hours_per_point).toBeNull();
@@ -221,10 +239,10 @@ describe('FlowMetricsService', () => {
 
   it('honours the since filter', () => {
     const events: AuditEvent[] = [
-      created('OLD-1', 0),
-      transitioned('OLD-1', 1, 'IN_REVIEW', 'DONE', 'approve'),
-      created('NEW-1', 100),
-      transitioned('NEW-1', 101, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['OLD-1'], 0),
+      transitioned(TASK['OLD-1'], 1, 'IN_REVIEW', 'DONE', 'approve'),
+      created(TASK['NEW-1'], 100),
+      transitioned(TASK['NEW-1'], 101, 'IN_REVIEW', 'DONE', 'approve'),
     ];
     const m = makeService(events, fakeTasks({})).compute({ since: at(50) });
     expect(m.throughput).toBe(1);
@@ -232,10 +250,10 @@ describe('FlowMetricsService', () => {
 
   it('returns empty summaries when the log has no terminal tasks', () => {
     const events: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 1, 'DRAFT', 'READY', 'submit'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 1, 'DRAFT', 'READY', 'submit'),
     ];
-    const m = makeService(events, fakeTasks({ 'NOTA-1': 3 })).compute();
+    const m = makeService(events, fakeTasks({ [TASK['NOTA-1']]: 3 })).compute();
     expect(m.throughput).toBe(0);
     expect(m.lead_time.count).toBe(0);
     expect(m.lead_time.median_hours).toBeNull();
@@ -285,16 +303,16 @@ describe('FlowMetricsService', () => {
     }
 
     const sampleEvents: AuditEvent[] = [
-      created('NOTA-1', 0),
-      transitioned('NOTA-1', 2, 'DRAFT', 'READY', 'submit'),
-      transitioned('NOTA-1', 5, 'READY', 'DONE', 'approve'),
+      created(TASK['NOTA-1'], 0),
+      transitioned(TASK['NOTA-1'], 2, 'DRAFT', 'READY', 'submit'),
+      transitioned(TASK['NOTA-1'], 5, 'READY', 'DONE', 'approve'),
     ];
 
     it('does not read the audit log when events are supplied', () => {
       const { audit, reads } = countingAudit(sampleEvents);
       const svc = new FlowMetricsService(
         audit,
-        fakeTasks({ 'NOTA-1': 3 }),
+        fakeTasks({ [TASK['NOTA-1']]: 3 }),
         workflow,
         fakeSprints(),
         'TEST',
@@ -307,7 +325,7 @@ describe('FlowMetricsService', () => {
       const { audit, reads } = countingAudit(sampleEvents);
       const svc = new FlowMetricsService(
         audit,
-        fakeTasks({ 'NOTA-1': 3 }),
+        fakeTasks({ [TASK['NOTA-1']]: 3 }),
         workflow,
         fakeSprints(),
         'TEST',
@@ -317,10 +335,10 @@ describe('FlowMetricsService', () => {
     });
 
     it('produces identical metrics whether events are passed or read', () => {
-      const passed = makeService(sampleEvents, fakeTasks({ 'NOTA-1': 3 })).compute({
+      const passed = makeService(sampleEvents, fakeTasks({ [TASK['NOTA-1']]: 3 })).compute({
         events: sampleEvents,
       });
-      const read = makeService(sampleEvents, fakeTasks({ 'NOTA-1': 3 })).compute();
+      const read = makeService(sampleEvents, fakeTasks({ [TASK['NOTA-1']]: 3 })).compute();
       expect(passed).toEqual(read);
     });
   });

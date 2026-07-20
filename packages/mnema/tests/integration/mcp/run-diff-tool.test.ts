@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -84,30 +85,31 @@ describe('run_diff MCP tool (MNEMA-91)', () => {
   });
 
   /** Drives a run that creates a task, attaches evidence and records a memory. */
-  async function driveRun(): Promise<string> {
+  async function driveRun(): Promise<{ runId: string; taskId: string }> {
     const start = (await harness.client.callTool({
       name: 'agent_run_start',
       arguments: { goal: 'do some work' },
     })) as CallToolResult;
     const runId = payload(start).run_id as string;
 
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: { title: 'A task', acceptance_criteria: ['works'] },
-    });
+    })) as CallToolResult;
+    const taskId = (payload(created).task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_attach_evidence',
-      arguments: { task_key: 'TEST-1', criterion_index: 0, kind: 'doc', ref: 'docs/x.md' },
+      arguments: { task_key: taskId, criterion_index: 0, kind: 'doc', ref: 'docs/x.md' },
     });
     await harness.client.callTool({
       name: 'memory_record',
       arguments: { slug: 'a-fact', title: 'A fact', content: 'something durable', topics: ['x'] },
     });
-    return runId;
+    return { runId, taskId };
   }
 
   it('reports the grouped diff while the run is still in progress', async () => {
-    const runId = await driveRun();
+    const { runId, taskId } = await driveRun();
     // No agent_run_end — the run is still open.
     const res = (await harness.client.callTool({
       name: 'run_diff',
@@ -120,13 +122,15 @@ describe('run_diff MCP tool (MNEMA-91)', () => {
     expect(diff.counts.transitions).toBeGreaterThanOrEqual(1); // task_created
     expect(diff.counts.evidence).toBe(1);
     expect(diff.counts.knowledge).toBe(1);
-    expect(diff.transitions.some((c) => c.summary.includes('TEST-1'))).toBe(true);
+    expect(diff.transitions.some((c) => c.summary.includes(deriveAlias('task', taskId)))).toBe(
+      true,
+    );
     expect(diff.evidence[0]?.summary).toContain('docs/x.md');
     expect(diff.knowledge[0]?.summary).toContain('a-fact');
   });
 
   it('reports the diff for a completed run', async () => {
-    const runId = await driveRun();
+    const { runId } = await driveRun();
     await harness.client.callTool({
       name: 'agent_run_end',
       arguments: { status: 'completed', summary: 'done' },
@@ -151,14 +155,15 @@ describe('run_diff MCP tool (MNEMA-91)', () => {
     })) as CallToolResult;
     const runId = payload(start).run_id as string;
 
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: { title: 'Claimable', acceptance_criteria: ['works'] },
-    });
-    await harness.client.callTool({ name: 'task_claim', arguments: { task_key: 'TEST-1' } });
+    })) as CallToolResult;
+    const taskId = (payload(created).task as { id: string }).id;
+    await harness.client.callTool({ name: 'task_claim', arguments: { task_key: taskId } });
     await harness.client.callTool({
       name: 'task_release_claim',
-      arguments: { task_key: 'TEST-1' },
+      arguments: { task_key: taskId },
     });
 
     const res = (await harness.client.callTool({
@@ -167,8 +172,9 @@ describe('run_diff MCP tool (MNEMA-91)', () => {
     })) as CallToolResult;
     const diff = payload(res).diff as Diff;
 
-    expect(diff.transitions.some((c) => c.summary.startsWith('claimed TEST-1'))).toBe(true);
-    expect(diff.transitions.some((c) => c.summary === 'released claim on TEST-1')).toBe(true);
+    const alias = deriveAlias('task', taskId);
+    expect(diff.transitions.some((c) => c.summary.startsWith(`claimed ${alias}`))).toBe(true);
+    expect(diff.transitions.some((c) => c.summary === `released claim on ${alias}`)).toBe(true);
   });
 
   it('errors on an unknown run id', async () => {

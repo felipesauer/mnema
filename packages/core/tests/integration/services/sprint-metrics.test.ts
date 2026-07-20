@@ -58,14 +58,14 @@ describe('SprintService metrics', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function makeSprint(key: string): void {
-    sprintRepo.insert({ projectId, key, name: key });
+  function makeSprint(name: string): string {
+    return sprintRepo.insert({ projectId, name }).id;
   }
 
   it('adds a metric with target and optional fields', () => {
-    makeSprint('TEST-SPRINT-1');
+    const sprintId = makeSprint('Sprint 1');
     const result = sprints.addMetric({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: sprintId,
       name: 'p95 latency',
       baseline: 800,
       target: 200,
@@ -81,15 +81,15 @@ describe('SprintService metrics', () => {
   });
 
   it('rejects a duplicate metric name on the same sprint', () => {
-    makeSprint('TEST-SPRINT-1');
+    const sprintId = makeSprint('Sprint 1');
     sprints.addMetric({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: sprintId,
       name: 'coverage',
       target: 80,
       actor: 'daniel',
     });
     const dup = sprints.addMetric({
-      sprintKey: 'TEST-SPRINT-1',
+      sprintKey: sprintId,
       name: 'coverage',
       target: 90,
       actor: 'daniel',
@@ -101,7 +101,7 @@ describe('SprintService metrics', () => {
 
   it('rejects metrics on an unknown sprint', () => {
     const result = sprints.addMetric({
-      sprintKey: 'NOPE-SPRINT-9',
+      sprintKey: '019f7700-0000-7000-8000-000000000099',
       name: 'x',
       target: 1,
       actor: 'daniel',
@@ -112,19 +112,19 @@ describe('SprintService metrics', () => {
   });
 
   it('show() carries the metrics', () => {
-    makeSprint('TEST-SPRINT-1');
-    sprints.addMetric({ sprintKey: 'TEST-SPRINT-1', name: 'a', target: 1, actor: 'daniel' });
-    sprints.addMetric({ sprintKey: 'TEST-SPRINT-1', name: 'b', target: 2, actor: 'daniel' });
-    const view = sprints.show('TEST-SPRINT-1');
+    const sprintId = makeSprint('Sprint 1');
+    sprints.addMetric({ sprintKey: sprintId, name: 'a', target: 1, actor: 'daniel' });
+    sprints.addMetric({ sprintKey: sprintId, name: 'b', target: 2, actor: 'daniel' });
+    const view = sprints.show(sprintId);
     expect(view.ok).toBe(true);
     if (!view.ok) return;
     expect(view.value.metrics).toHaveLength(2);
   });
 
   it('metricsFor returns the sprint metrics', () => {
-    makeSprint('TEST-SPRINT-1');
-    sprints.addMetric({ sprintKey: 'TEST-SPRINT-1', name: 'a', target: 1, actor: 'daniel' });
-    const result = sprints.metricsFor('TEST-SPRINT-1');
+    const sprintId = makeSprint('Sprint 1');
+    sprints.addMetric({ sprintKey: sprintId, name: 'a', target: 1, actor: 'daniel' });
+    const result = sprints.metricsFor(sprintId);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value).toHaveLength(1);
@@ -132,18 +132,16 @@ describe('SprintService metrics', () => {
   });
 
   it('maps a UNIQUE(sprint_id, name) race to a structured duplicate', () => {
-    makeSprint('TEST-SPRINT-1');
-    const sprintId = sprintRepo.findByKey('TEST-SPRINT-1')?.id;
-    expect(sprintId).toBeDefined();
+    const sprintId = makeSprint('Sprint 1');
     const metricRepo = new SprintMetricRepository(adapter);
-    metricRepo.insert({ sprintId: sprintId as string, name: 'coverage', target: 1 });
+    metricRepo.insert({ sprintId, name: 'coverage', target: 1 });
 
     // A second writer that passed the service-level exists() check would lose
     // this race at the DB. mapSqliteError must translate the raw UNIQUE
     // violation into SprintMetricDuplicate rather than letting it escape.
     let mapped: ErrorCode | 'threw-unmapped' | 'no-throw' = 'no-throw';
     try {
-      metricRepo.insert({ sprintId: sprintId as string, name: 'coverage', target: 2 });
+      metricRepo.insert({ sprintId, name: 'coverage', target: 2 });
     } catch (error) {
       const m = mapSqliteError(error);
       mapped = m === null ? 'threw-unmapped' : m.kind;

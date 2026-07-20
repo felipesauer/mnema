@@ -1,4 +1,5 @@
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { AgentRunStatus } from '@mnema/core/domain/enums/agent-run-status.js';
 import type { Workflow } from '@mnema/core/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
@@ -265,15 +266,18 @@ export class TransitionToolsRegistrar {
               });
               if (!result.ok) return err(result.error);
               proceeded = true;
+              // The alias is the human face of the task in the echo; the entity
+              // itself carries only the committed id.
+              const echo = { ...result.value, key: deriveAlias('task', result.value.id) };
               if (prWarning !== undefined) {
                 // Honour `verbosity` on the warn echo too — the pr_warning
                 // branch must not silently return the full entity when the
                 // caller asked for the compact shape.
-                const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                const task = verbosity === 'compact' ? toCompactTask(echo) : echo;
                 return ok({ task, pr_warning: prWarning });
               }
               if (noOp) {
-                const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                const task = verbosity === 'compact' ? toCompactTask(echo) : echo;
                 return ok({
                   task,
                   no_op: true,
@@ -286,13 +290,13 @@ export class TransitionToolsRegistrar {
               // (never a block at default enforcement) nudging a memory/decision
               // so the lesson is not lost.
               if (this.workflow.terminal.includes(result.value.state)) {
-                const advice = this.captureAdvisory(result.value);
+                const advice = this.captureAdvisory(echo);
                 if (advice !== null) {
-                  const task = verbosity === 'compact' ? toCompactTask(result.value) : result.value;
+                  const task = verbosity === 'compact' ? toCompactTask(echo) : echo;
                   return ok({ task, capture_prompt: advice });
                 }
               }
-              return okTask(result.value, verbosity);
+              return okTask(echo, verbosity);
             } finally {
               gov.finalize(proceeded ? AgentRunStatus.Completed : AgentRunStatus.Aborted);
             }

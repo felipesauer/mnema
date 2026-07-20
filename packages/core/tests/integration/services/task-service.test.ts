@@ -58,7 +58,7 @@ describe('TaskService (integration)', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.key).toBe('TEST-1');
+    expect(result.value.id).toBeTruthy();
     expect(result.value.state).toBe('DRAFT');
     expect(container.task.list()).toHaveLength(1);
   });
@@ -126,7 +126,7 @@ describe('TaskService (integration)', () => {
     const file = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, 'utf-8');
-    expect(content).toContain('TEST-1');
+    expect(content).toContain(created.value.id);
     expect(content).toContain('DRAFT');
   });
 
@@ -151,9 +151,10 @@ describe('TaskService (integration)', () => {
         actor: 'daniel',
       });
       expect(created.ok).toBe(true);
+      if (!created.ok) return;
 
       const moved = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'submit',
         payload: {
           title: 'Implement OAuth login flow',
@@ -181,7 +182,7 @@ describe('TaskService (integration)', () => {
       // `cancel` declares a `reason` gate field (validating) — the annotation
       // that must survive on the chain, not just in transitions.payload.
       const moved = container.task.transition({
-        taskKey: created.value.key,
+        taskKey: created.value.id,
         action: 'cancel',
         payload: { reason: 'no longer needed for the release' },
         actor: 'daniel',
@@ -191,7 +192,7 @@ describe('TaskService (integration)', () => {
       // The chain — not just transitions.payload — now carries the id AND the
       // reason, so a clone with only the committed chain can reconstruct WHY.
       const events = container.auditQuery.run({
-        taskKey: created.value.key,
+        taskKey: created.value.id,
         kind: 'task_transitioned',
       });
       expect(events).toHaveLength(1);
@@ -210,7 +211,7 @@ describe('TaskService (integration)', () => {
       if (!created.ok) return;
 
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'submit',
         payload: {
           title: 'Move me to ready',
@@ -228,10 +229,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('rejects invocation markup in a transition payload that folds to a column', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Markup on submit', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Markup on submit',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
 
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'submit',
         payload: {
           title: 'Markup on submit',
@@ -250,10 +257,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('returns InvalidTransition when the action is not allowed', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task X', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task X',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
 
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'approve',
         payload: { approval_note: 'lgtm' },
         actor: 'daniel',
@@ -265,7 +278,14 @@ describe('TaskService (integration)', () => {
     });
 
     it('is idempotent: re-issuing an action whose target is the current state is a no-op success', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Retry me', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Retry me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const taskId = created.value.id;
       const submitPayload = {
         title: 'Retry me',
         description: 'a task to retry the submit on',
@@ -274,7 +294,7 @@ describe('TaskService (integration)', () => {
       };
       // First submit: DRAFT → READY.
       const first = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit',
         payload: submitPayload,
         actor: 'daniel',
@@ -285,12 +305,12 @@ describe('TaskService (integration)', () => {
       const afterFirst = first.value.updatedAt;
 
       // The service flags it as a would-be no-op now.
-      expect(container.task.wouldBeNoOp('TEST-1', 'submit', 'daniel')).toBe(true);
+      expect(container.task.wouldBeNoOp(taskId, 'submit', 'daniel')).toBe(true);
 
       // Second submit: already READY → no-op success, not an error, and no
       // new write (updatedAt unchanged → no duplicate transition/audit).
       const second = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit',
         payload: submitPayload,
         actor: 'daniel',
@@ -308,9 +328,17 @@ describe('TaskService (integration)', () => {
       // already moved the task. Drive TEST-1 to IN_REVIEW, approve as agent A
       // (→ DONE), then agent B stalely `complete`s (targets DONE, invalid from
       // DONE). It must error, not return a silent Ok that drops B's payload.
-      container.task.create({ projectKey: 'TEST', title: 'Race', actor: 'daniel' });
+      const created = container.task.create({ projectKey: 'TEST', title: 'Race', actor: 'daniel' });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
       const drive = (action: string, payload: Record<string, unknown>, via?: string) =>
-        container.task.transition({ taskKey: 'TEST-1', action, payload, actor: 'daniel', via });
+        container.task.transition({
+          taskKey: created.value.id,
+          action,
+          payload,
+          actor: 'daniel',
+          via,
+        });
       drive('submit', {
         title: 'Race',
         description: 'a task raced by two agents',
@@ -335,10 +363,16 @@ describe('TaskService (integration)', () => {
 
     it('the SAME agent retrying its own move is still an idempotent no-op', () => {
       // The guard must not over-correct: a genuine same-agent retry still works.
-      container.task.create({ projectKey: 'TEST', title: 'Solo retry', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Solo retry',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
       const submit = () =>
         container.task.transition({
-          taskKey: 'TEST-1',
+          taskKey: created.value.id,
           action: 'submit',
           payload: {
             title: 'Solo retry',
@@ -363,10 +397,16 @@ describe('TaskService (integration)', () => {
       // Audit LOW: annotation free-text (reason/completion_note/…) folds into
       // transitions.payload, not a column, so it escaped the create/update
       // markup screen — yet it is the exact spill the module prevents.
-      container.task.create({ projectKey: 'TEST', title: 'Cancel me', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Cancel me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
       const p = 'parameter';
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'cancel',
         payload: { reason: `dropping this.</decision>\n<${p} name="context">leak` },
         actor: 'daniel',
@@ -379,10 +419,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('still errors on a genuinely invalid action (not a same-state retry)', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task Z', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task Z',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
       // DRAFT → approve is invalid AND approve does not target DRAFT → real error.
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'approve',
         payload: { approval_note: 'lgtm' },
         actor: 'daniel',
@@ -390,14 +436,20 @@ describe('TaskService (integration)', () => {
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.error.kind).toBe(ErrorCode.InvalidTransition);
-      expect(container.task.wouldBeNoOp('TEST-1', 'approve', 'daniel')).toBe(false);
+      expect(container.task.wouldBeNoOp(created.value.id, 'approve', 'daniel')).toBe(false);
     });
 
     it('returns GateFailed when the payload misses required fields', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task X', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task X',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
 
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: created.value.id,
         action: 'submit',
         payload: { title: 'X' },
         actor: 'daniel',
@@ -427,9 +479,16 @@ describe('TaskService (integration)', () => {
     it('honours a transition declared from a terminal state (DONE → IN_PROGRESS)', () => {
       // Drive a task through the default workflow to DONE so we can
       // attempt the declared `reopen` transition out of a terminal.
-      container.task.create({ projectKey: 'TEST', title: 'Reopen me', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Reopen me',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const taskId = created.value.id;
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit',
         payload: {
           title: 'Reopen me',
@@ -440,19 +499,19 @@ describe('TaskService (integration)', () => {
         actor: 'daniel',
       });
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'start',
         payload: { assignee_id: 'daniel' },
         actor: 'daniel',
       });
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit_review',
         payload: { pr_url: 'https://github.com/x/y/pull/1' },
         actor: 'daniel',
       });
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'approve',
         payload: { approval_note: 'ok' },
         actor: 'daniel',
@@ -460,7 +519,7 @@ describe('TaskService (integration)', () => {
       // Now at DONE (terminal). Default workflow declares
       // `DONE.reopen → IN_PROGRESS`.
       const reopened = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'reopen',
         payload: { reason: 'regression in prod' },
         actor: 'daniel',
@@ -473,9 +532,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('completes a non-code task to DONE via `complete` without a pr_url', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Ratify a decision', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Ratify a decision',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const taskId = created.value.id;
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit',
         payload: {
           title: 'Ratify a decision',
@@ -486,14 +552,14 @@ describe('TaskService (integration)', () => {
         actor: 'daniel',
       });
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'start',
         payload: { assignee_id: 'daniel' },
         actor: 'daniel',
       });
 
       const completed = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'complete',
         payload: { completion_note: 'decision recorded in the ADR' },
         actor: 'daniel',
@@ -504,9 +570,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('rejects `complete` when the completion_note is missing', () => {
-      container.task.create({ projectKey: 'TEST', title: 'No note', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'No note',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      const taskId = created.value.id;
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'submit',
         payload: {
           title: 'No note',
@@ -517,14 +590,14 @@ describe('TaskService (integration)', () => {
         actor: 'daniel',
       });
       container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'start',
         payload: { assignee_id: 'daniel' },
         actor: 'daniel',
       });
 
       const result = container.task.transition({
-        taskKey: 'TEST-1',
+        taskKey: taskId,
         action: 'complete',
         payload: {},
         actor: 'daniel',
@@ -549,7 +622,7 @@ describe('TaskService (integration)', () => {
       const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
       expect(existsSync(md)).toBe(true);
 
-      const deleted = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      const deleted = container.task.softDelete({ taskKey: created.value.id, actor: 'daniel' });
       expect(deleted.ok).toBe(true);
       if (!deleted.ok) return;
       expect(deleted.value.deletedAt).not.toBeNull();
@@ -565,13 +638,13 @@ describe('TaskService (integration)', () => {
       });
       expect(created.ok).toBe(true);
       if (!created.ok) return;
-      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      container.task.softDelete({ taskKey: created.value.id, actor: 'daniel' });
 
-      const restored = container.task.restore({ taskKey: 'TEST-1', actor: 'daniel' });
+      const restored = container.task.restore({ taskKey: created.value.id, actor: 'daniel' });
       expect(restored.ok).toBe(true);
       if (!restored.ok) return;
       expect(restored.value.deletedAt).toBeNull();
-      expect(container.task.list().map((t) => t.key)).toEqual(['TEST-1']);
+      expect(container.task.list().map((t) => t.id)).toEqual([created.value.id]);
       const md = path.join(projectRoot, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
       expect(existsSync(md)).toBe(true);
     });
@@ -585,7 +658,7 @@ describe('TaskService (integration)', () => {
       expect(created.ok).toBe(true);
       if (!created.ok) return;
       const { id } = created.value;
-      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      container.task.softDelete({ taskKey: deriveAlias('task', id), actor: 'daniel' });
 
       // The delete surface accepts an id/alias, so restore must too — a soft-
       // deleted row is invisible to the live resolver, so the id path resolves
@@ -598,10 +671,16 @@ describe('TaskService (integration)', () => {
     });
 
     it('softDelete on a deleted task returns TASK_NOT_FOUND', () => {
-      container.task.create({ projectKey: 'TEST', title: 'Task A', actor: 'daniel' });
-      container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      const created = container.task.create({
+        projectKey: 'TEST',
+        title: 'Task A',
+        actor: 'daniel',
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      container.task.softDelete({ taskKey: created.value.id, actor: 'daniel' });
 
-      const second = container.task.softDelete({ taskKey: 'TEST-1', actor: 'daniel' });
+      const second = container.task.softDelete({ taskKey: created.value.id, actor: 'daniel' });
       expect(second.ok).toBe(false);
       if (second.ok) return;
       expect(second.error.kind).toBe(ErrorCode.TaskNotFound);
@@ -616,9 +695,9 @@ describe('TaskService (integration)', () => {
   });
 
   // A user-facing read takes whatever the user typed — committed id, short
-  // alias, hash prefix, or the legacy key — and resolves it to one task.
+  // alias, or hash prefix — and resolves it to one task.
   describe('handle resolution', () => {
-    it('resolves a task by its committed id, alias, hash prefix, and legacy key', () => {
+    it('resolves a task by its committed id, alias, and hash prefix', () => {
       const created = container.task.create({
         projectKey: 'TEST',
         title: 'Resolve me',
@@ -626,10 +705,10 @@ describe('TaskService (integration)', () => {
       });
       expect(created.ok).toBe(true);
       if (!created.ok) return;
-      const { id, key } = created.value;
+      const { id } = created.value;
       const alias = deriveAlias('task', id);
 
-      for (const handle of [id, alias, alias.slice(2), key]) {
+      for (const handle of [id, alias, alias.slice(2)]) {
         const r = container.task.findByKey(handle);
         expect(r.ok, `handle ${handle} should resolve`).toBe(true);
         if (!r.ok) continue;
@@ -694,15 +773,22 @@ describe('TaskService reopen_count (jira-classic)', () => {
   });
 
   it('does NOT bump reopen_count when `reopen` fires from a non-terminal state (RESOLVED)', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Resolve then reopen', actor: 'daniel' });
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Resolve then reopen',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const taskId = created.value.id;
     container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       action: 'start',
       payload: { assignee_id: 'daniel' },
       actor: 'daniel',
     });
     container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       action: 'resolve',
       payload: { resolution: 'fixed' },
       actor: 'daniel',
@@ -710,7 +796,7 @@ describe('TaskService reopen_count (jira-classic)', () => {
     // RESOLVED is non-terminal (it still has `close`), so this reopen is an
     // ordinary move — the counter must stay at 0.
     const reopened = container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       action: 'reopen',
       payload: { reason: 'not actually done' },
       actor: 'daniel',
@@ -722,9 +808,16 @@ describe('TaskService reopen_count (jira-classic)', () => {
   });
 
   it('DOES bump reopen_count when `reopen` fires from a terminal state (CLOSED)', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Close then reopen', actor: 'daniel' });
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Close then reopen',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const taskId = created.value.id;
     container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       action: 'close',
       payload: { reason: 'wont fix' },
       actor: 'daniel',
@@ -732,7 +825,7 @@ describe('TaskService reopen_count (jira-classic)', () => {
     // CLOSED's only exit is `reopen` → it is terminal, so this genuinely
     // re-enters terminated work and the counter must bump.
     const reopened = container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       action: 'reopen',
       payload: { reason: 'changed our mind' },
       actor: 'daniel',

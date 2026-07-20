@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Config } from '@mnema/core/config/config-schema.js';
 import type { Task } from '@mnema/core/domain/entities/task.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { Workflow } from '@mnema/core/domain/state-machine/state-machine.js';
 import type { DependencyService } from '@mnema/core/services/backlog/dependency-service.js';
 import type { InboxService } from '@mnema/core/services/backlog/inbox-service.js';
@@ -130,7 +131,7 @@ export class ContextBootstrapTool {
     const agedTasks = all
       .filter((t) => !terminalStates.has(t.state))
       .map((t) => ({
-        key: t.key,
+        key: deriveAlias('task', t.id),
         state: t.state,
         title: t.title,
         updated_at: t.updatedAt,
@@ -143,10 +144,10 @@ export class ContextBootstrapTool {
     const memories = this.memoryService.list().slice(0, 30);
     const recentObservations = this.observationService.list({ limit: 5 });
 
-    // Build a tasks id→key map so observations can expose the
+    // Build a tasks id→alias map so observations can expose the
     // human-readable `related_task_key` instead of the internal UUID.
     const taskKeyById = new Map<string, string>();
-    for (const task of all) taskKeyById.set(task.id, task.key);
+    for (const task of all) taskKeyById.set(task.id, deriveAlias('task', task.id));
 
     // The actor roster an agent can read to learn valid assignee handles
     // without running a CLI. `default` is the handle the session acts as —
@@ -168,9 +169,14 @@ export class ContextBootstrapTool {
 
     // Skills relevant to whatever the agent is about to work on, surfaced up
     // front so it does not have to go fetch them. Keyed on the focus task
-    // (the in-progress one to resume, else the top ready one).
-    const focusKey = nextAction.in_progress_task?.key ?? nextAction.top_ready_task?.key ?? null;
-    const relevantSkills = focusKey === null ? [] : this.relevantSkillsFor(focusKey);
+    // (the in-progress one to resume, else the top ready one). `next_action`
+    // exposes the alias; recover the task's id from the roster to key the lookup.
+    const focusAlias = nextAction.in_progress_task?.key ?? nextAction.top_ready_task?.key ?? null;
+    const focusTaskId =
+      focusAlias === null
+        ? null
+        : (all.find((t) => deriveAlias('task', t.id) === focusAlias)?.id ?? null);
+    const relevantSkills = focusTaskId === null ? [] : this.relevantSkillsFor(focusTaskId);
 
     // The profile gate that `tool_groups` is filtered by, so it advertises
     // exactly what this project can call.
@@ -241,7 +247,7 @@ export class ContextBootstrapTool {
         4 * 1024,
       ),
       open_blockers: blockers.map((task) => ({
-        key: task.key,
+        key: deriveAlias('task', task.id),
         title: task.title,
         updated_at: task.updatedAt,
       })),
@@ -352,10 +358,12 @@ export class ContextBootstrapTool {
     const readyResult = this.dependencyService.ready();
     const readyTasks = readyResult.ok ? readyResult.value : [];
     const topReady = [...readyTasks].sort(
-      (a, b) => a.priority - b.priority || a.key.localeCompare(b.key),
+      (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
     )[0];
     const topReadyTask =
-      topReady === undefined ? null : { key: topReady.key, title: topReady.title };
+      topReady === undefined
+        ? null
+        : { key: deriveAlias('task', topReady.id), title: topReady.title };
 
     // In-progress work for this actor first, then anyone's. `defaultActor`
     // is a handle; tasks store an actor id, so resolve before comparing.
@@ -373,10 +381,11 @@ export class ContextBootstrapTool {
     };
 
     if (activeTask !== undefined) {
+      const activeAlias = deriveAlias('task', activeTask.id);
       return {
         focus: 'resume',
-        recommended: `Resume ${activeTask.key} (${activeTask.title}) — it is in progress. Finish it before starting new work.`,
-        in_progress_task: { key: activeTask.key, title: activeTask.title },
+        recommended: `Resume ${activeAlias} (${activeTask.title}) — it is in progress. Finish it before starting new work.`,
+        in_progress_task: { key: activeAlias, title: activeTask.title },
         ...base,
       };
     }
@@ -414,11 +423,11 @@ export class ContextBootstrapTool {
    * convenience, never a reason to fail the bootstrap.
    */
   private relevantSkillsFor(
-    taskKey: string,
+    taskId: string,
   ): { slug: string; name: string | null; snippet: string }[] {
-    const task = this.taskService.list().find((t) => t.key === taskKey);
+    const task = this.taskService.list().find((t) => t.id === taskId);
     if (task === undefined) return [];
-    const labels = this.labelService.listForTask(taskKey);
+    const labels = this.labelService.listForTask(taskId);
     const labelList = labels.ok ? labels.value : [];
     const labelWords = labelList.join(' ');
 

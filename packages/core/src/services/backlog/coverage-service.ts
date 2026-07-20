@@ -1,5 +1,6 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -26,7 +27,7 @@ export interface CoverageReport {
   readonly blocked: number;
   /** `round(terminal / total * 100)`, or 0 when there are no tasks. */
   readonly percent: number;
-  /** Keys of the non-terminal tasks — the actionable "what's left". */
+  /** Aliases of the non-terminal tasks — the actionable "what's left". */
   readonly open: readonly string[];
 }
 
@@ -92,7 +93,7 @@ export class CoverageService {
       if (this.stateMachine.isTerminal(task.state)) {
         terminal += 1;
       } else {
-        open.push(task.key);
+        open.push(deriveAlias('task', task.id));
       }
     }
 

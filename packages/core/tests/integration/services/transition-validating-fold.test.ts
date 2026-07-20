@@ -88,7 +88,7 @@ describe('transition fold-validation respects field_kind', () => {
     if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'finish',
       payload: { priority: 8 }, // accepted by the gate (no bound); audit-only
       actor: 'daniel',
@@ -106,7 +106,7 @@ describe('transition fold-validation respects field_kind', () => {
     if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'force',
       payload: { priority: 8 }, // gate accepts it, but it folds onto the 1..5 column
       actor: 'daniel',

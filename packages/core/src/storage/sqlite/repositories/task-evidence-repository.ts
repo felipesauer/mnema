@@ -79,10 +79,9 @@ export class TaskEvidenceRepository {
     return this.adapter
       .getDatabase()
       .prepare(
-        `SELECT e.ref AS ref, t.key AS taskKey
-           FROM task_evidence e
-           JOIN tasks t ON t.id = e.task_id
-          WHERE e.kind = 'commit'`,
+        `SELECT ref AS ref, task_id AS taskKey
+           FROM task_evidence
+          WHERE kind = 'commit'`,
       )
       .all() as { ref: string; taskKey: string }[];
   }

@@ -37,6 +37,8 @@ const PENDING = ['999_pretend_pending.sql'];
 interface Harness {
   readonly container: ServiceContainer;
   readonly client: Client;
+  /** Committed ids of the seeded entities (keys no longer exist). */
+  readonly ids: { readonly task: string; readonly sprint: string };
   readonly close: () => Promise<void>;
 }
 
@@ -127,6 +129,7 @@ async function setup(): Promise<Harness> {
   return {
     container,
     client,
+    ids: { task: task.value.id, sprint: sprint.value.id },
     close: async () => {
       await client.close();
       await sdkServer.close();
@@ -151,19 +154,23 @@ describe('drift-guard policy: reads pass, mutations block (MNEMA-ADR contract)',
     delete process.env.MNEMA_ACTOR;
   });
 
-  // Read-only tools must NOT be blocked by drift.
-  const reads: Array<[string, Record<string, unknown>]> = [
-    ['decision_show', { decision_key: 'TEST-ADR-1' }],
-    ['decisions_list', {}],
-    ['decisions_impacting', { ref: 'src/x.ts' }],
-    ['tasks_list', {}],
-    ['task_show', { task_key: 'TEST-1' }],
-    ['task_evidence', { task_key: 'TEST-1' }],
-    ['sprint_show', { sprint_key: 'TEST-SPRINT-1' }],
+  // Read-only tools must NOT be blocked by drift. Work-graph handles resolve by
+  // committed id (the human key is gone); decisions keep their key.
+  const reads: Array<[string, (ids: Harness['ids']) => Record<string, unknown>]> = [
+    ['decision_show', () => ({ decision_key: 'TEST-ADR-1' })],
+    ['decisions_list', () => ({})],
+    ['decisions_impacting', () => ({ ref: 'src/x.ts' })],
+    ['tasks_list', () => ({})],
+    ['task_show', (ids) => ({ task_key: ids.task })],
+    ['task_evidence', (ids) => ({ task_key: ids.task })],
+    ['sprint_show', (ids) => ({ sprint_key: ids.sprint })],
   ];
-  for (const [name, args] of reads) {
+  for (const [name, makeArgs] of reads) {
     it(`read ${name} succeeds despite pending migrations`, async () => {
-      const r = (await harness.client.callTool({ name, arguments: args })) as CallToolResult;
+      const r = (await harness.client.callTool({
+        name,
+        arguments: makeArgs(harness.ids),
+      })) as CallToolResult;
       expect(isError(r), `${name} should not be drift-blocked`).toBe(false);
     });
   }
@@ -171,28 +178,31 @@ describe('drift-guard policy: reads pass, mutations block (MNEMA-ADR contract)',
   // Mutating tools MUST be blocked by drift (SCHEMA_OUT_OF_DATE). Covers every
   // mutation in the four focus files, including the two decision-transition
   // mutations a prior version of this test omitted.
-  const mutations: Array<[string, Record<string, unknown>]> = [
-    ['decision_record', { title: 'New', decision: 'x' }],
-    ['decision_promote_from_note', { note_id: 'n1', title: 'Promoted', decision: 'x' }],
-    ['decision_supersede', { decision_key: 'TEST-ADR-1', superseded_by: 'TEST-ADR-2' }],
-    ['task_create', { title: 'New task' }],
-    ['task_attach_evidence', { task_key: 'TEST-1', criterion_index: 0, ref: 'r' }],
-    ['sprint_add_task', { sprint_key: 'TEST-SPRINT-1', task_key: 'TEST-1' }],
+  const mutations: Array<[string, (ids: Harness['ids']) => Record<string, unknown>]> = [
+    ['decision_record', () => ({ title: 'New', decision: 'x' })],
+    ['decision_promote_from_note', () => ({ note_id: 'n1', title: 'Promoted', decision: 'x' })],
+    ['decision_supersede', () => ({ decision_key: 'TEST-ADR-1', superseded_by: 'TEST-ADR-2' })],
+    ['task_create', () => ({ title: 'New task' })],
+    ['task_attach_evidence', (ids) => ({ task_key: ids.task, criterion_index: 0, ref: 'r' })],
+    ['sprint_add_task', (ids) => ({ sprint_key: ids.sprint, task_key: ids.task })],
     // Transition mutation: must be drift-blocked like every other write.
     [
       'task_submit',
-      {
-        task_key: 'TEST-1',
+      (ids) => ({
+        task_key: ids.task,
         title: 'Seed task',
         description: 'long enough description for the gate',
         acceptance_criteria: ['x'],
         estimate: 1,
-      },
+      }),
     ],
   ];
-  for (const [name, args] of mutations) {
+  for (const [name, makeArgs] of mutations) {
     it(`mutation ${name} is blocked by drift`, async () => {
-      const r = (await harness.client.callTool({ name, arguments: args })) as CallToolResult;
+      const r = (await harness.client.callTool({
+        name,
+        arguments: makeArgs(harness.ids),
+      })) as CallToolResult;
       expect(isError(r), `${name} should be drift-blocked`).toBe(true);
       const block = r.content[0];
       if (block?.type === 'text') {

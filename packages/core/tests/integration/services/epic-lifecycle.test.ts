@@ -52,41 +52,41 @@ describe('EpicService derived lifecycle', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function makeTaskInEpic(key: string, epicId: string, state = 'DRAFT'): void {
-    const task = tasks.insert({ key, projectId, title: key, reporterId: actorId });
+  function makeTaskInEpic(title: string, epicId: string, state = 'DRAFT'): void {
+    const task = tasks.insert({ projectId, title, reporterId: actorId });
     epicRepo.addTask(epicId, task.id);
     if (state !== 'DRAFT') tasks.updateState(task.id, state);
   }
 
-  function lifecycleOf(epicKey: string): string {
-    const result = epics.show(epicKey);
+  function lifecycleOf(epicId: string): string {
+    const result = epics.show(epicId);
     if (!result.ok) throw new Error('epic not found');
     return result.value.lifecycle;
   }
 
   it("is 'empty' for an OPEN epic with no tasks", () => {
-    epicRepo.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
-    expect(lifecycleOf('TEST-EPIC-1')).toBe('empty');
+    const epic = epicRepo.insert({ projectId, title: 'E1' });
+    expect(lifecycleOf(epic.id)).toBe('empty');
   });
 
   it("is 'in-progress' when an OPEN epic has a non-terminal task", () => {
-    const epic = epicRepo.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
-    makeTaskInEpic('TEST-1', epic.id, 'DONE');
-    makeTaskInEpic('TEST-2', epic.id, 'IN_PROGRESS');
-    expect(lifecycleOf('TEST-EPIC-1')).toBe('in-progress');
+    const epic = epicRepo.insert({ projectId, title: 'E1' });
+    makeTaskInEpic('Task 1', epic.id, 'DONE');
+    makeTaskInEpic('Task 2', epic.id, 'IN_PROGRESS');
+    expect(lifecycleOf(epic.id)).toBe('in-progress');
   });
 
   it("is 'developed' when every task of an OPEN epic is terminal", () => {
-    const epic = epicRepo.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
-    makeTaskInEpic('TEST-1', epic.id, 'DONE');
-    makeTaskInEpic('TEST-2', epic.id, 'CANCELED');
-    expect(lifecycleOf('TEST-EPIC-1')).toBe('developed');
+    const epic = epicRepo.insert({ projectId, title: 'E1' });
+    makeTaskInEpic('Task 1', epic.id, 'DONE');
+    makeTaskInEpic('Task 2', epic.id, 'CANCELED');
+    expect(lifecycleOf(epic.id)).toBe('developed');
   });
 
   it("is 'closed' once the epic is closed, regardless of tasks", () => {
-    const epic = epicRepo.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
-    makeTaskInEpic('TEST-1', epic.id, 'IN_PROGRESS');
-    epics.close({ epicKey: 'TEST-EPIC-1', actor: 'daniel' });
-    expect(lifecycleOf('TEST-EPIC-1')).toBe('closed');
+    const epic = epicRepo.insert({ projectId, title: 'E1' });
+    makeTaskInEpic('Task 1', epic.id, 'IN_PROGRESS');
+    epics.close({ epicKey: epic.id, actor: 'daniel' });
+    expect(lifecycleOf(epic.id)).toBe('closed');
   });
 });

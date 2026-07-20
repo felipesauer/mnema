@@ -1,4 +1,5 @@
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { SprintService } from '@mnema/core/services/backlog/sprint-service.js';
 import type { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -48,7 +49,11 @@ export class SprintTools {
         const result = this.sprints.show(sprintKey);
         if (!result.ok) return err(result.error);
         const view = result.value;
-        return ok({ sprint: view.sprint, tasks: view.tasks, metrics: view.metrics });
+        return ok({
+          sprint: { ...view.sprint, key: deriveAlias('sprint', view.sprint.id) },
+          tasks: view.tasks.map((t) => ({ ...t, key: deriveAlias('task', t.id) })),
+          metrics: view.metrics,
+        });
       },
     );
 
@@ -60,7 +65,7 @@ export class SprintTools {
       },
       () => {
         const sprints = this.sprints.list(this.config.project.key);
-        return ok({ sprints });
+        return ok({ sprints: sprints.map((s) => ({ ...s, key: deriveAlias('sprint', s.id) })) });
       },
     );
 
@@ -90,7 +95,7 @@ export class SprintTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return ok({ task: { ...result.value, key: deriveAlias('task', result.value.id) } });
       },
     );
 
@@ -126,7 +131,7 @@ export class SprintTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ sprint: result.value });
+        return ok({ sprint: { ...result.value, key: deriveAlias('sprint', result.value.id) } });
       },
     );
 
@@ -162,7 +167,7 @@ export class SprintTools {
             via,
             runId: runId ?? undefined,
           });
-          if (result.ok) added.push(result.value);
+          if (result.ok) added.push({ ...result.value, key: deriveAlias('task', result.value.id) });
           else failed.push({ index, task_key: taskKey, error: result.error });
         });
 
@@ -198,7 +203,7 @@ export class SprintTools {
           expectedUpdatedAt: input.expected_updated_at,
         });
         if (!result.ok) return err(result.error);
-        return ok({ sprint: result.value });
+        return ok({ sprint: { ...result.value, key: deriveAlias('sprint', result.value.id) } });
       },
     );
 
@@ -230,7 +235,7 @@ export class SprintTools {
           expectedUpdatedAt: input.expected_updated_at,
         });
         if (!result.ok) return err(result.error);
-        return ok({ sprint: result.value });
+        return ok({ sprint: { ...result.value, key: deriveAlias('sprint', result.value.id) } });
       },
     );
 
@@ -265,7 +270,7 @@ export class SprintTools {
           expectedUpdatedAt: input.expected_updated_at,
         });
         if (!result.ok) return err(result.error);
-        return ok({ sprint: result.value });
+        return ok({ sprint: { ...result.value, key: deriveAlias('sprint', result.value.id) } });
       },
     );
 
@@ -294,7 +299,7 @@ export class SprintTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return ok({ task: { ...result.value, key: deriveAlias('task', result.value.id) } });
       },
     );
 

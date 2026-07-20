@@ -47,15 +47,15 @@ describe('concurrent mutations (single-process simulation)', () => {
   });
 
   it('task transition: second writer with stale updatedAt is refused with CONFLICT', () => {
-    container.task.create({ projectKey: 'CC', title: 'Race me', actor: 'alice' });
-    const seed = container.task.findByKey('CC-1');
-    expect(seed.ok).toBe(true);
-    if (!seed.ok) return;
-    const taskAtT0 = seed.value;
+    const created = container.task.create({ projectKey: 'CC', title: 'Race me', actor: 'alice' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const taskId = created.value.id;
+    const taskAtT0 = created.value;
 
     // Alice submits, the row moves DRAFT → READY.
     const alice = container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'submit',
       payload: {
         title: 'A submit by alice',
@@ -73,7 +73,7 @@ describe('concurrent mutations (single-process simulation)', () => {
     // INVALID_TRANSITION before the token check fires — but the
     // protection we care about is that bob's submit does NOT succeed.
     const bob = container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'submit',
       payload: {
         title: 'B submit by bob',
@@ -92,14 +92,18 @@ describe('concurrent mutations (single-process simulation)', () => {
   });
 
   it('task transition without expectedUpdatedAt still uses the read row as default token', () => {
-    container.task.create({ projectKey: 'CC', title: 'Default token', actor: 'alice' });
-    const seed = container.task.findByKey('CC-1');
-    if (!seed.ok) return;
-    const taskAtT0 = seed.value;
+    const created = container.task.create({
+      projectKey: 'CC',
+      title: 'Default token',
+      actor: 'alice',
+    });
+    if (!created.ok) return;
+    const taskId = created.value.id;
+    const taskAtT0 = created.value;
 
     // Alice mutates first.
     container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'submit',
       payload: {
         title: 'Alice attempt with valid payload',
@@ -114,7 +118,7 @@ describe('concurrent mutations (single-process simulation)', () => {
     // silently overwritten alice's row; now it must fail (the service
     // defaults the token to what it read, which is now stale).
     const bobAttempt = container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'submit',
       payload: {
         title: 'Bob attempt with valid payload',
@@ -130,7 +134,7 @@ describe('concurrent mutations (single-process simulation)', () => {
     expect(bobAttempt.ok).toBe(false);
     // The audit log should NOT contain two `task_transitioned DRAFT →
     // READY` events: alice's submit is the only one that hit the row.
-    const events = container.auditQuery.run({ taskKey: 'CC-1', kind: 'task_transitioned' });
+    const events = container.auditQuery.run({ taskKey: taskId, kind: 'task_transitioned' });
     expect(events).toHaveLength(1);
     // Suppress unused-var warning by referencing the seed.
     expect(taskAtT0.state).toBe('DRAFT');
@@ -204,7 +208,6 @@ describe('concurrent mutations (single-process simulation)', () => {
     });
 
     const events = container.auditQuery.run({
-      taskKey: 'CC-ADR-1',
       kind: 'decision_status_changed',
     });
     // Only alice's transition produced a status change; bob's call
@@ -213,14 +216,14 @@ describe('concurrent mutations (single-process simulation)', () => {
     expect(events).toHaveLength(1);
   });
 
-  it('epic/sprint/decision creation mints distinct sequential keys under the immediate-transaction path', () => {
-    // The create path for each of these runs nextSequence (a COUNT) + insert
+  it('epic/sprint mint distinct ids and decision distinct sequential keys under the immediate-transaction path', () => {
+    // The create path for each of these runs its id/sequence + insert
     // inside runInTransactionImmediate, matching the task fix — so rapid
-    // sequential creates never collide on a key. (Cross-process serialisation
+    // sequential creates never collide. (Cross-process serialisation
     // is covered by task-create-concurrent-processes; this pins that the same
     // immediate-transaction path is wired for the other three entities.)
-    const epicKeys: string[] = [];
-    const sprintKeys: string[] = [];
+    const epicIds: string[] = [];
+    const sprintIds: string[] = [];
     const decisionKeys: string[] = [];
     for (let i = 0; i < 5; i++) {
       const e = container.epic.create({
@@ -229,7 +232,7 @@ describe('concurrent mutations (single-process simulation)', () => {
         actor: 'alice',
       });
       expect(e.ok).toBe(true);
-      if (e.ok) epicKeys.push(e.value.key);
+      if (e.ok) epicIds.push(e.value.id);
 
       const s = container.sprint.plan({
         projectKey: 'CC',
@@ -237,7 +240,7 @@ describe('concurrent mutations (single-process simulation)', () => {
         actor: 'alice',
       });
       expect(s.ok).toBe(true);
-      if (s.ok) sprintKeys.push(s.value.key);
+      if (s.ok) sprintIds.push(s.value.id);
 
       const d = container.decision.record({
         projectKey: 'CC',
@@ -249,25 +252,22 @@ describe('concurrent mutations (single-process simulation)', () => {
       if (d.ok) decisionKeys.push(d.value.key);
     }
 
-    expect(new Set(epicKeys).size).toBe(5);
-    expect(new Set(sprintKeys).size).toBe(5);
+    expect(new Set(epicIds).size).toBe(5);
+    expect(new Set(sprintIds).size).toBe(5);
     expect(new Set(decisionKeys).size).toBe(5);
-    expect([...epicKeys].sort()).toEqual(
-      Array.from({ length: 5 }, (_, i) => `CC-EPIC-${i + 1}`).sort(),
-    );
     expect([...decisionKeys].sort()).toEqual(
       Array.from({ length: 5 }, (_, i) => `CC-ADR-${i + 1}`).sort(),
     );
   });
 
   it('Conflict error carries the entity field for the printer', () => {
-    container.task.create({ projectKey: 'CC', title: 'Title X', actor: 'alice' });
-    const seed = container.task.findByKey('CC-1');
-    if (!seed.ok) return;
+    const created = container.task.create({ projectKey: 'CC', title: 'Title X', actor: 'alice' });
+    if (!created.ok) return;
+    const taskId = created.value.id;
 
     // Alice moves the row.
     container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'submit',
       payload: {
         title: 'Alice attempt with valid payload',
@@ -276,12 +276,12 @@ describe('concurrent mutations (single-process simulation)', () => {
         estimate: 1,
       },
       actor: 'alice',
-      expectedUpdatedAt: seed.value.updatedAt,
+      expectedUpdatedAt: created.value.updatedAt,
     });
 
     // Force a CONFLICT shape from `start` with a deliberately wrong token.
     const stale = container.task.transition({
-      taskKey: 'CC-1',
+      taskKey: taskId,
       action: 'start',
       payload: { assignee_id: 'alice' },
       actor: 'bob',

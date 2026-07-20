@@ -55,30 +55,30 @@ describe('task mirror rebuild', () => {
   });
 
   /** Creates one task (DRAFT); its mirror (named by id) is written on create. */
-  function seedTask(title: string): { id: string; key: string } {
+  function seedTask(title: string): { id: string } {
     const task = container.task.create({ projectKey: 'TEST', title, actor: 'daniel' });
     if (!task.ok) throw new Error('setup: task create failed');
-    return { id: task.value.id, key: task.value.key };
+    return { id: task.value.id };
   }
 
   it('recreates a missing task mirror from the SQLite row', () => {
-    const { id, key } = seedTask('A real task');
+    const { id } = seedTask('A real task');
     // Simulate drift: the row is present, the file is gone.
     rmSync(mirrorFor('DRAFT', id), { force: true });
     expect(existsSync(mirrorFor('DRAFT', id))).toBe(false);
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([key]);
+    expect(rebuilt).toEqual([id]);
     expect(existsSync(mirrorFor('DRAFT', id))).toBe(true);
   });
 
   it("lands the rebuilt mirror in the task's current state folder", () => {
-    const { id, key } = seedTask('Moves through states');
+    const { id } = seedTask('Moves through states');
     // Advance the task so its state — and therefore its mirror folder —
     // is no longer the initial one, then delete the mirror.
     const moved = container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'submit',
       payload: {
         title: 'Moves through states',
@@ -95,17 +95,17 @@ describe('task mirror rebuild', () => {
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([key]);
+    expect(rebuilt).toEqual([id]);
     // Recreated under the new state, not the initial DRAFT folder.
     expect(existsSync(mirrorFor(state, id))).toBe(true);
     expect(existsSync(mirrorFor('DRAFT', id))).toBe(false);
   });
 
   it('is idempotent — a second rebuild writes nothing', () => {
-    const { id, key } = seedTask('Idempotent');
+    const { id } = seedTask('Idempotent');
     rmSync(mirrorFor('DRAFT', id), { force: true });
 
-    expect(container.sync.rebuildMirrors()).toEqual([key]);
+    expect(container.sync.rebuildMirrors()).toEqual([id]);
     expect(container.sync.rebuildMirrors()).toEqual([]);
   });
 
@@ -117,7 +117,7 @@ describe('task mirror rebuild', () => {
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([gone.key]);
+    expect(rebuilt).toEqual([gone.id]);
     expect(existsSync(mirrorFor('DRAFT', kept.id))).toBe(true);
     expect(existsSync(mirrorFor('DRAFT', gone.id))).toBe(true);
   });

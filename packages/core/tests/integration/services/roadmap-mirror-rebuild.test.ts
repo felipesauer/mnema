@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
 /**
@@ -50,8 +51,8 @@ describe('roadmap mirror rebuild', () => {
 
   /** Creates one epic, one sprint and one decision, then deletes their mirrors. */
   function seedRowsWithoutMirrors(): {
-    epic: { id: string; key: string };
-    sprint: { id: string; key: string };
+    epic: { id: string };
+    sprint: { id: string };
     decision: { key: string };
   } {
     const epic = container.epic.create({ projectKey: 'TEST', title: 'An epic', actor: 'daniel' });
@@ -72,8 +73,8 @@ describe('roadmap mirror rebuild', () => {
     rmSync(path.join(roadmapDir(), `${decision.value.key}.md`), { force: true });
 
     return {
-      epic: { id: epic.value.id, key: epic.value.key },
-      sprint: { id: sprint.value.id, key: sprint.value.key },
+      epic: { id: epic.value.id },
+      sprint: { id: sprint.value.id },
       decision: { key: decision.value.key },
     };
   }
@@ -86,8 +87,8 @@ describe('roadmap mirror rebuild', () => {
     const sprints = container.sprint.rebuildMirrors('TEST');
     const decisions = container.decision.rebuildMirrors('TEST');
 
-    expect(epics).toEqual([seeded.epic.key]);
-    expect(sprints).toEqual([seeded.sprint.key]);
+    expect(epics).toEqual([deriveAlias('epic', seeded.epic.id)]);
+    expect(sprints).toEqual([deriveAlias('sprint', seeded.sprint.id)]);
     expect(decisions).toEqual([seeded.decision.key]);
 
     expect(existsSync(path.join(roadmapDir(), `${seeded.epic.id}.md`))).toBe(true);
@@ -114,6 +115,8 @@ describe('roadmap mirror rebuild', () => {
     // A fresh rebuild should now find the epic present and skip it.
     expect(container.epic.rebuildMirrors('TEST')).toEqual([]);
     // The sprint was never rebuilt, so it is still pending.
-    expect(container.sprint.rebuildMirrors('TEST')).toEqual([seeded.sprint.key]);
+    expect(container.sprint.rebuildMirrors('TEST')).toEqual([
+      deriveAlias('sprint', seeded.sprint.id),
+    ]);
   });
 });

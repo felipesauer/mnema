@@ -1,6 +1,7 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Epic } from '../../domain/entities/epic.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { EpicLifecycle } from '../../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
@@ -157,17 +158,12 @@ export class EpicService {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
 
-    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-    // two processes on one state.db cannot mint the same key.
-    const epic = this.epics.runInTransactionImmediate(() => {
-      const sequence = this.epics.nextSequence(project.id);
-      const key = `${project.key}-EPIC-${sequence}`;
-      return this.epics.insert({
-        key,
-        projectId: project.id,
-        title: input.title,
-        description: input.description ?? null,
-      });
+    // The epic's identity is a minted UUID — collision-free, so there is no
+    // sequence to serialise; the single insert is atomic on its own.
+    const epic = this.epics.insert({
+      projectId: project.id,
+      title: input.title,
+      description: input.description ?? null,
     });
 
     this.audit.write({
@@ -176,7 +172,7 @@ export class EpicService {
       via: input.via,
       run: input.runId,
       // The committed id binds provenance to the clone-stable identity.
-      data: { id: epic.id, key: epic.key, title: epic.title },
+      data: { id: epic.id, title: epic.title },
     });
 
     this.mirror?.writeEpic(epic);
@@ -197,7 +193,7 @@ export class EpicService {
     if (epic.state !== EpicState.Open) {
       return Err({
         kind: ErrorCode.EpicInvalidState,
-        epicKey: epic.key,
+        epicKey: deriveAlias('epic', epic.id),
         fromState: epic.state,
         toState: EpicState.Closed,
       });
@@ -212,7 +208,7 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
     });
 
     this.mirror?.writeEpic(updated);
@@ -260,7 +256,7 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, title: updated.title },
+      data: { id: updated.id, title: updated.title },
     });
 
     this.mirror?.writeEpic(updated);
@@ -283,12 +279,12 @@ export class EpicService {
     if (!resolved.ok) return Err(resolved.error);
     const epic = resolved.value;
 
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    if (taskKeys.length > 0) {
+    const taskIds = this.epics.listTaskIds(epic.id);
+    if (taskIds.length > 0) {
       return Err({
         kind: ErrorCode.EpicHasTasks,
-        epicKey: epic.key,
-        taskCount: taskKeys.length,
+        epicKey: deriveAlias('epic', epic.id),
+        taskCount: taskIds.length,
       });
     }
 
@@ -313,7 +309,7 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: epic.key },
+      data: { id: epic.id },
     });
 
     return Ok(epic);
@@ -342,11 +338,11 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { epic_key: epic.key, task_key: task.key },
+      data: { epic_id: epic.id, task_id: task.id },
     });
 
     // The epic link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'epic_task_added', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'epic_task_added', runId: input.runId });
 
     const updated = this.tasks.findById(task.id);
     if (updated === null) {
@@ -368,6 +364,9 @@ export class EpicService {
     }));
     if (!taskResolved.ok) return Err(taskResolved.error);
     const task = taskResolved.value;
+    // The epic the task is being detached from — its committed id, taken from
+    // the task's link before removal (removeTask clears it by task id).
+    const epicId = task.epicId;
     this.epics.removeTask(task.id);
 
     this.audit.write({
@@ -375,11 +374,11 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { epic_key: input.epicKey, task_key: task.key },
+      data: { epic_id: epicId, task_id: task.id },
     });
 
     // The epic link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'epic_task_removed', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'epic_task_removed', runId: input.runId });
 
     const updated = this.tasks.findById(task.id);
     if (updated === null) {
@@ -398,8 +397,9 @@ export class EpicService {
     const resolved = this.resolveEpic(epicKey);
     if (!resolved.ok) return Err(resolved.error);
     const epic = resolved.value;
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskKeys) });
+    const taskIds = this.epics.listTaskIds(epic.id);
+    const taskKeys = taskIds.map((id) => deriveAlias('task', id));
+    return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskIds) });
   }
 
   /**
@@ -418,20 +418,20 @@ export class EpicService {
     const resolved = this.resolveEpic(epicKey);
     if (!resolved.ok) return Err(resolved.error);
     const epic = resolved.value;
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    const nonTerminal = taskKeys
-      .map((key) => this.tasks.findByKey(key))
+    const taskIds = this.epics.listTaskIds(epic.id);
+    const nonTerminal = taskIds
+      .map((id) => this.tasks.findById(id))
       .filter((t): t is Task => t !== null && !this.stateMachine.isTerminal(t.state))
-      .map((t) => t.key);
+      .map((t) => deriveAlias('task', t.id));
     return Ok({
-      epicKey: epic.key,
+      epicKey: deriveAlias('epic', epic.id),
       state: epic.state,
-      attachedTaskKeys: taskKeys,
-      attachedTaskCount: taskKeys.length,
+      attachedTaskKeys: taskIds.map((id) => deriveAlias('task', id)),
+      attachedTaskCount: taskIds.length,
       nonTerminalTaskKeys: nonTerminal,
       // delete() refuses while any task is attached; close() is always allowed
       // but strands non-terminal tasks under a closed epic.
-      deleteWouldBeRefused: taskKeys.length > 0,
+      deleteWouldBeRefused: taskIds.length > 0,
     });
   }
 
@@ -439,12 +439,10 @@ export class EpicService {
    * Derives the epic's lifecycle label from its state and the states of
    * its tasks. Never stored — always computed.
    */
-  private deriveLifecycle(epic: Epic, taskKeys: readonly string[]): EpicLifecycle {
+  private deriveLifecycle(epic: Epic, taskIds: readonly string[]): EpicLifecycle {
     if (epic.state === EpicState.Closed) return 'closed';
-    if (taskKeys.length === 0) return 'empty';
-    const tasks = taskKeys
-      .map((key) => this.tasks.findByKey(key))
-      .filter((t): t is Task => t !== null);
+    if (taskIds.length === 0) return 'empty';
+    const tasks = taskIds.map((id) => this.tasks.findById(id)).filter((t): t is Task => t !== null);
     const allTerminal =
       tasks.length > 0 && tasks.every((t) => this.stateMachine.isTerminal(t.state));
     return allTerminal ? 'developed' : 'in-progress';
@@ -469,7 +467,7 @@ export class EpicService {
    * deletion. Existing files are left untouched.
    *
    * @param projectKey - Project key
-   * @returns Keys of the epics whose mirror was just written
+   * @returns Aliases of the epics whose mirror was just written
    */
   rebuildMirrors(projectKey: string): string[] {
     if (this.mirror === null) return [];
@@ -477,7 +475,7 @@ export class EpicService {
     for (const epic of this.list(projectKey)) {
       if (!this.mirror.hasEpic(epic.id)) {
         this.mirror.writeEpic(epic);
-        rebuilt.push(epic.key);
+        rebuilt.push(deriveAlias('epic', epic.id));
       }
     }
     return rebuilt;

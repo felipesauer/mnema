@@ -7,7 +7,6 @@ import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface EpicRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly title: string;
   readonly description: string | null;
@@ -24,7 +23,6 @@ interface EpicRow {
 export interface EpicInsertInput {
   /** Committed identity, preserved on a clone rebuild; minted when omitted. */
   readonly id?: string;
-  readonly key: string;
   readonly projectId: string;
   readonly title: string;
   readonly description?: string | null;
@@ -52,35 +50,6 @@ export interface EpicFieldUpdates {
  */
 export class EpicRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
-
-  /**
-   * Returns the next sequential number to use for an epic key, scoped
-   * to a project.
-   *
-   * @param projectId - Internal project id
-   * @returns The next available sequence (starts at 1)
-   */
-  nextSequence(projectId: string): number {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT COUNT(*) AS n FROM epics WHERE project_id = ?')
-      .get(projectId) as { n: number };
-    return row.n + 1;
-  }
-
-  /**
-   * Looks up an epic by its human-readable key.
-   *
-   * @param key - Epic key, e.g. `WEBAPP-EPIC-3`
-   * @returns The epic or `null`
-   */
-  findByKey(key: string): Epic | null {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT * FROM epics WHERE key = ? AND deleted_at IS NULL')
-      .get(key) as EpicRow | undefined;
-    return row === undefined ? null : rowToEpic(row);
-  }
 
   /**
    * Looks up an epic by its internal id.
@@ -155,12 +124,11 @@ export class EpicRepository {
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO epics (id, key, project_id, title, description, state, metadata, created_at, closed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO epics (id, project_id, title, description, state, metadata, created_at, closed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
-        input.key,
         input.projectId,
         input.title,
         input.description ?? null,
@@ -276,10 +244,8 @@ export class EpicRepository {
 
   /**
    * Runs `fn` inside a `BEGIN IMMEDIATE` transaction, taking the write lock
-   * up front. The create path reads `nextSequence` (a `COUNT(*)`) then
-   * inserts the derived key; under the default `BEGIN DEFERRED` two processes
-   * sharing one `state.db` can both take the COUNT before either writes and
-   * mint the same key. `IMMEDIATE` serialises them.
+   * up front so a read-then-write create path cannot race a second process
+   * sharing the same `state.db`.
    *
    * @param fn - Synchronous callback executed inside the transaction
    * @returns Whatever `fn` returns
@@ -311,28 +277,27 @@ export class EpicRepository {
   }
 
   /**
-   * Lists every active task currently assigned to an epic.
+   * Lists the ids of every active task currently assigned to an epic.
    *
    * @param epicId - Internal epic id
-   * @returns Task rows (raw) ordered by key
+   * @returns Task ids ordered by creation
    */
-  listTaskKeys(epicId: string): string[] {
+  listTaskIds(epicId: string): string[] {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT key FROM tasks
+        `SELECT id FROM tasks
           WHERE epic_id = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
-      .all(epicId) as { key: string }[];
-    return rows.map((r) => r.key);
+      .all(epicId) as { id: string }[];
+    return rows.map((r) => r.id);
   }
 }
 
 function rowToEpic(row: EpicRow): Epic {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     title: row.title,
     description: row.description,

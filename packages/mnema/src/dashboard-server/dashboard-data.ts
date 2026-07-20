@@ -1,3 +1,4 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { SlaBreach, WipBreach } from '@mnema/core/services/backlog/inbox-service.js';
 import type { IntegrityCheck } from '@mnema/core/services/integrity/audit-integrity.js';
 import { parseTimeBound } from '@mnema/core/services/integrity/audit-query.js';
@@ -22,11 +23,34 @@ export const DEFAULT_RECENT_LIMIT = 25;
 export const DEFAULT_METRICS_WINDOW = '30d';
 
 /**
- * Fields, in precedence order, that carry the entity key an event is
- * "about". Task-scoped events use `key`/`task_key`; decision, epic and
- * sprint events store theirs under a typed field.
+ * The display handle an event is "about". Task/epic/sprint events stamp a
+ * committed id, from which a short alias is derived; the entity kind comes from
+ * the event kind (a bare `id` field is ambiguous — `task_created` and
+ * `epic_created` both carry one). A decision keeps its human `key` verbatim.
+ * Returns undefined for events not scoped to one of these entities.
  */
-const KEY_FIELDS = ['key', 'task_key', 'decision_key', 'epic_key', 'sprint_key'] as const;
+function eventDisplayKey(kind: string, data: Record<string, unknown>): string | undefined {
+  const s = (field: string): string | undefined =>
+    typeof data[field] === 'string' ? (data[field] as string) : undefined;
+  // Decision events carry a human key — show it as-is.
+  if (kind.startsWith('decision')) return s('key') ?? s('decision_key');
+  // Task events (own id under `id`, referenced under `task_id`).
+  const taskId = kind.startsWith('task') ? (s('id') ?? s('task_id')) : s('task_id');
+  if (taskId !== undefined) return deriveAlias('task', taskId);
+  if (kind.startsWith('epic')) {
+    const id = s('id') ?? s('epic_id');
+    if (id !== undefined) return deriveAlias('epic', id);
+  }
+  if (kind.startsWith('sprint')) {
+    const id = s('id') ?? s('sprint_id');
+    if (id !== undefined) return deriveAlias('sprint', id);
+  }
+  return s('epic_id') !== undefined
+    ? deriveAlias('epic', s('epic_id') as string)
+    : s('sprint_id') !== undefined
+      ? deriveAlias('sprint', s('sprint_id') as string)
+      : undefined;
+}
 
 /** One recent-activity row, handles already resolved to display names. */
 export interface RecentEvent {
@@ -87,13 +111,7 @@ export interface DashboardData {
  */
 export function toRecentEvent(event: AuditEvent, display: (handle: string) => string): RecentEvent {
   const data = event.data as Record<string, unknown>;
-  let key: string | undefined;
-  for (const field of KEY_FIELDS) {
-    if (typeof data[field] === 'string') {
-      key = data[field] as string;
-      break;
-    }
-  }
+  const key = eventDisplayKey(event.kind, data);
   return {
     at: event.at,
     kind: event.kind,
@@ -181,8 +199,8 @@ export function buildDashboardData(
 }
 
 /** Narrows a task to the minimal reference the inbox panels render. */
-function toInboxRef(task: { key: string; title: string; state: string }): InboxRef {
-  return { key: task.key, title: task.title, state: task.state };
+function toInboxRef(task: { id: string; title: string; state: string }): InboxRef {
+  return { key: deriveAlias('task', task.id), title: task.title, state: task.state };
 }
 
 /**

@@ -137,7 +137,7 @@ export class TaskEvidenceService {
       via: input.via,
       run: input.runId,
       data: {
-        task_key: task.key,
+        task_id: task.id,
         criterion_index: input.criterionIndex,
         evidence_kind: kind,
         ref: input.ref,

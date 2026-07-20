@@ -1,3 +1,4 @@
+import { deriveAlias } from '../domain/entity-alias.js';
 import type { Workflow } from '../domain/state-machine/state-machine.js';
 import type { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
 import type { TransitionRepository } from '../storage/sqlite/repositories/transition-repository.js';
@@ -13,7 +14,7 @@ export interface SkillCandidate {
   readonly slug: string;
   /** Distinct reopened tasks whose run used this skill. */
   readonly reworkCount: number;
-  /** The reopened task keys, for the reader to inspect. */
+  /** The reopened task aliases, for the reader to inspect. */
   readonly tasks: readonly string[];
 }
 
@@ -183,24 +184,24 @@ export class EvolutionCandidateService {
 
     // Observation topics: aggregate the topics of observations linked to a
     // task that has since been reopened. relatedTaskId is a task id, so it is
-    // resolved to a key (and its reopen count checked) via the task repo.
+    // resolved to a display alias (and its reopen count checked) via the task repo.
     const byTopic = new Map<string, Set<string>>();
-    const reopenedKeyById = new Map<string, string | null>();
+    const reopenedAliasById = new Map<string, string | null>();
     for (const obs of this.observations.list({ includeArchived: false })) {
       if (obs.relatedTaskId === null) continue;
-      let key = reopenedKeyById.get(obs.relatedTaskId);
-      if (key === undefined) {
+      let alias = reopenedAliasById.get(obs.relatedTaskId);
+      if (alias === undefined) {
         const task = this.tasks.findById(obs.relatedTaskId);
-        // Cache the key only when the task is really reopened; otherwise null.
-        key = task !== null && task.reopenCount > 0 ? task.key : null;
-        reopenedKeyById.set(obs.relatedTaskId, key);
+        // Cache the alias only when the task is really reopened; otherwise null.
+        alias = task !== null && task.reopenCount > 0 ? deriveAlias('task', task.id) : null;
+        reopenedAliasById.set(obs.relatedTaskId, alias);
       }
-      if (key === null) continue;
+      if (alias === null) continue;
       for (const topic of obs.topics) {
         const t = topic.trim();
         if (t.length === 0) continue;
         const set = byTopic.get(t) ?? new Set<string>();
-        set.add(key);
+        set.add(alias);
         byTopic.set(t, set);
       }
     }
@@ -285,20 +286,21 @@ export class EvolutionCandidateService {
    */
   private recurringTopicsAcrossAllTasks(): RecurringTopicCandidate[] {
     const byTopic = new Map<string, Set<string>>();
-    const keyById = new Map<string, string | null>();
+    const aliasById = new Map<string, string | null>();
     for (const obs of this.observations.list({ includeArchived: false })) {
       if (obs.relatedTaskId === null) continue;
-      let key = keyById.get(obs.relatedTaskId);
-      if (key === undefined) {
-        key = this.tasks.findById(obs.relatedTaskId)?.key ?? null;
-        keyById.set(obs.relatedTaskId, key);
+      let alias = aliasById.get(obs.relatedTaskId);
+      if (alias === undefined) {
+        const task = this.tasks.findById(obs.relatedTaskId);
+        alias = task === null ? null : deriveAlias('task', task.id);
+        aliasById.set(obs.relatedTaskId, alias);
       }
-      if (key === null) continue;
+      if (alias === null) continue;
       for (const topic of obs.topics) {
         const t = topic.trim();
         if (t.length === 0) continue;
         const set = byTopic.get(t) ?? new Set<string>();
-        set.add(key);
+        set.add(alias);
         byTopic.set(t, set);
       }
     }

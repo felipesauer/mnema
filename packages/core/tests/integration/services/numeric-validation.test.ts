@@ -124,13 +124,16 @@ describe('service-level numeric validation', () => {
   });
 
   describe('sprint.addMetric', () => {
+    let sprintId: string;
     beforeEach(() => {
-      container.sprint.plan({ projectKey: 'TEST', name: 'S1', actor: 'daniel' });
+      const planned = container.sprint.plan({ projectKey: 'TEST', name: 'S1', actor: 'daniel' });
+      if (!planned.ok) throw new Error('setup sprint plan failed');
+      sprintId = planned.value.id;
     });
 
     it('rejects a non-finite target instead of crashing on NOT NULL', () => {
       const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
+        sprintKey: sprintId,
         name: 'p95',
         target: Number('abc'),
         actor: 'daniel',
@@ -141,7 +144,7 @@ describe('service-level numeric validation', () => {
 
     it('rejects a non-finite baseline rather than silently storing NULL', () => {
       const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
+        sprintKey: sprintId,
         name: 'p95',
         target: 100,
         baseline: Number('xyz'),
@@ -153,7 +156,7 @@ describe('service-level numeric validation', () => {
 
     it('accepts a valid metric', () => {
       const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
+        sprintKey: sprintId,
         name: 'p95',
         target: 100,
         baseline: 250,
@@ -174,7 +177,7 @@ describe('service-level numeric validation', () => {
         actor: 'daniel',
       });
       if (!t.ok) throw new Error('setup task create failed');
-      taskKey = t.value.key;
+      taskKey = t.value.id;
     });
 
     it('rejects a non-integer (0.5) criterion index — no orphan REAL row', () => {

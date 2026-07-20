@@ -120,9 +120,8 @@ export class RoadmapMirror {
 /** Serialises an epic to its `mnema:` frontmatter shape. */
 function serialiseEpic(epic: Epic): Record<string, unknown> {
   return {
-    // Committed identity (the v7 UUID); the rebuild adopts it on a clone.
+    // The only identity (the v7 UUID); the rebuild adopts it on a clone.
     id: epic.id,
-    key: epic.key,
     kind: 'epic',
     state: epic.state,
     title: epic.title,
@@ -136,9 +135,8 @@ function serialiseEpic(epic: Epic): Record<string, unknown> {
 /** Serialises a sprint to its `mnema:` frontmatter shape. */
 function serialiseSprint(sprint: Sprint): Record<string, unknown> {
   return {
-    // Committed identity (the v7 UUID); the rebuild adopts it on a clone.
+    // The only identity (the v7 UUID); the rebuild adopts it on a clone.
     id: sprint.id,
-    key: sprint.key,
     kind: 'sprint',
     state: sprint.state,
     name: sprint.name,

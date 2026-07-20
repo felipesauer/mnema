@@ -5,14 +5,13 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 
 /**
  * The slice of a repository this resolver needs: turn a user-typed handle into
- * a resolution, load the winner by id, and fall back to a literal key. Every
- * work-graph repository (task/epic/sprint) satisfies it, so a service can
- * resolve a handle without depending on the concrete repository type.
+ * a resolution and load the winner by id. Every work-graph repository
+ * (task/epic/sprint) satisfies it, so a service can resolve a handle without
+ * depending on the concrete repository type.
  */
 export interface HandleResolvable<T> {
   resolve(query: string): AliasResolution;
   findById(id: string): T | null;
-  findByKey(key: string): T | null;
 }
 
 /**
@@ -24,16 +23,10 @@ export interface HandleResolvable<T> {
  * This is the single resolution path every user-facing surface funnels
  * through, so alias resolution reaches a service the moment it takes a handle
  * from the CLI or an MCP tool — internal reference lookups keep using
- * `findById`/`findByKey` directly.
- *
- * An EXACT key match wins first, ahead of any prefix match. Without that, a key
- * whose text is all hex (a project like `DEAD` → key `DEAD-42`, which lowercases
- * to `dead-42`) could be read as an id PREFIX and resolve to a different entity
- * whose id starts with `dead42…` — the exact key must never be shadowed by a
- * prefix of something else.
+ * `findById` directly.
  *
  * @param repo - The repository slice that can resolve and load the entity
- * @param handle - The id, alias, hash prefix, or key the user supplied
+ * @param handle - The id, alias, or hash prefix the user supplied
  * @param notFound - Builds the entity-specific not-found error from the handle
  */
 export function resolveEntity<T>(
@@ -41,10 +34,6 @@ export function resolveEntity<T>(
   handle: string,
   notFound: (handle: string) => MnemaError,
 ): Result<T, MnemaError> {
-  // Exact key is an unambiguous identity — take it before any prefix match.
-  const byKey = repo.findByKey(handle);
-  if (byKey !== null) return Ok(byKey);
-
   const resolution = repo.resolve(handle);
   if (resolution.status === 'ambiguous') {
     return Err({ kind: ErrorCode.AmbiguousAlias, query: handle, matches: resolution.ids });

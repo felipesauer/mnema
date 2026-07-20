@@ -1,8 +1,8 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import { EnforcementMode } from '../../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
-import { generateTaskKey } from '../../domain/id-generator.js';
 import { hasInvocationMarkup } from '../../domain/invocation-markup.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../../domain/state-machine/workflow-meta-schema.js';
@@ -156,14 +156,11 @@ export class TaskService {
     const initialState = this.stateMachine.getWorkflow().initial as TaskState;
 
     const writeResult = tryMutation(() =>
-      // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-      // two processes on one state.db cannot mint the same key.
-      this.tasks.runInTransactionImmediate(() => {
-        const sequence = this.tasks.nextSequence(project.id);
-        const key = generateTaskKey(project.key, sequence);
-
+      // The task's identity is a minted UUID — collision-free by construction,
+      // so there is no sequence to serialise; the transaction just makes the
+      // insert plus its creation transition atomic.
+      this.tasks.runInTransaction(() => {
         const created = this.tasks.insert({
-          key,
           projectId: project.id,
           title: input.title,
           description: input.description ?? null,
@@ -200,12 +197,11 @@ export class TaskService {
       via: input.via,
       run: input.runId,
       // The committed id is the stable provenance anchor — it survives a clone
-      // and never changes, so the chain binds by it (the key is kept too, for
-      // human-readable history and until it is retired).
-      data: { id: task.id, key: task.key, title: task.title, state: task.state },
+      // and never changes, so the chain binds by it.
+      data: { id: task.id, title: task.title, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     return Ok(task);
   }
@@ -270,10 +266,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, assignee_id: assignee.value },
+      data: { id: updated.id, assignee_id: assignee.value },
     });
 
-    this.sync.syncTask(updated.key);
+    this.sync.syncTask(updated.id);
 
     return Ok(updated);
   }
@@ -310,7 +306,7 @@ export class TaskService {
     if (this.stateMachine.isTerminal(task.state)) {
       return Err({
         kind: ErrorCode.TerminalState,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         state: task.state,
       });
     }
@@ -353,7 +349,7 @@ export class TaskService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'task',
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         currentUpdatedAt: outcome.currentUpdatedAt,
       });
     }
@@ -364,10 +360,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, state: updated.state },
+      data: { id: updated.id, state: updated.state },
     });
 
-    this.sync.syncTask(updated.key);
+    this.sync.syncTask(updated.id);
 
     return Ok(updated);
   }
@@ -420,7 +416,7 @@ export class TaskService {
       }
       return Err({
         kind: ErrorCode.TaskAlreadyClaimed,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         claimedBy: outcome.reason.claimedBy,
         leaseExpiresAt: outcome.reason.leaseExpiresAt,
       });
@@ -432,7 +428,7 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, claimed_by: claimingActorId, lease_expires_at: leaseExpiresAt },
+      data: { id: updated.id, claimed_by: claimingActorId, lease_expires_at: leaseExpiresAt },
     });
 
     return Ok(updated);
@@ -472,7 +468,7 @@ export class TaskService {
         actor: input.actor,
         via: input.via,
         run: input.runId,
-        data: { key: task.key },
+        data: { id: task.id },
       });
     }
 
@@ -577,7 +573,7 @@ export class TaskService {
       if (exits.length === 0) {
         return Err({
           kind: ErrorCode.TerminalState,
-          taskKey: task.key,
+          taskKey: deriveAlias('task', task.id),
           state: task.state,
         });
       }
@@ -628,7 +624,7 @@ export class TaskService {
       const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
       return Err({
         kind: ErrorCode.InvalidTransition,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         fromState: task.state,
         action: input.action,
         available,
@@ -672,7 +668,7 @@ export class TaskService {
           via: input.via,
           run: input.runId,
           data: {
-            key: task.key,
+            id: task.id,
             action: input.action,
             mode: this.enforcementMode,
             missing: blocking.map((i) => i.path.join('.') || '(root)'),
@@ -680,7 +676,7 @@ export class TaskService {
         });
         return Err({
           kind: ErrorCode.GateFailed,
-          taskKey: task.key,
+          taskKey: deriveAlias('task', task.id),
           action: input.action,
           issues: blocking,
         });
@@ -884,20 +880,20 @@ export class TaskService {
     const outcome = outcomeResult.value;
 
     if (outcome.kind === 'not_found') {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: task.key });
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: deriveAlias('task', task.id) });
     }
     if (outcome.kind === 'conflict') {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'task',
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         currentUpdatedAt: outcome.currentUpdatedAt,
       });
     }
     if (outcome.kind === 'not_claimed') {
       return Err({
         kind: ErrorCode.TaskNotClaimed,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         claimedBy: outcome.claimedBy,
       });
     }
@@ -910,7 +906,6 @@ export class TaskService {
       run: input.runId,
       data: {
         id: task.id,
-        key: task.key,
         from: task.state,
         to,
         action: input.action,
@@ -934,7 +929,7 @@ export class TaskService {
         via: input.via,
         run: input.runId,
         data: {
-          key: task.key,
+          id: task.id,
           action: input.action,
           mode: this.enforcementMode,
           missing: gateOverride.map((i) => i.path.join('.') || '(root)'),
@@ -946,7 +941,7 @@ export class TaskService {
       this.lastGateOverride = gateOverride;
     }
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     return Ok(updated);
   }
@@ -1047,10 +1042,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, state: task.state },
+      data: { id: task.id, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     const updated = this.tasks.findByIdIncludingDeleted(task.id);
     if (updated === null) {
@@ -1072,11 +1067,9 @@ export class TaskService {
     runId?: string;
   }): Result<Task, MnemaError> {
     // A soft-deleted task is invisible to the live alias resolver, so restore
-    // accepts the exact key or the full committed id (what the user has from the
-    // delete output or the mirror filename) over the including-deleted rows.
-    const task =
-      this.tasks.findByKeyIncludingDeleted(input.taskKey) ??
-      this.tasks.findByIdIncludingDeleted(input.taskKey);
+    // accepts the full committed id (what the user has from the delete output or
+    // the mirror filename) over the including-deleted rows.
+    const task = this.tasks.findByIdIncludingDeleted(input.taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -1091,10 +1084,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, state: task.state },
+      data: { id: task.id, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     const restored = this.tasks.findById(task.id);
     if (restored === null) {

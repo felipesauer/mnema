@@ -1,6 +1,13 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { AuditEvent } from '@mnema/core/storage/audit/audit-writer.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import { formatTimestamp, type TimestampMode } from './timestamp-formatter.js';
+
+/** The short task alias from a committed id an audit event stamped, or '' when absent. */
+function taskAlias(data: Record<string, unknown>, field: 'id' | 'task_id'): string {
+  const id = data[field];
+  return typeof id === 'string' ? deriveAlias('task', id) : '';
+}
 
 /**
  * Output format for the audit log views.
@@ -93,9 +100,9 @@ function describe(event: AuditEvent): string {
   const data = event.data as Record<string, unknown>;
   switch (event.kind) {
     case 'task_created':
-      return `created ${stringify(data.key)} ${pc.dim(`"${stringify(data.title)}"`)}`;
+      return `created ${taskAlias(data, 'id')} ${pc.dim(`"${stringify(data.title)}"`)}`;
     case 'task_transitioned':
-      return `${stringify(data.action)} ${stringify(data.key)} ${stringify(data.from)} → ${pc.cyan(stringify(data.to))}`;
+      return `${stringify(data.action)} ${taskAlias(data, 'id')} ${stringify(data.from)} → ${pc.cyan(stringify(data.to))}`;
     case 'run_started': {
       const goal = stringify(data.goal);
       return `${pc.cyan('run started')} "${goal}"`;
@@ -136,7 +143,7 @@ function describe(event: AuditEvent): string {
       return `skill ${stringify(data.slug)}${version} superseded`;
     }
     case 'note_added':
-      return `note on ${stringify(data.task_key)} ${pc.dim(`[${stringify(data.note_kind)}]`)}`;
+      return `note on ${taskAlias(data, 'task_id')} ${pc.dim(`[${stringify(data.note_kind)}]`)}`;
     case 'attachment_added': {
       const dedup = data.deduplicated === true ? pc.dim(' (dedup)') : '';
       return `attached ${stringify(data.filename)} to ${stringify(data.task_key)} ${pc.dim(`(${formatBytes(data.size)})`)}${dedup}`;
@@ -193,15 +200,15 @@ function aggregateHuman(
       if (grouped.length > 1) {
         const first = grouped[0];
         if (first === undefined) continue;
-        const keys = grouped
-          .map((g) => stringify((g.data as Record<string, unknown>).key))
+        const aliases = grouped
+          .map((g) => taskAlias(g.data as Record<string, unknown>, 'id'))
           .join(', ');
         const time = formatTimestamp(first.at, mode);
         const actor = displayResolver(first.actor);
         const subject =
           first.via !== undefined ? `${actor} via ${displayResolver(first.via)}` : actor;
         lines.push(
-          `${pc.dim(time)}  ${subject}  created ${grouped.length} tasks ${pc.dim(`(${keys})`)}`,
+          `${pc.dim(time)}  ${subject}  created ${grouped.length} tasks ${pc.dim(`(${aliases})`)}`,
         );
         continue;
       }

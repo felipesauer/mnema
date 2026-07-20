@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { Err, Ok, type Result } from '../common/result.js';
+import { deriveAlias } from '../domain/entity-alias.js';
 import { ActorKind } from '../domain/enums/actor-kind.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
@@ -138,7 +139,7 @@ export class AttachmentService {
       via: input.via,
       run: input.runId,
       data: {
-        task_key: task.key,
+        task_key: deriveAlias('task', task.id),
         filename,
         size: stored.size,
         hash: stored.hash,

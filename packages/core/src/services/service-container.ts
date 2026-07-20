@@ -469,7 +469,7 @@ export function createServiceContainer(
         repos.taskEvidence,
         options.commitRunner,
         config.project.key,
-        (key) => repos.tasks.findByKey(key) !== null,
+        (handle) => repos.tasks.resolve(handle).status === 'unique',
       ),
   );
   const gitObserver = lazy(

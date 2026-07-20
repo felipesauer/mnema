@@ -10,7 +10,6 @@ import { DecisionStatus } from '../../domain/enums/decision-status.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
-import { parseTaskKey } from '../../domain/id-generator.js';
 import { parseFrontmatter } from '../../storage/markdown/frontmatter.js';
 import { MarkdownIo } from '../../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
@@ -62,8 +61,6 @@ export interface RebuildCounts {
 export interface MirrorConflict {
   /** Committed id the duplicate mirrors share — the filename that collided. */
   readonly id: string;
-  /** Human key, carried for a readable operator message (files are id-named). */
-  readonly key: string;
   /** The state directories the id was found in, in scan order. */
   readonly states: readonly string[];
 }
@@ -92,7 +89,7 @@ export interface RebuildSummary {
 /**
  * Reconstructs the cache tables from the version-controlled markdown:
  * epics and decisions under `roadmap/`, sprints under `sprints/`, and
- * tasks under `backlog/<STATE>/<KEY>.md`.
+ * tasks under `backlog/<STATE>/<ID>.md`.
  *
  * The append-only history (`transitions`, `agent_runs`, `agent_plans`)
  * is **not** rebuilt — that timeline lives in `.audit/*.jsonl` and is
@@ -246,14 +243,14 @@ export class SyncRebuild {
     // directory order is not guaranteed), so the link is resolved in a
     // second pass, once every decision row exists.
     this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
-    const tasks = this.rebuildTasks(project.id, project.key, skipped, conflicts);
+    const tasks = this.rebuildTasks(project.id, skipped, conflicts);
     // A task's `depends_on` list points at its blockers by key. Those
     // blocker rows may be walked after the dependent (directory order is
     // not guaranteed), so the edges are recreated in a second pass, once
     // every task row exists.
-    this.relinkTaskDependencies(project.key);
-    // Observations are rebuilt after tasks so a note's `related_task_key`
-    // resolves to a freshly-inserted task row.
+    this.relinkTaskDependencies();
+    // Observations are rebuilt after tasks so a note's `related_task_id`
+    // validates against a freshly-inserted task row.
     const observations = this.rebuildObservations(skipped);
     // Knowledge mirrors (foldered, flat frontmatter). Independent of the
     // backlog graph, so order does not matter. Without these a fresh clone
@@ -376,7 +373,6 @@ export class SyncRebuild {
    */
   private rebuildTasks(
     projectId: string,
-    projectKey: string,
     skipped: { file: string; reason: string }[],
     conflicts: MirrorConflict[],
   ): RebuildCounts {
@@ -420,16 +416,11 @@ export class SyncRebuild {
         scanned += 1;
 
         const data = this.markdownIo.read(filePath).mnemaData;
-        const key = readString(data, 'key');
-        if (key === null) {
-          skipped.push({ file: filePath, reason: 'missing mnema.key' });
-          continue;
-        }
-        // The mirror is named by the committed id now; the key still lives in
-        // the frontmatter and carries the project prefix, but the filename is
-        // the id. A mirror without an id (or one that disagrees) predates this
-        // layout and is skipped fail-closed — the store-format guard forces a
-        // migrate before a rebuild ever sees it.
+        // The committed id is the sole identity and the mirror filename. A file
+        // without an id (or one that disagrees) predates this layout and is
+        // skipped fail-closed — the store-format guard forces a migrate before
+        // a rebuild ever sees it. Every file under this project's backlog is
+        // this project's, so no project-prefix check is needed.
         const id = readString(data, 'id');
         if (id === null) {
           skipped.push({ file: filePath, reason: 'missing mnema.id' });
@@ -442,12 +433,6 @@ export class SyncRebuild {
             file: filePath,
             reason: `mnema.id (${id}) does not match filename (${expectedId})`,
           });
-          continue;
-        }
-
-        const parsedKey = parseTaskKey(key);
-        if (parsedKey === null || parsedKey.projectKey !== projectKey) {
-          skipped.push({ file: filePath, reason: 'key prefix does not match project' });
           continue;
         }
 
@@ -481,9 +466,8 @@ export class SyncRebuild {
           taskId = this.tasks.insert({
             // Adopt the committed id so it survives the clone.
             id,
-            key,
             projectId,
-            title: readString(data, 'title') ?? key,
+            title: readString(data, 'title') ?? id,
             description: readString(data, 'description'),
             acceptanceCriteria: readStringArray(data, 'acceptance_criteria'),
             state: stateName,
@@ -520,7 +504,7 @@ export class SyncRebuild {
             this.audit?.write({
               kind: 'sync_realign',
               actor: 'system',
-              data: { key, from: fromState, to: stateName },
+              data: { id, from: fromState, to: stateName },
             });
           }
 
@@ -589,7 +573,6 @@ export class SyncRebuild {
    */
   private collectDuplicateTaskIds(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
     const statesById = new Map<string, string[]>();
-    const keyById = new Map<string, string>();
 
     for (const stateDir of listDirs(root)) {
       if (!this.validStates.has(stateDir)) continue;
@@ -601,10 +584,6 @@ export class SyncRebuild {
         // Mirror the main pass's guards: an id that is absent or disagrees
         // with the filename is skipped there, so it must not count here.
         if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
-        // The key is carried for a readable conflict message; a missing key is
-        // still counted for the id collision (the main pass would skip it, but
-        // the duplicate-id guard is about the filename).
-        keyById.set(id, readString(data, 'key') ?? id);
 
         const states = statesById.get(id);
         if (states === undefined) statesById.set(id, [stateDir]);
@@ -616,7 +595,7 @@ export class SyncRebuild {
     for (const [id, states] of statesById) {
       if (states.length > 1) {
         duplicates.add(id);
-        conflicts.push({ id, key: keyById.get(id) ?? id, states });
+        conflicts.push({ id, states });
       }
     }
     return duplicates;
@@ -624,11 +603,10 @@ export class SyncRebuild {
 
   /**
    * Walks `observations/<id>.md` and re-imports each note into the cache,
-   * preserving its on-disk id / timestamps / archived state. Unlike a task
-   * or decision the id is the filename (observations have no human key), and
-   * a `related_task_key` is resolved to the freshly-inserted task row. The
-   * insert is idempotent by id — a note already present in the cache is left
-   * untouched — so a rebuild over a populated database is a no-op.
+   * preserving its on-disk id / timestamps / archived state. The id is the
+   * filename, and a `related_task_id` is validated against the freshly-inserted
+   * task row. The insert is idempotent by id — a note already present in the
+   * cache is left untouched — so a rebuild over a populated database is a no-op.
    */
   private rebuildObservations(skipped: { file: string; reason: string }[]): RebuildCounts {
     const root = path.join(this.paths.projectRoot, this.paths.observationsDir);
@@ -666,11 +644,11 @@ export class SyncRebuild {
       // The frontmatter seeds the row on a fresh clone (INSERT OR IGNORE —
       // observations are record-only knowledge, NOT folded back like the
       // backlog entities; see the run() contract). The body is only a
-      // readable copy. `related_task_key` resolves to the freshly-inserted
-      // task row by its stable key.
-      const relatedTaskKey = readString(data, 'related_task_key');
-      const relatedTaskId =
-        relatedTaskKey !== null ? (this.tasks.findByKey(relatedTaskKey)?.id ?? null) : null;
+      // readable copy. `related_task_id` is validated against the
+      // freshly-inserted task row by its committed id.
+      const relatedTaskId = readString(data, 'related_task_id');
+      const resolvedId =
+        relatedTaskId !== null ? (this.tasks.findById(relatedTaskId)?.id ?? null) : null;
       const createdBy = this.actors.upsert(
         readString(data, 'created_by') ?? 'unknown',
         ActorKind.Human,
@@ -680,7 +658,7 @@ export class SyncRebuild {
         id,
         content,
         topics: readStringArray(data, 'topics'),
-        relatedTaskId,
+        relatedTaskId: resolvedId,
         createdBy,
         at: readString(data, 'at') ?? isoNow(),
         // No archived_at: only live observations have a mirror (archiving
@@ -873,17 +851,18 @@ export class SyncRebuild {
       if (readString(data, 'kind') !== kind) continue;
       scanned += 1;
 
-      const key = readString(data, 'key');
-      if (key === null) {
-        skipped.push({ file: filePath, reason: 'missing mnema.key' });
-        continue;
-      }
-      // Epics and sprints are filed by their committed id (like observations);
-      // a decision is still filed by its human key (that boundary migrates in a
-      // later wave). The key stays the source for the project prefix and the
-      // upsert either way.
+      // A decision is filed by its human key (that boundary migrates in a later
+      // wave) and its project prefix scopes it; an epic or sprint is filed by
+      // its committed id, the sole identity, and every roadmap file already
+      // belongs to this project.
       const stem = fileName.replace(/\.md$/, '');
+      let changed: boolean;
       if (kind === 'decision') {
+        const key = readString(data, 'key');
+        if (key === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.key' });
+          continue;
+        }
         if (key !== stem) {
           skipped.push({
             file: filePath,
@@ -891,6 +870,11 @@ export class SyncRebuild {
           });
           continue;
         }
+        if (!key.startsWith(`${projectKey}-`)) {
+          skipped.push({ file: filePath, reason: 'key prefix does not match project' });
+          continue;
+        }
+        changed = this.upsertDecision(projectId, key, data);
       } else {
         const id = readString(data, 'id');
         if (id === null) {
@@ -904,18 +888,11 @@ export class SyncRebuild {
           });
           continue;
         }
+        changed =
+          kind === 'epic'
+            ? this.upsertEpic(projectId, id, data)
+            : this.upsertSprint(projectId, id, data);
       }
-      if (!key.startsWith(`${projectKey}-`)) {
-        skipped.push({ file: filePath, reason: 'key prefix does not match project' });
-        continue;
-      }
-
-      const changed =
-        kind === 'epic'
-          ? this.upsertEpic(projectId, key, data)
-          : kind === 'sprint'
-            ? this.upsertSprint(projectId, key, data)
-            : this.upsertDecision(projectId, key, data);
       if (changed) upserted += 1;
     }
 
@@ -923,18 +900,20 @@ export class SyncRebuild {
   }
 
   /** Inserts an epic when absent, or realigns its state when it drifted. */
-  private upsertEpic(projectId: string, key: string, data: Record<string, unknown>): boolean {
+  private upsertEpic(projectId: string, id: string, data: Record<string, unknown>): boolean {
     const state = readEnum(data, 'state', EpicState, EpicState.Open);
-    const existing = this.epics.findByKey(key);
+    // Resolve by the committed id, not a key: two clones that minted the same
+    // key offline carry distinct ids, and each must land as its own row rather
+    // than the second silently overwriting the first.
+    const existing = this.epics.findById(id);
     if (existing === null) {
       // Insert directly in the committed state with the committed timestamps,
       // so a CLOSED epic keeps its original created_at/closed_at instead of
       // an updateState stamping a fresh now.
       this.epics.insert({
-        id: readString(data, 'id') ?? undefined,
-        key,
+        id,
         projectId,
-        title: readString(data, 'title') ?? key,
+        title: readString(data, 'title') ?? id,
         description: readString(data, 'description'),
         metadata: readRecord(data, 'metadata'),
         state,
@@ -957,17 +936,18 @@ export class SyncRebuild {
   }
 
   /** Inserts a sprint when absent, or realigns its state when it drifted. */
-  private upsertSprint(projectId: string, key: string, data: Record<string, unknown>): boolean {
+  private upsertSprint(projectId: string, id: string, data: Record<string, unknown>): boolean {
     const state = readEnum(data, 'state', SprintState, SprintState.Planned);
-    const existing = this.sprints.findByKey(key);
+    // Resolve by the committed id (see upsertEpic): a key colliding across
+    // clones must not overwrite a distinct sprint.
+    const existing = this.sprints.findById(id);
     if (existing === null) {
       // Insert directly in the committed state with the committed timestamps,
       // so a closed sprint keeps its original created_at/closed_at.
       this.sprints.insert({
-        id: readString(data, 'id') ?? undefined,
-        key,
+        id,
         projectId,
-        name: readString(data, 'name') ?? key,
+        name: readString(data, 'name') ?? id,
         goal: readString(data, 'goal'),
         startsAt: readString(data, 'starts_at'),
         endsAt: readString(data, 'ends_at'),
@@ -1088,7 +1068,7 @@ export class SyncRebuild {
    * reference (blocker absent) rather than crashing, and is idempotent: an
    * edge already present is left untouched.
    */
-  private relinkTaskDependencies(projectKey: string): void {
+  private relinkTaskDependencies(): void {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return;
 
@@ -1099,17 +1079,13 @@ export class SyncRebuild {
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
 
-        const key = readString(data, 'key');
         const id = readString(data, 'id');
-        // The mirror is filed by id; the key still supplies the project prefix.
+        // The mirror is filed by id, the sole identity; every backlog file is
+        // this project's.
         if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
-        if (key === null) continue;
 
         const dependsOn = readStringArray(data, 'depends_on');
         if (dependsOn.length === 0) continue;
-
-        const parsedKey = parseTaskKey(key);
-        if (parsedKey === null || parsedKey.projectKey !== projectKey) continue;
 
         const task = this.tasks.findById(id);
         if (task === null) continue;

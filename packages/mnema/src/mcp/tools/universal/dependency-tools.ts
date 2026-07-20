@@ -1,4 +1,5 @@
 import type { DependencyKind } from '@mnema/core/domain/entities/dependency.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { DependencyService } from '@mnema/core/services/backlog/dependency-service.js';
 import type { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -143,7 +144,7 @@ export class DependencyTools {
       ({ sprint_key: sprintKey }) => {
         const result = this.dependencies.ready(sprintKey);
         if (!result.ok) return err(result.error);
-        return ok({ tasks: result.value });
+        return ok({ tasks: result.value.map((t) => ({ ...t, key: deriveAlias('task', t.id) })) });
       },
     );
 

@@ -53,7 +53,7 @@ describe('label markdown mirror', () => {
     if (!created.ok) return;
 
     container.label.setLabels({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       labels: ['area:api', 'tipo:bug'],
       actor: 'daniel',
     });
@@ -67,8 +67,8 @@ describe('label markdown mirror', () => {
   it('clears the frontmatter labels when the set is emptied', () => {
     const created = container.task.create({ projectKey: 'TEST', title: 'Wired', actor: 'daniel' });
     if (!created.ok) return;
-    container.label.setLabels({ taskKey: created.value.key, labels: ['area:api'], actor: 'd' });
-    container.label.setLabels({ taskKey: created.value.key, labels: [], actor: 'd' });
+    container.label.setLabels({ taskKey: created.value.id, labels: ['area:api'], actor: 'd' });
+    container.label.setLabels({ taskKey: created.value.id, labels: [], actor: 'd' });
 
     const md = readTaskMd(root, created.value.id);
     // The key remains (as an empty list) but the value is gone.
@@ -84,7 +84,6 @@ describe('label markdown mirror', () => {
     const md = `---
 mnema:
   id: ${id}
-  key: TEST-1
   state: DRAFT
   title: Imported with labels
   description: ''
@@ -106,7 +105,7 @@ mnema:
     const summary = container.syncRebuild.run('TEST');
     expect(summary.tasksUpserted).toBe(1);
 
-    const labels = container.label.listForTask('TEST-1');
+    const labels = container.label.listForTask(id);
     expect(labels).toEqual({ ok: true, value: ['area:api', 'tipo:bug'] });
   });
 
@@ -115,7 +114,7 @@ mnema:
     const created = container.task.create({ projectKey: 'TEST', title: 'Drift', actor: 'daniel' });
     if (!created.ok) return;
     container.label.setLabels({
-      taskKey: 'TEST-1',
+      taskKey: created.value.id,
       labels: ['area:api', 'tipo:bug'],
       actor: 'daniel',
     });
@@ -129,6 +128,9 @@ mnema:
 
     container.syncRebuild.run('TEST');
 
-    expect(container.label.listForTask('TEST-1')).toEqual({ ok: true, value: ['area:api'] });
+    expect(container.label.listForTask(created.value.id)).toEqual({
+      ok: true,
+      value: ['area:api'],
+    });
   });
 });

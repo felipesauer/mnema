@@ -86,18 +86,19 @@ describe('skill_suggest MCP tool', () => {
         content: 'Steps to configure OAuth authentication and the callback route.',
       },
     });
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: {
         title: 'Implement OAuth login',
         description: 'Add the Google OAuth authentication flow',
         acceptance_criteria: ['users authenticate'],
       },
-    });
+    })) as CallToolResult;
+    const taskId = (payload(created).task as { id: string }).id;
 
     const res = (await harness.client.callTool({
       name: 'skill_suggest',
-      arguments: { task_key: 'TEST-1' },
+      arguments: { task_key: taskId },
     })) as CallToolResult;
     const suggestions = payload(res).suggestions as { key: string | null; entity: string }[];
 
@@ -117,18 +118,19 @@ describe('skill_suggest MCP tool', () => {
         content: 'Add a numbered SQL file and register the version.',
       },
     });
-    await harness.client.callTool({
+    const created = (await harness.client.callTool({
       name: 'task_create',
       arguments: {
         title: 'Redesign the marketing homepage',
         description: 'New hero copy and imagery',
         acceptance_criteria: ['approved by design'],
       },
-    });
+    })) as CallToolResult;
+    const taskId = (payload(created).task as { id: string }).id;
 
     const res = (await harness.client.callTool({
       name: 'skill_suggest',
-      arguments: { task_key: 'TEST-1' },
+      arguments: { task_key: taskId },
     })) as CallToolResult;
     expect((payload(res).suggestions as unknown[]).length).toBe(0);
   });
@@ -136,7 +138,7 @@ describe('skill_suggest MCP tool', () => {
   it('errors on an unknown task key', async () => {
     const res = (await harness.client.callTool({
       name: 'skill_suggest',
-      arguments: { task_key: 'TEST-999' },
+      arguments: { task_key: '019f7700-0000-7000-8000-000000000099' },
     })) as CallToolResult;
     expect(res.isError).toBe(true);
   });

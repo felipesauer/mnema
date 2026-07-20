@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { DependencyGraphService } from '@/services/snapshot/dependency-graph-service.js';
@@ -16,6 +17,11 @@ import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 import { loadWorkflowFile } from '@/storage/workflow-file.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
+
+/** The display alias a task id surfaces as in the graph result. */
+function taskAlias(id: string): string {
+  return deriveAlias('task', id);
+}
 
 describe('DependencyGraphService', () => {
   let tempRoot: string;
@@ -53,8 +59,8 @@ describe('DependencyGraphService', () => {
   });
 
   /** Insert a task in a given state; returns its internal id. */
-  function makeTask(key: string, state = 'READY'): string {
-    const task = tasks.insert({ key, projectId, title: key, reporterId: actorId });
+  function makeTask(title: string, state = 'READY'): string {
+    const task = tasks.insert({ projectId, title, reporterId: actorId });
     if (state !== 'DRAFT') tasks.updateState(task.id, state, null);
     return task.id;
   }
@@ -75,7 +81,7 @@ describe('DependencyGraphService', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.cycles).toEqual([]);
-    expect(result.value.criticalPath).toEqual(['T-A', 'T-B', 'T-C']);
+    expect(result.value.criticalPath).toEqual([taskAlias(a), taskAlias(b), taskAlias(c)]);
   });
 
   it('identifies the ready/blocked frontier with the live blockers', () => {
@@ -89,8 +95,10 @@ describe('DependencyGraphService', () => {
     const result = graph.forScope({ kind: 'project' });
     if (!result.ok) return;
     // B and C have no live blocker; A is terminal (not in frontier).
-    expect(result.value.frontier.ready).toEqual(['T-B', 'T-C']);
-    expect(result.value.frontier.blocked).toEqual([{ key: 'T-D', blockedBy: ['T-C'] }]);
+    expect(result.value.frontier.ready).toEqual([taskAlias(b), taskAlias(c)].sort());
+    expect(result.value.frontier.blocked).toEqual([
+      { key: taskAlias(d), blockedBy: [taskAlias(c)] },
+    ]);
   });
 
   it('detects a cycle and omits the critical path (cyclic fixture)', () => {
@@ -105,26 +113,26 @@ describe('DependencyGraphService', () => {
     expect(result.value.cycles.length).toBe(1);
     // The cycle lists both members (closed loop).
     const cycle = result.value.cycles[0] ?? [];
-    expect(cycle).toContain('T-A');
-    expect(cycle).toContain('T-B');
+    expect(cycle).toContain(taskAlias(a));
+    expect(cycle).toContain(taskAlias(b));
     // Critical path is undefined under a cycle → empty.
     expect(result.value.criticalPath).toEqual([]);
   });
 
   it('drops edges that point outside the scope', () => {
     const epics = new EpicRepository(adapter);
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
+    const epic = epics.insert({ projectId, title: 'E' });
     // A is in the epic; X is not. X blocks A, but X is out of scope.
     const a = makeTask('T-A');
     const x = makeTask('T-X');
     epics.addTask(epic.id, a);
     blocks(x, a);
-    const result = graph.forScope({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = graph.forScope({ kind: 'epic', key: epic.id });
     if (!result.ok) return;
     // Only A is in scope; its out-of-scope blocker X is dropped, so A is ready.
-    expect(result.value.nodes.map((n) => n.key)).toEqual(['T-A']);
+    expect(result.value.nodes.map((n) => n.key)).toEqual([taskAlias(a)]);
     expect(result.value.nodes[0]?.blockedBy).toEqual([]);
-    expect(result.value.frontier.ready).toEqual(['T-A']);
+    expect(result.value.frontier.ready).toEqual([taskAlias(a)]);
   });
 
   it('returns EpicNotFound for an unknown epic scope', () => {
@@ -150,7 +158,7 @@ describe('DependencyGraphService', () => {
 
     // Parity: the batched result still yields the correct critical path.
     if (result.ok) {
-      expect(result.value.criticalPath).toEqual(['T-A', 'T-B', 'T-C', 'T-D', 'T-E']);
+      expect(result.value.criticalPath).toEqual(ids.map(taskAlias));
     }
     perTask.mockRestore();
     batched.mockRestore();

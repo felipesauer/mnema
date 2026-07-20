@@ -51,41 +51,40 @@ describe('LabelService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function makeTask(key: string): void {
-    tasks.insert({ key, projectId, title: key, reporterId: actorId });
+  function makeTask(title: string): string {
+    return tasks.insert({ projectId, title, reporterId: actorId }).id;
   }
 
   const id = { actor: 'daniel' };
 
   it('sets labels on a task and returns them sorted', () => {
-    makeTask('TEST-1');
-    const result = labels.setLabels({ taskKey: 'TEST-1', labels: ['tipo:bug', 'area:api'], ...id });
+    const t1 = makeTask('TEST-1');
+    const result = labels.setLabels({ taskKey: t1, labels: ['tipo:bug', 'area:api'], ...id });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value).toEqual(['area:api', 'tipo:bug']);
     // Cross-check straight through the repository, by the task's real id.
-    const taskId = tasks.findByKey('TEST-1')?.id ?? '';
-    expect(labelRepo.findNamesByTask(taskId)).toEqual(['area:api', 'tipo:bug']);
+    expect(labelRepo.findNamesByTask(t1)).toEqual(['area:api', 'tipo:bug']);
   });
 
   it('replaces the whole set (set-semantics), not appends', () => {
-    makeTask('TEST-1');
-    labels.setLabels({ taskKey: 'TEST-1', labels: ['area:api', 'tipo:bug'], ...id });
-    const result = labels.setLabels({ taskKey: 'TEST-1', labels: ['area:web'], ...id });
+    const t1 = makeTask('TEST-1');
+    labels.setLabels({ taskKey: t1, labels: ['area:api', 'tipo:bug'], ...id });
+    const result = labels.setLabels({ taskKey: t1, labels: ['area:web'], ...id });
     expect(result.ok && result.value).toEqual(['area:web']);
   });
 
   it('clears every label when given an empty array', () => {
-    makeTask('TEST-1');
-    labels.setLabels({ taskKey: 'TEST-1', labels: ['area:api'], ...id });
-    const result = labels.setLabels({ taskKey: 'TEST-1', labels: [], ...id });
+    const t1 = makeTask('TEST-1');
+    labels.setLabels({ taskKey: t1, labels: ['area:api'], ...id });
+    const result = labels.setLabels({ taskKey: t1, labels: [], ...id });
     expect(result.ok && result.value).toEqual([]);
-    expect(labels.listForTask('TEST-1')).toEqual({ ok: true, value: [] });
+    expect(labels.listForTask(t1)).toEqual({ ok: true, value: [] });
   });
 
   it('de-duplicates and trims label names', () => {
-    makeTask('TEST-1');
+    const t1 = makeTask('TEST-1');
     const result = labels.setLabels({
-      taskKey: 'TEST-1',
+      taskKey: t1,
       labels: ['  area:api  ', 'area:api', 'tipo:bug'],
       ...id,
     });
@@ -93,15 +92,15 @@ describe('LabelService', () => {
   });
 
   it('rejects an empty label name', () => {
-    makeTask('TEST-1');
-    const result = labels.setLabels({ taskKey: 'TEST-1', labels: ['   '], ...id });
+    const t1 = makeTask('TEST-1');
+    const result = labels.setLabels({ taskKey: t1, labels: ['   '], ...id });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
   });
 
   it('rejects a label containing a comma', () => {
-    makeTask('TEST-1');
-    const result = labels.setLabels({ taskKey: 'TEST-1', labels: ['area:api,tipo:bug'], ...id });
+    const t1 = makeTask('TEST-1');
+    const result = labels.setLabels({ taskKey: t1, labels: ['area:api,tipo:bug'], ...id });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(ErrorCode.ValidationFailed);
   });
@@ -113,12 +112,12 @@ describe('LabelService', () => {
   });
 
   it('reports per-label active-task counts most-used first', () => {
-    makeTask('TEST-1');
-    makeTask('TEST-2');
-    makeTask('TEST-3');
-    labels.setLabels({ taskKey: 'TEST-1', labels: ['area:api'], ...id });
-    labels.setLabels({ taskKey: 'TEST-2', labels: ['area:api', 'tipo:bug'], ...id });
-    labels.setLabels({ taskKey: 'TEST-3', labels: ['tipo:bug'], ...id });
+    const t1 = makeTask('TEST-1');
+    const t2 = makeTask('TEST-2');
+    const t3 = makeTask('TEST-3');
+    labels.setLabels({ taskKey: t1, labels: ['area:api'], ...id });
+    labels.setLabels({ taskKey: t2, labels: ['area:api', 'tipo:bug'], ...id });
+    labels.setLabels({ taskKey: t3, labels: ['tipo:bug'], ...id });
     expect(labels.counts()).toEqual([
       { name: 'area:api', count: 2 },
       { name: 'tipo:bug', count: 2 },

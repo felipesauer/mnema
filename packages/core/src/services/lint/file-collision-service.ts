@@ -1,5 +1,6 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import type { EpicRepository } from '../../storage/sqlite/repositories/epic-repository.js';
@@ -71,28 +72,33 @@ export class FileCollisionService {
     if (!tasksResult.ok) return tasksResult;
     const scopeTasks = tasksResult.value;
 
-    // Compute each task's touched-file set from its commit evidence.
-    const filesByKey = new Map<string, Set<string>>();
+    // Compute each task's touched-file set from its commit evidence, keyed by
+    // the display alias (the handle the report carries).
+    const filesByAlias = new Map<string, Set<string>>();
     const analysed: string[] = [];
     const skipped: string[] = [];
     for (const task of scopeTasks) {
+      const alias = deriveAlias('task', task.id);
       const files = this.filesFor(task.id);
       if (files.size === 0) {
-        skipped.push(task.key);
+        skipped.push(alias);
       } else {
-        filesByKey.set(task.key, files);
-        analysed.push(task.key);
+        filesByAlias.set(alias, files);
+        analysed.push(alias);
       }
     }
 
     // Compare every unordered pair of analysed tasks for shared files.
     const collisions: FileCollision[] = [];
-    const keys = [...filesByKey.keys()].sort();
-    for (let i = 0; i < keys.length; i += 1) {
-      for (let j = i + 1; j < keys.length; j += 1) {
-        const a = keys[i] as string;
-        const b = keys[j] as string;
-        const shared = intersect(filesByKey.get(a) ?? new Set(), filesByKey.get(b) ?? new Set());
+    const aliases = [...filesByAlias.keys()].sort();
+    for (let i = 0; i < aliases.length; i += 1) {
+      for (let j = i + 1; j < aliases.length; j += 1) {
+        const a = aliases[i] as string;
+        const b = aliases[j] as string;
+        const shared = intersect(
+          filesByAlias.get(a) ?? new Set(),
+          filesByAlias.get(b) ?? new Set(),
+        );
         if (shared.length > 0) {
           collisions.push({ taskA: a, taskB: b, files: shared });
         }

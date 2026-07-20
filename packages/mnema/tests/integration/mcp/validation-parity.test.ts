@@ -162,10 +162,10 @@ describe('producer/consumer validation parity (MNEMA-ADR-28)', () => {
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const id = created.value.id;
 
     const svc = harness.container.taskEvidence.attach({
-      taskKey: key,
+      taskKey: id,
       criterionIndex: 0.5,
       ref: 'x',
       actor: 'daniel',
@@ -174,7 +174,7 @@ describe('producer/consumer validation parity (MNEMA-ADR-28)', () => {
 
     const mcp = (await harness.client.callTool({
       name: 'task_attach_evidence',
-      arguments: { task_key: key, criterion_index: 0.5, ref: 'x' },
+      arguments: { task_key: id, criterion_index: 0.5, ref: 'x' },
     })) as CallToolResult;
     expect(mcpRejected(mcp)).toBe(true);
   });

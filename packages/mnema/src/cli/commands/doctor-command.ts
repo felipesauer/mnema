@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { ConfigLoader } from '@mnema/core/config/config-loader.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   formatWorkflowIssues,
   WorkflowInvalidError,
@@ -994,8 +995,8 @@ export function inspectMirrorDrift(
   // files as orphans.
   const epicRows = adapter
     .getDatabase()
-    .prepare('SELECT id, key FROM epics WHERE deleted_at IS NULL')
-    .all() as Array<{ id: string; key: string }>;
+    .prepare('SELECT id FROM epics WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string }>;
   const epicIds = epicRows.map((r) => r.id);
   const decisionKeys = (
     adapter
@@ -1005,8 +1006,8 @@ export function inspectMirrorDrift(
   ).map((r) => r.key);
   const sprintRows = adapter
     .getDatabase()
-    .prepare('SELECT id, key FROM sprints WHERE deleted_at IS NULL')
-    .all() as Array<{ id: string; key: string }>;
+    .prepare('SELECT id FROM sprints WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string }>;
   const sprintIds = sprintRows.map((r) => r.id);
 
   const roadmapKnown = new Set([...epicIds, ...decisionKeys]);
@@ -1024,7 +1025,7 @@ export function inspectMirrorDrift(
     severity: 'warning',
     detail: mirrorDetail(
       epicRows.length,
-      epicMissing.map((r) => r.key),
+      epicMissing.map((r) => deriveAlias('epic', r.id)),
       [],
     ),
   });
@@ -1049,7 +1050,7 @@ export function inspectMirrorDrift(
     severity: 'warning',
     detail: mirrorDetail(
       sprintRows.length,
-      sprintMissing.map((r) => r.key),
+      sprintMissing.map((r) => deriveAlias('sprint', r.id)),
       sprintOrphans,
     ),
   });
@@ -1059,12 +1060,12 @@ export function inspectMirrorDrift(
   // the missing-file probe and the orphan scan walk one level deeper.
   const taskRows = adapter
     .getDatabase()
-    .prepare('SELECT id, key, state FROM tasks WHERE deleted_at IS NULL')
-    .all() as Array<{ id: string; key: string; state: string }>;
+    .prepare('SELECT id, state FROM tasks WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string; state: string }>;
   const taskIds = new Set(taskRows.map((r) => r.id));
   const taskMissing = taskRows
     .filter((r) => !existsSync(path.join(dirs.backlogDir, r.state, `${r.id}.md`)))
-    .map((r) => r.key);
+    .map((r) => deriveAlias('task', r.id));
   const taskOrphans = listNestedMirrorOrphans(dirs.backlogDir, taskIds);
   checks.push({
     name: 'tasks mirrored',

@@ -1,4 +1,5 @@
 import { Err, Ok, type Result } from '../../common/result.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { AgentRunStatus } from '../../domain/enums/agent-run-status.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
@@ -162,29 +163,36 @@ function summarise(kind: string, data: Readonly<Record<string, unknown>>): strin
     typeof data[key] === 'string' ? (data[key] as string) : undefined;
   const n = (key: string): number | undefined =>
     typeof data[key] === 'number' ? (data[key] as number) : undefined;
+  // A task's display handle: the short alias derived from the committed id an
+  // event stamps (`id` on a task's own event, `task_id` when referenced from
+  // another entity's). Falls back to a bare label when neither is present.
+  const taskAlias = (field: 'id' | 'task_id'): string => {
+    const id = s(field);
+    return id !== undefined ? deriveAlias('task', id) : 'task';
+  };
 
   switch (kind) {
     case 'task_created':
-      return `created ${s('key') ?? 'task'}`;
+      return `created ${taskAlias('id')}`;
     case 'task_transitioned':
-      return `${s('key') ?? 'task'}: ${s('from') ?? '?'} → ${s('to') ?? '?'}`;
+      return `${taskAlias('id')}: ${s('from') ?? '?'} → ${s('to') ?? '?'}`;
     case 'task_assigned':
-      return `assigned ${s('key') ?? 'task'}${s('assignee') !== undefined ? ` to ${s('assignee')}` : ''}`;
+      return `assigned ${taskAlias('id')}${s('assignee') !== undefined ? ` to ${s('assignee')}` : ''}`;
     case 'task_claimed':
-      return `claimed ${s('key') ?? 'task'}${s('lease_expires_at') !== undefined ? ` (lease → ${s('lease_expires_at')})` : ''}`;
+      return `claimed ${taskAlias('id')}${s('lease_expires_at') !== undefined ? ` (lease → ${s('lease_expires_at')})` : ''}`;
     case 'task_claim_released':
-      return `released claim on ${s('key') ?? 'task'}`;
+      return `released claim on ${taskAlias('id')}`;
     case 'task_deleted':
-      return `deleted ${s('key') ?? 'task'}`;
+      return `deleted ${taskAlias('id')}`;
     case 'task_restored':
-      return `restored ${s('key') ?? 'task'}`;
+      return `restored ${taskAlias('id')}`;
     case 'task_labels_set':
-      return `labelled ${s('task_key') ?? s('key') ?? 'task'}`;
+      return `labelled ${taskAlias('task_id')}`;
     case 'dependency_linked':
-      return `${s('task_key') ?? '?'} depends on ${s('blocks_task_key') ?? '?'} (${s('kind') ?? 'blocks'})`;
+      return `${s('task_id') !== undefined ? deriveAlias('task', s('task_id') as string) : '?'} depends on ${s('blocks_task_id') !== undefined ? deriveAlias('task', s('blocks_task_id') as string) : '?'} (${s('kind') ?? 'blocks'})`;
     case 'evidence_attached': {
       const idx = n('criterion_index');
-      return `evidence on ${s('task_key') ?? 'task'}${idx !== undefined ? ` [${idx}]` : ''}: ${s('evidence_kind') ?? 'other'} ${s('ref') ?? ''}`.trim();
+      return `evidence on ${taskAlias('task_id')}${idx !== undefined ? ` [${idx}]` : ''}: ${s('evidence_kind') ?? 'other'} ${s('ref') ?? ''}`.trim();
     }
     case 'decision_recorded':
       return `decision ${s('key') ?? ''} ${s('title') ?? ''}`.trim();
@@ -209,11 +217,11 @@ function summarise(kind: string, data: Readonly<Record<string, unknown>>): strin
     case 'skill_superseded':
       return `superseded skill ${s('slug') ?? ''}`.trim();
     case 'observation_recorded':
-      return `observation${s('related_task_key') !== undefined ? ` on ${s('related_task_key')}` : ''}`;
+      return `observation${s('related_task_id') !== undefined ? ` on ${deriveAlias('task', s('related_task_id') as string)}` : ''}`;
     case 'observation_archived':
       return `archived observation ${s('id') ?? ''}`.trim();
     case 'note_added':
-      return `note on ${s('task_key') ?? s('key') ?? 'task'}`;
+      return `note on ${taskAlias('task_id')}`;
     default:
       return kind;
   }

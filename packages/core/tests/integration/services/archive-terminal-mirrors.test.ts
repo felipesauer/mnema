@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ARCHIVE_DIRNAME } from '@/services/backlog/archive-service.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 import { MarkdownIo } from '@/storage/markdown/markdown-io.js';
@@ -41,9 +42,15 @@ describe('ArchiveService terminal-mirror archival', () => {
   let container: ServiceContainer;
   const markdownIo = new MarkdownIo();
   const backlogDir = () => path.join(projectRoot, '.mnema/backlog');
-  const stateMirror = (state: string, key: string) => path.join(backlogDir(), state, `${key}.md`);
-  const archiveMirror = (state: string, key: string) =>
-    path.join(backlogDir(), ARCHIVE_DIRNAME, state, `${key}.md`);
+  // Mirrors are filed by the committed id; the fixture seeds a task under
+  // `id-${label}`, so a mirror path is keyed off that id.
+  const taskId = (label: string) => `id-${label}`;
+  const stateMirror = (state: string, label: string) =>
+    path.join(backlogDir(), state, `${taskId(label)}.md`);
+  const archiveMirror = (state: string, label: string) =>
+    path.join(backlogDir(), ARCHIVE_DIRNAME, state, `${taskId(label)}.md`);
+  // The short alias the archive reports for a seeded task.
+  const taskAlias = (label: string) => deriveAlias('task', taskId(label));
 
   beforeEach(() => {
     projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-archive-'));
@@ -68,7 +75,7 @@ describe('ArchiveService terminal-mirror archival', () => {
    * layer so the timestamp is exactly controllable (the `updated_at` trigger
    * only fires on UPDATE, so an explicit value on INSERT survives).
    */
-  function seedTaskWithMirror(key: string, state: string, ageMs: number, now: number): void {
+  function seedTaskWithMirror(label: string, state: string, ageMs: number, now: number): void {
     const db = container.adapter.getDatabase();
     const project = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string };
     let actor = db.prepare('SELECT id FROM actors LIMIT 1').get() as { id: string } | undefined;
@@ -76,18 +83,19 @@ describe('ArchiveService terminal-mirror archival', () => {
       db.prepare("INSERT INTO actors (id, handle, kind) VALUES ('act-1', 'daniel', 'human')").run();
       actor = { id: 'act-1' };
     }
+    const id = taskId(label);
     const at = new Date(now - ageMs).toISOString();
     db.prepare(
-      `INSERT INTO tasks (id, key, project_id, title, description, acceptance_criteria, state,
+      `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
          priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
-       VALUES (?, ?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
-    ).run(`id-${key}`, key, project.id, `Task ${key}`, state, actor.id, actor.id, at, at);
+       VALUES (?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
+    ).run(id, project.id, `Task ${label}`, state, actor.id, actor.id, at, at);
 
-    mkdirSync(path.dirname(stateMirror(state, key)), { recursive: true });
-    markdownIo.write(stateMirror(state, key), {
-      mnemaData: { key, state, title: `Task ${key}`, updated_at: at },
+    mkdirSync(path.dirname(stateMirror(state, label)), { recursive: true });
+    markdownIo.write(stateMirror(state, label), {
+      mnemaData: { id, state, title: `Task ${label}`, updated_at: at },
       otherFrontmatter: {},
-      content: `# Task ${key}\n`,
+      content: `# Task ${label}\n`,
     });
   }
 
@@ -105,7 +113,7 @@ describe('ArchiveService terminal-mirror archival', () => {
     expect(result.dryRun).toBe(false);
     expect(result.archived).toEqual([
       {
-        key: 'TEST-1',
+        key: taskAlias('TEST-1'),
         state: 'DONE',
         fromPath: stateMirror('DONE', 'TEST-1'),
         toPath: archiveMirror('DONE', 'TEST-1'),
@@ -116,9 +124,12 @@ describe('ArchiveService terminal-mirror archival', () => {
     expect(existsSync(archiveMirror('DONE', 'TEST-1'))).toBe(true);
     // The SQLite row (source of truth) is never touched.
     expect(
-      container.adapter.getDatabase().prepare("SELECT key FROM tasks WHERE key = 'TEST-1'").get(),
+      container.adapter
+        .getDatabase()
+        .prepare('SELECT id FROM tasks WHERE id = ?')
+        .get(taskId('TEST-1')),
     ).toEqual({
-      key: 'TEST-1',
+      id: taskId('TEST-1'),
     });
   });
 
@@ -168,12 +179,11 @@ describe('ArchiveService terminal-mirror archival', () => {
       actor = { id: 'act-1' };
     }
     db.prepare(
-      `INSERT INTO tasks (id, key, project_id, title, description, acceptance_criteria, state,
+      `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
          priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at, closed_at)
-       VALUES (?, ?, ?, ?, '', '[]', 'DONE', 3, ?, ?, 0, '{}', ?, ?, ?)`,
+       VALUES (?, ?, ?, '', '[]', 'DONE', 3, ?, ?, 0, '{}', ?, ?, ?)`,
     ).run(
-      'id-TEST-9',
-      'TEST-9',
+      taskId('TEST-9'),
       project.id,
       'Task TEST-9',
       actor.id,
@@ -184,7 +194,12 @@ describe('ArchiveService terminal-mirror archival', () => {
     );
     mkdirSync(path.dirname(stateMirror('DONE', 'TEST-9')), { recursive: true });
     markdownIo.write(stateMirror('DONE', 'TEST-9'), {
-      mnemaData: { key: 'TEST-9', state: 'DONE', title: 'Task TEST-9', updated_at: updatedAt },
+      mnemaData: {
+        id: taskId('TEST-9'),
+        state: 'DONE',
+        title: 'Task TEST-9',
+        updated_at: updatedAt,
+      },
       otherFrontmatter: {},
       content: '# Task TEST-9\n',
     });
@@ -228,7 +243,7 @@ describe('ArchiveService terminal-mirror archival', () => {
     // The plan still names what WOULD move, with the destination path.
     expect(result.archived).toEqual([
       {
-        key: 'TEST-5',
+        key: taskAlias('TEST-5'),
         state: 'DONE',
         fromPath: stateMirror('DONE', 'TEST-5'),
         toPath: archiveMirror('DONE', 'TEST-5'),
@@ -242,10 +257,10 @@ describe('ArchiveService terminal-mirror archival', () => {
   it('disambiguates a name collision in the archive with a .N suffix', () => {
     const now = Date.now();
     seedTaskWithMirror('TEST-6', 'DONE', 8 * MONTH, now);
-    // A prior archive already holds .archive/DONE/TEST-6.md — force a collision.
+    // A prior archive already holds .archive/DONE/<id>.md — force a collision.
     mkdirSync(path.dirname(archiveMirror('DONE', 'TEST-6')), { recursive: true });
     markdownIo.write(archiveMirror('DONE', 'TEST-6'), {
-      mnemaData: { key: 'TEST-6', state: 'DONE' },
+      mnemaData: { id: taskId('TEST-6'), state: 'DONE' },
       otherFrontmatter: {},
       content: '# stale archived copy\n',
     });
@@ -257,7 +272,12 @@ describe('ArchiveService terminal-mirror archival', () => {
     });
 
     expect(result.movedCount).toBe(1);
-    const expectedDest = path.join(backlogDir(), ARCHIVE_DIRNAME, 'DONE', 'TEST-6.1.md');
+    const expectedDest = path.join(
+      backlogDir(),
+      ARCHIVE_DIRNAME,
+      'DONE',
+      `${taskId('TEST-6')}.1.md`,
+    );
     expect(result.archived[0]?.toPath).toBe(expectedDest);
     expect(existsSync(expectedDest)).toBe(true);
     // The original collided copy is preserved, the state-folder mirror is gone.
@@ -309,7 +329,10 @@ describe('ArchiveService terminal-mirror archival', () => {
     expect(existsSync(stateMirror('DONE', 'TEST-8'))).toBe(false);
     // The row survived the whole cycle (source of truth, never row-gated away).
     expect(
-      container.adapter.getDatabase().prepare("SELECT state FROM tasks WHERE key = 'TEST-8'").get(),
+      container.adapter
+        .getDatabase()
+        .prepare('SELECT state FROM tasks WHERE id = ?')
+        .get(taskId('TEST-8')),
     ).toEqual({
       state: 'DONE',
     });

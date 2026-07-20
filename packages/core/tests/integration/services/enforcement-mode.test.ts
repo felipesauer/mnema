@@ -49,20 +49,20 @@ describe('enforcement_mode on a failed gate', () => {
   }
 
   /** Creates a title-only DRAFT — its submit gate will fail. */
-  function draftKey(): string {
+  function draftId(): string {
     const created = container.task.create({
       projectKey: 'TEST',
       title: 'Bare draft',
       actor: 'daniel',
     });
     if (!created.ok) throw new Error('setup: create failed');
-    return created.value.key;
+    return created.value.id;
   }
 
   /** Submits with an empty payload (gate fails); `agent` toggles the `via` field. */
-  function submit(key: string, agent: boolean) {
+  function submit(id: string, agent: boolean) {
     return container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
@@ -82,20 +82,20 @@ describe('enforcement_mode on a failed gate', () => {
 
   it('blocking: blocks even a human, and audits the block', () => {
     boot('blocking');
-    const key = draftKey();
-    const result = submit(key, false);
+    const id = draftId();
+    const result = submit(id, false);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(ErrorCode.GateFailed);
     expect(auditKinds()).toContain('transition_blocked');
     // The task did not move.
-    const after = container.task.findByKey(key);
+    const after = container.task.findByKey(id);
     if (after.ok) expect(after.value.state).toBe('DRAFT');
   });
 
   it('strict: blocks an agent', () => {
     boot('strict');
-    const key = draftKey();
-    const result = submit(key, true);
+    const id = draftId();
+    const result = submit(id, true);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(ErrorCode.GateFailed);
     expect(auditKinds()).toContain('transition_blocked');
@@ -103,8 +103,8 @@ describe('enforcement_mode on a failed gate', () => {
 
   it('strict: lets a human override, and audits the override', () => {
     boot('strict');
-    const key = draftKey();
-    const result = submit(key, false);
+    const id = draftId();
+    const result = submit(id, false);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.state).toBe('READY');
     expect(auditKinds()).toContain('gate_overridden');
@@ -112,8 +112,8 @@ describe('enforcement_mode on a failed gate', () => {
 
   it('advisory: lets an agent through, and audits the override', () => {
     boot('advisory');
-    const key = draftKey();
-    const result = submit(key, true);
+    const id = draftId();
+    const result = submit(id, true);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.state).toBe('READY');
     expect(auditKinds()).toContain('gate_overridden');
@@ -131,7 +131,7 @@ describe('enforcement_mode on a failed gate', () => {
     });
     if (!created.ok) throw new Error('setup');
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
@@ -144,9 +144,9 @@ describe('enforcement_mode on a failed gate', () => {
 
   it('an unknown action is always rejected, even in advisory', () => {
     boot('advisory');
-    const key = draftKey();
+    const id = draftId();
     const result = container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'no_such_action',
       payload: {},
       actor: 'daniel',

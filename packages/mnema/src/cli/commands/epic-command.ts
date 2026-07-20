@@ -1,4 +1,5 @@
 import type { Epic } from '@mnema/core/domain/entities/epic.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { EpicLifecycle } from '@mnema/core/domain/enums/epic-lifecycle.js';
 import { EpicState } from '@mnema/core/domain/enums/epic-state.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
@@ -202,17 +203,17 @@ function renderEpic(
     process.exit(printError(result.error));
   }
   process.stdout.write(
-    `${pc.green('✓')} epic ${pc.bold(result.value.key)} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
+    `${pc.green('✓')} epic ${pc.bold(deriveAlias('epic', result.value.id))} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
   );
 }
 
 function formatEpicRow(epic: Epic): string {
-  return `${pc.bold(epic.key.padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
+  return `${pc.bold(deriveAlias('epic', epic.id).padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
 }
 
 function formatEpicView(epic: Epic, taskKeys: readonly string[], lifecycle: EpicLifecycle): string {
   const lines: string[] = [];
-  lines.push(`${pc.bold('Epic:')} ${epic.key}`);
+  lines.push(`${pc.bold('Epic:')} ${deriveAlias('epic', epic.id)}`);
   lines.push(`${pc.bold('Title:')} ${epic.title}`);
   lines.push(`${pc.bold('State:')} ${epic.state} ${pc.dim(`(${lifecycle})`)}`);
   if (epic.description !== null) {

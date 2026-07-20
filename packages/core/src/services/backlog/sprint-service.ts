@@ -2,6 +2,7 @@ import { Err, Ok, type Result } from '../../common/result.js';
 import type { Sprint } from '../../domain/entities/sprint.js';
 import type { SprintMetric } from '../../domain/entities/sprint-metric.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import { checkOptionalFiniteNumber, checkRequiredFiniteNumber } from '../../domain/validation.js';
@@ -169,21 +170,17 @@ export class SprintService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
-    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-    // two processes on one state.db cannot mint the same key.
+    // The sprint's identity is a minted UUID — no sequence to serialise. The
+    // insert still runs through tryMutation so the "one active sprint" unique
+    // index surfaces as a structured error.
     const sprintResult = tryMutation(() =>
-      this.sprints.runInTransactionImmediate(() => {
-        const sequence = this.sprints.nextSequence(project.id);
-        const key = `${project.key}-SPRINT-${sequence}`;
-        return this.sprints.insert({
-          key,
-          projectId: project.id,
-          name: input.name,
-          goal: input.goal ?? null,
-          startsAt: input.startsAt ?? null,
-          endsAt: input.endsAt ?? null,
-          capacity: input.capacity ?? null,
-        });
+      this.sprints.insert({
+        projectId: project.id,
+        name: input.name,
+        goal: input.goal ?? null,
+        startsAt: input.startsAt ?? null,
+        endsAt: input.endsAt ?? null,
+        capacity: input.capacity ?? null,
       }),
     );
     if (!sprintResult.ok) return sprintResult;
@@ -195,7 +192,7 @@ export class SprintService {
       via: input.via,
       run: input.runId,
       // The committed id binds provenance to the clone-stable identity.
-      data: { id: sprint.id, key: sprint.key, name: sprint.name, goal: sprint.goal },
+      data: { id: sprint.id, name: sprint.name, goal: sprint.goal },
     });
 
     this.mirror?.writeSprint(sprint);
@@ -217,18 +214,17 @@ export class SprintService {
     if (sprint.state !== SprintState.Planned) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Active,
       });
     }
     const active = this.sprints.findActive(sprint.projectId);
     if (active !== null) {
-      const projectKey = sprint.key.split('-SPRINT-')[0] ?? sprint.projectId;
       return Err({
         kind: ErrorCode.ActiveSprintExists,
-        projectKey,
-        activeSprintKey: active.key,
+        projectKey: this.projects.findById(sprint.projectId)?.key ?? sprint.projectId,
+        activeSprintKey: deriveAlias('sprint', active.id),
       });
     }
 
@@ -248,13 +244,12 @@ export class SprintService {
     );
     if (!wrapped.ok) {
       if (wrapped.error.kind === ErrorCode.ActiveSprintExists) {
-        // The race winner's key was not in the SqliteError message; look it up.
+        // The race winner was not in the SqliteError message; look it up.
         const winner = this.sprints.findActive(sprint.projectId);
-        const projectKey = sprint.key.split('-SPRINT-')[0] ?? sprint.projectId;
         return Err({
           kind: ErrorCode.ActiveSprintExists,
-          projectKey,
-          activeSprintKey: winner?.key ?? '(unknown)',
+          projectKey: this.projects.findById(sprint.projectId)?.key ?? sprint.projectId,
+          activeSprintKey: winner !== null ? deriveAlias('sprint', winner.id) : '(unknown)',
         });
       }
       return Err(wrapped.error);
@@ -267,7 +262,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -278,7 +273,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
     });
 
     this.mirror?.writeSprint(updated);
@@ -299,7 +294,7 @@ export class SprintService {
     if (sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Closed,
       });
@@ -319,7 +314,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -330,7 +325,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
     });
 
     this.mirror?.writeSprint(updated);
@@ -362,7 +357,7 @@ export class SprintService {
     if (sprint.state !== SprintState.Planned && sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Canceled,
       });
@@ -379,7 +374,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -390,7 +385,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, reason },
+      data: { id: updated.id, reason },
     });
 
     this.mirror?.writeSprint(updated);
@@ -422,11 +417,11 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { sprint_key: sprint.key, task_key: task.key },
+      data: { sprint_id: sprint.id, task_id: task.id },
     });
 
     // The sprint link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'sprint_task_added', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'sprint_task_added', runId: input.runId });
 
     const updated = this.tasks.findById(task.id);
     if (updated === null) {
@@ -448,6 +443,9 @@ export class SprintService {
     }));
     if (!taskResolved.ok) return Err(taskResolved.error);
     const task = taskResolved.value;
+    // The sprint the task is being detached from — its committed id, from the
+    // task's link before removal (removeTask clears it by task id).
+    const sprintId = task.sprintId;
 
     this.sprints.removeTask(task.id);
 
@@ -456,11 +454,11 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { sprint_key: input.sprintKey, task_key: task.key },
+      data: { sprint_id: sprintId, task_id: task.id },
     });
 
     // The sprint link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'sprint_task_removed', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'sprint_task_removed', runId: input.runId });
 
     const updated = this.tasks.findById(task.id);
     if (updated === null) {
@@ -539,7 +537,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { sprint_key: sprint.key, name: input.name, target: input.target },
+      data: { sprint_id: sprint.id, name: input.name, target: input.target },
     });
     return Ok(created);
   }
@@ -593,7 +591,7 @@ export class SprintService {
    * a manual deletion. Existing files are left untouched.
    *
    * @param projectKey - Project key
-   * @returns Keys of the sprints whose mirror was just written
+   * @returns Aliases of the sprints whose mirror was just written
    */
   rebuildMirrors(projectKey: string): string[] {
     if (this.mirror === null) return [];
@@ -601,7 +599,7 @@ export class SprintService {
     for (const sprint of this.list(projectKey)) {
       if (!this.mirror.hasSprint(sprint.id)) {
         this.mirror.writeSprint(sprint);
-        rebuilt.push(sprint.key);
+        rebuilt.push(deriveAlias('sprint', sprint.id));
       }
     }
     return rebuilt;

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import type { CommandRunner } from '@/services/git/github-pr-service.js';
 import { FileCollisionService } from '@/services/lint/file-collision-service.js';
@@ -15,6 +16,20 @@ import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
 
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
+
+/** The display alias the report carries for a task id. */
+function taskAlias(id: string): string {
+  return deriveAlias('task', id);
+}
+
+/**
+ * A collision pair as an order-independent, sorted alias tuple. The service
+ * emits `taskA`/`taskB` in alias-sort order (not seed order), so tests compare
+ * the pair as a set rather than pinning which alias lands in `taskA`.
+ */
+function pair(idX: string, idY: string): [string, string] {
+  return [taskAlias(idX), taskAlias(idY)].sort() as [string, string];
+}
 
 /** A git runner that maps a commit sha → the files it touched. */
 function gitRunner(byCommit: Record<string, string[]>): CommandRunner {
@@ -57,12 +72,14 @@ describe('FileCollisionService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  /** Seed a task in an epic with one acceptance criterion + a commit evidence sha. */
-  function seed(key: string, epicId: string, sha?: string): void {
+  /**
+   * Seed a task in an epic with one acceptance criterion + a commit evidence
+   * sha. Returns the created task's id (the report carries its derived alias).
+   */
+  function seed(title: string, epicId: string, sha?: string): string {
     const task = tasks.insert({
-      key,
       projectId,
-      title: key,
+      title,
       reporterId: actorId,
       epicId,
       acceptanceCriteria: ['ships'],
@@ -70,6 +87,7 @@ describe('FileCollisionService', () => {
     if (sha !== undefined) {
       evidence.insert({ taskId: task.id, criterionIndex: 0, kind: 'commit', ref: sha });
     }
+    return task.id;
   }
 
   function service(byCommit: Record<string, string[]>): FileCollisionService {
@@ -84,63 +102,70 @@ describe('FileCollisionService', () => {
   }
 
   it('flags two tasks in an epic that touch the same file', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
-    seed('T-A', epic.id, 'sha-a');
-    seed('T-B', epic.id, 'sha-b');
-    seed('T-C', epic.id, 'sha-c');
+    const epic = epics.insert({ projectId, title: 'E' });
+    const a = seed('T-A', epic.id, 'sha-a');
+    const b = seed('T-B', epic.id, 'sha-b');
+    const c = seed('T-C', epic.id, 'sha-c');
     const svc = service({
       'sha-a': ['src/mcp/mcp-server.ts', 'src/a.ts'],
       'sha-b': ['src/mcp/mcp-server.ts', 'src/b.ts'], // collides with A on mcp-server.ts
       'sha-c': ['src/c.ts'], // no overlap
     });
 
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.collisions).toEqual([
-      { taskA: 'T-A', taskB: 'T-B', files: ['src/mcp/mcp-server.ts'] },
-    ]);
-    expect(result.value.analysed.sort()).toEqual(['T-A', 'T-B', 'T-C']);
+    expect(result.value.collisions).toHaveLength(1);
+    const collision = result.value.collisions[0];
+    expect(collision).toBeDefined();
+    if (collision === undefined) return;
+    expect([collision.taskA, collision.taskB].sort()).toEqual(pair(a, b));
+    expect(collision.files).toEqual(['src/mcp/mcp-server.ts']);
+    expect(result.value.analysed.sort()).toEqual([taskAlias(a), taskAlias(b), taskAlias(c)].sort());
     expect(result.value.skipped).toEqual([]);
   });
 
   it('reports no collisions when file sets are disjoint', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
+    const epic = epics.insert({ projectId, title: 'E' });
     seed('T-A', epic.id, 'sha-a');
     seed('T-B', epic.id, 'sha-b');
     const svc = service({ 'sha-a': ['src/a.ts'], 'sha-b': ['src/b.ts'] });
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
     if (!result.ok) return;
     expect(result.value.collisions).toEqual([]);
   });
 
   it('skips tasks with no commit evidence (files cannot be inferred)', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
-    seed('T-A', epic.id, 'sha-a');
-    seed('T-NOEV', epic.id); // no commit evidence
+    const epic = epics.insert({ projectId, title: 'E' });
+    const a = seed('T-A', epic.id, 'sha-a');
+    const noev = seed('T-NOEV', epic.id); // no commit evidence
     const svc = service({ 'sha-a': ['src/a.ts'] });
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
     if (!result.ok) return;
-    expect(result.value.analysed).toEqual(['T-A']);
-    expect(result.value.skipped).toEqual(['T-NOEV']);
+    expect(result.value.analysed).toEqual([taskAlias(a)]);
+    expect(result.value.skipped).toEqual([taskAlias(noev)]);
     expect(result.value.collisions).toEqual([]);
   });
 
   it('orders collisions by number of shared files, most first', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
-    seed('T-A', epic.id, 'sha-a');
-    seed('T-B', epic.id, 'sha-b');
-    seed('T-C', epic.id, 'sha-c');
+    const epic = epics.insert({ projectId, title: 'E' });
+    const a = seed('T-A', epic.id, 'sha-a');
+    const b = seed('T-B', epic.id, 'sha-b');
+    const c = seed('T-C', epic.id, 'sha-c');
     const svc = service({
       'sha-a': ['x.ts', 'y.ts', 'z.ts'],
       'sha-b': ['x.ts', 'y.ts'], // shares 2 with A
       'sha-c': ['z.ts'], // shares 1 with A
     });
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
     if (!result.ok) return;
-    expect(result.value.collisions.map((c) => [c.taskA, c.taskB, c.files.length])).toEqual([
-      ['T-A', 'T-B', 2],
-      ['T-A', 'T-C', 1],
+    // Ordering by shared-file count (2 then 1) is the invariant; the pair
+    // within each collision is compared order-independently.
+    expect(
+      result.value.collisions.map((coll) => [[coll.taskA, coll.taskB].sort(), coll.files.length]),
+    ).toEqual([
+      [pair(a, b), 2],
+      [pair(a, c), 1],
     ]);
   });
 
