@@ -112,11 +112,79 @@ export interface TaskTransitionedV1 extends Envelope {
 }
 
 /**
+ * A decision was recorded — the birth of an architecture decision.
+ *
+ * Unlike a task, whose creation event carries only a title, a decision's fact
+ * is its WHY: `rationale` is part of the immutable record, because a decision
+ * with no rationale records nothing worth proving. `adr` is the citable label
+ * (`ADR-<n>`) frozen at write time — a sequential number derived from how many
+ * decisions the writer's local view already held. It is FROZEN into the fact,
+ * never re-derived on read: a number derived on read would slip when a
+ * concurrent decision merges in ahead of it, and a citation ("ADR-2") would
+ * silently come to point at a different decision. The number is a citation
+ * label over the id, not identity and not a fatal constraint — two clones may
+ * mint the same `adr` offline; the ids stay unique and a projection surfaces
+ * the label collision.
+ */
+export interface DecisionRecordedV1 extends Envelope {
+  readonly kind: 'decision.recorded';
+  readonly v: 1;
+  /** Subject is the decision's id. */
+  readonly payload: {
+    readonly title: string;
+    /** The why of the decision — the whole value of an ADR. */
+    readonly rationale: string;
+    /** The citable label, `ADR-<n>`, frozen at write time. */
+    readonly adr: string;
+  };
+}
+
+/**
+ * A decision moved between workflow states. Mirrors `task.transitioned`:
+ * `from`/`to`/`action` are literal strings — the fact of the move, not a
+ * pointer into a workflow that may since have changed — and `fields` carries
+ * the transition's textual proof (the gate decides which is mandatory).
+ *
+ * `by` is the one shape a decision transition carries that a task's does not:
+ * the id of the decision that SUPERSEDES this one. It is a typed relational id
+ * in the payload (never smuggled into `fields`, which is textual proof), so a
+ * `supersede` records, as an autonomous fact, exactly which decision replaced
+ * which. It is present only on a supersede and absent otherwise. This is the
+ * first multi-entity event: its subject is the superseded decision, and `by`
+ * names the successor — the model for every relational fact that follows.
+ *
+ * `from` is `null` for exactly one transition: the birth that gives a decision
+ * its initial state. The same rule as tasks — current state is the `to` of the
+ * last transition, read without ever consulting the workflow.
+ */
+export interface DecisionTransitionedV1 extends Envelope {
+  readonly kind: 'decision.transitioned';
+  readonly v: 1;
+  /** Subject is the decision's id (the superseded one, on a supersede). */
+  readonly payload: {
+    /** The state left behind, or `null` when this is the birth transition. */
+    readonly from: string | null;
+    readonly to: string;
+    readonly action: string;
+    /** The successor decision's id — present only on a `supersede`. */
+    readonly by?: string;
+    /** The transition's proof and context; omitted when it carries none. */
+    readonly fields?: TransitionFields;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
  */
-export type CatalogEvent = RunStartedV1 | RunEndedV1 | TaskCreatedV1 | TaskTransitionedV1;
+export type CatalogEvent =
+  | RunStartedV1
+  | RunEndedV1
+  | TaskCreatedV1
+  | TaskTransitionedV1
+  | DecisionRecordedV1
+  | DecisionTransitionedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -130,4 +198,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'run.ended': 1,
   'task.created': 1,
   'task.transitioned': 1,
+  'decision.recorded': 1,
+  'decision.transitioned': 1,
 };

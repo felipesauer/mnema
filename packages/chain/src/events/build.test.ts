@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   BIRTH_ACTION,
+  decisionBirth,
+  decisionRecorded,
+  decisionTransitioned,
   runEnded,
   runStarted,
   taskBirth,
@@ -171,5 +174,93 @@ describe('taskBirth', () => {
       expect(transitioned.payload.to).toBe('triage');
       expect(transitioned.payload.from).toBeNull();
     }
+  });
+});
+
+describe('decision builders', () => {
+  it('records a decision with its title, rationale, and frozen adr label', () => {
+    const event = decisionRecorded(env, {
+      title: 'Use SQLite for the cache',
+      rationale: 'The load is relational; a rebuildable cache dissolves migrations.',
+      adr: 'ADR-3',
+    });
+    expect(event).toMatchObject({
+      v: 1,
+      kind: 'decision.recorded',
+      payload: {
+        title: 'Use SQLite for the cache',
+        rationale: 'The load is relational; a rebuildable cache dissolves migrations.',
+        adr: 'ADR-3',
+      },
+    });
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
+
+  it('builds a decision.transitioned without `by` when it is not a supersede', () => {
+    const event = decisionTransitioned(env, { from: 'proposed', to: 'accepted', action: 'accept' });
+    expect(Object.keys(event.payload)).not.toContain('by');
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
+
+  it('carries `by` (the successor id) on a supersede', () => {
+    const event = decisionTransitioned(env, {
+      from: 'accepted',
+      to: 'superseded',
+      action: 'supersede',
+      by: 'd-9f3a',
+      fields: { reason: 'HMAC dropped; Ed25519 checkpoint covers it' },
+    });
+    if (event.kind === 'decision.transitioned') {
+      expect(event.payload.by).toBe('d-9f3a');
+      expect(event.payload.fields?.reason).toBe('HMAC dropped; Ed25519 checkpoint covers it');
+    }
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
+
+  it('OMITS an empty `by` so the line stays re-readable (symmetric with the parser)', () => {
+    // An empty `by` would serialize but the parser rejects an empty string on
+    // read. The builder drops it, so a caller cannot produce an unreadable line.
+    const event = decisionTransitioned(env, {
+      from: 'proposed',
+      to: 'accepted',
+      action: 'accept',
+      by: '',
+    });
+    expect(Object.keys(event.payload)).not.toContain('by');
+  });
+});
+
+describe('decisionBirth', () => {
+  it('emits the pair in order: recorded then the birth transition', () => {
+    const [recorded, transitioned] = decisionBirth(env, {
+      title: 'Fix the workflow',
+      rationale: 'Because the why is the value.',
+      adr: 'ADR-1',
+      initial: 'proposed',
+    });
+    expect(recorded).toMatchObject({
+      kind: 'decision.recorded',
+      payload: {
+        title: 'Fix the workflow',
+        rationale: 'Because the why is the value.',
+        adr: 'ADR-1',
+      },
+    });
+    expect(transitioned).toMatchObject({
+      kind: 'decision.transitioned',
+      payload: { from: null, to: 'proposed', action: BIRTH_ACTION },
+    });
+  });
+
+  it('stamps both events with the same envelope (one atomic fact)', () => {
+    const [recorded, transitioned] = decisionBirth(
+      { ...env, which: 'claude', run: 'r-1' },
+      { title: 't', rationale: 'why', adr: 'ADR-2', initial: 'proposed' },
+    );
+    expect(recorded.subject).toBe(transitioned.subject);
+    expect(recorded.at).toBe(transitioned.at);
+    expect(recorded.who).toBe(transitioned.who);
+    expect(recorded.which).toBe(transitioned.which);
+    expect(recorded.run).toBe(transitioned.run);
   });
 });

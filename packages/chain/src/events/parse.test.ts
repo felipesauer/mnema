@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { runEnded, runStarted, taskCreated, taskTransitioned } from './build.js';
+import {
+  decisionRecorded,
+  decisionTransitioned,
+  runEnded,
+  runStarted,
+  taskCreated,
+  taskTransitioned,
+} from './build.js';
 import { canonicalStringify } from './canonical.js';
 import type { CatalogEvent } from './catalog.js';
 import { EventParseError, parseEvent, toCanonical } from './parse.js';
@@ -129,6 +136,97 @@ describe('parseEvent — transition proof fields', () => {
     if (parsed.kind === 'task.transitioned') {
       expect(parsed.payload.fields).toEqual({ note: 'second' });
     }
+  });
+});
+
+describe('parseEvent — decision events', () => {
+  it('parses decision.recorded and round-trips it', () => {
+    const event = decisionRecorded(
+      { ...envelope, subject: 'd-1' },
+      { title: 'Fix the workflow', rationale: 'The why is the value.', adr: 'ADR-42' },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('requires a non-empty rationale (an ADR with no why records nothing)', () => {
+    const forged =
+      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","subject":"d-1","payload":{"title":"x","rationale":"","adr":"ADR-1"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.rationale/);
+  });
+
+  it('requires the adr label', () => {
+    const forged =
+      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","subject":"d-1","payload":{"title":"x","rationale":"y"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.adr/);
+  });
+
+  it('parses a decision.transitioned supersede carrying `by` and round-trips it', () => {
+    const event = decisionTransitioned(
+      { ...envelope, subject: 'd-1', which: 'claude', run: 'r-1' },
+      {
+        from: 'accepted',
+        to: 'superseded',
+        action: 'supersede',
+        by: 'd-2',
+        fields: { reason: 'r' },
+      },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'decision.transitioned') expect(parsed.payload.by).toBe('d-2');
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('parses a non-supersede decision transition with no `by`', () => {
+    const event = decisionTransitioned(
+      { ...envelope, subject: 'd-1' },
+      { from: 'proposed', to: 'accepted', action: 'accept', fields: { note: 'agreed' } },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'decision.transitioned') expect(parsed.payload.by).toBeUndefined();
+  });
+
+  it('rejects an empty `by` (write-only line)', () => {
+    const forged =
+      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":""}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.by/);
+  });
+
+  it('rejects a non-string `by`', () => {
+    const forged =
+      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":42}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.by/);
+  });
+
+  it('rejects an unknown payload field on a decision (closed shape)', () => {
+    const forged =
+      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","subject":"d-1","payload":{"title":"x","rationale":"y","adr":"ADR-1","evil":"z"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
+  });
+
+  it('keeps `by` out of fields — a relational id is not textual proof', () => {
+    // `by` lives at payload level, never inside fields; a forged `by` smuggled
+    // into fields is an unknown fields key and is rejected.
+    const forged =
+      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","fields":{"by":"d-2"}}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload\.fields field "by"/);
+  });
+
+  it('rebuilds a decision transition so a duplicate `by` cannot pick a value into the bytes', () => {
+    // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
+    // declared shape, so the recomputed canonical bytes match a clean build.
+    const dup =
+      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":"d-2","by":"d-3"}}';
+    const parsed = parseEvent(dup, reg);
+    if (parsed.kind === 'decision.transitioned') expect(parsed.payload.by).toBe('d-3');
+    const clean = decisionTransitioned(
+      { at: 't', who: 'h', subject: 'd-1' },
+      { from: 'a', to: 'b', action: 'supersede', by: 'd-3' },
+    );
+    expect(canonicalStringify(toCanonical(parsed))).toBe(canonicalStringify(toCanonical(clean)));
   });
 });
 

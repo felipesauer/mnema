@@ -67,6 +67,9 @@ export {
 } from './chain/writer.js';
 export {
   BIRTH_ACTION,
+  decisionBirth,
+  decisionRecorded,
+  decisionTransitioned,
   runEnded,
   runStarted,
   taskBirth,
@@ -81,6 +84,8 @@ export {
 } from './events/canonical.js';
 export {
   type CatalogEvent,
+  type DecisionRecordedV1,
+  type DecisionTransitionedV1,
   type EventKind,
   LATEST_VERSION,
   type RunEndedV1,
