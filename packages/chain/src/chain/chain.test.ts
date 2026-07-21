@@ -428,6 +428,88 @@ describe('chain — aggregation across tails (multi-machine)', () => {
   });
 });
 
+describe('chain — census crosses committed keys against tails on disk', () => {
+  it('baseline: every tail has its key, so no census note (a two-machine chain)', () => {
+    const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
+    try {
+      const a = openChainForWriting(root);
+      a.append(runStarted(env('r-a'), { agent: 'claude' }));
+      a.checkpoint();
+      const b = openChainForWriting(rootB);
+      b.append(runStarted(env('r-b'), { agent: 'cursor' }));
+      b.checkpoint();
+      mergeTails(rootB, root);
+
+      const result = verify(root);
+      expect(result.ok).toBe(true);
+      expect(result.tails).toHaveLength(2);
+      expect(result.census).toEqual([]);
+    } finally {
+      rmSync(rootB, { recursive: true, force: true });
+    }
+  });
+
+  it('deleting a tail but LEAVING its key is flagged by the census (still ok, still blind)', () => {
+    // The hash chain sees nothing — the deleted tail is simply not read. But the
+    // committed key it left behind has no tail, and the census names it. This is
+    // the non-adversarial common case (a tail dropped in a botched merge) and
+    // the adversarial one (a tail removed to hide events) at once.
+    const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
+    try {
+      openChainForWriting(root).append(runStarted(env('r-a'), { agent: 'claude' }));
+      openChainForWriting(root).checkpoint();
+      const b = openChainForWriting(rootB);
+      b.append(runStarted(env('r-b'), { agent: 'cursor' }));
+      b.checkpoint();
+      const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
+      mergeTails(rootB, root);
+
+      // Remove tail B's directory but keep keys/<tailB>.pub (the merged key).
+      rmSync(join(root, 'tails', tailB), { recursive: true, force: true });
+
+      const result = verify(root);
+      // Not an integrity break: the crypto still verifies what remains.
+      expect(result.ok).toBe(true);
+      expect(result.tails).toHaveLength(1);
+      // The census flags the orphaned key by its fingerprint.
+      expect(result.census).toHaveLength(1);
+      expect(result.census[0]?.fingerprint).toBe(tailB);
+      expect(result.summary).toMatch(/committed key\(s\) without a tail/);
+    } finally {
+      rmSync(rootB, { recursive: true, force: true });
+    }
+  });
+
+  it('deleting a tail AND its key is invisible — the honest limit only git can witness', () => {
+    // With both the tail and its key gone, nothing on disk points at what was
+    // removed: the census has nothing to cross. This is the documented residual
+    // — local crypto cannot testify to a wholesale deletion; only an external
+    // witness (a git history of the committed files) can.
+    const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
+    try {
+      openChainForWriting(root).append(runStarted(env('r-a'), { agent: 'claude' }));
+      openChainForWriting(root).checkpoint();
+      const b = openChainForWriting(rootB);
+      b.append(runStarted(env('r-b'), { agent: 'cursor' }));
+      b.checkpoint();
+      const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
+      mergeTails(rootB, root);
+
+      // Remove BOTH tail B's directory and its committed public key.
+      rmSync(join(root, 'tails', tailB), { recursive: true, force: true });
+      rmSync(join(root, 'keys', `${tailB}.pub`), { force: true });
+
+      const result = verify(root);
+      expect(result.ok).toBe(true);
+      expect(result.tails).toHaveLength(1);
+      // Blind on purpose: no orphaned key means no census note.
+      expect(result.census).toEqual([]);
+    } finally {
+      rmSync(rootB, { recursive: true, force: true });
+    }
+  });
+});
+
 // --- helpers that reach into the on-disk format to simulate tampering ---
 
 function tailIdOf(chainRoot: string): string {
