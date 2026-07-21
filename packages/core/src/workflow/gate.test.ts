@@ -175,6 +175,86 @@ describe('gate — authority (who != which)', () => {
     const result = gate({ from: 'DONE', action: 'submit', who: 'x', which: 'x' });
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
   });
+
+  it('rejects a whitespace-only who (whitespace is no human)', () => {
+    const result = gate({ from: 'READY', action: 'start', who: '   ' });
+    expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+  });
+
+  it('rejects who and which that differ ONLY by whitespace (no self-authorization bypass)', () => {
+    // A lookalike spelling of the agent's own id must not pass the invariant.
+    for (const [who, which] of [
+      ['alice', 'alice '],
+      ['alice', ' alice'],
+      ['alice', 'alice\n'],
+    ]) {
+      const result = gate({ from: 'READY', action: 'start', who, which });
+      expect(result, `${JSON.stringify(who)} vs ${JSON.stringify(which)}`).toMatchObject({
+        ok: false,
+        code: 'WHO_IS_WHICH',
+      });
+    }
+  });
+
+  it('treats a whitespace-padded which as absent when it trims to empty', () => {
+    // A which that is only whitespace is not a real agent; it must not be
+    // compared as if it were, and a human acting directly still passes.
+    const result = gate({ from: 'READY', action: 'start', who: WHO, which: '   ' });
+    expect(result).toEqual({ ok: true, to: 'IN_PROGRESS', action: 'start' });
+  });
+});
+
+describe('gate — never throws on untrusted junk (the boundary it claims to own)', () => {
+  // The declared inputs are strings, but a surface may forward junk. The gate
+  // must return a typed refusal, never crash — and never let a value the chain
+  // parser will later reject (a non-string identity) pass as authorized.
+  const junk: unknown[] = [undefined, null, 5, {}, [], true];
+
+  it('refuses a non-string who without throwing', () => {
+    for (const bad of junk) {
+      const call = () => gate({ from: 'READY', action: 'start', who: bad as string });
+      expect(call).not.toThrow();
+      expect(call()).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    }
+  });
+
+  it('refuses a non-string which (never passes it as a valid distinct agent)', () => {
+    // A non-string which trims to "absent", so a valid who alone still passes;
+    // the point is it does not crash and does not sail a junk which through.
+    const result = gate({
+      from: 'READY',
+      action: 'start',
+      who: WHO,
+      which: 5 as unknown as string,
+    });
+    expect(result).toEqual({ ok: true, to: 'IN_PROGRESS', action: 'start' });
+  });
+
+  it('does not crash on a non-object fields; treats missing proof as refused', () => {
+    for (const bad of [null, 5, 'nope', []]) {
+      const call = () =>
+        gate({
+          from: 'IN_PROGRESS',
+          action: 'complete',
+          fields: bad as unknown as undefined,
+          who: WHO,
+        });
+      expect(call).not.toThrow();
+      expect(call()).toMatchObject({ ok: false, code: 'MISSING_PROOF' });
+    }
+  });
+});
+
+describe('gate — whitespace is not proof', () => {
+  it('rejects a whitespace-only required field', () => {
+    const result = gate({
+      from: 'IN_PROGRESS',
+      action: 'cancel',
+      fields: { reason: '   ' },
+      who: WHO,
+    });
+    expect(result).toMatchObject({ ok: false, code: 'MISSING_PROOF', field: 'reason' });
+  });
 });
 
 describe('gate — purity', () => {

@@ -9,18 +9,28 @@
  * task's current state and a requested action, may this move be recorded, and
  * if so, to which state and carrying which proof?
  *
- * It enforces three things, in order:
- *   1. LEGALITY — the (from, action) pair is a transition the workflow allows.
- *   2. PROOF — every field the action requires is present and non-empty.
- *   3. AUTHORITY — a human `who` authorized it, and `who` is not the agent
+ * It enforces three things, in the order it checks them:
+ *   1. AUTHORITY — a human `who` authorized it, and `who` is not the agent
  *      `which` that executed it (a human authorizes; an agent executes; they
  *      are never the same identity). `which` may be absent — a human acting
  *      directly, with no agent — but when present it must differ from `who`.
+ *      Checked first: the identity invariant holds regardless of the move, so a
+ *      self-authorized illegal move reports the more fundamental fault.
+ *   2. LEGALITY — the (from, action) pair is a transition the workflow allows.
+ *   3. PROOF — every field the action requires is present and non-empty.
  *
  * On success it returns the resolved `to` state (taken from the table, never
  * from the caller) so the writer records the transition the workflow defines,
  * not one the caller asserts. On failure it returns a typed reason; the writer
  * emits nothing.
+ *
+ * The gate never throws: its declared inputs are strings, but a surface at the
+ * untrusted boundary may forward junk, and an invalid request must come back as
+ * a typed refusal, not an exception. Non-string identities are refused (not
+ * crashed on), and identity comparison is whitespace-insensitive so a lookalike
+ * spelling cannot defeat the who != which invariant. (It reads `fields` as
+ * plain data; a surface is responsible for handing it a plain object, not one
+ * with active getters.)
  */
 
 import type { TransitionFields } from '@mnema/chain';
@@ -88,14 +98,21 @@ export function gate(request: GateRequest): GateResult {
   // AUTHORITY first for the identity invariant that holds regardless of the
   // move: a fact with no human behind it, or one an agent authorized for
   // itself, is never valid — checked before legality so the reason is precise.
-  if (request.who.length === 0) {
+  // Identity is normalized (a real string, trimmed): a non-string or
+  // whitespace-only `who` is no human, and a `which` that differs from `who`
+  // only by whitespace must not slip past the self-authorization check.
+  const who = normalizeIdentity(request.who);
+  if (who === undefined) {
     return err('MISSING_WHO', 'a transition needs a human who authorized it');
   }
-  if (request.which !== undefined && request.which === request.who) {
-    return err(
-      'WHO_IS_WHICH',
-      'the authorizing human and the executing agent must be different identities',
-    );
+  if (request.which !== undefined) {
+    const which = normalizeIdentity(request.which);
+    if (which !== undefined && which === who) {
+      return err(
+        'WHO_IS_WHICH',
+        'the authorizing human and the executing agent must be different identities',
+      );
+    }
   }
 
   if (!isTaskState(request.from)) {
@@ -132,14 +149,28 @@ function isTaskAction(action: string): action is TaskAction {
 }
 
 /**
+ * Normalizes an identity to a real, meaningful string, or undefined when it is
+ * none — not a string at all (junk from an untrusted surface), or empty once
+ * trimmed (whitespace is no identity). The trimmed form is what identity
+ * comparison uses, so " alice" and "alice" are the same person and cannot be
+ * played off against each other to defeat the who != which invariant.
+ */
+function normalizeIdentity(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
  * True when a required proof field is present and non-empty. Only the textual
  * fields are ever required (`links` is never a requirement), so a required
- * field is always a non-empty string.
+ * field is always a non-empty string — and whitespace is not proof, so a
+ * blank-but-present value does not satisfy the requirement.
  */
 function hasProof(fields: TransitionFields | undefined, field: ProofField): boolean {
-  if (fields === undefined) return false;
+  if (fields === undefined || fields === null || typeof fields !== 'object') return false;
   const value = fields[field];
-  return typeof value === 'string' && value.length > 0;
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function err(code: GateErrorCode, message: string): GateErr {
