@@ -160,7 +160,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   }
 
   const at = (ctx.clock ?? systemClock)();
-  const [created, transitioned] = taskBirth(
+  const birth = taskBirth(
     {
       at,
       who: input.who,
@@ -170,8 +170,10 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
     },
     { title: input.title, initial: INITIAL_STATE },
   );
-  const e1 = ctx.writer.append(created);
-  const e2 = ctx.writer.append(transitioned);
+  // Append the pair atomically: a torn birth would leave a created task with no
+  // state, permanently burning the id (the projection drops a stateless
+  // subject, so every later transition on it fails as UNKNOWN_TASK).
+  const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
   return { ok: true, id: input.id, entries: [e1, e2] };
 }
 

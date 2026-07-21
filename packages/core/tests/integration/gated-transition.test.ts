@@ -97,6 +97,26 @@ describe('createTask', () => {
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
     expect(eventCount()).toBe(0);
   });
+
+  it('births atomically: a failed write leaves NO orphan task.created', () => {
+    // The birth pair must be all-or-nothing. If the write fails, the chain must
+    // not carry a created-but-stateless task, which would burn the id forever.
+    // A writer whose batch append throws stands in for a disk/IO failure.
+    const boom = {
+      appendAll() {
+        throw new Error('disk full');
+      },
+      append() {
+        throw new Error('should not be called — birth must be one atomic write');
+      },
+    } as unknown as ChainWriter;
+    const brokenCtx: WriteContext = { writer: boom, layout, upcasters, clock };
+    expect(() => createTask(brokenCtx, { id: 't-1', title: 't', who: 'felipe' })).toThrow(
+      'disk full',
+    );
+    // Nothing reached the real tail: no half-birth to re-read.
+    expect(eventCount()).toBe(0);
+  });
 });
 
 describe('transitionTask — authorized moves persist and project', () => {
