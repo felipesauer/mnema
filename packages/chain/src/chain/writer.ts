@@ -123,6 +123,47 @@ export class ChainWriter {
   }
 
   /**
+   * Appends several events as one atomic unit: either every line reaches the
+   * tail or none does. The entries are sealed and chained in memory, serialized
+   * together, and written with a SINGLE append — so a birth pair (a
+   * `task.created` and its transition) can never land half-written, leaving a
+   * created task with no state. A crash mid-write can still tear the LAST line
+   * of the buffer, which the reader tolerates as an unterminated final entry, so
+   * the atom is "all-or-nothing" up to that already-handled tail case.
+   *
+   * The whole batch goes into one segment (rotating first if the current one is
+   * full), so no entry in the batch straddles a segment boundary.
+   */
+  appendAll(events: readonly CatalogEvent[]): Entry[] {
+    if (events.length === 0) return [];
+    if (this.segmentBytes >= this.maxSegmentBytes) {
+      this.segment += 1;
+      this.segmentBytes = 0;
+    }
+    const entries: Entry[] = [];
+    let prev = this.head;
+    let seq = this.nextSeq;
+    let lines = '';
+    for (const event of events) {
+      const entry = sealEntry({ event, tail: this.tailId, seq, prev });
+      const line = `${serializeEntry(entry)}\n`;
+      entries.push(entry);
+      lines += line;
+      prev = entry.link.hash;
+      seq += 1;
+    }
+    const path = segmentPath(this.layout, this.tailId, this.segment);
+    appendFileSync(path, lines, 'utf-8');
+
+    this.head = prev;
+    this.nextSeq = seq;
+    this.segmentBytes += Buffer.byteLength(lines, 'utf-8');
+
+    this.maybeCheckpoint();
+    return entries;
+  }
+
+  /**
    * Signs a checkpoint over the uncheckpointed tail if enough events have
    * accumulated. Coverage stays contiguous: each checkpoint starts at the seq
    * right after the previous one's end.

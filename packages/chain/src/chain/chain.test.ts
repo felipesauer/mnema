@@ -91,6 +91,55 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   });
 });
 
+describe('chain — appendAll writes a batch atomically', () => {
+  it('appends a birth pair as one write, chained and verifiable', () => {
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const birth = taskBirth(env('t-1'), { title: 'ship', initial: 'draft' });
+    const entries = w.appendAll(birth);
+    w.checkpoint();
+
+    expect(entries).toHaveLength(2);
+    // Chained: seq 0 then 1, and the second's prev is the first's hash.
+    expect(entries[0]?.link.seq).toBe(0);
+    expect(entries[1]?.link.seq).toBe(1);
+    expect(entries[1]?.link.prev).toBe(entries[0]?.link.hash);
+
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.fullySigned).toBe(true);
+
+    const reread = readTailEntries({ root }, tailIdOf(root), catalogUpcasters());
+    expect(reread).toHaveLength(2);
+    expect(reread[0]?.event.kind).toBe('task.created');
+    expect(reread[1]?.event.kind).toBe('task.transitioned');
+  });
+
+  it('a later single append continues the seq after a batch', () => {
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    w.appendAll(taskBirth(env('t-1'), { title: 't', initial: 'draft' }));
+    const next = w.append(
+      taskTransitioned(env('t-1'), { from: 'draft', to: 'ready', action: 'submit' }),
+    );
+    expect(next.link.seq).toBe(2);
+    expect(next.link.prev).not.toBeNull();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('an empty batch writes nothing', () => {
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    expect(w.appendAll([])).toEqual([]);
+    expect(readTailEntries({ root }, tailIdOf(root), catalogUpcasters())).toHaveLength(0);
+  });
+
+  it('writes the whole batch in ONE segment file (no straddle)', () => {
+    // Both lines land in the same segment, so a birth pair is never split across
+    // a rotation boundary — part of what makes it one atomic unit on disk.
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    w.appendAll(taskBirth(env('t-1'), { title: 't', initial: 'draft' }));
+    expect(orderedSegments({ root }, tailIdOf(root))).toHaveLength(1);
+  });
+});
+
 describe('chain — T1 (hash chain) catches corruption and reordering', () => {
   it('flags a content edit at the exact seq (entry hash mismatch)', () => {
     writeSome(5, { checkpointEvery: 100 });
