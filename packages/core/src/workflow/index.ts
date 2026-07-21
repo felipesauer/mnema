@@ -3,6 +3,7 @@
  * gate that authorizes each move at write time.
  */
 
+export { type Clock, systemClock } from './clock.js';
 export {
   type GateErr,
   type GateErrorCode,
@@ -11,6 +12,16 @@ export {
   type GateResult,
   gate,
 } from './gate.js';
+export {
+  type CreateInput,
+  type CreateOk,
+  createTask,
+  type TransitionInput,
+  type TransitionOk,
+  transitionTask,
+  type WriteContext,
+  type WriteError,
+} from './operations.js';
 export { INITIAL_STATE, isTaskState, TASK_STATES, type TaskState } from './states.js';
 export {
   findTransition,
