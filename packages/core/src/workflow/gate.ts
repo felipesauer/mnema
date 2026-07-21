@@ -27,10 +27,11 @@
  * The gate never throws: its declared inputs are strings, but a surface at the
  * untrusted boundary may forward junk, and an invalid request must come back as
  * a typed refusal, not an exception. Non-string identities are refused (not
- * crashed on), and identity comparison is whitespace-insensitive so a lookalike
- * spelling cannot defeat the who != which invariant. (It reads `fields` as
- * plain data; a surface is responsible for handing it a plain object, not one
- * with active getters.)
+ * crashed on), and identities are compared in their canonical form — trimmed
+ * and NFC-normalized, the same form the chain will seal — so neither a stray
+ * space nor a decomposed lookalike spelling can defeat the who != which
+ * invariant. (It reads `fields` as plain data; a surface is responsible for
+ * handing it a plain object, not one with active getters.)
  */
 
 import type { TransitionFields } from '@mnema/chain';
@@ -99,9 +100,10 @@ export function gate(request: GateRequest): GateResult {
   // AUTHORITY first for the identity invariant that holds regardless of the
   // move: a fact with no human behind it, or one an agent authorized for
   // itself, is never valid — checked before legality so the reason is precise.
-  // Identity is normalized (a real string, trimmed): a non-string or
-  // whitespace-only `who` is no human, and a `which` that differs from `who`
-  // only by whitespace must not slip past the self-authorization check.
+  // Identity is taken in canonical form (a real string, trimmed and
+  // NFC-normalized): a non-string or whitespace-only `who` is no human, and a
+  // `which` that differs from `who` only by whitespace or Unicode composition
+  // must not slip past the self-authorization check.
   const who = canonicalIdentity(request.who);
   if (who === undefined) {
     return err('MISSING_WHO', 'a transition needs a human who authorized it');

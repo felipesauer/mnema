@@ -41,4 +41,24 @@ describe('canonicalIdentity', () => {
   it('preserves internal whitespace (only the ends are trimmed)', () => {
     expect(canonicalIdentity('  Felipe Sauer  ')).toBe('Felipe Sauer');
   });
+
+  it('normalizes composition to NFC so equal text is one identity', () => {
+    // "José" pre-composed (U+00E9) vs decomposed ("e" + U+0301). They render
+    // identically and are the same person; the chain stores NFC, so this must
+    // too, or the gate would see two distinct strings for one identity.
+    const nfc = 'José';
+    const nfd = 'José';
+    expect(nfc).not.toBe(nfd); // byte-distinct before normalization
+    expect(canonicalIdentity(nfc)).toBe(canonicalIdentity(nfd));
+    // and the returned form is the NFC one
+    expect(canonicalIdentity(nfd)).toBe(nfc);
+  });
+
+  it('rejects a string the chain cannot canonicalize (a lone surrogate)', () => {
+    // A lone (unpaired) high surrogate is not valid Unicode text; the chain
+    // refuses it at seal time, so accepting it here would mean the gate
+    // authorizes a move the writer then throws on. Refuse it up front.
+    expect(canonicalIdentity('\ud800alice')).toBeUndefined();
+    expect(canonicalIdentity('alice\udfff')).toBeUndefined();
+  });
 });
