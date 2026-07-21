@@ -31,6 +31,10 @@ export {
   materializeTasks,
 } from './projections/task-store.js';
 export {
+  type Clock,
+  type CreateInput,
+  type CreateOk,
+  createTask,
   findTransition,
   type GateErr,
   type GateErrorCode,
@@ -41,10 +45,16 @@ export {
   INITIAL_STATE,
   isTaskState,
   type ProofField,
+  systemClock,
   TASK_ACTIONS,
   TASK_STATES,
   type TaskAction,
   type TaskState,
   TRANSITIONS,
   type Transition,
+  type TransitionInput,
+  type TransitionOk,
+  transitionTask,
+  type WriteContext,
+  type WriteError,
 } from './workflow/index.js';
