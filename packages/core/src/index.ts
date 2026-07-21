@@ -17,12 +17,25 @@ export {
   ALIAS_PREFIXES,
   type AliasKind,
   type AliasSubject,
+  canonicalId,
   canonicalIdentity,
   deriveAlias,
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './identity/index.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
+export {
+  type AdrCollision,
+  adrCollisions,
+  type DecisionProjection,
+  projectDecisions,
+} from './projections/decision.js';
+export {
+  getDecision,
+  listDecisions,
+  listDecisionsByState,
+  materializeDecisions,
+} from './projections/decision-store.js';
 export { orderedEvents } from './projections/order.js';
 export { rebuild } from './projections/rebuild.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
@@ -40,6 +53,7 @@ export {
   materializeTasks,
 } from './projections/task-store.js';
 export {
+  acceptDecision,
   type Clock,
   type CreateInput,
   type CreateOk,
@@ -56,6 +70,10 @@ export {
   type DecisionProofField,
   type DecisionState,
   type DecisionTransition,
+  type DecisionTransitionInput,
+  type DecisionTransitionOk,
+  type DecisionWriteContext,
+  type DecisionWriteError,
   decisionGate,
   findDecisionTransition,
   findTransition,
@@ -70,6 +88,12 @@ export {
   isDecisionState,
   isTaskState,
   type ProofField,
+  type RecordInput,
+  type RecordOk,
+  recordDecision,
+  rejectDecision,
+  type SupersedeInput,
+  supersedeDecision,
   systemClock,
   TASK_ACTIONS,
   TASK_STATES,

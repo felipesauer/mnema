@@ -17,18 +17,21 @@
  *
  * What the pure gate CANNOT judge — because it needs the event stream — is
  * whether `by` and the subject actually EXIST. That existence check lives in
- * the operation that has the chain, reported as UNKNOWN_BY / UNKNOWN_SUBJECT.
- * Splitting it this way keeps the gate pure and exhaustively testable while
- * still enforcing the whole rule at write time: the operation runs the pure
- * gate AND the existence check before it appends.
+ * the operation that has the chain (UNKNOWN_BY for a dangling successor,
+ * UNKNOWN_DECISION for an absent subject). Splitting it this way keeps the gate
+ * pure and exhaustively testable while still enforcing the whole rule at write
+ * time: the operation runs the pure gate AND the existence check before it
+ * appends.
  *
- * The gate never throws: an invalid request comes back as a typed refusal, and
- * identities are compared in canonical form (trimmed, NFC-normalized — the same
- * form the chain will seal) so neither whitespace nor a decomposed lookalike
- * can defeat who != which.
+ * The gate never throws: an invalid request comes back as a typed refusal.
+ * Identities (who/which) are compared in canonical form (trimmed, NFC — the
+ * form the chain seals) so neither whitespace nor a decomposed lookalike can
+ * defeat who != which; entity ids (subject/by) are compared in the chain's id
+ * form (NFC, no trim), the form every subject is stored and read back in.
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { canonicalId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { type DecisionState, isDecisionState } from './decision-states.js';
 import {
@@ -150,16 +153,19 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
   }
 
   // Supersede shape: `by` is mandatory on a supersede and forbidden elsewhere.
-  // The successor is compared in canonical form so a whitespace/composition
-  // variant of the subject cannot slip past the self-supersede check — the same
-  // reasoning as who != which.
-  const by = canonicalIdentity(request.by);
+  // `by` names another ENTITY, so it is taken in the chain's id form (NFC, no
+  // trim) — the SAME form every subject is stored and read back in. This is what
+  // keeps the successor link whole: the recorded `by`, the operation's existence
+  // lookup, and the successor's own subject all key on the identical NFC string,
+  // so no composition variant can split them. The self-supersede check compares
+  // the two ids in that same canonical form, so an NFD spelling of the subject
+  // cannot pose as a different successor.
+  const by = canonicalId(request.by);
   if (request.action === SUPERSEDE) {
     if (by === undefined) {
       return err('MISSING_BY', 'a supersede must name the successor decision "by"');
     }
-    const subject = canonicalIdentity(request.subject);
-    if (subject !== undefined && by === subject) {
+    if (by === canonicalId(request.subject)) {
       return err('SELF_SUPERSEDE', 'a decision cannot supersede itself');
     }
   } else if (by !== undefined) {
@@ -167,7 +173,7 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
   }
 
   const ok: Mutable<DecisionGateOk> = { ok: true, to: transition.to, action: request.action };
-  if (request.action === SUPERSEDE && by !== undefined) ok.by = by;
+  if (by !== undefined) ok.by = by;
   if (request.fields !== undefined) ok.fields = request.fields;
   return ok;
 }

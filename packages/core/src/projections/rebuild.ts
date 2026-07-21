@@ -19,6 +19,8 @@
 import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
 import { dropProjections, ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { projectDecisions } from './decision.js';
+import { materializeDecisions } from './decision-store.js';
 import { orderedEvents } from './order.js';
 import { projectRuns } from './run.js';
 import { materializeRuns } from './run-store.js';
@@ -37,12 +39,14 @@ export function rebuild(
   const events = orderedEvents(layout, upcasters);
   const tasks = projectTasks(events);
   const runs = projectRuns(events);
+  const decisions = projectDecisions(events);
 
   const replace = db.transaction(() => {
     dropProjections(db);
     ensureSchema(db);
     materializeTasks(db, tasks.values());
     materializeRuns(db, runs.values());
+    materializeDecisions(db, decisions.values());
   });
   replace();
 }

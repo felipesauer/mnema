@@ -1,6 +1,7 @@
 /**
- * The task workflow: the product's fixed opinion about how work moves, plus the
- * gate that authorizes each move at write time.
+ * The workflows: the product's fixed opinions about how work moves — one for
+ * tasks, one for decisions — plus the gates that authorize each move at write
+ * time and the operations that append only what a gate authorized.
  */
 
 export { type Clock, systemClock } from './clock.js';
@@ -12,6 +13,19 @@ export {
   type DecisionGateResult,
   decisionGate,
 } from './decision-gate.js';
+export {
+  acceptDecision,
+  type DecisionTransitionInput,
+  type DecisionTransitionOk,
+  type DecisionWriteContext,
+  type DecisionWriteError,
+  type RecordInput,
+  type RecordOk,
+  recordDecision,
+  rejectDecision,
+  type SupersedeInput,
+  supersedeDecision,
+} from './decision-operations.js';
 export {
   DECISION_STATES,
   type DecisionState,

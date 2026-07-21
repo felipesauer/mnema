@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type ChainWriter,
+  decisionRecorded,
+  decisionTransitioned,
   openChainForWriting,
   runEnded,
   runStarted,
@@ -233,6 +235,70 @@ describe('ProjectionCache — runs', () => {
     cache.rebuild();
     expect(cache.getTask('t-1')?.state).toBe('done');
     expect(cache.getRun('r-1')?.open).toBe(true);
+  });
+});
+
+describe('ProjectionCache — decisions', () => {
+  /** Records a decision and moves it to `to` via the given action. */
+  function writeDecision(
+    w: ChainWriter,
+    id: string,
+    adr: string,
+    to: string,
+    action: string,
+  ): void {
+    w.append(decisionRecorded(env(id, 0), { title: `t ${id}`, rationale: `r ${id}`, adr }));
+    w.append(decisionTransitioned(env(id, 0), { from: null, to: 'proposed', action: 'create' }));
+    if (to !== 'proposed') {
+      w.append(
+        decisionTransitioned(env(id, 1), {
+          from: 'proposed',
+          to,
+          action,
+          fields: { note: 'n' },
+        }),
+      );
+    }
+  }
+
+  it('materializes a decision and queries it by state', () => {
+    const w = openChainForWriting(chainRoot);
+    writeDecision(w, 'd-1', 'ADR-1', 'accepted', 'accept');
+    writeDecision(w, 'd-2', 'ADR-2', 'proposed', 'create');
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getDecision('d-1')).toMatchObject({ id: 'd-1', adr: 'ADR-1', state: 'accepted' });
+    expect(cache.listDecisionsByState('proposed').map((d) => d.id)).toEqual(['d-2']);
+  });
+
+  it('reports an ADR label collision through the cache', () => {
+    const w = openChainForWriting(chainRoot);
+    writeDecision(w, 'd-1', 'ADR-1', 'proposed', 'create');
+    writeDecision(w, 'd-2', 'ADR-1', 'proposed', 'create'); // same label, distinct ids
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.adrCollisions()).toEqual([{ adr: 'ADR-1', ids: ['d-1', 'd-2'] }]);
+  });
+
+  it('rebuilds decisions identically after the cache is wiped', () => {
+    const w = openChainForWriting(chainRoot);
+    writeDecision(w, 'd-1', 'ADR-1', 'accepted', 'accept');
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = first.listDecisions();
+    first.close();
+    caches = caches.filter((c) => c !== first);
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    expect(second.listDecisions()).toEqual(before);
   });
 });
 

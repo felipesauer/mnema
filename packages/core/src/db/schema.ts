@@ -18,7 +18,7 @@ import type { SqliteDatabase } from './sqlite.js';
  * they are dropped. Listing them here is what lets a rebuild wipe the cache
  * without dropping anything the chain did not put there.
  */
-export const PROJECTION_TABLES = ['tasks', 'runs'] as const;
+export const PROJECTION_TABLES = ['tasks', 'runs', 'decisions'] as const;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tasks (
@@ -54,6 +54,31 @@ CREATE TABLE IF NOT EXISTS runs (
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_runs_open ON runs (open);
+
+CREATE TABLE IF NOT EXISTS decisions (
+  -- The decision's id (the event subject). One row per decision.
+  id            TEXT PRIMARY KEY NOT NULL,
+  -- The citable 'ADR-<n>' label, frozen at write time. NOT identity; a
+  -- collision across offline clones is a label clash, reported not enforced.
+  adr           TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  -- The why — the whole value of the record.
+  rationale     TEXT NOT NULL,
+  -- Current state: the 'to' of the decision's last transition.
+  state         TEXT NOT NULL,
+  -- The successor's id when this decision was superseded, else NULL.
+  superseded_by TEXT,
+  -- The id this decision superseded when it is a successor, else NULL.
+  supersedes    TEXT,
+  -- 'at' of decision.recorded, and of the last transition.
+  created_at    TEXT NOT NULL,
+  updated_at    TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS idx_decisions_state ON decisions (state);
+-- The adr label is not unique (a collision is possible and reported), so this
+-- index speeds the collision scan and by-label lookups, not a uniqueness guard.
+CREATE INDEX IF NOT EXISTS idx_decisions_adr ON decisions (adr);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

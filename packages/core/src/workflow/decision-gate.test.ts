@@ -163,20 +163,20 @@ describe('decisionGate — supersede shape (by)', () => {
     expect(result).toMatchObject({ ok: false, code: 'SELF_SUPERSEDE' });
   });
 
-  it('rejects a self-supersede that differs only by whitespace/composition', () => {
-    // A lookalike spelling of the subject must not slip past the self check —
-    // the same canonicalization reasoning as who != which.
-    for (const by of [`${SUBJECT} `, ` ${SUBJECT}`, `${SUBJECT}\n`]) {
-      const result = decisionGate({
-        from: 'accepted',
-        action: 'supersede',
-        fields: { reason: 'r' },
-        by,
-        subject: SUBJECT,
-        who: WHO,
-      });
-      expect(result, JSON.stringify(by)).toMatchObject({ ok: false, code: 'SELF_SUPERSEDE' });
-    }
+  it('compares by and subject as opaque ids (a padded lookalike is NOT the same id)', () => {
+    // `by` is an id, compared byte-for-byte — not canonicalized. A whitespace
+    // variant is a DIFFERENT id, so it is not a self-supersede here; whether it
+    // names a real decision is the operation's existence check, not the gate's.
+    const result = decisionGate({
+      from: 'accepted',
+      action: 'supersede',
+      fields: { reason: 'r' },
+      by: `${SUBJECT} `,
+      subject: SUBJECT,
+      who: WHO,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.by).toBe(`${SUBJECT} `);
   });
 
   it('rejects a by supplied on a non-supersede action', () => {
@@ -193,24 +193,24 @@ describe('decisionGate — supersede shape (by)', () => {
     }
   });
 
-  it('records the canonical by (trimmed), not the raw input', () => {
+  it('records by verbatim (an id is not normalized)', () => {
     const result = decisionGate({
       from: 'accepted',
       action: 'supersede',
       fields: { reason: 'r' },
-      by: `  ${BY}  `,
+      by: BY,
       subject: SUBJECT,
       who: WHO,
     });
     if (result.ok) expect(result.by).toBe(BY);
   });
 
-  it('treats a whitespace-only by as missing on a supersede', () => {
+  it('rejects an empty-string by as missing on a supersede', () => {
     const result = decisionGate({
       from: 'accepted',
       action: 'supersede',
       fields: { reason: 'r' },
-      by: '   ',
+      by: '',
       subject: SUBJECT,
       who: WHO,
     });
