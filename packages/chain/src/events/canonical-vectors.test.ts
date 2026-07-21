@@ -18,7 +18,14 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import { eventBytes } from '../chain/hash.js';
-import { runEnded, runStarted, taskCreated, taskTransitioned } from './build.js';
+import {
+  decisionRecorded,
+  decisionTransitioned,
+  runEnded,
+  runStarted,
+  taskCreated,
+  taskTransitioned,
+} from './build.js';
 import type { CatalogEvent } from './catalog.js';
 
 const digest = (event: CatalogEvent): string =>
@@ -70,6 +77,28 @@ const vectors: ReadonlyArray<{ name: string; event: CatalogEvent; sha256: string
       },
     ),
     sha256: 'b87ed8d1b45f93a5f9dbdf5102ea0efc93e67f1ebef2ea821dfb90f09cbc5173',
+  },
+  {
+    name: 'decision.recorded',
+    event: decisionRecorded(
+      { at: '2026-07-21T00:00:00.000Z', who: 'alice', which: 'claude', subject: 'd-1' },
+      { title: 'Use SQLite for the cache', rationale: 'The load is relational.', adr: 'ADR-3' },
+    ),
+    sha256: '8e377279f491c1d9c1af2ca4305c4a88a746897030c7c8f48ca748165936cec5',
+  },
+  {
+    name: 'decision.transitioned (supersede, with `by`)',
+    event: decisionTransitioned(
+      { at: '2026-07-21T00:00:00.000Z', who: 'alice', which: 'claude', subject: 'd-1' },
+      {
+        from: 'accepted',
+        to: 'superseded',
+        action: 'supersede',
+        by: 'd-2',
+        fields: { reason: 'r' },
+      },
+    ),
+    sha256: 'af7a914136726ee6a484ced4d602c827e374ee5430dd71c3cafa44acd980e1ec',
   },
 ];
 

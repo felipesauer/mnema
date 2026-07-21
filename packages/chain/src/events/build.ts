@@ -118,6 +118,83 @@ export function taskTransitioned(
 export const BIRTH_ACTION = 'create';
 
 /**
+ * Builds a `decision.recorded` event (subject = the decision's id). Unlike a
+ * task's creation, the decision's fact carries its `rationale` (the why) and
+ * its frozen `adr` label — both part of the immutable record.
+ */
+export function decisionRecorded(
+  envelope: EnvelopeInput,
+  payload: { title: string; rationale: string; adr: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'decision.recorded',
+    ...envelopeFields(envelope),
+    payload: { title: payload.title, rationale: payload.rationale, adr: payload.adr },
+  };
+}
+
+/**
+ * Builds a `decision.transitioned` event (subject = the decision's id). `from`
+ * is a literal state string, or `null` for the birth transition. `by` — the
+ * successor decision's id — is written only on a supersede and omitted
+ * otherwise; `fields` carries the transition's proof and is omitted entirely
+ * when empty, so a transition with no proof stays byte-identical to one built
+ * without the argument.
+ */
+export function decisionTransitioned(
+  envelope: EnvelopeInput,
+  payload: {
+    from: string | null;
+    to: string;
+    action: string;
+    by?: string;
+    fields?: TransitionFields;
+  },
+): CatalogEvent {
+  const p: {
+    from: string | null;
+    to: string;
+    action: string;
+    by?: string;
+    fields?: TransitionFields;
+  } = { from: payload.from, to: payload.to, action: payload.action };
+  if (nonEmptyString(payload.by)) p.by = payload.by;
+  if (payload.fields !== undefined) {
+    const trimmed = transitionFields(payload.fields);
+    if (Object.keys(trimmed).length > 0) p.fields = trimmed;
+  }
+  return {
+    v: 1,
+    kind: 'decision.transitioned',
+    ...envelopeFields(envelope),
+    payload: p,
+  };
+}
+
+/**
+ * Builds the pair of events a decision's birth always emits, in order: the
+ * `decision.recorded` that proves it exists (with its why and frozen label),
+ * then the birth `decision.transitioned` (`from: null`) that establishes its
+ * initial state. The two are one atomic fact — like a task, a decision never
+ * exists without a state. The caller supplies `initial` because which state a
+ * decision starts in is the domain's concern, not the chain's.
+ */
+export function decisionBirth(
+  envelope: EnvelopeInput,
+  payload: { title: string; rationale: string; adr: string; initial: string },
+): [CatalogEvent, CatalogEvent] {
+  return [
+    decisionRecorded(envelope, {
+      title: payload.title,
+      rationale: payload.rationale,
+      adr: payload.adr,
+    }),
+    decisionTransitioned(envelope, { from: null, to: payload.initial, action: BIRTH_ACTION }),
+  ];
+}
+
+/**
  * Builds the pair of events that a task's birth always emits, in order: the
  * `task.created` that proves the task exists, then the `task.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state.

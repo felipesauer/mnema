@@ -43,6 +43,8 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'run.ended': ['outcome'],
   'task.created': ['title'],
   'task.transitioned': ['from', 'to', 'action', 'fields'],
+  'decision.recorded': ['title', 'rationale', 'adr'],
+  'decision.transitioned': ['from', 'to', 'action', 'by', 'fields'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -166,6 +168,31 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
         to: event.payload.to,
         action: event.payload.action,
       };
+      const fields = rebuildTransitionFields(kind, event.payload.fields);
+      if (fields !== undefined) p.fields = fields;
+      return p;
+    }
+    case 'decision.recorded': {
+      requireString(kind, 'payload.title', event.payload.title);
+      requireString(kind, 'payload.rationale', event.payload.rationale);
+      requireString(kind, 'payload.adr', event.payload.adr);
+      return {
+        title: event.payload.title,
+        rationale: event.payload.rationale,
+        adr: event.payload.adr,
+      };
+    }
+    case 'decision.transitioned': {
+      requireStringOrNull(kind, 'payload.from', event.payload.from);
+      requireString(kind, 'payload.to', event.payload.to);
+      requireString(kind, 'payload.action', event.payload.action);
+      requireOptionalString(kind, 'payload.by', event.payload.by);
+      const p: Record<string, PayloadValue> = {
+        from: event.payload.from,
+        to: event.payload.to,
+        action: event.payload.action,
+      };
+      if (event.payload.by !== undefined) p.by = event.payload.by;
       const fields = rebuildTransitionFields(kind, event.payload.fields);
       if (fields !== undefined) p.fields = fields;
       return p;
