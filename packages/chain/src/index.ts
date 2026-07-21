@@ -6,12 +6,62 @@
  * and the verifier. It has zero runtime dependencies so the surface that
  * carries the proof stays small, isolated, and auditable on its own.
  *
- * This entry point exports the event core. The chain writer, checkpoints, and
- * verifier land in following changes.
+ * This entry point exports the event core and the chain: append-only per-tail
+ * writing, the hash chain, signed checkpoints, and verification.
  */
 
 export const PACKAGE_NAME = '@mnema/chain';
 
+// The chain.
+export { openChainForWriting, verify } from './chain/chain.js';
+export {
+  type Checkpoint,
+  CheckpointParseError,
+  type CheckpointVerdict,
+  parseCheckpoint,
+  serializeCheckpoint,
+  signCheckpoint,
+  verifyCheckpoint,
+} from './chain/checkpoint.js';
+export {
+  type Entry,
+  type EntryLink,
+  EntryParseError,
+  parseEntry,
+  sealEntry,
+  serializeEntry,
+} from './chain/entry.js';
+export { contentRoot, entryHash, eventBytes, sha256Hex } from './chain/hash.js';
+export {
+  fingerprintOf,
+  generateKeyPair,
+  type KeyPair,
+  publicKeyFromPem,
+  publicKeyToPem,
+  sign,
+  verify as verifySignature,
+} from './chain/keys.js';
+export { loadOrCreateKeyPair, persistKeyPair } from './chain/keystore.js';
+export type { ChainLayout } from './chain/layout.js';
+export {
+  listTails,
+  orderedSegments,
+  readTailCheckpoints,
+  readTailEntries,
+} from './chain/store.js';
+export {
+  type TailIssue,
+  type TailResult,
+  type VerifyResult,
+  verifyChain,
+  type WitnessStatus,
+} from './chain/verify.js';
+export {
+  ChainWriter,
+  DEFAULT_CHECKPOINT_EVERY,
+  DEFAULT_MAX_SEGMENT_BYTES,
+  type WriterOptions,
+} from './chain/writer.js';
 export {
   runEnded,
   runStarted,
