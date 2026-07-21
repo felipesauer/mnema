@@ -57,13 +57,23 @@ export interface TaskCreatedV1 extends Envelope {
  * A task moved between workflow states. `from`/`to`/`action` are literal
  * strings — the fact of the transition as it happened, not a reference to a
  * workflow that may since have changed.
+ *
+ * `from` is `null` for exactly one transition: the one that gives a task its
+ * initial state at birth. A task's state is never carried by its creation
+ * event; it is only ever established by a transition, and the birth transition
+ * (`from: null`, `action: "create"`) is the first of them. That single rule —
+ * "current state is the `to` of the last transition" — reads state without ever
+ * consulting the workflow, so replaying a task written long ago yields the
+ * state that was recorded, not one re-derived from a workflow that has since
+ * moved on.
  */
 export interface TaskTransitionedV1 extends Envelope {
   readonly kind: 'task.transitioned';
   readonly v: 1;
   /** Subject is the task's id. */
   readonly payload: {
-    readonly from: string;
+    /** The state left behind, or `null` when this is the birth transition. */
+    readonly from: string | null;
     readonly to: string;
     readonly action: string;
   };

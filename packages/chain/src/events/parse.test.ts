@@ -44,6 +44,18 @@ describe('parseEvent — happy path across the catalog', () => {
       expect(parsed.payload.from).toBe('ready');
     }
   });
+
+  it('parses the birth transition (from: null) and preserves the null', () => {
+    const event = taskTransitioned(
+      { ...envelope, subject: 't-1' },
+      { from: null, to: 'draft', action: 'create' },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'task.transitioned') {
+      expect(parsed.payload.from).toBeNull();
+    }
+  });
 });
 
 describe('parseEvent — round-trip is byte-stable', () => {
@@ -51,6 +63,18 @@ describe('parseEvent — round-trip is byte-stable', () => {
     const event = taskTransitioned(
       { ...envelope, subject: 't-1' },
       { from: 'a', to: 'b', action: 'go' },
+    );
+    const once = line(event);
+    const twice = canonicalStringify(toCanonical(parseEvent(once, reg)));
+    expect(twice).toBe(once);
+  });
+
+  it('re-canonicalizes a birth transition (from: null) to identical bytes', () => {
+    // The rebuild must preserve `from: null`, not drop it or coerce it — a
+    // birth transition that re-canonicalized differently would read as tampered.
+    const event = taskTransitioned(
+      { ...envelope, subject: 't-1' },
+      { from: null, to: 'draft', action: 'create' },
     );
     const once = line(event);
     const twice = canonicalStringify(toCanonical(parseEvent(once, reg)));
@@ -94,6 +118,15 @@ describe('parseEvent — rejects malformed input', () => {
 
   it('rejects an unknown kind (not in the catalog)', () => {
     expect(() => parseEvent('{"kind":"task.deleted","v":1}', reg)).toThrow(/unknown event kind/);
+  });
+
+  it('rejects an empty-string `from` (only null, never "", is the valued absence)', () => {
+    // null means "born, no prior state"; "" is neither a state nor null — a
+    // forged or corrupt line. Accepting it would create a second way to spell
+    // birth and blur the single projection rule.
+    const bad =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"","to":"draft","action":"create"}}';
+    expect(() => parseEvent(bad, reg)).toThrow(/payload\.from/);
   });
 });
 

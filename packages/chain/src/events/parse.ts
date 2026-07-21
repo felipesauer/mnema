@@ -124,7 +124,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
   return rebuilt;
 }
 
-function validatePayload(event: CatalogEvent): Record<string, string> {
+function validatePayload(event: CatalogEvent): Record<string, string | null> {
   const kind = event.kind;
   requirePayloadObject(event);
   rejectUnknownKeys(
@@ -152,7 +152,7 @@ function validatePayload(event: CatalogEvent): Record<string, string> {
       return { title: event.payload.title };
     }
     case 'task.transitioned': {
-      requireString(kind, 'payload.from', event.payload.from);
+      requireStringOrNull(kind, 'payload.from', event.payload.from);
       requireString(kind, 'payload.to', event.payload.to);
       requireString(kind, 'payload.action', event.payload.action);
       return { from: event.payload.from, to: event.payload.to, action: event.payload.action };
@@ -191,6 +191,12 @@ function requireString(kind: string, field: string, value: unknown): void {
 
 function requireOptionalString(kind: string, field: string, value: unknown): void {
   if (value !== undefined) requireString(kind, field, value);
+}
+
+/** Requires a non-empty string or an explicit `null` (a valued absence). */
+function requireStringOrNull(kind: string, field: string, value: unknown): void {
+  if (value === null) return;
+  requireString(kind, field, value);
 }
 
 function assertNever(value: never): never {

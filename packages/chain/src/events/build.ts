@@ -57,10 +57,14 @@ export function taskCreated(envelope: EnvelopeInput, payload: { title: string })
   };
 }
 
-/** Builds a `task.transitioned` event (subject = the task's id). */
+/**
+ * Builds a `task.transitioned` event (subject = the task's id). `from` is a
+ * literal state string, or `null` for the birth transition that gives a task
+ * its initial state.
+ */
 export function taskTransitioned(
   envelope: EnvelopeInput,
-  payload: { from: string; to: string; action: string },
+  payload: { from: string | null; to: string; action: string },
 ): CatalogEvent {
   return {
     v: 1,
@@ -68,4 +72,29 @@ export function taskTransitioned(
     ...envelopeFields(envelope),
     payload: { from: payload.from, to: payload.to, action: payload.action },
   };
+}
+
+/** The literal `action` a birth transition always carries. */
+export const BIRTH_ACTION = 'create';
+
+/**
+ * Builds the pair of events that a task's birth always emits, in order: the
+ * `task.created` that proves the task exists, then the `task.transitioned`
+ * (`from: null`, `action: "create"`) that establishes its initial state.
+ *
+ * The two are one atomic fact — a task never exists without a state, and a
+ * state is never carried by the creation event. The caller supplies `initial`
+ * because the workflow (which state a task starts in) is the domain's concern,
+ * not the chain's; the chain only guarantees the birth is always this shape.
+ * Append both to the tail together so a reader never sees a created task with
+ * no state.
+ */
+export function taskBirth(
+  envelope: EnvelopeInput,
+  payload: { title: string; initial: string },
+): [CatalogEvent, CatalogEvent] {
+  return [
+    taskCreated(envelope, { title: payload.title }),
+    taskTransitioned(envelope, { from: null, to: payload.initial, action: BIRTH_ACTION }),
+  ];
 }
