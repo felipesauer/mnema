@@ -17,6 +17,7 @@ export {
   ALIAS_PREFIXES,
   type AliasKind,
   type AliasSubject,
+  canonicalIdentity,
   deriveAlias,
   disambiguate,
   SHORT_ALIAS_HEX,

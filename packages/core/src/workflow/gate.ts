@@ -34,6 +34,7 @@
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { canonicalIdentity } from '../identity/who.js';
 import { isTaskState, type TaskState } from './states.js';
 import { findTransition, type ProofField, TASK_ACTIONS, type TaskAction } from './transitions.js';
 
@@ -101,12 +102,12 @@ export function gate(request: GateRequest): GateResult {
   // Identity is normalized (a real string, trimmed): a non-string or
   // whitespace-only `who` is no human, and a `which` that differs from `who`
   // only by whitespace must not slip past the self-authorization check.
-  const who = normalizeIdentity(request.who);
+  const who = canonicalIdentity(request.who);
   if (who === undefined) {
     return err('MISSING_WHO', 'a transition needs a human who authorized it');
   }
   if (request.which !== undefined) {
-    const which = normalizeIdentity(request.which);
+    const which = canonicalIdentity(request.which);
     if (which !== undefined && which === who) {
       return err(
         'WHO_IS_WHICH',
@@ -146,19 +147,6 @@ export function gate(request: GateRequest): GateResult {
 /** True when `action` is one the workflow defines. */
 function isTaskAction(action: string): action is TaskAction {
   return (TASK_ACTIONS as readonly string[]).includes(action);
-}
-
-/**
- * Normalizes an identity to a real, meaningful string, or undefined when it is
- * none — not a string at all (junk from an untrusted surface), or empty once
- * trimmed (whitespace is no identity). The trimmed form is what identity
- * comparison uses, so " alice" and "alice" are the same person and cannot be
- * played off against each other to defeat the who != which invariant.
- */
-function normalizeIdentity(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /**
