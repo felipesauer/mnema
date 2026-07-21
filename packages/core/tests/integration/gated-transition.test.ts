@@ -343,4 +343,40 @@ describe('canonical identity — what is validated is what is recorded', () => {
     // the agent was blank; the birth records who alone, no which
     expect(lastActor()).toEqual({ who: 'felipe' });
   });
+
+  it('who != which holds against a Unicode composition difference', () => {
+    // "José" pre-composed vs decomposed: the same identity in the signed bytes
+    // (the chain NFC-normalizes both). If the gate compared raw strings it
+    // would let this agent self-authorize; canonical identity must catch it.
+    const nfc = 'José';
+    const nfd = 'José';
+    const created = createTask(ctx(), { id: 't-1', title: 't', who: nfc, which: nfd });
+    expect(created).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    expect(eventCount()).toBe(0);
+  });
+
+  it('records the NFC form, matching what the chain seals', () => {
+    createTask(ctx(), { id: 't-1', title: 't', who: 'José' /* NFD */ });
+    // the recorded who is byte-identical to the NFC spelling
+    expect(lastActor().who).toBe('José'); // NFC literal
+  });
+
+  it('refuses a lone-surrogate who without the writer ever throwing', () => {
+    // A lone surrogate passes a naive non-empty check but the chain cannot
+    // canonicalize it. Canonical identity must refuse it as MISSING_WHO, not
+    // let it reach an append that throws.
+    const result = createTask(ctx(), { id: 't-1', title: 't', who: '\ud800alice' });
+    expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    expect(eventCount()).toBe(0);
+
+    createTask(ctx(), { id: 't-2', title: 't', who: 'felipe' });
+    const before = eventCount();
+    const moved = transitionTask(ctx(), {
+      id: 't-2',
+      action: 'submit',
+      who: 'alice\udfff',
+    });
+    expect(moved).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    expect(eventCount()).toBe(before);
+  });
 });
