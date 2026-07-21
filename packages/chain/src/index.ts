@@ -64,8 +64,10 @@ export {
   type WriterOptions,
 } from './chain/writer.js';
 export {
+  BIRTH_ACTION,
   runEnded,
   runStarted,
+  taskBirth,
   taskCreated,
   taskTransitioned,
 } from './events/build.js';

@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { runStarted, taskCreated, taskTransitioned } from '../events/build.js';
+import { runStarted, taskBirth, taskCreated, taskTransitioned } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
 import { parseEvent } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
@@ -20,7 +20,7 @@ import { openChainForWriting, verify } from './chain.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash } from './hash.js';
 import { generateKeyPair, publicKeyToPem } from './keys.js';
-import { orderedSegments } from './store.js';
+import { orderedSegments, readTailEntries } from './store.js';
 
 let root: string;
 
@@ -68,6 +68,26 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     expect(result.ok).toBe(true); // T1 still holds
     expect(result.uncheckpointedEvents).toBe(5);
     expect(result.tails[0]?.checkpointedThrough).toBe(-1);
+  });
+
+  it('carries a birth pair (from: null) through write, checkpoint, verify, and re-read', () => {
+    // The birth transition's `null` must survive the full round-trip: it is part
+    // of the signed content, so if reading coerced or dropped it the checkpoint
+    // would fail. Green here proves `from: null` is a first-class signed fact.
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const [created, transitioned] = taskBirth(env('t-1'), { title: 'ship', initial: 'draft' });
+    w.append(created);
+    w.append(transitioned);
+    w.checkpoint();
+
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.fullySigned).toBe(true);
+
+    const entries = readTailEntries({ root }, tailIdOf(root), catalogUpcasters());
+    const birth = entries[1]?.event;
+    expect(birth?.kind).toBe('task.transitioned');
+    if (birth?.kind === 'task.transitioned') expect(birth.payload.from).toBeNull();
   });
 });
 
