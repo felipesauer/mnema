@@ -11,7 +11,9 @@
  * Reading the current state comes from the chain itself (the source of truth),
  * not the SQLite cache — a stale cache must never let an illegal move through.
  * Each operation stamps `at` from one uniform clock so events across tails
- * interleave consistently.
+ * interleave consistently, and records the canonical `who`/`which` — the same
+ * form the identity rule validated — so what was judged legal is what the event
+ * proves.
  */
 
 import {
@@ -24,6 +26,7 @@ import {
   taskTransitioned,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { type Clock, systemClock } from './clock.js';
@@ -116,13 +119,19 @@ export function transitionTask(
   });
   if (!verdict.ok) return verdict;
 
+  // Record the SAME canonical identity the gate validated, never the raw input:
+  // what was judged legal is what the event proves. The gate already accepted a
+  // canonical `who`, so this cannot be undefined here.
+  const who = canonicalIdentity(input.who) as string;
+  const which = canonicalIdentity(input.which);
+
   const at = (ctx.clock ?? systemClock)();
   const event = taskTransitioned(
     {
       at,
-      who: input.who,
+      who,
       subject: input.id,
-      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
     {
@@ -144,14 +153,20 @@ export function transitionTask(
  * executing agent `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
-  if (input.who.length === 0) {
+  // Birth applies the SAME identity rule as a gated transition: canonicalize
+  // once, then validate and record that canonical form. A `who` that is not a
+  // real string or is empty once trimmed is no human; a `which` that equals
+  // `who` is an agent authorizing itself.
+  const who = canonicalIdentity(input.who);
+  if (who === undefined) {
     return {
       ok: false,
       code: 'MISSING_WHO',
       message: 'creating a task needs a human who authorized it',
     };
   }
-  if (input.which !== undefined && input.which === input.who) {
+  const which = canonicalIdentity(input.which);
+  if (which !== undefined && which === who) {
     return {
       ok: false,
       code: 'WHO_IS_WHICH',
@@ -163,9 +178,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   const birth = taskBirth(
     {
       at,
-      who: input.who,
+      who,
       subject: input.id,
-      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
     { title: input.title, initial: INITIAL_STATE },

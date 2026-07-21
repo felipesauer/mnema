@@ -249,3 +249,98 @@ describe('transitionTask — gated against the chain, not a stale cache', () => 
     expect(stateOf('t-1')).toBe('IN_PROGRESS');
   });
 });
+
+describe('canonical identity — what is validated is what is recorded', () => {
+  /** The `who`/`which` of the last event on the chain. */
+  function lastActor(): { who: string; which?: string } {
+    const events = orderedEvents(layout, upcasters);
+    const last = events[events.length - 1];
+    if (last === undefined) throw new Error('no events');
+    return { who: last.who, ...(last.which !== undefined ? { which: last.which } : {}) };
+  }
+
+  it('createTask records the trimmed who, not the raw input', () => {
+    const result = createTask(ctx(), { id: 't-1', title: 't', who: '  felipe  ' });
+    expect(result.ok).toBe(true);
+    // both birth events carry the canonical form
+    const events = orderedEvents(layout, upcasters);
+    expect(events[0]?.who).toBe('felipe');
+    expect(events[1]?.who).toBe('felipe');
+  });
+
+  it('createTask records the trimmed which, not the raw input', () => {
+    createTask(ctx(), { id: 't-1', title: 't', who: 'felipe', which: '  claude  ' });
+    expect(lastActor().which).toBe('claude');
+  });
+
+  it('transitionTask records the trimmed who/which', () => {
+    createTask(ctx(), { id: 't-1', title: 't', who: 'felipe', which: 'claude' });
+    transitionTask(ctx(), { id: 't-1', action: 'submit', who: '  felipe ' });
+    expect(lastActor().who).toBe('felipe');
+    transitionTask(ctx(), {
+      id: 't-1',
+      action: 'start',
+      who: ' felipe ',
+      which: ' claude ',
+    });
+    expect(lastActor()).toEqual({ who: 'felipe', which: 'claude' });
+  });
+
+  it('createTask and transitionTask refuse a whitespace-only who identically', () => {
+    const created = createTask(ctx(), { id: 't-1', title: 't', who: '   ' });
+    expect(created).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    expect(eventCount()).toBe(0);
+
+    // set up a real task, then try to transition with whitespace-only who
+    createTask(ctx(), { id: 't-2', title: 't', who: 'felipe' });
+    const before = eventCount();
+    const moved = transitionTask(ctx(), { id: 't-2', action: 'submit', who: '   ' });
+    expect(moved).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    expect(eventCount()).toBe(before);
+  });
+
+  it('createTask and transitionTask refuse a non-string who without crashing', () => {
+    const created = createTask(ctx(), {
+      id: 't-1',
+      title: 't',
+      who: 5 as unknown as string,
+    });
+    expect(created).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+
+    createTask(ctx(), { id: 't-2', title: 't', who: 'felipe' });
+    const moved = transitionTask(ctx(), {
+      id: 't-2',
+      action: 'submit',
+      who: 5 as unknown as string,
+    });
+    expect(moved).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+  });
+
+  it('who != which holds against a whitespace-only difference (create and transition)', () => {
+    const created = createTask(ctx(), {
+      id: 't-1',
+      title: 't',
+      who: 'claude',
+      which: ' claude ',
+    });
+    expect(created).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    expect(eventCount()).toBe(0);
+
+    createTask(ctx(), { id: 't-2', title: 't', who: 'felipe' });
+    const before = eventCount();
+    const moved = transitionTask(ctx(), {
+      id: 't-2',
+      action: 'submit',
+      who: 'claude',
+      which: ' claude ',
+    });
+    expect(moved).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    expect(eventCount()).toBe(before);
+  });
+
+  it('a whitespace-only which is dropped, not recorded as an empty agent', () => {
+    createTask(ctx(), { id: 't-1', title: 't', who: 'felipe', which: '   ' });
+    // the agent was blank; the birth records who alone, no which
+    expect(lastActor()).toEqual({ who: 'felipe' });
+  });
+});
