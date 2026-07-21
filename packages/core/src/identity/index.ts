@@ -11,4 +11,5 @@ export {
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './alias.js';
+export { canonicalId } from './id.js';
 export { canonicalIdentity } from './who.js';

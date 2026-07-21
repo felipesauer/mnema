@@ -13,6 +13,8 @@
 import { type ChainLayout, catalogUpcasters, type UpcasterRegistry } from '@mnema/chain';
 import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
+import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
+import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
 import { rebuild } from './rebuild.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
@@ -87,6 +89,29 @@ export class ProjectionCache {
   /** Lists the currently open runs (not yet ended). */
   listOpenRuns(): RunProjection[] {
     return listOpenRuns(this.db);
+  }
+
+  /** Reads one decision by id, or null if it is not projected. */
+  getDecision(id: string): DecisionProjection | null {
+    return getDecision(this.db, id);
+  }
+
+  /** Lists all projected decisions, ordered by id. */
+  listDecisions(): DecisionProjection[] {
+    return listDecisions(this.db);
+  }
+
+  /** Lists decisions currently in the given state. */
+  listDecisionsByState(state: string): DecisionProjection[] {
+    return listDecisionsByState(this.db, state);
+  }
+
+  /**
+   * Reports every `ADR-<n>` label carried by more than one decision — a label
+   * collision to reconcile, never an error. Empty when every label is unique.
+   */
+  adrCollisions(): AdrCollision[] {
+    return adrCollisions(listDecisions(this.db));
   }
 
   /** Closes the underlying database. */
