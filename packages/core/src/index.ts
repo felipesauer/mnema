@@ -1,10 +1,10 @@
 /**
  * @mnema/core — the work domain.
  *
- * Projections (event → state materialized in SQLite) live here, built on
- * @mnema/chain: the chain is the source of truth, and the projections replay
- * its events into a queryable cache without re-validating them. Workflow gates
- * and identity land in following changes.
+ * Built on @mnema/chain (the source of truth), it holds: the projections that
+ * replay chain events into a queryable SQLite cache without re-validating them;
+ * the workflow and its write-time gate; and identity — how an entity is named
+ * for a human without that name ever becoming its identity.
  *
  * The projection cache is pure: it is derived from the chain, never committed,
  * and rebuilt by dropping and replaying — there are no data migrations.
@@ -13,6 +13,14 @@
 export const PACKAGE_NAME = '@mnema/core';
 
 export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
+export {
+  ALIAS_PREFIXES,
+  type AliasKind,
+  type AliasSubject,
+  deriveAlias,
+  disambiguate,
+  SHORT_ALIAS_HEX,
+} from './identity/index.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export { orderedEvents } from './projections/order.js';
 export { rebuild } from './projections/rebuild.js';
