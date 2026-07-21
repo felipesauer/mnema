@@ -57,7 +57,6 @@ export interface LeanTask {
   readonly title: string;
   readonly description: string | null;
   readonly state: string;
-  readonly priority: number;
   readonly assigneeId: string | null;
   readonly epicId: string | null;
   readonly sprintId: string | null;
@@ -95,7 +94,6 @@ export interface TaskInsertInput {
   readonly state?: string;
   readonly estimate?: number | null;
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly epicId?: string | null;
   readonly sprintId?: string | null;
@@ -122,7 +120,6 @@ export interface TaskFieldUpdates {
   readonly acceptanceCriteria?: readonly string[];
   readonly estimate?: number | null;
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
   /**

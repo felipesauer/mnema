@@ -100,7 +100,7 @@ export type MnemaError =
        */
       readonly taskKey: string;
       readonly currentUpdatedAt: string;
-      readonly entity?: 'task' | 'decision' | 'sprint';
+      readonly entity?: 'task' | 'decision' | 'sprint' | 'epic';
     }
   | {
       readonly kind: ErrorCode.KeyCollision;
@@ -239,16 +239,11 @@ export type MnemaError =
       readonly ref: string;
     }
   | {
-      readonly kind: ErrorCode.SprintMetricDuplicate;
-      readonly sprintKey: string;
-      readonly name: string;
-    }
-  | {
       /**
        * A field value failed a domain invariant before any storage write —
-       * e.g. a non-integer/negative `context_budget` or a non-finite metric
-       * `target`. Carries the same {@link ErrorIssue} shape as Zod-sourced
-       * failures so producers (CLI, MCP, importers) reject identically.
+       * e.g. a non-integer/negative `context_budget`. Carries the same
+       * {@link ErrorIssue} shape as Zod-sourced failures so producers (CLI,
+       * MCP, importers) reject identically.
        */
       readonly kind: ErrorCode.ValidationFailed;
       readonly issues: ErrorIssue[];

@@ -1,15 +1,12 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Sprint } from '../../domain/entities/sprint.js';
-import type { SprintMetric } from '../../domain/entities/sprint-metric.js';
 import type { Task } from '../../domain/entities/task.js';
 import { deriveAlias } from '../../domain/entity-alias.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
-import { checkOptionalFiniteNumber, checkRequiredFiniteNumber } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../../errors/mnema-error.js';
 import type { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
-import type { SprintMetricRepository } from '../../storage/sqlite/repositories/sprint-metric-repository.js';
 import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
@@ -20,13 +17,6 @@ import type { SyncService } from '../sync/sync-service.js';
 import { resolveEntity } from './resolve-entity.js';
 
 /**
- * Upper bound for sprint capacity in story points; lifted from
- * DESIGN.md §6.4 (no real team plans above 1k). The lower bound is 1
- * — zero capacity is a CLOSED sprint, not a planned one.
- */
-const MAX_SPRINT_CAPACITY = 1000;
-
-/**
  * Input for {@link SprintService.plan}.
  */
 export interface PlanSprintInput {
@@ -35,7 +25,6 @@ export interface PlanSprintInput {
   readonly goal?: string;
   readonly startsAt?: string;
   readonly endsAt?: string;
-  readonly capacity?: number;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -83,22 +72,6 @@ export interface SprintTaskInput {
 export interface SprintView {
   readonly sprint: Sprint;
   readonly tasks: readonly Task[];
-  readonly metrics: readonly SprintMetric[];
-}
-
-/**
- * Input for {@link SprintService.addMetric}.
- */
-export interface AddSprintMetricInput {
-  readonly sprintKey: string;
-  readonly name: string;
-  readonly baseline?: number | null;
-  readonly target: number;
-  readonly unit?: string | null;
-  readonly dueDate?: string | null;
-  readonly actor: string;
-  readonly via?: string;
-  readonly runId?: string;
 }
 
 /**
@@ -116,7 +89,6 @@ export class SprintService {
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
     private readonly stateMachine: StateMachine,
-    private readonly metrics: SprintMetricRepository,
     // Optional so unit tests can drive the service without a filesystem.
     // `mirror` versions the sprint; `sync` rewrites a task's markdown when
     // its sprint link changes.
@@ -180,7 +152,6 @@ export class SprintService {
         goal: input.goal ?? null,
         startsAt: input.startsAt ?? null,
         endsAt: input.endsAt ?? null,
-        capacity: input.capacity ?? null,
       }),
     );
     if (!sprintResult.ok) return sprintResult;
@@ -480,79 +451,7 @@ export class SprintService {
     return Ok({
       sprint,
       tasks: this.sprints.listTasks(sprint.id),
-      metrics: this.metrics.findBySprint(sprint.id),
     });
-  }
-
-  /**
-   * Adds a measurable metric to a sprint. CLI-only mutation, in line
-   * with the rest of the sprint lifecycle.
-   *
-   * @param input - Sprint key + metric fields + identity tuple
-   * @returns The created metric or a structured error
-   */
-  addMetric(input: AddSprintMetricInput): Result<SprintMetric, MnemaError> {
-    const resolved = this.resolveSprint(input.sprintKey);
-    if (!resolved.ok) return Err(resolved.error);
-    const sprint = resolved.value;
-    const issues: ErrorIssue[] = [];
-    checkRequiredFiniteNumber(input.target, 'target', issues);
-    checkOptionalFiniteNumber(input.baseline ?? null, 'baseline', issues);
-    if (issues.length > 0) {
-      return Err({ kind: ErrorCode.ValidationFailed, issues });
-    }
-    if (this.metrics.exists(sprint.id, input.name)) {
-      return Err({
-        kind: ErrorCode.SprintMetricDuplicate,
-        sprintKey: input.sprintKey,
-        name: input.name,
-      });
-    }
-    // Wrap the insert: a concurrent writer can pass the exists() check above
-    // and lose the UNIQUE(sprint_id, name) race — map that to the structured
-    // duplicate rather than letting a raw SqliteError escape.
-    const createdResult = tryMutation(() =>
-      this.metrics.insert({
-        sprintId: sprint.id,
-        name: input.name,
-        baseline: input.baseline ?? null,
-        target: input.target,
-        unit: input.unit ?? null,
-        dueDate: input.dueDate ?? null,
-      }),
-    );
-    if (!createdResult.ok) {
-      if (createdResult.error.kind === ErrorCode.SprintMetricDuplicate) {
-        return Err({
-          kind: ErrorCode.SprintMetricDuplicate,
-          sprintKey: input.sprintKey,
-          name: input.name,
-        });
-      }
-      return createdResult;
-    }
-    const created = createdResult.value;
-    this.audit.write({
-      kind: 'sprint_metric_added',
-      actor: input.actor,
-      via: input.via,
-      run: input.runId,
-      data: { sprint_id: sprint.id, name: input.name, target: input.target },
-    });
-    return Ok(created);
-  }
-
-  /**
-   * Lists a sprint's metrics.
-   *
-   * @param sprintKey - Sprint identifier
-   * @returns Metrics or a structured error when the sprint is unknown
-   */
-  metricsFor(sprintKey: string): Result<SprintMetric[], MnemaError> {
-    const resolved = this.resolveSprint(sprintKey);
-    if (!resolved.ok) return Err(resolved.error);
-    const sprint = resolved.value;
-    return Ok(this.metrics.findBySprint(sprint.id));
   }
 
   /**
@@ -569,7 +468,6 @@ export class SprintService {
     return {
       sprint,
       tasks: this.sprints.listTasks(sprint.id),
-      metrics: this.metrics.findBySprint(sprint.id),
     };
   }
 
@@ -623,16 +521,6 @@ function validatePlanInput(input: PlanSprintInput): ErrorIssue[] {
     new Date(input.endsAt).getTime() < new Date(input.startsAt).getTime()
   ) {
     issues.push({ path: ['endsAt'], message: 'must be on or after startsAt' });
-  }
-  if (input.capacity !== undefined) {
-    if (!Number.isFinite(input.capacity) || !Number.isInteger(input.capacity)) {
-      issues.push({ path: ['capacity'], message: 'must be a positive integer' });
-    } else if (input.capacity < 1 || input.capacity > MAX_SPRINT_CAPACITY) {
-      issues.push({
-        path: ['capacity'],
-        message: `must be between 1 and ${MAX_SPRINT_CAPACITY}`,
-      });
-    }
   }
 
   return issues;

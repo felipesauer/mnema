@@ -89,12 +89,12 @@ describe('epic/sprint lifecycle MCP parity', () => {
     const names = new Set((await harness.client.listTools()).tools.map((t) => t.name));
     for (const n of [
       'epic_close',
+      'epic_reopen',
       'epic_remove',
       'sprint_start',
       'sprint_close',
       'sprint_cancel',
       'sprint_remove',
-      'sprint_metric',
     ]) {
       expect(names, `expected ${n} to be registered`).toContain(n);
     }
@@ -129,7 +129,7 @@ describe('epic/sprint lifecycle MCP parity', () => {
     expect((parsePayload(closed).epic as { state: string }).state).toBe('CLOSED');
   });
 
-  it('sprint_start → sprint_metric → sprint_remove → sprint_close round-trips via MCP', async () => {
+  it('sprint_start → sprint_remove → sprint_close round-trips via MCP', async () => {
     const sprint = parsePayload(
       await call(harness.client, 'sprint_create', { name: 'Parity sprint' }),
     ).sprint as { id: string };
@@ -140,15 +140,6 @@ describe('epic/sprint lifecycle MCP parity', () => {
     const started = await call(harness.client, 'sprint_start', { sprint_key: sprint.id });
     expect(started.isError).toBeFalsy();
     expect((parsePayload(started).sprint as { state: string }).state).toBe('ACTIVE');
-
-    const metric = await call(harness.client, 'sprint_metric', {
-      sprint_key: sprint.id,
-      name: 'p95 latency',
-      target: 200,
-      unit: 'ms',
-    });
-    expect(metric.isError).toBeFalsy();
-    expect((parsePayload(metric).metric as { name: string }).name).toBe('p95 latency');
 
     const removed = await call(harness.client, 'sprint_remove', {
       sprint_key: sprint.id,
@@ -222,14 +213,23 @@ describe('epic/sprint lifecycle MCP parity', () => {
     expect(parsePayload(result).error).toBe('TASK_NOT_FOUND');
   });
 
-  it('sprint_metric with a duplicate name returns SPRINT_METRIC_DUPLICATE', async () => {
-    const sprint = parsePayload(await call(harness.client, 'sprint_create', { name: 'Measured' }))
-      .sprint as { id: string };
-    const metric = { sprint_key: sprint.id, name: 'p95 latency', target: 200 };
-    await call(harness.client, 'sprint_metric', metric);
-    const dup = await call(harness.client, 'sprint_metric', metric);
-    expect(dup.isError).toBe(true);
-    expect(parsePayload(dup).error).toBe('SPRINT_METRIC_DUPLICATE');
+  it('epic_close → epic_reopen round-trips via MCP', async () => {
+    const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Cyclical epic' }))
+      .epic as { id: string };
+    const closed = await call(harness.client, 'epic_close', { epic_key: epic.id });
+    expect((parsePayload(closed).epic as { state: string }).state).toBe('CLOSED');
+
+    const reopened = await call(harness.client, 'epic_reopen', { epic_key: epic.id });
+    expect(reopened.isError).toBeFalsy();
+    expect((parsePayload(reopened).epic as { state: string }).state).toBe('OPEN');
+  });
+
+  it('epic_reopen on an already-open epic returns EPIC_INVALID_STATE', async () => {
+    const epic = parsePayload(await call(harness.client, 'epic_create', { title: 'Already open' }))
+      .epic as { id: string };
+    const result = await call(harness.client, 'epic_reopen', { epic_key: epic.id });
+    expect(result.isError).toBe(true);
+    expect(parsePayload(result).error).toBe('EPIC_INVALID_STATE');
   });
 
   it('epic_update edits an epic description via MCP', async () => {

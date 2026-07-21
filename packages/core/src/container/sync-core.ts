@@ -105,6 +105,7 @@ export function createSyncCore(
     auditCore.audit,
     repos.provenanceLinks,
     (kind: string) => auditCore.auditQuery.run({ kind }),
+    repos.transitions,
   );
 
   return { sync, syncRebuild, roadmapMirror };

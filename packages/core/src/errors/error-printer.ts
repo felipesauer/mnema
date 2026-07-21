@@ -225,7 +225,7 @@ export function formatError(error: MnemaError): string {
       for (const issue of error.issues) {
         lines.push(`  - ${formatPath(issue.path)}: ${issue.message}`);
       }
-      lines.push(`${pc.dim('hint:')} Use ISO8601 dates and a positive integer capacity`);
+      lines.push(`${pc.dim('hint:')} Use ISO8601 dates for starts-at / ends-at`);
       break;
 
     case ErrorCode.AttachmentSourceNotFound:
@@ -416,9 +416,6 @@ export function formatError(error: MnemaError): string {
         `${error.taskKey} criterion ${error.index} already has that evidence (${error.ref})`,
       );
       break;
-    case ErrorCode.SprintMetricDuplicate:
-      lines.push(`Sprint ${error.sprintKey} already has a metric named "${error.name}"`);
-      break;
 
     case ErrorCode.ValidationFailed:
       lines.push('Invalid input');
@@ -461,8 +458,8 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     // contended resource. A wrapper script keys its retry loop off this code,
     // so it must be distinct from Usage. (e.g. CONFLICT, STORAGE_BUSY.)
     // Only genuine races belong here. Deterministic "already exists" duplicates
-    // (DependencyDuplicate/EvidenceDuplicate/SprintMetricDuplicate) are NOT
-    // retryable — they live under Usage with TaskKeyExists.
+    // (DependencyDuplicate/EvidenceDuplicate) are NOT retryable — they live
+    // under Usage with TaskKeyExists.
     case ErrorCode.Conflict:
     case ErrorCode.KeyCollision:
     case ErrorCode.InitConflict:
@@ -506,7 +503,6 @@ export function exitCodeFor(error: MnemaError): ExitCodeValue {
     case ErrorCode.TaskKeyExists:
     case ErrorCode.DependencyDuplicate:
     case ErrorCode.EvidenceDuplicate:
-    case ErrorCode.SprintMetricDuplicate:
     case ErrorCode.ProjectNotFound:
     case ErrorCode.WorkflowNotFound:
     case ErrorCode.WorkflowInvalid:

@@ -13,9 +13,22 @@ interface EpicRow {
   readonly state: string;
   readonly metadata: string;
   readonly created_at: string;
+  readonly updated_at: string;
   readonly closed_at: string | null;
   readonly deleted_at: string | null;
 }
+
+/**
+ * Result of {@link EpicRepository.updateState} — mirrors the shape used by
+ * tasks/sprints so callers can branch on `kind` consistently.
+ */
+export type UpdateEpicStateResult =
+  | { readonly ok: true; readonly epic: Epic }
+  | { readonly ok: false; readonly reason: { readonly kind: 'NOT_FOUND' } }
+  | {
+      readonly ok: false;
+      readonly reason: { readonly kind: 'CONFLICT'; readonly currentUpdatedAt: string };
+    };
 
 /**
  * Input for {@link EpicRepository.insert}.
@@ -43,6 +56,13 @@ export interface EpicFieldUpdates {
   readonly title?: string;
   readonly description?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /**
+   * Committed close timestamp, reconciled from the mirror on rebuild — the
+   * `.md` is authoritative for it. Distinct from the fresh `now` that
+   * {@link EpicRepository.updateState} stamps on a live close: a realign must
+   * carry the ORIGINAL close time, not the rebuild's clock.
+   */
+  readonly closedAt?: string | null;
 }
 
 /**
@@ -120,12 +140,15 @@ export class EpicRepository {
   insert(input: EpicInsertInput): Epic {
     const id = input.id ?? generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
+    // A new epic is last-touched at creation; seed updated_at from created_at
+    // (a clone rebuild passes the committed created_at, so both stay aligned).
+    const createdAt = input.createdAt ?? isoNow();
 
     this.adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO epics (id, project_id, title, description, state, metadata, created_at, closed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO epics (id, project_id, title, description, state, metadata, created_at, updated_at, closed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -134,7 +157,8 @@ export class EpicRepository {
         input.description ?? null,
         input.state ?? 'OPEN',
         metadata,
-        input.createdAt ?? isoNow(),
+        createdAt,
+        createdAt,
         input.closedAt ?? null,
       );
 
@@ -146,32 +170,63 @@ export class EpicRepository {
   }
 
   /**
-   * Transitions an epic to a new state. Setting `CLOSED` stamps
-   * `closed_at` automatically.
+   * Transitions an epic to a new state, stamping `updated_at`. Closing
+   * stamps `closed_at`; reopening (back to `OPEN`) clears it. Supports
+   * optimistic concurrency via `expectedUpdatedAt` — when supplied, the
+   * update only proceeds if the current `updated_at` matches.
    *
    * @param epicId - Internal epic id
    * @param state - Target state
-   * @returns The updated epic, or `null` when the id is unknown
+   * @param expectedUpdatedAt - Optional optimistic-concurrency token
+   * @returns Result describing success or the reason it failed
    */
-  updateState(epicId: string, state: EpicState): Epic | null {
-    const isClosing = state === EpicState.Closed;
-    const closedClause = isClosing ? `, closed_at = ?` : '';
-    const stmt = this.adapter
-      .getDatabase()
-      .prepare(`UPDATE epics SET state = ?${closedClause} WHERE id = ?`);
-    if (isClosing) {
-      stmt.run(state, isoNow(), epicId);
-    } else {
-      stmt.run(state, epicId);
+  updateState(
+    epicId: string,
+    state: EpicState,
+    expectedUpdatedAt: string | null = null,
+  ): UpdateEpicStateResult {
+    const db = this.adapter.getDatabase();
+    const current = db
+      .prepare('SELECT updated_at FROM epics WHERE id = ? AND deleted_at IS NULL')
+      .get(epicId) as { updated_at: string } | undefined;
+    if (current === undefined) {
+      return { ok: false, reason: { kind: 'NOT_FOUND' } };
     }
-    return this.findById(epicId);
+    if (expectedUpdatedAt !== null && current.updated_at !== expectedUpdatedAt) {
+      return {
+        ok: false,
+        reason: { kind: 'CONFLICT', currentUpdatedAt: current.updated_at },
+      };
+    }
+
+    const now = isoNow();
+    if (state === EpicState.Closed) {
+      db.prepare(`UPDATE epics SET state = ?, closed_at = ?, updated_at = ? WHERE id = ?`).run(
+        state,
+        now,
+        now,
+        epicId,
+      );
+    } else {
+      // Reopening (or any non-closing transition) clears closed_at so a
+      // reopened epic is not left with a stale close timestamp.
+      db.prepare(`UPDATE epics SET state = ?, closed_at = NULL, updated_at = ? WHERE id = ?`).run(
+        state,
+        now,
+        epicId,
+      );
+    }
+    const reloaded = this.findById(epicId);
+    if (reloaded === null) {
+      throw new Error('epic disappeared after updateState');
+    }
+    return { ok: true, epic: reloaded };
   }
 
   /**
    * Overwrites an epic's content columns from the given fields, skipping
-   * any left `undefined`. Used by sync rebuild to fold content drift from
-   * the committed markdown back onto an existing row. `epics` carries no
-   * `updated_at`, so none is stamped.
+   * any left `undefined`, and stamps `updated_at`. Used by sync rebuild to
+   * fold content drift from the committed markdown back onto an existing row.
    *
    * @param epicId - Internal epic id
    * @param fields - Content columns to overwrite
@@ -192,8 +247,14 @@ export class EpicRepository {
       sets.push('metadata = ?');
       values.push(JSON.stringify(fields.metadata));
     }
+    if (fields.closedAt !== undefined) {
+      sets.push('closed_at = ?');
+      values.push(fields.closedAt);
+    }
 
     if (sets.length > 0) {
+      sets.push('updated_at = ?');
+      values.push(isoNow());
       values.push(epicId);
       this.adapter
         .getDatabase()
@@ -304,6 +365,7 @@ function rowToEpic(row: EpicRow): Epic {
     state: row.state as EpicState,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     closedAt: row.closed_at,
     deletedAt: row.deleted_at,
   };

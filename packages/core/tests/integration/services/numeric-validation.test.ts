@@ -83,87 +83,19 @@ describe('service-level numeric validation', () => {
       if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
     });
 
-    it('rejects priority out of the 1..5 range', () => {
-      const r = container.task.create({
-        projectKey: 'TEST',
-        title: 'Title X',
-        priority: 99,
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('rejects a NaN priority instead of crashing on NOT NULL', () => {
-      const r = container.task.create({
-        projectKey: 'TEST',
-        title: 'Title X',
-        priority: Number('abc'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
     it('still accepts valid values (0 budget is distinct from unset)', () => {
       const r = container.task.create({
         projectKey: 'TEST',
         title: 'Title X',
         contextBudget: 0,
         estimate: 5,
-        priority: 2,
         actor: 'daniel',
       });
       expect(r.ok).toBe(true);
       if (r.ok) {
         expect(r.value.contextBudget).toBe(0);
         expect(r.value.estimate).toBe(5);
-        expect(r.value.priority).toBe(2);
       }
-    });
-  });
-
-  describe('sprint.addMetric', () => {
-    let sprintId: string;
-    beforeEach(() => {
-      const planned = container.sprint.plan({ projectKey: 'TEST', name: 'S1', actor: 'daniel' });
-      if (!planned.ok) throw new Error('setup sprint plan failed');
-      sprintId = planned.value.id;
-    });
-
-    it('rejects a non-finite target instead of crashing on NOT NULL', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: sprintId,
-        name: 'p95',
-        target: Number('abc'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('rejects a non-finite baseline rather than silently storing NULL', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: sprintId,
-        name: 'p95',
-        target: 100,
-        baseline: Number('xyz'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('accepts a valid metric', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: sprintId,
-        name: 'p95',
-        target: 100,
-        baseline: 250,
-        unit: 'ms',
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(true);
     });
   });
 

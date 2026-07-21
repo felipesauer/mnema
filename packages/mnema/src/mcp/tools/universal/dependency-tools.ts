@@ -13,12 +13,7 @@ import {
   requireFreshSchema,
 } from '../../mcp-tool-result.js';
 
-const dependencyKindValues = [
-  'blocks',
-  'relates_to',
-  'duplicates',
-  'parent_of',
-] as const satisfies readonly DependencyKind[];
+const dependencyKindValues = ['blocks', 'relates_to'] as const satisfies readonly DependencyKind[];
 
 /**
  * Registers the task-dependency MCP tools — `task_depends_on`,
@@ -48,7 +43,7 @@ export class DependencyTools {
       'task_depends_on',
       {
         description:
-          'Declare that one task is blocked by another (or relates to / duplicates / is a parent of it). `task_key` depends on `blocks_task_key`. Defaults to kind `blocks`. Requires an active agent run.',
+          'Declare that one task is blocked by another (or merely relates to it). `task_key` depends on `blocks_task_key`. Defaults to kind `blocks`. Requires an active agent run.',
         inputSchema: {
           task_key: z.string().describe('The dependent task, e.g. WEBAPP-43'),
           blocks_task_key: z.string().describe('The task it depends on / is blocked by'),

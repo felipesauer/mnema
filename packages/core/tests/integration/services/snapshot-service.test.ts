@@ -83,8 +83,8 @@ describe('SnapshotService', () => {
       .getDatabase()
       .prepare(
         `INSERT INTO tasks (id, project_id, epic_id, title, description, acceptance_criteria,
-           state, priority, reporter_id, reopen_count, metadata, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', '[]', ?, 3, ?, 0, '{}', ?, ?)`,
+           state, reporter_id, reopen_count, metadata, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', '[]', ?, ?, 0, '{}', ?, ?)`,
       )
       .run(
         id,

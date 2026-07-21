@@ -330,8 +330,8 @@ export class ContextBootstrapTool {
    *    READY pick would fragment the work. Falls back to any in-progress
    *    task when none is assigned to this actor (still better to converge
    *    than to open a new front).
-   * 2. **Start the top ready task.** Otherwise point at the highest-priority
-   *    task whose blockers are all terminal — computed by DependencyService
+   * 2. **Start the top ready task.** Otherwise point at the next ready task
+   *    whose blockers are all terminal — computed by DependencyService
    *    so a task blocked by an open dependency is never recommended.
    * 3. **Unblock.** Otherwise, if something is blocked, that is the lever.
    * 4. **Idle.** Otherwise the actionable backlog is empty.
@@ -357,9 +357,7 @@ export class ContextBootstrapTool {
     // direction is a convenience, never a reason to break session start.
     const readyResult = this.dependencyService.ready();
     const readyTasks = readyResult.ok ? readyResult.value : [];
-    const topReady = [...readyTasks].sort(
-      (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
-    )[0];
+    const topReady = [...readyTasks].sort((a, b) => a.id.localeCompare(b.id))[0];
     const topReadyTask =
       topReady === undefined
         ? null
@@ -392,7 +390,7 @@ export class ContextBootstrapTool {
     if (topReadyTask !== null) {
       return {
         focus: 'start',
-        recommended: `Start ${topReadyTask.key} (${topReadyTask.title}) — highest-priority ready task. task_start it before editing.`,
+        recommended: `Start ${topReadyTask.key} (${topReadyTask.title}) — next ready task. task_start it before editing.`,
         in_progress_task: null,
         ...base,
       };

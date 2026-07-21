@@ -21,31 +21,11 @@ export function parseNonNegativeInt(raw: string): number {
   return n;
 }
 
-/** Parses a flag whose value must be an integer within an inclusive range (e.g. priority 1..5). */
-export function parseIntInRange(min: number, max: number): (raw: string) => number {
-  return (raw: string): number => {
-    const n = toIntOrThrow(raw);
-    if (n < min || n > max) {
-      throw new InvalidArgumentError(`must be between ${min} and ${max} (got ${raw})`);
-    }
-    return n;
-  };
-}
-
 /** Parses a flag whose value must be a positive integer (e.g. --limit). */
 export function parsePositiveInt(raw: string): number {
   const n = toIntOrThrow(raw);
   if (n <= 0) {
     throw new InvalidArgumentError(`must be a positive integer (got ${raw})`);
-  }
-  return n;
-}
-
-/** Parses a flag whose value must be a finite number, integer or not (e.g. metric target/baseline). */
-export function parseFiniteNumber(raw: string): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) {
-    throw new InvalidArgumentError(`must be a number (got ${raw})`);
   }
   return n;
 }

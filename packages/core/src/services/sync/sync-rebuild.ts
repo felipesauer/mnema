@@ -10,6 +10,7 @@ import { DecisionStatus } from '../../domain/enums/decision-status.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
+import { generateUuid } from '../../domain/id-generator.js';
 import { parseFrontmatter } from '../../storage/markdown/frontmatter.js';
 import { MarkdownIo } from '../../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
@@ -35,6 +36,7 @@ import type {
   TaskFieldUpdates,
   TaskRepository,
 } from '../../storage/sqlite/repositories/task-repository.js';
+import type { TransitionRepository } from '../../storage/sqlite/repositories/transition-repository.js';
 import { isoNow } from '../../utils/iso-now.js';
 import {
   CURATED_MEMORY_SUBFOLDERS,
@@ -43,6 +45,22 @@ import {
   SEED_AUTHOR_HANDLE,
   SKILL_DEFAULT_DIR,
 } from '../../utils/mirror-layout.js';
+
+/**
+ * The audit-event shape the rebuild reads to replay projections. Carries the
+ * envelope fields (`actor`/`via`/`run`/`at`, which live outside `data`) as well
+ * as `data`, so a projection like transitions can recover the actor handle and
+ * the true timestamp — not just the payload. A superset of what the provenance
+ * replay needs (it uses only `data`), kept in one place so both share a reader.
+ */
+export interface AuditEventView {
+  readonly kind: string;
+  readonly at: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly run?: string;
+  readonly data: Record<string, unknown>;
+}
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -91,11 +109,13 @@ export interface RebuildSummary {
  * epics and decisions under `roadmap/`, sprints under `sprints/`, and
  * tasks under `backlog/<STATE>/<ID>.md`.
  *
- * The append-only history (`transitions`, `agent_runs`, `agent_plans`)
- * is **not** rebuilt — that timeline lives in `.audit/*.jsonl` and is
- * the canonical record for the human. `mnema sync` is therefore safe to
- * run on a clean database: it bootstraps the cache from disk without
- * inventing past events.
+ * The transition history IS rebuilt — but as a projection of the canonical
+ * `.audit/*.jsonl` chain, not invented: a fresh clone's empty `transitions`
+ * table is replayed from `task_created`/`task_transitioned` events (only when
+ * empty, so a live project's authoritative rows are never touched). The other
+ * append-only timelines (`agent_runs`, `agent_plans`) are still left to the
+ * chain. `mnema sync` is therefore safe to run on a clean database: it
+ * bootstraps the cache from disk + chain without inventing past events.
  *
  * Order matters. Epics and sprints are rebuilt before tasks so a task's
  * `epic_id` / `sprint_id` link can be resolved to a freshly-inserted row.
@@ -163,9 +183,15 @@ export class SyncRebuild {
     private readonly provenance: {
       link(source: { kind: string; ref: string }, target: { kind: string; ref: string }): unknown;
     } | null = null,
-    private readonly auditEvents:
-      | ((kind: string) => readonly { readonly data: Record<string, unknown> }[])
-      | null = null,
+    private readonly auditEvents: ((kind: string) => readonly AuditEventView[]) | null = null,
+    /**
+     * Optional transitions repo. When present (alongside {@link auditEvents}),
+     * the rebuild reconstructs the transition history from the chain into the
+     * empty table of a fresh clone — the live hot-path is the only other writer,
+     * so a clone that never ran it starts with no history. Left optional so
+     * existing callers/tests construct the rebuild unchanged.
+     */
+    private readonly transitions: TransitionRepository | null = null,
   ) {}
 
   /**
@@ -264,6 +290,12 @@ export class SyncRebuild {
     // exists (the edges reference decision/memory/skill refs). No-op when the
     // provenance repo or the event reader was not wired.
     this.rebuildProvenance();
+
+    // Replay the transition history from the chain into a fresh clone's empty
+    // transitions table. Runs after tasks exist (rows reference task ids) and
+    // is a no-op unless the table is empty (a live project already holds the
+    // authoritative rows). No-op when the repo or event reader was not wired.
+    this.rebuildTransitions();
 
     return {
       tasksScanned: tasks.scanned,
@@ -364,6 +396,95 @@ export class SyncRebuild {
       const supersededRef =
         skillRowId(supersededSlug, readNumber(data, 'version')) ?? supersededSlug;
       link({ kind: 'skill', ref: supersededRef ?? '' }, { kind: 'skill', ref: successorId ?? '' });
+    }
+  }
+
+  /**
+   * Reconstructs the transition history from the committed audit chain into a
+   * fresh clone's empty `transitions` table. The chain is the source of truth:
+   * a `task_created` event becomes the initial `create` row, and each
+   * `task_transitioned` event becomes a state-change row, carrying the gate
+   * payload that rode on the event since the identity wave.
+   *
+   * Runs ONLY when the table is empty. The table is append-only (UPDATE/DELETE
+   * are trigger-blocked) and the live hot-path is its authoritative writer, so
+   * a project that already has rows must never be re-projected — re-running
+   * against a populated table would duplicate. An empty table means a clone
+   * that has the `.audit/` chain but never ran the hot-path: exactly the gap
+   * this closes.
+   *
+   * Two shape gaps between the row and the event are bridged here: the event
+   * stores actor/via as HANDLES (the table wants resolved actor ids, so they
+   * are re-resolved via `upsert`, matching the live `ensureActor`), and the
+   * `create` transition has no `task_transitioned` event (it is synthesised
+   * from `task_created`). No-op when the repo or event reader is absent.
+   */
+  private rebuildTransitions(): void {
+    if (this.transitions === null || this.auditEvents === null) return;
+    if (this.transitions.count() > 0) return;
+    const read = this.auditEvents;
+    const repo = this.transitions;
+
+    // Resolve an actor handle to its committed id, creating the actor when the
+    // clone has not seen it — the same "ensure" the live path uses. Human vs
+    // agent is inferred from the `agent:` handle convention.
+    const resolveActor = (handle: string | undefined): string | null => {
+      if (handle === undefined || handle.length === 0) return null;
+      const kind = handle.startsWith('agent:') ? ActorKind.Agent : ActorKind.Human;
+      return this.actors.upsert(handle, kind);
+    };
+
+    // Both event kinds project onto a transition row; merge and replay in
+    // chain order so `at`-ordered readers see the true sequence.
+    const events = [...read('task_created'), ...read('task_transitioned')].sort((a, b) =>
+      a.at.localeCompare(b.at),
+    );
+
+    for (const event of events) {
+      const taskId = readString(event.data, 'id');
+      if (taskId === null) continue;
+      // The row's task_id is a NOT NULL FK. A clone can hold a chain event for a
+      // task with no row — a canceled task (its mirror was unlinked, but the
+      // create/transition events stay committed) or one skipped as a
+      // multi-mirror conflict. Skip such an event rather than let the FK abort
+      // the whole sync; without a task row the transition has nothing to anchor.
+      // (`IncludingDeleted` so a soft-deleted-but-present row still projects.)
+      if (this.tasks.findByIdIncludingDeleted(taskId) === null) continue;
+      const actorId = resolveActor(event.actor);
+      if (actorId === null) continue;
+
+      const isCreate = event.kind === 'task_created';
+      // task_created carries only { id, title, state }; synthesise the create
+      // row's shape. A transition event carries from/to/action/payload directly
+      // (payload only when non-empty — default it to {}).
+      const fromState = isCreate ? null : (readString(event.data, 'from') ?? null);
+      const toState = isCreate
+        ? (readString(event.data, 'state') ?? '')
+        : (readString(event.data, 'to') ?? '');
+      const action = isCreate ? 'create' : (readString(event.data, 'action') ?? '');
+      const payload = isCreate
+        ? { title: readString(event.data, 'title') ?? '' }
+        : readRecord(event.data, 'payload');
+
+      repo.insertProjected({
+        // The row id is a fresh uuid: transitions is a git-ignored local cache,
+        // never cross-referenced by id across clones, so it need not be stable.
+        id: generateUuid(),
+        taskId,
+        fromState,
+        toState,
+        action,
+        payload,
+        actorId,
+        viaActorId: resolveActor(event.via),
+        // agent_run_id is a FK to agent_runs, which the rebuild never
+        // reconstructs (that timeline is left to the chain), so on a clone the
+        // table is empty. Projecting the event's run id would violate the FK
+        // and abort the sync; the transition keeps its actor/payload, only the
+        // run link (meaningless on a clone with no runs) is dropped to null.
+        agentRunId: null,
+        at: event.at,
+      });
     }
   }
 
@@ -477,7 +598,6 @@ export class SyncRebuild {
             createdAt: readString(data, 'created_at') ?? undefined,
             updatedAt: readString(data, 'updated_at') ?? undefined,
             closedAt: readString(data, 'closed_at'),
-            priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,
             epicId,
@@ -511,7 +631,7 @@ export class SyncRebuild {
           // Fold the content columns serialiseTask round-trips back onto the
           // row when they diverge from the cache, so a merged edit to a
           // committed task (title, description, acceptance_criteria,
-          // estimate, priority, assignee) is no longer silently dropped.
+          // estimate, assignee) is no longer silently dropped.
           const contentDrift = collectTaskContentDrift(existing, data, assigneeId);
           if (contentDrift !== null) {
             this.tasks.updateFields(existing.id, contentDrift);
@@ -842,8 +962,11 @@ export class SyncRebuild {
     let scanned = 0;
     let upserted = 0;
 
-    for (const fileName of listMarkdownFiles(root)) {
-      const filePath = path.join(root, fileName);
+    // Recursive (one level): reads both the flat layout (files at the root) and
+    // the foldered layout (files under a per-kind subfolder). The basename is
+    // the identity, so the subfolder is irrelevant to resolution — a not-yet-
+    // migrated tree and a migrated one both scan.
+    for (const { slug: stem, filePath } of listMirrorEntries(root)) {
       const data = this.markdownIo.read(filePath).mnemaData;
 
       // The directory may hold more than one kind (epic + decision); only
@@ -855,7 +978,6 @@ export class SyncRebuild {
       // wave) and its project prefix scopes it; an epic or sprint is filed by
       // its committed id, the sole identity, and every roadmap file already
       // belongs to this project.
-      const stem = fileName.replace(/\.md$/, '');
       let changed: boolean;
       if (kind === 'decision') {
         const key = readString(data, 'key');
@@ -951,7 +1073,6 @@ export class SyncRebuild {
         goal: readString(data, 'goal'),
         startsAt: readString(data, 'starts_at'),
         endsAt: readString(data, 'ends_at'),
-        capacity: readNumber(data, 'capacity'),
         metadata: readRecord(data, 'metadata'),
         state,
         createdAt: readString(data, 'created_at') ?? undefined,
@@ -1115,10 +1236,9 @@ export class SyncRebuild {
  * so the caller can skip the write and leave `updated_at` truthful.
  *
  * Mirrors the fields {@link serialiseTask} round-trips and the insert
- * path's fallbacks (title/priority default the same way) so a freshly
- * written mirror reports no drift. `assigneeId` is passed in already
- * resolved from the `assignee` handle, matching how the insert branch
- * derives it.
+ * path's fallbacks (title defaults the same way) so a freshly written
+ * mirror reports no drift. `assigneeId` is passed in already resolved
+ * from the `assignee` handle, matching how the insert branch derives it.
  */
 function collectTaskContentDrift(
   existing: Task,
@@ -1155,12 +1275,6 @@ function collectTaskContentDrift(
   const contextBudget = readNumber(data, 'context_budget');
   if (contextBudget !== existing.contextBudget) {
     updates.contextBudget = contextBudget;
-    changed = true;
-  }
-
-  const priority = readNumber(data, 'priority') ?? 3;
-  if (priority !== existing.priority) {
-    updates.priority = priority;
     changed = true;
   }
 
@@ -1218,6 +1332,16 @@ function collectEpicContentDrift(
     changed = true;
   }
 
+  // closed_at is authoritative from the mirror on rebuild: an epic closed on
+  // disk must carry its committed close time into the cache rather than the
+  // fresh `now` that a realigning updateState() stamps; one reopened on disk
+  // (closed_at: null) must have a stale cached value cleared.
+  const closedAt = readString(data, 'closed_at');
+  if (closedAt !== existing.closedAt) {
+    updates.closedAt = closedAt;
+    changed = true;
+  }
+
   return changed ? updates : null;
 }
 
@@ -1253,12 +1377,6 @@ function collectSprintContentDrift(
   const endsAt = readString(data, 'ends_at');
   if (endsAt !== existing.endsAt) {
     updates.endsAt = endsAt;
-    changed = true;
-  }
-
-  const capacity = readNumber(data, 'capacity');
-  if (capacity !== existing.capacity) {
-    updates.capacity = capacity;
     changed = true;
   }
 

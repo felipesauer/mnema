@@ -6,7 +6,7 @@ import type { TaskState } from '../../domain/enums/task-state.js';
 import { hasInvocationMarkup } from '../../domain/invocation-markup.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../../domain/state-machine/workflow-meta-schema.js';
-import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../../domain/validation.js';
+import { checkOptionalNonNegativeInt } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { type ErrorIssue, fromZodIssues, type MnemaError } from '../../errors/mnema-error.js';
 import type {
@@ -47,7 +47,6 @@ export interface CreateTaskInput {
   readonly estimate?: number | null;
   /** Estimated context cost in tokens; distinct from `estimate` (story points). */
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   /**
    * Free-form metadata persisted alongside the task. Importers use it
@@ -142,7 +141,6 @@ export class TaskService {
     checkNoInvocationMarkup(input, issues);
     checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
     checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
-    checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
     if (issues.length > 0) {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
@@ -167,7 +165,6 @@ export class TaskService {
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           estimate: input.estimate ?? null,
           contextBudget: input.contextBudget ?? null,
-          priority: input.priority ?? 3,
           assigneeId: assignee.value,
           reporterId,
           state: initialState,
@@ -689,23 +686,20 @@ export class TaskService {
 
     const { to, data } = resolution.value;
 
-    // A custom workflow may declare `estimate`/`priority` as a MUTATING gate
-    // field with looser bounds than the first-class column allows (estimate ≥
-    // 0 integer; priority 1..5). The gate would accept e.g. priority=8, then
-    // the column fold would silently drop it — Ok returned, audit says 8, the
-    // task row unchanged. Validate against the column invariant here so the
-    // transition fails closed, symmetric with create(). This applies ONLY to
-    // mutating fields: a `validating` field is recorded in the audit payload
-    // and never folded to a column, so its value must not be column-validated.
+    // A custom workflow may declare `estimate` as a MUTATING gate field with
+    // looser bounds than the first-class column allows (estimate ≥ 0 integer).
+    // The gate would accept e.g. estimate=-1, then the column fold would
+    // silently drop it — Ok returned, audit says -1, the task row unchanged.
+    // Validate against the column invariant here so the transition fails
+    // closed, symmetric with create(). This applies ONLY to mutating fields: a
+    // `validating` field is recorded in the audit payload and never folded to
+    // a column, so its value must not be column-validated.
     if (data !== null && typeof data === 'object') {
       const payload = data as Record<string, unknown>;
       const spec = resolution.value.requiresSpec;
       const foldIssues: ErrorIssue[] = [];
       if (typeof payload.estimate === 'number' && isMutatingField(spec, 'estimate')) {
         checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
-      }
-      if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
-        checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
       }
       // Free-text fields that fold onto columns (e.g. submit's title /
       // description / acceptance_criteria) get the same markup screen as
@@ -1236,16 +1230,6 @@ function persistableFromPayload(
     touched = true;
   }
   if (
-    typeof payload.priority === 'number' &&
-    Number.isInteger(payload.priority) &&
-    payload.priority >= 1 &&
-    payload.priority <= 5 &&
-    isMutating('priority')
-  ) {
-    (updates as { priority?: number }).priority = payload.priority;
-    touched = true;
-  }
-  if (
     typeof payload.assignee_id === 'string' &&
     payload.assignee_id.length > 0 &&
     isMutating('assignee_id')
@@ -1274,7 +1258,6 @@ function persistedFieldDefaults(task: Task): Record<string, unknown> {
   };
   if (task.description !== null) defaults.description = task.description;
   if (task.estimate !== null) defaults.estimate = task.estimate;
-  defaults.priority = task.priority;
   if (task.assigneeId !== null) defaults.assignee_id = task.assigneeId;
   return defaults;
 }

@@ -40,6 +40,20 @@ export interface RecordTransitionInput {
 }
 
 /**
+ * Input shape for {@link TransitionRepository.insertProjected} — a transition
+ * reconstructed from the audit chain rather than recorded live. Unlike
+ * {@link RecordTransitionInput}, the caller supplies the committed `id` and
+ * `at` from the source event so the projection is a faithful replay, not a
+ * fresh stamp.
+ */
+export interface ProjectedTransitionInput extends RecordTransitionInput {
+  /** The transition's committed id (minted by the projector from the event). */
+  readonly id: string;
+  /** The source event's timestamp — the true moment of the transition. */
+  readonly at: string;
+}
+
+/**
  * Persistence for {@link Transition}. Append-only at the SQL level:
  * UPDATE/DELETE on `transitions` are blocked by triggers.
  */
@@ -83,6 +97,54 @@ export class TransitionRepository {
       throw new Error('transition insert succeeded but row not found');
     }
     return found;
+  }
+
+  /**
+   * Total number of transition rows. Used by the rebuild to decide whether the
+   * table needs projecting: a fresh clone has none (the live hot-path is the
+   * only writer, so a clone that never ran it starts empty), while a live
+   * project already holds the authoritative rows and must not be re-projected.
+   *
+   * @returns The row count
+   */
+  count(): number {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT COUNT(*) AS n FROM transitions')
+      .get() as { n: number };
+    return row.n;
+  }
+
+  /**
+   * Appends a transition reconstructed from the audit chain, preserving the
+   * committed `id` and `at` from the source event. Same append-only INSERT as
+   * {@link record} — it does not touch the UPDATE/DELETE-blocking triggers —
+   * but replays a historical row faithfully instead of stamping a new one.
+   * Only the rebuild uses this, and only against an empty table.
+   *
+   * @param input - Projected transition, carrying the committed id + timestamp
+   */
+  insertProjected(input: ProjectedTransitionInput): void {
+    this.adapter
+      .getDatabase()
+      .prepare(
+        `INSERT INTO transitions (
+           id, task_id, from_state, to_state, action,
+           payload, actor_id, via_actor_id, agent_run_id, at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.id,
+        input.taskId,
+        input.fromState,
+        input.toState,
+        input.action,
+        JSON.stringify(input.payload),
+        input.actorId,
+        input.viaActorId ?? null,
+        input.agentRunId ?? null,
+        input.at,
+      );
   }
 
   /**

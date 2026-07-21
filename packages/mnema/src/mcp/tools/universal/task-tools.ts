@@ -35,7 +35,6 @@ const taskItemSchema = z.object({
   acceptance_criteria: z.array(z.string().min(1)).optional(),
   estimate: z.number().int().min(0).optional(),
   context_budget: z.number().int().min(0).optional(),
-  priority: z.number().int().min(1).max(5).optional(),
   assignee: z.string().optional(),
   labels: z.array(z.string().min(1)).optional(),
 });
@@ -89,7 +88,6 @@ export class TaskTools {
             .min(0)
             .optional()
             .describe('Estimated context cost in tokens (≠ estimate)'),
-          priority: z.number().int().min(1).max(5).optional(),
           assignee: z.string().optional().describe('Actor handle (e.g. `maria`) or UUID'),
           labels: z.array(z.string().min(1)).optional().describe('e.g. ["area:api", "tipo:bug"]'),
           verbosity: z
@@ -139,7 +137,6 @@ export class TaskTools {
           acceptanceCriteria,
           estimate: input.estimate ?? null,
           contextBudget: input.context_budget ?? null,
-          priority: input.priority ?? 3,
           assigneeId: input.assignee ?? null,
           actor: this.identity.getDefaultActor(),
           via,
@@ -320,7 +317,6 @@ export class TaskTools {
             acceptanceCriteria: item.acceptance_criteria ?? [],
             estimate: item.estimate ?? null,
             contextBudget: item.context_budget ?? null,
-            priority: item.priority ?? 3,
             assigneeId: item.assignee ?? null,
             actor: this.identity.getDefaultActor(),
             via,
@@ -423,7 +419,7 @@ export class TaskTools {
             .optional()
             .describe('Filter by assignee — accepts a handle (e.g. `maria`) or a UUID'),
           sort: z
-            .enum(['key', 'updated_at', 'created_at', 'priority'])
+            .enum(['key', 'updated_at', 'created_at'])
             .optional()
             .describe('Order results by the given field. Default: key (alphanumeric)'),
           limit: z
@@ -521,13 +517,12 @@ function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value);
 }
 
-type SortKey = 'key' | 'updated_at' | 'created_at' | 'priority';
+type SortKey = 'key' | 'updated_at' | 'created_at';
 
 interface SortableTask {
   readonly id: string;
   readonly updatedAt: string;
   readonly createdAt: string;
-  readonly priority: number;
 }
 
 function compareBy(a: SortableTask, b: SortableTask, key: SortKey): number {
@@ -541,8 +536,6 @@ function compareBy(a: SortableTask, b: SortableTask, key: SortKey): number {
       return b.updatedAt.localeCompare(a.updatedAt); // newest first
     case 'created_at':
       return b.createdAt.localeCompare(a.createdAt); // newest first
-    case 'priority':
-      return a.priority - b.priority; // 1 (highest) first
   }
 }
 

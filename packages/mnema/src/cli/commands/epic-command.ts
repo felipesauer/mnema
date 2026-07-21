@@ -32,6 +32,7 @@ interface ListOptions {
  * - `epic list [--state=OPEN|CLOSED]`   → list epics
  * - `epic update <key> [--title ...]`   → edit an epic's content
  * - `epic close <key>`                  → close an OPEN epic
+ * - `epic reopen <key>`                 → reopen a CLOSED epic
  * - `epic add <epicKey> <taskKey>`      → attach a task to an epic
  * - `epic remove <epicKey> <taskKey>`   → detach a task from an epic
  * - `epic delete <key>`                 → soft-delete an epic + drop its mirror
@@ -120,6 +121,19 @@ export class EpicCommand {
             actor: container.identity.getDefaultActor(),
           });
           renderEpic(result, 'closed');
+        });
+      });
+
+    group
+      .command('reopen <key>')
+      .description('Reopen a CLOSED epic')
+      .action(async (key: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.epic.reopen({
+            epicKey: key,
+            actor: container.identity.getDefaultActor(),
+          });
+          renderEpic(result, 'reopened');
         });
       });
 

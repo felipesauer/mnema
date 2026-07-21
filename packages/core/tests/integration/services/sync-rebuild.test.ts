@@ -72,7 +72,6 @@ mnema:
   description: ''
   acceptance_criteria: []
   estimate: null
-  priority: 3
   reporter: daniel
   reopen_count: 0
   metadata: {}
@@ -206,7 +205,7 @@ mnema:
     expect(summary.tasksScanned).toBe(2);
   });
 
-  it('applies content drift (title/priority/acceptance_criteria) from the committed markdown', () => {
+  it('applies content drift (title/acceptance_criteria) from the committed markdown', () => {
     const created = container.task.create({
       projectKey: 'TEST',
       title: 'Original title',
@@ -216,7 +215,7 @@ mnema:
     if (!created.ok) return;
 
     // The create wrote the mirror; edit the committed markdown the way a
-    // merged PR would — new title, new priority, a new acceptance criterion.
+    // merged PR would — new title, a new acceptance criterion.
     const markdownIo = new MarkdownIo();
     const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
     const parsed = markdownIo.read(draftFile);
@@ -225,7 +224,6 @@ mnema:
       mnemaData: {
         ...parsed.mnemaData,
         title: 'Edited by a merged PR',
-        priority: 1,
         acceptance_criteria: ['a newly added criterion'],
       },
     });
@@ -239,7 +237,6 @@ mnema:
     expect(reloaded.ok).toBe(true);
     if (!reloaded.ok) return;
     expect(reloaded.value.title).toBe('Edited by a merged PR');
-    expect(reloaded.value.priority).toBe(1);
     expect(reloaded.value.acceptanceCriteria).toEqual(['a newly added criterion']);
   });
 
@@ -276,12 +273,87 @@ mnema:
     expect(reloaded.value.epic.description).toBe('epic EDITED description');
   });
 
-  it('applies sprint content drift (name/goal/capacity) from the committed markdown', () => {
+  it('realigns an epic to CLOSED preserving the committed close time (not a fresh now)', () => {
+    // A cached OPEN epic whose committed mirror says CLOSED with an old close
+    // time — the realign must adopt the committed closed_at, not stamp `now`.
+    // Regression: the state realign calls updateState (which stamps a fresh
+    // now); only the closed_at drift reconcile carries the true committed time.
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Closed elsewhere',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const committedClose = '2020-01-02T03:04:05.000Z';
+    const markdownIo = new MarkdownIo();
+    const file = path.join(root, '.mnema/roadmap', `${created.value.id}.md`);
+    const parsed = markdownIo.read(file);
+    markdownIo.write(file, {
+      ...parsed,
+      mnemaData: {
+        ...parsed.mnemaData,
+        state: 'CLOSED',
+        closed_at: committedClose,
+      },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.epics.upserted).toBe(1);
+
+    const reloaded = container.epic.show(created.value.id);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.epic.state).toBe('CLOSED');
+    // The committed close time survives — the realign did not overwrite it with
+    // the rebuild's clock.
+    expect(reloaded.value.epic.closedAt).toBe(committedClose);
+  });
+
+  it('ingests a roadmap mirror from a foldered subdirectory (layout compat)', () => {
+    // Forward compat for the foldered layout (roadmap/epics/<id>.md): the roadmap
+    // scanner is recursive, so an epic mirror moved into a per-kind subfolder is
+    // ingested on a clone exactly as a flat one is. The basename stays the
+    // identity — the subfolder is presentational only.
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Foldered epic',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+
+    // The writer put it flat at roadmap/<id>.md; relocate it into a foldered
+    // subdir to emulate the post-migration layout.
+    const flat = path.join(root, '.mnema/roadmap', `${id}.md`);
+    const folderedDir = path.join(root, '.mnema/roadmap', 'epics');
+    mkdirSync(folderedDir, { recursive: true });
+    writeFileSync(path.join(folderedDir, `${id}.md`), readFileSync(flat, 'utf-8'), 'utf-8');
+    rmSync(flat, { force: true });
+
+    // Fresh clone: only the committed markdown (now foldered) survives.
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      const summary = fresh.syncRebuild.run('TEST');
+      expect(summary.epics.upserted).toBe(1);
+      const shown = fresh.epic.show(id);
+      expect(shown.ok, 'the foldered epic mirror must be ingested on a clone').toBe(true);
+      if (!shown.ok) return;
+      expect(shown.value.epic.title).toBe('Foldered epic');
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('applies sprint content drift (name/goal) from the committed markdown', () => {
     const planned = container.sprint.plan({
       projectKey: 'TEST',
       name: 'Sprint original',
       goal: 'ship the original',
-      capacity: 10,
       actor: 'daniel',
     });
     expect(planned.ok).toBe(true);
@@ -296,7 +368,6 @@ mnema:
         ...parsed.mnemaData,
         name: 'Sprint EDITED',
         goal: 'ship the EDITED',
-        capacity: 20,
       },
     });
 
@@ -308,7 +379,6 @@ mnema:
     if (!reloaded.ok) return;
     expect(reloaded.value.sprint.name).toBe('Sprint EDITED');
     expect(reloaded.value.sprint.goal).toBe('ship the EDITED');
-    expect(reloaded.value.sprint.capacity).toBe(20);
   });
 
   it('applies decision content drift (title/rationale) from the committed markdown', () => {
@@ -1118,6 +1188,152 @@ mnema:
       // The superseded skill has no mirror after being retired, so its stable
       // slug anchors the source end.
       expect(edge?.fromRef).toBe('old-skill');
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('reconstructs the transition history from the audit on a fresh clone', () => {
+    // A task with a create + two live transitions. The transitions table is
+    // git-ignored, so a fresh clone starts empty; the rebuild must replay it
+    // from the committed chain — including the synthesised `create` row, the
+    // re-resolved actor/via (the event stores handles, the row wants ids), and
+    // the gate payload that rides on the transition event.
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Replayable',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+    expect(
+      container.task.transition({ taskKey: id, action: 'submit', payload: {}, actor: 'daniel' }).ok,
+    ).toBe(true);
+    expect(
+      container.task.transition({
+        taskKey: id,
+        action: 'start',
+        payload: { assignee_id: 'daniel' },
+        actor: 'maria',
+        via: 'agent:cc',
+      }).ok,
+    ).toBe(true);
+
+    // Sanity: three rows live (create + submit + start).
+    const before = container.transitions.findByTask(id);
+    expect(before).toHaveLength(3);
+
+    // Fresh clone: drop the git-ignored state; only the committed chain remains.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.transitions.findByTask(id);
+      // All three rows are back, in order, each with a resolved actor.
+      expect(after, 'transition history must survive the clone').toHaveLength(3);
+      expect(after.map((t) => t.action)).toEqual(['create', 'submit', 'start']);
+      expect(after.every((t) => t.actorId.length > 0)).toBe(true);
+      // The create row is synthesised from task_created (from=null, action=create).
+      expect(after[0]?.fromState).toBeNull();
+      expect(after[0]?.toState).toBe('DRAFT');
+      // The agent `via` on the start transition is re-resolved to an actor id.
+      const start = after.find((t) => t.action === 'start');
+      expect(start?.viaActorId, 'the via handle must re-resolve to an actor id').not.toBeNull();
+      // The gate payload rode on the event and is preserved.
+      expect(start?.payload).toMatchObject({ assignee_id: expect.any(String) });
+
+      // Idempotent: a second rebuild does not duplicate (the empty-table guard).
+      fresh.syncRebuild.run('TEST');
+      expect(fresh.transitions.findByTask(id)).toHaveLength(3);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('rebuilds transitions that carried an agent run id, nulling the run link on the clone', () => {
+    // Regression: agent_run_id is a FK to agent_runs, which the rebuild never
+    // reconstructs — on a clone that table is empty. Projecting the event's run
+    // id would violate the FK and abort the whole sync. The transition must
+    // survive with its run link dropped to null.
+    const run = container.agentRun.start({ goal: 'ship it', actor: 'daniel' });
+    expect(run.ok).toBe(true);
+    if (!run.ok) return;
+    const runId = run.value.id;
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Run-driven',
+      actor: 'daniel',
+      runId,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+    expect(
+      container.task.transition({
+        taskKey: id,
+        action: 'submit',
+        payload: {},
+        actor: 'daniel',
+        runId,
+      }).ok,
+    ).toBe(true);
+
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      // The sync must not throw on the FK — the run link is nulled.
+      expect(() => fresh.syncRebuild.run('TEST')).not.toThrow();
+      const after = fresh.transitions.findByTask(id);
+      expect(after, 'run-driven transitions must survive the clone').toHaveLength(2);
+      expect(after.every((t) => t.agentRunId === null)).toBe(true);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('skips a chain transition whose task has no row on the clone (no FK abort)', () => {
+    // Regression: task_id is a NOT NULL FK. A canceled task keeps its
+    // create/transition events in the chain, but its mirror is gone, so no task
+    // row exists after rebuildTasks. Projecting the transition would violate the
+    // FK and abort the sync; it must be skipped instead. A second, live task
+    // proves the sync completed and still rebuilt what it could.
+    const canceled = container.task.create({
+      projectKey: 'TEST',
+      title: 'Doomed',
+      actor: 'daniel',
+    });
+    expect(canceled.ok).toBe(true);
+    if (!canceled.ok) return;
+    expect(
+      container.task.transition({
+        taskKey: canceled.value.id,
+        action: 'cancel',
+        payload: { reason: 'scrapped' },
+        actor: 'daniel',
+      }).ok,
+    ).toBe(true);
+    const live = container.task.create({ projectKey: 'TEST', title: 'Survivor', actor: 'daniel' });
+    expect(live.ok).toBe(true);
+    if (!live.ok) return;
+
+    // Drop the canceled task's mirror so the clone has its events but no row.
+    container.sync.rebuildMirrors();
+    const canceledMirror = path.join(root, '.mnema/backlog', 'CANCELED', `${canceled.value.id}.md`);
+    if (existsSync(canceledMirror)) rmSync(canceledMirror, { force: true });
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      expect(() => fresh.syncRebuild.run('TEST')).not.toThrow();
+      // The doomed task's transitions were skipped (no row to anchor them).
+      expect(fresh.transitions.findByTask(canceled.value.id)).toHaveLength(0);
+      // The live task's create transition still rebuilt.
+      expect(fresh.transitions.findByTask(live.value.id).length).toBeGreaterThan(0);
     } finally {
       fresh.close();
     }

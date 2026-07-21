@@ -253,10 +253,10 @@ export class WorkGraphLintService {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        // Only `blocks` edges are integrity-bearing: a dangling
-        // relates_to/duplicates/parent_of edge to a soft-deleted task is
-        // informational, not a broken-graph error. (blockersAllTerminal /
-        // reachesViaBlocks both filter to 'blocks' too.)
+        // Only `blocks` edges are integrity-bearing: a dangling relates_to
+        // edge to a soft-deleted task is informational, not a broken-graph
+        // error. (blockersAllTerminal / reachesViaBlocks both filter to
+        // 'blocks' too.)
         `SELECT t.id AS task_id, d.blocks_task_id AS blocks_task_id
            FROM dependencies d
            JOIN tasks t ON t.id = d.task_id

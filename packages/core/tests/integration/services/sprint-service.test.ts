@@ -10,7 +10,6 @@ import { SprintService } from '@/services/backlog/sprint-service.js';
 import { AuditService } from '@/services/integrity/audit-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { ProjectRepository } from '@/storage/sqlite/repositories/project-repository.js';
-import { SprintMetricRepository } from '@/storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '@/storage/sqlite/repositories/sprint-repository.js';
 import { TaskRepository } from '@/storage/sqlite/repositories/task-repository.js';
 import { SqliteAdapter } from '@/storage/sqlite/sqlite-adapter.js';
@@ -39,14 +38,7 @@ describe('SprintService', () => {
       loadWorkflowFile(path.resolve('packages/core/workflows/default.json')),
     );
 
-    sprints = new SprintService(
-      sprintRepo,
-      tasks,
-      projects,
-      audit,
-      stateMachine,
-      new SprintMetricRepository(adapter),
-    );
+    sprints = new SprintService(sprintRepo, tasks, projects, audit, stateMachine);
 
     projects.insert({ key: 'TEST', name: 'Test' });
     adapter
@@ -248,27 +240,12 @@ describe('SprintService', () => {
       expect(result.error.kind).toBe(ErrorCode.SprintInvalidPayload);
     });
 
-    it('rejects a capacity outside [1, 1000]', () => {
-      for (const bad of [0, -3, 1500, 1.5]) {
-        const result = sprints.plan({
-          projectKey: 'TEST',
-          name: 'A',
-          capacity: bad,
-          actor: 'daniel',
-        });
-        expect(result.ok).toBe(false);
-        if (result.ok) return;
-        expect(result.error.kind).toBe(ErrorCode.SprintInvalidPayload);
-      }
-    });
-
     it('accepts a valid payload with all bounds', () => {
       const result = sprints.plan({
         projectKey: 'TEST',
         name: 'A',
         startsAt: '2026-05-01',
         endsAt: '2026-05-15T18:00:00Z',
-        capacity: 42,
         actor: 'daniel',
       });
       expect(result.ok).toBe(true);
@@ -325,7 +302,6 @@ describe('SprintService', () => {
         projects,
         audit,
         kanbanMachine,
-        new SprintMetricRepository(adapter),
       );
       const result = sprintsKanban.plan({
         projectKey: 'TEST',

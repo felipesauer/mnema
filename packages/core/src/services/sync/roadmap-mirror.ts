@@ -143,7 +143,6 @@ function serialiseSprint(sprint: Sprint): Record<string, unknown> {
     goal: sprint.goal,
     starts_at: sprint.startsAt,
     ends_at: sprint.endsAt,
-    capacity: sprint.capacity,
     metadata: { ...sprint.metadata },
     created_at: sprint.createdAt,
     closed_at: sprint.closedAt,

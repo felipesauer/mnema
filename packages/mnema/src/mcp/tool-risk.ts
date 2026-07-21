@@ -219,6 +219,12 @@ export const TOOL_RISK: Readonly<Record<string, ToolAnnotations>> = {
     idempotentHint: true, // closed stays closed (end-state policy)
     openWorldHint: false,
   },
+  epic_reopen: {
+    readOnlyHint: false,
+    destructiveHint: false, // reopening restores work, strands nothing
+    idempotentHint: false, // refused when already open
+    openWorldHint: false,
+  },
   epic_delete: {
     readOnlyHint: false,
     destructiveHint: true, // soft-deletes + drops the roadmap mirror file
@@ -267,12 +273,6 @@ export const TOOL_RISK: Readonly<Record<string, ToolAnnotations>> = {
     readOnlyHint: false,
     destructiveHint: true, // clears the sprint linkage
     idempotentHint: true, // removing when absent is a no-op
-    openWorldHint: false,
-  },
-  sprint_metric: {
-    readOnlyHint: false,
-    destructiveHint: false, // adds a metric
-    idempotentHint: false, // additive; a duplicate name is an error, not a no-op
     openWorldHint: false,
   },
 

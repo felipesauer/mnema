@@ -71,9 +71,9 @@ function taskAlias(id: string): string {
  * Read-only navigation of the task dependency graph, scoped to an epic,
  * a sprint, or the whole project.
  *
- * Only `blocks` edges form the graph — `relates_to` / `duplicates` /
- * `parent_of` are informational and never gate readiness, mirroring
- * {@link DependencyService}. Edges that point outside the scope are
+ * Only `blocks` edges form the graph — `relates_to` is informational and
+ * never gates readiness, mirroring {@link DependencyService}. Edges that
+ * point outside the scope are
  * dropped: an epic is read as a self-contained unit, so a blocker in
  * another epic does not enter its frontier or critical path.
  *

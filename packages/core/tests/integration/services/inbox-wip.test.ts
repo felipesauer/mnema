@@ -53,8 +53,8 @@ function seedState(container: ServiceContainer, state: string, count: number): v
     const label = `${state}-${i}`;
     db.prepare(
       `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
-         priority, reporter_id, reopen_count, metadata, created_at, updated_at)
-       VALUES (?, ?, ?, '', '[]', ?, 3, ?, 0, '{}', ?, ?)`,
+         reporter_id, reopen_count, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, '', '[]', ?, ?, 0, '{}', ?, ?)`,
     ).run(`id-${label}`, project.id, `Task ${label}`, state, actor.id, now, now);
   }
 }

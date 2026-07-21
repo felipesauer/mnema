@@ -255,7 +255,6 @@ export function createServiceContainer(
         repos.projects,
         auditCore().audit,
         stateMachine,
-        repos.sprintMetrics,
         syncCore().roadmapMirror,
         syncCore().sync,
       ),

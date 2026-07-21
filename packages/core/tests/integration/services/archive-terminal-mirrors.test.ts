@@ -87,8 +87,8 @@ describe('ArchiveService terminal-mirror archival', () => {
     const at = new Date(now - ageMs).toISOString();
     db.prepare(
       `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
-         priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
-       VALUES (?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
+         reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, '', '[]', ?, ?, ?, 0, '{}', ?, ?)`,
     ).run(id, project.id, `Task ${label}`, state, actor.id, actor.id, at, at);
 
     mkdirSync(path.dirname(stateMirror(state, label)), { recursive: true });
@@ -180,8 +180,8 @@ describe('ArchiveService terminal-mirror archival', () => {
     }
     db.prepare(
       `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
-         priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at, closed_at)
-       VALUES (?, ?, ?, '', '[]', 'DONE', 3, ?, ?, 0, '{}', ?, ?, ?)`,
+         reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at, closed_at)
+       VALUES (?, ?, ?, '', '[]', 'DONE', ?, ?, 0, '{}', ?, ?, ?)`,
     ).run(
       taskId('TEST-9'),
       project.id,

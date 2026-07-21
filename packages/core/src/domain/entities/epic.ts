@@ -12,6 +12,8 @@ export interface Epic {
   readonly state: EpicState;
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly createdAt: string;
+  /** ISO8601 timestamp; used for optimistic versioning on state changes. */
+  readonly updatedAt: string;
   readonly closedAt: string | null;
   readonly deletedAt: string | null;
 }

@@ -110,8 +110,6 @@ describe('producer/consumer validation parity (MNEMA-ADR-28)', () => {
     },
     { label: 'estimate negative', svcField: 'estimate', mcpField: 'estimate', value: -1 },
     { label: 'estimate float', svcField: 'estimate', mcpField: 'estimate', value: 2.5 },
-    { label: 'priority out of range', svcField: 'priority', mcpField: 'priority', value: 99 },
-    { label: 'priority NaN', svcField: 'priority', mcpField: 'priority', value: Number('x') },
   ] as const;
 
   for (const c of taskCases) {
@@ -140,14 +138,13 @@ describe('producer/consumer validation parity (MNEMA-ADR-28)', () => {
       title: 'good',
       contextBudget: 0,
       estimate: 5,
-      priority: 2,
       actor: 'daniel',
     });
     expect(svc.ok).toBe(true);
 
     const mcp = (await harness.client.callTool({
       name: 'task_create',
-      arguments: { title: 'good', context_budget: 0, estimate: 5, priority: 2 },
+      arguments: { title: 'good', context_budget: 0, estimate: 5 },
     })) as CallToolResult;
     expect(mcpRejected(mcp)).toBe(false);
   });

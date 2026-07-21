@@ -39,8 +39,7 @@ export interface DependencyView {
  *
  * Edge semantics: a row `(task_id=A, blocks_task_id=B)` means **A is
  * blocked by B** — B must reach a terminal state before A is ready.
- * Only `kind='blocks'` gates readiness; `relates_to`/`duplicates`/
- * `parent_of` are informational.
+ * Only `kind='blocks'` gates readiness; `relates_to` is informational.
  *
  * Readiness is a *query* ({@link ready}), never an auto-transition
  * side-effect — consistent with "Mnema records work, it does not execute

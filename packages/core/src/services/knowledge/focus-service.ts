@@ -11,8 +11,8 @@ export interface Focus {
   /** The task the actor should be on, if any. `key` carries the derived task
    * alias (e.g. `t-3a9f`) — display ergonomics, not the identity. */
   readonly activeTask: { readonly key: string; readonly title: string } | null;
-  /** The highest-priority ready task, when nothing is in progress. `key`
-   * carries the derived task alias. */
+  /** The next ready task, when nothing is in progress. `key` carries the
+   * derived task alias. */
   readonly nextTask: { readonly key: string; readonly title: string } | null;
   /** Machine-readable disposition, mirroring context_bootstrap.next_action. */
   readonly focus: 'resume' | 'start' | 'idle';
@@ -92,7 +92,7 @@ export class FocusService {
 
     const readyResult = this.dependencies.ready();
     const ready = readyResult.ok ? readyResult.value : [];
-    const top = [...ready].sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))[0];
+    const top = [...ready].sort((a, b) => a.id.localeCompare(b.id))[0];
     if (top !== undefined) {
       const topAlias = deriveAlias('task', top.id);
       return {

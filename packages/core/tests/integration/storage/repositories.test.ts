@@ -87,7 +87,6 @@ describe('repositories', () => {
 
       expect(created.state).toBe(TaskState.Draft);
       expect(created.acceptanceCriteria).toEqual(['one', 'two']);
-      expect(created.priority).toBe(3);
 
       const found = tasks.findById(created.id);
       expect(found?.id).toBe(created.id);

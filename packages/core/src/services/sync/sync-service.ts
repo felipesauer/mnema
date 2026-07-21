@@ -388,7 +388,6 @@ function serialiseTask(
     depends_on: [...dependsOn],
     estimate: task.estimate,
     context_budget: task.contextBudget,
-    priority: task.priority,
     assignee: actors.assignee,
     reporter: actors.reporter,
     epic_id: links.epicId,

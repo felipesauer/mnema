@@ -35,6 +35,24 @@ export interface CloseEpicInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /**
+   * Optional optimistic-concurrency token. When supplied, the close only
+   * proceeds if the epic's current `updatedAt` matches; otherwise a
+   * `Conflict` is returned with the latest server-side timestamp.
+   */
+  readonly expectedUpdatedAt?: string;
+}
+
+/**
+ * Input for {@link EpicService.reopen}.
+ */
+export interface ReopenEpicInput {
+  readonly epicKey: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+  /** Optional optimistic-concurrency token (see {@link CloseEpicInput}). */
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -49,6 +67,8 @@ export interface UpdateEpicInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /** Optional optimistic-concurrency token (see {@link CloseEpicInput}). */
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -96,8 +116,8 @@ export interface EpicImpact {
 
 /**
  * Manages epics — long-lived containers that group tasks under a theme
- * or feature. Lifecycle is intentionally minimal: `OPEN → CLOSED`,
- * never reopened.
+ * or feature. Lifecycle is `OPEN ⇄ CLOSED`: an epic can be reopened when
+ * work resumes under it, mirroring how a task reopens.
  */
 export class EpicService {
   constructor(
@@ -198,13 +218,76 @@ export class EpicService {
         toState: EpicState.Closed,
       });
     }
-    const updated = this.epics.updateState(epic.id, EpicState.Closed);
-    if (updated === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+
+    // Default the token to the row we just read so two concurrent closes
+    // don't both audit "closed" against an already-closed epic.
+    const expectedUpdatedAt = input.expectedUpdatedAt ?? epic.updatedAt;
+
+    const result = this.epics.updateState(epic.id, EpicState.Closed, expectedUpdatedAt);
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
     }
+    const updated = result.epic;
 
     this.audit.write({
       kind: 'epic_closed',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { id: updated.id },
+    });
+
+    this.mirror?.writeEpic(updated);
+
+    return Ok(updated);
+  }
+
+  /**
+   * Reopens a `CLOSED` epic, clearing its close timestamp. The mirror is
+   * rewritten so the versioned `.md` reflects the reopened state.
+   *
+   * @param input - Epic key + identity tuple
+   * @returns The reopened epic or a structured error
+   */
+  reopen(input: ReopenEpicInput): Result<Epic, MnemaError> {
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    if (epic.state !== EpicState.Closed) {
+      return Err({
+        kind: ErrorCode.EpicInvalidState,
+        epicKey: deriveAlias('epic', epic.id),
+        fromState: epic.state,
+        toState: EpicState.Open,
+      });
+    }
+
+    const expectedUpdatedAt = input.expectedUpdatedAt ?? epic.updatedAt;
+
+    const result = this.epics.updateState(epic.id, EpicState.Open, expectedUpdatedAt);
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
+    }
+    const updated = result.epic;
+
+    this.audit.write({
+      kind: 'epic_reopened',
       actor: input.actor,
       via: input.via,
       run: input.runId,
@@ -222,10 +305,10 @@ export class EpicService {
    * as-is. The markdown mirror is rewritten so the versioned `.md`
    * reflects the edit.
    *
-   * The `epics` table carries no `updated_at`, so there is no
-   * optimistic-concurrency token to compare — edits are last-write-wins,
-   * the same contract sync rebuild already uses when it folds content
-   * drift back onto an epic row.
+   * When `expectedUpdatedAt` is supplied, the edit is optimistically
+   * concurrent — it is refused with a `Conflict` if the row was touched
+   * since the caller read it. Omitting the token keeps the historical
+   * last-write-wins behaviour that sync rebuild relies on.
    *
    * @param input - Epic key + content fields + identity tuple
    * @returns The updated epic or a structured error
@@ -241,6 +324,15 @@ export class EpicService {
       if (issues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues });
       }
+    }
+
+    if (input.expectedUpdatedAt !== undefined && epic.updatedAt !== input.expectedUpdatedAt) {
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: epic.updatedAt,
+      });
     }
 
     const updated = this.epics.runInTransaction(() =>

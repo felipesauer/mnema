@@ -77,8 +77,8 @@ function seedTask(
   const at = new Date(now - ageDays * DAY).toISOString();
   db.prepare(
     `INSERT INTO tasks (id, project_id, title, description, acceptance_criteria, state,
-       priority, reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
-     VALUES (?, ?, ?, '', '[]', ?, 3, ?, ?, 0, '{}', ?, ?)`,
+       reporter_id, assignee_id, reopen_count, metadata, created_at, updated_at)
+     VALUES (?, ?, ?, '', '[]', ?, ?, ?, 0, '{}', ?, ?)`,
   ).run(id, project.id, `Task ${handle}`, state, actor.id, actor.id, at, at);
   return id;
 }

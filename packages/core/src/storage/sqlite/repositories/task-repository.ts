@@ -39,7 +39,6 @@ interface TaskRow {
   readonly state: string;
   readonly estimate: number | null;
   readonly context_budget: number | null;
-  readonly priority: number;
   readonly assignee_id: string | null;
   readonly reporter_id: string;
   readonly reopen_count: number;
@@ -195,7 +194,7 @@ export class TaskRepository implements ITaskRepository {
     const rows = this.adapter
       .getDatabase()
       .prepare(
-        `SELECT id, title, description, state, priority,
+        `SELECT id, title, description, state,
                 assignee_id, epic_id, sprint_id, created_at, updated_at,
                 claimed_by, lease_expires_at
            FROM tasks
@@ -246,9 +245,9 @@ export class TaskRepository implements ITaskRepository {
         `INSERT INTO tasks (
            id, project_id, epic_id, sprint_id,
            title, description, acceptance_criteria, state,
-           estimate, context_budget, priority, assignee_id, reporter_id, metadata,
+           estimate, context_budget, assignee_id, reporter_id, metadata,
            reopen_count, created_at, updated_at, closed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -261,7 +260,6 @@ export class TaskRepository implements ITaskRepository {
         input.state ?? 'DRAFT',
         input.estimate ?? null,
         input.contextBudget ?? null,
-        input.priority ?? 3,
         input.assigneeId ?? null,
         input.reporterId,
         metadata,
@@ -584,10 +582,6 @@ export class TaskRepository implements ITaskRepository {
       sets.push('context_budget = ?');
       values.push(fields.contextBudget);
     }
-    if (fields.priority !== undefined) {
-      sets.push('priority = ?');
-      values.push(fields.priority);
-    }
     if (fields.assigneeId !== undefined) {
       sets.push('assignee_id = ?');
       values.push(fields.assigneeId);
@@ -741,7 +735,6 @@ function rowToTask(row: TaskRow): Task {
     state: row.state as TaskState,
     estimate: row.estimate,
     contextBudget: row.context_budget,
-    priority: row.priority,
     assigneeId: row.assignee_id,
     reporterId: row.reporter_id,
     reopenCount: row.reopen_count,
@@ -764,7 +757,6 @@ interface LeanRow {
   readonly title: string;
   readonly description: string | null;
   readonly state: string;
-  readonly priority: number;
   readonly assignee_id: string | null;
   readonly epic_id: string | null;
   readonly sprint_id: string | null;
@@ -781,7 +773,6 @@ function rowToLeanTask(row: LeanRow): LeanTask {
     title: row.title,
     description: row.description,
     state: row.state,
-    priority: row.priority,
     assigneeId: row.assignee_id,
     epicId: row.epic_id,
     sprintId: row.sprint_id,

@@ -201,6 +201,36 @@ export class EpicTools {
     );
 
     server.registerTool(
+      'epic_reopen',
+      {
+        description:
+          'Reopen a CLOSED epic when work resumes under it, clearing its close ' +
+          'timestamp. Requires an active agent run.',
+        inputSchema: {
+          epic_key: z.string().describe('Epic key, e.g. WEBAPP-EPIC-3'),
+        },
+      },
+      (input) => {
+        const drift = requireFreshSchema(this.pendingMigrations);
+        if (drift !== null) return drift;
+
+        const runId = this.session.getCurrentRunId();
+        const guard = requireActiveRun(runId);
+        if (guard !== null) return guard;
+
+        const handle = this.session.getClientMetadata().agent_handle;
+        const result = this.epics.reopen({
+          epicKey: input.epic_key,
+          actor: this.identity.getDefaultActor(),
+          via: handle !== undefined && handle.length > 0 ? `agent:${handle}` : undefined,
+          runId: runId ?? undefined,
+        });
+        if (!result.ok) return err(result.error);
+        return ok({ epic: { ...result.value, key: deriveAlias('epic', result.value.id) } });
+      },
+    );
+
+    server.registerTool(
       'epic_remove',
       {
         description: 'Remove a task from its epic. Requires an active agent run.',

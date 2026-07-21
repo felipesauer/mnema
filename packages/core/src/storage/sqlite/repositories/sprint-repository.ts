@@ -15,7 +15,6 @@ interface SprintRow {
   readonly state: string;
   readonly starts_at: string | null;
   readonly ends_at: string | null;
-  readonly capacity: number | null;
   readonly metadata: string;
   readonly created_at: string;
   readonly updated_at: string;
@@ -46,7 +45,6 @@ interface TaskRow {
   readonly state: string;
   readonly estimate: number | null;
   readonly context_budget: number | null;
-  readonly priority: number;
   readonly assignee_id: string | null;
   readonly reporter_id: string;
   readonly reopen_count: number;
@@ -73,7 +71,6 @@ export interface SprintInsertInput {
   readonly goal?: string | null;
   readonly startsAt?: string | null;
   readonly endsAt?: string | null;
-  readonly capacity?: number | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
   /** Committed state to create in — defaults to PLANNED (clone rebuild). */
   readonly state?: string;
@@ -88,7 +85,6 @@ export interface SprintFieldUpdates {
   readonly goal?: string | null;
   readonly startsAt?: string | null;
   readonly endsAt?: string | null;
-  readonly capacity?: number | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
@@ -194,8 +190,8 @@ export class SprintRepository {
       .prepare(
         `INSERT INTO sprints (
            id, project_id, name, goal,
-           state, starts_at, ends_at, capacity, metadata, created_at, updated_at, closed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           state, starts_at, ends_at, metadata, created_at, updated_at, closed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -205,7 +201,6 @@ export class SprintRepository {
         input.state ?? 'PLANNED',
         input.startsAt ?? null,
         input.endsAt ?? null,
-        input.capacity ?? null,
         metadata,
         input.createdAt ?? now,
         now,
@@ -302,10 +297,6 @@ export class SprintRepository {
       sets.push('ends_at = ?');
       values.push(fields.endsAt);
     }
-    if (fields.capacity !== undefined) {
-      sets.push('capacity = ?');
-      values.push(fields.capacity);
-    }
     if (fields.metadata !== undefined) {
       sets.push('metadata = ?');
       values.push(JSON.stringify(fields.metadata));
@@ -381,7 +372,6 @@ function rowToSprint(row: SprintRow): Sprint {
     state: row.state as SprintState,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
-    capacity: row.capacity,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -406,7 +396,6 @@ function rowToTask(row: TaskRow): Task {
     state: row.state as TaskState,
     estimate: row.estimate,
     contextBudget: row.context_budget,
-    priority: row.priority,
     assigneeId: row.assignee_id,
     reporterId: row.reporter_id,
     reopenCount: row.reopen_count,

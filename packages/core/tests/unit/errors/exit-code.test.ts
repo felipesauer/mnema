@@ -33,11 +33,6 @@ describe('exitCodeFor', () => {
   it('maps deterministic "already exists" duplicates to exit 2 (Usage), not retryable 4', () => {
     // These can never succeed on retry — re-running with the same input
     // reproduces the duplicate. They belong with TaskKeyExists at Usage(2).
-    const metric: MnemaError = {
-      kind: ErrorCode.SprintMetricDuplicate,
-      sprintKey: 'WEBAPP-SPRINT-1',
-      name: 'p95',
-    };
     const dep: MnemaError = {
       kind: ErrorCode.DependencyDuplicate,
       taskKey: 'A-1',
@@ -50,7 +45,6 @@ describe('exitCodeFor', () => {
       index: 0,
       ref: 'tests/a.test.ts',
     };
-    expect(exitCodeFor(metric)).toBe(ExitCode.Usage);
     expect(exitCodeFor(dep)).toBe(ExitCode.Usage);
     expect(exitCodeFor(evidence)).toBe(ExitCode.Usage);
   });

@@ -15,18 +15,17 @@ import { withCliContext, withMutatingCliContext } from '../cli-context.js';
 import { formatHistory, type HistoryFormat } from '../formatters/history-formatter.js';
 import { formatTaskBlock, formatTaskList } from '../formatters/task-formatter.js';
 import type { TimestampMode } from '../formatters/timestamp-formatter.js';
-import { parseIntInRange, parseNonNegativeInt, parsePositiveInt } from '../option-parsers.js';
+import { parseNonNegativeInt, parsePositiveInt } from '../option-parsers.js';
 
 interface CreateOptions {
   readonly title: string;
   readonly description?: string;
   readonly acceptance?: string[];
-  // estimate/contextBudget/priority are pre-parsed to numbers by the option
-  // argParsers (parseNonNegativeInt / parseIntInRange), so bad input is
-  // rejected at parse time and never reaches the action as a string.
+  // estimate/contextBudget are pre-parsed to numbers by the option argParsers
+  // (parseNonNegativeInt), so bad input is rejected at parse time and never
+  // reaches the action as a string.
   readonly estimate?: number;
   readonly contextBudget?: number;
-  readonly priority?: number;
   readonly assignee?: string;
   readonly label?: string[];
   readonly template?: TaskTemplateKind;
@@ -38,6 +37,21 @@ function parseTemplateKind(value: string): TaskTemplateKind {
     return value as TaskTemplateKind;
   }
   throw new InvalidArgumentError(`expected one of: ${TASK_TEMPLATE_KINDS.join(', ')}.`);
+}
+
+/** The dependency kinds a `--kind` flag accepts, mirroring the MCP enum. */
+const DEPENDENCY_KINDS = ['blocks', 'relates_to'] as const satisfies readonly DependencyKind[];
+
+/**
+ * Commander coercer: `--kind` must be a live dependency kind. Rejects at parse
+ * time with a clean usage error rather than letting an unknown value reach the
+ * narrowed CHECK constraint and surface as a raw SqliteError.
+ */
+function parseDependencyKind(value: string): DependencyKind {
+  if ((DEPENDENCY_KINDS as readonly string[]).includes(value)) {
+    return value as DependencyKind;
+  }
+  throw new InvalidArgumentError(`expected one of: ${DEPENDENCY_KINDS.join(', ')}.`);
 }
 
 interface ListOptions {
@@ -61,7 +75,7 @@ interface HistoryOptions {
 }
 
 interface DependsOptions {
-  readonly kind?: string;
+  readonly kind?: DependencyKind;
 }
 
 interface ReadyOptions {
@@ -105,7 +119,6 @@ export class TaskCommand {
         'Estimated context cost in tokens (distinct from estimate)',
         parseNonNegativeInt,
       )
-      .option('--priority <n>', 'Priority 1..5 (default 3)', parseIntInRange(1, 5))
       .option('--assignee <handle>', 'Assignee handle')
       .option('--label <label...>', 'Transversal label, e.g. area:api (repeat for multiple)')
       .option(
@@ -137,7 +150,6 @@ export class TaskCommand {
             acceptanceCriteria,
             estimate: options.estimate ?? null,
             contextBudget: options.contextBudget ?? null,
-            priority: options.priority ?? 3,
             assigneeId: options.assignee ?? null,
             actor: container.identity.getDefaultActor(),
           });
@@ -377,13 +389,13 @@ export class TaskCommand {
     group
       .command('depends <key> <blocksKey>')
       .description('Declare that <key> is blocked by <blocksKey> (or another relationship kind)')
-      .option('--kind <kind>', 'blocks | relates_to | duplicates | parent_of', 'blocks')
+      .option('--kind <kind>', 'blocks | relates_to', parseDependencyKind, 'blocks')
       .action(async (key: string, blocksKey: string, options: DependsOptions) => {
         await withMutatingCliContext(({ container }) => {
           const result = container.dependency.link({
             taskKey: key,
             blocksTaskKey: blocksKey,
-            kind: options.kind as DependencyKind | undefined,
+            kind: options.kind,
             actor: container.identity.getDefaultActor(),
           });
           if (!result.ok) {
