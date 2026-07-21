@@ -26,7 +26,7 @@
  */
 
 import type { CanonicalValue } from './canonical.js';
-import type { CatalogEvent } from './catalog.js';
+import type { CatalogEvent, TransitionFields } from './catalog.js';
 import type { UpcasterRegistry, VersionedEvent } from './upcaster.js';
 
 /** Thrown when a line is not a valid, current-catalog event. */
@@ -42,8 +42,11 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'run.started': ['agent', 'goal'],
   'run.ended': ['outcome'],
   'task.created': ['title'],
-  'task.transitioned': ['from', 'to', 'action'],
+  'task.transitioned': ['from', 'to', 'action', 'fields'],
 };
+
+/** The proof/context fields a transition's `fields` object may carry. */
+const TRANSITION_FIELD_KEYS = ['reason', 'note', 'feedback', 'pr_url', 'links'] as const;
 
 /**
  * Parses one canonical (or raw) JSON string into a current-version catalog
@@ -124,7 +127,10 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
   return rebuilt;
 }
 
-function validatePayload(event: CatalogEvent): Record<string, string | null> {
+/** A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields. */
+type PayloadValue = string | null | TransitionFields;
+
+function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
   const kind = event.kind;
   requirePayloadObject(event);
   rejectUnknownKeys(
@@ -155,12 +161,71 @@ function validatePayload(event: CatalogEvent): Record<string, string | null> {
       requireStringOrNull(kind, 'payload.from', event.payload.from);
       requireString(kind, 'payload.to', event.payload.to);
       requireString(kind, 'payload.action', event.payload.action);
-      return { from: event.payload.from, to: event.payload.to, action: event.payload.action };
+      const p: Record<string, PayloadValue> = {
+        from: event.payload.from,
+        to: event.payload.to,
+        action: event.payload.action,
+      };
+      const fields = rebuildTransitionFields(kind, event.payload.fields);
+      if (fields !== undefined) p.fields = fields;
+      return p;
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.
       return assertNever(event);
   }
+}
+
+/**
+ * Validates and REBUILDS the optional `fields` object of a transition. Like the
+ * envelope and payload, `fields` is a closed shape: an unknown key is rejected,
+ * and the returned object is a fresh reconstruction of only the declared keys,
+ * so a forged extra field cannot ride along into the signed bytes. Returns
+ * undefined when `fields` is absent — an omitted key, never `{}`, so a
+ * transition with no proof canonicalizes to the same bytes it always did.
+ */
+function rebuildTransitionFields(kind: string, raw: unknown): TransitionFields | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new EventParseError(`event "${kind}" needs an object at payload.fields`);
+  }
+  const obj = raw as Record<string, unknown>;
+  rejectUnknownKeys(kind, 'payload.fields', obj, TRANSITION_FIELD_KEYS);
+  const rebuilt: {
+    reason?: string;
+    note?: string;
+    feedback?: string;
+    pr_url?: string;
+    links?: string[];
+  } = {};
+  requireOptionalString(kind, 'payload.fields.reason', obj.reason);
+  if (obj.reason !== undefined) rebuilt.reason = obj.reason as string;
+  requireOptionalString(kind, 'payload.fields.note', obj.note);
+  if (obj.note !== undefined) rebuilt.note = obj.note as string;
+  requireOptionalString(kind, 'payload.fields.feedback', obj.feedback);
+  if (obj.feedback !== undefined) rebuilt.feedback = obj.feedback as string;
+  requireOptionalString(kind, 'payload.fields.pr_url', obj.pr_url);
+  if (obj.pr_url !== undefined) rebuilt.pr_url = obj.pr_url as string;
+  if (obj.links !== undefined)
+    rebuilt.links = requireStringArray(kind, 'payload.fields.links', obj.links);
+  // An empty `fields` object carries no proof; treat it as absence so it cannot
+  // become a second, byte-distinct spelling of "no fields".
+  if (Object.keys(rebuilt).length === 0) {
+    throw new EventParseError(`event "${kind}" has an empty payload.fields; omit it instead`);
+  }
+  return rebuilt;
+}
+
+function requireStringArray(kind: string, field: string, value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new EventParseError(`event "${kind}" needs a non-empty array at ${field}`);
+  }
+  return value.map((item, i) => {
+    if (typeof item !== 'string' || item.length === 0) {
+      throw new EventParseError(`event "${kind}" needs a non-empty string at ${field}[${i}]`);
+    }
+    return item;
+  });
 }
 
 function requirePayloadObject(event: CatalogEvent): void {

@@ -85,6 +85,7 @@ export {
   type RunStartedV1,
   type TaskCreatedV1,
   type TaskTransitionedV1,
+  type TransitionFields,
 } from './events/catalog.js';
 export type { Envelope, Which, Who } from './events/envelope.js';
 export { EventParseError, parseEvent, toCanonical } from './events/parse.js';

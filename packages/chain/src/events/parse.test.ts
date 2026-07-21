@@ -58,6 +58,69 @@ describe('parseEvent — happy path across the catalog', () => {
   });
 });
 
+describe('parseEvent — transition proof fields', () => {
+  it('parses a transition carrying proof fields and round-trips it', () => {
+    const event = taskTransitioned(
+      { ...envelope, subject: 't-1', which: 'claude', run: 'r-1' },
+      {
+        from: 'in-progress',
+        to: 'done',
+        action: 'complete',
+        fields: { note: 'shipped', pr_url: 'https://x/1', links: ['https://y'] },
+      },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    const twice = canonicalStringify(toCanonical(parsed));
+    expect(twice).toBe(line(event));
+  });
+
+  it('rejects an unknown key inside fields (closed shape, no smuggling)', () => {
+    const forged =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"n","evil":"x"}}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload\.fields field "evil"/);
+  });
+
+  it('rejects a non-object fields (array, scalar)', () => {
+    for (const f of ['"nope"', '42', '[]', 'true']) {
+      const forged = `{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":${f}}}`;
+      expect(() => parseEvent(forged, reg)).toThrow(/object at payload\.fields/);
+    }
+  });
+
+  it('rejects an empty fields object (must be omitted, not spelled as {})', () => {
+    const forged =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{}}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/empty payload\.fields/);
+  });
+
+  it('rejects a non-string proof field', () => {
+    const forged =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"reason":42}}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.fields\.reason/);
+  });
+
+  it('rejects an empty links array and a non-string link item', () => {
+    const emptyArr =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":[]}}}';
+    expect(() => parseEvent(emptyArr, reg)).toThrow(/non-empty array at payload\.fields\.links/);
+    const badItem =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":["ok",""]}}}';
+    expect(() => parseEvent(badItem, reg)).toThrow(/payload\.fields\.links\[1\]/);
+  });
+
+  it('rebuilds fields so a duplicate inner key cannot pick a value into the bytes', () => {
+    // JSON.parse keeps the last duplicate; the rebuilt fields reflect only the
+    // declared shape. The recomputed canonical form is deterministic regardless.
+    const dup =
+      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"first","note":"second"}}}';
+    const parsed = parseEvent(dup, reg);
+    if (parsed.kind === 'task.transitioned') {
+      expect(parsed.payload.fields).toEqual({ note: 'second' });
+    }
+  });
+});
+
 describe('parseEvent — round-trip is byte-stable', () => {
   it('re-canonicalizes a parsed event to identical bytes', () => {
     const event = taskTransitioned(

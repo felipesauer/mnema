@@ -61,6 +61,44 @@ describe('event builders', () => {
     // `null` is a first-class canonical value, so a birth transition signs cleanly.
     expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
   });
+
+  it('OMITS `fields` when not provided (byte-identical to no proof)', () => {
+    const without = taskTransitioned(env, { from: 'a', to: 'b', action: 'go' });
+    const withEmpty = taskTransitioned(env, { from: 'a', to: 'b', action: 'go', fields: {} });
+    expect(Object.keys(without.payload)).not.toContain('fields');
+    // An empty fields object is dropped, so it cannot become a second spelling.
+    expect(Object.keys(withEmpty.payload)).not.toContain('fields');
+    expect(canonicalStringify(toCanonical(withEmpty))).toBe(
+      canonicalStringify(toCanonical(without)),
+    );
+  });
+
+  it('INCLUDES only the defined proof fields, dropping explicit-undefined ones', () => {
+    const event = taskTransitioned(env, {
+      from: 'in-progress',
+      to: 'done',
+      action: 'complete',
+      fields: { note: 'shipped', pr_url: undefined, reason: undefined },
+    });
+    if (event.kind === 'task.transitioned') {
+      expect(event.payload.fields).toEqual({ note: 'shipped' });
+      expect(Object.keys(event.payload.fields ?? {})).not.toContain('pr_url');
+    }
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
+
+  it('carries links as an array and canonicalizes cleanly', () => {
+    const event = taskTransitioned(env, {
+      from: 'in-progress',
+      to: 'done',
+      action: 'complete',
+      fields: { note: 'done', links: ['https://a', 'https://b'] },
+    });
+    if (event.kind === 'task.transitioned') {
+      expect(event.payload.fields?.links).toEqual(['https://a', 'https://b']);
+    }
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
 });
 
 describe('taskBirth', () => {

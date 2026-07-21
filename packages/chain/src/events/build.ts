@@ -9,7 +9,7 @@
  * entirely is the safe path to a signable event.
  */
 
-import type { CatalogEvent } from './catalog.js';
+import type { CatalogEvent, TransitionFields } from './catalog.js';
 import type { Envelope } from './envelope.js';
 
 /** The envelope fields a caller supplies; `v` and `kind` come from the builder. */
@@ -57,20 +57,49 @@ export function taskCreated(envelope: EnvelopeInput, payload: { title: string })
   };
 }
 
+/** Copies only the defined proof fields, never writing an explicit undefined. */
+function transitionFields(fields: TransitionFields): TransitionFields {
+  const out: {
+    reason?: string;
+    note?: string;
+    feedback?: string;
+    pr_url?: string;
+    links?: readonly string[];
+  } = {};
+  if (fields.reason !== undefined) out.reason = fields.reason;
+  if (fields.note !== undefined) out.note = fields.note;
+  if (fields.feedback !== undefined) out.feedback = fields.feedback;
+  if (fields.pr_url !== undefined) out.pr_url = fields.pr_url;
+  if (fields.links !== undefined) out.links = fields.links;
+  return out;
+}
+
 /**
  * Builds a `task.transitioned` event (subject = the task's id). `from` is a
  * literal state string, or `null` for the birth transition that gives a task
- * its initial state.
+ * its initial state. `fields` carries the transition's proof (the why, links);
+ * it is omitted entirely when empty, so a transition with no proof stays
+ * byte-identical to one built without the argument.
  */
 export function taskTransitioned(
   envelope: EnvelopeInput,
-  payload: { from: string | null; to: string; action: string },
+  payload: { from: string | null; to: string; action: string; fields?: TransitionFields },
 ): CatalogEvent {
+  const p: {
+    from: string | null;
+    to: string;
+    action: string;
+    fields?: TransitionFields;
+  } = { from: payload.from, to: payload.to, action: payload.action };
+  if (payload.fields !== undefined) {
+    const trimmed = transitionFields(payload.fields);
+    if (Object.keys(trimmed).length > 0) p.fields = trimmed;
+  }
   return {
     v: 1,
     kind: 'task.transitioned',
     ...envelopeFields(envelope),
-    payload: { from: payload.from, to: payload.to, action: payload.action },
+    payload: p,
   };
 }
 

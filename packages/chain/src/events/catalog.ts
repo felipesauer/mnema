@@ -54,6 +54,33 @@ export interface TaskCreatedV1 extends Envelope {
 }
 
 /**
+ * The proof carried by a transition: the textual why of the move, plus optional
+ * context. Which of these a given action must carry is the workflow gate's rule,
+ * enforced once at write time — the catalog only pins their SHAPE, never which
+ * action requires which field. Keeping the requirement out of the type is
+ * deliberate: `action` is an open literal string so the workflow can grow new
+ * actions without touching this zero-dependency catalog, and an event written
+ * under an old workflow stays readable forever. If the payload varied by action
+ * instead, a historical action the current catalog no longer lists would be
+ * rejected on read — the very drift the literal-string design exists to avoid.
+ *
+ * Every field is optional here; the gate is what makes one mandatory for a given
+ * action. A reader replays the fact as written and does not re-judge it.
+ */
+export interface TransitionFields {
+  /** Why a task was canceled, blocked, or reopened. */
+  readonly reason?: string;
+  /** What was done when completing or approving. */
+  readonly note?: string;
+  /** What must change when review is not approved. */
+  readonly feedback?: string;
+  /** A pull request for the work, when one exists. Never required. */
+  readonly pr_url?: string;
+  /** Any further context links, when they exist. */
+  readonly links?: readonly string[];
+}
+
+/**
  * A task moved between workflow states. `from`/`to`/`action` are literal
  * strings — the fact of the transition as it happened, not a reference to a
  * workflow that may since have changed.
@@ -66,6 +93,9 @@ export interface TaskCreatedV1 extends Envelope {
  * consulting the workflow, so replaying a task written long ago yields the
  * state that was recorded, not one re-derived from a workflow that has since
  * moved on.
+ *
+ * `fields` carries the transition's proof (the why, links). It is optional at
+ * this layer; the workflow gate decides which fields a given action must carry.
  */
 export interface TaskTransitionedV1 extends Envelope {
   readonly kind: 'task.transitioned';
@@ -76,6 +106,8 @@ export interface TaskTransitionedV1 extends Envelope {
     readonly from: string | null;
     readonly to: string;
     readonly action: string;
+    /** The transition's proof and context; omitted when it carries none. */
+    readonly fields?: TransitionFields;
   };
 }
 
