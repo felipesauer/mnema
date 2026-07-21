@@ -5,6 +5,28 @@
 
 export { type Clock, systemClock } from './clock.js';
 export {
+  type DecisionGateErr,
+  type DecisionGateErrorCode,
+  type DecisionGateOk,
+  type DecisionGateRequest,
+  type DecisionGateResult,
+  decisionGate,
+} from './decision-gate.js';
+export {
+  DECISION_STATES,
+  type DecisionState,
+  INITIAL_DECISION_STATE,
+  isDecisionState,
+} from './decision-states.js';
+export {
+  DECISION_ACTIONS,
+  DECISION_TRANSITIONS,
+  type DecisionAction,
+  type DecisionProofField,
+  type DecisionTransition,
+  findDecisionTransition,
+} from './decision-transitions.js';
+export {
   type GateErr,
   type GateErrorCode,
   type GateOk,
