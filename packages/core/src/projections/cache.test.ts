@@ -1,7 +1,14 @@
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type ChainWriter, openChainForWriting, taskBirth, taskTransitioned } from '@mnema/chain';
+import {
+  type ChainWriter,
+  openChainForWriting,
+  runEnded,
+  runStarted,
+  taskBirth,
+  taskTransitioned,
+} from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../db/sqlite.js';
 import { ProjectionCache } from './cache.js';
@@ -166,6 +173,66 @@ describe('ProjectionCache — multi-tail materialization', () => {
     } finally {
       rmSync(rootB, { recursive: true, force: true });
     }
+  });
+});
+
+describe('ProjectionCache — runs', () => {
+  it('projects an open run, then reflects its close on the next rebuild', () => {
+    const w = openChainForWriting(chainRoot);
+    w.append(runStarted(env('r-1', 0), { agent: 'claude', goal: 'ship' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getRun('r-1')).toEqual({
+      id: 'r-1',
+      agent: 'claude',
+      who: 'felipe',
+      goal: 'ship',
+      open: true,
+      startedAt: at(0),
+    });
+    expect(cache.listOpenRuns().map((r) => r.id)).toEqual(['r-1']);
+
+    // Close the run and rebuild: the cache follows the chain.
+    w.append(runEnded(env('r-1', 1), { outcome: 'done' }));
+    cache.rebuild();
+    const closed = cache.getRun('r-1');
+    expect(closed?.open).toBe(false);
+    expect(closed?.outcome).toBe('done');
+    expect(cache.listOpenRuns()).toEqual([]);
+  });
+
+  it('rebuilds runs identically after the cache is wiped, from the chain alone', () => {
+    const w = openChainForWriting(chainRoot);
+    w.append(runStarted(env('r-1', 0), { agent: 'claude' }));
+    w.append(runEnded(env('r-1', 1), { outcome: 'ok' }));
+    w.append(runStarted(env('r-2', 2), { agent: 'cursor', goal: 'explore' }));
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = first.listRuns();
+    first.close();
+    caches = caches.filter((c) => c !== first);
+
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    expect(second.listRuns()).toEqual(before);
+  });
+
+  it('projects tasks and runs from the same chain side by side', () => {
+    const w = openChainForWriting(chainRoot);
+    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    w.append(runStarted(env('r-1', 3), { agent: 'claude' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getRun('r-1')?.open).toBe(true);
   });
 });
 

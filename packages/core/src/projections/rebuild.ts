@@ -20,6 +20,8 @@ import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
 import { dropProjections, ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import { orderedEvents } from './order.js';
+import { projectRuns } from './run.js';
+import { materializeRuns } from './run-store.js';
 import { projectTasks } from './task.js';
 import { materializeTasks } from './task-store.js';
 
@@ -30,14 +32,17 @@ export function rebuild(
   upcasters: UpcasterRegistry,
 ): void {
   // Read and fold outside the transaction: a chain that fails to read leaves
-  // the existing cache untouched.
+  // the existing cache untouched. Every projection folds the same ordered
+  // stream once, so they always agree on what the chain says.
   const events = orderedEvents(layout, upcasters);
   const tasks = projectTasks(events);
+  const runs = projectRuns(events);
 
   const replace = db.transaction(() => {
     dropProjections(db);
     ensureSchema(db);
     materializeTasks(db, tasks.values());
+    materializeRuns(db, runs.values());
   });
   replace();
 }
