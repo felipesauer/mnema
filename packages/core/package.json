@@ -1,0 +1,20 @@
+{
+  "name": "@mnema/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The mnema work domain: workflow gates, projections, identity, and queries. Depends on @mnema/chain.",
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "dependencies": {
+    "@mnema/chain": "workspace:*"
+  }
+}
