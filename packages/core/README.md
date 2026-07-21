@@ -27,7 +27,7 @@ at any time.
 
 ## What it guarantees — and what it does not
 
-Core makes two promises, and is precise about their limits:
+Core makes a few promises, and is precise about their limits:
 
 | Property | What holds |
 |---|---|
