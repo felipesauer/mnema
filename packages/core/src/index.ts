@@ -30,3 +30,21 @@ export {
   listTasksByState,
   materializeTasks,
 } from './projections/task-store.js';
+export {
+  findTransition,
+  type GateErr,
+  type GateErrorCode,
+  type GateOk,
+  type GateRequest,
+  type GateResult,
+  gate,
+  INITIAL_STATE,
+  isTaskState,
+  type ProofField,
+  TASK_ACTIONS,
+  TASK_STATES,
+  type TaskAction,
+  type TaskState,
+  TRANSITIONS,
+  type Transition,
+} from './workflow/index.js';
