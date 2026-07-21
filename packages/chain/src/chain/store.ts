@@ -15,6 +15,7 @@ import {
   type ChainLayout,
   checkpointsPath,
   isSegmentFile,
+  keysDir,
   segmentNumberOf,
   tailDir,
   tailsDir,
@@ -27,6 +28,22 @@ export function listTails(layout: ChainLayout): string[] {
   return readdirSync(dir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
+    .sort();
+}
+
+/**
+ * Lists the fingerprints of the committed public keys (each `<fingerprint>.pub`
+ * under `keys/`). Because a public key is written before a machine's first
+ * event and its fingerprint IS its tail id, this set is a committed census of
+ * the tails that ought to exist — the verifier crosses it against the tails
+ * actually present to notice a tail that went missing while its key stayed.
+ */
+export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
+  const dir = keysDir(layout);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.pub'))
+    .map((name) => name.slice(0, -'.pub'.length))
     .sort();
 }
 

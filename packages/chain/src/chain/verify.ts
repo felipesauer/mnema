@@ -27,7 +27,12 @@ import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import { type ChainLayout, publicKeyPath } from './layout.js';
-import { listTails, readTailCheckpoints, readTailEntries } from './store.js';
+import {
+  listPublicKeyFingerprints,
+  listTails,
+  readTailCheckpoints,
+  readTailEntries,
+} from './store.js';
 
 /** How the external-witness (T3) layer stands for this verification. */
 export type WitnessStatus = 'not-covered';
@@ -37,6 +42,30 @@ export interface TailIssue {
   readonly tail: string;
   readonly layer: 'T1' | 'T2/T4';
   readonly seq?: number;
+  readonly detail: string;
+}
+
+/**
+ * A census note: an observation about the SHAPE of the chain on disk, distinct
+ * from a {@link TailIssue}, which is a break in what the crypto can prove. A
+ * committed public key is written before its machine's first event and its
+ * fingerprint is that machine's tail id, so `keys/` is a committed roster of
+ * the tails that should exist. Crossing it against the tails actually present
+ * surfaces a key whose tail is gone.
+ *
+ * This is a SIGNAL, never a verdict of tampering. A key with no tail has
+ * innocent causes: a key committed by a machine that minted it but never wrote
+ * an event (an empty tail directory is not versioned by git, so a clone sees
+ * the key alone), or a merge that copied the key but not the tail. It also has
+ * a guilty one: a tail removed to hide its events. The note cannot tell them
+ * apart, so it never sets {@link VerifyResult.ok} to false — it points at
+ * something worth a look, not at proof of removal. And it is blind to a tail
+ * deleted together WITH its key: with nothing left on disk to cross, only an
+ * external witness (a git history) can testify to what was removed.
+ */
+export interface CensusNote {
+  /** The committed public key's fingerprint (equal to the missing tail's id). */
+  readonly fingerprint: string;
   readonly detail: string;
 }
 
@@ -69,6 +98,12 @@ export interface VerifyResult {
   readonly fullySigned: boolean;
   readonly tails: readonly TailResult[];
   readonly issues: readonly TailIssue[];
+  /**
+   * Census notes: committed public keys with no matching tail on disk. These
+   * are informational — they do NOT affect {@link ok} — because a key without a
+   * tail can be a machine that has not written yet. See {@link CensusNote}.
+   */
+  readonly census: readonly CensusNote[];
   /** Events proven only by the hash chain, not yet by a signature. */
   readonly uncheckpointedEvents: number;
   readonly witness: WitnessStatus;
@@ -100,6 +135,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     });
   }
 
+  const census = takeCensus(layout, tails);
+
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
   const witness: WitnessStatus = 'not-covered';
@@ -108,10 +145,36 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     fullySigned,
     tails: tailResults,
     issues: allIssues,
+    census,
     uncheckpointedEvents: uncheckpointed,
     witness,
-    summary: buildSummary(ok, tailResults.length, uncheckpointed),
+    summary: buildSummary(ok, tailResults.length, uncheckpointed, census.length),
   };
+}
+
+/**
+ * Crosses the committed public keys against the tails present on disk. Each key
+ * whose tail is absent becomes a census note.
+ *
+ * The reverse — a tail with no committed key — is not a census concern. If that
+ * tail has a checkpoint, verifying it already fails with "no committed public
+ * key for signer"; if it has none, its events rest on the hash chain alone and
+ * are already reported as the unsigned residual (`fullySigned`). Either way the
+ * existing result covers it, so the census only looks one way: keys → tails.
+ */
+function takeCensus(layout: ChainLayout, tails: readonly string[]): CensusNote[] {
+  const present = new Set(tails);
+  const notes: CensusNote[] = [];
+  for (const fingerprint of listPublicKeyFingerprints(layout)) {
+    if (present.has(fingerprint)) continue;
+    notes.push({
+      fingerprint,
+      detail:
+        'committed public key has no tail on disk — the tail may have been dropped ' +
+        '(a botched merge), never written (an empty tail is not versioned), or removed',
+    });
+  }
+  return notes;
 }
 
 /**
@@ -265,7 +328,12 @@ function loadPublicKey(layout: ChainLayout, fingerprint: string): KeyObject | nu
   }
 }
 
-function buildSummary(ok: boolean, tailCount: number, uncheckpointed: number): string {
+function buildSummary(
+  ok: boolean,
+  tailCount: number,
+  uncheckpointed: number,
+  censusCount: number,
+): string {
   const local = ok ? 'local integrity verified (T1/T2/T4)' : 'local integrity FAILED — see issues';
   // The events above the last checkpoint are covered only by the keyless hash
   // chain, not yet by a signature — so a party without the private key could
@@ -275,7 +343,13 @@ function buildSummary(ok: boolean, tailCount: number, uncheckpointed: number): s
       ? `${uncheckpointed} event(s) above the last checkpoint are hash-chained but NOT yet signature-covered`
       : 'all events are signature-covered';
   const scope = `${tailCount} tail(s); ${residual}`;
+  // A census note is not an integrity failure — it flags a committed key whose
+  // tail is missing. Report it separately and only when there is one.
+  const census =
+    censusCount > 0
+      ? `; ${censusCount} committed key(s) without a tail (see census — informational, not a break)`
+      : '';
   const witness =
     'external witness (T3): not covered — enable an anchor or push to a shared remote';
-  return `${local}; ${scope}; ${witness}`;
+  return `${local}; ${scope}${census}; ${witness}`;
 }

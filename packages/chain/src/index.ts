@@ -45,12 +45,14 @@ export {
 export { loadOrCreateKeyPair, persistKeyPair } from './chain/keystore.js';
 export type { ChainLayout } from './chain/layout.js';
 export {
+  listPublicKeyFingerprints,
   listTails,
   orderedSegments,
   readTailCheckpoints,
   readTailEntries,
 } from './chain/store.js';
 export {
+  type CensusNote,
   type TailIssue,
   type TailResult,
   type VerifyResult,
