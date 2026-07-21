@@ -11,7 +11,17 @@
  * The signed message includes the FULL signer fingerprint, so a signature
  * cannot be re-pointed at a different key. The content root is recomputed from
  * the events, never read from stored entry hashes — see hash.ts.
+ *
+ * Checkpoints CHAIN: each one signs the hash of the previous checkpoint's
+ * signed message (`prev`, null for the first). This makes the run of
+ * checkpoints itself tamper-evident — a trailing checkpoint cannot be dropped
+ * to hide signed history, because the surviving checkpoints no longer reach the
+ * head the last one attested. (Events appended ABOVE the last checkpoint carry
+ * only the hash chain and can still be truncated by a keyless party; that is
+ * the declared residual window, reported honestly by the verifier.)
  */
+
+import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
@@ -31,6 +41,8 @@ export interface Checkpoint {
   readonly toSeq: number;
   /** Content root folded over the events in the range. */
   readonly contentRoot: string;
+  /** Hash of the previous checkpoint's signed message, or null for the first. */
+  readonly prev: string | null;
   /** Full fingerprint of the signing key. */
   readonly signerFp: string;
   /** Hex Ed25519 signature over the canonical signed message. */
@@ -45,28 +57,38 @@ function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
     fromSeq: fields.fromSeq,
     toSeq: fields.toSeq,
     contentRoot: fields.contentRoot,
+    prev: fields.prev,
     signerFp: fields.signerFp,
   });
+}
+
+/** The hash of a checkpoint (over its signed message) — what the next one links to. */
+export function checkpointHash(checkpoint: Checkpoint): string {
+  const { sig: _sig, ...fields } = checkpoint;
+  return createHash('sha256').update(signedMessage(fields)).digest('hex');
 }
 
 /**
  * Signs a checkpoint over `events`, which must be the contiguous range
  * `[fromSeq..toSeq]` of `tail` in order. The content root is folded from the
- * events' canonical bytes.
+ * events' canonical bytes. `prev` links to the previous checkpoint's hash so
+ * the checkpoints form a tamper-evident chain.
  */
 export function signCheckpoint(input: {
   tail: string;
   fromSeq: number;
   events: readonly CatalogEvent[];
+  prev: string | null;
   keyPair: KeyPair;
 }): Checkpoint {
-  const { tail, fromSeq, events, keyPair } = input;
+  const { tail, fromSeq, events, prev, keyPair } = input;
   const fields: Omit<Checkpoint, 'sig'> = {
     scheme: SCHEME,
     tail,
     fromSeq,
     toSeq: fromSeq + events.length - 1,
     contentRoot: contentRoot(events),
+    prev,
     signerFp: keyPair.fingerprint,
   };
   const sig = Buffer.from(sign(signedMessage(fields), keyPair.privateKey)).toString('hex');
@@ -122,6 +144,7 @@ export function serializeCheckpoint(checkpoint: Checkpoint): string {
     fromSeq: checkpoint.fromSeq,
     toSeq: checkpoint.toSeq,
     contentRoot: checkpoint.contentRoot,
+    prev: checkpoint.prev,
     signerFp: checkpoint.signerFp,
     sig: checkpoint.sig,
   });
@@ -148,12 +171,17 @@ export function parseCheckpoint(line: string): Checkpoint {
   if (scheme !== SCHEME) {
     throw new CheckpointParseError(`unknown checkpoint scheme "${scheme}"`);
   }
+  const prev = raw.prev;
+  if (prev !== null && (typeof prev !== 'string' || prev.length === 0)) {
+    throw new CheckpointParseError('checkpoint prev must be a hash or null');
+  }
   return {
     scheme,
     tail: requireString('tail'),
     fromSeq: requireSeq('fromSeq'),
     toSeq: requireSeq('toSeq'),
     contentRoot: requireString('contentRoot'),
+    prev,
     signerFp: requireString('signerFp'),
     sig: requireString('sig'),
   };

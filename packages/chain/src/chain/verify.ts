@@ -22,7 +22,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import { verifyCheckpoint } from './checkpoint.js';
+import { checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
@@ -174,6 +174,7 @@ function verifyCheckpoints(
 ): number {
   const checkpoints = readTailCheckpoints(layout, tail).sort((a, b) => a.fromSeq - b.fromSeq);
   let covered = -1;
+  let expectedPrev: string | null = null;
 
   for (const checkpoint of checkpoints) {
     if (checkpoint.tail !== tail) {
@@ -181,6 +182,18 @@ function verifyCheckpoints(
         tail,
         layer: 'T2/T4',
         detail: `checkpoint names tail ${checkpoint.tail}, stored under ${tail}`,
+      });
+      continue;
+    }
+    // Checkpoint chain: each checkpoint links to the previous one's hash. A
+    // dropped trailing checkpoint therefore cannot hide the signed history it
+    // covered — the surviving run no longer matches what the next one linked.
+    if (checkpoint.prev !== expectedPrev) {
+      issues.push({
+        tail,
+        layer: 'T2/T4',
+        seq: checkpoint.fromSeq,
+        detail: 'checkpoint chain break: prev does not link to the previous checkpoint',
       });
       continue;
     }
@@ -237,6 +250,7 @@ function verifyCheckpoints(
       continue;
     }
     covered = checkpoint.toSeq;
+    expectedPrev = checkpointHash(checkpoint);
   }
   return covered;
 }

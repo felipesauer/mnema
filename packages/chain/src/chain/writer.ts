@@ -16,13 +16,18 @@ import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import { type Checkpoint, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
+import {
+  type Checkpoint,
+  checkpointHash,
+  serializeCheckpoint,
+  signCheckpoint,
+} from './checkpoint.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { KeyPair } from './keys.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
 import { orderedSegments, readTailCheckpoints, readTailEntries } from './store.js';
 
-/** Seal a segment once it grows past this many bytes (P4: by size). */
+/** Seal a segment once it grows past this many bytes (segments rotate by size). */
 export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
 
 /** Sign a checkpoint after this many uncheckpointed events. */
@@ -40,6 +45,8 @@ export class ChainWriter {
   private segmentBytes = 0;
   /** Seq of the last event covered by a checkpoint, or -1 if none. */
   private lastCheckpointedSeq = -1;
+  /** Hash of the last checkpoint, or null if none — the link the next one signs. */
+  private lastCheckpointHash: string | null = null;
 
   private readonly maxSegmentBytes: number;
   private readonly checkpointEvery: number;
@@ -81,7 +88,10 @@ export class ChainWriter {
       this.segmentBytes = statSync(lastSegment).size;
     }
     const lastCp = readTailCheckpoints(this.layout, this.tailId).at(-1);
-    if (lastCp !== undefined) this.lastCheckpointedSeq = lastCp.toSeq;
+    if (lastCp !== undefined) {
+      this.lastCheckpointedSeq = lastCp.toSeq;
+      this.lastCheckpointHash = checkpointHash(lastCp);
+    }
   }
 
   /**
@@ -137,12 +147,14 @@ export class ChainWriter {
       tail: this.tailId,
       fromSeq,
       events: events.map((e) => e.event),
+      prev: this.lastCheckpointHash,
       keyPair: this.keyPair,
     });
     const path = checkpointsPath(this.layout, this.tailId);
     ensureDir(path);
     appendFileSync(path, `${serializeCheckpoint(checkpoint)}\n`, 'utf-8');
     this.lastCheckpointedSeq = toSeq;
+    this.lastCheckpointHash = checkpointHash(checkpoint);
     return checkpoint;
   }
 }
