@@ -1,16 +1,25 @@
 /**
  * @mnema/core — the work domain.
  *
- * Workflow gates, projections (event → state materialized in SQLite),
- * identity, and queries live here. It builds on @mnema/chain: every state
- * change is an event that passes a gate and is appended to the chain; the
- * projections replay those events on read without re-validating them.
+ * Projections (event → state materialized in SQLite) live here, built on
+ * @mnema/chain: the chain is the source of truth, and the projections replay
+ * its events into a queryable cache without re-validating them. Workflow gates
+ * and identity land in following changes.
  *
- * The domain lands in following changes; this entry point currently
- * re-exports the proof engine's identity so the dependency edge is real.
+ * The projection cache is pure: it is derived from the chain, never committed,
+ * and rebuilt by dropping and replaying — there are no data migrations.
  */
 
-import { PACKAGE_NAME as CHAIN_PACKAGE } from '@mnema/chain';
-
 export const PACKAGE_NAME = '@mnema/core';
-export const CHAIN_DEPENDENCY = CHAIN_PACKAGE;
+
+export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
+export { type CacheOptions, ProjectionCache } from './projections/cache.js';
+export { orderedEvents } from './projections/order.js';
+export { rebuild } from './projections/rebuild.js';
+export { projectTasks, type TaskProjection } from './projections/task.js';
+export {
+  getTask,
+  listTasks,
+  listTasksByState,
+  materializeTasks,
+} from './projections/task-store.js';
