@@ -109,6 +109,17 @@ describe('parseEvent — transition proof fields', () => {
     expect(() => parseEvent(badItem, reg)).toThrow(/payload\.fields\.links\[1\]/);
   });
 
+  it('a builder event with an empty optional field round-trips (never a write-only line)', () => {
+    // The builder must not produce a line the chain can write but not read. An
+    // empty pr_url is dropped at build time, so the built event parses cleanly.
+    const event = taskTransitioned(
+      { ...envelope, subject: 't-1' },
+      { from: 'in-progress', to: 'done', action: 'complete', fields: { note: 'done', pr_url: '' } },
+    );
+    expect(() => parseEvent(line(event), reg)).not.toThrow();
+    expect(parseEvent(line(event), reg)).toEqual(event);
+  });
+
   it('rebuilds fields so a duplicate inner key cannot pick a value into the bytes', () => {
     // JSON.parse keeps the last duplicate; the rebuilt fields reflect only the
     // declared shape. The recomputed canonical form is deterministic regardless.
