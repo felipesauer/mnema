@@ -1,4 +1,5 @@
 import type { DependencyKind } from '@mnema/core/domain/entities/dependency.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { DependencyService } from '@mnema/core/services/backlog/dependency-service.js';
 import type { IdentityService } from '@mnema/core/services/integrity/identity-service.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -12,12 +13,7 @@ import {
   requireFreshSchema,
 } from '../../mcp-tool-result.js';
 
-const dependencyKindValues = [
-  'blocks',
-  'relates_to',
-  'duplicates',
-  'parent_of',
-] as const satisfies readonly DependencyKind[];
+const dependencyKindValues = ['blocks', 'relates_to'] as const satisfies readonly DependencyKind[];
 
 /**
  * Registers the task-dependency MCP tools — `task_depends_on`,
@@ -47,7 +43,7 @@ export class DependencyTools {
       'task_depends_on',
       {
         description:
-          'Declare that one task is blocked by another (or relates to / duplicates / is a parent of it). `task_key` depends on `blocks_task_key`. Defaults to kind `blocks`. Requires an active agent run.',
+          'Declare that one task is blocked by another (or merely relates to it). `task_key` depends on `blocks_task_key`. Defaults to kind `blocks`. Requires an active agent run.',
         inputSchema: {
           task_key: z.string().describe('The dependent task, e.g. WEBAPP-43'),
           blocks_task_key: z.string().describe('The task it depends on / is blocked by'),
@@ -143,7 +139,7 @@ export class DependencyTools {
       ({ sprint_key: sprintKey }) => {
         const result = this.dependencies.ready(sprintKey);
         if (!result.ok) return err(result.error);
-        return ok({ tasks: result.value });
+        return ok({ tasks: result.value.map((t) => ({ ...t, key: deriveAlias('task', t.id) })) });
       },
     );
 

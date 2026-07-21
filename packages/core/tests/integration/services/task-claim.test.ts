@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
@@ -46,11 +47,11 @@ describe('TaskService claim/releaseClaim', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  /** Creates a task and returns its key. */
+  /** Creates a task and returns its id. */
   function makeTask(title = 'Claimable'): string {
     const created = container.task.create({ projectKey: 'TEST', title, actor: 'alice' });
     if (!created.ok) throw new Error('setup: create failed');
-    return created.value.key;
+    return created.value.id;
   }
 
   it('claims a task and records the holder + a future lease', () => {
@@ -75,7 +76,8 @@ describe('TaskService claim/releaseClaim', () => {
     if (second.ok) return;
     expect(second.error.kind).toBe(ErrorCode.TaskAlreadyClaimed);
     if (second.error.kind === ErrorCode.TaskAlreadyClaimed) {
-      expect(second.error.taskKey).toBe(key);
+      // The error's taskKey is the display alias derived from the committed id.
+      expect(second.error.taskKey).toBe(deriveAlias('task', key));
       expect(second.error.leaseExpiresAt).not.toBe('');
     }
   });
@@ -231,7 +233,7 @@ describe('TaskService start-time claim gate (claims.require_to_start)', () => {
       actor: 'alice',
     });
     if (!created.ok) throw new Error('setup: create failed');
-    const key = created.value.key;
+    const key = created.value.id;
     const submitted = container.task.transition({
       taskKey: key,
       action: 'submit',

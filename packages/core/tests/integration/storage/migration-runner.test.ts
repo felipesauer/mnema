@@ -1,4 +1,12 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Database as DatabaseType } from 'better-sqlite3';
@@ -33,15 +41,15 @@ describe('MigrationRunner (001 baseline)', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('applies the squashed baseline on an empty database', () => {
+  it('applies every pending migration on an empty database', () => {
     const applied = new MigrationRunner().run(adapter, migrationsDir);
-    expect(applied.map((a) => a.version)).toEqual([1]);
+    expect(applied.map((a) => a.version)).toEqual([1, 2, 3]);
 
     const versions = adapter
       .getDatabase()
       .prepare('SELECT version FROM schema_migrations ORDER BY version')
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2, 3]);
   });
 
   it('is idempotent — running twice does not duplicate', () => {
@@ -49,6 +57,47 @@ describe('MigrationRunner (001 baseline)', () => {
     runner.run(adapter, migrationsDir);
     const second = runner.run(adapter, migrationsDir);
     expect(second).toEqual([]);
+  });
+
+  // Regression: migration 003 folds the retired dependency kinds
+  // (duplicates/parent_of) into relates_to. A task pair carrying BOTH a
+  // relates_to AND a parent_of edge would, under a naive in-place UPDATE,
+  // produce two identical (task_id, blocks_task_id, 'relates_to') rows and trip
+  // the unique index mid-migration — aborting `mnema upgrade` for any real
+  // project with that shape. The fold must instead collapse the redundant soft
+  // edge into one.
+  it('003 folds colliding relates_to + parent_of edges without aborting', () => {
+    const db = adapter.getDatabase();
+    // Apply 001 + 002 only, seeding the collision before 003 runs.
+    db.exec(readFileSync(path.join(migrationsDir, '001_baseline.sql'), 'utf-8'));
+    db.pragma('foreign_keys = OFF');
+    db.exec(readFileSync(path.join(migrationsDir, '002_drop_entity_keys.sql'), 'utf-8'));
+    db.pragma('foreign_keys = ON');
+    db.exec(`
+      INSERT INTO projects (id, key, name, created_at)
+        VALUES ('p1', 'D', 'D', '2026-01-01T00:00:00Z');
+      INSERT INTO actors (id, kind, handle, created_at)
+        VALUES ('a1', 'human', 'f', '2026-01-01T00:00:00Z');
+      INSERT INTO tasks (id, project_id, title, state, reporter_id, created_at, updated_at)
+        VALUES ('t1', 'p1', 'A', 'DRAFT', 'a1', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+      INSERT INTO tasks (id, project_id, title, state, reporter_id, created_at, updated_at)
+        VALUES ('t2', 'p1', 'B', 'DRAFT', 'a1', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+      INSERT INTO dependencies (id, task_id, blocks_task_id, kind, created_at)
+        VALUES ('d1', 't1', 't2', 'relates_to', '2026-01-01T00:00:00Z');
+      INSERT INTO dependencies (id, task_id, blocks_task_id, kind, created_at)
+        VALUES ('d2', 't1', 't2', 'parent_of', '2026-01-02T00:00:00Z');
+    `);
+
+    // Running the runner now applies only 003; it must not throw.
+    expect(() => new MigrationRunner().run(adapter, migrationsDir)).not.toThrow();
+
+    // The collision collapsed to a single relates_to edge (the earlier row by
+    // created_at survives; the redundant one is dropped, not duplicated).
+    const deps = db.prepare('SELECT id, kind FROM dependencies ORDER BY id').all() as Array<{
+      id: string;
+      kind: string;
+    }>;
+    expect(deps).toEqual([{ id: 'd1', kind: 'relates_to' }]);
   });
 
   it('seeds the audit_state singleton row', () => {
@@ -138,23 +187,25 @@ describe('MigrationRunner (001 baseline)', () => {
       runner.run(adapter, staged);
 
       // A synthetic table-rewrite in the exact shape historical rewrites
-      // used: FK toggle via the header, its own BEGIN/COMMIT.
+      // used: FK toggle via the header, its own BEGIN/COMMIT. Uses a version
+      // well above the bundled set so it stays the next free slot no matter
+      // how many real migrations land.
       writeFileSync(
-        path.join(staged, '002_synthetic_rewrite.sql'),
+        path.join(staged, '999_synthetic_rewrite.sql'),
         [
           '-- mnema:disable-foreign-keys',
           'BEGIN;',
           'CREATE TABLE anchors_new AS SELECT * FROM anchors;',
           'DROP TABLE anchors;',
           'ALTER TABLE anchors_new RENAME TO anchors;',
-          'INSERT INTO schema_migrations (version) VALUES (2);',
+          'INSERT INTO schema_migrations (version) VALUES (999);',
           'COMMIT;',
           '',
         ].join('\n'),
       );
 
       const applied = runner.run(adapter, staged);
-      expect(applied.map((a) => a.version)).toEqual([2]);
+      expect(applied.map((a) => a.version)).toEqual([999]);
       // FK enforcement is restored afterwards.
       const fk = adapter.getDatabase().pragma('foreign_keys', { simple: true });
       expect(fk).toBe(1);
@@ -166,13 +217,13 @@ describe('MigrationRunner (001 baseline)', () => {
       runner.run(adapter, staged);
 
       writeFileSync(
-        path.join(staged, '002_synthetic_failure.sql'),
+        path.join(staged, '999_synthetic_failure.sql'),
         [
           '-- mnema:disable-foreign-keys',
           'BEGIN;',
           'CREATE TABLE half_done (id INTEGER PRIMARY KEY);',
           'CREATE TABLE half_done (id INTEGER PRIMARY KEY); -- duplicate: throws',
-          'INSERT INTO schema_migrations (version) VALUES (2);',
+          'INSERT INTO schema_migrations (version) VALUES (999);',
           'COMMIT;',
           '',
         ].join('\n'),
@@ -185,7 +236,7 @@ describe('MigrationRunner (001 baseline)', () => {
       const versions = (
         db.prepare('SELECT version FROM schema_migrations').all() as Array<{ version: number }>
       ).map((v) => v.version);
-      expect(versions).toEqual([1]); // never stamped
+      expect(versions).toEqual([1, 2, 3]); // the synthetic 999 never stamped
     });
   });
 

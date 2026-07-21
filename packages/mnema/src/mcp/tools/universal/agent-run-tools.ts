@@ -1,3 +1,4 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { AgentRunStatus } from '@mnema/core/domain/enums/agent-run-status.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import type { AgentRunService } from '@mnema/core/services/agent/agent-run-service.js';
@@ -322,25 +323,31 @@ export function buildSkillDraft(goal: string, steps: readonly RunStep[]): SkillD
 function stepForEvent(kind: string, data: Record<string, unknown>): RunStep | null {
   const s = (key: string): string | undefined =>
     typeof data[key] === 'string' ? (data[key] as string) : undefined;
+  // The task's display handle (alias) from the committed id an event stamps.
+  // `taskKey` carries the id itself — a stable grouping key for cycle detection.
+  const alias = (field: 'id' | 'task_id'): string => {
+    const id = s(field);
+    return id !== undefined ? deriveAlias('task', id) : 'task';
+  };
   switch (kind) {
     case 'task_created':
       return {
-        text: `create task ${s('key') ?? ''}`.trim(),
-        taskKey: s('key') ?? null,
+        text: `create task ${s('id') !== undefined ? alias('id') : ''}`.trim(),
+        taskKey: s('id') ?? null,
         verb: 'create',
       };
     case 'task_transitioned': {
       const action = s('action') ?? 'transition';
       return {
-        text: `${action} ${s('key') ?? 'task'} (${s('from') ?? '?'} → ${s('to') ?? '?'})`,
-        taskKey: s('key') ?? null,
+        text: `${action} ${alias('id')} (${s('from') ?? '?'} → ${s('to') ?? '?'})`,
+        taskKey: s('id') ?? null,
         verb: action,
       };
     }
     case 'evidence_attached':
       return {
-        text: `attach ${s('evidence_kind') ?? 'other'} evidence to ${s('task_key') ?? 'task'}`,
-        taskKey: s('task_key') ?? null,
+        text: `attach ${s('evidence_kind') ?? 'other'} evidence to ${alias('task_id')}`,
+        taskKey: s('task_id') ?? null,
         verb: 'attach_evidence',
       };
     case 'decision_recorded':
@@ -353,7 +360,7 @@ function stepForEvent(kind: string, data: Record<string, unknown>): RunStep | nu
       return { text: 'record an observation', taskKey: null, verb: 'observation' };
     case 'note_added':
       return {
-        text: `add a note to ${s('task_key') ?? s('key') ?? 'task'}`,
+        text: `add a note to ${alias('task_id')}`,
         taskKey: null,
         verb: 'note',
       };

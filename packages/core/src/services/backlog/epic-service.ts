@@ -1,6 +1,7 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Epic } from '../../domain/entities/epic.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { EpicLifecycle } from '../../domain/enums/epic-lifecycle.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
@@ -12,6 +13,7 @@ import type { TaskRepository } from '../../storage/sqlite/repositories/task-repo
 import type { AuditService } from '../integrity/audit-service.js';
 import type { RoadmapMirror } from '../sync/roadmap-mirror.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Input for {@link EpicService.create}.
@@ -33,6 +35,24 @@ export interface CloseEpicInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /**
+   * Optional optimistic-concurrency token. When supplied, the close only
+   * proceeds if the epic's current `updatedAt` matches; otherwise a
+   * `Conflict` is returned with the latest server-side timestamp.
+   */
+  readonly expectedUpdatedAt?: string;
+}
+
+/**
+ * Input for {@link EpicService.reopen}.
+ */
+export interface ReopenEpicInput {
+  readonly epicKey: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly runId?: string;
+  /** Optional optimistic-concurrency token (see {@link CloseEpicInput}). */
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -47,6 +67,8 @@ export interface UpdateEpicInput {
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
+  /** Optional optimistic-concurrency token (see {@link CloseEpicInput}). */
+  readonly expectedUpdatedAt?: string;
 }
 
 /**
@@ -94,8 +116,8 @@ export interface EpicImpact {
 
 /**
  * Manages epics — long-lived containers that group tasks under a theme
- * or feature. Lifecycle is intentionally minimal: `OPEN → CLOSED`,
- * never reopened.
+ * or feature. Lifecycle is `OPEN ⇄ CLOSED`: an epic can be reopened when
+ * work resumes under it, mirroring how a task reopens.
  */
 export class EpicService {
   constructor(
@@ -110,6 +132,21 @@ export class EpicService {
     private readonly mirror: RoadmapMirror | null = null,
     private readonly sync: SyncService | null = null,
   ) {}
+
+  /**
+   * Resolves a user-typed handle to a single epic. Accepts the committed id, a
+   * short alias (`e-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
+   *
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveEpic(handle: string): Result<Epic, MnemaError> {
+    return resolveEntity(this.epics, handle, (epicKey) => ({
+      kind: ErrorCode.EpicNotFound,
+      epicKey,
+    }));
+  }
 
   /**
    * Creates a new epic in `OPEN` state.
@@ -141,17 +178,12 @@ export class EpicService {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
 
-    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-    // two processes on one state.db cannot mint the same key.
-    const epic = this.epics.runInTransactionImmediate(() => {
-      const sequence = this.epics.nextSequence(project.id);
-      const key = `${project.key}-EPIC-${sequence}`;
-      return this.epics.insert({
-        key,
-        projectId: project.id,
-        title: input.title,
-        description: input.description ?? null,
-      });
+    // The epic's identity is a minted UUID — collision-free, so there is no
+    // sequence to serialise; the single insert is atomic on its own.
+    const epic = this.epics.insert({
+      projectId: project.id,
+      title: input.title,
+      description: input.description ?? null,
     });
 
     this.audit.write({
@@ -159,7 +191,8 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: epic.key, title: epic.title },
+      // The committed id binds provenance to the clone-stable identity.
+      data: { id: epic.id, title: epic.title },
     });
 
     this.mirror?.writeEpic(epic);
@@ -174,29 +207,91 @@ export class EpicService {
    * @returns The updated epic or a structured error
    */
   close(input: CloseEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
     if (epic.state !== EpicState.Open) {
       return Err({
         kind: ErrorCode.EpicInvalidState,
-        epicKey: epic.key,
+        epicKey: deriveAlias('epic', epic.id),
         fromState: epic.state,
         toState: EpicState.Closed,
       });
     }
-    const updated = this.epics.updateState(epic.id, EpicState.Closed);
-    if (updated === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+
+    // Default the token to the row we just read so two concurrent closes
+    // don't both audit "closed" against an already-closed epic.
+    const expectedUpdatedAt = input.expectedUpdatedAt ?? epic.updatedAt;
+
+    const result = this.epics.updateState(epic.id, EpicState.Closed, expectedUpdatedAt);
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
     }
+    const updated = result.epic;
 
     this.audit.write({
       kind: 'epic_closed',
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
+    });
+
+    this.mirror?.writeEpic(updated);
+
+    return Ok(updated);
+  }
+
+  /**
+   * Reopens a `CLOSED` epic, clearing its close timestamp. The mirror is
+   * rewritten so the versioned `.md` reflects the reopened state.
+   *
+   * @param input - Epic key + identity tuple
+   * @returns The reopened epic or a structured error
+   */
+  reopen(input: ReopenEpicInput): Result<Epic, MnemaError> {
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    if (epic.state !== EpicState.Closed) {
+      return Err({
+        kind: ErrorCode.EpicInvalidState,
+        epicKey: deriveAlias('epic', epic.id),
+        fromState: epic.state,
+        toState: EpicState.Open,
+      });
+    }
+
+    const expectedUpdatedAt = input.expectedUpdatedAt ?? epic.updatedAt;
+
+    const result = this.epics.updateState(epic.id, EpicState.Open, expectedUpdatedAt);
+    if (!result.ok) {
+      if (result.reason.kind === 'NOT_FOUND') {
+        return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
+      }
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: result.reason.currentUpdatedAt,
+      });
+    }
+    const updated = result.epic;
+
+    this.audit.write({
+      kind: 'epic_reopened',
+      actor: input.actor,
+      via: input.via,
+      run: input.runId,
+      data: { id: updated.id },
     });
 
     this.mirror?.writeEpic(updated);
@@ -210,19 +305,18 @@ export class EpicService {
    * as-is. The markdown mirror is rewritten so the versioned `.md`
    * reflects the edit.
    *
-   * The `epics` table carries no `updated_at`, so there is no
-   * optimistic-concurrency token to compare — edits are last-write-wins,
-   * the same contract sync rebuild already uses when it folds content
-   * drift back onto an epic row.
+   * When `expectedUpdatedAt` is supplied, the edit is optimistically
+   * concurrent — it is refused with a `Conflict` if the row was touched
+   * since the caller read it. Omitting the token keeps the historical
+   * last-write-wins behaviour that sync rebuild relies on.
    *
    * @param input - Epic key + content fields + identity tuple
    * @returns The updated epic or a structured error
    */
   update(input: UpdateEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
 
     if (input.title !== undefined) {
       const issues: ErrorIssue[] = [];
@@ -230,6 +324,15 @@ export class EpicService {
       if (issues.length > 0) {
         return Err({ kind: ErrorCode.ValidationFailed, issues });
       }
+    }
+
+    if (input.expectedUpdatedAt !== undefined && epic.updatedAt !== input.expectedUpdatedAt) {
+      return Err({
+        kind: ErrorCode.Conflict,
+        entity: 'epic',
+        taskKey: deriveAlias('epic', epic.id),
+        currentUpdatedAt: epic.updatedAt,
+      });
     }
 
     const updated = this.epics.runInTransaction(() =>
@@ -245,7 +348,7 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, title: updated.title },
+      data: { id: updated.id, title: updated.title },
     });
 
     this.mirror?.writeEpic(updated);
@@ -264,17 +367,16 @@ export class EpicService {
    * @returns The soft-deleted epic or a structured error
    */
   delete(input: DeleteEpicInput): Result<Epic, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
 
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    if (taskKeys.length > 0) {
+    const taskIds = this.epics.listTaskIds(epic.id);
+    if (taskIds.length > 0) {
       return Err({
         kind: ErrorCode.EpicHasTasks,
-        epicKey: epic.key,
-        taskCount: taskKeys.length,
+        epicKey: deriveAlias('epic', epic.id),
+        taskCount: taskIds.length,
       });
     }
 
@@ -287,7 +389,7 @@ export class EpicService {
     // `.md`, and a rebuild would re-insert the deleted epic as live — an
     // orphan that reads as live. This matches how task soft-delete drops the
     // markdown for a row it is about to remove from the active set.
-    this.mirror?.removeEpic(epic.key);
+    this.mirror?.removeEpic(epic.id);
 
     const deleted = this.epics.runInTransaction(() => this.epics.softDelete(epic.id));
     if (!deleted) {
@@ -299,7 +401,7 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: epic.key },
+      data: { id: epic.id },
     });
 
     return Ok(epic);
@@ -312,14 +414,15 @@ export class EpicService {
    * @returns The updated task or a structured error
    */
   addTask(input: EpicTaskInput): Result<Task, MnemaError> {
-    const epic = this.epics.findByKey(input.epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey: input.epicKey });
-    }
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveEpic(input.epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
     this.epics.addTask(epic.id, task.id);
 
     this.audit.write({
@@ -327,13 +430,13 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { epic_key: epic.key, task_key: task.key },
+      data: { epic_id: epic.id, task_id: task.id },
     });
 
     // The epic link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'epic_task_added', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'epic_task_added', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -347,10 +450,15 @@ export class EpicService {
    * @returns The updated task or a structured error
    */
   removeTask(input: EpicTaskInput): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
+    // The epic the task is being detached from — its committed id, taken from
+    // the task's link before removal (removeTask clears it by task id).
+    const epicId = task.epicId;
     this.epics.removeTask(task.id);
 
     this.audit.write({
@@ -358,13 +466,13 @@ export class EpicService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { epic_key: input.epicKey, task_key: task.key },
+      data: { epic_id: epicId, task_id: task.id },
     });
 
     // The epic link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'epic_task_removed', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'epic_task_removed', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -378,12 +486,12 @@ export class EpicService {
    * @returns The epic view or a structured error when unknown
    */
   show(epicKey: string): Result<EpicView, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskKeys) });
+    const resolved = this.resolveEpic(epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    const taskIds = this.epics.listTaskIds(epic.id);
+    const taskKeys = taskIds.map((id) => deriveAlias('task', id));
+    return Ok({ epic, taskKeys, lifecycle: this.deriveLifecycle(epic, taskIds) });
   }
 
   /**
@@ -399,24 +507,23 @@ export class EpicService {
    * @returns The impact view or `EpicNotFound`
    */
   impact(epicKey: string): Result<EpicImpact, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
-    const taskKeys = this.epics.listTaskKeys(epic.id);
-    const nonTerminal = taskKeys
-      .map((key) => this.tasks.findByKey(key))
+    const resolved = this.resolveEpic(epicKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
+    const taskIds = this.epics.listTaskIds(epic.id);
+    const nonTerminal = taskIds
+      .map((id) => this.tasks.findById(id))
       .filter((t): t is Task => t !== null && !this.stateMachine.isTerminal(t.state))
-      .map((t) => t.key);
+      .map((t) => deriveAlias('task', t.id));
     return Ok({
-      epicKey: epic.key,
+      epicKey: deriveAlias('epic', epic.id),
       state: epic.state,
-      attachedTaskKeys: taskKeys,
-      attachedTaskCount: taskKeys.length,
+      attachedTaskKeys: taskIds.map((id) => deriveAlias('task', id)),
+      attachedTaskCount: taskIds.length,
       nonTerminalTaskKeys: nonTerminal,
       // delete() refuses while any task is attached; close() is always allowed
       // but strands non-terminal tasks under a closed epic.
-      deleteWouldBeRefused: taskKeys.length > 0,
+      deleteWouldBeRefused: taskIds.length > 0,
     });
   }
 
@@ -424,12 +531,10 @@ export class EpicService {
    * Derives the epic's lifecycle label from its state and the states of
    * its tasks. Never stored — always computed.
    */
-  private deriveLifecycle(epic: Epic, taskKeys: readonly string[]): EpicLifecycle {
+  private deriveLifecycle(epic: Epic, taskIds: readonly string[]): EpicLifecycle {
     if (epic.state === EpicState.Closed) return 'closed';
-    if (taskKeys.length === 0) return 'empty';
-    const tasks = taskKeys
-      .map((key) => this.tasks.findByKey(key))
-      .filter((t): t is Task => t !== null);
+    if (taskIds.length === 0) return 'empty';
+    const tasks = taskIds.map((id) => this.tasks.findById(id)).filter((t): t is Task => t !== null);
     const allTerminal =
       tasks.length > 0 && tasks.every((t) => this.stateMachine.isTerminal(t.state));
     return allTerminal ? 'developed' : 'in-progress';
@@ -454,15 +559,15 @@ export class EpicService {
    * deletion. Existing files are left untouched.
    *
    * @param projectKey - Project key
-   * @returns Keys of the epics whose mirror was just written
+   * @returns Aliases of the epics whose mirror was just written
    */
   rebuildMirrors(projectKey: string): string[] {
     if (this.mirror === null) return [];
     const rebuilt: string[] = [];
     for (const epic of this.list(projectKey)) {
-      if (!this.mirror.hasEpic(epic.key)) {
+      if (!this.mirror.hasEpic(epic.id)) {
         this.mirror.writeEpic(epic);
-        rebuilt.push(epic.key);
+        rebuilt.push(deriveAlias('epic', epic.id));
       }
     }
     return rebuilt;

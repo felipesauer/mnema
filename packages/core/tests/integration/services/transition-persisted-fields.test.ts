@@ -67,7 +67,7 @@ describe('transition tolerates already-persisted gate fields', () => {
 
     // No fields resent — the gate is satisfied by the persisted values.
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
@@ -82,13 +82,13 @@ describe('transition tolerates already-persisted gate fields', () => {
     const rich = created.value.description;
 
     container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
     });
 
-    const after = container.task.findByKey(created.value.key);
+    const after = container.task.findByKey(created.value.id);
     expect(after.ok).toBe(true);
     if (after.ok) expect(after.value.description).toBe(rich);
   });
@@ -105,7 +105,7 @@ describe('transition tolerates already-persisted gate fields', () => {
     if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {},
       actor: 'daniel',
@@ -121,13 +121,13 @@ describe('transition tolerates already-persisted gate fields', () => {
     if (!created.ok) return;
 
     container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: { description: 'An explicitly updated, sufficiently long description' },
       actor: 'daniel',
     });
 
-    const after = container.task.findByKey(created.value.key);
+    const after = container.task.findByKey(created.value.id);
     expect(after.ok).toBe(true);
     if (after.ok) {
       expect(after.value.description).toBe('An explicitly updated, sufficiently long description');

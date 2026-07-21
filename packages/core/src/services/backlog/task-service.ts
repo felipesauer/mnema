@@ -1,12 +1,12 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import { EnforcementMode } from '../../domain/enums/enforcement-mode.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
-import { generateTaskKey } from '../../domain/id-generator.js';
 import { hasInvocationMarkup } from '../../domain/invocation-markup.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import type { FieldSpec } from '../../domain/state-machine/workflow-meta-schema.js';
-import { checkOptionalIntInRange, checkOptionalNonNegativeInt } from '../../domain/validation.js';
+import { checkOptionalNonNegativeInt } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import { type ErrorIssue, fromZodIssues, type MnemaError } from '../../errors/mnema-error.js';
 import type {
@@ -19,6 +19,7 @@ import type { TransitionRepository } from '../../storage/sqlite/repositories/tra
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /** Matches a v4/v7 UUID so an assignee reference can be told apart from a handle. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,7 +47,6 @@ export interface CreateTaskInput {
   readonly estimate?: number | null;
   /** Estimated context cost in tokens; distinct from `estimate` (story points). */
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   /**
    * Free-form metadata persisted alongside the task. Importers use it
@@ -141,7 +141,6 @@ export class TaskService {
     checkNoInvocationMarkup(input, issues);
     checkOptionalNonNegativeInt(input.estimate, 'estimate', issues);
     checkOptionalNonNegativeInt(input.contextBudget, 'context_budget', issues);
-    checkOptionalIntInRange(input.priority, 'priority', 1, 5, issues);
     if (issues.length > 0) {
       return Err({ kind: ErrorCode.ValidationFailed, issues });
     }
@@ -155,21 +154,17 @@ export class TaskService {
     const initialState = this.stateMachine.getWorkflow().initial as TaskState;
 
     const writeResult = tryMutation(() =>
-      // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-      // two processes on one state.db cannot mint the same key.
-      this.tasks.runInTransactionImmediate(() => {
-        const sequence = this.tasks.nextSequence(project.id);
-        const key = generateTaskKey(project.key, sequence);
-
+      // The task's identity is a minted UUID — collision-free by construction,
+      // so there is no sequence to serialise; the transaction just makes the
+      // insert plus its creation transition atomic.
+      this.tasks.runInTransaction(() => {
         const created = this.tasks.insert({
-          key,
           projectId: project.id,
           title: input.title,
           description: input.description ?? null,
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           estimate: input.estimate ?? null,
           contextBudget: input.contextBudget ?? null,
-          priority: input.priority ?? 3,
           assigneeId: assignee.value,
           reporterId,
           state: initialState,
@@ -198,10 +193,12 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, title: task.title, state: task.state },
+      // The committed id is the stable provenance anchor — it survives a clone
+      // and never changes, so the chain binds by it.
+      data: { id: task.id, title: task.title, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     return Ok(task);
   }
@@ -249,10 +246,9 @@ export class TaskService {
     readonly via?: string;
     readonly runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     const assignee = this.resolveAssignee(input.assignee);
     if (!assignee.ok) return assignee;
 
@@ -267,10 +263,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, assignee_id: assignee.value },
+      data: { id: updated.id, assignee_id: assignee.value },
     });
 
-    this.sync.syncTask(updated.key);
+    this.sync.syncTask(updated.id);
 
     return Ok(updated);
   }
@@ -300,15 +296,14 @@ export class TaskService {
     readonly runId?: string;
     readonly expectedUpdatedAt?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     if (this.stateMachine.isTerminal(task.state)) {
       return Err({
         kind: ErrorCode.TerminalState,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         state: task.state,
       });
     }
@@ -351,7 +346,7 @@ export class TaskService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'task',
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         currentUpdatedAt: outcome.currentUpdatedAt,
       });
     }
@@ -362,10 +357,10 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, state: updated.state },
+      data: { id: updated.id, state: updated.state },
     });
 
-    this.sync.syncTask(updated.key);
+    this.sync.syncTask(updated.id);
 
     return Ok(updated);
   }
@@ -394,10 +389,9 @@ export class TaskService {
     readonly runId?: string;
     readonly leaseMinutes: number;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const claimingActorId =
       input.via !== undefined
@@ -419,7 +413,7 @@ export class TaskService {
       }
       return Err({
         kind: ErrorCode.TaskAlreadyClaimed,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         claimedBy: outcome.reason.claimedBy,
         leaseExpiresAt: outcome.reason.leaseExpiresAt,
       });
@@ -431,7 +425,7 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, claimed_by: claimingActorId, lease_expires_at: leaseExpiresAt },
+      data: { id: updated.id, claimed_by: claimingActorId, lease_expires_at: leaseExpiresAt },
     });
 
     return Ok(updated);
@@ -453,10 +447,9 @@ export class TaskService {
     readonly via?: string;
     readonly runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const releasingActorId =
       input.via !== undefined
@@ -472,11 +465,11 @@ export class TaskService {
         actor: input.actor,
         via: input.via,
         run: input.runId,
-        data: { key: task.key },
+        data: { id: task.id },
       });
     }
 
-    const reloaded = this.tasks.findByKey(input.taskKey);
+    const reloaded = this.tasks.findById(task.id);
     if (reloaded === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -513,8 +506,9 @@ export class TaskService {
    * false for an unknown task.
    */
   wouldBeNoOp(taskKey: string, action: string, actor: string, via?: string): boolean {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) return false;
+    const resolved = this.resolveTask(taskKey);
+    if (!resolved.ok) return false;
+    const task = resolved.value;
     // A genuinely valid action from here is not a no-op even if it loops back
     // to the same state — only a retry (invalid-from-here + targets current).
     const validHere = this.stateMachine
@@ -563,10 +557,9 @@ export class TaskService {
   transition(input: TransitionInput): Result<Task, MnemaError> {
     // A previous call's override must never leak into this one.
     this.lastGateOverride = null;
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     // A "terminal" state is one with no declared outbound transitions —
     // any workflow that does declare them (e.g. jira-classic's
@@ -577,7 +570,7 @@ export class TaskService {
       if (exits.length === 0) {
         return Err({
           kind: ErrorCode.TerminalState,
-          taskKey: task.key,
+          taskKey: deriveAlias('task', task.id),
           state: task.state,
         });
       }
@@ -628,7 +621,7 @@ export class TaskService {
       const available = this.stateMachine.listActionsFrom(task.state).map((a) => a.action);
       return Err({
         kind: ErrorCode.InvalidTransition,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         fromState: task.state,
         action: input.action,
         available,
@@ -672,7 +665,7 @@ export class TaskService {
           via: input.via,
           run: input.runId,
           data: {
-            key: task.key,
+            id: task.id,
             action: input.action,
             mode: this.enforcementMode,
             missing: blocking.map((i) => i.path.join('.') || '(root)'),
@@ -680,7 +673,7 @@ export class TaskService {
         });
         return Err({
           kind: ErrorCode.GateFailed,
-          taskKey: task.key,
+          taskKey: deriveAlias('task', task.id),
           action: input.action,
           issues: blocking,
         });
@@ -693,23 +686,20 @@ export class TaskService {
 
     const { to, data } = resolution.value;
 
-    // A custom workflow may declare `estimate`/`priority` as a MUTATING gate
-    // field with looser bounds than the first-class column allows (estimate ≥
-    // 0 integer; priority 1..5). The gate would accept e.g. priority=8, then
-    // the column fold would silently drop it — Ok returned, audit says 8, the
-    // task row unchanged. Validate against the column invariant here so the
-    // transition fails closed, symmetric with create(). This applies ONLY to
-    // mutating fields: a `validating` field is recorded in the audit payload
-    // and never folded to a column, so its value must not be column-validated.
+    // A custom workflow may declare `estimate` as a MUTATING gate field with
+    // looser bounds than the first-class column allows (estimate ≥ 0 integer).
+    // The gate would accept e.g. estimate=-1, then the column fold would
+    // silently drop it — Ok returned, audit says -1, the task row unchanged.
+    // Validate against the column invariant here so the transition fails
+    // closed, symmetric with create(). This applies ONLY to mutating fields: a
+    // `validating` field is recorded in the audit payload and never folded to
+    // a column, so its value must not be column-validated.
     if (data !== null && typeof data === 'object') {
       const payload = data as Record<string, unknown>;
       const spec = resolution.value.requiresSpec;
       const foldIssues: ErrorIssue[] = [];
       if (typeof payload.estimate === 'number' && isMutatingField(spec, 'estimate')) {
         checkOptionalNonNegativeInt(payload.estimate, 'estimate', foldIssues);
-      }
-      if (typeof payload.priority === 'number' && isMutatingField(spec, 'priority')) {
-        checkOptionalIntInRange(payload.priority, 'priority', 1, 5, foldIssues);
       }
       // Free-text fields that fold onto columns (e.g. submit's title /
       // description / acceptance_criteria) get the same markup screen as
@@ -884,20 +874,20 @@ export class TaskService {
     const outcome = outcomeResult.value;
 
     if (outcome.kind === 'not_found') {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: task.key });
+      return Err({ kind: ErrorCode.TaskNotFound, taskKey: deriveAlias('task', task.id) });
     }
     if (outcome.kind === 'conflict') {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'task',
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         currentUpdatedAt: outcome.currentUpdatedAt,
       });
     }
     if (outcome.kind === 'not_claimed') {
       return Err({
         kind: ErrorCode.TaskNotClaimed,
-        taskKey: task.key,
+        taskKey: deriveAlias('task', task.id),
         claimedBy: outcome.claimedBy,
       });
     }
@@ -909,10 +899,17 @@ export class TaskService {
       via: input.via,
       run: input.runId,
       data: {
-        key: task.key,
+        id: task.id,
         from: task.state,
         to,
         action: input.action,
+        // The transition's annotation payload (reason, approval_note, pr_url,
+        // gate fields) now rides ON the event, not only in `transitions.payload`
+        // — so a clone with just the chain can reconstruct WHY, and the
+        // projection of `transitions` from the chain keeps every reason.
+        ...(data !== null && typeof data === 'object' && Object.keys(data).length > 0
+          ? { payload: data }
+          : {}),
       },
     });
 
@@ -926,7 +923,7 @@ export class TaskService {
         via: input.via,
         run: input.runId,
         data: {
-          key: task.key,
+          id: task.id,
           action: input.action,
           mode: this.enforcementMode,
           missing: gateOverride.map((i) => i.path.join('.') || '(root)'),
@@ -938,7 +935,7 @@ export class TaskService {
       this.lastGateOverride = gateOverride;
     }
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
     return Ok(updated);
   }
@@ -958,17 +955,28 @@ export class TaskService {
   }
 
   /**
-   * Returns a task by its human-readable key.
+   * Resolves a user-typed handle to a single task. Accepts the committed id, a
+   * short alias (`t-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
    *
-   * @param key - Task key (e.g. `"WEBAPP-42"`)
-   * @returns The task or a {@link ErrorCode.TaskNotFound} error
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveTask(handle: string): Result<Task, MnemaError> {
+    return resolveEntity(this.tasks, handle, (taskKey) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey,
+    }));
+  }
+
+  /**
+   * Returns a task by a user-typed handle — id, alias, hash prefix, or key.
+   *
+   * @param key - The handle the user supplied (e.g. `"t-3a9f"` or `"WEBAPP-42"`)
+   * @returns The task or a {@link ErrorCode.TaskNotFound}/{@link ErrorCode.AmbiguousAlias} error
    */
   findByKey(key: string): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(key);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: key });
-    }
-    return Ok(task);
+    return this.resolveTask(key);
   }
 
   /**
@@ -1014,10 +1022,9 @@ export class TaskService {
     via?: string;
     runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveTask(input.taskKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const ok = this.tasks.softDelete(task.id);
     if (!ok) {
@@ -1029,12 +1036,12 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, state: task.state },
+      data: { id: task.id, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
-    const updated = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    const updated = this.tasks.findByIdIncludingDeleted(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -1053,7 +1060,10 @@ export class TaskService {
     via?: string;
     runId?: string;
   }): Result<Task, MnemaError> {
-    const task = this.tasks.findByKeyIncludingDeleted(input.taskKey);
+    // A soft-deleted task is invisible to the live alias resolver, so restore
+    // accepts the full committed id (what the user has from the delete output or
+    // the mirror filename) over the including-deleted rows.
+    const task = this.tasks.findByIdIncludingDeleted(input.taskKey);
     if (task === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -1068,12 +1078,12 @@ export class TaskService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: task.key, state: task.state },
+      data: { id: task.id, state: task.state },
     });
 
-    this.sync.syncTask(task.key);
+    this.sync.syncTask(task.id);
 
-    const restored = this.tasks.findByKey(input.taskKey);
+    const restored = this.tasks.findById(task.id);
     if (restored === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -1220,16 +1230,6 @@ function persistableFromPayload(
     touched = true;
   }
   if (
-    typeof payload.priority === 'number' &&
-    Number.isInteger(payload.priority) &&
-    payload.priority >= 1 &&
-    payload.priority <= 5 &&
-    isMutating('priority')
-  ) {
-    (updates as { priority?: number }).priority = payload.priority;
-    touched = true;
-  }
-  if (
     typeof payload.assignee_id === 'string' &&
     payload.assignee_id.length > 0 &&
     isMutating('assignee_id')
@@ -1258,7 +1258,6 @@ function persistedFieldDefaults(task: Task): Record<string, unknown> {
   };
   if (task.description !== null) defaults.description = task.description;
   if (task.estimate !== null) defaults.estimate = task.estimate;
-  defaults.priority = task.priority;
   if (task.assigneeId !== null) defaults.assignee_id = task.assigneeId;
   return defaults;
 }

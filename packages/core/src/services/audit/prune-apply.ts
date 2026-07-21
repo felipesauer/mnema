@@ -7,6 +7,7 @@ import { removeCoveredAtts } from './prune-att-lockstep.js';
 import { writeRebaselineWaiver } from './rebaseline-store.js';
 import { buildPruneWaiver, type RebaselineWaiver } from './rebaseline-waiver.js';
 import type { CutPoint } from './retention-cut-point.js';
+import { appendTransitionsSnapshot, projectTransitions } from './transitions-snapshot.js';
 
 /**
  * The plan a prune apply would execute, computed WITHOUT touching disk so the
@@ -183,6 +184,13 @@ export function applyPrune(params: {
     acceptedAt: now().toISOString(),
     sign,
   });
+
+  // 1b. Archive the transition history the prune is about to delete, BEFORE the
+  //     files go. The waiver carries crypto anchors but no event payloads, so
+  //     without this the "why" of a pruned transition (its gate payload) would
+  //     be gone — the projection can only recover what the chain still holds.
+  //     Committed alongside the waiver; accretes oldest-first across prunes.
+  appendTransitionsSnapshot(auditDir, projectTransitions(plan.droppedEvents));
 
   // 2. Delete the dropped segment files AND the covered .att / anchor rows in
   //    lockstep, so no attestation or receipt is ever left over a removed tail.

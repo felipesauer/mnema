@@ -94,53 +94,55 @@ describe('AuditQuery', () => {
     expect(events).toEqual([]);
   });
 
-  it('filters by taskKey across data.key and data.task_key, isolating other tasks', () => {
+  it('filters by task id across data.id and data.task_id, isolating other tasks', () => {
+    const idOne = '019f7700-0000-7000-8000-000000000001';
+    const idTwo = '019f7700-0000-7000-8000-000000000002';
     writeJsonl(path.join(dir, 'current.jsonl'), [
       {
         v: 1,
         at: '2026-05-01T10:00:00Z',
         kind: 'task_created',
         actor: 'd',
-        data: { key: 'MNEMA-1', title: 'one' },
+        data: { id: idOne, title: 'one' },
       },
       {
         v: 1,
         at: '2026-05-01T10:01:00Z',
         kind: 'task_transitioned',
         actor: 'd',
-        data: { key: 'MNEMA-1', from: 'TODO', to: 'DOING', action: 'start' },
+        data: { id: idOne, from: 'TODO', to: 'DOING', action: 'start' },
       },
       {
         v: 1,
         at: '2026-05-01T10:02:00Z',
         kind: 'note_added',
         actor: 'd',
-        data: { task_key: 'MNEMA-1', note_kind: 'comment' },
+        data: { task_id: idOne, note_kind: 'comment' },
       },
       {
         v: 1,
         at: '2026-05-01T10:03:00Z',
         kind: 'attachment_added',
         actor: 'd',
-        data: { task_key: 'MNEMA-1', filename: 'README.md' },
+        data: { task_id: idOne, filename: 'README.md' },
       },
       {
         v: 1,
         at: '2026-05-01T11:00:00Z',
         kind: 'task_created',
         actor: 'd',
-        data: { key: 'MNEMA-2', title: 'two' },
+        data: { id: idTwo, title: 'two' },
       },
       {
         v: 1,
         at: '2026-05-01T11:01:00Z',
         kind: 'note_added',
         actor: 'd',
-        data: { task_key: 'MNEMA-2', note_kind: 'comment' },
+        data: { task_id: idTwo, note_kind: 'comment' },
       },
     ]);
 
-    const events = new AuditQuery(dir).run({ taskKey: 'MNEMA-1' });
+    const events = new AuditQuery(dir).run({ taskKey: idOne });
     expect(events.map((e) => e.kind)).toEqual([
       'task_created',
       'task_transitioned',
@@ -149,14 +151,15 @@ describe('AuditQuery', () => {
     ]);
   });
 
-  it('does not collide task keys with decision keys (MNEMA-ADR-*)', () => {
+  it('does not match a decision event (which carries data.key, not an id) on a task-id filter', () => {
+    const taskId = '019f7700-0000-7000-8000-000000000001';
     writeJsonl(path.join(dir, 'current.jsonl'), [
       {
         v: 1,
         at: '2026-05-01T10:00:00Z',
         kind: 'task_created',
         actor: 'd',
-        data: { key: 'MNEMA-1' },
+        data: { id: taskId },
       },
       {
         v: 1,
@@ -167,8 +170,9 @@ describe('AuditQuery', () => {
       },
     ]);
 
-    expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-1' })).toHaveLength(1);
-    expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-ADR-1' })).toHaveLength(1);
+    expect(new AuditQuery(dir).run({ taskKey: taskId })).toHaveLength(1);
+    // A decision's key never matches the id-based task filter.
+    expect(new AuditQuery(dir).run({ taskKey: 'MNEMA-ADR-1' })).toHaveLength(0);
   });
 
   describe('limit guard', () => {

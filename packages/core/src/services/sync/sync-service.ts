@@ -30,13 +30,13 @@ export interface SyncPaths {
 
 /**
  * Resolves a task's epic/sprint links to their human keys for the
- * markdown frontmatter. The database stores internal UUIDs, but those are
- * regenerated on a fresh clone — the stable, version-controlled reference
- * is the key (e.g. `WEBAPP-EPIC-3`). Returns `null` for an unset link.
+ * markdown frontmatter. The link is the target's committed id — the id now
+ * survives a clone (the mirror carries it), so it is the collision-free,
+ * version-controlled reference. Returns `null` for an unset link.
  */
 export type TaskLinkResolver = (task: Task) => {
-  readonly epicKey: string | null;
-  readonly sprintKey: string | null;
+  readonly epicId: string | null;
+  readonly sprintId: string | null;
 };
 
 /**
@@ -86,7 +86,7 @@ const DEFAULT_FLUSH_POLICY: SyncFlushPolicy = {
 
 /**
  * Synchronises SQLite state to markdown files, one file per task,
- * grouped by state under `backlogDir/<STATE>/<KEY>.md`.
+ * grouped by state under `backlogDir/<STATE>/<ID>.md`.
  *
  * In Push mode every mutation flushes synchronously; in Buffer mode the
  * service persists pending updates to the {@link SyncBuffer} and flushes
@@ -151,26 +151,26 @@ export class SyncService {
    * mode the entry is appended to the persistent buffer and an
    * auto-flush check is performed.
    *
-   * @param taskKey - Task whose markdown should be regenerated
+   * @param taskId - Committed id of the task whose markdown should regenerate
    * @param meta - Optional context (action, run_id) recorded in buffer
    */
-  syncTask(taskKey: string, meta: { action?: string; runId?: string } = {}): void {
+  syncTask(taskId: string, meta: { action?: string; runId?: string } = {}): void {
     if (this.mode === SyncMode.Push) {
-      this.flushOne(taskKey);
+      this.flushOne(taskId);
       return;
     }
 
     if (this.buffer === null) {
       throw new Error('Buffer mode without a buffer instance — invariant violated');
     }
-    const task = this.taskRepository.findByKey(taskKey);
+    const task = this.taskRepository.findById(taskId);
     if (task === null) return;
 
     this.buffer.append({
       v: 1,
       at: new Date().toISOString(),
       kind: 'task_synced',
-      taskKey,
+      taskKey: taskId,
       mdTarget: this.pathForTask(task),
       action: meta.action,
       runId: meta.runId,
@@ -225,7 +225,7 @@ export class SyncService {
 
   /**
    * Recreates the markdown mirror for every active task whose `.md`
-   * file is missing from its expected `backlogDir/<STATE>/<KEY>.md`
+   * file is missing from its expected `backlogDir/<STATE>/<ID>.md`
    * path, rebuilding from the SQLite row (the source of truth). Existing
    * mirrors are left untouched — this only heals drift, it does not
    * reformat content a human may have edited locally. Returns the keys
@@ -240,8 +240,8 @@ export class SyncService {
     const rebuilt: string[] = [];
     for (const task of this.taskRepository.findAllActive()) {
       if (existsSync(this.pathForTask(task))) continue;
-      this.flushOne(task.key);
-      rebuilt.push(task.key);
+      this.flushOne(task.id);
+      rebuilt.push(task.id);
     }
     return rebuilt;
   }
@@ -273,22 +273,24 @@ export class SyncService {
    */
   pathForTask(task: Task): string {
     const backlogRoot = path.resolve(this.paths.projectRoot, this.paths.backlogDir);
-    const target = path.resolve(backlogRoot, task.state, `${task.key}.md`);
+    // The mirror is named by the committed id (like observations), so it
+    // survives a clone and never collides on a merge.
+    const target = path.resolve(backlogRoot, task.state, `${task.id}.md`);
     if (!isWithin(backlogRoot, target)) {
       throw new Error(
-        `refusing to write task ${task.key}: state '${task.state}' escapes the backlog directory`,
+        `refusing to write task ${task.id}: state '${task.state}' escapes the backlog directory`,
       );
     }
     return target;
   }
 
-  private flushOne(taskKey: string): void {
-    const task = this.taskRepository.findByKey(taskKey);
+  private flushOne(taskId: string): void {
+    const task = this.taskRepository.findById(taskId);
     if (task === null) {
       // Either the row is unknown or it was just soft-deleted. In both
       // cases drop any markdown still sitting under the state folders so
       // the on-disk layout matches the database.
-      this.removeMarkdownForKey(taskKey);
+      this.removeMarkdownForId(taskId);
       return;
     }
 
@@ -297,7 +299,7 @@ export class SyncService {
     this.relocateIfStateChanged(task, targetPath);
 
     const existing = this.markdownIo.read(targetPath);
-    const links = this.resolveLinks?.(task) ?? { epicKey: null, sprintKey: null };
+    const links = this.resolveLinks?.(task) ?? { epicId: null, sprintId: null };
     const labels = this.resolveLabels?.(task) ?? [];
     const dependsOn = this.resolveDependencies?.(task) ?? [];
     // Serialise actors as stable HANDLES, not regenerated ids, so they survive
@@ -315,15 +317,16 @@ export class SyncService {
     });
   }
 
-  private removeMarkdownForKey(taskKey: string): void {
+  private removeMarkdownForId(taskId: string): void {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return;
+    // The mirror is named by the committed id, so the removal is a direct
+    // unlink of `<id>.md` — it can only be in one state folder, but the folder
+    // is not known here (the row may be gone), so every state dir is checked.
     for (const stateDir of readdirSync(root, { withFileTypes: true })) {
       if (!stateDir.isDirectory()) continue;
-      const candidate = path.join(root, stateDir.name, `${taskKey}.md`);
-      if (existsSync(candidate)) {
-        unlinkSync(candidate);
-      }
+      const candidate = path.join(root, stateDir.name, `${taskId}.md`);
+      if (existsSync(candidate)) unlinkSync(candidate);
     }
   }
 
@@ -353,7 +356,7 @@ export class SyncService {
     if (!existsSync(root)) return;
 
     for (const stateDir of safeReaddir(root)) {
-      const candidate = path.join(root, stateDir, `${task.key}.md`);
+      const candidate = path.join(root, stateDir, `${task.id}.md`);
       if (candidate === targetPath) continue;
       if (!existsSync(candidate)) continue;
 
@@ -366,14 +369,17 @@ export class SyncService {
 
 function serialiseTask(
   task: Task,
-  links: { readonly epicKey: string | null; readonly sprintKey: string | null },
+  links: { readonly epicId: string | null; readonly sprintId: string | null },
   labels: readonly string[],
   dependsOn: readonly string[],
   // Actor HANDLES (not ids) so assignee/reporter round-trip on a fresh clone.
   actors: { readonly assignee: string | null; readonly reporter: string },
 ): Record<string, unknown> {
   return {
-    key: task.key,
+    // The committed identity: the v7 UUID, written first so it survives a
+    // clone (the rebuild adopts it instead of minting a new one). It is the
+    // only identity — the human-facing handle is an alias derived from it.
+    id: task.id,
     state: task.state,
     title: task.title,
     description: task.description,
@@ -382,11 +388,10 @@ function serialiseTask(
     depends_on: [...dependsOn],
     estimate: task.estimate,
     context_budget: task.contextBudget,
-    priority: task.priority,
     assignee: actors.assignee,
     reporter: actors.reporter,
-    epic_key: links.epicKey,
-    sprint_key: links.sprintKey,
+    epic_id: links.epicId,
+    sprint_id: links.sprintId,
     reopen_count: task.reopenCount,
     metadata: { ...task.metadata },
     // Git link: persist the STABLE identifiers — branch and PR — so a

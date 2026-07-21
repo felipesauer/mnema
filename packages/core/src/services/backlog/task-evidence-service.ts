@@ -10,6 +10,7 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import type { TaskEvidenceRepository } from '../../storage/sqlite/repositories/task-evidence-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from '../integrity/audit-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Input for {@link TaskEvidenceService.attach}.
@@ -88,10 +89,12 @@ export class TaskEvidenceService {
       });
     }
     const kind: EvidenceKind = rawKind;
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     // `Number.isInteger` rejects NaN (from a CLI `Number('abc')`) and floats
     // (0.5), both of which would otherwise pass the `< 0 || >= length` range
@@ -134,7 +137,7 @@ export class TaskEvidenceService {
       via: input.via,
       run: input.runId,
       data: {
-        task_key: task.key,
+        task_id: task.id,
         criterion_index: input.criterionIndex,
         evidence_kind: kind,
         ref: input.ref,
@@ -153,10 +156,12 @@ export class TaskEvidenceService {
    * @returns Criterion/evidence pairs or a structured error
    */
   forTask(taskKey: string): Result<TaskEvidenceView, MnemaError> {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     const rows = this.evidence.findByTask(task.id);
     const criteria = task.acceptanceCriteria.map((criterion) => ({
       criterion,

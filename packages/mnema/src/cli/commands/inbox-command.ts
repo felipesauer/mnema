@@ -1,5 +1,6 @@
 import type { Decision } from '@mnema/core/domain/entities/decision.js';
 import type { Task } from '@mnema/core/domain/entities/task.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { SlaBreach, WipBreach } from '@mnema/core/services/backlog/inbox-service.js';
 import { pc } from '@mnema/core/utils/colors.js';
 import type { Command } from 'commander';
@@ -77,7 +78,9 @@ function formatSection(
   lines.push(`${badge} ${pc.bold(label)} (${tasks.length})`);
   for (const task of tasks) {
     const since = formatTimestamp(task.updatedAt, mode);
-    lines.push(`  ${pc.bold(task.key.padEnd(12))} ${task.title.padEnd(40)} ${pc.dim(since)}`);
+    lines.push(
+      `  ${pc.bold(deriveAlias('task', task.id).padEnd(12))} ${task.title.padEnd(40)} ${pc.dim(since)}`,
+    );
   }
   return lines.join('\n');
 }

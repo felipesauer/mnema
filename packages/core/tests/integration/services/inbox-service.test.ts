@@ -68,12 +68,12 @@ describe('InboxService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function insertTask(key: string, state: TaskState): void {
-    tasks.insert({ key, projectId, title: key, reporterId: actorId, state });
+  function insertTask(title: string, state: TaskState): string {
+    return tasks.insert({ projectId, title, reporterId: actorId, state }).id;
   }
 
   it('returns empty queues when no items need attention', () => {
-    insertTask('TEST-1', TaskState.Draft);
+    insertTask('Task One', TaskState.Draft);
     const view = inbox.view();
     expect(view.awaitingReview).toHaveLength(0);
     expect(view.blocked).toHaveLength(0);
@@ -81,15 +81,15 @@ describe('InboxService', () => {
   });
 
   it('lists tasks in IN_REVIEW under awaitingReview', () => {
-    insertTask('TEST-1', TaskState.InReview);
+    const id = insertTask('Task One', TaskState.InReview);
     const view = inbox.view();
-    expect(view.awaitingReview.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(view.awaitingReview.map((t) => t.id)).toEqual([id]);
   });
 
   it('lists BLOCKED tasks under blocked', () => {
-    insertTask('TEST-1', TaskState.Blocked);
+    const id = insertTask('Task One', TaskState.Blocked);
     const view = inbox.view();
-    expect(view.blocked.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(view.blocked.map((t) => t.id)).toEqual([id]);
   });
 
   it('lists proposed decisions under pendingDecisions and excludes accepted ones', () => {
@@ -116,16 +116,16 @@ describe('InboxService', () => {
     });
     // Even if a task somehow has IN_REVIEW state, the inbox under lean
     // should not surface it — the concept does not exist for that workflow.
-    insertTask('TEST-1', TaskState.InReview);
-    insertTask('TEST-2', TaskState.Blocked);
+    insertTask('Task One', TaskState.InReview);
+    insertTask('Task Two', TaskState.Blocked);
     const view = leanInbox.view();
     expect(view.awaitingReview).toHaveLength(0);
     expect(view.blocked).toHaveLength(0);
   });
 
   it('view() reads the active task list once, not once per breach computation', () => {
-    insertTask('TEST-1', TaskState.InReview);
-    insertTask('TEST-2', TaskState.Draft);
+    insertTask('Task One', TaskState.InReview);
+    insertTask('Task Two', TaskState.Draft);
 
     const lean = vi.spyOn(tasks, 'findActiveLean');
     const legacy = vi.spyOn(tasks, 'findAllActive');

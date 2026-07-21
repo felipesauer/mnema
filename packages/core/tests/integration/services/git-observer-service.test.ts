@@ -87,7 +87,7 @@ describe('GitObserverService links the unambiguous in-progress task (MNEMA-230)'
   function inProgressTask(title: string): string {
     const created = container.task.create({ projectKey: 'TEST', title, actor: 'daniel' });
     if (!created.ok) throw new Error('create failed');
-    const key = created.value.key;
+    const key = created.value.id;
     container.task.transition({
       taskKey: key,
       action: 'submit',

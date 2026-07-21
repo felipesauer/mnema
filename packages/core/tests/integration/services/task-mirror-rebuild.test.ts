@@ -9,7 +9,7 @@ import { createServiceContainer, type ServiceContainer } from '@/services/servic
 
 /**
  * Recovery path for the backlog mirror: a task has a SQLite row but its
- * `backlog/<STATE>/<KEY>.md` file is gone (a project from before the
+ * `backlog/<STATE>/<ID>.md` file is gone (a project from before the
  * mirror existed, or a file deleted by hand). `SyncService.rebuildMirrors`
  * re-creates the missing file from the row without touching mirrors that
  * are already present.
@@ -35,7 +35,7 @@ describe('task mirror rebuild', () => {
   let projectRoot: string;
   let container: ServiceContainer;
   const backlogDir = () => path.join(projectRoot, '.mnema/backlog');
-  const mirrorFor = (state: string, key: string) => path.join(backlogDir(), state, `${key}.md`);
+  const mirrorFor = (state: string, id: string) => path.join(backlogDir(), state, `${id}.md`);
 
   beforeEach(() => {
     projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-task-rebuild-'));
@@ -54,31 +54,31 @@ describe('task mirror rebuild', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  /** Creates one task (DRAFT) and returns its key; its mirror is written on create. */
-  function seedTask(title: string): string {
+  /** Creates one task (DRAFT); its mirror (named by id) is written on create. */
+  function seedTask(title: string): { id: string } {
     const task = container.task.create({ projectKey: 'TEST', title, actor: 'daniel' });
     if (!task.ok) throw new Error('setup: task create failed');
-    return task.value.key;
+    return { id: task.value.id };
   }
 
   it('recreates a missing task mirror from the SQLite row', () => {
-    const key = seedTask('A real task');
+    const { id } = seedTask('A real task');
     // Simulate drift: the row is present, the file is gone.
-    rmSync(mirrorFor('DRAFT', key), { force: true });
-    expect(existsSync(mirrorFor('DRAFT', key))).toBe(false);
+    rmSync(mirrorFor('DRAFT', id), { force: true });
+    expect(existsSync(mirrorFor('DRAFT', id))).toBe(false);
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([key]);
-    expect(existsSync(mirrorFor('DRAFT', key))).toBe(true);
+    expect(rebuilt).toEqual([id]);
+    expect(existsSync(mirrorFor('DRAFT', id))).toBe(true);
   });
 
   it("lands the rebuilt mirror in the task's current state folder", () => {
-    const key = seedTask('Moves through states');
+    const { id } = seedTask('Moves through states');
     // Advance the task so its state — and therefore its mirror folder —
     // is no longer the initial one, then delete the mirror.
     const moved = container.task.transition({
-      taskKey: key,
+      taskKey: id,
       action: 'submit',
       payload: {
         title: 'Moves through states',
@@ -91,21 +91,21 @@ describe('task mirror rebuild', () => {
     if (!moved.ok) throw new Error(`setup: submit failed (${moved.error.kind})`);
     const state = moved.value.state;
     expect(state).not.toBe('DRAFT');
-    rmSync(mirrorFor(state, key), { force: true });
+    rmSync(mirrorFor(state, id), { force: true });
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([key]);
+    expect(rebuilt).toEqual([id]);
     // Recreated under the new state, not the initial DRAFT folder.
-    expect(existsSync(mirrorFor(state, key))).toBe(true);
-    expect(existsSync(mirrorFor('DRAFT', key))).toBe(false);
+    expect(existsSync(mirrorFor(state, id))).toBe(true);
+    expect(existsSync(mirrorFor('DRAFT', id))).toBe(false);
   });
 
   it('is idempotent — a second rebuild writes nothing', () => {
-    const key = seedTask('Idempotent');
-    rmSync(mirrorFor('DRAFT', key), { force: true });
+    const { id } = seedTask('Idempotent');
+    rmSync(mirrorFor('DRAFT', id), { force: true });
 
-    expect(container.sync.rebuildMirrors()).toEqual([key]);
+    expect(container.sync.rebuildMirrors()).toEqual([id]);
     expect(container.sync.rebuildMirrors()).toEqual([]);
   });
 
@@ -113,12 +113,12 @@ describe('task mirror rebuild', () => {
     const kept = seedTask('Kept');
     const gone = seedTask('Gone');
     // Only the second task's mirror drifts.
-    rmSync(mirrorFor('DRAFT', gone), { force: true });
+    rmSync(mirrorFor('DRAFT', gone.id), { force: true });
 
     const rebuilt = container.sync.rebuildMirrors();
 
-    expect(rebuilt).toEqual([gone]);
-    expect(existsSync(mirrorFor('DRAFT', kept))).toBe(true);
-    expect(existsSync(mirrorFor('DRAFT', gone))).toBe(true);
+    expect(rebuilt).toEqual([gone.id]);
+    expect(existsSync(mirrorFor('DRAFT', kept.id))).toBe(true);
+    expect(existsSync(mirrorFor('DRAFT', gone.id))).toBe(true);
   });
 });

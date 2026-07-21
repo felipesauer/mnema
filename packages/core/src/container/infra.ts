@@ -21,7 +21,6 @@ import { ObservationRepository } from '../storage/sqlite/repositories/observatio
 import { ProjectRepository } from '../storage/sqlite/repositories/project-repository.js';
 import { ProvenanceLinkRepository } from '../storage/sqlite/repositories/provenance-link-repository.js';
 import { SkillRepository } from '../storage/sqlite/repositories/skill-repository.js';
-import { SprintMetricRepository } from '../storage/sqlite/repositories/sprint-metric-repository.js';
 import { SprintRepository } from '../storage/sqlite/repositories/sprint-repository.js';
 import { TaskEvidenceRepository } from '../storage/sqlite/repositories/task-evidence-repository.js';
 import { TaskRepository } from '../storage/sqlite/repositories/task-repository.js';
@@ -52,7 +51,6 @@ export interface Infra {
     readonly agentRuns: AgentRunRepository;
     readonly agentPlans: AgentPlanRepository;
     readonly sprints: SprintRepository;
-    readonly sprintMetrics: SprintMetricRepository;
     readonly attachments: AttachmentRepository;
     readonly decisions: DecisionRepository;
     readonly dependencies: DependencyRepository;
@@ -135,7 +133,6 @@ export function createInfra(
       agentRuns: new AgentRunRepository(adapter),
       agentPlans: new AgentPlanRepository(adapter),
       sprints: new SprintRepository(adapter),
-      sprintMetrics: new SprintMetricRepository(adapter),
       attachments: new AttachmentRepository(adapter),
       decisions: new DecisionRepository(adapter),
       dependencies: new DependencyRepository(adapter),

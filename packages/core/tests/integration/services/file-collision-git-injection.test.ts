@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { FileCollisionService } from '@/services/lint/file-collision-service.js';
 import { MigrationRunner } from '@/storage/sqlite/migration-runner.js';
 import { EpicRepository } from '@/storage/sqlite/repositories/epic-repository.js';
@@ -76,21 +77,21 @@ describe('FileCollisionService git argument injection', () => {
     rmSync(repo, { recursive: true, force: true });
   });
 
-  /** Seeds a task in the epic carrying one commit-evidence ref. */
-  function seed(key: string, epicId: string, ref: string): void {
+  /** Seeds a task in the epic carrying one commit-evidence ref; returns its id. */
+  function seed(title: string, epicId: string, ref: string): string {
     const task = tasks.insert({
-      key,
       projectId,
-      title: key,
+      title,
       reporterId: actorId,
       epicId,
       acceptanceCriteria: ['ships'],
     });
     evidence.insert({ taskId: task.id, criterionIndex: 0, kind: 'commit', ref });
+    return task.id;
   }
 
   it('does not write an arbitrary file when a commit ref is `--output=<path>`', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E' });
+    const epic = epics.insert({ projectId, title: 'E' });
     const sink = path.join(repo, 'PWNED.txt');
     // Two tasks so the pair comparison runs; both carry a hostile ref.
     seed('T-A', epic.id, `--output=${sink}`);
@@ -104,7 +105,7 @@ describe('FileCollisionService git argument injection', () => {
       new SprintRepository(adapter),
       repo,
     );
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-1' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
 
     // The scan completes (advisory, never throws) and, crucially, the
     // hostile ref wrote nothing — the guard neutralised it.
@@ -117,10 +118,10 @@ describe('FileCollisionService git argument injection', () => {
   });
 
   it('still resolves a legitimate commit SHA to its files', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-2', projectId, title: 'E' });
+    const epic = epics.insert({ projectId, title: 'E' });
     const sha = git(['rev-parse', 'HEAD']).trim();
-    seed('T-A', epic.id, sha);
-    seed('T-B', epic.id, sha);
+    const taskAId = seed('T-A', epic.id, sha);
+    const taskBId = seed('T-B', epic.id, sha);
 
     const svc = new FileCollisionService(
       tasks,
@@ -129,14 +130,16 @@ describe('FileCollisionService git argument injection', () => {
       new SprintRepository(adapter),
       repo,
     );
-    const result = svc.scan({ kind: 'epic', key: 'TEST-EPIC-2' });
+    const result = svc.scan({ kind: 'epic', key: epic.id });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       // Both tasks touch file.txt (the only file in the initial commit),
       // so they collide on it — proving the guard did not break resolution.
+      // The report carries the display alias, not identity.
+      const [aliasA, aliasB] = [deriveAlias('task', taskAId), deriveAlias('task', taskBId)].sort();
       expect(result.value.collisions).toEqual([
-        { taskA: 'T-A', taskB: 'T-B', files: ['file.txt'] },
+        { taskA: aliasA, taskB: aliasB, files: ['file.txt'] },
       ]);
     }
   });

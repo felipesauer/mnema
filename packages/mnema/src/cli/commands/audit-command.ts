@@ -57,7 +57,7 @@ interface QueryOptions {
   readonly actor?: string;
   readonly via?: string;
   readonly run?: string;
-  readonly taskKey?: string;
+  readonly task?: string;
   readonly since?: string;
   readonly until?: string;
   readonly limit?: number;
@@ -146,8 +146,8 @@ export class AuditCommand {
       .option('--via <handle>', 'Filter by agent (via) handle')
       .option('--run <runId>', 'Filter by agent run id')
       .option(
-        '--task-key <key>',
-        'Filter by entity key — matches task, decision (MNEMA-ADR-N) or any event whose `data.key` / `data.task_key` matches',
+        '--task <handle>',
+        'Filter to one task — its committed id, a short alias (t-3a9f), or a hash prefix',
       )
       .option(
         '--since <duration>',
@@ -160,12 +160,20 @@ export class AuditCommand {
       .option('--iso', 'Show timestamps as ISO8601 instead of relative', false)
       .action(async (options: QueryOptions) => {
         await withCliContext(({ container }) => {
+          // The audit filter matches a task's committed id, so resolve the
+          // user's handle (id/alias/hash prefix) to that id first. An
+          // unresolvable handle is passed through and simply matches nothing.
+          let taskId: string | undefined;
+          if (options.task !== undefined) {
+            const resolved = container.task.findByKey(options.task);
+            taskId = resolved.ok ? resolved.value.id : options.task;
+          }
           const events = container.auditQuery.run({
             kind: options.kind,
             actor: options.actor,
             via: options.via,
             run: options.run,
-            taskKey: options.taskKey,
+            taskKey: taskId,
             since: options.since,
             until: options.until,
             limit: options.limit,

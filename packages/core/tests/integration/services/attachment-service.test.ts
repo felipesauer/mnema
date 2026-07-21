@@ -25,6 +25,7 @@ describe('AttachmentService + FileStore', () => {
   let attachmentsDir: string;
   let adapter: SqliteAdapter;
   let service: AttachmentService;
+  let taskId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-attach-svc-'));
@@ -53,12 +54,11 @@ describe('AttachmentService + FileStore', () => {
 
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     const reporterId = actors.upsert('daniel', ActorKind.Human);
-    tasks.insert({
-      key: 'TEST-1',
+    taskId = tasks.insert({
       projectId: project.id,
       title: 'A',
       reporterId,
-    });
+    }).id;
   });
 
   afterEach(() => {
@@ -71,7 +71,7 @@ describe('AttachmentService + FileStore', () => {
     writeFileSync(source, 'hello attachments\n', 'utf-8');
 
     const result = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: source,
       actor: 'daniel',
     });
@@ -91,9 +91,9 @@ describe('AttachmentService + FileStore', () => {
     writeFileSync(source1, 'identical\n', 'utf-8');
     writeFileSync(source2, 'identical\n', 'utf-8');
 
-    const first = service.attachToTask({ taskKey: 'TEST-1', sourcePath: source1, actor: 'daniel' });
+    const first = service.attachToTask({ taskKey: taskId, sourcePath: source1, actor: 'daniel' });
     const second = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: source2,
       actor: 'daniel',
     });
@@ -108,7 +108,7 @@ describe('AttachmentService + FileStore', () => {
 
   it('returns ATTACHMENT_SOURCE_NOT_FOUND when source is missing', () => {
     const result = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: path.join(tempRoot, 'missing.txt'),
       actor: 'daniel',
     });
@@ -134,9 +134,9 @@ describe('AttachmentService + FileStore', () => {
   it('listForTask returns attachments in order and respects unknown task', () => {
     const source = path.join(tempRoot, 'note.txt');
     writeFileSync(source, 'first\n', 'utf-8');
-    service.attachToTask({ taskKey: 'TEST-1', sourcePath: source, actor: 'daniel' });
+    service.attachToTask({ taskKey: taskId, sourcePath: source, actor: 'daniel' });
 
-    const list = service.listForTask('TEST-1');
+    const list = service.listForTask(taskId);
     expect(list.ok).toBe(true);
     if (!list.ok) return;
     expect(list.value).toHaveLength(1);
@@ -149,14 +149,14 @@ describe('AttachmentService + FileStore', () => {
     const source = path.join(tempRoot, 'dup.txt');
     writeFileSync(source, 'identical body\n', 'utf-8');
     const first = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: source,
       actor: 'daniel',
     });
     expect(first.ok).toBe(true);
     if (!first.ok) return;
     const second = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: source,
       actor: 'daniel',
     });
@@ -165,7 +165,7 @@ describe('AttachmentService + FileStore', () => {
     // Same row id returned both times.
     expect(second.value.id).toBe(first.value.id);
 
-    const list = service.listForTask('TEST-1');
+    const list = service.listForTask(taskId);
     if (!list.ok) return;
     expect(list.value).toHaveLength(1);
   });
@@ -174,7 +174,7 @@ describe('AttachmentService + FileStore', () => {
     const source = path.join(tempRoot, 'paths.bin');
     writeFileSync(source, 'paths\n', 'utf-8');
     const result = service.attachToTask({
-      taskKey: 'TEST-1',
+      taskKey: taskId,
       sourcePath: source,
       actor: 'daniel',
     });

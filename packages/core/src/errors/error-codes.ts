@@ -10,6 +10,7 @@ export enum ErrorCode {
   VersionMismatch = 'VERSION_MISMATCH',
 
   TaskNotFound = 'TASK_NOT_FOUND',
+  AmbiguousAlias = 'AMBIGUOUS_ALIAS',
   GateFailed = 'GATE_FAILED',
   InvalidTransition = 'INVALID_TRANSITION',
   TaskKeyExists = 'TASK_KEY_EXISTS',
@@ -89,8 +90,6 @@ export enum ErrorCode {
 
   EvidenceCriterionOutOfRange = 'EVIDENCE_CRITERION_OUT_OF_RANGE',
   EvidenceDuplicate = 'EVIDENCE_DUPLICATE',
-
-  SprintMetricDuplicate = 'SPRINT_METRIC_DUPLICATE',
 
   ValidationFailed = 'VALIDATION_FAILED',
 }

@@ -28,6 +28,11 @@ export type MnemaError =
     }
   | { readonly kind: ErrorCode.TaskNotFound; readonly taskKey: string }
   | {
+      readonly kind: ErrorCode.AmbiguousAlias;
+      readonly query: string;
+      readonly matches: readonly string[];
+    }
+  | {
       readonly kind: ErrorCode.GateFailed;
       readonly taskKey: string;
       readonly action: string;
@@ -95,15 +100,16 @@ export type MnemaError =
        */
       readonly taskKey: string;
       readonly currentUpdatedAt: string;
-      readonly entity?: 'task' | 'decision' | 'sprint';
+      readonly entity?: 'task' | 'decision' | 'sprint' | 'epic';
     }
   | {
       readonly kind: ErrorCode.KeyCollision;
       /**
-       * The table whose `key` UNIQUE constraint was violated, e.g. `tasks`.
-       * Two writers sharing one `state.db` each minted the same sequential
-       * key (the COUNT(*)-based `nextSequence` is check-then-act). Retryable:
-       * a re-run re-reads the now-higher count and gets a fresh key.
+       * The table whose `key` UNIQUE constraint was violated — `decisions`,
+       * the only entity that still mints a sequential key. Two writers sharing
+       * one `state.db` each derived the same one (the COUNT(*)-based
+       * `nextSequence` is check-then-act). Retryable: a re-run re-reads the
+       * now-higher count and gets a fresh key.
        */
       readonly table: string;
     }
@@ -233,16 +239,11 @@ export type MnemaError =
       readonly ref: string;
     }
   | {
-      readonly kind: ErrorCode.SprintMetricDuplicate;
-      readonly sprintKey: string;
-      readonly name: string;
-    }
-  | {
       /**
        * A field value failed a domain invariant before any storage write —
-       * e.g. a non-integer/negative `context_budget` or a non-finite metric
-       * `target`. Carries the same {@link ErrorIssue} shape as Zod-sourced
-       * failures so producers (CLI, MCP, importers) reject identically.
+       * e.g. a non-integer/negative `context_budget`. Carries the same
+       * {@link ErrorIssue} shape as Zod-sourced failures so producers (CLI,
+       * MCP, importers) reject identically.
        */
       readonly kind: ErrorCode.ValidationFailed;
       readonly issues: ErrorIssue[];

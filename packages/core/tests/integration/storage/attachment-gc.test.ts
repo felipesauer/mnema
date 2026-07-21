@@ -25,6 +25,7 @@ describe('attachment GC (orphan reclamation)', () => {
   let adapter: SqliteAdapter;
   let repository: AttachmentRepository;
   let service: AttachmentService;
+  let taskId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-attach-gc-'));
@@ -53,7 +54,7 @@ describe('attachment GC (orphan reclamation)', () => {
 
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     const reporterId = actors.upsert('daniel', ActorKind.Human);
-    tasks.insert({ key: 'TEST-1', projectId: project.id, title: 'A', reporterId });
+    taskId = tasks.insert({ projectId: project.id, title: 'A', reporterId }).id;
   });
 
   afterEach(() => {
@@ -61,11 +62,11 @@ describe('attachment GC (orphan reclamation)', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  /** Attaches `content` to TEST-1 and returns the persisted attachment row. */
+  /** Attaches `content` to the fixture task and returns the persisted attachment row. */
   function attach(name: string, content: string) {
     const source = path.join(tempRoot, name);
     writeFileSync(source, content, 'utf-8');
-    const result = service.attachToTask({ taskKey: 'TEST-1', sourcePath: source, actor: 'daniel' });
+    const result = service.attachToTask({ taskKey: taskId, sourcePath: source, actor: 'daniel' });
     if (!result.ok) throw new Error(`attach failed: ${result.error.kind}`);
     return result.value;
   }

@@ -18,6 +18,13 @@ import type { TaskRepository } from '@/storage/sqlite/repositories/task-reposito
 describe('SyncService.flushAll crash safety', () => {
   let root: string;
 
+  // The buffer entry now carries the task's committed id (the buffer's
+  // `taskKey` field name is unchanged, but flushOne resolves it via findById).
+  const T1 = '019f7700-0000-7000-8000-000000000001';
+  const T2 = '019f7700-0000-7000-8000-000000000002';
+  const T3 = '019f7700-0000-7000-8000-000000000003';
+  const T4 = '019f7700-0000-7000-8000-000000000004';
+
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), 'mnema-flush-crash-'));
   });
@@ -26,13 +33,13 @@ describe('SyncService.flushAll crash safety', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  /** A task repository that returns a fully-shaped DRAFT task for any key. */
+  /** A task repository that returns a fully-shaped DRAFT task for any id. */
   const taskRepo = {
-    findByKey: (key: string): Task =>
+    findById: (id: string): Task =>
       ({
-        key,
+        id,
         state: 'DRAFT',
-        title: `Task ${key}`,
+        title: `Task ${id}`,
         description: '',
         acceptanceCriteria: [],
         estimate: null,
@@ -61,13 +68,13 @@ describe('SyncService.flushAll crash safety', () => {
     return { io, writes: () => writeCount };
   }
 
-  function entry(taskKey: string): SyncBufferEntry {
+  function entry(taskId: string): SyncBufferEntry {
     return {
       v: 1,
       at: new Date().toISOString(),
       kind: 'task_transitioned',
-      taskKey,
-      mdTarget: `.mnema/backlog/DRAFT/${taskKey}.md`,
+      taskKey: taskId,
+      mdTarget: `.mnema/backlog/DRAFT/${taskId}.md`,
     };
   }
 
@@ -82,15 +89,15 @@ describe('SyncService.flushAll crash safety', () => {
 
   it('re-appends the un-flushed remainder when a write fails mid-batch, then completes on retry', () => {
     const buffer = new SyncBuffer(root);
-    for (const k of ['T-1', 'T-2', 'T-3', 'T-4']) buffer.append(entry(k));
+    for (const id of [T1, T2, T3, T4]) buffer.append(entry(id));
 
-    // Fail on the 2nd markdown write: T-1 written, T-2 fails, T-3/T-4 untouched.
+    // Fail on the 2nd markdown write: T1 written, T2 fails, T3/T4 untouched.
     const failing = failingMarkdownIo(2);
     expect(() => service(failing.io, buffer).flushAll()).toThrow(/injected write failure/);
 
-    // The buffer must now hold the remainder (T-2, T-3, T-4) — not empty.
+    // The buffer must now hold the remainder (T2, T3, T4) — not empty.
     const remaining = buffer.readAll().map((e) => e.taskKey);
-    expect(remaining).toEqual(['T-2', 'T-3', 'T-4']);
+    expect(remaining).toEqual([T2, T3, T4]);
 
     // A second flush with a healthy MarkdownIo drains everything.
     const healthy = failingMarkdownIo(Number.POSITIVE_INFINITY);
@@ -101,17 +108,17 @@ describe('SyncService.flushAll crash safety', () => {
 
   it('keeps every entry when the very first write fails', () => {
     const buffer = new SyncBuffer(root);
-    for (const k of ['T-1', 'T-2']) buffer.append(entry(k));
+    for (const id of [T1, T2]) buffer.append(entry(id));
 
     const failing = failingMarkdownIo(1);
     expect(() => service(failing.io, buffer).flushAll()).toThrow();
 
-    expect(buffer.readAll().map((e) => e.taskKey)).toEqual(['T-1', 'T-2']);
+    expect(buffer.readAll().map((e) => e.taskKey)).toEqual([T1, T2]);
   });
 
   it('drops nothing and leaves the buffer empty on a fully successful flush', () => {
     const buffer = new SyncBuffer(root);
-    for (const k of ['T-1', 'T-2']) buffer.append(entry(k));
+    for (const id of [T1, T2]) buffer.append(entry(id));
 
     const healthy = failingMarkdownIo(Number.POSITIVE_INFINITY);
     service(healthy.io, buffer).flushAll();

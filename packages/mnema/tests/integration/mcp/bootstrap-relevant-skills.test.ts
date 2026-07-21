@@ -101,14 +101,17 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
       },
     });
     // A task about the notifier, driven to IN_PROGRESS.
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Wire the notifier channel', acceptance_criteria: ['sends'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Wire the notifier channel', acceptance_criteria: ['sends'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Wire the notifier channel',
         description: 'Add a new notifier dispatcher channel.',
         acceptance_criteria: ['sends'],
@@ -117,7 +120,7 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
 
     const boot = payload(
@@ -154,14 +157,17 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
         content: 'Tune the runtime.',
       },
     });
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Ship the invoice export', acceptance_criteria: ['exports'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Ship the invoice export', acceptance_criteria: ['exports'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Ship the invoice export',
         description: 'Generate a CSV with the monthly invoices.',
         acceptance_criteria: ['exports'],
@@ -170,7 +176,7 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
 
     const boot = payload(
@@ -194,14 +200,17 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
         content: 'Register the channel, add config, cover it with a test.',
       },
     });
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Wire the notifier channel', acceptance_criteria: ['sends'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Wire the notifier channel', acceptance_criteria: ['sends'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Wire the notifier channel',
         description: 'Add a new notifier dispatcher channel.',
         acceptance_criteria: ['sends'],
@@ -210,7 +219,7 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
 
     const boot = payload(
@@ -224,7 +233,7 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     const suggest = payload(
       (await harness.client.callTool({
         name: 'skill_suggest',
-        arguments: { task_key: 'TEST-1' },
+        arguments: { task_key: taskId },
       })) as CallToolResult,
     );
     const suggested = (suggest.suggestions as Array<{ key: string | null }>).map((s) => s.key);
@@ -263,14 +272,17 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
         content: 'Register the callback route and exchange the code for a token.',
       },
     });
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Implement the oauth callback', acceptance_criteria: ['tokens'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Implement the oauth callback', acceptance_criteria: ['tokens'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Implement the oauth callback',
         description: 'Handle the oauth callback and exchange the authorization code.',
         acceptance_criteria: ['tokens'],
@@ -279,13 +291,13 @@ describe('context_bootstrap injects skills relevant to the active task (MNEMA-23
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
 
     const suggest = payload(
       (await harness.client.callTool({
         name: 'skill_suggest',
-        arguments: { task_key: 'TEST-1' },
+        arguments: { task_key: taskId },
       })) as CallToolResult,
     );
     const suggested = (suggest.suggestions as Array<{ key: string | null }>).map((s) => s.key);

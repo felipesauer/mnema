@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 
 /**
@@ -16,12 +17,13 @@ export const ARCHIVE_DIRNAME = '.archive';
 
 /** One terminal-task mirror the archive would move (or moved). */
 export interface ArchivedMirror {
+  /** Short display alias of the archived task. */
   readonly key: string;
   /** The terminal state whose folder the mirror was in (also the archive subfolder). */
   readonly state: string;
-  /** Absolute path the mirror was moved from (`backlog/<STATE>/<KEY>.md`). */
+  /** Absolute path the mirror was moved from (`backlog/<STATE>/<ID>.md`). */
   readonly fromPath: string;
-  /** Absolute path the mirror was moved to (`backlog/.archive/<STATE>/<KEY>.md`, `.N` on collision). */
+  /** Absolute path the mirror was moved to (`backlog/.archive/<STATE>/<ID>.md`, `.N` on collision). */
   readonly toPath: string;
 }
 
@@ -102,7 +104,7 @@ export class ArchiveService {
     const archived: ArchivedMirror[] = [];
 
     for (const task of this.taskRepository.findTerminalUpdatedBefore(cutoff)) {
-      const fromPath = this.pathForStateMirror(backlogRoot, task.state, task.key);
+      const fromPath = this.pathForStateMirror(backlogRoot, task.state, task.id);
       // The row is the source of truth; a missing mirror is nothing to move.
       if (!existsSync(fromPath)) continue;
 
@@ -111,39 +113,39 @@ export class ArchiveService {
       // escape the backlog root, on either the source or the destination side.
       if (!isWithin(backlogRoot, fromPath) || !isWithin(backlogRoot, destDir)) {
         throw new Error(
-          `refusing to archive task ${task.key}: state '${task.state}' escapes the backlog directory`,
+          `refusing to archive task ${deriveAlias('task', task.id)}: state '${task.state}' escapes the backlog directory`,
         );
       }
 
-      const toPath = this.resolveDestination(destDir, task.key, dryRun);
+      const toPath = this.resolveDestination(destDir, task.id, dryRun);
       if (!dryRun) {
         mkdirSync(destDir, { recursive: true });
         renameSync(fromPath, toPath);
       }
-      archived.push({ key: task.key, state: task.state, fromPath, toPath });
+      archived.push({ key: deriveAlias('task', task.id), state: task.state, fromPath, toPath });
     }
 
     return { archived, movedCount: dryRun ? 0 : archived.length, dryRun };
   }
 
-  /** Absolute `backlog/<STATE>/<KEY>.md`. */
-  private pathForStateMirror(backlogRoot: string, state: string, key: string): string {
-    return path.resolve(backlogRoot, state, `${key}.md`);
+  /** Absolute `backlog/<STATE>/<ID>.md`. */
+  private pathForStateMirror(backlogRoot: string, state: string, id: string): string {
+    return path.resolve(backlogRoot, state, `${id}.md`);
   }
 
   /**
-   * The archive destination for a key, disambiguated on collision the same way
-   * the quarantine sweep does: `<KEY>.md`, then `<KEY>.1.md`, `<KEY>.2.md`, …
+   * The archive destination for a task id, disambiguated on collision the same
+   * way the quarantine sweep does: `<ID>.md`, then `<ID>.1.md`, `<ID>.2.md`, …
    * In a dry run the filesystem is not probed for existing `.N` names — the
    * reported path is the first candidate, since nothing is actually written.
    */
-  private resolveDestination(destDir: string, key: string, dryRun: boolean): string {
-    const base = path.join(destDir, `${key}.md`);
+  private resolveDestination(destDir: string, id: string, dryRun: boolean): string {
+    const base = path.join(destDir, `${id}.md`);
     if (dryRun) return base;
     let dest = base;
     let n = 1;
     while (existsSync(dest)) {
-      dest = path.join(destDir, `${key}.${n}.md`);
+      dest = path.join(destDir, `${id}.${n}.md`);
       n += 1;
     }
     return dest;

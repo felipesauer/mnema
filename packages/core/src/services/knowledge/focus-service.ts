@@ -1,3 +1,4 @@
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import type { DependencyService } from '../backlog/dependency-service.js';
 import type { TaskService } from '../backlog/task-service.js';
@@ -7,9 +8,11 @@ import type { IdentityService } from '../integrity/identity-service.js';
 export interface Focus {
   /** A single actionable line, ready to drop into a reminder. */
   readonly line: string;
-  /** The task the actor should be on, if any. */
+  /** The task the actor should be on, if any. `key` carries the derived task
+   * alias (e.g. `t-3a9f`) — display ergonomics, not the identity. */
   readonly activeTask: { readonly key: string; readonly title: string } | null;
-  /** The highest-priority ready task, when nothing is in progress. */
+  /** The next ready task, when nothing is in progress. `key` carries the
+   * derived task alias. */
   readonly nextTask: { readonly key: string; readonly title: string } | null;
   /** Machine-readable disposition, mirroring context_bootstrap.next_action. */
   readonly focus: 'resume' | 'start' | 'idle';
@@ -72,30 +75,32 @@ export class FocusService {
 
     if (active !== undefined) {
       const isMine = ownActive !== undefined;
+      const activeAlias = deriveAlias('task', active.id);
       return {
         focus: 'resume',
-        activeTask: { key: active.key, title: active.title },
+        activeTask: { key: activeAlias, title: active.title },
         nextTask: null,
         activeIsMine: isMine,
         // "resume it" is only honest when the task is the actor's own —
         // telling Alice to resume Bob's task invites her to work under his
-        // key. Name the other-actor case so the reader coordinates instead.
+        // identity. Name the other-actor case so the reader coordinates instead.
         line: isMine
-          ? `active: ${active.key} (${active.title}) — resume it; finish before starting new work`
-          : `active: ${active.key} (${active.title}) — assigned to another actor; coordinate or pick the next ready task`,
+          ? `active: ${activeAlias} (${active.title}) — resume it; finish before starting new work`
+          : `active: ${activeAlias} (${active.title}) — assigned to another actor; coordinate or pick the next ready task`,
       };
     }
 
     const readyResult = this.dependencies.ready();
     const ready = readyResult.ok ? readyResult.value : [];
-    const top = [...ready].sort((a, b) => a.priority - b.priority || a.key.localeCompare(b.key))[0];
+    const top = [...ready].sort((a, b) => a.id.localeCompare(b.id))[0];
     if (top !== undefined) {
+      const topAlias = deriveAlias('task', top.id);
       return {
         focus: 'start',
         activeTask: null,
-        nextTask: { key: top.key, title: top.title },
+        nextTask: { key: topAlias, title: top.title },
         activeIsMine: false,
-        line: `no task in progress — next: task_start ${top.key} (${top.title})`,
+        line: `no task in progress — next: task_start ${topAlias} (${top.title})`,
       };
     }
 

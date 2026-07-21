@@ -63,15 +63,15 @@ describe('SyncRebuild', () => {
     const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(draftDir, { recursive: true });
 
+    const id = '019f7700-0000-7000-8000-000000000001';
     const md = `---
 mnema:
-  key: TEST-1
+  id: ${id}
   state: DRAFT
   title: Imported task
   description: ''
   acceptance_criteria: []
   estimate: null
-  priority: 3
   reporter: daniel
   reopen_count: 0
   metadata: {}
@@ -79,14 +79,14 @@ mnema:
 
 # Imported task
 `;
-    writeFileSync(path.join(draftDir, 'TEST-1.md'), md, 'utf-8');
+    writeFileSync(path.join(draftDir, `${id}.md`), md, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.tasksScanned).toBe(1);
     expect(summary.tasksUpserted).toBe(1);
 
     const list = container.task.list();
-    expect(list.map((t) => t.key)).toEqual(['TEST-1']);
+    expect(list.map((t) => t.id)).toEqual([id]);
     expect(list[0]?.title).toBe('Imported task');
   });
 
@@ -107,21 +107,28 @@ mnema:
   });
 
   it('updates state when the markdown lives in a different state folder', () => {
-    container.task.create({ projectKey: 'TEST', title: 'Move via fs', actor: 'daniel' });
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Move via fs',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
 
-    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', 'TEST-1.md');
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${id}.md`);
     const readyDir = path.join(root, '.mnema/backlog', 'READY');
     mkdirSync(readyDir, { recursive: true });
 
     const original = readFileSync(draftFile, 'utf-8');
-    writeFileSync(path.join(readyDir, 'TEST-1.md'), original.replace('DRAFT', 'READY'), 'utf-8');
+    writeFileSync(path.join(readyDir, `${id}.md`), original.replace('DRAFT', 'READY'), 'utf-8');
     rmSync(draftFile, { force: true });
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.tasksUpserted).toBe(1);
     expect(summary.conflicts).toEqual([]);
 
-    const reloaded = container.task.findByKey('TEST-1');
+    const reloaded = container.task.findByKey(id);
     expect(reloaded.ok).toBe(true);
     if (!reloaded.ok) return;
     expect(reloaded.value.state).toBe('READY');
@@ -131,7 +138,7 @@ mnema:
     // regressed DONE tasks with no audit trace).
     const realigns = container.auditQuery.run({ kind: 'sync_realign' });
     expect(realigns).toHaveLength(1);
-    expect(realigns[0]?.data).toMatchObject({ key: 'TEST-1', from: 'DRAFT', to: 'READY' });
+    expect(realigns[0]?.data).toMatchObject({ id, from: 'DRAFT', to: 'READY' });
   });
 
   it('refuses to realign a task mirrored in more than one state dir (no silent regression)', () => {
@@ -146,9 +153,9 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const id = created.value.id;
     const move = (action: string, payload: Record<string, unknown>) => {
-      const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
+      const r = container.task.transition({ taskKey: id, action, payload, actor: 'daniel' });
       expect(r.ok).toBe(true);
     };
     move('submit', {});
@@ -156,36 +163,36 @@ mnema:
     move('submit_review', { pr_url: 'https://github.com/o/r/pull/1' });
     move('approve', { approval_note: 'lgtm' });
 
-    const doneReload = container.task.findByKey(key);
+    const doneReload = container.task.findByKey(id);
     expect(doneReload.ok).toBe(true);
     if (!doneReload.ok) return;
     expect(doneReload.value.state).toBe('DONE');
 
     // …but a squash-merge left a stale mirror of it in READY/ too (the
-    // canonical DONE/ mirror stays in place). Two copies of one key now
-    // exist across state dirs.
-    const doneFile = path.join(root, '.mnema/backlog', 'DONE', `${key}.md`);
+    // canonical DONE/ mirror stays in place). Two copies of one id now
+    // exist across state dirs — same `<id>.md`, so the id dedup collides.
+    const doneFile = path.join(root, '.mnema/backlog', 'DONE', `${id}.md`);
     const readyDir = path.join(root, '.mnema/backlog', 'READY');
     mkdirSync(readyDir, { recursive: true });
     const doneMd = readFileSync(doneFile, 'utf-8');
-    writeFileSync(path.join(readyDir, `${key}.md`), doneMd.replace('DONE', 'READY'), 'utf-8');
+    writeFileSync(path.join(readyDir, `${id}.md`), doneMd.replace('DONE', 'READY'), 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
 
     // The row is left exactly as it was — never regressed to READY on a guess.
-    const afterReload = container.task.findByKey(key);
+    const afterReload = container.task.findByKey(id);
     expect(afterReload.ok).toBe(true);
     if (!afterReload.ok) return;
     expect(afterReload.value.state).toBe('DONE');
 
     // The conflict is reported with both offending directories.
     expect(summary.conflicts).toHaveLength(1);
-    expect(summary.conflicts[0]?.key).toBe(key);
+    expect(summary.conflicts[0]?.id).toBe(id);
     expect([...(summary.conflicts[0]?.states ?? [])].sort()).toEqual(['DONE', 'READY']);
 
-    // And no realign event was emitted for the ambiguous key.
+    // And no realign event was emitted for the ambiguous id.
     const realigns = container.auditQuery.run({ kind: 'sync_realign' });
-    expect(realigns.some((e) => (e.data as { key?: string }).key === key)).toBe(false);
+    expect(realigns.some((e) => (e.data as { id?: string }).id === id)).toBe(false);
   });
 
   it('reports no conflicts for a healthy one-mirror-per-task repo (guard is a no-op)', () => {
@@ -198,7 +205,7 @@ mnema:
     expect(summary.tasksScanned).toBe(2);
   });
 
-  it('applies content drift (title/priority/acceptance_criteria) from the committed markdown', () => {
+  it('applies content drift (title/acceptance_criteria) from the committed markdown', () => {
     const created = container.task.create({
       projectKey: 'TEST',
       title: 'Original title',
@@ -208,16 +215,15 @@ mnema:
     if (!created.ok) return;
 
     // The create wrote the mirror; edit the committed markdown the way a
-    // merged PR would — new title, new priority, a new acceptance criterion.
+    // merged PR would — new title, a new acceptance criterion.
     const markdownIo = new MarkdownIo();
-    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.key}.md`);
+    const draftFile = path.join(root, '.mnema/backlog', 'DRAFT', `${created.value.id}.md`);
     const parsed = markdownIo.read(draftFile);
     markdownIo.write(draftFile, {
       ...parsed,
       mnemaData: {
         ...parsed.mnemaData,
         title: 'Edited by a merged PR',
-        priority: 1,
         acceptance_criteria: ['a newly added criterion'],
       },
     });
@@ -227,11 +233,10 @@ mnema:
     // Content-only drift must count as an upsert (not 0).
     expect(summary.tasksUpserted).toBe(1);
 
-    const reloaded = container.task.findByKey(created.value.key);
+    const reloaded = container.task.findByKey(created.value.id);
     expect(reloaded.ok).toBe(true);
     if (!reloaded.ok) return;
     expect(reloaded.value.title).toBe('Edited by a merged PR');
-    expect(reloaded.value.priority).toBe(1);
     expect(reloaded.value.acceptanceCriteria).toEqual(['a newly added criterion']);
   });
 
@@ -247,7 +252,7 @@ mnema:
 
     // Row already exists in the cache; a merged PR edits the committed markdown.
     const markdownIo = new MarkdownIo();
-    const file = path.join(root, '.mnema/roadmap', `${created.value.key}.md`);
+    const file = path.join(root, '.mnema/roadmap', `${created.value.id}.md`);
     const parsed = markdownIo.read(file);
     markdownIo.write(file, {
       ...parsed,
@@ -261,26 +266,101 @@ mnema:
     const summary = container.syncRebuild.run('TEST');
     expect(summary.epics.upserted).toBe(1);
 
-    const reloaded = container.epic.show(created.value.key);
+    const reloaded = container.epic.show(created.value.id);
     expect(reloaded.ok).toBe(true);
     if (!reloaded.ok) return;
     expect(reloaded.value.epic.title).toBe('Epic EDITED');
     expect(reloaded.value.epic.description).toBe('epic EDITED description');
   });
 
-  it('applies sprint content drift (name/goal/capacity) from the committed markdown', () => {
+  it('realigns an epic to CLOSED preserving the committed close time (not a fresh now)', () => {
+    // A cached OPEN epic whose committed mirror says CLOSED with an old close
+    // time — the realign must adopt the committed closed_at, not stamp `now`.
+    // Regression: the state realign calls updateState (which stamps a fresh
+    // now); only the closed_at drift reconcile carries the true committed time.
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Closed elsewhere',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const committedClose = '2020-01-02T03:04:05.000Z';
+    const markdownIo = new MarkdownIo();
+    const file = path.join(root, '.mnema/roadmap', `${created.value.id}.md`);
+    const parsed = markdownIo.read(file);
+    markdownIo.write(file, {
+      ...parsed,
+      mnemaData: {
+        ...parsed.mnemaData,
+        state: 'CLOSED',
+        closed_at: committedClose,
+      },
+    });
+
+    const summary = container.syncRebuild.run('TEST');
+    expect(summary.epics.upserted).toBe(1);
+
+    const reloaded = container.epic.show(created.value.id);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.epic.state).toBe('CLOSED');
+    // The committed close time survives — the realign did not overwrite it with
+    // the rebuild's clock.
+    expect(reloaded.value.epic.closedAt).toBe(committedClose);
+  });
+
+  it('ingests a roadmap mirror from a foldered subdirectory (layout compat)', () => {
+    // Forward compat for the foldered layout (roadmap/epics/<id>.md): the roadmap
+    // scanner is recursive, so an epic mirror moved into a per-kind subfolder is
+    // ingested on a clone exactly as a flat one is. The basename stays the
+    // identity — the subfolder is presentational only.
+    const created = container.epic.create({
+      projectKey: 'TEST',
+      title: 'Foldered epic',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+
+    // The writer put it flat at roadmap/<id>.md; relocate it into a foldered
+    // subdir to emulate the post-migration layout.
+    const flat = path.join(root, '.mnema/roadmap', `${id}.md`);
+    const folderedDir = path.join(root, '.mnema/roadmap', 'epics');
+    mkdirSync(folderedDir, { recursive: true });
+    writeFileSync(path.join(folderedDir, `${id}.md`), readFileSync(flat, 'utf-8'), 'utf-8');
+    rmSync(flat, { force: true });
+
+    // Fresh clone: only the committed markdown (now foldered) survives.
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      const summary = fresh.syncRebuild.run('TEST');
+      expect(summary.epics.upserted).toBe(1);
+      const shown = fresh.epic.show(id);
+      expect(shown.ok, 'the foldered epic mirror must be ingested on a clone').toBe(true);
+      if (!shown.ok) return;
+      expect(shown.value.epic.title).toBe('Foldered epic');
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('applies sprint content drift (name/goal) from the committed markdown', () => {
     const planned = container.sprint.plan({
       projectKey: 'TEST',
       name: 'Sprint original',
       goal: 'ship the original',
-      capacity: 10,
       actor: 'daniel',
     });
     expect(planned.ok).toBe(true);
     if (!planned.ok) return;
 
     const markdownIo = new MarkdownIo();
-    const file = path.join(root, '.mnema/sprints', `${planned.value.key}.md`);
+    const file = path.join(root, '.mnema/sprints', `${planned.value.id}.md`);
     const parsed = markdownIo.read(file);
     markdownIo.write(file, {
       ...parsed,
@@ -288,18 +368,17 @@ mnema:
         ...parsed.mnemaData,
         name: 'Sprint EDITED',
         goal: 'ship the EDITED',
-        capacity: 20,
       },
     });
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.sprints.upserted).toBe(1);
 
-    const reloaded = container.sprint.show(planned.value.key);
-    expect(reloaded).not.toBeNull();
-    expect(reloaded?.sprint.name).toBe('Sprint EDITED');
-    expect(reloaded?.sprint.goal).toBe('ship the EDITED');
-    expect(reloaded?.sprint.capacity).toBe(20);
+    const reloaded = container.sprint.show(planned.value.id);
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.value.sprint.name).toBe('Sprint EDITED');
+    expect(reloaded.value.sprint.goal).toBe('ship the EDITED');
   });
 
   it('applies decision content drift (title/rationale) from the committed markdown', () => {
@@ -331,23 +410,27 @@ mnema:
     expect(reloaded.value.rationale).toBe('EDITED rationale');
   });
 
-  it('skips files whose mnema.key does not match the filename', () => {
+  it('skips files whose mnema.id does not match the filename', () => {
     const dir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(dir, { recursive: true });
 
+    // The mirror is named by the committed id. A file whose frontmatter id
+    // disagrees with its filename is skipped fail-closed — the rebuild never
+    // adopts a row whose committed identity does not match where it lives.
     const md = `---
 mnema:
-  key: TEST-99
+  id: 019f7700-0000-7000-8000-000000000099
   state: DRAFT
   title: wrong filename
 ---
 
 body
 `;
-    writeFileSync(path.join(dir, 'TEST-1.md'), md, 'utf-8');
+    writeFileSync(path.join(dir, '019f7700-0000-7000-8000-000000000001.md'), md, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
     expect(summary.skipped.length).toBeGreaterThan(0);
+    expect(summary.skipped.some((s) => s.reason.includes('does not match filename'))).toBe(true);
     expect(existsSync(path.join(root, '.mnema/state', 'state.db'))).toBe(true);
 
     const list = container.task.list();
@@ -359,11 +442,12 @@ body
     // directory. Since migration 004 dropped the tasks.state CHECK, an
     // unknown state would otherwise persist and strand the task past the
     // workflow gates — the rebuild must refuse it.
+    const validId = '019f7700-0000-7000-8000-000000000001';
     const draftDir = path.join(root, '.mnema/backlog', 'DRAFT');
     mkdirSync(draftDir, { recursive: true });
     const validMd = `---
 mnema:
-  key: TEST-1
+  id: ${validId}
   state: DRAFT
   title: Legit task
   reporter: daniel
@@ -371,13 +455,14 @@ mnema:
 
 # Legit task
 `;
-    writeFileSync(path.join(draftDir, 'TEST-1.md'), validMd, 'utf-8');
+    writeFileSync(path.join(draftDir, `${validId}.md`), validMd, 'utf-8');
 
+    const bogusId = '019f7700-0000-7000-8000-000000000002';
     const bogusDir = path.join(root, '.mnema/backlog', 'NOTASTATE');
     mkdirSync(bogusDir, { recursive: true });
     const bogusMd = `---
 mnema:
-  key: TEST-2
+  id: ${bogusId}
   state: NOTASTATE
   title: Smuggled task
   reporter: daniel
@@ -385,14 +470,14 @@ mnema:
 
 # Smuggled task
 `;
-    writeFileSync(path.join(bogusDir, 'TEST-2.md'), bogusMd, 'utf-8');
+    writeFileSync(path.join(bogusDir, `${bogusId}.md`), bogusMd, 'utf-8');
 
     const summary = container.syncRebuild.run('TEST');
 
     // The legit task is upserted; the smuggled one is reported skipped.
     const list = container.task.list();
-    expect(list.map((t) => t.key)).toEqual(['TEST-1']);
-    expect(summary.skipped.some((s) => s.file.includes('TEST-2.md'))).toBe(true);
+    expect(list.map((t) => t.id)).toEqual([validId]);
+    expect(summary.skipped.some((s) => s.file.includes(`${bogusId}.md`))).toBe(true);
     expect(summary.skipped.some((s) => s.reason.includes('NOTASTATE'))).toBe(true);
 
     // No row anywhere carries the invalid state.
@@ -497,7 +582,7 @@ mnema:
     if (!task.ok) return;
     const rec = container.observation.record({
       content: 'linked note',
-      relatedTaskKey: task.value.key,
+      relatedTaskKey: task.value.id,
       actor: 'daniel',
     });
     expect(rec.ok).toBe(true);
@@ -508,8 +593,8 @@ mnema:
     const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
     try {
       rebuilt.syncRebuild.run('TEST');
-      // The note is re-linked to the freshly-inserted task by its stable key.
-      const scoped = rebuilt.observation.list({ relatedTaskKey: task.value.key });
+      // The note is re-linked to the freshly-inserted task by its stable id.
+      const scoped = rebuilt.observation.list({ relatedTaskKey: task.value.id });
       expect(scoped.map((o) => o.content)).toEqual(['linked note']);
     } finally {
       rebuilt.close();
@@ -529,7 +614,7 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const id = created.value.id;
 
     new TaskRepository(container.adapter).setGitLink(created.value.id, {
       branch: 'feat/linked',
@@ -538,7 +623,7 @@ mnema:
     });
     // The observer enqueues a sync on a real link change (watch-command);
     // mirror that, then flush the buffer so the markdown carries the link.
-    container.sync.syncTask(created.value.key, { action: 'git_observed' });
+    container.sync.syncTask(created.value.id, { action: 'git_observed' });
     container.sync.flushAll();
 
     // Simulate a fresh clone: version-controlled markdown present, state DB gone.
@@ -547,7 +632,7 @@ mnema:
     const rebuilt = createServiceContainer(makeConfig(), root, { migrationsDir });
     try {
       rebuilt.syncRebuild.run('TEST');
-      const reloaded = rebuilt.task.findByKey(key);
+      const reloaded = rebuilt.task.findByKey(id);
       expect(reloaded.ok).toBe(true);
       if (!reloaded.ok) return;
       // Stable identifiers survive the clone.
@@ -630,7 +715,7 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     const move = (action: string, payload: Record<string, unknown> = {}) => {
       const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
       expect(r.ok, `${action}: ${r.ok ? '' : JSON.stringify(r.error)}`).toBe(true);
@@ -663,6 +748,108 @@ mnema:
     }
   });
 
+  it('preserves the committed id of every backlog entity across a fresh-clone rebuild', () => {
+    // Option C: the v7 UUID is the COMMITTED identity — it must survive the
+    // clone (the mirror carries it, the rebuild adopts it) rather than being
+    // re-minted, which is what made the id clone-local before.
+    const task = container.task.create({
+      projectKey: 'TEST',
+      title: 'Identity survives',
+      acceptanceCriteria: ['stable id'],
+      actor: 'daniel',
+    });
+    const epic = container.epic.create({ projectKey: 'TEST', title: 'An epic', actor: 'daniel' });
+    const sprint = container.sprint.plan({ projectKey: 'TEST', name: 'A sprint', actor: 'daniel' });
+    const decision = container.decision.record({
+      projectKey: 'TEST',
+      title: 'A decision',
+      decision: 'do the thing',
+      actor: 'daniel',
+    });
+    expect(task.ok && epic.ok && sprint.ok && decision.ok).toBe(true);
+    if (!(task.ok && epic.ok && sprint.ok && decision.ok)) return;
+    const ids = {
+      task: task.value.id,
+      epic: epic.value.id,
+      sprint: sprint.value.id,
+      decision: decision.value.id,
+    };
+    // A decision is still filed by its human key; task/epic/sprint are resolved
+    // by their committed id (the sole identity now).
+    const decisionKey = decision.value.key;
+
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      // Each entity is resolved by its committed id (its key, for a decision),
+      // and its id is the SAME one committed to the mirror — not a fresh mint.
+      const t = fresh.task.findByKey(ids.task); // value = Task
+      const e = fresh.epic.show(ids.epic); // value = EpicView ({ epic, ... })
+      const d = fresh.decision.show(decisionKey); // value = Decision
+      const s = fresh.sprint.show(ids.sprint); // value = SprintView ({ sprint, ... })
+      expect(t.ok && e.ok && d.ok && s.ok).toBe(true);
+      if (!(t.ok && e.ok && d.ok && s.ok)) return;
+      expect(t.value.id).toBe(ids.task);
+      expect(e.value.epic.id).toBe(ids.epic);
+      expect(d.value.id).toBe(ids.decision);
+      expect(s.value.sprint.id).toBe(ids.sprint);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('preserves the blocks dependency graph across a fresh-clone rebuild (by id)', () => {
+    // The depends_on frontmatter carries the blocker's committed id now, so the
+    // blocks edge relinks by id on a clone. This is the graph the plan warns
+    // evaporates silently if the reference does not survive.
+    const blocker = container.task.create({
+      projectKey: 'TEST',
+      title: 'Blocker',
+      acceptanceCriteria: ['x'],
+      actor: 'daniel',
+    });
+    const blocked = container.task.create({
+      projectKey: 'TEST',
+      title: 'Blocked',
+      acceptanceCriteria: ['x'],
+      actor: 'daniel',
+    });
+    expect(blocker.ok && blocked.ok).toBe(true);
+    if (!(blocker.ok && blocked.ok)) return;
+    const link = container.dependency.link({
+      taskKey: blocked.value.id,
+      blocksTaskKey: blocker.value.id,
+      kind: 'blocks',
+      actor: 'daniel',
+    });
+    expect(link.ok).toBe(true);
+    const blockerId = blocker.value.id;
+
+    // Re-mirror the blocked task so its `depends_on` reaches disk (linking a
+    // dependency updates the DB edge; the mirror follows on the next sync).
+    container.sync.syncTask(blocked.value.id);
+    container.sync.flushAll();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      // The edge survives, keyed on the committed blocker id — the same id, and
+      // the same edge, not a dangling reference silently dropped.
+      const view = fresh.dependency.listFor(blocked.value.id);
+      expect(view.ok).toBe(true);
+      if (!view.ok) return;
+      const blocks = view.value.dependsOn.filter((d) => d.kind === 'blocks');
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]?.blocksTaskId).toBe(blockerId);
+    } finally {
+      fresh.close();
+    }
+  });
+
   it('preserves a closed epic created_at + closed_at across a fresh-clone rebuild', () => {
     const created = container.epic.create({
       projectKey: 'TEST',
@@ -672,7 +859,7 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     const closed = container.epic.close({ epicKey: key, actor: 'daniel' });
     expect(closed.ok).toBe(true);
     if (!closed.ok) return;
@@ -715,7 +902,7 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     // A freshly-created task carries no close time.
     expect(created.value.closedAt).toBeNull();
 
@@ -764,7 +951,7 @@ mnema:
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     const move = (action: string, payload: Record<string, unknown>) => {
       const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
       expect(r.ok, `${action} should succeed`).toBe(true);
@@ -793,8 +980,8 @@ mnema:
   // the reopen-on-disk (stale close retained) and complete-on-disk (disk
   // close dropped) cases.
   const markdownIo = new MarkdownIo();
-  const stateMirror = (state: string, key: string) =>
-    path.join(root, '.mnema/backlog', state, `${key}.md`);
+  const stateMirror = (state: string, id: string) =>
+    path.join(root, '.mnema/backlog', state, `${id}.md`);
 
   function driveToDone(key: string): void {
     const move = (action: string, payload: Record<string, unknown>) => {
@@ -817,7 +1004,8 @@ mnema:
       actor: 'daniel',
     });
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
+    const id = created.value.id;
     driveToDone(key);
     const done = container.task.findByKey(key);
     if (!done.ok) return;
@@ -826,11 +1014,11 @@ mnema:
     // Edit the mirror on disk: move it to IN_PROGRESS and drop closed_at,
     // as a merge/hand-edit would. Remove the stale DONE mirror so the walk
     // sees the row in exactly one state dir.
-    rmSync(stateMirror('DONE', key), { force: true });
-    mkdirSync(path.dirname(stateMirror('IN_PROGRESS', key)), { recursive: true });
-    markdownIo.write(stateMirror('IN_PROGRESS', key), {
+    rmSync(stateMirror('DONE', id), { force: true });
+    mkdirSync(path.dirname(stateMirror('IN_PROGRESS', id)), { recursive: true });
+    markdownIo.write(stateMirror('IN_PROGRESS', id), {
       mnemaData: {
-        key,
+        id,
         state: 'IN_PROGRESS',
         title: 'Disk-reopened task',
         closed_at: null,
@@ -860,7 +1048,8 @@ mnema:
       actor: 'daniel',
     });
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
+    const id = created.value.id;
     // Move it to a non-terminal live state so the row starts with a null close.
     const submit = container.task.transition({
       taskKey: key,
@@ -875,12 +1064,12 @@ mnema:
 
     // The mirror says DONE with an explicit close time (a merge landed the
     // completed snapshot). Remove the READY mirror; write the DONE one.
-    rmSync(stateMirror('READY', key), { force: true });
+    rmSync(stateMirror('READY', id), { force: true });
     const diskClosedAt = '2026-01-02T03:04:05.000Z';
-    mkdirSync(path.dirname(stateMirror('DONE', key)), { recursive: true });
-    markdownIo.write(stateMirror('DONE', key), {
+    mkdirSync(path.dirname(stateMirror('DONE', id)), { recursive: true });
+    markdownIo.write(stateMirror('DONE', id), {
       mnemaData: {
-        key,
+        id,
         state: 'DONE',
         title: 'Disk-completed task',
         closed_at: diskClosedAt,
@@ -1004,6 +1193,152 @@ mnema:
     }
   });
 
+  it('reconstructs the transition history from the audit on a fresh clone', () => {
+    // A task with a create + two live transitions. The transitions table is
+    // git-ignored, so a fresh clone starts empty; the rebuild must replay it
+    // from the committed chain — including the synthesised `create` row, the
+    // re-resolved actor/via (the event stores handles, the row wants ids), and
+    // the gate payload that rides on the transition event.
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Replayable',
+      actor: 'daniel',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+    expect(
+      container.task.transition({ taskKey: id, action: 'submit', payload: {}, actor: 'daniel' }).ok,
+    ).toBe(true);
+    expect(
+      container.task.transition({
+        taskKey: id,
+        action: 'start',
+        payload: { assignee_id: 'daniel' },
+        actor: 'maria',
+        via: 'agent:cc',
+      }).ok,
+    ).toBe(true);
+
+    // Sanity: three rows live (create + submit + start).
+    const before = container.transitions.findByTask(id);
+    expect(before).toHaveLength(3);
+
+    // Fresh clone: drop the git-ignored state; only the committed chain remains.
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      fresh.syncRebuild.run('TEST');
+      const after = fresh.transitions.findByTask(id);
+      // All three rows are back, in order, each with a resolved actor.
+      expect(after, 'transition history must survive the clone').toHaveLength(3);
+      expect(after.map((t) => t.action)).toEqual(['create', 'submit', 'start']);
+      expect(after.every((t) => t.actorId.length > 0)).toBe(true);
+      // The create row is synthesised from task_created (from=null, action=create).
+      expect(after[0]?.fromState).toBeNull();
+      expect(after[0]?.toState).toBe('DRAFT');
+      // The agent `via` on the start transition is re-resolved to an actor id.
+      const start = after.find((t) => t.action === 'start');
+      expect(start?.viaActorId, 'the via handle must re-resolve to an actor id').not.toBeNull();
+      // The gate payload rode on the event and is preserved.
+      expect(start?.payload).toMatchObject({ assignee_id: expect.any(String) });
+
+      // Idempotent: a second rebuild does not duplicate (the empty-table guard).
+      fresh.syncRebuild.run('TEST');
+      expect(fresh.transitions.findByTask(id)).toHaveLength(3);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('rebuilds transitions that carried an agent run id, nulling the run link on the clone', () => {
+    // Regression: agent_run_id is a FK to agent_runs, which the rebuild never
+    // reconstructs — on a clone that table is empty. Projecting the event's run
+    // id would violate the FK and abort the whole sync. The transition must
+    // survive with its run link dropped to null.
+    const run = container.agentRun.start({ goal: 'ship it', actor: 'daniel' });
+    expect(run.ok).toBe(true);
+    if (!run.ok) return;
+    const runId = run.value.id;
+    const created = container.task.create({
+      projectKey: 'TEST',
+      title: 'Run-driven',
+      actor: 'daniel',
+      runId,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const id = created.value.id;
+    expect(
+      container.task.transition({
+        taskKey: id,
+        action: 'submit',
+        payload: {},
+        actor: 'daniel',
+        runId,
+      }).ok,
+    ).toBe(true);
+
+    container.sync.rebuildMirrors();
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      // The sync must not throw on the FK — the run link is nulled.
+      expect(() => fresh.syncRebuild.run('TEST')).not.toThrow();
+      const after = fresh.transitions.findByTask(id);
+      expect(after, 'run-driven transitions must survive the clone').toHaveLength(2);
+      expect(after.every((t) => t.agentRunId === null)).toBe(true);
+    } finally {
+      fresh.close();
+    }
+  });
+
+  it('skips a chain transition whose task has no row on the clone (no FK abort)', () => {
+    // Regression: task_id is a NOT NULL FK. A canceled task keeps its
+    // create/transition events in the chain, but its mirror is gone, so no task
+    // row exists after rebuildTasks. Projecting the transition would violate the
+    // FK and abort the sync; it must be skipped instead. A second, live task
+    // proves the sync completed and still rebuilt what it could.
+    const canceled = container.task.create({
+      projectKey: 'TEST',
+      title: 'Doomed',
+      actor: 'daniel',
+    });
+    expect(canceled.ok).toBe(true);
+    if (!canceled.ok) return;
+    expect(
+      container.task.transition({
+        taskKey: canceled.value.id,
+        action: 'cancel',
+        payload: { reason: 'scrapped' },
+        actor: 'daniel',
+      }).ok,
+    ).toBe(true);
+    const live = container.task.create({ projectKey: 'TEST', title: 'Survivor', actor: 'daniel' });
+    expect(live.ok).toBe(true);
+    if (!live.ok) return;
+
+    // Drop the canceled task's mirror so the clone has its events but no row.
+    container.sync.rebuildMirrors();
+    const canceledMirror = path.join(root, '.mnema/backlog', 'CANCELED', `${canceled.value.id}.md`);
+    if (existsSync(canceledMirror)) rmSync(canceledMirror, { force: true });
+    container.close();
+    rmSync(path.join(root, '.mnema/state'), { recursive: true, force: true });
+    const fresh = createServiceContainer(makeConfig(), root, { migrationsDir });
+    try {
+      expect(() => fresh.syncRebuild.run('TEST')).not.toThrow();
+      // The doomed task's transitions were skipped (no row to anchor them).
+      expect(fresh.transitions.findByTask(canceled.value.id)).toHaveLength(0);
+      // The live task's create transition still rebuilt.
+      expect(fresh.transitions.findByTask(live.value.id).length).toBeGreaterThan(0);
+    } finally {
+      fresh.close();
+    }
+  });
+
   it('carries the stable successor key on a skill_superseded audit event', () => {
     // The remap above only works because the event records the successor's
     // stable (slug, version), not just the regenerated row id.
@@ -1048,7 +1383,7 @@ mnema:
       actor: 'daniel',
     });
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     const move = (action: string, payload: Record<string, unknown>) => {
       const r = container.task.transition({ taskKey: key, action, payload, actor: 'daniel' });
       expect(r.ok, `${action} should succeed`).toBe(true);
@@ -1074,7 +1409,7 @@ mnema:
       actor: 'daniel',
     });
     if (!created.ok) return;
-    const key = created.value.key;
+    const key = created.value.id;
     container.task.transition({
       taskKey: key,
       action: 'submit',

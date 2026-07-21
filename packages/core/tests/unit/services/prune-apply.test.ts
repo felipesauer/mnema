@@ -10,6 +10,11 @@ import { applyPrune, buildPrunePlan, PrunePlanError } from '@/services/audit/pru
 import { readRebaselineWaiver, rebaselineWaiverPath } from '@/services/audit/rebaseline-store.js';
 import { verifyRebaselineWaiver } from '@/services/audit/rebaseline-waiver.js';
 import { computeCutPoint } from '@/services/audit/retention-cut-point.js';
+import {
+  appendTransitionsSnapshot,
+  readTransitionsSnapshot,
+  transitionsSnapshotPath,
+} from '@/services/audit/transitions-snapshot.js';
 import { assessAuditChain } from '@/services/integrity/audit-integrity.js';
 import { MachineKeyService } from '@/services/integrity/machine-key.js';
 import { hmacEvent } from '@/storage/audit/audit-hash.js';
@@ -155,6 +160,74 @@ describe('prune apply', () => {
     // And a BARE assess (no re-baseline) still reads the deleted prefix as tamper.
     const bare = assessAuditChain(auditDir, null);
     expect(bare.chainBroken).toBe(true);
+  });
+
+  it('archives the pruned transitions to a committed snapshot before deleting', () => {
+    // The 5 dropped events (chain[0..4], each a task_created) must be projected
+    // into the committed transitions snapshot BEFORE their segment files go, so
+    // the transition history a projection can no longer recover from the chain
+    // survives the prune.
+    const { chain } = layout();
+    const cut = computeCutPoint(auditDir, 'local', 12, NOW);
+    const plan = buildPrunePlan(auditDir, cut);
+    const s = signer();
+    applyPrune({
+      auditDir,
+      plan,
+      droppedFiles: cut.dropped.map((d) => d.file),
+      signerActor: 'felipesauer',
+      signerFingerprint: s.fingerprint,
+      projectHmacId: hmacId,
+      sign: s.sign,
+      forceReconcile: () => {},
+      reSignHead: () => true,
+      now: () => NOW,
+    });
+
+    // The snapshot is committed alongside the waiver, holding one `create` row
+    // per dropped task_created, oldest-first, with the committed timestamps.
+    expect(existsSync(transitionsSnapshotPath(auditDir))).toBe(true);
+    const snapshot = readTransitionsSnapshot(auditDir);
+    expect(snapshot).toHaveLength(5);
+    expect(snapshot.map((r) => r.taskId)).toEqual(['T-0', 'T-1', 'T-2', 'T-3', 'T-4']);
+    expect(snapshot.every((r) => r.action === 'create' && r.fromState === null)).toBe(true);
+    expect(snapshot[0]?.at).toBe(chain[0].at);
+  });
+
+  it('accretes across prunes and refuses to overwrite a malformed snapshot', () => {
+    const tail = auditDir;
+    const rowA = {
+      taskId: 'T-old',
+      fromState: null,
+      toState: 'DRAFT',
+      action: 'create',
+      payload: {},
+      actor: 'daniel',
+      via: null,
+      run: null,
+      at: '2025-01-01T00:00:00.000Z',
+    };
+    const rowB = { ...rowA, taskId: 'T-new', at: '2026-06-01T00:00:00.000Z' };
+
+    // First prune archives T-old.
+    appendTransitionsSnapshot(tail, [rowA]);
+    // A later prune archives T-new — the earlier row must be PRESERVED, not
+    // clobbered (successive prunes drop disjoint, oldest-first prefixes).
+    appendTransitionsSnapshot(tail, [rowB]);
+    const merged = readTransitionsSnapshot(tail);
+    expect(merged.map((r) => r.taskId)).toEqual(['T-old', 'T-new']);
+
+    // Re-archiving the same row is idempotent (dedup on the full identity key).
+    appendTransitionsSnapshot(tail, [rowB]);
+    expect(readTransitionsSnapshot(tail)).toHaveLength(2);
+
+    // Now corrupt the committed file. A blind overwrite would destroy the
+    // archived history whose chain segments are already pruned — so the append
+    // must THROW rather than treat the corrupt file as empty.
+    writeFileSync(transitionsSnapshotPath(tail), '{ this is not json', 'utf-8');
+    expect(() => appendTransitionsSnapshot(tail, [rowA])).toThrow(/malformed|refusing/i);
+    // The lenient READ path still degrades to empty (never crashes a reader).
+    expect(readTransitionsSnapshot(tail)).toEqual([]);
   });
 
   it('writes the waiver LAST — after reconcile and re-sign', () => {

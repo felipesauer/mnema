@@ -46,6 +46,8 @@ export type UpdateDecisionStatusResult =
  * Input for {@link DecisionRepository.insert}.
  */
 export interface DecisionInsertInput {
+  /** Committed identity, preserved on a clone rebuild; minted when omitted. */
+  readonly id?: string;
   readonly key: string;
   readonly projectId: string;
   readonly title: string;
@@ -191,7 +193,7 @@ export class DecisionRepository {
    * @returns The newly created decision
    */
   insert(input: DecisionInsertInput): Decision {
-    const id = generateUuid();
+    const id = input.id ?? generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
     const impacts = JSON.stringify(input.impacts ?? []);
     const now = isoNow();

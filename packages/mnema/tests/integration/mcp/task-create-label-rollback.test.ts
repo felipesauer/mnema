@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -101,13 +102,14 @@ describe('task_create is all-or-nothing on a bad inline label', () => {
     expect((payload(list).tasks as unknown[]).length).toBe(0);
   });
 
-  it('task_create returns the key when a valid label is applied', async () => {
+  it('task_create returns the alias when a valid label is applied', async () => {
     const res = (await harness.client.callTool({
       name: 'task_create',
       arguments: { title: 'Born labelled', labels: ['area:api'] },
     })) as CallToolResult;
     expect(res.isError ?? false).toBe(false);
-    expect((payload(res).task as { key: string }).key).toBe('TEST-1');
+    const task = payload(res).task as { id: string; key: string };
+    expect(task.key).toBe(deriveAlias('task', task.id));
   });
 
   it('task_create_many counts a bad-label item as failed and never persists it', async () => {
@@ -139,8 +141,10 @@ describe('task_create is all-or-nothing on a bad inline label', () => {
       name: 'tasks_list',
       arguments: {},
     })) as CallToolResult;
-    const keys = (payload(list).tasks as { key: string }[]).map((t) => t.key).sort();
-    expect(keys).toEqual(result.created.map((t) => t.key).sort());
-    expect(keys).toHaveLength(2);
+    const aliases = (payload(list).tasks as { id: string }[])
+      .map((t) => deriveAlias('task', t.id))
+      .sort();
+    expect(aliases).toEqual(result.created.map((t) => t.key).sort());
+    expect(aliases).toHaveLength(2);
   });
 });

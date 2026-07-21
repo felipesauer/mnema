@@ -33,6 +33,24 @@ function runCli(
 }
 
 /**
+ * Extracts a work-graph alias (`t-3a9f`, `e-3a9f`, `s-3a9f`) of the given kind
+ * from CLI output. The human key is gone, so a test that needs to reference the
+ * entity it just created reads the alias the `create`/`plan` command printed and
+ * feeds it back — every user surface resolves an alias.
+ */
+function aliasOf(kind: 't' | 'e' | 's', text: string): string {
+  const match = text.match(new RegExp(`\\b${kind}-[0-9a-f]+\\b`));
+  if (match === null) throw new Error(`no ${kind}- alias in output:\n${text}`);
+  return match[0];
+}
+
+/** Creates a task via the CLI and returns its derived alias (`t-…`). */
+function createTask(projectRoot: string, args: readonly string[]): string {
+  const res = runCli(['task', 'create', ...args], projectRoot);
+  return aliasOf('t', res.stdout);
+}
+
+/**
  * Path to this machine's audit tail `current.jsonl`. Writes land in
  * `audit/m-<id>/`, so an E2E test reading the on-disk trail resolves the sole
  * tail rather than the flat `audit/current.jsonl`.
@@ -221,14 +239,14 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       projectRoot,
     );
     expect(create.status).toBe(0);
-    expect(create.stdout).toContain('WEBAPP-1');
+    const alias = aliasOf('t', create.stdout);
     expect(create.stdout).toContain('DRAFT');
 
     const list = runCli(['task', 'list'], projectRoot);
     expect(list.status).toBe(0);
-    expect(list.stdout).toContain('WEBAPP-1');
+    expect(list.stdout).toContain(alias);
 
-    const show = runCli(['task', 'show', 'WEBAPP-1'], projectRoot);
+    const show = runCli(['task', 'show', alias], projectRoot);
     expect(show.status).toBe(0);
     expect(show.stdout).toContain('Implement OAuth login');
 
@@ -236,7 +254,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       [
         'task',
         'move',
-        'WEBAPP-1',
+        alias,
         'submit',
         'title=Implement OAuth login flow',
         'description=Add Google OAuth support to the login page.',
@@ -248,10 +266,14 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(move.status).toBe(0);
     expect(move.stdout).toContain('READY');
 
-    const draftFile = path.join(projectRoot, '.mnema/backlog', 'DRAFT', 'WEBAPP-1.md');
-    const readyFile = path.join(projectRoot, '.mnema/backlog', 'READY', 'WEBAPP-1.md');
-    expect(existsSync(draftFile)).toBe(false);
-    expect(existsSync(readyFile)).toBe(true);
+    // The mirror is named by the committed id (not the key), so assert on the
+    // state dir contents: the task's markdown moved out of DRAFT into READY.
+    const mdIn = (state: string): string[] => {
+      const dir = path.join(projectRoot, '.mnema/backlog', state);
+      return existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.md')) : [];
+    };
+    expect(mdIn('DRAFT')).toHaveLength(0);
+    expect(mdIn('READY')).toHaveLength(1);
 
     const audit = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
     expect(audit).toContain('task_created');
@@ -260,7 +282,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema task move accepts `--field name=value` flags with embedded spaces (H-1)', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Task X'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Task X']);
 
     // The `--field` flag is the safe form: shell delivers the whole
     // `name=value with spaces` token intact, so parseFieldArgs sees
@@ -270,7 +292,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       [
         'task',
         'move',
-        'WEBAPP-1',
+        alias,
         'submit',
         '--field',
         'title=Implement OAuth with spaces in title',
@@ -290,11 +312,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema task move on an invalid action returns a structured error', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Task X'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Task X']);
 
-    const result = runCli(['task', 'move', 'WEBAPP-1', 'approve'], projectRoot);
+    const result = runCli(['task', 'move', alias, 'approve'], projectRoot);
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('Cannot approve WEBAPP-1');
+    expect(result.stderr).toContain(`Cannot approve ${alias}`);
   });
 
   it('mnema guard exits non-zero with no task in progress, zero once one is started', () => {
@@ -312,12 +334,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(idleQuiet.stdout.trim()).toBe('');
 
     // Drive a task to IN_PROGRESS.
-    runCli(['task', 'create', '--title', 'Real work', '--acceptance', 'done'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Real work', '--acceptance', 'done']);
     runCli(
       [
         'task',
         'move',
-        'WEBAPP-1',
+        alias,
         'submit',
         '--field',
         'title=Real work',
@@ -330,12 +352,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       ],
       projectRoot,
     );
-    runCli(['task', 'move', 'WEBAPP-1', 'start', '--field', 'assignee_id=me'], projectRoot);
+    runCli(['task', 'move', alias, 'start', '--field', 'assignee_id=me'], projectRoot);
 
     // Now a task is in progress → guard passes.
     const active = runCli(['guard'], projectRoot);
     expect(active.status).toBe(0);
-    expect(active.stdout).toContain('WEBAPP-1');
+    expect(active.stdout).toContain(alias);
 
     // JSON form carries the machine-readable verdict, enriched so one call
     // can gate AND reinject focus: verdict + active/next task + the line.
@@ -343,7 +365,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(json.status).toBe(0);
     const verdict = JSON.parse(json.stdout);
     expect(verdict).toMatchObject({ ok: true, focus: 'resume' });
-    expect(verdict.active_task).toMatchObject({ key: 'WEBAPP-1' });
+    expect(verdict.active_task).toMatchObject({ key: alias });
     expect(verdict).toHaveProperty('next_task'); // null here, but present
     expect(typeof verdict.line).toBe('string');
     expect(verdict.line.length).toBeGreaterThan(0);
@@ -428,8 +450,9 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     };
 
     // --- Phase 1: un-approved block is INERT ---
-    runCli(['task', 'create', '--title', 'Ship it'], projectRoot, hookEnv);
-    const doneUnapproved = driveToDone('LEAN-1', hookEnv);
+    const shipIt = runCli(['task', 'create', '--title', 'Ship it'], projectRoot, hookEnv);
+    const aliasA = aliasOf('t', shipIt.stdout);
+    const doneUnapproved = driveToDone(aliasA, hookEnv);
     expect(doneUnapproved.status).toBe(0);
     expect(existsSync(capturePath)).toBe(false); // nothing executed
 
@@ -449,8 +472,13 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const auditLog = readFileSync(tailCurrentFile(projectRoot), 'utf-8');
     expect(auditLog).toContain('"kind":"hooks_approved"');
 
-    runCli(['task', 'create', '--title', 'Ship it again'], projectRoot, hookEnv);
-    const done = driveToDone('LEAN-2', hookEnv);
+    const shipItAgain = runCli(
+      ['task', 'create', '--title', 'Ship it again'],
+      projectRoot,
+      hookEnv,
+    );
+    const aliasB = aliasOf('t', shipItAgain.stdout);
+    const done = driveToDone(aliasB, hookEnv);
     expect(done.status).toBe(0);
     expect(done.stdout).toContain('DONE');
 
@@ -587,10 +615,16 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema upgrade rebuilds a missing task mirror and prunes an orphan', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Real task']);
 
     const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
-    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    // The real mirror is named by the committed id — discover it (the single
+    // `.md` the create wrote), rather than assume the key.
+    const realMirror = path.join(
+      draftDir,
+      readdirSync(draftDir).find((f) => f.endsWith('.md')) as string,
+    );
+    // An orphan under a state dir: any stem with no matching task id.
     const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
     expect(existsSync(realMirror)).toBe(true);
 
@@ -598,10 +632,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     rmSync(realMirror);
     writeFileSync(orphanMirror, '---\n---\nstray', 'utf-8');
 
-    // doctor surfaces both before the fix.
+    // doctor surfaces both before the fix — missing by the task's alias,
+    // orphan by the stray file's stem.
     const doctor = runCli(['doctor'], projectRoot);
     expect(doctor.stdout).toContain('tasks mirrored');
-    expect(doctor.stdout).toContain('missing files: WEBAPP-1');
+    expect(doctor.stdout).toContain(`missing files: ${alias}`);
     expect(doctor.stdout).toContain('orphan files: WEBAPP-999');
 
     const upgrade = runCli(['upgrade', '--yes'], projectRoot);
@@ -609,17 +644,21 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(upgrade.stdout).toContain('rebuilt 1 mirror file(s)');
     expect(upgrade.stdout).toContain('pruned 1 orphan mirror file(s)');
 
-    // The real mirror is back; the orphan is gone.
-    expect(existsSync(realMirror)).toBe(true);
+    // The real mirror is back (one `.md` in DRAFT); the orphan is gone.
+    expect(readdirSync(draftDir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
     expect(existsSync(orphanMirror)).toBe(false);
   });
 
   it('mnema doctor --rebuild-mirrors recreates a missing task mirror and prunes an orphan', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Real task'], projectRoot);
+    createTask(projectRoot, ['--title', 'Real task']);
 
     const draftDir = path.join(projectRoot, '.mnema/backlog', 'DRAFT');
-    const realMirror = path.join(draftDir, 'WEBAPP-1.md');
+    // The mirror is named by the committed id — capture that stem (the rebuild
+    // report identifies the task by this id).
+    const mirrorFile = readdirSync(draftDir).find((f) => f.endsWith('.md')) as string;
+    const taskId = mirrorFile.replace(/\.md$/, '');
+    const realMirror = path.join(draftDir, mirrorFile);
     const orphanMirror = path.join(draftDir, 'WEBAPP-999.md');
 
     // Simulate drift: the real task's mirror vanished; a stray orphan lingers.
@@ -628,11 +667,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
     const rebuild = runCli(['doctor', '--rebuild-mirrors', '--prune-orphans'], projectRoot);
     expect(rebuild.status).toBe(0);
-    expect(rebuild.stdout).toContain('tasks mirrored: 1 — WEBAPP-1');
+    // Rebuilt is reported by the committed id; the pruned orphan by its stem.
+    expect(rebuild.stdout).toContain(`tasks mirrored: 1 — ${taskId}`);
     expect(rebuild.stdout).toContain('tasks pruned: 1 — WEBAPP-999');
 
-    // The real mirror is back; the orphan is gone.
-    expect(existsSync(realMirror)).toBe(true);
+    // The real mirror is back (one `.md` in DRAFT); the orphan is gone.
+    expect(readdirSync(draftDir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
     expect(existsSync(orphanMirror)).toBe(false);
   });
 
@@ -768,12 +808,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema history shows aggregated activity for the day', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'First task title'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'First task title']);
     const move = runCli(
       [
         'task',
         'move',
-        'WEBAPP-1',
+        alias,
         'submit',
         'title=First task title',
         'description=submission attempt with enough text',
@@ -786,20 +826,25 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
     const result = runCli(['history', '--since', 'today'], projectRoot);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('created WEBAPP-1');
-    expect(result.stdout).toContain('submit WEBAPP-1');
+    // The aggregated day view names the created task by its title and the
+    // transition by its state arc — the human key it used to print is gone.
+    expect(result.stdout).toContain('created');
+    expect(result.stdout).toContain('First task title');
+    expect(result.stdout).toContain('submit');
     expect(result.stdout).toContain('DRAFT → READY');
   });
 
   it('mnema task history shows the audit trail of a single task', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Target task'], projectRoot);
-    runCli(['task', 'create', '--title', 'Other task'], projectRoot);
+    const targetCreate = runCli(['task', 'create', '--title', 'Target task'], projectRoot);
+    const target = aliasOf('t', targetCreate.stdout);
+    const otherCreate = runCli(['task', 'create', '--title', 'Other task'], projectRoot);
+    const other = aliasOf('t', otherCreate.stdout);
     const move = runCli(
       [
         'task',
         'move',
-        'WEBAPP-1',
+        target,
         'submit',
         'title=Target task',
         'description=submission attempt with enough text',
@@ -810,25 +855,39 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     );
     expect(move.status).toBe(0);
 
-    const human = runCli(['task', 'history', 'WEBAPP-1'], projectRoot);
+    const human = runCli(['task', 'history', target], projectRoot);
     expect(human.status).toBe(0);
-    expect(human.stdout).toContain('created WEBAPP-1');
-    expect(human.stdout).toContain('submit WEBAPP-1');
-    expect(human.stdout).not.toContain('WEBAPP-2');
+    // The human trail names the created task by its title and shows the arc;
+    // the other task's activity must not bleed in.
+    expect(human.stdout).toContain('created');
+    expect(human.stdout).toContain('Target task');
+    expect(human.stdout).toContain('submit');
+    expect(human.stdout).not.toContain('Other task');
 
-    const json = runCli(['task', 'history', 'WEBAPP-1', '--json'], projectRoot);
+    // Each JSON event carries the committed id of the single task in scope.
+    const json = runCli(['task', 'history', target, '--json'], projectRoot);
     expect(json.status).toBe(0);
     const lines = json.stdout.trim().split('\n');
     expect(lines.length).toBeGreaterThanOrEqual(2);
-    for (const line of lines) {
-      const event = JSON.parse(line) as { data: { key?: string; task_key?: string } };
-      const key = event.data.key ?? event.data.task_key;
-      expect(key).toBe('WEBAPP-1');
-    }
+    const ids = lines.map((l) => (JSON.parse(l) as { data: { id?: string } }).data.id);
+    const targetId = ids[0];
+    expect(targetId).toBeTruthy();
+    for (const id of ids) expect(id).toBe(targetId);
 
-    const missing = runCli(['task', 'history', 'WEBAPP-999'], projectRoot);
+    // The other task's id never bleeds into this task's trail.
+    const otherId = (
+      JSON.parse(
+        runCli(['task', 'history', other, '--json'], projectRoot).stdout.trim().split('\n')[0] ??
+          '{"data":{}}',
+      ) as { data: { id?: string } }
+    ).data.id;
+    expect(otherId).toBeTruthy();
+    expect(otherId).not.toBe(targetId);
+    expect(json.stdout).not.toContain(otherId as string);
+
+    const missing = runCli(['task', 'history', 't-ffffffff'], projectRoot);
     expect(missing.status).not.toBe(0);
-    expect(missing.stderr).toContain('WEBAPP-999');
+    expect(missing.stderr).toContain('t-ffffffff');
   });
 
   it('mnema agent inspect renders a run with plans and per-task mutations', async () => {
@@ -859,12 +918,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       // `init` above so the FK to projects is satisfied).
       const projectId = (db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string }).id;
       db.prepare(
-        `INSERT INTO tasks (id, key, project_id, title, reporter_id, state)
-         VALUES ('t-7', 'WEBAPP-7', ?, 'Login flow', 'h1', 'TODO')`,
+        `INSERT INTO tasks (id, project_id, title, reporter_id, state)
+         VALUES ('t-7', ?, 'Login flow', 'h1', 'TODO')`,
       ).run(projectId);
       db.prepare(
-        `INSERT INTO tasks (id, key, project_id, title, reporter_id, state)
-         VALUES ('t-9', 'WEBAPP-9', ?, 'Token refresh', 'h1', 'DOING')`,
+        `INSERT INTO tasks (id, project_id, title, reporter_id, state)
+         VALUES ('t-9', ?, 'Token refresh', 'h1', 'DOING')`,
       ).run(projectId);
 
       db.prepare(
@@ -889,13 +948,13 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     expect(result.stdout).toContain('completed');
     expect(result.stdout).toContain('scan SQL injection');
     expect(result.stdout).toContain('Mutations (2)');
-    // Each mutation line must carry the human task key, so that runs
-    // touching multiple tasks are still readable.
-    expect(result.stdout).toContain('WEBAPP-7');
-    expect(result.stdout).toContain('WEBAPP-9');
-    // And the actions still appear next to their respective keys.
-    expect(result.stdout).toMatch(/create\s+WEBAPP-7/);
-    expect(result.stdout).toMatch(/start\s+WEBAPP-9/);
+    // Each mutation line must carry the task handle, so that runs touching
+    // multiple tasks are still readable.
+    expect(result.stdout).toContain('t-7');
+    expect(result.stdout).toContain('t-9');
+    // And the actions still appear next to their respective handles.
+    expect(result.stdout).toMatch(/create\s+t-7/);
+    expect(result.stdout).toMatch(/start\s+t-9/);
   });
 
   it('mnema agent resume reopens an aborted run and lists open items', async () => {
@@ -950,12 +1009,12 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('mnema inbox lists tasks awaiting review and blocked tasks', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Block test task'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Block test task']);
     const submit = runCli(
       [
         'task',
         'move',
-        'WEBAPP-1',
+        alias,
         'submit',
         'title=Block test task',
         'description=submission with enough text content',
@@ -966,11 +1025,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     );
     expect(submit.status).toBe(0);
 
-    const start = runCli(['task', 'move', 'WEBAPP-1', 'start', 'assignee_id=daniel'], projectRoot);
+    const start = runCli(['task', 'move', alias, 'start', 'assignee_id=daniel'], projectRoot);
     expect(start.status).toBe(0);
 
     const block = runCli(
-      ['task', 'move', 'WEBAPP-1', 'block', 'reason=missing credentials'],
+      ['task', 'move', alias, 'block', 'reason=missing credentials'],
       projectRoot,
     );
     expect(block.status).toBe(0);
@@ -978,63 +1037,64 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     const result = runCli(['inbox'], projectRoot);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Blocked');
-    expect(result.stdout).toContain('WEBAPP-1');
+    expect(result.stdout).toContain(alias);
   });
 
   it('mnema sprint plan/start/add/show flow works', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Implement OAuth login'], projectRoot);
+    const taskAlias = createTask(projectRoot, ['--title', 'Implement OAuth login']);
 
     const plan = runCli(
       ['sprint', 'plan', '--name', 'Sprint 1', '--goal', 'ship auth'],
       projectRoot,
     );
     expect(plan.status).toBe(0);
-    expect(plan.stdout).toContain('WEBAPP-SPRINT-1');
+    const sprintAlias = aliasOf('s', plan.stdout);
     expect(plan.stdout).toContain('PLANNED');
 
-    const start = runCli(['sprint', 'start', 'WEBAPP-SPRINT-1'], projectRoot);
+    const start = runCli(['sprint', 'start', sprintAlias], projectRoot);
     expect(start.status).toBe(0);
     expect(start.stdout).toContain('ACTIVE');
 
-    const add = runCli(['sprint', 'add', 'WEBAPP-SPRINT-1', 'WEBAPP-1'], projectRoot);
+    const add = runCli(['sprint', 'add', sprintAlias, taskAlias], projectRoot);
     expect(add.status).toBe(0);
 
-    const show = runCli(['sprint', 'show', 'WEBAPP-SPRINT-1'], projectRoot);
+    const show = runCli(['sprint', 'show', sprintAlias], projectRoot);
     expect(show.status).toBe(0);
     expect(show.stdout).toContain('Sprint 1');
-    expect(show.stdout).toContain('WEBAPP-1');
+    expect(show.stdout).toContain(taskAlias);
   });
 
   it('mnema search returns matching tasks across FTS5', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Implement OAuth login flow'], projectRoot);
-    runCli(['task', 'create', '--title', 'Improve dashboard latency'], projectRoot);
+    const oauthAlias = createTask(projectRoot, ['--title', 'Implement OAuth login flow']);
+    const dashboardAlias = createTask(projectRoot, ['--title', 'Improve dashboard latency']);
 
     const result = runCli(['search', 'oauth'], projectRoot);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('WEBAPP-1');
-    expect(result.stdout).not.toContain('WEBAPP-2');
+    // Search surfaces a hit by the task's alias, not the retired human key.
+    expect(result.stdout).toContain(oauthAlias);
+    expect(result.stdout).not.toContain(dashboardAlias);
   });
 
   it('mnema attach add stores a file and lists it back, deduplicated', () => {
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot);
-    runCli(['task', 'create', '--title', 'Task with file'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Task with file']);
 
     const samplePath = path.join(projectRoot, 'sample.txt');
     writeFileSync(samplePath, 'attachment content\n', 'utf-8');
 
-    const first = runCli(['attach', 'add', 'WEBAPP-1', 'sample.txt'], projectRoot);
+    const first = runCli(['attach', 'add', alias, 'sample.txt'], projectRoot);
     expect(first.status).toBe(0);
     expect(first.stdout).toContain('sample.txt attached');
 
-    const second = runCli(['attach', 'add', 'WEBAPP-1', 'sample.txt'], projectRoot);
+    const second = runCli(['attach', 'add', alias, 'sample.txt'], projectRoot);
     expect(second.status).toBe(0);
 
     const stored = readdirSync(path.join(projectRoot, '.mnema/state', 'attachments'));
     expect(stored).toHaveLength(1);
 
-    const list = runCli(['attach', 'list', 'WEBAPP-1'], projectRoot);
+    const list = runCli(['attach', 'list', alias], projectRoot);
     expect(list.status).toBe(0);
     expect(list.stdout).toContain('sample.txt');
   });
@@ -1293,7 +1353,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
   it('release-hardening: type-aware field coercion — commas in strings survive, single criterion satisfies the array gate', () => {
     runCli(['init', '--name', 'Hard', '--key', 'HRD'], projectRoot);
-    runCli(['task', 'create', '--title', 'Comma survivor'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Comma survivor']);
 
     // A comma-bearing description used to be blindly array-split, fail the
     // string gate, and be silently DROPPED; a single comma-less criterion
@@ -1302,7 +1362,7 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
       [
         'task',
         'move',
-        'HRD-1',
+        alias,
         'submit',
         '--field',
         'title=Comma survivor',
@@ -1319,18 +1379,18 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
     // No gate override happened — the fields genuinely satisfied the gate.
     expect(move.stderr).not.toContain('gate overridden');
 
-    const show = runCli(['task', 'show', 'HRD-1'], projectRoot);
+    const show = runCli(['task', 'show', alias], projectRoot);
     expect(show.stdout).toContain('First, we parse. Then, we render.');
     expect(show.stdout).toContain('Works correctly');
   });
 
   it('release-hardening: a silent strict-mode gate override now warns on stderr', () => {
     runCli(['init', '--name', 'Warn', '--key', 'WRN'], projectRoot);
-    runCli(['task', 'create', '--title', 'Underspecified'], projectRoot);
+    const alias = createTask(projectRoot, ['--title', 'Underspecified']);
 
     // A human (no --via) under strict mode may force the gate — but the
     // override must be VISIBLE, not only an audit row.
-    const move = runCli(['task', 'move', 'WRN-1', 'submit'], projectRoot);
+    const move = runCli(['task', 'move', alias, 'submit'], projectRoot);
     expect(move.status).toBe(0);
     expect(move.stderr).toContain('gate overridden');
     expect(move.stderr).toContain('gate_overridden'); // names the audit kind
@@ -1341,10 +1401,11 @@ describe('CLI end-to-end', { timeout: 30_000 }, () => {
 
     const bug = runCli(['task', 'create', '--title', 'A bug', '--template', 'bug'], projectRoot);
     expect(bug.status).toBe(0);
-    const show = runCli(['task', 'show', 'TPL-1'], projectRoot);
+    const alias = aliasOf('t', bug.stdout);
+    const show = runCli(['task', 'show', alias], projectRoot);
     // The bug template pre-fills a reproduction-oriented skeleton.
     expect(show.stdout.length).toBeGreaterThan(0);
-    expect(runCli(['task', 'show', 'TPL-1'], projectRoot).stdout).toMatch(
+    expect(runCli(['task', 'show', alias], projectRoot).stdout).toMatch(
       /reproduce|steps|expected/i,
     );
 

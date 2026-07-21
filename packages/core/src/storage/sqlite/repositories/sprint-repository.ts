@@ -1,5 +1,6 @@
 import type { Sprint } from '../../../domain/entities/sprint.js';
 import type { GitCommitRef, GitPrRef, Task } from '../../../domain/entities/task.js';
+import { type AliasResolution, resolveAlias } from '../../../domain/entity-alias.js';
 import { SprintState } from '../../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../../domain/enums/task-state.js';
 import { generateUuid } from '../../../domain/id-generator.js';
@@ -8,14 +9,12 @@ import type { SqliteAdapter } from '../sqlite-adapter.js';
 
 interface SprintRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly name: string;
   readonly goal: string | null;
   readonly state: string;
   readonly starts_at: string | null;
   readonly ends_at: string | null;
-  readonly capacity: number | null;
   readonly metadata: string;
   readonly created_at: string;
   readonly updated_at: string;
@@ -37,7 +36,6 @@ export type UpdateSprintStateResult =
 
 interface TaskRow {
   readonly id: string;
-  readonly key: string;
   readonly project_id: string;
   readonly epic_id: string | null;
   readonly sprint_id: string | null;
@@ -47,7 +45,6 @@ interface TaskRow {
   readonly state: string;
   readonly estimate: number | null;
   readonly context_budget: number | null;
-  readonly priority: number;
   readonly assignee_id: string | null;
   readonly reporter_id: string;
   readonly reopen_count: number;
@@ -67,13 +64,13 @@ interface TaskRow {
  * Input for {@link SprintRepository.insert}.
  */
 export interface SprintInsertInput {
-  readonly key: string;
+  /** Committed identity, preserved on a clone rebuild; minted when omitted. */
+  readonly id?: string;
   readonly projectId: string;
   readonly name: string;
   readonly goal?: string | null;
   readonly startsAt?: string | null;
   readonly endsAt?: string | null;
-  readonly capacity?: number | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
   /** Committed state to create in — defaults to PLANNED (clone rebuild). */
   readonly state?: string;
@@ -88,7 +85,6 @@ export interface SprintFieldUpdates {
   readonly goal?: string | null;
   readonly startsAt?: string | null;
   readonly endsAt?: string | null;
-  readonly capacity?: number | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
@@ -101,43 +97,15 @@ export class SprintRepository {
   constructor(private readonly adapter: SqliteAdapter) {}
 
   /**
-   * Returns the next sequential number to use for a sprint key.
-   *
-   * @param projectId - Internal project id
-   * @returns The next available sequence (starts at 1)
-   */
-  nextSequence(projectId: string): number {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT COUNT(*) AS n FROM sprints WHERE project_id = ?')
-      .get(projectId) as { n: number };
-    return row.n + 1;
-  }
-
-  /**
    * Runs `fn` inside a `BEGIN IMMEDIATE` transaction, taking the write lock
-   * up front so a `nextSequence` COUNT followed by an insert cannot race a
-   * second process into minting the same key.
+   * up front so a read-then-write create path cannot race a second process
+   * sharing the same `state.db`.
    *
    * @param fn - Synchronous callback executed inside the transaction
    * @returns Whatever `fn` returns
    */
   runInTransactionImmediate<T>(fn: () => T): T {
     return this.adapter.getDatabase().transaction(fn).immediate();
-  }
-
-  /**
-   * Looks up a sprint by its human-readable key.
-   *
-   * @param key - Sprint key, e.g. `WEBAPP-SPRINT-3`
-   * @returns The sprint or `null`
-   */
-  findByKey(key: string): Sprint | null {
-    const row = this.adapter
-      .getDatabase()
-      .prepare('SELECT * FROM sprints WHERE key = ? AND deleted_at IS NULL')
-      .get(key) as SprintRow | undefined;
-    return row === undefined ? null : rowToSprint(row);
   }
 
   /**
@@ -152,6 +120,23 @@ export class SprintRepository {
       .prepare('SELECT * FROM sprints WHERE id = ? AND deleted_at IS NULL')
       .get(id) as SprintRow | undefined;
     return row === undefined ? null : rowToSprint(row);
+  }
+
+  /**
+   * Resolves a user-typed handle — full id, full or partial alias, or a bare
+   * hash prefix — to a single live sprint id, or reports ambiguity/absence.
+   *
+   * @param query - The handle to resolve (id, alias, or hash prefix)
+   */
+  resolve(query: string): AliasResolution {
+    const rows = this.adapter
+      .getDatabase()
+      .prepare('SELECT id FROM sprints WHERE deleted_at IS NULL')
+      .all() as Array<{ id: string }>;
+    return resolveAlias(
+      query,
+      rows.map((r) => ({ kind: 'sprint', id: r.id })),
+    );
   }
 
   /**
@@ -196,7 +181,7 @@ export class SprintRepository {
    * @returns The newly created sprint
    */
   insert(input: SprintInsertInput): Sprint {
-    const id = generateUuid();
+    const id = input.id ?? generateUuid();
     const metadata = JSON.stringify(input.metadata ?? {});
     const now = isoNow();
 
@@ -204,20 +189,18 @@ export class SprintRepository {
       .getDatabase()
       .prepare(
         `INSERT INTO sprints (
-           id, key, project_id, name, goal,
-           state, starts_at, ends_at, capacity, metadata, created_at, updated_at, closed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           id, project_id, name, goal,
+           state, starts_at, ends_at, metadata, created_at, updated_at, closed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
-        input.key,
         input.projectId,
         input.name,
         input.goal ?? null,
         input.state ?? 'PLANNED',
         input.startsAt ?? null,
         input.endsAt ?? null,
-        input.capacity ?? null,
         metadata,
         input.createdAt ?? now,
         now,
@@ -314,10 +297,6 @@ export class SprintRepository {
       sets.push('ends_at = ?');
       values.push(fields.endsAt);
     }
-    if (fields.capacity !== undefined) {
-      sets.push('capacity = ?');
-      values.push(fields.capacity);
-    }
     if (fields.metadata !== undefined) {
       sets.push('metadata = ?');
       values.push(JSON.stringify(fields.metadata));
@@ -369,7 +348,7 @@ export class SprintRepository {
    * Lists every active task currently assigned to a sprint.
    *
    * @param sprintId - Internal sprint id
-   * @returns Tasks ordered by key
+   * @returns Tasks ordered by creation
    */
   listTasks(sprintId: string): Task[] {
     const rows = this.adapter
@@ -377,7 +356,7 @@ export class SprintRepository {
       .prepare(
         `SELECT * FROM tasks
           WHERE sprint_id = ? AND deleted_at IS NULL
-          ORDER BY key`,
+          ORDER BY created_at`,
       )
       .all(sprintId) as TaskRow[];
     return rows.map(rowToTask);
@@ -387,14 +366,12 @@ export class SprintRepository {
 function rowToSprint(row: SprintRow): Sprint {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     name: row.name,
     goal: row.goal,
     state: row.state as SprintState,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
-    capacity: row.capacity,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -410,7 +387,6 @@ function rowToSprint(row: SprintRow): Sprint {
 function rowToTask(row: TaskRow): Task {
   return {
     id: row.id,
-    key: row.key,
     projectId: row.project_id,
     epicId: row.epic_id,
     sprintId: row.sprint_id,
@@ -420,7 +396,6 @@ function rowToTask(row: TaskRow): Task {
     state: row.state as TaskState,
     estimate: row.estimate,
     contextBudget: row.context_budget,
-    priority: row.priority,
     assigneeId: row.assignee_id,
     reporterId: row.reporter_id,
     reopenCount: row.reopen_count,

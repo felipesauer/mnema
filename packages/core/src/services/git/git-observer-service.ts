@@ -6,7 +6,11 @@ import { type CommandResult, type CommandRunner, defaultRunner } from './github-
 export interface GitObserveResult {
   /** Whether git could be consulted (same honesty bit as CommitVerifier). */
   readonly checked: boolean;
-  /** The task key that was linked, or null when nothing unambiguous applied. */
+  /**
+   * The committed id of the task that was linked, or null when nothing
+   * unambiguous applied. It is an id (not a display handle) because the caller
+   * feeds it straight to `syncTask`, which resolves by id.
+   */
   readonly linkedTaskKey: string | null;
   /**
    * Whether this pass actually CHANGED the stored link (vs. re-affirming an
@@ -117,7 +121,7 @@ export class GitObserverService {
     // file (commits are re-derived), so it does not flip `changed`.
     const branchOrPrChanged = task.gitBranch !== branch;
     this.tasks.setGitLink(task.id, { branch, commits, pr: task.gitPr });
-    return { checked: true, linkedTaskKey: task.key, changed: branchOrPrChanged };
+    return { checked: true, linkedTaskKey: task.id, changed: branchOrPrChanged };
   }
 }
 

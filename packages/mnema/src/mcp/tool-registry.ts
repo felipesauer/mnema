@@ -60,6 +60,7 @@ export const EPIC_TOOL_NAMES: readonly string[] = [
   'epic_update',
   'epic_add_task',
   'epic_close',
+  'epic_reopen',
   'epic_remove',
   'epic_delete',
 ];
@@ -75,7 +76,6 @@ export const SPRINT_TOOL_NAMES: readonly string[] = [
   'sprint_close',
   'sprint_cancel',
   'sprint_remove',
-  'sprint_metric',
 ];
 
 /**

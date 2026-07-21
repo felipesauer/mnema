@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -63,13 +64,19 @@ function payload(result: CallToolResult): Record<string, unknown> {
   return JSON.parse(block.text) as Record<string, unknown>;
 }
 
-/** Drive a fresh task to IN_REVIEW; returns after submit_review. */
-async function toReview(client: Client, key: string, title: string): Promise<void> {
-  await client.callTool({ name: 'task_create', arguments: { title, acceptance_criteria: ['ok'] } });
+/** Drive a fresh task to IN_REVIEW; returns the committed id after submit_review. */
+async function toReview(client: Client, title: string): Promise<string> {
+  const created = payload(
+    (await client.callTool({
+      name: 'task_create',
+      arguments: { title, acceptance_criteria: ['ok'] },
+    })) as CallToolResult,
+  );
+  const taskId = (created.task as { id: string }).id;
   await client.callTool({
     name: 'task_submit',
     arguments: {
-      task_key: key,
+      task_key: taskId,
       title,
       description: `${title} — ready`,
       acceptance_criteria: ['ok'],
@@ -78,12 +85,13 @@ async function toReview(client: Client, key: string, title: string): Promise<voi
   });
   await client.callTool({
     name: 'task_start',
-    arguments: { task_key: key, assignee_id: 'daniel' },
+    arguments: { task_key: taskId, assignee_id: 'daniel' },
   });
   await client.callTool({
     name: 'task_submit_review',
-    arguments: { task_key: key, pr_url: 'https://example.com/pr/1' },
+    arguments: { task_key: taskId, pr_url: 'https://example.com/pr/1' },
   });
+  return taskId;
 }
 
 describe('capture gate nudges knowledge on a non-trivial approve (MNEMA-239)', () => {
@@ -101,44 +109,47 @@ describe('capture gate nudges knowledge on a non-trivial approve (MNEMA-239)', (
   });
 
   it('emits a capture_prompt when approving a task that was reopened', async () => {
-    await toReview(harness.client, 'TEST-1', 'First pass');
+    const taskId = await toReview(harness.client, 'First pass');
     await harness.client.callTool({
       name: 'task_approve',
-      arguments: { task_key: 'TEST-1', approval_note: 'lgtm' },
+      arguments: { task_key: taskId, approval_note: 'lgtm' },
     });
     // Reopen (rework), then take it back through review and approve again.
     await harness.client.callTool({
       name: 'task_reopen',
-      arguments: { task_key: 'TEST-1', reason: 'a real bug surfaced after merge' },
+      arguments: { task_key: taskId, reason: 'a real bug surfaced after merge' },
     });
     await harness.client.callTool({
       name: 'task_submit_review',
-      arguments: { task_key: 'TEST-1', pr_url: 'https://example.com/pr/2' },
+      arguments: { task_key: taskId, pr_url: 'https://example.com/pr/2' },
     });
     const approved = payload(
       (await harness.client.callTool({
         name: 'task_approve',
-        arguments: { task_key: 'TEST-1', approval_note: 'fixed now' },
+        arguments: { task_key: taskId, approval_note: 'fixed now' },
       })) as CallToolResult,
     );
-    expect(String(approved.capture_prompt)).toContain('TEST-1');
+    expect(String(approved.capture_prompt)).toContain(deriveAlias('task', taskId));
     expect(String(approved.capture_prompt).toLowerCase()).toContain('reopen');
     expect(String(approved.capture_prompt)).toContain('memory_record');
   });
 
   it('emits a capture_prompt when approving a task labelled architecture', async () => {
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Design the anchor', acceptance_criteria: ['ok'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Design the anchor', acceptance_criteria: ['ok'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_set_labels',
-      arguments: { task_key: 'TEST-1', labels: ['architecture'] },
+      arguments: { task_key: taskId, labels: ['architecture'] },
     });
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Design the anchor',
         description: 'a design task',
         acceptance_criteria: ['ok'],
@@ -147,27 +158,27 @@ describe('capture gate nudges knowledge on a non-trivial approve (MNEMA-239)', (
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
     await harness.client.callTool({
       name: 'task_submit_review',
-      arguments: { task_key: 'TEST-1', pr_url: 'https://example.com/pr/1' },
+      arguments: { task_key: taskId, pr_url: 'https://example.com/pr/1' },
     });
     const approved = payload(
       (await harness.client.callTool({
         name: 'task_approve',
-        arguments: { task_key: 'TEST-1', approval_note: 'lgtm' },
+        arguments: { task_key: taskId, approval_note: 'lgtm' },
       })) as CallToolResult,
     );
     expect(String(approved.capture_prompt)).toContain('architecture');
   });
 
   it('does not nudge on a routine approve (no rework, no arch label)', async () => {
-    await toReview(harness.client, 'TEST-1', 'Routine chore');
+    const taskId = await toReview(harness.client, 'Routine chore');
     const approved = payload(
       (await harness.client.callTool({
         name: 'task_approve',
-        arguments: { task_key: 'TEST-1', approval_note: 'lgtm' },
+        arguments: { task_key: taskId, approval_note: 'lgtm' },
       })) as CallToolResult,
     );
     expect(approved.capture_prompt).toBeUndefined();

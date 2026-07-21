@@ -255,7 +255,6 @@ export function createServiceContainer(
         repos.projects,
         auditCore().audit,
         stateMachine,
-        repos.sprintMetrics,
         syncCore().roadmapMirror,
         syncCore().sync,
       ),
@@ -469,7 +468,7 @@ export function createServiceContainer(
         repos.taskEvidence,
         options.commitRunner,
         config.project.key,
-        (key) => repos.tasks.findByKey(key) !== null,
+        (handle) => repos.tasks.resolve(handle).status === 'unique',
       ),
   );
   const gitObserver = lazy(

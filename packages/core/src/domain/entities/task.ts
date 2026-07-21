@@ -7,10 +7,9 @@ import type { TaskState } from '../enums/task-state.js';
  * from snake_case at the SQL boundary.
  */
 export interface Task {
-  /** Internal UUID v7 */
+  /** The committed identity (UUID v7). A short alias is derived from it for
+   * display; there is no stored human key. */
   readonly id: string;
-  /** Human-friendly identifier, e.g. `"WEBAPP-42"` */
-  readonly key: string;
   readonly projectId: string;
   readonly epicId: string | null;
   readonly sprintId: string | null;
@@ -21,7 +20,6 @@ export interface Task {
   readonly estimate: number | null;
   /** Estimated context cost in tokens; null when unsized. Distinct from `estimate` (story points). */
   readonly contextBudget: number | null;
-  readonly priority: number;
   readonly assigneeId: string | null;
   readonly reporterId: string;
   readonly reopenCount: number;

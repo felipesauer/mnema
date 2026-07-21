@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -78,11 +79,19 @@ describe('graph_dependencies MCP tool', () => {
 
   it('returns the project graph with a critical path over a blocks-chain', async () => {
     // Create A, B and declare B depends on A (A blocks B).
-    await harness.client.callTool({ name: 'task_create', arguments: { title: 'Task A' } });
-    await harness.client.callTool({ name: 'task_create', arguments: { title: 'Task B' } });
+    const createA = (await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Task A' },
+    })) as CallToolResult;
+    const createB = (await harness.client.callTool({
+      name: 'task_create',
+      arguments: { title: 'Task B' },
+    })) as CallToolResult;
+    const idA = (payload(createA).task as { id: string }).id;
+    const idB = (payload(createB).task as { id: string }).id;
     await harness.client.callTool({
       name: 'task_depends_on',
-      arguments: { task_key: 'TEST-2', blocks_task_key: 'TEST-1' },
+      arguments: { task_key: idB, blocks_task_key: idA },
     });
 
     const res = (await harness.client.callTool({
@@ -95,7 +104,7 @@ describe('graph_dependencies MCP tool', () => {
       frontier: { ready: string[] };
     };
     expect(g.cycles).toEqual([]);
-    expect(g.criticalPath).toEqual(['TEST-1', 'TEST-2']);
+    expect(g.criticalPath).toEqual([deriveAlias('task', idA), deriveAlias('task', idB)]);
   });
 
   it('rejects passing both epic_key and sprint_key', async () => {

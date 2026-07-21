@@ -48,13 +48,15 @@ describe('per-gate enforcement severity (MNEMA-243)', () => {
   it('warn-only ceremony field proceeds while the block safety field still blocks', () => {
     // estimate = ceremony (warn), description missing = safety (global block).
     boot({ estimate: 'warn' });
-    container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    const created = container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
 
     // Missing description (blocks) AND a below-Fibonacci-shaped estimate would
     // both fail; description is a hard block, so the transition is refused —
     // proving a block field still bites even with a warn field present.
     const blocked = container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: created.value.id,
       action: 'submit',
       payload: { title: 'A task', acceptance_criteria: ['ok'] }, // no description, no estimate
       actor: 'daniel',
@@ -74,10 +76,12 @@ describe('per-gate enforcement severity (MNEMA-243)', () => {
     // estimate warn-only: supply everything BUT estimate → the sole failing
     // field is warn → the transition proceeds despite the global blocking mode.
     boot({ estimate: 'warn' });
-    container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    const created = container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: created.value.id,
       action: 'submit',
       payload: {
         title: 'A task',
@@ -95,10 +99,12 @@ describe('per-gate enforcement severity (MNEMA-243)', () => {
 
   it('empty field_severity reproduces the pure global blocking behaviour', () => {
     boot({});
-    container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    const created = container.task.create({ projectKey: 'TEST', title: 'A task', actor: 'daniel' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
     // Missing estimate under global blocking (no per-field override) → blocked.
     const blocked = container.task.transition({
-      taskKey: 'TEST-1',
+      taskKey: created.value.id,
       action: 'submit',
       payload: { title: 'A task', description: 'a real description', acceptance_criteria: ['ok'] },
       actor: 'daniel',

@@ -26,11 +26,11 @@ function runStartedBootstrapped(run: string, h: number): AuditEvent {
     data: { goal: 'x', bootstrapped: true },
   };
 }
-function created(key: string, h: number, run: string): AuditEvent {
-  return { v: 2, at: at(h), kind: 'task_created', actor: 'a', run, data: { key, state: 'DRAFT' } };
+function created(id: string, h: number, run: string): AuditEvent {
+  return { v: 2, at: at(h), kind: 'task_created', actor: 'a', run, data: { id, state: 'DRAFT' } };
 }
 function transitioned(
-  key: string,
+  id: string,
   h: number,
   from: string,
   to: string,
@@ -43,7 +43,7 @@ function transitioned(
     kind: 'task_transitioned',
     actor: 'a',
     run,
-    data: { key, from, to, action },
+    data: { id, from, to, action },
   };
 }
 function skillUsed(slug: string, h: number, run: string): AuditEvent {

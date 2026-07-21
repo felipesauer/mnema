@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { type Config, ConfigSchema } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   createServiceContainer,
   type ServiceContainer,
@@ -312,8 +313,8 @@ describe('MnemaMcpServer (in-memory)', () => {
     });
     const createdPayload = parsePayload(created as CallToolResult);
     expect(createdPayload.ok).toBe(true);
-    const task = createdPayload.task as { key: string; state: string };
-    expect(task.key).toBe('TEST-1');
+    const task = createdPayload.task as { id: string; key: string; state: string };
+    expect(task.key).toBe(deriveAlias('task', task.id));
     expect(task.state).toBe('DRAFT');
   });
 

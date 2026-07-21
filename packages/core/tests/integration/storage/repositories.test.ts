@@ -77,7 +77,6 @@ describe('repositories', () => {
       const reporter = actors.upsert('daniel', ActorKind.Human);
 
       const created = tasks.insert({
-        key: 'WEBAPP-1',
         projectId: project.id,
         title: 'First task',
         reporterId: reporter,
@@ -86,50 +85,47 @@ describe('repositories', () => {
         estimate: 5,
       });
 
-      expect(created.key).toBe('WEBAPP-1');
       expect(created.state).toBe(TaskState.Draft);
       expect(created.acceptanceCriteria).toEqual(['one', 'two']);
-      expect(created.priority).toBe(3);
 
-      const found = tasks.findByKey('WEBAPP-1');
+      const found = tasks.findById(created.id);
       expect(found?.id).toBe(created.id);
       expect(found?.acceptanceCriteria).toEqual(['one', 'two']);
     });
 
-    it('findByState returns matching active tasks ordered by key', () => {
+    it('findByState returns matching active tasks ordered by creation', () => {
       const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
       const reporter = actors.upsert('daniel', ActorKind.Human);
 
-      tasks.insert({
-        key: 'WEBAPP-2',
+      const second = tasks.insert({
         projectId: project.id,
         title: 'Second',
         reporterId: reporter,
       });
-      tasks.insert({
-        key: 'WEBAPP-1',
+      const first = tasks.insert({
         projectId: project.id,
         title: 'First',
         reporterId: reporter,
       });
 
       const drafts = tasks.findByState(TaskState.Draft);
-      expect(drafts.map((t) => t.key)).toEqual(['WEBAPP-1', 'WEBAPP-2']);
+      // Ordered by creation now (the sequential key that used to sort is gone).
+      expect(drafts.map((t) => t.id)).toEqual([second.id, first.id]);
     });
 
     it('countActive ignores soft-deleted tasks', () => {
       const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
       const reporter = actors.upsert('daniel', ActorKind.Human);
 
-      tasks.insert({ key: 'WEBAPP-1', projectId: project.id, title: 'A', reporterId: reporter });
-      tasks.insert({ key: 'WEBAPP-2', projectId: project.id, title: 'B', reporterId: reporter });
+      const a = tasks.insert({ projectId: project.id, title: 'A', reporterId: reporter });
+      tasks.insert({ projectId: project.id, title: 'B', reporterId: reporter });
 
       expect(tasks.countActive()).toBe(2);
 
       adapter
         .getDatabase()
-        .prepare("UPDATE tasks SET deleted_at = datetime('now') WHERE key = 'WEBAPP-1'")
-        .run();
+        .prepare("UPDATE tasks SET deleted_at = datetime('now') WHERE id = ?")
+        .run(a.id);
 
       expect(tasks.countActive()).toBe(1);
     });
@@ -138,7 +134,6 @@ describe('repositories', () => {
       const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
       const reporter = actors.upsert('daniel', ActorKind.Human);
       const t = tasks.insert({
-        key: 'WEBAPP-1',
         projectId: project.id,
         title: 'Lean',
         reporterId: reporter,
@@ -154,7 +149,7 @@ describe('repositories', () => {
 
       // The lean path returns the row and does NOT parse the blobs.
       const lean = tasks.findActiveLean();
-      expect(lean.map((r) => r.key)).toEqual(['WEBAPP-1']);
+      expect(lean.map((r) => r.id)).toEqual([t.id]);
       expect(lean[0]?.state).toBe(TaskState.Draft);
 
       // Contrast: the full read DOES parse and therefore throws on the same
@@ -166,19 +161,18 @@ describe('repositories', () => {
       const project = projects.insert({ key: 'WEBAPP', name: 'Webapp' });
       const reporter = actors.upsert('daniel', ActorKind.Human);
       const a = tasks.insert({
-        key: 'WEBAPP-1',
         projectId: project.id,
         title: 'A',
         reporterId: reporter,
       });
       tasks.updateState(a.id, TaskState.InReview, null);
-      tasks.insert({ key: 'WEBAPP-2', projectId: project.id, title: 'B', reporterId: reporter });
+      const b = tasks.insert({ projectId: project.id, title: 'B', reporterId: reporter });
 
       // Only the IN_REVIEW task comes back when filtered by state.
       const filtered = tasks.findActiveLean({ state: TaskState.InReview });
-      expect(filtered.map((r) => r.key)).toEqual(['WEBAPP-1']);
-      // No filter → both active tasks, key-ordered.
-      expect(tasks.findActiveLean().map((r) => r.key)).toEqual(['WEBAPP-1', 'WEBAPP-2']);
+      expect(filtered.map((r) => r.id)).toEqual([a.id]);
+      // No filter → both active tasks, creation-ordered.
+      expect(tasks.findActiveLean().map((r) => r.id)).toEqual([a.id, b.id]);
       // A non-matching equality (sentinel-style) → empty.
       expect(tasks.findActiveLean({ epicId: ' no-match' })).toEqual([]);
     });

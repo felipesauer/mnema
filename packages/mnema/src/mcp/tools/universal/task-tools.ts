@@ -1,4 +1,5 @@
 import type { Config } from '@mnema/core/config/config-schema.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { StateMachine } from '@mnema/core/domain/state-machine/state-machine.js';
 import {
   type LabelService,
@@ -34,7 +35,6 @@ const taskItemSchema = z.object({
   acceptance_criteria: z.array(z.string().min(1)).optional(),
   estimate: z.number().int().min(0).optional(),
   context_budget: z.number().int().min(0).optional(),
-  priority: z.number().int().min(1).max(5).optional(),
   assignee: z.string().optional(),
   labels: z.array(z.string().min(1)).optional(),
 });
@@ -88,7 +88,6 @@ export class TaskTools {
             .min(0)
             .optional()
             .describe('Estimated context cost in tokens (≠ estimate)'),
-          priority: z.number().int().min(1).max(5).optional(),
           assignee: z.string().optional().describe('Actor handle (e.g. `maria`) or UUID'),
           labels: z.array(z.string().min(1)).optional().describe('e.g. ["area:api", "tipo:bug"]'),
           verbosity: z
@@ -138,7 +137,6 @@ export class TaskTools {
           acceptanceCriteria,
           estimate: input.estimate ?? null,
           contextBudget: input.context_budget ?? null,
-          priority: input.priority ?? 3,
           assigneeId: input.assignee ?? null,
           actor: this.identity.getDefaultActor(),
           via,
@@ -148,7 +146,7 @@ export class TaskTools {
 
         if (hasLabels) {
           const labelled = this.labels.setLabels({
-            taskKey: result.value.key,
+            taskKey: result.value.id,
             labels: input.labels as readonly string[],
             actor: this.identity.getDefaultActor(),
             via,
@@ -191,7 +189,7 @@ export class TaskTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value);
       },
     );
 
@@ -233,7 +231,7 @@ export class TaskTools {
           leaseMinutes: input.lease_minutes ?? this.config.claims.lease_minutes,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value);
       },
     );
 
@@ -264,7 +262,7 @@ export class TaskTools {
           runId: runId ?? undefined,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value);
       },
     );
 
@@ -319,7 +317,6 @@ export class TaskTools {
             acceptanceCriteria: item.acceptance_criteria ?? [],
             estimate: item.estimate ?? null,
             contextBudget: item.context_budget ?? null,
-            priority: item.priority ?? 3,
             assigneeId: item.assignee ?? null,
             actor: this.identity.getDefaultActor(),
             via,
@@ -329,9 +326,10 @@ export class TaskTools {
             failed.push({ index, error: result.error });
             return;
           }
+          const echo = { ...result.value, key: deriveAlias('task', result.value.id) };
           if (hasLabels) {
             const labelled = this.labels.setLabels({
-              taskKey: result.value.key,
+              taskKey: result.value.id,
               labels: item.labels as readonly string[],
               actor: this.identity.getDefaultActor(),
               via,
@@ -341,13 +339,11 @@ export class TaskTools {
             // the task IS persisted, so record it as created (with its key) and
             // never let a persisted task land only in `failed`.
             if (!labelled.ok) {
-              created.push(
-                input.verbosity === 'compact' ? toCompactTask(result.value) : result.value,
-              );
+              created.push(input.verbosity === 'compact' ? toCompactTask(echo) : echo);
               return;
             }
           }
-          created.push(input.verbosity === 'compact' ? toCompactTask(result.value) : result.value);
+          created.push(input.verbosity === 'compact' ? toCompactTask(echo) : echo);
         });
 
         return ok({ created, failed, created_count: created.length, failed_count: failed.length });
@@ -393,7 +389,7 @@ export class TaskTools {
           expectedUpdatedAt: input.expected_updated_at,
         });
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value);
       },
     );
 
@@ -423,7 +419,7 @@ export class TaskTools {
             .optional()
             .describe('Filter by assignee — accepts a handle (e.g. `maria`) or a UUID'),
           sort: z
-            .enum(['key', 'updated_at', 'created_at', 'priority'])
+            .enum(['key', 'updated_at', 'created_at'])
             .optional()
             .describe('Order results by the given field. Default: key (alphanumeric)'),
           limit: z
@@ -456,7 +452,10 @@ export class TaskTools {
           tasks = tasks.slice(0, limit);
         }
 
-        return ok({ tasks });
+        // Each row carries a derived alias as its display handle (there is no
+        // stored key), so the agent has something short to show and to feed
+        // back into other tools.
+        return ok({ tasks: tasks.map((t) => ({ ...t, key: deriveAlias('task', t.id) })) });
       },
     );
 
@@ -471,7 +470,7 @@ export class TaskTools {
       ({ task_key: taskKey }) => {
         const result = this.tasks.findByKey(taskKey);
         if (!result.ok) return err(result.error);
-        return ok({ task: result.value });
+        return okTask(result.value);
       },
     );
 
@@ -503,7 +502,7 @@ export class TaskTools {
           required_fields: Object.keys(transition.requires.shape),
         }));
         return ok({
-          task_key: task.key,
+          task_key: deriveAlias('task', task.id),
           state: fromState,
           actions,
         });
@@ -518,25 +517,25 @@ function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value);
 }
 
-type SortKey = 'key' | 'updated_at' | 'created_at' | 'priority';
+type SortKey = 'key' | 'updated_at' | 'created_at';
 
 interface SortableTask {
-  readonly key: string;
+  readonly id: string;
   readonly updatedAt: string;
   readonly createdAt: string;
-  readonly priority: number;
 }
 
 function compareBy(a: SortableTask, b: SortableTask, key: SortKey): number {
   switch (key) {
     case 'key':
-      return naturalCompareKey(a.key, b.key);
+      // "key" ordering now sorts by the derived alias — the human handle that
+      // replaced the stored key. Aliases don't fit the numeric prefix pattern,
+      // so this settles to a stable lexical compare of the handles.
+      return naturalCompareKey(deriveAlias('task', a.id), deriveAlias('task', b.id));
     case 'updated_at':
       return b.updatedAt.localeCompare(a.updatedAt); // newest first
     case 'created_at':
       return b.createdAt.localeCompare(a.createdAt); // newest first
-    case 'priority':
-      return a.priority - b.priority; // 1 (highest) first
   }
 }
 

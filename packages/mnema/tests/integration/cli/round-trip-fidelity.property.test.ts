@@ -216,7 +216,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
               });
               expect(created.ok).toBe(true);
               if (!created.ok) return;
-              const key = created.value.key;
+              const key = created.value.id;
 
               const after = roundTrip(local);
               try {
@@ -272,7 +272,7 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
             });
             expect(created.ok).toBe(true);
             if (!created.ok) return;
-            const key = created.value.key;
+            const key = created.value.id;
             const after = roundTrip(local);
             try {
               const got = after.container.epic.show(key);
@@ -316,16 +316,16 @@ describe('round-trip fidelity: every mirror entity survives a fresh-clone rebuil
             });
             expect(created.ok).toBe(true);
             if (!created.ok) return;
-            const key = created.value.key;
+            const key = created.value.id;
             const after = roundTrip(local);
             try {
               const got = after.container.sprint.show(key);
-              expect(got, 'sprint must rehydrate').not.toBeNull();
-              if (got === null) return;
+              expect(got.ok, 'sprint must rehydrate').toBe(true);
+              if (!got.ok) return;
               assertRoundTrip(
                 'sprint',
                 created.value as unknown as Record<string, unknown>,
-                got.sprint as unknown as Record<string, unknown>,
+                got.value.sprint as unknown as Record<string, unknown>,
                 ['name', 'goal', 'capacity', 'state', 'createdAt', 'closedAt'],
               );
             } finally {

@@ -36,7 +36,7 @@ interface SourceFile {
 /**
  * Validates `[[slug]]` wikilinks inside skill and memory markdown bodies
  * against the set of known targets (skill slugs, memory slugs, decision
- * keys, task keys), and answers "what references X". Read-only — it
+ * keys, task ids), and answers "what references X". Read-only — it
  * reports, it never mutates.
  */
 export class WikilinkLintService {
@@ -98,13 +98,13 @@ export class WikilinkLintService {
   }
 
   /**
-   * The union of every slug/key a wikilink may legitimately point at.
+   * The union of every slug/id/key a wikilink may legitimately point at.
    */
   private knownTargets(): Set<string> {
     const targets = new Set<string>();
     for (const skill of this.skills.listLatest()) targets.add(skill.slug);
     for (const memory of this.memories.listAll()) targets.add(memory.slug);
-    for (const task of this.tasks.findAllActive()) targets.add(task.key);
+    for (const task of this.tasks.findAllActive()) targets.add(task.id);
 
     const project = this.projects.findByKey(this.projectKey);
     if (project !== null) {

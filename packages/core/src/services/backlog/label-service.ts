@@ -7,6 +7,7 @@ import type { LabelRepository } from '../../storage/sqlite/repositories/label-re
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { SyncService } from '../sync/sync-service.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * A single label name: trimmed, non-empty, bounded, and free of commas
@@ -78,10 +79,12 @@ export class LabelService {
    * @returns The labels now on the task (sorted) or a structured error
    */
   setLabels(input: SetLabelsInput): Result<string[], MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
 
     const parsed = LABELS_INPUT.safeParse(input.labels);
     if (!parsed.success) {
@@ -95,12 +98,12 @@ export class LabelService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { task_key: task.key, labels: applied },
+      data: { task_id: task.id, labels: applied },
     });
 
     // Mirror the new label set to the task's markdown frontmatter, the
     // same way TaskService syncs after its own mutations.
-    this.sync.syncTask(task.key, { action: 'task_labels_set', runId: input.runId });
+    this.sync.syncTask(task.id, { action: 'task_labels_set', runId: input.runId });
 
     return Ok(applied);
   }
@@ -112,10 +115,12 @@ export class LabelService {
    * @returns The label names or a structured error if the task is unknown
    */
   listForTask(taskKey: string): Result<string[], MnemaError> {
-    const task = this.tasks.findByKey(taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey });
-    }
+    const resolved = resolveEntity(this.tasks, taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const task = resolved.value;
     return Ok(this.labels.findNamesByTask(task.id));
   }
 

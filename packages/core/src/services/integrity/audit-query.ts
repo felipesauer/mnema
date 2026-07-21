@@ -19,10 +19,10 @@ export interface AuditQueryFilter {
   /** Match `event.run` exactly. */
   readonly run?: string;
   /**
-   * Match a task key against either `event.data.key` (task_created,
-   * task_transitioned) or `event.data.task_key` (note_added,
-   * attachment_added). Decisions use `data.key` with a `MNEMA-ADR-`
-   * prefix and therefore do not collide with task keys.
+   * A resolved task id, matched against `event.data.id` (a task's own event,
+   * e.g. task_created/task_transitioned) or `event.data.task_id` (a task
+   * referenced from another entity's event, e.g. note_added/attachment_added).
+   * A decision event carries its own `data.key`, so it never matches an id.
    */
   readonly taskKey?: string;
   /** Lower bound for `event.at`. Either an ISO8601 string or a Date. */
@@ -206,9 +206,12 @@ function monthlyFileOutOfWindow(
   return false;
 }
 
-function matchesTaskKey(event: AuditEvent, taskKey: string): boolean {
+function matchesTaskKey(event: AuditEvent, taskId: string): boolean {
+  // Events stamp the committed id now (`id` on a task's own event, `task_id`
+  // when a task is referenced from another entity's event), so the filter —
+  // which carries a resolved id — matches on those.
   const data = event.data as Record<string, unknown>;
-  return data.key === taskKey || data.task_key === taskKey;
+  return data.id === taskId || data.task_id === taskId;
 }
 
 function unitToSeconds(unit: string): number {

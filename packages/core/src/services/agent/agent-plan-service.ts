@@ -6,6 +6,7 @@ import type { MnemaError } from '../../errors/mnema-error.js';
 import type { AgentPlanRepository } from '../../storage/sqlite/repositories/agent-plan-repository.js';
 import type { AgentRunRepository } from '../../storage/sqlite/repositories/agent-run-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 
 /**
  * Maximum nesting depth for plans (mirrors the SQL CHECK).
@@ -96,11 +97,12 @@ export class AgentPlanService {
 
     let taskId: string | null = null;
     if (input.taskKey !== undefined) {
-      const task = this.tasks.findByKey(input.taskKey);
-      if (task === null) {
-        return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-      }
-      taskId = task.id;
+      const resolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+        kind: ErrorCode.TaskNotFound,
+        taskKey: handle,
+      }));
+      if (!resolved.ok) return Err(resolved.error);
+      taskId = resolved.value.id;
     }
 
     const plan = this.plans.insert({

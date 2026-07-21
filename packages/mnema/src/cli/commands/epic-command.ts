@@ -1,4 +1,5 @@
 import type { Epic } from '@mnema/core/domain/entities/epic.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { EpicLifecycle } from '@mnema/core/domain/enums/epic-lifecycle.js';
 import { EpicState } from '@mnema/core/domain/enums/epic-state.js';
 import { printError } from '@mnema/core/errors/error-printer.js';
@@ -31,6 +32,7 @@ interface ListOptions {
  * - `epic list [--state=OPEN|CLOSED]`   → list epics
  * - `epic update <key> [--title ...]`   → edit an epic's content
  * - `epic close <key>`                  → close an OPEN epic
+ * - `epic reopen <key>`                 → reopen a CLOSED epic
  * - `epic add <epicKey> <taskKey>`      → attach a task to an epic
  * - `epic remove <epicKey> <taskKey>`   → detach a task from an epic
  * - `epic delete <key>`                 → soft-delete an epic + drop its mirror
@@ -123,6 +125,19 @@ export class EpicCommand {
       });
 
     group
+      .command('reopen <key>')
+      .description('Reopen a CLOSED epic')
+      .action(async (key: string) => {
+        await withMutatingCliContext(({ container }) => {
+          const result = container.epic.reopen({
+            epicKey: key,
+            actor: container.identity.getDefaultActor(),
+          });
+          renderEpic(result, 'reopened');
+        });
+      });
+
+    group
       .command('add <epicKey> <taskKey>')
       .description('Attach a task to an epic')
       .action(async (epicKey: string, taskKey: string) => {
@@ -202,17 +217,17 @@ function renderEpic(
     process.exit(printError(result.error));
   }
   process.stdout.write(
-    `${pc.green('✓')} epic ${pc.bold(result.value.key)} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
+    `${pc.green('✓')} epic ${pc.bold(deriveAlias('epic', result.value.id))} ${verb} ${pc.dim(`[${result.value.state}]`)}\n`,
   );
 }
 
 function formatEpicRow(epic: Epic): string {
-  return `${pc.bold(epic.key.padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
+  return `${pc.bold(deriveAlias('epic', epic.id).padEnd(20))} ${epic.state.padEnd(8)} ${epic.title}`;
 }
 
 function formatEpicView(epic: Epic, taskKeys: readonly string[], lifecycle: EpicLifecycle): string {
   const lines: string[] = [];
-  lines.push(`${pc.bold('Epic:')} ${epic.key}`);
+  lines.push(`${pc.bold('Epic:')} ${deriveAlias('epic', epic.id)}`);
   lines.push(`${pc.bold('Title:')} ${epic.title}`);
   lines.push(`${pc.bold('State:')} ${epic.state} ${pc.dim(`(${lifecycle})`)}`);
   if (epic.description !== null) {

@@ -94,14 +94,18 @@ describe('agent_run_resume reconstructs focus (MNEMA-223)', () => {
     );
     const runId = started.run_id as string;
 
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Notifier channel', acceptance_criteria: ['sends'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Notifier channel', acceptance_criteria: ['sends'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
+
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Notifier channel',
         description: 'Add a notification channel.',
         acceptance_criteria: ['sends'],
@@ -110,12 +114,12 @@ describe('agent_run_resume reconstructs focus (MNEMA-223)', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
     await harness.client.callTool({
       name: 'task_attach_evidence',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         criterion_index: 0,
         kind: 'commit',
         ref: 'abc123',
@@ -134,18 +138,19 @@ describe('agent_run_resume reconstructs focus (MNEMA-223)', () => {
       })) as CallToolResult,
     ) as unknown as ResumePayload;
 
-    // The task the run left IN_PROGRESS is surfaced as in-flight.
+    // The task the run left IN_PROGRESS is surfaced as in-flight, keyed by the
+    // committed id a resumed session resolves to pick the work back up.
     expect(resume.active_tasks).toHaveLength(1);
-    expect(resume.active_tasks[0]?.key).toBe('TEST-1');
+    expect(resume.active_tasks[0]?.key).toBe(taskId);
     expect(resume.active_tasks[0]?.state).toBe('IN_PROGRESS');
 
     // The hint is derived from the real audit (names the task + points at resuming it),
     // not a placeholder.
-    expect(resume.resume_hint).toContain('TEST-1');
+    expect(resume.resume_hint).toContain(taskId);
     expect(resume.resume_hint.toLowerCase()).toContain('resume');
 
     // Recent changes reflect the actual transition timeline.
-    expect(resume.recent_changes.some((c) => c.includes('TEST-1'))).toBe(true);
+    expect(resume.recent_changes.some((c) => c.includes(taskId))).toBe(true);
     expect(resume.mutation_count).toBeGreaterThan(0);
   });
 
@@ -160,14 +165,18 @@ describe('agent_run_resume reconstructs focus (MNEMA-223)', () => {
     );
     const runId = started.run_id as string;
 
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Quick chore', acceptance_criteria: ['done'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Quick chore', acceptance_criteria: ['done'] },
+      })) as CallToolResult,
+    );
+    const taskId = (created.task as { id: string }).id;
+
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskId,
         title: 'Quick chore',
         description: 'A quick chore to finish.',
         acceptance_criteria: ['done'],
@@ -176,15 +185,15 @@ describe('agent_run_resume reconstructs focus (MNEMA-223)', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskId, assignee_id: 'daniel' },
     });
     await harness.client.callTool({
       name: 'task_submit_review',
-      arguments: { task_key: 'TEST-1', pr_url: 'https://example.com/pr/1' },
+      arguments: { task_key: taskId, pr_url: 'https://example.com/pr/1' },
     });
     await harness.client.callTool({
       name: 'task_approve',
-      arguments: { task_key: 'TEST-1', approval_note: 'lgtm' },
+      arguments: { task_key: taskId, approval_note: 'lgtm' },
     });
     await harness.client.callTool({
       name: 'agent_run_end',

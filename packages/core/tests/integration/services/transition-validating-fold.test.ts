@@ -17,9 +17,10 @@ import { createServiceContainer, type ServiceContainer } from '@/services/servic
  */
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 
-// A custom workflow where `priority` is a VALIDATING gate field on `finish`,
-// with no bound — looser than the priority column's 1..5 invariant. The gate
-// accepts priority:8; persistence must not fold it; the guard must not reject.
+// A custom workflow where `estimate` is a VALIDATING gate field on `finish`,
+// with no bound — looser than the estimate column's ≥0-integer invariant. The
+// gate accepts estimate:-1; persistence must not fold it; the guard must not
+// reject.
 const CUSTOM_WORKFLOW = {
   schema_version: '1.0',
   name: 'custom-validating',
@@ -34,17 +35,18 @@ const CUSTOM_WORKFLOW = {
         description: 'Finish and record an audit-only confidence score',
         use_when: 'Work complete; the score is audit-only, not a task field',
         requires: {
-          priority: { type: 'number', field_kind: 'validating' },
+          estimate: { type: 'number', field_kind: 'validating' },
         },
       },
-      // `force` declares priority as MUTATING with no bound — the gate accepts
-      // 8, but it WOULD fold onto the 1..5 column, so the guard must reject.
+      // `force` declares estimate as MUTATING with no bound — the gate accepts
+      // -1, but it WOULD fold onto the ≥0-integer column, so the guard must
+      // reject.
       force: {
         to: 'DONE',
-        description: 'Force-close, folding the given priority onto the task',
-        use_when: 'Administrative close that overwrites the task priority',
+        description: 'Force-close, folding the given estimate onto the task',
+        use_when: 'Administrative close that overwrites the task estimate',
         requires: {
-          priority: { type: 'number', field_kind: 'mutating' },
+          estimate: { type: 'number', field_kind: 'mutating' },
         },
       },
     },
@@ -82,33 +84,33 @@ describe('transition fold-validation respects field_kind', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it('accepts a validating priority that exceeds the column bound (it is never folded)', () => {
+  it('accepts a validating estimate that violates the column bound (it is never folded)', () => {
     const created = container.task.create({ projectKey: 'TEST', title: 'probe', actor: 'daniel' });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'finish',
-      payload: { priority: 8 }, // accepted by the gate (no bound); audit-only
+      payload: { estimate: -1 }, // accepted by the gate (no bound); audit-only
       actor: 'daniel',
     });
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
     expect(moved.value.state).toBe('DONE');
-    // The column was NOT touched — it keeps the create-time default (3).
-    expect(moved.value.priority).toBe(3);
+    // The column was NOT touched — it keeps its create-time value (unset/null).
+    expect(moved.value.estimate).toBeNull();
   });
 
-  it('rejects a MUTATING priority that exceeds the column bound (it would fold)', () => {
+  it('rejects a MUTATING estimate that violates the column bound (it would fold)', () => {
     const created = container.task.create({ projectKey: 'TEST', title: 'probe', actor: 'daniel' });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 
     const moved = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'force',
-      payload: { priority: 8 }, // gate accepts it, but it folds onto the 1..5 column
+      payload: { estimate: -1 }, // gate accepts it, but it folds onto the ≥0 column
       actor: 'daniel',
     });
     expect(moved.ok).toBe(false);

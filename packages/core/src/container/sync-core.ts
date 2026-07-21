@@ -53,24 +53,23 @@ export function createSyncCore(
     new MarkdownIo(),
     { projectRoot, backlogDir: LAYOUT.backlog },
     syncBuffer,
-    // Resolve a task's epic/sprint UUIDs to their stable human keys for
-    // the markdown frontmatter; those keys survive a clone, the ids do not.
+    // A task's epic/sprint links are the committed IDs — the ids now survive a
+    // clone (the mirror carries them), so they are the collision-free reference
+    // the rebuild resolves by, in place of the human key.
     (task) => ({
-      epicKey: task.epicId !== null ? (repos.epics.findById(task.epicId)?.key ?? null) : null,
-      sprintKey:
-        task.sprintId !== null ? (repos.sprints.findById(task.sprintId)?.key ?? null) : null,
+      epicId: task.epicId,
+      sprintId: task.sprintId,
     }),
     // Resolve a task's labels for the frontmatter `labels:` list.
     (task) => repos.labels.findNamesByTask(task.id),
-    // Resolve the keys of the tasks this one is blocked by for the
-    // frontmatter `depends_on:` list. Only `blocks`-kind edges gate
-    // readiness, so only they are mirrored.
+    // The ids of the tasks this one is blocked by, for the `depends_on:` list.
+    // Only `blocks`-kind edges gate readiness, so only they are mirrored; the
+    // blocker's id is committed, so a clone relinks the same edge.
     (task) =>
       repos.dependencies
         .findByTask(task.id)
         .filter((dep) => dep.kind === 'blocks')
-        .map((dep) => repos.tasks.findById(dep.blocksTaskId)?.key ?? null)
-        .filter((key): key is string => key !== null),
+        .map((dep) => dep.blocksTaskId),
     // Resolve a task's assignee/reporter UUID to its stable HANDLE for the
     // frontmatter — the handle is what `rebuildTasks` upserts against.
     (actorId) => repos.actors.findById(actorId)?.handle ?? actorId,
@@ -106,6 +105,7 @@ export function createSyncCore(
     auditCore.audit,
     repos.provenanceLinks,
     (kind: string) => auditCore.auditQuery.run({ kind }),
+    repos.transitions,
   );
 
   return { sync, syncRebuild, roadmapMirror };

@@ -83,84 +83,19 @@ describe('service-level numeric validation', () => {
       if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
     });
 
-    it('rejects priority out of the 1..5 range', () => {
-      const r = container.task.create({
-        projectKey: 'TEST',
-        title: 'Title X',
-        priority: 99,
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('rejects a NaN priority instead of crashing on NOT NULL', () => {
-      const r = container.task.create({
-        projectKey: 'TEST',
-        title: 'Title X',
-        priority: Number('abc'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
     it('still accepts valid values (0 budget is distinct from unset)', () => {
       const r = container.task.create({
         projectKey: 'TEST',
         title: 'Title X',
         contextBudget: 0,
         estimate: 5,
-        priority: 2,
         actor: 'daniel',
       });
       expect(r.ok).toBe(true);
       if (r.ok) {
         expect(r.value.contextBudget).toBe(0);
         expect(r.value.estimate).toBe(5);
-        expect(r.value.priority).toBe(2);
       }
-    });
-  });
-
-  describe('sprint.addMetric', () => {
-    beforeEach(() => {
-      container.sprint.plan({ projectKey: 'TEST', name: 'S1', actor: 'daniel' });
-    });
-
-    it('rejects a non-finite target instead of crashing on NOT NULL', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
-        name: 'p95',
-        target: Number('abc'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('rejects a non-finite baseline rather than silently storing NULL', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
-        name: 'p95',
-        target: 100,
-        baseline: Number('xyz'),
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.kind).toBe(ErrorCode.ValidationFailed);
-    });
-
-    it('accepts a valid metric', () => {
-      const r = container.sprint.addMetric({
-        sprintKey: 'TEST-SPRINT-1',
-        name: 'p95',
-        target: 100,
-        baseline: 250,
-        unit: 'ms',
-        actor: 'daniel',
-      });
-      expect(r.ok).toBe(true);
     });
   });
 
@@ -174,7 +109,7 @@ describe('service-level numeric validation', () => {
         actor: 'daniel',
       });
       if (!t.ok) throw new Error('setup task create failed');
-      taskKey = t.value.key;
+      taskKey = t.value.id;
     });
 
     it('rejects a non-integer (0.5) criterion index — no orphan REAL row', () => {

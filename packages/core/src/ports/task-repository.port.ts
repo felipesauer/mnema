@@ -1,4 +1,5 @@
 import type { GitCommitRef, GitPrRef, Task } from '../domain/entities/task.js';
+import type { AliasResolution } from '../domain/entity-alias.js';
 
 /**
  * Persistence PORT for {@link Task}.
@@ -18,15 +19,14 @@ import type { GitCommitRef, GitPrRef, Task } from '../domain/entities/task.js';
  * database or shipping a package — it is internal testability and reuse.
  */
 export interface ITaskRepository {
-  findByKey(key: string): Task | null;
   findById(id: string): Task | null;
-  findByKeyIncludingDeleted(key: string): Task | null;
+  resolve(query: string): AliasResolution;
+  findByIdIncludingDeleted(id: string): Task | null;
   findByState(state: string): Task[];
   findByEpic(epicId: string): Task[];
   findAllActive(): Task[];
   findActiveLean(filter?: LeanTaskFilter): LeanTask[];
   findByTitle(projectId: string, title: string): Task[];
-  nextSequence(projectId: string): number;
   countActive(): number;
   insert(input: TaskInsertInput): Task;
   updateState(
@@ -54,11 +54,9 @@ export interface ITaskRepository {
 /** Lean projection returned by {@link ITaskRepository.findActiveLean}. */
 export interface LeanTask {
   readonly id: string;
-  readonly key: string;
   readonly title: string;
   readonly description: string | null;
   readonly state: string;
-  readonly priority: number;
   readonly assigneeId: string | null;
   readonly epicId: string | null;
   readonly sprintId: string | null;
@@ -82,7 +80,12 @@ export interface LeanTaskFilter {
 
 /** Input shape for {@link ITaskRepository.insert}. */
 export interface TaskInsertInput {
-  readonly key: string;
+  /**
+   * The committed identity, preserved on a clone rebuild so the id survives
+   * (the mirror carries it). Omitted only for a genuinely new task, where the
+   * repository mints a fresh v7 UUID.
+   */
+  readonly id?: string;
   readonly projectId: string;
   readonly title: string;
   readonly reporterId: string;
@@ -91,7 +94,6 @@ export interface TaskInsertInput {
   readonly state?: string;
   readonly estimate?: number | null;
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly epicId?: string | null;
   readonly sprintId?: string | null;
@@ -118,7 +120,6 @@ export interface TaskFieldUpdates {
   readonly acceptanceCriteria?: readonly string[];
   readonly estimate?: number | null;
   readonly contextBudget?: number | null;
-  readonly priority?: number;
   readonly assigneeId?: string | null;
   readonly metadata?: Readonly<Record<string, unknown>>;
   /**

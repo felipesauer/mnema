@@ -10,7 +10,7 @@ import { DecisionStatus } from '../../domain/enums/decision-status.js';
 import { EpicState } from '../../domain/enums/epic-state.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { TaskState } from '../../domain/enums/task-state.js';
-import { parseTaskKey } from '../../domain/id-generator.js';
+import { generateUuid } from '../../domain/id-generator.js';
 import { parseFrontmatter } from '../../storage/markdown/frontmatter.js';
 import { MarkdownIo } from '../../storage/markdown/markdown-io.js';
 import type { ActorRepository } from '../../storage/sqlite/repositories/actor-repository.js';
@@ -36,6 +36,7 @@ import type {
   TaskFieldUpdates,
   TaskRepository,
 } from '../../storage/sqlite/repositories/task-repository.js';
+import type { TransitionRepository } from '../../storage/sqlite/repositories/transition-repository.js';
 import { isoNow } from '../../utils/iso-now.js';
 import {
   CURATED_MEMORY_SUBFOLDERS,
@@ -44,6 +45,22 @@ import {
   SEED_AUTHOR_HANDLE,
   SKILL_DEFAULT_DIR,
 } from '../../utils/mirror-layout.js';
+
+/**
+ * The audit-event shape the rebuild reads to replay projections. Carries the
+ * envelope fields (`actor`/`via`/`run`/`at`, which live outside `data`) as well
+ * as `data`, so a projection like transitions can recover the actor handle and
+ * the true timestamp — not just the payload. A superset of what the provenance
+ * replay needs (it uses only `data`), kept in one place so both share a reader.
+ */
+export interface AuditEventView {
+  readonly kind: string;
+  readonly at: string;
+  readonly actor: string;
+  readonly via?: string;
+  readonly run?: string;
+  readonly data: Record<string, unknown>;
+}
 
 /**
  * Per-entity tally of a {@link SyncRebuild.run} execution.
@@ -60,8 +77,9 @@ export interface RebuildCounts {
  * directory order is exactly the silent regression this guard prevents.
  */
 export interface MirrorConflict {
-  readonly key: string;
-  /** The state directories the key was found in, in scan order. */
+  /** Committed id the duplicate mirrors share — the filename that collided. */
+  readonly id: string;
+  /** The state directories the id was found in, in scan order. */
   readonly states: readonly string[];
 }
 
@@ -89,16 +107,18 @@ export interface RebuildSummary {
 /**
  * Reconstructs the cache tables from the version-controlled markdown:
  * epics and decisions under `roadmap/`, sprints under `sprints/`, and
- * tasks under `backlog/<STATE>/<KEY>.md`.
+ * tasks under `backlog/<STATE>/<ID>.md`.
  *
- * The append-only history (`transitions`, `agent_runs`, `agent_plans`)
- * is **not** rebuilt — that timeline lives in `.audit/*.jsonl` and is
- * the canonical record for the human. `mnema sync` is therefore safe to
- * run on a clean database: it bootstraps the cache from disk without
- * inventing past events.
+ * The transition history IS rebuilt — but as a projection of the canonical
+ * `.audit/*.jsonl` chain, not invented: a fresh clone's empty `transitions`
+ * table is replayed from `task_created`/`task_transitioned` events (only when
+ * empty, so a live project's authoritative rows are never touched). The other
+ * append-only timelines (`agent_runs`, `agent_plans`) are still left to the
+ * chain. `mnema sync` is therefore safe to run on a clean database: it
+ * bootstraps the cache from disk + chain without inventing past events.
  *
  * Order matters. Epics and sprints are rebuilt before tasks so a task's
- * `epic_key` / `sprint_key` can be resolved to a freshly-inserted row.
+ * `epic_id` / `sprint_id` link can be resolved to a freshly-inserted row.
  *
  * Upsert-only: it inserts or realigns a row for every markdown it finds,
  * but never deletes. Removing a `.md` is therefore not a delete signal —
@@ -163,9 +183,15 @@ export class SyncRebuild {
     private readonly provenance: {
       link(source: { kind: string; ref: string }, target: { kind: string; ref: string }): unknown;
     } | null = null,
-    private readonly auditEvents:
-      | ((kind: string) => readonly { readonly data: Record<string, unknown> }[])
-      | null = null,
+    private readonly auditEvents: ((kind: string) => readonly AuditEventView[]) | null = null,
+    /**
+     * Optional transitions repo. When present (alongside {@link auditEvents}),
+     * the rebuild reconstructs the transition history from the chain into the
+     * empty table of a fresh clone — the live hot-path is the only other writer,
+     * so a clone that never ran it starts with no history. Left optional so
+     * existing callers/tests construct the rebuild unchanged.
+     */
+    private readonly transitions: TransitionRepository | null = null,
   ) {}
 
   /**
@@ -243,14 +269,14 @@ export class SyncRebuild {
     // directory order is not guaranteed), so the link is resolved in a
     // second pass, once every decision row exists.
     this.relinkSupersededDecisions(this.paths.roadmapDir, project.key);
-    const tasks = this.rebuildTasks(project.id, project.key, skipped, conflicts);
+    const tasks = this.rebuildTasks(project.id, skipped, conflicts);
     // A task's `depends_on` list points at its blockers by key. Those
     // blocker rows may be walked after the dependent (directory order is
     // not guaranteed), so the edges are recreated in a second pass, once
     // every task row exists.
-    this.relinkTaskDependencies(project.key);
-    // Observations are rebuilt after tasks so a note's `related_task_key`
-    // resolves to a freshly-inserted task row.
+    this.relinkTaskDependencies();
+    // Observations are rebuilt after tasks so a note's `related_task_id`
+    // validates against a freshly-inserted task row.
     const observations = this.rebuildObservations(skipped);
     // Knowledge mirrors (foldered, flat frontmatter). Independent of the
     // backlog graph, so order does not matter. Without these a fresh clone
@@ -264,6 +290,12 @@ export class SyncRebuild {
     // exists (the edges reference decision/memory/skill refs). No-op when the
     // provenance repo or the event reader was not wired.
     this.rebuildProvenance();
+
+    // Replay the transition history from the chain into a fresh clone's empty
+    // transitions table. Runs after tasks exist (rows reference task ids) and
+    // is a no-op unless the table is empty (a live project already holds the
+    // authoritative rows). No-op when the repo or event reader was not wired.
+    this.rebuildTransitions();
 
     return {
       tasksScanned: tasks.scanned,
@@ -368,12 +400,100 @@ export class SyncRebuild {
   }
 
   /**
+   * Reconstructs the transition history from the committed audit chain into a
+   * fresh clone's empty `transitions` table. The chain is the source of truth:
+   * a `task_created` event becomes the initial `create` row, and each
+   * `task_transitioned` event becomes a state-change row, carrying the gate
+   * payload that rode on the event since the identity wave.
+   *
+   * Runs ONLY when the table is empty. The table is append-only (UPDATE/DELETE
+   * are trigger-blocked) and the live hot-path is its authoritative writer, so
+   * a project that already has rows must never be re-projected — re-running
+   * against a populated table would duplicate. An empty table means a clone
+   * that has the `.audit/` chain but never ran the hot-path: exactly the gap
+   * this closes.
+   *
+   * Two shape gaps between the row and the event are bridged here: the event
+   * stores actor/via as HANDLES (the table wants resolved actor ids, so they
+   * are re-resolved via `upsert`, matching the live `ensureActor`), and the
+   * `create` transition has no `task_transitioned` event (it is synthesised
+   * from `task_created`). No-op when the repo or event reader is absent.
+   */
+  private rebuildTransitions(): void {
+    if (this.transitions === null || this.auditEvents === null) return;
+    if (this.transitions.count() > 0) return;
+    const read = this.auditEvents;
+    const repo = this.transitions;
+
+    // Resolve an actor handle to its committed id, creating the actor when the
+    // clone has not seen it — the same "ensure" the live path uses. Human vs
+    // agent is inferred from the `agent:` handle convention.
+    const resolveActor = (handle: string | undefined): string | null => {
+      if (handle === undefined || handle.length === 0) return null;
+      const kind = handle.startsWith('agent:') ? ActorKind.Agent : ActorKind.Human;
+      return this.actors.upsert(handle, kind);
+    };
+
+    // Both event kinds project onto a transition row; merge and replay in
+    // chain order so `at`-ordered readers see the true sequence.
+    const events = [...read('task_created'), ...read('task_transitioned')].sort((a, b) =>
+      a.at.localeCompare(b.at),
+    );
+
+    for (const event of events) {
+      const taskId = readString(event.data, 'id');
+      if (taskId === null) continue;
+      // The row's task_id is a NOT NULL FK. A clone can hold a chain event for a
+      // task with no row — a canceled task (its mirror was unlinked, but the
+      // create/transition events stay committed) or one skipped as a
+      // multi-mirror conflict. Skip such an event rather than let the FK abort
+      // the whole sync; without a task row the transition has nothing to anchor.
+      // (`IncludingDeleted` so a soft-deleted-but-present row still projects.)
+      if (this.tasks.findByIdIncludingDeleted(taskId) === null) continue;
+      const actorId = resolveActor(event.actor);
+      if (actorId === null) continue;
+
+      const isCreate = event.kind === 'task_created';
+      // task_created carries only { id, title, state }; synthesise the create
+      // row's shape. A transition event carries from/to/action/payload directly
+      // (payload only when non-empty — default it to {}).
+      const fromState = isCreate ? null : (readString(event.data, 'from') ?? null);
+      const toState = isCreate
+        ? (readString(event.data, 'state') ?? '')
+        : (readString(event.data, 'to') ?? '');
+      const action = isCreate ? 'create' : (readString(event.data, 'action') ?? '');
+      const payload = isCreate
+        ? { title: readString(event.data, 'title') ?? '' }
+        : readRecord(event.data, 'payload');
+
+      repo.insertProjected({
+        // The row id is a fresh uuid: transitions is a git-ignored local cache,
+        // never cross-referenced by id across clones, so it need not be stable.
+        id: generateUuid(),
+        taskId,
+        fromState,
+        toState,
+        action,
+        payload,
+        actorId,
+        viaActorId: resolveActor(event.via),
+        // agent_run_id is a FK to agent_runs, which the rebuild never
+        // reconstructs (that timeline is left to the chain), so on a clone the
+        // table is empty. Projecting the event's run id would violate the FK
+        // and abort the sync; the transition keeps its actor/payload, only the
+        // run link (meaningless on a clone with no runs) is dropped to null.
+        agentRunId: null,
+        at: event.at,
+      });
+    }
+  }
+
+  /**
    * Walks `backlog/<STATE>/*.md`, upserts each task, and relinks it to
    * its epic/sprint by the keys recorded in the frontmatter.
    */
   private rebuildTasks(
     projectId: string,
-    projectKey: string,
     skipped: { file: string; reason: string }[],
     conflicts: MirrorConflict[],
   ): RebuildCounts {
@@ -389,7 +509,7 @@ export class SyncRebuild {
     // and choosing by it silently regressed DONE tasks to READY/DRAFT in the
     // field). These keys are recorded as conflicts and skipped entirely in
     // the pass below — never upserted from any copy.
-    const duplicateKeys = this.collectDuplicateTaskKeys(root, conflicts);
+    const duplicateIds = this.collectDuplicateTaskIds(root, conflicts);
 
     for (const stateDir of listDirs(root)) {
       const stateRoot = path.join(root, stateDir);
@@ -417,32 +537,31 @@ export class SyncRebuild {
         scanned += 1;
 
         const data = this.markdownIo.read(filePath).mnemaData;
-        const key = readString(data, 'key');
-        if (key === null) {
-          skipped.push({ file: filePath, reason: 'missing mnema.key' });
+        // The committed id is the sole identity and the mirror filename. A file
+        // without an id (or one that disagrees) predates this layout and is
+        // skipped fail-closed — the store-format guard forces a migrate before
+        // a rebuild ever sees it. Every file under this project's backlog is
+        // this project's, so no project-prefix check is needed.
+        const id = readString(data, 'id');
+        if (id === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.id' });
           continue;
         }
 
-        const expectedKey = fileName.replace(/\.md$/, '');
-        if (key !== expectedKey) {
+        const expectedId = fileName.replace(/\.md$/, '');
+        if (id !== expectedId) {
           skipped.push({
             file: filePath,
-            reason: `mnema.key (${key}) does not match filename (${expectedKey})`,
+            reason: `mnema.id (${id}) does not match filename (${expectedId})`,
           });
           continue;
         }
 
-        const parsedKey = parseTaskKey(key);
-        if (parsedKey === null || parsedKey.projectKey !== projectKey) {
-          skipped.push({ file: filePath, reason: 'key prefix does not match project' });
-          continue;
-        }
-
-        // A key mirrored in more than one state directory is ambiguous: the
+        // An id mirrored in more than one state directory is ambiguous: the
         // rebuild refuses to realign the cached row from any copy (recorded
         // as a conflict in the first pass). Leaving the row untouched is
         // fail-closed — it never moves a task backwards on a guess.
-        if (duplicateKeys.has(key)) {
+        if (duplicateIds.has(id)) {
           continue;
         }
 
@@ -454,22 +573,22 @@ export class SyncRebuild {
         const assigneeId =
           assigneeHandle !== null ? this.actors.upsert(assigneeHandle, ActorKind.Human) : null;
 
-        // Resolve epic/sprint links by key — the rows exist already
-        // because the roadmap was rebuilt first. An unknown key links to
-        // nothing rather than failing the whole rebuild.
-        const epicKey = readString(data, 'epic_key');
-        const epicId = epicKey !== null ? (this.epics.findByKey(epicKey)?.id ?? null) : null;
-        const sprintKey = readString(data, 'sprint_key');
-        const sprintId =
-          sprintKey !== null ? (this.sprints.findByKey(sprintKey)?.id ?? null) : null;
+        // Links are committed ids now; resolve straight through (the epic/sprint
+        // was rebuilt first and adopts the same committed id). An unknown id
+        // links to nothing rather than failing the whole rebuild.
+        const epicId = resolveRefId(readString(data, 'epic_id'), (ref) => this.epics.findById(ref));
+        const sprintId = resolveRefId(readString(data, 'sprint_id'), (ref) =>
+          this.sprints.findById(ref),
+        );
 
-        const existing = this.tasks.findByKey(key);
+        const existing = this.tasks.findById(id);
         let taskId: string;
         if (existing === null) {
           taskId = this.tasks.insert({
-            key,
+            // Adopt the committed id so it survives the clone.
+            id,
             projectId,
-            title: readString(data, 'title') ?? key,
+            title: readString(data, 'title') ?? id,
             description: readString(data, 'description'),
             acceptanceCriteria: readStringArray(data, 'acceptance_criteria'),
             state: stateName,
@@ -479,7 +598,6 @@ export class SyncRebuild {
             createdAt: readString(data, 'created_at') ?? undefined,
             updatedAt: readString(data, 'updated_at') ?? undefined,
             closedAt: readString(data, 'closed_at'),
-            priority: readNumber(data, 'priority') ?? 3,
             assigneeId,
             reporterId,
             epicId,
@@ -506,14 +624,14 @@ export class SyncRebuild {
             this.audit?.write({
               kind: 'sync_realign',
               actor: 'system',
-              data: { key, from: fromState, to: stateName },
+              data: { id, from: fromState, to: stateName },
             });
           }
 
           // Fold the content columns serialiseTask round-trips back onto the
           // row when they diverge from the cache, so a merged edit to a
           // committed task (title, description, acceptance_criteria,
-          // estimate, priority, assignee) is no longer silently dropped.
+          // estimate, assignee) is no longer silently dropped.
           const contentDrift = collectTaskContentDrift(existing, data, assigneeId);
           if (contentDrift !== null) {
             this.tasks.updateFields(existing.id, contentDrift);
@@ -542,7 +660,7 @@ export class SyncRebuild {
         const gitBranch = readString(data, 'git_branch');
         const gitPr = readGitPr(data);
         if (gitBranch !== null || gitPr !== null) {
-          const currentTask = this.tasks.findByKey(key);
+          const currentTask = this.tasks.findById(id);
           this.tasks.setGitLink(taskId, {
             branch: gitBranch,
             commits: currentTask?.gitCommits ?? [],
@@ -562,19 +680,19 @@ export class SyncRebuild {
   }
 
   /**
-   * First pass over `backlog/<STATE>/*.md`: finds every task key mirrored in
-   * more than one valid state directory and returns the set of such keys,
+   * First pass over `backlog/<STATE>/*.md`: finds every task id mirrored in
+   * more than one valid state directory and returns the set of such ids,
    * appending a {@link MirrorConflict} for each to `conflicts`.
    *
    * Only copies that the main pass would actually act on are counted — the
    * state directory must be one the active workflow declares, and the
-   * frontmatter `key` must match the filename — so an already-skipped file
-   * (unknown state, key/filename mismatch) never fabricates a false
-   * conflict. A key seen once is not a conflict; the common single-mirror
+   * frontmatter `id` must match the filename — so an already-skipped file
+   * (unknown state, id/filename mismatch) never fabricates a false
+   * conflict. An id seen once is not a conflict; the common single-mirror
    * repo yields an empty set and the guard is a no-op.
    */
-  private collectDuplicateTaskKeys(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
-    const statesByKey = new Map<string, string[]>();
+  private collectDuplicateTaskIds(root: string, conflicts: MirrorConflict[]): ReadonlySet<string> {
+    const statesById = new Map<string, string[]>();
 
     for (const stateDir of listDirs(root)) {
       if (!this.validStates.has(stateDir)) continue;
@@ -582,22 +700,22 @@ export class SyncRebuild {
 
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
-        const key = readString(data, 'key');
-        // Mirror the main pass's guards: a key that is absent or disagrees
+        const id = readString(data, 'id');
+        // Mirror the main pass's guards: an id that is absent or disagrees
         // with the filename is skipped there, so it must not count here.
-        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+        if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
 
-        const states = statesByKey.get(key);
-        if (states === undefined) statesByKey.set(key, [stateDir]);
+        const states = statesById.get(id);
+        if (states === undefined) statesById.set(id, [stateDir]);
         else states.push(stateDir);
       }
     }
 
     const duplicates = new Set<string>();
-    for (const [key, states] of statesByKey) {
+    for (const [id, states] of statesById) {
       if (states.length > 1) {
-        duplicates.add(key);
-        conflicts.push({ key, states });
+        duplicates.add(id);
+        conflicts.push({ id, states });
       }
     }
     return duplicates;
@@ -605,11 +723,10 @@ export class SyncRebuild {
 
   /**
    * Walks `observations/<id>.md` and re-imports each note into the cache,
-   * preserving its on-disk id / timestamps / archived state. Unlike a task
-   * or decision the id is the filename (observations have no human key), and
-   * a `related_task_key` is resolved to the freshly-inserted task row. The
-   * insert is idempotent by id — a note already present in the cache is left
-   * untouched — so a rebuild over a populated database is a no-op.
+   * preserving its on-disk id / timestamps / archived state. The id is the
+   * filename, and a `related_task_id` is validated against the freshly-inserted
+   * task row. The insert is idempotent by id — a note already present in the
+   * cache is left untouched — so a rebuild over a populated database is a no-op.
    */
   private rebuildObservations(skipped: { file: string; reason: string }[]): RebuildCounts {
     const root = path.join(this.paths.projectRoot, this.paths.observationsDir);
@@ -647,11 +764,11 @@ export class SyncRebuild {
       // The frontmatter seeds the row on a fresh clone (INSERT OR IGNORE —
       // observations are record-only knowledge, NOT folded back like the
       // backlog entities; see the run() contract). The body is only a
-      // readable copy. `related_task_key` resolves to the freshly-inserted
-      // task row by its stable key.
-      const relatedTaskKey = readString(data, 'related_task_key');
-      const relatedTaskId =
-        relatedTaskKey !== null ? (this.tasks.findByKey(relatedTaskKey)?.id ?? null) : null;
+      // readable copy. `related_task_id` is validated against the
+      // freshly-inserted task row by its committed id.
+      const relatedTaskId = readString(data, 'related_task_id');
+      const resolvedId =
+        relatedTaskId !== null ? (this.tasks.findById(relatedTaskId)?.id ?? null) : null;
       const createdBy = this.actors.upsert(
         readString(data, 'created_by') ?? 'unknown',
         ActorKind.Human,
@@ -661,7 +778,7 @@ export class SyncRebuild {
         id,
         content,
         topics: readStringArray(data, 'topics'),
-        relatedTaskId,
+        relatedTaskId: resolvedId,
         createdBy,
         at: readString(data, 'at') ?? isoNow(),
         // No archived_at: only live observations have a mirror (archiving
@@ -845,8 +962,11 @@ export class SyncRebuild {
     let scanned = 0;
     let upserted = 0;
 
-    for (const fileName of listMarkdownFiles(root)) {
-      const filePath = path.join(root, fileName);
+    // Recursive (one level): reads both the flat layout (files at the root) and
+    // the foldered layout (files under a per-kind subfolder). The basename is
+    // the identity, so the subfolder is irrelevant to resolution — a not-yet-
+    // migrated tree and a migrated one both scan.
+    for (const { slug: stem, filePath } of listMirrorEntries(root)) {
       const data = this.markdownIo.read(filePath).mnemaData;
 
       // The directory may hold more than one kind (epic + decision); only
@@ -854,30 +974,47 @@ export class SyncRebuild {
       if (readString(data, 'kind') !== kind) continue;
       scanned += 1;
 
-      const key = readString(data, 'key');
-      if (key === null) {
-        skipped.push({ file: filePath, reason: 'missing mnema.key' });
-        continue;
+      // A decision is filed by its human key (that boundary migrates in a later
+      // wave) and its project prefix scopes it; an epic or sprint is filed by
+      // its committed id, the sole identity, and every roadmap file already
+      // belongs to this project.
+      let changed: boolean;
+      if (kind === 'decision') {
+        const key = readString(data, 'key');
+        if (key === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.key' });
+          continue;
+        }
+        if (key !== stem) {
+          skipped.push({
+            file: filePath,
+            reason: `mnema.key (${key}) does not match filename (${stem})`,
+          });
+          continue;
+        }
+        if (!key.startsWith(`${projectKey}-`)) {
+          skipped.push({ file: filePath, reason: 'key prefix does not match project' });
+          continue;
+        }
+        changed = this.upsertDecision(projectId, key, data);
+      } else {
+        const id = readString(data, 'id');
+        if (id === null) {
+          skipped.push({ file: filePath, reason: 'missing mnema.id' });
+          continue;
+        }
+        if (id !== stem) {
+          skipped.push({
+            file: filePath,
+            reason: `mnema.id (${id}) does not match filename (${stem})`,
+          });
+          continue;
+        }
+        changed =
+          kind === 'epic'
+            ? this.upsertEpic(projectId, id, data)
+            : this.upsertSprint(projectId, id, data);
       }
-      const expectedKey = fileName.replace(/\.md$/, '');
-      if (key !== expectedKey) {
-        skipped.push({
-          file: filePath,
-          reason: `mnema.key (${key}) does not match filename (${expectedKey})`,
-        });
-        continue;
-      }
-      if (!key.startsWith(`${projectKey}-`)) {
-        skipped.push({ file: filePath, reason: 'key prefix does not match project' });
-        continue;
-      }
-
-      const changed =
-        kind === 'epic'
-          ? this.upsertEpic(projectId, key, data)
-          : kind === 'sprint'
-            ? this.upsertSprint(projectId, key, data)
-            : this.upsertDecision(projectId, key, data);
       if (changed) upserted += 1;
     }
 
@@ -885,17 +1022,20 @@ export class SyncRebuild {
   }
 
   /** Inserts an epic when absent, or realigns its state when it drifted. */
-  private upsertEpic(projectId: string, key: string, data: Record<string, unknown>): boolean {
+  private upsertEpic(projectId: string, id: string, data: Record<string, unknown>): boolean {
     const state = readEnum(data, 'state', EpicState, EpicState.Open);
-    const existing = this.epics.findByKey(key);
+    // Resolve by the committed id, not a key: two clones that minted the same
+    // key offline carry distinct ids, and each must land as its own row rather
+    // than the second silently overwriting the first.
+    const existing = this.epics.findById(id);
     if (existing === null) {
       // Insert directly in the committed state with the committed timestamps,
       // so a CLOSED epic keeps its original created_at/closed_at instead of
       // an updateState stamping a fresh now.
       this.epics.insert({
-        key,
+        id,
         projectId,
-        title: readString(data, 'title') ?? key,
+        title: readString(data, 'title') ?? id,
         description: readString(data, 'description'),
         metadata: readRecord(data, 'metadata'),
         state,
@@ -918,20 +1058,21 @@ export class SyncRebuild {
   }
 
   /** Inserts a sprint when absent, or realigns its state when it drifted. */
-  private upsertSprint(projectId: string, key: string, data: Record<string, unknown>): boolean {
+  private upsertSprint(projectId: string, id: string, data: Record<string, unknown>): boolean {
     const state = readEnum(data, 'state', SprintState, SprintState.Planned);
-    const existing = this.sprints.findByKey(key);
+    // Resolve by the committed id (see upsertEpic): a key colliding across
+    // clones must not overwrite a distinct sprint.
+    const existing = this.sprints.findById(id);
     if (existing === null) {
       // Insert directly in the committed state with the committed timestamps,
       // so a closed sprint keeps its original created_at/closed_at.
       this.sprints.insert({
-        key,
+        id,
         projectId,
-        name: readString(data, 'name') ?? key,
+        name: readString(data, 'name') ?? id,
         goal: readString(data, 'goal'),
         startsAt: readString(data, 'starts_at'),
         endsAt: readString(data, 'ends_at'),
-        capacity: readNumber(data, 'capacity'),
         metadata: readRecord(data, 'metadata'),
         state,
         createdAt: readString(data, 'created_at') ?? undefined,
@@ -972,6 +1113,7 @@ export class SyncRebuild {
       // accepted/superseded ADR keeps its original decision timestamp instead
       // of an updateStatus stamping a fresh now.
       this.decisions.insert({
+        id: readString(data, 'id') ?? undefined,
         key,
         projectId,
         title: readString(data, 'title') ?? key,
@@ -1047,7 +1189,7 @@ export class SyncRebuild {
    * reference (blocker absent) rather than crashing, and is idempotent: an
    * edge already present is left untouched.
    */
-  private relinkTaskDependencies(projectKey: string): void {
+  private relinkTaskDependencies(): void {
     const root = path.join(this.paths.projectRoot, this.paths.backlogDir);
     if (!existsSync(root)) return;
 
@@ -1058,22 +1200,22 @@ export class SyncRebuild {
       for (const fileName of listMarkdownFiles(stateRoot)) {
         const data = this.markdownIo.read(path.join(stateRoot, fileName)).mnemaData;
 
-        const key = readString(data, 'key');
-        if (key === null || key !== fileName.replace(/\.md$/, '')) continue;
+        const id = readString(data, 'id');
+        // The mirror is filed by id, the sole identity; every backlog file is
+        // this project's.
+        if (id === null || id !== fileName.replace(/\.md$/, '')) continue;
 
         const dependsOn = readStringArray(data, 'depends_on');
         if (dependsOn.length === 0) continue;
 
-        const parsedKey = parseTaskKey(key);
-        if (parsedKey === null || parsedKey.projectKey !== projectKey) continue;
-
-        const task = this.tasks.findByKey(key);
+        const task = this.tasks.findById(id);
         if (task === null) continue;
 
-        for (const blockerKey of dependsOn) {
-          const blocker = this.tasks.findByKey(blockerKey);
-          // A dangling reference (blocker absent, or the task blocking
-          // itself) is skipped rather than crashing the rebuild.
+        for (const blockerId of dependsOn) {
+          // depends_on carries the blocker's committed id now. Resolve by id
+          // (it survives the clone). A dangling reference (blocker absent, or
+          // the task blocking itself) is skipped rather than crashing.
+          const blocker = this.tasks.findById(blockerId);
           if (blocker === null || blocker.id === task.id) continue;
           if (this.dependencies.exists(task.id, blocker.id, 'blocks')) continue;
           this.dependencies.insert({
@@ -1094,10 +1236,9 @@ export class SyncRebuild {
  * so the caller can skip the write and leave `updated_at` truthful.
  *
  * Mirrors the fields {@link serialiseTask} round-trips and the insert
- * path's fallbacks (title/priority default the same way) so a freshly
- * written mirror reports no drift. `assigneeId` is passed in already
- * resolved from the `assignee` handle, matching how the insert branch
- * derives it.
+ * path's fallbacks (title defaults the same way) so a freshly written
+ * mirror reports no drift. `assigneeId` is passed in already resolved
+ * from the `assignee` handle, matching how the insert branch derives it.
  */
 function collectTaskContentDrift(
   existing: Task,
@@ -1134,12 +1275,6 @@ function collectTaskContentDrift(
   const contextBudget = readNumber(data, 'context_budget');
   if (contextBudget !== existing.contextBudget) {
     updates.contextBudget = contextBudget;
-    changed = true;
-  }
-
-  const priority = readNumber(data, 'priority') ?? 3;
-  if (priority !== existing.priority) {
-    updates.priority = priority;
     changed = true;
   }
 
@@ -1197,6 +1332,16 @@ function collectEpicContentDrift(
     changed = true;
   }
 
+  // closed_at is authoritative from the mirror on rebuild: an epic closed on
+  // disk must carry its committed close time into the cache rather than the
+  // fresh `now` that a realigning updateState() stamps; one reopened on disk
+  // (closed_at: null) must have a stale cached value cleared.
+  const closedAt = readString(data, 'closed_at');
+  if (closedAt !== existing.closedAt) {
+    updates.closedAt = closedAt;
+    changed = true;
+  }
+
   return changed ? updates : null;
 }
 
@@ -1232,12 +1377,6 @@ function collectSprintContentDrift(
   const endsAt = readString(data, 'ends_at');
   if (endsAt !== existing.endsAt) {
     updates.endsAt = endsAt;
-    changed = true;
-  }
-
-  const capacity = readNumber(data, 'capacity');
-  if (capacity !== existing.capacity) {
-    updates.capacity = capacity;
     changed = true;
   }
 
@@ -1339,6 +1478,20 @@ function listMarkdownFiles(dir: string): string[] {
 function readString(data: Record<string, unknown>, key: string): string | null {
   const value = data[key];
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Resolves a committed reference id to a live id, confirming the target row
+ * exists via `lookup`. A `null` ref (unset link) or a dangling id (the target
+ * is not in this project's mirror) resolves to `null` — a broken link never
+ * fails the whole rebuild.
+ */
+function resolveRefId(
+  ref: string | null,
+  lookup: (id: string) => { readonly id: string } | null,
+): string | null {
+  if (ref === null) return null;
+  return lookup(ref)?.id ?? null;
 }
 
 function readNumber(data: Record<string, unknown>, key: string): number | null {

@@ -1,14 +1,12 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Sprint } from '../../domain/entities/sprint.js';
-import type { SprintMetric } from '../../domain/entities/sprint-metric.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import { SprintState } from '../../domain/enums/sprint-state.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
-import { checkOptionalFiniteNumber, checkRequiredFiniteNumber } from '../../domain/validation.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { ErrorIssue, MnemaError } from '../../errors/mnema-error.js';
 import type { ProjectRepository } from '../../storage/sqlite/repositories/project-repository.js';
-import type { SprintMetricRepository } from '../../storage/sqlite/repositories/sprint-metric-repository.js';
 import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import { tryMutation } from '../../storage/sqlite/sqlite-error-map.js';
@@ -16,13 +14,7 @@ import { isIso8601 } from '../../utils/iso-date.js';
 import type { AuditService } from '../integrity/audit-service.js';
 import type { RoadmapMirror } from '../sync/roadmap-mirror.js';
 import type { SyncService } from '../sync/sync-service.js';
-
-/**
- * Upper bound for sprint capacity in story points; lifted from
- * DESIGN.md §6.4 (no real team plans above 1k). The lower bound is 1
- * — zero capacity is a CLOSED sprint, not a planned one.
- */
-const MAX_SPRINT_CAPACITY = 1000;
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * Input for {@link SprintService.plan}.
@@ -33,7 +25,6 @@ export interface PlanSprintInput {
   readonly goal?: string;
   readonly startsAt?: string;
   readonly endsAt?: string;
-  readonly capacity?: number;
   readonly actor: string;
   readonly via?: string;
   readonly runId?: string;
@@ -81,22 +72,6 @@ export interface SprintTaskInput {
 export interface SprintView {
   readonly sprint: Sprint;
   readonly tasks: readonly Task[];
-  readonly metrics: readonly SprintMetric[];
-}
-
-/**
- * Input for {@link SprintService.addMetric}.
- */
-export interface AddSprintMetricInput {
-  readonly sprintKey: string;
-  readonly name: string;
-  readonly baseline?: number | null;
-  readonly target: number;
-  readonly unit?: string | null;
-  readonly dueDate?: string | null;
-  readonly actor: string;
-  readonly via?: string;
-  readonly runId?: string;
 }
 
 /**
@@ -114,13 +89,27 @@ export class SprintService {
     private readonly projects: ProjectRepository,
     private readonly audit: AuditService,
     private readonly stateMachine: StateMachine,
-    private readonly metrics: SprintMetricRepository,
     // Optional so unit tests can drive the service without a filesystem.
     // `mirror` versions the sprint; `sync` rewrites a task's markdown when
     // its sprint link changes.
     private readonly mirror: RoadmapMirror | null = null,
     private readonly sync: SyncService | null = null,
   ) {}
+
+  /**
+   * Resolves a user-typed handle to a single sprint. Accepts the committed id, a
+   * short alias (`s-3a9f`), or a hash prefix; a legacy key still resolves as a
+   * fallback so callers hand this whatever the user typed. Reports ambiguity so
+   * the caller can ask for more characters.
+   *
+   * @param handle - The id, alias, hash prefix, or key the user supplied
+   */
+  private resolveSprint(handle: string): Result<Sprint, MnemaError> {
+    return resolveEntity(this.sprints, handle, (sprintKey) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey,
+    }));
+  }
 
   /**
    * Plans a new sprint in `PLANNED` state.
@@ -153,21 +142,16 @@ export class SprintService {
       return Err({ kind: ErrorCode.ProjectNotFound, projectKey: input.projectKey });
     }
 
-    // BEGIN IMMEDIATE: take the write lock before the nextSequence COUNT so
-    // two processes on one state.db cannot mint the same key.
+    // The sprint's identity is a minted UUID — no sequence to serialise. The
+    // insert still runs through tryMutation so the "one active sprint" unique
+    // index surfaces as a structured error.
     const sprintResult = tryMutation(() =>
-      this.sprints.runInTransactionImmediate(() => {
-        const sequence = this.sprints.nextSequence(project.id);
-        const key = `${project.key}-SPRINT-${sequence}`;
-        return this.sprints.insert({
-          key,
-          projectId: project.id,
-          name: input.name,
-          goal: input.goal ?? null,
-          startsAt: input.startsAt ?? null,
-          endsAt: input.endsAt ?? null,
-          capacity: input.capacity ?? null,
-        });
+      this.sprints.insert({
+        projectId: project.id,
+        name: input.name,
+        goal: input.goal ?? null,
+        startsAt: input.startsAt ?? null,
+        endsAt: input.endsAt ?? null,
       }),
     );
     if (!sprintResult.ok) return sprintResult;
@@ -178,7 +162,8 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: sprint.key, name: sprint.name, goal: sprint.goal },
+      // The committed id binds provenance to the clone-stable identity.
+      data: { id: sprint.id, name: sprint.name, goal: sprint.goal },
     });
 
     this.mirror?.writeSprint(sprint);
@@ -194,25 +179,23 @@ export class SprintService {
    * @returns The updated sprint or a structured error
    */
   start(input: SprintTransitionInput): Result<Sprint, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Planned) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Active,
       });
     }
     const active = this.sprints.findActive(sprint.projectId);
     if (active !== null) {
-      const projectKey = sprint.key.split('-SPRINT-')[0] ?? sprint.projectId;
       return Err({
         kind: ErrorCode.ActiveSprintExists,
-        projectKey,
-        activeSprintKey: active.key,
+        projectKey: this.projects.findById(sprint.projectId)?.key ?? sprint.projectId,
+        activeSprintKey: deriveAlias('sprint', active.id),
       });
     }
 
@@ -232,13 +215,12 @@ export class SprintService {
     );
     if (!wrapped.ok) {
       if (wrapped.error.kind === ErrorCode.ActiveSprintExists) {
-        // The race winner's key was not in the SqliteError message; look it up.
+        // The race winner was not in the SqliteError message; look it up.
         const winner = this.sprints.findActive(sprint.projectId);
-        const projectKey = sprint.key.split('-SPRINT-')[0] ?? sprint.projectId;
         return Err({
           kind: ErrorCode.ActiveSprintExists,
-          projectKey,
-          activeSprintKey: winner?.key ?? '(unknown)',
+          projectKey: this.projects.findById(sprint.projectId)?.key ?? sprint.projectId,
+          activeSprintKey: winner !== null ? deriveAlias('sprint', winner.id) : '(unknown)',
         });
       }
       return Err(wrapped.error);
@@ -251,7 +233,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -262,7 +244,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
     });
 
     this.mirror?.writeSprint(updated);
@@ -277,14 +259,13 @@ export class SprintService {
    * @returns The updated sprint or a structured error
    */
   close(input: SprintTransitionInput): Result<Sprint, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Closed,
       });
@@ -304,7 +285,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -315,7 +296,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key },
+      data: { id: updated.id },
     });
 
     this.mirror?.writeSprint(updated);
@@ -341,14 +322,13 @@ export class SprintService {
         issues: [{ path: ['reason'], message: 'a cancel reason is required' }],
       });
     }
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     if (sprint.state !== SprintState.Planned && sprint.state !== SprintState.Active) {
       return Err({
         kind: ErrorCode.SprintInvalidState,
-        sprintKey: sprint.key,
+        sprintKey: deriveAlias('sprint', sprint.id),
         fromState: sprint.state,
         toState: SprintState.Canceled,
       });
@@ -365,7 +345,7 @@ export class SprintService {
       return Err({
         kind: ErrorCode.Conflict,
         entity: 'sprint',
-        taskKey: sprint.key,
+        taskKey: deriveAlias('sprint', sprint.id),
         currentUpdatedAt: result.reason.currentUpdatedAt,
       });
     }
@@ -376,7 +356,7 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { key: updated.key, reason },
+      data: { id: updated.id, reason },
     });
 
     this.mirror?.writeSprint(updated);
@@ -391,14 +371,15 @@ export class SprintService {
    * @returns The updated task or a structured error
    */
   addTask(input: SprintTaskInput): Result<Task, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const resolved = this.resolveSprint(input.sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
 
     this.sprints.addTask(sprint.id, task.id);
 
@@ -407,13 +388,13 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { sprint_key: sprint.key, task_key: task.key },
+      data: { sprint_id: sprint.id, task_id: task.id },
     });
 
     // The sprint link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'sprint_task_added', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'sprint_task_added', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -427,10 +408,15 @@ export class SprintService {
    * @returns The updated task or a structured error
    */
   removeTask(input: SprintTaskInput): Result<Task, MnemaError> {
-    const task = this.tasks.findByKey(input.taskKey);
-    if (task === null) {
-      return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
-    }
+    const taskResolved = resolveEntity(this.tasks, input.taskKey, (handle) => ({
+      kind: ErrorCode.TaskNotFound,
+      taskKey: handle,
+    }));
+    if (!taskResolved.ok) return Err(taskResolved.error);
+    const task = taskResolved.value;
+    // The sprint the task is being detached from — its committed id, from the
+    // task's link before removal (removeTask clears it by task id).
+    const sprintId = task.sprintId;
 
     this.sprints.removeTask(task.id);
 
@@ -439,13 +425,13 @@ export class SprintService {
       actor: input.actor,
       via: input.via,
       run: input.runId,
-      data: { sprint_key: input.sprintKey, task_key: task.key },
+      data: { sprint_id: sprintId, task_id: task.id },
     });
 
     // The sprint link lives in the task's markdown, so rewrite it.
-    this.sync?.syncTask(task.key, { action: 'sprint_task_removed', runId: input.runId });
+    this.sync?.syncTask(task.id, { action: 'sprint_task_removed', runId: input.runId });
 
-    const updated = this.tasks.findByKey(input.taskKey);
+    const updated = this.tasks.findById(task.id);
     if (updated === null) {
       return Err({ kind: ErrorCode.TaskNotFound, taskKey: input.taskKey });
     }
@@ -455,90 +441,17 @@ export class SprintService {
   /**
    * Returns a sprint plus its current task list.
    *
-   * @param sprintKey - Sprint identifier
-   * @returns The sprint view or `null` if the sprint is unknown
+   * @param sprintKey - Sprint identifier (id, alias, hash prefix, or key)
+   * @returns The sprint view or a structured error if unknown/ambiguous
    */
-  show(sprintKey: string): SprintView | null {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) return null;
-    return {
+  show(sprintKey: string): Result<SprintView, MnemaError> {
+    const resolved = this.resolveSprint(sprintKey);
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
+    return Ok({
       sprint,
       tasks: this.sprints.listTasks(sprint.id),
-      metrics: this.metrics.findBySprint(sprint.id),
-    };
-  }
-
-  /**
-   * Adds a measurable metric to a sprint. CLI-only mutation, in line
-   * with the rest of the sprint lifecycle.
-   *
-   * @param input - Sprint key + metric fields + identity tuple
-   * @returns The created metric or a structured error
-   */
-  addMetric(input: AddSprintMetricInput): Result<SprintMetric, MnemaError> {
-    const sprint = this.sprints.findByKey(input.sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey: input.sprintKey });
-    }
-    const issues: ErrorIssue[] = [];
-    checkRequiredFiniteNumber(input.target, 'target', issues);
-    checkOptionalFiniteNumber(input.baseline ?? null, 'baseline', issues);
-    if (issues.length > 0) {
-      return Err({ kind: ErrorCode.ValidationFailed, issues });
-    }
-    if (this.metrics.exists(sprint.id, input.name)) {
-      return Err({
-        kind: ErrorCode.SprintMetricDuplicate,
-        sprintKey: input.sprintKey,
-        name: input.name,
-      });
-    }
-    // Wrap the insert: a concurrent writer can pass the exists() check above
-    // and lose the UNIQUE(sprint_id, name) race — map that to the structured
-    // duplicate rather than letting a raw SqliteError escape.
-    const createdResult = tryMutation(() =>
-      this.metrics.insert({
-        sprintId: sprint.id,
-        name: input.name,
-        baseline: input.baseline ?? null,
-        target: input.target,
-        unit: input.unit ?? null,
-        dueDate: input.dueDate ?? null,
-      }),
-    );
-    if (!createdResult.ok) {
-      if (createdResult.error.kind === ErrorCode.SprintMetricDuplicate) {
-        return Err({
-          kind: ErrorCode.SprintMetricDuplicate,
-          sprintKey: input.sprintKey,
-          name: input.name,
-        });
-      }
-      return createdResult;
-    }
-    const created = createdResult.value;
-    this.audit.write({
-      kind: 'sprint_metric_added',
-      actor: input.actor,
-      via: input.via,
-      run: input.runId,
-      data: { sprint_key: sprint.key, name: input.name, target: input.target },
     });
-    return Ok(created);
-  }
-
-  /**
-   * Lists a sprint's metrics.
-   *
-   * @param sprintKey - Sprint identifier
-   * @returns Metrics or a structured error when the sprint is unknown
-   */
-  metricsFor(sprintKey: string): Result<SprintMetric[], MnemaError> {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
-    }
-    return Ok(this.metrics.findBySprint(sprint.id));
   }
 
   /**
@@ -555,7 +468,6 @@ export class SprintService {
     return {
       sprint,
       tasks: this.sprints.listTasks(sprint.id),
-      metrics: this.metrics.findBySprint(sprint.id),
     };
   }
 
@@ -577,15 +489,15 @@ export class SprintService {
    * a manual deletion. Existing files are left untouched.
    *
    * @param projectKey - Project key
-   * @returns Keys of the sprints whose mirror was just written
+   * @returns Aliases of the sprints whose mirror was just written
    */
   rebuildMirrors(projectKey: string): string[] {
     if (this.mirror === null) return [];
     const rebuilt: string[] = [];
     for (const sprint of this.list(projectKey)) {
-      if (!this.mirror.hasSprint(sprint.key)) {
+      if (!this.mirror.hasSprint(sprint.id)) {
         this.mirror.writeSprint(sprint);
-        rebuilt.push(sprint.key);
+        rebuilt.push(deriveAlias('sprint', sprint.id));
       }
     }
     return rebuilt;
@@ -609,16 +521,6 @@ function validatePlanInput(input: PlanSprintInput): ErrorIssue[] {
     new Date(input.endsAt).getTime() < new Date(input.startsAt).getTime()
   ) {
     issues.push({ path: ['endsAt'], message: 'must be on or after startsAt' });
-  }
-  if (input.capacity !== undefined) {
-    if (!Number.isFinite(input.capacity) || !Number.isInteger(input.capacity)) {
-      issues.push({ path: ['capacity'], message: 'must be a positive integer' });
-    } else if (input.capacity < 1 || input.capacity > MAX_SPRINT_CAPACITY) {
-      issues.push({
-        path: ['capacity'],
-        message: `must be between 1 and ${MAX_SPRINT_CAPACITY}`,
-      });
-    }
   }
 
   return issues;

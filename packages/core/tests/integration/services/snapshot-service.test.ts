@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { CoverageService } from '@/services/backlog/coverage-service.js';
@@ -81,13 +82,12 @@ describe('SnapshotService', () => {
     adapter
       .getDatabase()
       .prepare(
-        `INSERT INTO tasks (id, key, project_id, epic_id, title, description, acceptance_criteria,
-           state, priority, reporter_id, reopen_count, metadata, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, '', '[]', ?, 3, ?, 0, '{}', ?, ?)`,
+        `INSERT INTO tasks (id, project_id, epic_id, title, description, acceptance_criteria,
+           state, reporter_id, reopen_count, metadata, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', '[]', ?, ?, 0, '{}', ?, ?)`,
       )
       .run(
         id,
-        key,
         projectId,
         opts.epicId ?? null,
         `Task ${key}`,
@@ -100,17 +100,17 @@ describe('SnapshotService', () => {
   }
 
   it('composes coverage, dependency graph and scoped SLA breaches for an epic', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'Auth epic' });
+    const epic = epics.insert({ projectId, title: 'Auth epic' });
     // 1 DONE, 1 blocked chain (A blocks B), 1 IN_REVIEW aged 3d (SLA 1d → breach).
     seed('T-DONE', { state: 'DONE', epicId: epic.id });
     const a = seed('T-A', { state: 'READY', epicId: epic.id });
     const b = seed('T-B', { state: 'READY', epicId: epic.id });
     deps.insert({ taskId: b, blocksTaskId: a, kind: 'blocks' }); // A blocks B
-    seed('T-REV', { state: 'IN_REVIEW', epicId: epic.id, agedDays: 3 });
+    const rev = seed('T-REV', { state: 'IN_REVIEW', epicId: epic.id, agedDays: 3 });
     // A task in ANOTHER epic that also breaches — must NOT leak into this scope.
     seed('OTHER-1', { state: 'IN_REVIEW', agedDays: 9 });
 
-    const result = snapshot.forScope({ kind: 'epic', key: 'TEST-EPIC-1' }, now);
+    const result = snapshot.forScope({ kind: 'epic', key: epic.id }, now);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const s = result.value;
@@ -118,9 +118,9 @@ describe('SnapshotService', () => {
     expect(s.title).toBe('Auth epic');
     expect(s.coverage.total).toBe(4);
     expect(s.coverage.terminal).toBe(1); // T-DONE
-    expect(s.graph.criticalPath).toEqual(['T-A', 'T-B']);
+    expect(s.graph.criticalPath).toEqual([deriveAlias('task', a), deriveAlias('task', b)]);
     // Only the in-scope IN_REVIEW task breaches; OTHER-1 is excluded.
-    expect(s.slaBreaches.map((x) => x.key)).toEqual(['T-REV']);
+    expect(s.slaBreaches.map((x) => x.key)).toEqual([deriveAlias('task', rev)]);
   });
 
   it('returns EpicNotFound for an unknown epic', () => {
@@ -130,9 +130,9 @@ describe('SnapshotService', () => {
   });
 
   it('renders markdown with the headline sections', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'Auth epic' });
+    const epic = epics.insert({ projectId, title: 'Auth epic' });
     seed('T-DONE', { state: 'DONE', epicId: epic.id });
-    const result = snapshot.forScope({ kind: 'epic', key: 'TEST-EPIC-1' }, now);
+    const result = snapshot.forScope({ kind: 'epic', key: epic.id }, now);
     if (!result.ok) return;
     const md = renderMarkdown(result.value);
     expect(md).toContain('# Snapshot — Auth epic');
@@ -142,9 +142,9 @@ describe('SnapshotService', () => {
   });
 
   it('renders self-contained HTML that escapes interpolated text', () => {
-    const epic = epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'A & B <auth>' });
+    const epic = epics.insert({ projectId, title: 'A & B <auth>' });
     seed('T-1', { state: 'DRAFT', epicId: epic.id });
-    const result = snapshot.forScope({ kind: 'epic', key: 'TEST-EPIC-1' }, now);
+    const result = snapshot.forScope({ kind: 'epic', key: epic.id }, now);
     if (!result.ok) return;
     const html = renderHtml(result.value);
     expect(html).toContain('<!doctype html>');

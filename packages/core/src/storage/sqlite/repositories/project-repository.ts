@@ -34,6 +34,20 @@ export class ProjectRepository {
   }
 
   /**
+   * Finds a project by its committed id, ignoring soft-deleted rows.
+   *
+   * @param id - Project id (UUID)
+   * @returns The project if active, `null` otherwise
+   */
+  findById(id: string): Project | null {
+    const row = this.adapter
+      .getDatabase()
+      .prepare('SELECT * FROM projects WHERE id = ? AND deleted_at IS NULL')
+      .get(id) as ProjectRow | undefined;
+    return row === undefined ? null : rowToProject(row);
+  }
+
+  /**
    * Inserts a new project. Caller must ensure the key is unique.
    *
    * @param input - Fields required to create a project

@@ -34,8 +34,10 @@ describe('single-format guard (source)', () => {
   it('names no legacy event format (v2/v3 / v>=2)', () => {
     // The single format is `EVENT_FORMAT_VERSION`. A comment or check that
     // speaks of a `v2`/`v3` event, or a `v>=2` chaining rule, is a scar from a
-    // multi-format lineage that no longer exists.
-    const forbidden = /\bv[23]\b|v\s*>=\s*2/;
+    // multi-format lineage that no longer exists. A `scheme/vN` identifier
+    // (e.g. `mnema-mirror/v2`) is a versioned tag, not an event format — the
+    // negative lookbehind keeps those out of the net.
+    const forbidden = /(?<!\/)\bv[23]\b|v\s*>=\s*2/;
     const hits: string[] = [];
     for (const file of sourceFiles) {
       const lines = readFileSync(file, 'utf-8').split('\n');

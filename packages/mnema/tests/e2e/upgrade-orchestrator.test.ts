@@ -10,6 +10,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 /** The single machine tail's `current.jsonl` under a project audit dir. */
@@ -50,30 +51,53 @@ function runCli(
   };
 }
 
+/**
+ * The task alias (`t-…`) a `task create`/`plan` prints on its first line — the
+ * handle every later command resolves by. Throws if the output has none, so a
+ * broken create fails the test at the source rather than downstream.
+ */
+function taskAliasFromStdout(stdout: string): string {
+  const match = stdout.match(/\bt-[0-9a-f]+\b/);
+  if (match === null) throw new Error(`no task alias in output:\n${stdout}`);
+  return match[0];
+}
+
 /** Frontmatter a committed task mirror carries, in the shape sync writes. */
-function taskMd(key: string, state: string): string {
+function taskMd(id: string, label: string, state: string): string {
   return [
     '---',
     'mnema:',
-    `  key: ${key}`,
+    `  id: ${id}`,
     `  state: ${state}`,
-    `  title: Committed ${key}`,
+    `  title: Committed ${label}`,
     '  reporter: alice',
     '  metadata: {}',
     '---',
-    `# Committed ${key}`,
+    `# Committed ${label}`,
     '',
   ].join('\n');
+}
+
+/**
+ * A deterministic committed id from a fixture seed, so a fixture's filename (the
+ * id) and its `mnema.id` agree, and the duplicate-mirror fixture can put the
+ * SAME id in two state dirs (that is what a squash-merge strands).
+ */
+function idForSeed(seed: string): string {
+  const n = seed.replace(/\D/g, '').padStart(12, '0');
+  return `019f7700-0000-7000-8000-${n}`;
 }
 
 /**
  * Builds a checkout that has everything git tracks (config, the active
  * workflow, and committed backlog markdown) but no `.mnema/state/` — the
  * git-ignored directory a fresh clone never has, so the local DB starts empty.
+ * Each fixture's `seed` only fixes its committed id and label; identity is the
+ * id, and the human handle is the alias derived from it.
  */
 function freshClone(
   projectRoot: string,
-  tasks: ReadonlyArray<{ key: string; state: string }>,
+  tasks: ReadonlyArray<{ seed: string; state: string }>,
 ): void {
   mkdirSync(path.join(projectRoot, '.mnema/workflows'), { recursive: true });
   const config = {
@@ -90,10 +114,13 @@ function freshClone(
     path.join(projectRoot, '.mnema/workflows/default.json'),
     readFileSync(path.join(workflowsSrc, 'default.json'), 'utf-8'),
   );
-  for (const { key, state } of tasks) {
+  for (const { seed, state } of tasks) {
     const dir = path.join(projectRoot, '.mnema/backlog', state);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(path.join(dir, `${key}.md`), taskMd(key, state));
+    // The mirror is named by the committed id (deterministic from the seed), so
+    // a duplicate fixture (same seed in two dirs) lands the SAME id file twice.
+    const id = idForSeed(seed);
+    writeFileSync(path.join(dir, `${id}.md`), taskMd(id, seed, state));
   }
 }
 
@@ -115,10 +142,11 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
   });
 
   it('ingests committed markdown into the cache on a fresh clone', () => {
-    freshClone(projectRoot, [{ key: 'CLONE-1', state: 'DRAFT' }]);
+    freshClone(projectRoot, [{ seed: 'CLONE-1', state: 'DRAFT' }]);
+    const alias = deriveAlias('task', idForSeed('CLONE-1'));
 
     // Before the upgrade the local DB has never seen the committed task.
-    expect(runCli(['task', 'show', 'CLONE-1'], projectRoot).status).not.toBe(0);
+    expect(runCli(['task', 'show', alias], projectRoot).status).not.toBe(0);
 
     const upgrade = runCli(['upgrade', '--yes'], projectRoot);
     expect(upgrade.status).toBe(0);
@@ -126,35 +154,40 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
     expect(upgrade.stdout).toContain('ingested 1 row(s)');
 
     // The row now exists — the ingest ran markdown → DB.
-    const show = runCli(['task', 'show', 'CLONE-1'], projectRoot);
+    const show = runCli(['task', 'show', alias], projectRoot);
     expect(show.status).toBe(0);
-    expect(show.stdout).toContain('CLONE-1');
+    expect(show.stdout).toContain(alias);
     expect(show.stdout).toContain('DRAFT');
   });
 
   it('reports a duplicate-mirror conflict LOUDLY, does not fail, and keeps both copies', () => {
-    // Same key committed in two state directories: an ambiguous duplicate the
+    // Same id committed in two state directories: an ambiguous duplicate the
     // ingest must refuse rather than guess a state for.
     freshClone(projectRoot, [
-      { key: 'CLONE-1', state: 'DRAFT' },
-      { key: 'CLONE-1', state: 'DONE' },
+      { seed: 'CLONE-1', state: 'DRAFT' },
+      { seed: 'CLONE-1', state: 'DONE' },
     ]);
+    const dupIdRaw = idForSeed('CLONE-1');
+    const alias = deriveAlias('task', dupIdRaw);
 
     const upgrade = runCli(['upgrade', '--yes'], projectRoot);
     // Fail-closed does NOT mean fail the command: the guard prevented the
     // unsafe write, so the upgrade completes cleanly.
     expect(upgrade.status).toBe(0);
-    // The conflict is surfaced loudly, naming the key and both state dirs.
-    expect(upgrade.stdout).toContain('CLONE-1 in [DONE, DRAFT]');
+    // The conflict is surfaced loudly, naming the task (by alias) and both
+    // state dirs.
+    expect(upgrade.stdout).toContain(`${alias} in [DONE, DRAFT]`);
     expect(upgrade.stdout).toContain('LEFT UNTOUCHED');
 
     // The guard left the cached row unset — no state was guessed.
-    expect(runCli(['task', 'show', 'CLONE-1'], projectRoot).status).not.toBe(0);
+    expect(runCli(['task', 'show', alias], projectRoot).status).not.toBe(0);
 
     // Neither committed copy was pruned: the orphan-prune protects the
-    // conflicted key so the human still has both to resolve the duplicate.
-    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DRAFT/CLONE-1.md'))).toBe(true);
-    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DONE/CLONE-1.md'))).toBe(true);
+    // conflicted id so the human still has both to resolve the duplicate. Both
+    // copies share the committed id (that is the squash-merge shape).
+    const dupId = `${dupIdRaw}.md`;
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DRAFT', dupId))).toBe(true);
+    expect(existsSync(path.join(projectRoot, '.mnema/backlog/DONE', dupId))).toBe(true);
   });
 
   it('adopts a MISSING layout component and leaves present ones alone', () => {
@@ -188,7 +221,7 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
   it('orders the plan: ingest BEFORE rebuild, adopt BEFORE AGENTS.md sync', () => {
     // A fresh clone that also lacks the layout components exercises every step:
     // ingest, adopt, AGENTS.md sync, and the mirror prune/rebuild.
-    freshClone(projectRoot, [{ key: 'CLONE-1', state: 'DRAFT' }]);
+    freshClone(projectRoot, [{ seed: 'CLONE-1', state: 'DRAFT' }]);
 
     const dry = runCli(['upgrade', '--dry-run'], projectRoot);
     expect(dry.status).toBe(0);
@@ -245,12 +278,13 @@ describe('mnema upgrade orchestrator (e2e)', { timeout: 30_000 }, () => {
     // Machine A writes chained audit events into its tail (`audit/m-<A>/`).
     const homeA = path.join(mkdtempSync(path.join(tmpdir(), 'mnema-homeA-')));
     runCli(['init', '--name', 'Web App', '--key', 'WEBAPP'], projectRoot, { HOME: homeA });
-    runCli(['task', 'create', '--title', 'Real task'], projectRoot, { HOME: homeA });
-    runCli(
-      ['task', 'move', 'WEBAPP-1', 'submit', '--field', 'acceptance_criteria=done'],
-      projectRoot,
-      { HOME: homeA },
-    );
+    const created = runCli(['task', 'create', '--title', 'Real task'], projectRoot, {
+      HOME: homeA,
+    });
+    const alias = taskAliasFromStdout(created.stdout);
+    runCli(['task', 'move', alias, 'submit', '--field', 'acceptance_criteria=done'], projectRoot, {
+      HOME: homeA,
+    });
 
     const dbPath = path.join(projectRoot, '.mnema/state', 'state.db');
     const diskChained = countChainedLines(tailCurrent(path.join(projectRoot, '.mnema/audit')));

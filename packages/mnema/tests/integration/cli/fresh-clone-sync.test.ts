@@ -26,6 +26,13 @@ import { inspectMirrorDrift } from '@/cli/commands/doctor-command.js';
 const migrationsDir = path.resolve('packages/core/src/storage/sqlite/migrations');
 const workflowsSrc = path.resolve('packages/core/workflows');
 
+// Committed ids of the entities written into the clone. Tasks/epics/sprints have
+// no human key any more, so tests resolve them by the id that survives the clone.
+// The decision keeps its `CLONE-ADR-1` key.
+const TASK_ID = '019f7700-0000-7000-8000-000000000101';
+const EPIC_ID = '019f7700-0000-7000-8000-000000000e01';
+const SPRINT_ID = '019f7700-0000-7000-8000-000000000501';
+
 /** Builds a checkout that has everything git tracks but no `.mnema/state/`. */
 function freshClone(): string {
   const projectRoot = mkdtempSync(path.join(tmpdir(), 'mnema-clone-'));
@@ -59,12 +66,17 @@ function freshClone(): string {
     readFileSync(path.join(workflowsSrc, 'default.json'), 'utf-8'),
   );
 
+  // Committed identities: the epic/sprint links are by id now (the id survives
+  // the clone), so the task references these committed ids, not the human key.
+  const epicId = EPIC_ID;
+  const sprintId = SPRINT_ID;
+
   // A committed task markdown, in the shape `sync-service` writes,
-  // carrying its epic/sprint links by key.
+  // carrying its epic/sprint links by id.
   const taskMd = [
     '---',
     'mnema:',
-    '  key: CLONE-1',
+    `  id: ${TASK_ID}`,
     '  state: DRAFT',
     '  title: Survives the clone',
     '  description: A task that was committed as markdown',
@@ -74,8 +86,8 @@ function freshClone(): string {
     '  priority: 2',
     '  assignee: null',
     '  reporter: alice',
-    '  epic_key: CLONE-EPIC-1',
-    '  sprint_key: CLONE-SPRINT-1',
+    `  epic_id: ${epicId}`,
+    `  sprint_id: ${sprintId}`,
     '  reopen_count: 0',
     '  metadata: {}',
     "  updated_at: '2026-06-01T00:00:00.000Z'",
@@ -83,14 +95,14 @@ function freshClone(): string {
     '# Survives the clone',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/backlog/DRAFT/CLONE-1.md'), taskMd);
+  writeFileSync(path.join(projectRoot, `.mnema/backlog/DRAFT/${TASK_ID}.md`), taskMd);
 
   // Committed roadmap: an epic and a decision share roadmap/, the sprint
   // lives under sprints/ — the shape `RoadmapMirror` writes.
   const epicMd = [
     '---',
     'mnema:',
-    '  key: CLONE-EPIC-1',
+    `  id: ${epicId}`,
     '  kind: epic',
     '  state: OPEN',
     '  title: The committed epic',
@@ -102,7 +114,7 @@ function freshClone(): string {
     '# The committed epic',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/roadmap/CLONE-EPIC-1.md'), epicMd);
+  writeFileSync(path.join(projectRoot, `.mnema/roadmap/${epicId}.md`), epicMd);
 
   const decisionMd = [
     '---',
@@ -129,7 +141,7 @@ function freshClone(): string {
   const sprintMd = [
     '---',
     'mnema:',
-    '  key: CLONE-SPRINT-1',
+    `  id: ${sprintId}`,
     '  kind: sprint',
     '  state: PLANNED',
     '  name: First cycle',
@@ -144,7 +156,7 @@ function freshClone(): string {
     '# First cycle',
     '',
   ].join('\n');
-  writeFileSync(path.join(projectRoot, '.mnema/sprints/CLONE-SPRINT-1.md'), sprintMd);
+  writeFileSync(path.join(projectRoot, `.mnema/sprints/${sprintId}.md`), sprintMd);
 
   // Committed knowledge mirrors, in the FLAT-frontmatter shape the memory and
   // skill writers produce (not the nested `mnema:` block the backlog uses).
@@ -280,7 +292,7 @@ describe('fresh clone → sync', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
 
-      const result = container.task.findByKey('CLONE-1');
+      const result = container.task.findByKey(TASK_ID);
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       expect(result.value.title).toBe('Survives the clone');
@@ -308,13 +320,14 @@ describe('fresh clone → sync', () => {
       expect(summary.sprints.upserted).toBe(1);
       expect(summary.decisions.upserted).toBe(1);
 
-      const epic = container.epic.show('CLONE-EPIC-1');
+      const epic = container.epic.show(EPIC_ID);
       expect(epic.ok).toBe(true);
       if (epic.ok) expect(epic.value.epic.title).toBe('The committed epic');
 
-      const sprint = container.sprint.show('CLONE-SPRINT-1');
-      expect(sprint).not.toBeNull();
-      expect(sprint?.sprint.name).toBe('First cycle');
+      const sprint = container.sprint.show(SPRINT_ID);
+      expect(sprint.ok).toBe(true);
+      if (!sprint.ok) return;
+      expect(sprint.value.sprint.name).toBe('First cycle');
 
       const decision = container.decision.show('CLONE-ADR-1');
       expect(decision.ok).toBe(true);
@@ -324,20 +337,22 @@ describe('fresh clone → sync', () => {
     });
   });
 
-  it('relinks the task to its epic and sprint by key', () => {
+  it('relinks the task to its epic and sprint by committed id', () => {
     withClone((container) => {
       container.syncRebuild.run('CLONE');
 
-      const task = container.task.findByKey('CLONE-1');
-      const epic = container.epic.show('CLONE-EPIC-1');
-      const sprint = container.sprint.show('CLONE-SPRINT-1');
-      expect(task.ok && epic.ok && sprint !== null).toBe(true);
-      if (!task.ok || !epic.ok || sprint === null) return;
+      const task = container.task.findByKey(TASK_ID);
+      const epic = container.epic.show(EPIC_ID);
+      const sprint = container.sprint.show(SPRINT_ID);
+      expect(task.ok && epic.ok && sprint.ok).toBe(true);
+      if (!task.ok || !epic.ok || !sprint.ok) return;
 
-      // The links survive the clone: the task points at the rehydrated
-      // epic/sprint rows even though their UUIDs were regenerated.
+      // The links survive the clone: the epic/sprint adopt their committed ids
+      // and the task points at exactly those, resolved from its `epic_id` /
+      // `sprint_id` frontmatter.
+      expect(epic.value.epic.id).toBe(EPIC_ID);
       expect(task.value.epicId).toBe(epic.value.epic.id);
-      expect(task.value.sprintId).toBe(sprint.sprint.id);
+      expect(task.value.sprintId).toBe(sprint.value.sprint.id);
     });
   });
 

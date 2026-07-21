@@ -27,11 +27,11 @@ describe('SyncService.pathForTask containment', () => {
   }
 
   const svc = serviceWithRoot('/tmp/proj', '.mnema/backlog');
-  const task = (state: string): Task => ({ key: 'T-1', state }) as Task;
+  const task = (state: string): Task => ({ id: 'task-fixture-id', key: 'T-1', state }) as Task;
 
   it('resolves a normal state inside the backlog root', () => {
     const p = svc.pathForTask(task('DRAFT'));
-    expect(p).toBe(path.resolve('/tmp/proj/.mnema/backlog/DRAFT/T-1.md'));
+    expect(p).toBe(path.resolve('/tmp/proj/.mnema/backlog/DRAFT/task-fixture-id.md'));
   });
 
   it('allows an unusual but contained state name', () => {

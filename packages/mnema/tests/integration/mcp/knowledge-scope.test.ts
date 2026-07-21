@@ -100,18 +100,21 @@ describe('knowledge scope narrows relevance by area (MNEMA-238)', () => {
       },
     });
     // A task labelled packages/notifier, driven to IN_PROGRESS.
-    await harness.client.callTool({
-      name: 'task_create',
-      arguments: { title: 'Ship the quarterly report', acceptance_criteria: ['done'] },
-    });
+    const created = payload(
+      (await harness.client.callTool({
+        name: 'task_create',
+        arguments: { title: 'Ship the quarterly report', acceptance_criteria: ['done'] },
+      })) as CallToolResult,
+    );
+    const taskHandle = (created.task as { key: string }).key;
     await harness.client.callTool({
       name: 'task_set_labels',
-      arguments: { task_key: 'TEST-1', labels: ['packages/notifier'] },
+      arguments: { task_key: taskHandle, labels: ['packages/notifier'] },
     });
     await harness.client.callTool({
       name: 'task_submit',
       arguments: {
-        task_key: 'TEST-1',
+        task_key: taskHandle,
         title: 'Ship the quarterly report',
         description: 'Produce the report.',
         acceptance_criteria: ['done'],
@@ -120,7 +123,7 @@ describe('knowledge scope narrows relevance by area (MNEMA-238)', () => {
     });
     await harness.client.callTool({
       name: 'task_start',
-      arguments: { task_key: 'TEST-1', assignee_id: 'daniel' },
+      arguments: { task_key: taskHandle, assignee_id: 'daniel' },
     });
 
     const boot = payload(

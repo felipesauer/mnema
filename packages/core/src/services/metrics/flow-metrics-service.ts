@@ -1,3 +1,4 @@
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { Workflow } from '../../domain/state-machine/state-machine.js';
 import type { AuditEvent } from '../../storage/audit/audit-writer.js';
 import type { SprintService } from '../backlog/sprint-service.js';
@@ -98,8 +99,8 @@ interface TaskTimeline {
  * and estimate-vs-actual — from the audit log, collecting nothing new.
  *
  * Every duration metric is reconstructed by replaying `task_created` and
- * `task_transitioned` events per task key; estimate-vs-actual joins each
- * completed task's current `estimate` (read from the task row) with the
+ * `task_transitioned` events per committed task id; estimate-vs-actual joins
+ * each completed task's current `estimate` (read from the task row) with the
  * lead time the log implies. Read-only and side-effect free.
  */
 export class FlowMetricsService {
@@ -132,9 +133,11 @@ export class FlowMetricsService {
     const terminal = new Set(this.workflow.terminal);
     const initial = this.workflow.initial;
 
+    // Timelines are keyed by the committed task id, which the audit events
+    // carry in `data.id`.
     const timelines = new Map<string, TaskTimeline>();
-    const timelineFor = (key: string): TaskTimeline => {
-      let t = timelines.get(key);
+    const timelineFor = (id: string): TaskTimeline => {
+      let t = timelines.get(id);
       if (t === undefined) {
         t = {
           createdAt: null,
@@ -143,7 +146,7 @@ export class FlowMetricsService {
           reopened: false,
           runIds: new Set<string>(),
         };
-        timelines.set(key, t);
+        timelines.set(id, t);
       }
       return t;
     };
@@ -179,18 +182,18 @@ export class FlowMetricsService {
         continue;
       }
 
-      const data = event.data as { key?: string; from?: string; to?: string; action?: string };
-      const key = typeof data.key === 'string' ? data.key : undefined;
-      if (key === undefined) continue;
+      const data = event.data as { id?: string; from?: string; to?: string; action?: string };
+      const id = typeof data.id === 'string' ? data.id : undefined;
+      if (id === undefined) continue;
 
       if (event.kind === 'task_created') {
-        const t = timelineFor(key);
+        const t = timelineFor(id);
         if (t.createdAt === null) t.createdAt = atMs;
         if (typeof event.run === 'string') t.runIds.add(event.run);
         continue;
       }
       if (event.kind === 'task_transitioned') {
-        const t = timelineFor(key);
+        const t = timelineFor(id);
         if (typeof event.run === 'string') t.runIds.add(event.run);
         // First move off the initial state starts the cycle clock.
         if (t.firstMoveAt === null && data.from === initial) {
@@ -225,12 +228,12 @@ export class FlowMetricsService {
     const cycleTimes: number[] = [];
     let completed = 0;
     let reopened = 0;
-    const completedKeys: string[] = [];
+    const completedIds: string[] = [];
 
-    for (const [key, t] of timelines) {
+    for (const [id, t] of timelines) {
       if (t.firstTerminalAt === null) continue;
       completed += 1;
-      completedKeys.push(key);
+      completedIds.push(id);
       if (t.reopened) reopened += 1;
       if (t.createdAt !== null) {
         leadTimes.push((t.firstTerminalAt - t.createdAt) / MS_PER_HOUR);
@@ -241,35 +244,35 @@ export class FlowMetricsService {
       }
     }
 
-    // One listing builds key→{estimate, sprintId}; the audit log carries
+    // One listing builds id→{estimate, sprintId}; the audit log carries
     // neither, so they come from the current task rows.
-    const estimateByKey = new Map<string, number | null>();
-    const sprintIdByKey = new Map<string, string | null>();
+    const estimateById = new Map<string, number | null>();
+    const sprintIdById = new Map<string, string | null>();
     for (const task of this.tasks.list()) {
-      estimateByKey.set(task.key, task.estimate);
-      sprintIdByKey.set(task.key, task.sprintId);
+      estimateById.set(task.id, task.estimate);
+      sprintIdById.set(task.id, task.sprintId);
     }
 
     // Estimate vs actual: prefer summed run duration (the effort the AC
     // asks for); fall back to lead time, flagged, when no run data exists.
     const estimateSamples: EstimateVsActual[] = [];
-    for (const key of completedKeys) {
-      const t = timelines.get(key);
+    for (const id of completedIds) {
+      const t = timelines.get(id);
       if (t === undefined || t.firstTerminalAt === null) continue;
-      const estimate = estimateByKey.get(key) ?? null;
+      const estimate = estimateById.get(id) ?? null;
       if (estimate === null || estimate <= 0) continue;
 
       const runHours = runHoursForTask(t);
       if (runHours !== null) {
         estimateSamples.push({
-          task_key: key,
+          task_key: deriveAlias('task', id),
           estimate,
           actual_hours: round1(runHours),
           actual_source: 'run_duration',
         });
       } else if (t.createdAt !== null) {
         estimateSamples.push({
-          task_key: key,
+          task_key: deriveAlias('task', id),
           estimate,
           actual_hours: round1((t.firstTerminalAt - t.createdAt) / MS_PER_HOUR),
           actual_source: 'lead_time',
@@ -288,7 +291,7 @@ export class FlowMetricsService {
         completed_tasks: completed,
         rate: completed === 0 ? 0 : round2(reopened / completed),
       },
-      velocity: this.velocityBySprint(completedKeys, sprintIdByKey, estimateByKey),
+      velocity: this.velocityBySprint(completedIds, sprintIdById, estimateById),
       estimate_vs_actual: {
         samples: estimateSamples,
         hours_per_point: totalPoints === 0 ? null : round1(totalHours / totalPoints),
@@ -312,18 +315,18 @@ export class FlowMetricsService {
    * rows; sprints with no completed tasks are omitted. Newest first.
    */
   private velocityBySprint(
-    completedKeys: readonly string[],
-    sprintIdByKey: ReadonlyMap<string, string | null>,
-    estimateByKey: ReadonlyMap<string, number | null>,
+    completedIds: readonly string[],
+    sprintIdByTaskId: ReadonlyMap<string, string | null>,
+    estimateById: ReadonlyMap<string, number | null>,
   ): SprintVelocity[] {
     const sprints = this.sprints.list(this.projectKey);
     if (sprints.length === 0) return [];
-    const completedSet = new Set(completedKeys);
+    const completedSet = new Set(completedIds);
 
     const acc = new Map<string, { points: number; tasks: number }>();
-    for (const [key, sprintId] of sprintIdByKey) {
-      if (sprintId === null || !completedSet.has(key)) continue;
-      const estimate = estimateByKey.get(key) ?? 0;
+    for (const [taskId, sprintId] of sprintIdByTaskId) {
+      if (sprintId === null || !completedSet.has(taskId)) continue;
+      const estimate = estimateById.get(taskId) ?? 0;
       const cur = acc.get(sprintId) ?? { points: 0, tasks: 0 };
       cur.points += estimate ?? 0;
       cur.tasks += 1;
@@ -335,7 +338,7 @@ export class FlowMetricsService {
       const a = acc.get(sprint.id);
       if (a === undefined) continue;
       out.push({
-        sprint_key: sprint.key,
+        sprint_key: deriveAlias('sprint', sprint.id),
         sprint_name: sprint.name,
         completed_points: a.points,
         completed_tasks: a.tasks,

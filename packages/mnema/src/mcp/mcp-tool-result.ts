@@ -1,3 +1,4 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import { ErrorCode } from '@mnema/core/errors/error-codes.js';
 import { recoveryHint, toStructured } from '@mnema/core/errors/error-printer.js';
 import type { MnemaError } from '@mnema/core/errors/mnema-error.js';
@@ -32,6 +33,7 @@ export type Verbosity = 'full' | 'compact';
 
 /** The minimal shape a task is reduced to under `compact` verbosity. */
 export interface CompactTask {
+  /** The short alias derived from the committed id — the human handle. */
   readonly key: string;
   readonly state: string;
   readonly updatedAt: string;
@@ -41,33 +43,37 @@ export interface CompactTask {
  * Reduces a task entity to its confirmation-sized form. Shared by the
  * single-task `okTask` and batch tools that echo many tasks at once, so
  * a large batch can opt out of repeating long descriptions and
- * acceptance-criteria arrays.
+ * acceptance-criteria arrays. The `key` it echoes is the alias derived from
+ * the committed id (there is no stored key).
  *
- * @param task - The full task entity
+ * @param task - The full task entity (carries the committed `id`)
  * @returns Just `{ key, state, updatedAt }`
  */
-export function toCompactTask(task: {
-  key: string;
-  state: string;
-  updatedAt: string;
-}): CompactTask {
-  return { key: task.key, state: task.state, updatedAt: task.updatedAt };
+export function toCompactTask(task: { id: string; state: string; updatedAt: string }): CompactTask {
+  return { key: deriveAlias('task', task.id), state: task.state, updatedAt: task.updatedAt };
 }
 
 /**
- * Wraps a mutated task as a success response, honouring `verbosity`.
- * `full` (default) echoes the whole entity under `task`; `compact`
- * echoes only `{ key, state, updatedAt }`.
+ * Wraps a mutated or read task as a success response, honouring `verbosity`.
+ * `full` (default) echoes the whole entity under `task`, with a derived `key`
+ * alias added alongside the committed id so the agent has a handle to show and
+ * to feed back into later tools; `compact` echoes only `{ key, state,
+ * updatedAt }`.
  *
- * @param task - The full task entity returned by the service
+ * @param task - The full task entity returned by the service (carries `id`)
  * @param verbosity - Echo mode; defaults to `full`
  * @returns A success-shaped CallToolResult
  */
 export function okTask(
-  task: { key: string; state: string; updatedAt: string },
+  task: { id: string; state: string; updatedAt: string },
   verbosity: Verbosity = 'full',
 ): CallToolResult {
-  return ok({ task: verbosity === 'compact' ? toCompactTask(task) : task });
+  return ok({
+    task:
+      verbosity === 'compact'
+        ? toCompactTask(task)
+        : { ...task, key: deriveAlias('task', task.id) },
+  });
 }
 
 /**

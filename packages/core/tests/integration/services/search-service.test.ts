@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ActorKind } from '@/domain/enums/actor-kind.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { SearchService } from '@/services/search-service.js';
@@ -18,6 +18,8 @@ describe('SearchService', () => {
   let tempRoot: string;
   let adapter: SqliteAdapter;
   let search: SearchService;
+  let oauthTaskId: string;
+  let authTaskId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(path.join(tmpdir(), 'mnema-search-svc-'));
@@ -31,24 +33,21 @@ describe('SearchService', () => {
     const project = projects.insert({ key: 'TEST', name: 'Test' });
     const reporterId = actors.upsert('daniel', ActorKind.Human);
 
-    tasks.insert({
-      key: 'TEST-1',
+    oauthTaskId = tasks.insert({
       projectId: project.id,
       title: 'Implement OAuth login',
       description: 'Add Google OAuth flow',
       acceptanceCriteria: ['Users authenticate'],
       reporterId,
-    });
-    tasks.insert({
-      key: 'TEST-2',
+    }).id;
+    authTaskId = tasks.insert({
       projectId: project.id,
       title: 'Refactor authentication',
       description: 'Reescrever a camada de sessão',
       acceptanceCriteria: ['Compatible with current API'],
       reporterId,
-    });
+    }).id;
     tasks.insert({
-      key: 'TEST-3',
       projectId: project.id,
       title: 'Improve dashboard',
       description: 'Latency tweaks for metrics page',
@@ -71,13 +70,13 @@ describe('SearchService', () => {
 
   it('returns matching tasks ordered by FTS rank', () => {
     const hits = hitsOrThrow('oauth');
-    expect(hits.map((h) => h.key)).toContain('TEST-1');
+    expect(hits.map((h) => h.key)).toContain(deriveAlias('task', oauthTaskId));
     expect(hits.every((h) => h.entity === 'task')).toBe(true);
   });
 
   it('matches across diacritics (sessao ≈ sessão)', () => {
     const hits = hitsOrThrow('sessao');
-    expect(hits.map((h) => h.key)).toContain('TEST-2');
+    expect(hits.map((h) => h.key)).toContain(deriveAlias('task', authTaskId));
   });
 
   it('returns empty array for unmatched queries', () => {

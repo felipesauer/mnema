@@ -1,6 +1,13 @@
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import type { AuditEvent } from '@mnema/core/storage/audit/audit-writer.js';
 import { describe, expect, it } from 'vitest';
 import { formatEvent, formatHistory } from '@/cli/formatters/history-formatter.js';
+
+/** Deterministic committed ids for fixtures, and their derived task aliases. */
+const ID1 = '019f7700-0000-7000-8000-000000000001';
+const ID2 = '019f7700-0000-7000-8000-000000000002';
+const ID3 = '019f7700-0000-7000-8000-000000000003';
+const alias = (id: string): string => deriveAlias('task', id);
 
 const sample = (
   kind: string,
@@ -121,11 +128,11 @@ describe('formatEvent', () => {
     expect(line).toContain('→ X-ADR-7');
   });
 
-  it('renders note_added with the target task key and kind', () => {
+  it('renders note_added with the target task alias and kind', () => {
     const line = noColor(
       formatEvent(
         sample('note_added', {
-          task_key: 'X-1',
+          task_id: ID1,
           note_kind: 'comment',
           content_size: 42,
         }),
@@ -133,7 +140,7 @@ describe('formatEvent', () => {
         'iso',
       ),
     );
-    expect(line).toContain('note on X-1');
+    expect(line).toContain(`note on ${alias(ID1)}`);
     expect(line).toContain('[comment]');
     expect(line).not.toContain('note_added');
     expect(line).not.toContain('content_size');
@@ -182,15 +189,15 @@ describe('formatEvent', () => {
 describe('formatHistory', () => {
   it('collapses consecutive task_created from the same run into one summary line', () => {
     const events: AuditEvent[] = [
-      sample('task_created', { key: 'X-1', title: 'A' }, { run: 'r1' }),
+      sample('task_created', { id: ID1, title: 'A' }, { run: 'r1' }),
       sample(
         'task_created',
-        { key: 'X-2', title: 'B' },
+        { id: ID2, title: 'B' },
         { run: 'r1', at: '2026-05-01T10:00:01.000Z' },
       ),
       sample(
         'task_created',
-        { key: 'X-3', title: 'C' },
+        { id: ID3, title: 'C' },
         { run: 'r1', at: '2026-05-01T10:00:02.000Z' },
       ),
     ];
@@ -199,16 +206,16 @@ describe('formatHistory', () => {
     const lines = output.split('\n');
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('created 3 tasks');
-    expect(lines[0]).toContain('X-1');
-    expect(lines[0]).toContain('X-3');
+    expect(lines[0]).toContain(alias(ID1));
+    expect(lines[0]).toContain(alias(ID3));
   });
 
   it('keeps single creates verbose', () => {
     const events: AuditEvent[] = [
-      sample('task_created', { key: 'X-1', title: 'A' }, { run: 'r1' }),
+      sample('task_created', { id: ID1, title: 'A' }, { run: 'r1' }),
       sample(
         'task_transitioned',
-        { key: 'X-1', from: 'DRAFT', to: 'READY', action: 'submit' },
+        { id: ID1, from: 'DRAFT', to: 'READY', action: 'submit' },
         { run: 'r1', at: '2026-05-01T10:00:01.000Z' },
       ),
     ];
@@ -216,7 +223,7 @@ describe('formatHistory', () => {
     const output = noColor(formatHistory(events, 'human'));
     const lines = output.split('\n');
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain('created X-1');
+    expect(lines[0]).toContain(`created ${alias(ID1)}`);
   });
 
   it('emits raw JSON lines in json mode without aggregating', () => {

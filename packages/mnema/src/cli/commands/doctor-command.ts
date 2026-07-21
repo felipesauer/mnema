@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { ConfigLoader } from '@mnema/core/config/config-loader.js';
+import { deriveAlias } from '@mnema/core/domain/entity-alias.js';
 import {
   formatWorkflowIssues,
   WorkflowInvalidError,
@@ -281,17 +282,19 @@ export class DoctorCommand {
           observationIds,
           fsMod,
         );
-        const taskKeys = new Set(
+        // Mirrors are id-named, so the known set (and thus the orphan test) is
+        // keyed by id.
+        const taskIds = new Set(
           (
             adapter
               .getDatabase()
-              .prepare('SELECT key FROM tasks WHERE deleted_at IS NULL')
-              .all() as Array<{ key: string }>
-          ).map((r) => r.key),
+              .prepare('SELECT id FROM tasks WHERE deleted_at IS NULL')
+              .all() as Array<{ id: string }>
+          ).map((r) => r.id),
         );
         prunedTasks = pruneNestedOrphanMirrors(
           pathMod.join(projectRoot, LAYOUT.backlog),
-          taskKeys,
+          taskIds,
           fsMod,
           rowlessDuplicateKeys,
         );
@@ -302,17 +305,18 @@ export class DoctorCommand {
         // tiebreak is trusted. A stale copy in the wrong state dir — the shape a
         // squash-merge strands and that a plain sync would resolve by directory
         // order — is moved to backlog/.quarantine/ for the human to inspect.
-        const stateByKey = new Map(
+        // Mirrors are id-named, so the map is keyed by id (the filename stem).
+        const stateById = new Map(
           (
             adapter
               .getDatabase()
-              .prepare('SELECT key, state FROM tasks WHERE deleted_at IS NULL')
-              .all() as Array<{ key: string; state: string }>
-          ).map((r) => [r.key, r.state] as const),
+              .prepare('SELECT id, state FROM tasks WHERE deleted_at IS NULL')
+              .all() as Array<{ id: string; state: string }>
+          ).map((r) => [r.id, r.state] as const),
         );
         quarantined = quarantineDuplicateTaskMirrors(
           pathMod.join(projectRoot, LAYOUT.backlog),
-          stateByKey,
+          stateById,
           fsMod,
         );
       }
@@ -984,41 +988,46 @@ export function inspectMirrorDrift(
     ),
   });
 
-  // Roadmap mirrors are keyed by their human key, not a slug. Epics and
-  // decisions share `roadmap/`, so the orphan check for that directory
-  // uses the union of both key sets — otherwise each kind would flag the
-  // other's files as orphans.
-  const epicKeys = (
-    adapter.getDatabase().prepare('SELECT key FROM epics WHERE deleted_at IS NULL').all() as Array<{
-      key: string;
-    }>
-  ).map((r) => r.key);
+  // Epic and sprint mirrors are named by their committed id now; decisions
+  // are still named by their human key. Epics and decisions share `roadmap/`,
+  // so the orphan check for that directory uses the union of the epic id set
+  // and the decision key set — otherwise each kind would flag the other's
+  // files as orphans.
+  const epicRows = adapter
+    .getDatabase()
+    .prepare('SELECT id FROM epics WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string }>;
+  const epicIds = epicRows.map((r) => r.id);
   const decisionKeys = (
     adapter
       .getDatabase()
       .prepare('SELECT key FROM decisions WHERE deleted_at IS NULL')
       .all() as Array<{ key: string }>
   ).map((r) => r.key);
-  const sprintKeys = (
-    adapter
-      .getDatabase()
-      .prepare('SELECT key FROM sprints WHERE deleted_at IS NULL')
-      .all() as Array<{ key: string }>
-  ).map((r) => r.key);
+  const sprintRows = adapter
+    .getDatabase()
+    .prepare('SELECT id FROM sprints WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string }>;
+  const sprintIds = sprintRows.map((r) => r.id);
 
-  const roadmapKnown = new Set([...epicKeys, ...decisionKeys]);
-  // Only key-shaped stems are entity mirrors in roadmap/; free-form human
-  // files (e.g. 2026-Q2.md) are invited by the scaffold and never orphans.
+  const roadmapKnown = new Set([...epicIds, ...decisionKeys]);
+  // A roadmap mirror stem is either an epic's committed id or a decision's
+  // `-ADR-` key; free-form human files (e.g. 2026-Q2.md) are invited by the
+  // scaffold and never orphans.
   const roadmapOrphans = listMirrorOrphans(dirs.roadmapDir, roadmapKnown, isRoadmapMirrorStem);
 
-  const epicMissing = epicKeys.filter((k) => !existsSync(path.join(dirs.roadmapDir, `${k}.md`)));
+  const epicMissing = epicRows.filter((r) => !existsSync(path.join(dirs.roadmapDir, `${r.id}.md`)));
   checks.push({
     name: 'epics mirrored',
     // Orphans live in roadmap/ shared with decisions — only fail on
-    // genuine orphans (keys in neither set), reported once below.
+    // genuine orphans (stems in neither set), reported once below.
     ok: epicMissing.length === 0,
     severity: 'warning',
-    detail: mirrorDetail(epicKeys.length, epicMissing, []),
+    detail: mirrorDetail(
+      epicRows.length,
+      epicMissing.map((r) => deriveAlias('epic', r.id)),
+      [],
+    ),
   });
 
   const decisionMissing = decisionKeys.filter(
@@ -1031,29 +1040,33 @@ export function inspectMirrorDrift(
     detail: mirrorDetail(decisionKeys.length, decisionMissing, roadmapOrphans),
   });
 
-  const sprintMissing = sprintKeys.filter(
-    (k) => !existsSync(path.join(dirs.sprintsDir, `${k}.md`)),
+  const sprintMissing = sprintRows.filter(
+    (r) => !existsSync(path.join(dirs.sprintsDir, `${r.id}.md`)),
   );
-  const sprintOrphans = listMirrorOrphans(dirs.sprintsDir, new Set(sprintKeys));
+  const sprintOrphans = listMirrorOrphans(dirs.sprintsDir, new Set(sprintIds));
   checks.push({
     name: 'sprints mirrored',
     ok: sprintMissing.length === 0 && sprintOrphans.length === 0,
     severity: 'warning',
-    detail: mirrorDetail(sprintKeys.length, sprintMissing, sprintOrphans),
+    detail: mirrorDetail(
+      sprintRows.length,
+      sprintMissing.map((r) => deriveAlias('sprint', r.id)),
+      sprintOrphans,
+    ),
   });
 
   // Tasks differ from the flat-directory entities above: their mirrors
-  // live in per-state subfolders (`backlog/<STATE>/<KEY>.md`), so both
+  // live in per-state subfolders (`backlog/<STATE>/<ID>.md`), so both
   // the missing-file probe and the orphan scan walk one level deeper.
   const taskRows = adapter
     .getDatabase()
-    .prepare('SELECT key, state FROM tasks WHERE deleted_at IS NULL')
-    .all() as Array<{ key: string; state: string }>;
-  const taskKeys = new Set(taskRows.map((r) => r.key));
+    .prepare('SELECT id, state FROM tasks WHERE deleted_at IS NULL')
+    .all() as Array<{ id: string; state: string }>;
+  const taskIds = new Set(taskRows.map((r) => r.id));
   const taskMissing = taskRows
-    .filter((r) => !existsSync(path.join(dirs.backlogDir, r.state, `${r.key}.md`)))
-    .map((r) => r.key);
-  const taskOrphans = listNestedMirrorOrphans(dirs.backlogDir, taskKeys);
+    .filter((r) => !existsSync(path.join(dirs.backlogDir, r.state, `${r.id}.md`)))
+    .map((r) => deriveAlias('task', r.id));
+  const taskOrphans = listNestedMirrorOrphans(dirs.backlogDir, taskIds);
   checks.push({
     name: 'tasks mirrored',
     ok: taskMissing.length === 0 && taskOrphans.length === 0,
@@ -1066,8 +1079,9 @@ export function inspectMirrorDrift(
   // live, so neither check above sees it. Surface it as its own error — it is
   // the shape a squash-merge strands, and a subsequent `mnema sync` would
   // otherwise resolve it by directory order and regress the task's state.
-  const stateByKey = new Map(taskRows.map((r) => [r.key, r.state]));
-  const duplicates = listDuplicateTaskMirrors(dirs.backlogDir, stateByKey);
+  // Mirrors are id-named, so the map is keyed by id (the filename stem).
+  const stateById = new Map(taskRows.map((r) => [r.id, r.state]));
+  const duplicates = listDuplicateTaskMirrors(dirs.backlogDir, stateById);
   checks.push({
     name: 'task mirror uniqueness',
     ok: duplicates.length === 0,
@@ -1086,15 +1100,15 @@ export function inspectMirrorDrift(
 /**
  * Like {@link listMirrorOrphans} but for the backlog's per-state layout:
  * scans every `backlog/<STATE>/*.md` and returns the stems that match no
- * known task key. A `.md` under any state folder whose key has no live
+ * known task id. A `.md` under any state folder whose id has no live
  * SQLite row is an orphan (the row was deleted, renamed, or the file was
  * left behind after a state move).
  *
  * @param backlogDir - Backlog root (returns empty if it does not exist)
- * @param knownKeys - Authoritative set of task keys from SQLite
- * @returns Orphan key list, alphabetical
+ * @param knownIds - Authoritative set of task ids from SQLite (the filenames)
+ * @returns Orphan id list, alphabetical
  */
-function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<string>): string[] {
+function listNestedMirrorOrphans(backlogDir: string, knownIds: ReadonlySet<string>): string[] {
   if (!existsSync(backlogDir)) return [];
   const orphans: string[] = [];
   for (const stateDir of readdirSync(backlogDir, { withFileTypes: true })) {
@@ -1107,8 +1121,8 @@ function listNestedMirrorOrphans(backlogDir: string, knownKeys: ReadonlySet<stri
       if (entry.name.startsWith('.')) continue;
       if (entry.name === 'INDEX.md') continue;
       if (!entry.name.endsWith('.md')) continue;
-      const key = entry.name.slice(0, -3);
-      if (!knownKeys.has(key)) orphans.push(key);
+      const stem = entry.name.slice(0, -3);
+      if (!knownIds.has(stem)) orphans.push(stem);
     }
   }
   return orphans.sort();
@@ -1215,14 +1229,16 @@ function listMirrorOrphans(
 }
 
 /**
- * True when a `roadmap/` stem is a shaped entity key — `<PROJECT>-ADR-<n>` or
- * `<PROJECT>-EPIC-<n>`. Only these are mirrors of a SQLite row; any other
- * `.md` in roadmap/ is free-form human content (quarter/theme notes the
- * scaffold README explicitly invites) and must never read as an orphan.
+ * True when a `roadmap/` stem is a mirror of a SQLite row: an epic's committed
+ * id (a v7 UUID) or a decision's `<PROJECT>-ADR-<n>` key. Any other `.md` in
+ * roadmap/ is free-form human content (quarter/theme notes the scaffold README
+ * explicitly invites) and must never read as an orphan. Epics are id-named now,
+ * so a bare `-EPIC-` key is no longer a mirror stem.
  */
-const ROADMAP_MIRROR_STEM = /^[A-Z][A-Z0-9]*-(?:ADR|EPIC)-\d+$/;
+const DECISION_KEY_STEM = /^[A-Z][A-Z0-9]*-ADR-\d+$/;
+const UUID_STEM = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isRoadmapMirrorStem(stem: string): boolean {
-  return ROADMAP_MIRROR_STEM.test(stem);
+  return UUID_STEM.test(stem) || DECISION_KEY_STEM.test(stem);
 }
 
 /**
@@ -1358,23 +1374,23 @@ export function pruneFolderedOrphanMirrors(
  * orphan (a single copy, no row) is still pruned as before.
  *
  * @param backlogDir - Backlog root (no-op if it does not exist)
- * @param knownKeys - Authoritative task key set from SQLite
+ * @param knownIds - Authoritative task id set from SQLite (the mirror filenames)
  * @param fs - `node:fs` namespace (injected for testability + lazy load)
- * @param duplicateConflicts - Optional collector; each row-less key found in
+ * @param duplicateConflicts - Optional collector; each row-less stem found in
  *   more than one state dir is pushed here (alphabetical, deduped) and its
  *   files are NOT deleted
- * @returns Key list (alphabetical) of the files that were deleted
+ * @returns Stem list (alphabetical) of the files that were deleted
  */
 export function pruneNestedOrphanMirrors(
   backlogDir: string,
-  knownKeys: ReadonlySet<string>,
+  knownIds: ReadonlySet<string>,
   fs: typeof import('node:fs'),
   duplicateConflicts?: string[],
 ): string[] {
   if (!fs.existsSync(backlogDir)) return [];
 
-  // First pass: for every row-less key, count the state dirs it appears in.
-  // A key in >1 dir is a duplicate we must not double-delete.
+  // First pass: for every row-less stem, count the state dirs it appears in.
+  // A stem in >1 dir is a duplicate we must not double-delete.
   const rowlessDirCount = new Map<string, number>();
   const stateDirs = fs
     .readdirSync(backlogDir, { withFileTypes: true })
@@ -1385,21 +1401,21 @@ export function pruneNestedOrphanMirrors(
     })) {
       if (!entry.isFile() || entry.name.startsWith('.') || !entry.name.endsWith('.md')) continue;
       if (entry.name === 'INDEX.md') continue;
-      const key = entry.name.slice(0, -3);
-      if (knownKeys.has(key)) continue;
-      rowlessDirCount.set(key, (rowlessDirCount.get(key) ?? 0) + 1);
+      const stem = entry.name.slice(0, -3);
+      if (knownIds.has(stem)) continue;
+      rowlessDirCount.set(stem, (rowlessDirCount.get(stem) ?? 0) + 1);
     }
   }
   const duplicated = new Set(
-    [...rowlessDirCount].filter(([, count]) => count > 1).map(([key]) => key),
+    [...rowlessDirCount].filter(([, count]) => count > 1).map(([stem]) => stem),
   );
   if (duplicateConflicts !== undefined && duplicated.size > 0) {
-    for (const key of [...duplicated].sort()) {
-      if (!duplicateConflicts.includes(key)) duplicateConflicts.push(key);
+    for (const stem of [...duplicated].sort()) {
+      if (!duplicateConflicts.includes(stem)) duplicateConflicts.push(stem);
     }
   }
 
-  // Second pass: prune a row-less key only when it is NOT a duplicate.
+  // Second pass: prune a row-less stem only when it is NOT a duplicate.
   const removed: string[] = [];
   for (const stateDir of stateDirs) {
     const stateRoot = path.join(backlogDir, stateDir.name);
@@ -1408,10 +1424,10 @@ export function pruneNestedOrphanMirrors(
       if (entry.name.startsWith('.')) continue;
       if (entry.name === 'INDEX.md') continue;
       if (!entry.name.endsWith('.md')) continue;
-      const key = entry.name.slice(0, -3);
-      if (!knownKeys.has(key) && !duplicated.has(key)) {
+      const stem = entry.name.slice(0, -3);
+      if (!knownIds.has(stem) && !duplicated.has(stem)) {
         fs.rmSync(path.join(stateRoot, entry.name));
-        removed.push(key);
+        removed.push(stem);
       }
     }
   }

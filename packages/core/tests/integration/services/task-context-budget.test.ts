@@ -37,13 +37,12 @@ describe('task context_budget column', () => {
   });
 
   it('defaults context_budget to null when not provided', () => {
-    const task = tasks.insert({ key: 'TEST-1', projectId, title: 'A', reporterId: actorId });
+    const task = tasks.insert({ projectId, title: 'A', reporterId: actorId });
     expect(task.contextBudget).toBeNull();
   });
 
   it('persists and reads back a context_budget', () => {
     const created = tasks.insert({
-      key: 'TEST-2',
       projectId,
       title: 'B',
       reporterId: actorId,
@@ -52,13 +51,12 @@ describe('task context_budget column', () => {
     expect(created.contextBudget).toBe(80_000);
 
     // round-trips through a fresh read
-    const reloaded = tasks.findByKey('TEST-2');
+    const reloaded = tasks.findById(created.id);
     expect(reloaded?.contextBudget).toBe(80_000);
   });
 
   it('keeps context_budget independent of estimate', () => {
     const task = tasks.insert({
-      key: 'TEST-3',
       projectId,
       title: 'C',
       reporterId: actorId,

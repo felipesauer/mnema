@@ -194,8 +194,8 @@ export class EvalReportService {
   }
 }
 
-/** The task key carried by a task_created/task_transitioned event, or null. */
+/** The committed task id carried by a task_created/task_transitioned event. */
 function taskKeyOf(event: AuditEvent): string | null {
-  const key = (event.data as { key?: unknown }).key;
-  return typeof key === 'string' ? key : null;
+  const id = (event.data as { id?: unknown }).id;
+  return typeof id === 'string' ? id : null;
 }

@@ -90,7 +90,6 @@ export interface BoardData {
     readonly key: string;
     readonly title: string;
     readonly state: string;
-    readonly priority: number;
     readonly assignee_id: string | null;
     readonly updated_at: string;
     readonly labels: readonly string[];

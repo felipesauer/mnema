@@ -1,11 +1,13 @@
 import { Err, Ok, type Result } from '../../common/result.js';
 import type { Task } from '../../domain/entities/task.js';
+import { deriveAlias } from '../../domain/entity-alias.js';
 import type { StateMachine } from '../../domain/state-machine/state-machine.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { MnemaError } from '../../errors/mnema-error.js';
 import type { EpicRepository } from '../../storage/sqlite/repositories/epic-repository.js';
 import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-repository.js';
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
+import { resolveEntity } from './resolve-entity.js';
 
 /**
  * A computed coverage snapshot for an epic or sprint.
@@ -25,7 +27,7 @@ export interface CoverageReport {
   readonly blocked: number;
   /** `round(terminal / total * 100)`, or 0 when there are no tasks. */
   readonly percent: number;
-  /** Keys of the non-terminal tasks — the actionable "what's left". */
+  /** Aliases of the non-terminal tasks — the actionable "what's left". */
   readonly open: readonly string[];
 }
 
@@ -50,10 +52,12 @@ export class CoverageService {
    * @returns The report or `EpicNotFound`
    */
   forEpic(epicKey: string): Result<CoverageReport, MnemaError> {
-    const epic = this.epics.findByKey(epicKey);
-    if (epic === null) {
-      return Err({ kind: ErrorCode.EpicNotFound, epicKey });
-    }
+    const resolved = resolveEntity(this.epics, epicKey, (handle) => ({
+      kind: ErrorCode.EpicNotFound,
+      epicKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const epic = resolved.value;
     return Ok(this.compute(this.tasks.findByEpic(epic.id)));
   }
 
@@ -64,10 +68,12 @@ export class CoverageService {
    * @returns The report or `SprintNotFound`
    */
   forSprint(sprintKey: string): Result<CoverageReport, MnemaError> {
-    const sprint = this.sprints.findByKey(sprintKey);
-    if (sprint === null) {
-      return Err({ kind: ErrorCode.SprintNotFound, sprintKey });
-    }
+    const resolved = resolveEntity(this.sprints, sprintKey, (handle) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey: handle,
+    }));
+    if (!resolved.ok) return Err(resolved.error);
+    const sprint = resolved.value;
     return Ok(this.compute(this.sprints.listTasks(sprint.id)));
   }
 
@@ -87,7 +93,7 @@ export class CoverageService {
       if (this.stateMachine.isTerminal(task.state)) {
         terminal += 1;
       } else {
-        open.push(task.key);
+        open.push(deriveAlias('task', task.id));
       }
     }
 

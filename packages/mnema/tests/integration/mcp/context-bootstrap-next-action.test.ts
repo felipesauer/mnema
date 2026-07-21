@@ -137,32 +137,20 @@ describe('context_bootstrap.next_action tells the agent what to do now (MNEMA-22
     expect(na.recommended).toContain(key);
   });
 
-  it('recommends the highest-priority READY task when several compete', async () => {
-    // priority 1 is highest; a default-priority (3) task first, then a
-    // priority-1 one that must win the recommendation.
-    await createReady(harness, 'Low priority chore');
-    const created = payload(
-      (await harness.client.callTool({
-        name: 'task_create',
-        arguments: { title: 'Urgent fix', acceptance_criteria: ['ships'], priority: 1 },
-      })) as CallToolResult,
-    );
-    const urgentKey = (created.task as { key: string }).key;
-    await harness.client.callTool({
-      name: 'task_submit',
-      arguments: {
-        task_key: urgentKey,
-        title: 'Urgent fix',
-        description: 'Urgent fix — ready to pick up.',
-        acceptance_criteria: ['ships'],
-        estimate: 1,
-      },
-    });
+  it('recommends a stable single READY task when several compete', async () => {
+    // With no priority to rank on, the recommendation settles to a stable
+    // order (by committed id). The contract the agent relies on is that it is
+    // deterministic and points at one of the ready tasks — not which wins.
+    const firstKey = await createReady(harness, 'First ready');
+    const secondKey = await createReady(harness, 'Second ready');
 
     const na = await bootstrapNextAction(harness);
     expect(na.focus).toBe('start');
     expect(na.ready_count).toBe(2);
-    expect(na.top_ready_task?.key).toBe(urgentKey);
+    expect([firstKey, secondKey]).toContain(na.top_ready_task?.key);
+    // Deterministic: a second read returns the same pick.
+    const again = await bootstrapNextAction(harness);
+    expect(again.top_ready_task?.key).toBe(na.top_ready_task?.key);
   });
 
   it('prefers resuming an IN_PROGRESS task over starting a new READY one', async () => {

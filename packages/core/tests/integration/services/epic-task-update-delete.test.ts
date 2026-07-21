@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Config } from '@/config/config-schema.js';
 import { ConfigSchema } from '@/config/config-schema.js';
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { ErrorCode } from '@/errors/error-codes.js';
 import { createServiceContainer, type ServiceContainer } from '@/services/service-container.js';
 
@@ -47,7 +48,7 @@ describe('epic/task content edit + epic delete', () => {
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  const epicPath = (key: string): string => path.join(projectRoot, '.mnema/roadmap', `${key}.md`);
+  const epicPath = (id: string): string => path.join(projectRoot, '.mnema/roadmap', `${id}.md`);
 
   it('edits an epic description and reflects it in the read + the .md mirror', () => {
     const created = container.epic.create({
@@ -60,7 +61,7 @@ describe('epic/task content edit + epic delete', () => {
     if (!created.ok) return;
 
     const updated = container.epic.update({
-      epicKey: created.value.key,
+      epicKey: created.value.id,
       description: 'new text',
       actor: 'daniel',
     });
@@ -68,12 +69,12 @@ describe('epic/task content edit + epic delete', () => {
     if (!updated.ok) return;
     expect(updated.value.description).toBe('new text');
 
-    const readBack = container.epic.show(created.value.key);
+    const readBack = container.epic.show(created.value.id);
     expect(readBack.ok).toBe(true);
     if (!readBack.ok) return;
     expect(readBack.value.epic.description).toBe('new text');
 
-    const md = readFileSync(epicPath(created.value.key), 'utf-8');
+    const md = readFileSync(epicPath(created.value.id), 'utf-8');
     expect(md).toContain('new text');
     expect(md).not.toContain('old text');
   });
@@ -88,7 +89,7 @@ describe('epic/task content edit + epic delete', () => {
     if (!created.ok) return;
 
     const submitted = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'submit',
       payload: {
         description: 'a sufficiently long description',
@@ -102,7 +103,7 @@ describe('epic/task content edit + epic delete', () => {
     expect(submitted.value.state).toBe('READY');
 
     const updated = container.task.updateContent({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       title: 'Corrected title',
       actor: 'daniel',
     });
@@ -111,7 +112,7 @@ describe('epic/task content edit + epic delete', () => {
     expect(updated.value.title).toBe('Corrected title');
     expect(updated.value.state).toBe('READY');
 
-    const readBack = container.task.findByKey(created.value.key);
+    const readBack = container.task.findByKey(created.value.id);
     expect(readBack.ok).toBe(true);
     if (!readBack.ok) return;
     expect(readBack.value.title).toBe('Corrected title');
@@ -127,7 +128,7 @@ describe('epic/task content edit + epic delete', () => {
     if (!created.ok) return;
 
     const canceled = container.task.transition({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       action: 'cancel',
       payload: { reason: 'not pursuing this' },
       actor: 'daniel',
@@ -137,7 +138,7 @@ describe('epic/task content edit + epic delete', () => {
     expect(canceled.value.state).toBe('CANCELED');
 
     const updated = container.task.updateContent({
-      taskKey: created.value.key,
+      taskKey: created.value.id,
       title: 'Too late',
       actor: 'daniel',
     });
@@ -154,21 +155,21 @@ describe('epic/task content edit + epic delete', () => {
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    expect(existsSync(epicPath(created.value.key))).toBe(true);
+    expect(existsSync(epicPath(created.value.id))).toBe(true);
 
     const deleted = container.epic.delete({
-      epicKey: created.value.key,
+      epicKey: created.value.id,
       actor: 'daniel',
     });
     expect(deleted.ok).toBe(true);
 
-    const show = container.epic.show(created.value.key);
+    const show = container.epic.show(created.value.id);
     expect(show.ok).toBe(false);
     if (show.ok) return;
     expect(show.error.kind).toBe(ErrorCode.EpicNotFound);
 
-    expect(container.epic.list('TEST').map((e) => e.key)).not.toContain(created.value.key);
-    expect(existsSync(epicPath(created.value.key))).toBe(false);
+    expect(container.epic.list('TEST').map((e) => e.id)).not.toContain(created.value.id);
+    expect(existsSync(epicPath(created.value.id))).toBe(false);
   });
 
   it('refuses to delete an epic that still has an attached task', () => {
@@ -186,13 +187,13 @@ describe('epic/task content edit + epic delete', () => {
     if (!epic.ok || !task.ok) return;
 
     container.epic.addTask({
-      epicKey: epic.value.key,
-      taskKey: task.value.key,
+      epicKey: epic.value.id,
+      taskKey: task.value.id,
       actor: 'daniel',
     });
 
     const deleted = container.epic.delete({
-      epicKey: epic.value.key,
+      epicKey: epic.value.id,
       actor: 'daniel',
     });
     expect(deleted.ok).toBe(false);
@@ -200,8 +201,8 @@ describe('epic/task content edit + epic delete', () => {
     expect(deleted.error.kind).toBe(ErrorCode.EpicHasTasks);
 
     // The refusal leaves the epic and its mirror intact.
-    expect(container.epic.show(epic.value.key).ok).toBe(true);
-    expect(existsSync(epicPath(epic.value.key))).toBe(true);
+    expect(container.epic.show(epic.value.id).ok).toBe(true);
+    expect(existsSync(epicPath(epic.value.id))).toBe(true);
   });
 
   it('leaves no live orphan when a crash interrupts delete between the two steps', () => {
@@ -212,8 +213,8 @@ describe('epic/task content edit + epic delete', () => {
     });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const key = created.value.key;
-    expect(existsSync(epicPath(key))).toBe(true);
+    const id = created.value.id;
+    expect(existsSync(epicPath(id))).toBe(true);
 
     // Simulate a crash in the window between the two non-atomic steps: the
     // mirror unlink runs, then the process dies before the soft-delete
@@ -228,20 +229,18 @@ describe('epic/task content edit + epic delete', () => {
       throw new Error('injected crash before soft-delete commit');
     };
 
-    expect(() => container.epic.delete({ epicKey: key, actor: 'daniel' })).toThrow(
-      /injected crash/,
-    );
+    expect(() => container.epic.delete({ epicKey: id, actor: 'daniel' })).toThrow(/injected crash/);
     repo.epics.softDelete = original;
 
     // The recoverable state is benign: the epic is still live and readable
     // (not a deleted row masquerading behind a stale mirror).
-    const show = container.epic.show(key);
+    const show = container.epic.show(id);
     expect(show.ok).toBe(true);
 
     // The mirror is gone, but rebuildMirrors heals it — self-healing.
-    expect(existsSync(epicPath(key))).toBe(false);
+    expect(existsSync(epicPath(id))).toBe(false);
     const rebuilt = container.epic.rebuildMirrors('TEST');
-    expect(rebuilt).toContain(key);
-    expect(existsSync(epicPath(key))).toBe(true);
+    expect(rebuilt).toContain(deriveAlias('epic', id));
+    expect(existsSync(epicPath(id))).toBe(true);
   });
 });

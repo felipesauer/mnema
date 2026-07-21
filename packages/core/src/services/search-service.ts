@@ -1,4 +1,5 @@
 import { Err, Ok, type Result } from '../common/result.js';
+import { deriveAlias } from '../domain/entity-alias.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import type { MnemaError } from '../errors/mnema-error.js';
 import type { SqliteAdapter } from '../storage/sqlite/sqlite-adapter.js';
@@ -94,7 +95,6 @@ export class SearchService {
       .getDatabase()
       .prepare(
         `SELECT t.id AS id,
-                t.key AS key,
                 t.title AS title,
                 snippet(tasks_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
            FROM tasks_fts
@@ -106,14 +106,13 @@ export class SearchService {
       )
       .all(query, limit) as Array<{
       id: string;
-      key: string;
       title: string;
       snippet: string;
     }>;
     return rows.map((row) => ({
       entity: 'task' as const,
       id: row.id,
-      key: row.key,
+      key: deriveAlias('task', row.id),
       title: row.title,
       snippet: row.snippet,
       parentKey: null,
@@ -280,7 +279,7 @@ export class SearchService {
       .getDatabase()
       .prepare(
         `SELECT n.id AS id,
-                t.key AS task_key,
+                n.task_id AS task_id,
                 snippet(notes_fts, -1, '<mark>', '</mark>', '…', 32) AS snippet
            FROM notes_fts
            JOIN notes n ON n.id = notes_fts.note_id
@@ -292,7 +291,7 @@ export class SearchService {
       )
       .all(query, limit) as Array<{
       id: string;
-      task_key: string;
+      task_id: string;
       snippet: string;
     }>;
     return rows.map((row) => ({
@@ -301,7 +300,7 @@ export class SearchService {
       key: null,
       title: null,
       snippet: row.snippet,
-      parentKey: row.task_key,
+      parentKey: deriveAlias('task', row.task_id),
     }));
   }
 }

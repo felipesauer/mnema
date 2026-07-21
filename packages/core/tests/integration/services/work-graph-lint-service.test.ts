@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { deriveAlias } from '@/domain/entity-alias.js';
 import { generateUuid } from '@/domain/id-generator.js';
 import { StateMachine } from '@/domain/state-machine/state-machine.js';
 import { ErrorCode } from '@/errors/error-codes.js';
@@ -74,8 +75,8 @@ describe('WorkGraphLintService', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  function makeTask(key: string, state = 'DRAFT', sprintId?: string): string {
-    const task = tasks.insert({ key, projectId, title: key, reporterId: actorId, sprintId });
+  function makeTask(title: string, state = 'DRAFT', sprintId?: string): string {
+    const task = tasks.insert({ projectId, title, reporterId: actorId, sprintId });
     if (state !== 'DRAFT') tasks.updateState(task.id, state);
     return task.id;
   }
@@ -93,19 +94,19 @@ describe('WorkGraphLintService', () => {
   }
 
   it('reports clean for a sprint whose tasks are all terminal (with an agent run + evidence)', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     const id = makeTask('TEST-1', 'DONE', sprint.id);
     // a transition recorded under an agent run → not a bypass
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
       run: generateUuid(),
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
     // evidence attached → not missing-evidence
     attachEvidence(id);
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics).toEqual([]);
@@ -113,82 +114,82 @@ describe('WorkGraphLintService', () => {
   });
 
   it('warns about an empty sprint', () => {
-    sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'empty')).toBe(true);
   });
 
   it('warns about non-terminal tasks', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'IN_PROGRESS', sprint.id);
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'IN_PROGRESS', sprint.id);
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const d = result.value.diagnostics.find((x) => x.rule === 'incomplete-tasks');
     expect(d).toBeDefined();
-    expect(d?.message).toContain('TEST-1');
+    expect(d?.message).toContain(deriveAlias('task', id));
   });
 
   it('flags subagent-bypass: a DONE task with audit events but none under a run', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
     // transition recorded WITHOUT a run id → bypass
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(true);
   });
 
   it('does not flag bypass when a DONE task has no audit trail at all', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     makeTask('TEST-1', 'DONE', sprint.id);
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
   });
 
   it('flags missing-evidence: a DONE task with no attached evidence', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const d = result.value.diagnostics.find((x) => x.rule === 'missing-evidence');
     expect(d).toBeDefined();
     expect(d?.severity).toBe('warning');
-    expect(d?.message).toContain('TEST-1');
+    expect(d?.message).toContain(deriveAlias('task', id));
   });
 
   it('does not flag missing-evidence once evidence is attached', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     const id = makeTask('TEST-1', 'DONE', sprint.id);
     attachEvidence(id);
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'missing-evidence')).toBe(false);
   });
 
   it('does not flag missing-evidence for a CANCELED task (abandon terminal is exempt)', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     makeTask('TEST-1', 'CANCELED', sprint.id);
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'missing-evidence')).toBe(false);
   });
 
   it('flags a broken dependency (blocker soft-deleted)', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     const dependent = makeTask('TEST-1', 'READY', sprint.id);
     const blocker = makeTask('TEST-2', 'DONE', sprint.id);
     // create a dependency edge directly (migration-001 table)
@@ -204,7 +205,7 @@ describe('WorkGraphLintService', () => {
       .prepare("UPDATE tasks SET deleted_at = '2026-06-23T01:00:00.000Z' WHERE id = ?")
       .run(blocker);
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const broken = result.value.diagnostics.find((d) => d.rule === 'broken-dependency');
@@ -214,57 +215,57 @@ describe('WorkGraphLintService', () => {
   });
 
   it('lints an epic and warns when empty', () => {
-    epics.insert({ key: 'TEST-EPIC-1', projectId, title: 'E1' });
-    const result = lint.lintEpic('TEST-EPIC-1');
+    const epic = epics.insert({ projectId, title: 'E1' });
+    const result = lint.lintEpic(epic.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'empty')).toBe(true);
   });
 
-  it('returns SprintNotFound / EpicNotFound for unknown keys', () => {
-    const s = lint.lintSprint('NOPE-SPRINT-9');
+  it('returns SprintNotFound / EpicNotFound for unknown handles', () => {
+    const s = lint.lintSprint('s-ffffffff');
     expect(s.ok).toBe(false);
     if (!s.ok) expect(s.error.kind).toBe(ErrorCode.SprintNotFound);
 
-    const e = lint.lintEpic('NOPE-EPIC-9');
+    const e = lint.lintEpic('e-ffffffff');
     expect(e.ok).toBe(false);
     if (!e.ok) expect(e.error.kind).toBe(ErrorCode.EpicNotFound);
   });
 
   it('flags subagent-bypass even when a run-carrying non-transition event is present', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
     // The DONE transition was NOT run-tracked → a genuine bypass.
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
     // …but a note WAS written under a run. This must not mask the bypass.
     audit.write({
       kind: 'note_added',
       actor: 'daniel',
       run: generateUuid(),
-      data: { task_key: 'TEST-1', note_kind: 'comment', content_size: 3 },
+      data: { task_id: id, note_kind: 'comment', content_size: 3 },
     });
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(true);
   });
 
   it('does not report an informational (relates_to) edge to a deleted task as broken', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     const a = makeTask('TEST-1', 'DONE', sprint.id);
     const b = makeTask('TEST-2', 'DONE', sprint.id);
     // run-tracked transitions so the only candidate diagnostic is the edge
-    for (const key of ['TEST-1', 'TEST-2']) {
+    for (const id of [a, b]) {
       audit.write({
         kind: 'task_transitioned',
         actor: 'daniel',
         run: generateUuid(),
-        data: { key, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+        data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
       });
     }
     adapter
@@ -275,7 +276,7 @@ describe('WorkGraphLintService', () => {
       .run(generateUuid(), a, b);
     tasks.softDelete(b);
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'broken-dependency')).toBe(false);
@@ -283,66 +284,66 @@ describe('WorkGraphLintService', () => {
   });
 
   it('flags a run-less terminal arrival even when an earlier transition was run-tracked', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
     // start WAS tracked under a run…
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
       run: generateUuid(),
-      data: { key: 'TEST-1', from: 'READY', to: 'IN_PROGRESS', action: 'start' },
+      data: { id, from: 'READY', to: 'IN_PROGRESS', action: 'start' },
     });
     // …but the transition that ARRIVED at the terminal state was not.
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(true);
   });
 
   it('does NOT flag when the terminal arrival itself was run-tracked', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const sprint = sprints.insert({ projectId, name: 'S1' });
+    const id = makeTask('TEST-1', 'DONE', sprint.id);
     // an earlier run-less transition…
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
-      data: { key: 'TEST-1', from: 'READY', to: 'IN_PROGRESS', action: 'start' },
+      data: { id, from: 'READY', to: 'IN_PROGRESS', action: 'start' },
     });
     // …but the terminal arrival WAS tracked → not a bypass.
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
       run: generateUuid(),
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.diagnostics.some((d) => d.rule === 'subagent-bypass')).toBe(false);
   });
 
   it('reads the audit log ONCE regardless of how many terminal tasks there are', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     // Three terminal tasks — the old code read the whole log once per task.
-    for (const key of ['TEST-1', 'TEST-2', 'TEST-3']) {
-      makeTask(key, 'DONE', sprint.id);
+    for (const title of ['TEST-1', 'TEST-2', 'TEST-3']) {
+      const id = makeTask(title, 'DONE', sprint.id);
       audit.write({
         kind: 'task_transitioned',
         actor: 'daniel',
         run: generateUuid(),
-        data: { key, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+        data: { id, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
       });
     }
 
     const spy = vi.spyOn(auditQuery, 'run');
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
 
     // A single read powers all three bypass checks (was one read per task).
@@ -355,27 +356,27 @@ describe('WorkGraphLintService', () => {
   });
 
   it('still flags a bypass correctly with the single bucketed read (mixed tasks)', () => {
-    const sprint = sprints.insert({ projectId, key: 'TEST-SPRINT-1', name: 'S1' });
+    const sprint = sprints.insert({ projectId, name: 'S1' });
     // TEST-1 arrives DONE under a run (clean); TEST-2 arrives DONE with NO run (bypass).
-    makeTask('TEST-1', 'DONE', sprint.id);
+    const clean = makeTask('TEST-1', 'DONE', sprint.id);
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
       run: generateUuid(),
-      data: { key: 'TEST-1', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id: clean, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
-    makeTask('TEST-2', 'DONE', sprint.id);
+    const bypassed = makeTask('TEST-2', 'DONE', sprint.id);
     audit.write({
       kind: 'task_transitioned',
       actor: 'daniel',
-      data: { key: 'TEST-2', from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
+      data: { id: bypassed, from: 'IN_REVIEW', to: 'DONE', action: 'approve' },
     });
 
-    const result = lint.lintSprint('TEST-SPRINT-1');
+    const result = lint.lintSprint(sprint.id);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const bypasses = result.value.diagnostics.filter((d) => d.rule === 'subagent-bypass');
     expect(bypasses).toHaveLength(1);
-    expect(bypasses[0]?.message).toContain('TEST-2');
+    expect(bypasses[0]?.message).toContain(deriveAlias('task', bypassed));
   });
 });

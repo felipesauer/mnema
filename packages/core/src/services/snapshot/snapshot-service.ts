@@ -7,6 +7,7 @@ import type { SprintRepository } from '../../storage/sqlite/repositories/sprint-
 import type { TaskRepository } from '../../storage/sqlite/repositories/task-repository.js';
 import type { CoverageReport, CoverageService } from '../backlog/coverage-service.js';
 import type { InboxService, SlaBreach } from '../backlog/inbox-service.js';
+import { resolveEntity } from '../backlog/resolve-entity.js';
 import type { DependencyGraph, DependencyGraphService } from './dependency-graph-service.js';
 
 /** What the snapshot is scoped to. */
@@ -66,7 +67,7 @@ export class SnapshotService {
     // a structured error, consistent with the services we compose.
     const resolved = this.resolveScope(scope);
     if (!resolved.ok) return resolved;
-    const { title, scopeKeys } = resolved.value;
+    const { title, scopeIds } = resolved.value;
 
     const coverageResult =
       scope.kind === 'epic' ? this.coverage.forEpic(scope.key) : this.coverage.forSprint(scope.key);
@@ -77,8 +78,9 @@ export class SnapshotService {
     const g: DependencyGraph = graphResult.value;
 
     // slaBreaches() is global; narrow it to the scope's own tasks so the
-    // snapshot reflects only what belongs to this epic/sprint.
-    const breaches = this.inbox.slaBreaches(now).filter((b) => scopeKeys.has(b.key));
+    // snapshot reflects only what belongs to this epic/sprint. Both sides key
+    // on the committed id.
+    const breaches = this.inbox.slaBreaches(now).filter((b) => scopeIds.has(b.id));
 
     return Ok({
       scope,
@@ -94,19 +96,27 @@ export class SnapshotService {
     });
   }
 
-  /** Resolves the scope to its title and the set of its task keys. */
+  /** Resolves the scope to its title and the set of its task ids. */
   private resolveScope(
     scope: SnapshotScope,
-  ): Result<{ title: string; scopeKeys: Set<string> }, MnemaError> {
+  ): Result<{ title: string; scopeIds: Set<string> }, MnemaError> {
     if (scope.kind === 'epic') {
-      const epic = this.epics.findByKey(scope.key);
-      if (epic === null) return Err({ kind: ErrorCode.EpicNotFound, epicKey: scope.key });
-      const keys = new Set(this.tasks.findByEpic(epic.id).map((t: Task) => t.key));
-      return Ok({ title: epic.title, scopeKeys: keys });
+      const epicResult = resolveEntity(this.epics, scope.key, (handle) => ({
+        kind: ErrorCode.EpicNotFound,
+        epicKey: handle,
+      }));
+      if (!epicResult.ok) return Err(epicResult.error);
+      const epic = epicResult.value;
+      const ids = new Set(this.tasks.findByEpic(epic.id).map((t: Task) => t.id));
+      return Ok({ title: epic.title, scopeIds: ids });
     }
-    const sprint = this.sprints.findByKey(scope.key);
-    if (sprint === null) return Err({ kind: ErrorCode.SprintNotFound, sprintKey: scope.key });
-    const keys = new Set(this.sprints.listTasks(sprint.id).map((t: Task) => t.key));
-    return Ok({ title: sprint.name, scopeKeys: keys });
+    const sprintResult = resolveEntity(this.sprints, scope.key, (handle) => ({
+      kind: ErrorCode.SprintNotFound,
+      sprintKey: handle,
+    }));
+    if (!sprintResult.ok) return Err(sprintResult.error);
+    const sprint = sprintResult.value;
+    const ids = new Set(this.sprints.listTasks(sprint.id).map((t: Task) => t.id));
+    return Ok({ title: sprint.name, scopeIds: ids });
   }
 }
