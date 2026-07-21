@@ -1,0 +1,48 @@
+{
+  "name": "@mnema/mnema",
+  "version": "0.0.0",
+  "description": "A tamper-evident, local-first audit chain for AI-agent work. An MCP server and CLI that record every action behind workflow gates in a cryptographically verifiable log.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "audit-trail",
+    "tamper-evident",
+    "provenance",
+    "accountability",
+    "local-first"
+  ],
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mnema": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "files": ["dist/"],
+  "homepage": "https://felipesauer.github.io/mnema/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@mnema/core": "workspace:*"
+  }
+}
