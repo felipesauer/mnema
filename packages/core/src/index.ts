@@ -16,6 +16,13 @@ export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export { orderedEvents } from './projections/order.js';
 export { rebuild } from './projections/rebuild.js';
+export { projectRuns, type RunProjection } from './projections/run.js';
+export {
+  getRun,
+  listOpenRuns,
+  listRuns,
+  materializeRuns,
+} from './projections/run-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export {
   getTask,

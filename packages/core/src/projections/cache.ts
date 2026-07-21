@@ -14,6 +14,8 @@ import { type ChainLayout, catalogUpcasters, type UpcasterRegistry } from '@mnem
 import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { rebuild } from './rebuild.js';
+import type { RunProjection } from './run.js';
+import { getRun, listOpenRuns, listRuns } from './run-store.js';
 import type { TaskProjection } from './task.js';
 import { getTask, listTasks, listTasksByState } from './task-store.js';
 
@@ -70,6 +72,21 @@ export class ProjectionCache {
   /** Lists tasks currently in the given state. */
   listTasksByState(state: string): TaskProjection[] {
     return listTasksByState(this.db, state);
+  }
+
+  /** Reads one run by id, or null if it is not projected. */
+  getRun(id: string): RunProjection | null {
+    return getRun(this.db, id);
+  }
+
+  /** Lists all projected runs, ordered by id. */
+  listRuns(): RunProjection[] {
+    return listRuns(this.db);
+  }
+
+  /** Lists the currently open runs (not yet ended). */
+  listOpenRuns(): RunProjection[] {
+    return listOpenRuns(this.db);
   }
 
   /** Closes the underlying database. */
