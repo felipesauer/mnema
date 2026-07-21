@@ -57,7 +57,14 @@ export function taskCreated(envelope: EnvelopeInput, payload: { title: string })
   };
 }
 
-/** Copies only the defined proof fields, never writing an explicit undefined. */
+/**
+ * Copies only the meaningful proof fields. A field that is undefined OR empty
+ * (an empty string, or an empty links array) is treated as absence and omitted
+ * — the same rule the parser enforces on read (it rejects an empty string or an
+ * empty array). Keeping the builder symmetric with the parser is what makes an
+ * event valid-by-construction: a caller cannot produce a line the chain can
+ * write but never read back.
+ */
 function transitionFields(fields: TransitionFields): TransitionFields {
   const out: {
     reason?: string;
@@ -66,12 +73,16 @@ function transitionFields(fields: TransitionFields): TransitionFields {
     pr_url?: string;
     links?: readonly string[];
   } = {};
-  if (fields.reason !== undefined) out.reason = fields.reason;
-  if (fields.note !== undefined) out.note = fields.note;
-  if (fields.feedback !== undefined) out.feedback = fields.feedback;
-  if (fields.pr_url !== undefined) out.pr_url = fields.pr_url;
-  if (fields.links !== undefined) out.links = fields.links;
+  if (nonEmptyString(fields.reason)) out.reason = fields.reason;
+  if (nonEmptyString(fields.note)) out.note = fields.note;
+  if (nonEmptyString(fields.feedback)) out.feedback = fields.feedback;
+  if (nonEmptyString(fields.pr_url)) out.pr_url = fields.pr_url;
+  if (fields.links !== undefined && fields.links.length > 0) out.links = fields.links;
   return out;
+}
+
+function nonEmptyString(value: string | undefined): value is string {
+  return value !== undefined && value.length > 0;
 }
 
 /**

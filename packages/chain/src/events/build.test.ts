@@ -87,6 +87,44 @@ describe('event builders', () => {
     expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
   });
 
+  it('OMITS an empty-string optional field so the line stays re-readable', () => {
+    // An empty optional (pr_url: '') would serialize fine but the parser rejects
+    // an empty string on read — a line the chain could write but never read
+    // back. The builder drops it, symmetric with the parser.
+    const event = taskTransitioned(env, {
+      from: 'in-progress',
+      to: 'done',
+      action: 'complete',
+      fields: { note: 'done', pr_url: '' },
+    });
+    if (event.kind === 'task.transitioned') {
+      expect(event.payload.fields).toEqual({ note: 'done' });
+      expect(Object.keys(event.payload.fields ?? {})).not.toContain('pr_url');
+    }
+  });
+
+  it('OMITS an empty links array (also unreadable if written)', () => {
+    const event = taskTransitioned(env, {
+      from: 'in-progress',
+      to: 'done',
+      action: 'complete',
+      fields: { note: 'done', links: [] },
+    });
+    if (event.kind === 'task.transitioned') {
+      expect(event.payload.fields).toEqual({ note: 'done' });
+    }
+  });
+
+  it('drops fields entirely when every field is empty', () => {
+    const event = taskTransitioned(env, {
+      from: 'a',
+      to: 'b',
+      action: 'go',
+      fields: { reason: '', links: [] },
+    });
+    expect(Object.keys(event.payload)).not.toContain('fields');
+  });
+
   it('carries links as an array and canonicalizes cleanly', () => {
     const event = taskTransitioned(env, {
       from: 'in-progress',
