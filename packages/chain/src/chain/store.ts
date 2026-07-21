@@ -41,9 +41,15 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
 }
 
 /**
- * Reads all entries of a tail in seq order across its segments. Skips blank
- * lines; a malformed line throws (a tail's segments are our own append-only
- * output, so a parse failure is corruption worth surfacing, not tolerating).
+ * Reads all entries of a tail in seq order across its segments.
+ *
+ * A malformed line is corruption worth surfacing — EXCEPT one specific,
+ * benign case: a crash mid-append can leave a torn final line at the physical
+ * end of the last segment. A complete append always ends in a newline, so a
+ * torn write is exactly "the file does not end in a newline and its last line
+ * fails to parse". That one trailing fragment is dropped so the intact prefix
+ * still reads and the writer can resume; any malformed line elsewhere (or a
+ * torn fragment that happens to parse) still throws.
  */
 export function readTailEntries(
   layout: ChainLayout,
@@ -51,10 +57,24 @@ export function readTailEntries(
   upcasters: UpcasterRegistry,
 ): Entry[] {
   const entries: Entry[] = [];
-  for (const file of orderedSegments(layout, tailId)) {
-    for (const line of readFileSync(file, 'utf-8').split('\n')) {
+  const segments = orderedSegments(layout, tailId);
+  for (let s = 0; s < segments.length; s += 1) {
+    const file = segments[s] as string;
+    const raw = readFileSync(file, 'utf-8');
+    const isLastSegment = s === segments.length - 1;
+    // A trailing fragment (no final newline) only exists on the last segment.
+    const endsWithNewline = raw.endsWith('\n');
+    const lines = raw.split('\n');
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i] as string;
       if (line.length === 0) continue;
-      entries.push(parseEntry(line, upcasters));
+      const isTrailingFragment = isLastSegment && !endsWithNewline && i === lines.length - 1;
+      try {
+        entries.push(parseEntry(line, upcasters));
+      } catch (error) {
+        if (isTrailingFragment) continue; // torn last write from a crash — drop it
+        throw error;
+      }
     }
   }
   return entries;

@@ -22,7 +22,7 @@ export type Which = string;
 /**
  * The proof envelope shared by every event kind.
  *
- * `who` and `which` are distinct roles by construction (D5): the human
+ * `who` and `which` are distinct roles by construction: the human
  * authorizes, the agent executes. An action taken inside a run inherits the
  * run's authorization; the writer is responsible for populating `who` from the
  * run that authorized it. A missing `who` is an invalid event, enforced where

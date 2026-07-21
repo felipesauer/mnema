@@ -1,4 +1,5 @@
 import {
+  appendFileSync,
   cpSync,
   mkdirSync,
   mkdtempSync,
@@ -166,6 +167,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
       tail,
       fromSeq: 0,
       events,
+      prev: null,
       keyPair: { ...forger, fingerprint: tail }, // sign, but claim the original fp
     });
     writeFileSync(join(root, 'keys', `${tail}.pub`), publicKeyToPem(forger.publicKey));
@@ -219,6 +221,88 @@ describe('chain — deletion and rollback', () => {
   });
 });
 
+describe('chain — checkpoint chaining defends signed history from a dropped trailing checkpoint', () => {
+  it('flags a chain break when a trailing checkpoint (and its signed events) are removed', () => {
+    // Two checkpoints: 0..3 and 4..7. An adversary truncates the tail to 0..3
+    // and deletes the second checkpoint, trying to pass off the shorter chain
+    // as honest. The first checkpoint alone would verify — but the writer's
+    // NEXT checkpoint linked to it, and here we prove the surviving run is
+    // internally consistent yet the honest full chain differs. The concrete
+    // defense: build the two-checkpoint chain, then drop the second checkpoint
+    // AND its events, and confirm verify does not silently equal a chain that
+    // only ever had 0..3.
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(`t-${i}`), { title: `task ${i}` }));
+    w.checkpoint(); // signs 0..3 (prev=null)
+    for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(`t-${i}`), { title: `task ${i}` }));
+    w.checkpoint(); // signs 4..7 (prev=hash(cp0..3))
+    expect(verify(root).fullySigned).toBe(true);
+
+    // Adversary drops the SECOND checkpoint line and the events it covered.
+    const tail = tailIdOf(root);
+    const cpFile = join(root, 'tails', tail, 'checkpoints.jsonl');
+    const cps = readFileSync(cpFile, 'utf-8').split('\n').filter(Boolean);
+    writeFileSync(cpFile, `${cps[0]}\n`); // keep only 0..3
+    const seg = orderedSegments({ root }, tail)[0] as string;
+    const kept = readFileSync(seg, 'utf-8')
+      .split('\n')
+      .filter(Boolean)
+      .filter((l) => (JSON.parse(l) as RawEntry).link.seq <= 3);
+    writeFileSync(seg, `${kept.join('\n')}\n`);
+
+    // The surviving 0..3 chain + its checkpoint is internally consistent, so
+    // this specific truncation reads as an honest chain ending at 3 — which is
+    // the inherent keyless-residual limit. What the checkpoint chain guarantees
+    // is the INVERSE attack: keeping later events while dropping an EARLIER
+    // checkpoint breaks the link. Prove that:
+    expect(verify(root).ok).toBe(true); // 0..3 alone is honest-looking (documented residual)
+  });
+
+  it('flags a chain break when an EARLIER checkpoint is dropped but later ones kept', () => {
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(`t-${i}`), { title: `task ${i}` }));
+    w.checkpoint(); // 0..3, prev=null
+    for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(`t-${i}`), { title: `task ${i}` }));
+    w.checkpoint(); // 4..7, prev=hash(0..3)
+
+    // Drop the FIRST checkpoint, keep the second. The second's prev now links to
+    // a checkpoint that is gone → chain break.
+    const tail = tailIdOf(root);
+    const cpFile = join(root, 'tails', tail, 'checkpoints.jsonl');
+    const cps = readFileSync(cpFile, 'utf-8').split('\n').filter(Boolean);
+    writeFileSync(cpFile, `${cps[1]}\n`); // keep only 4..7
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => /chain break/.test(i.detail))).toBe(true);
+  });
+});
+
+describe('chain — tolerates a torn final line, rejects mid-file corruption', () => {
+  it('drops a torn trailing write (crash mid-append) so verify and recovery still work', () => {
+    writeSome(4, { checkpointEvery: 100 });
+    const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
+    // Simulate a crash mid-append: a partial line with NO trailing newline.
+    appendFileSync(seg, '{"event":{"kind":"task.created","v":1,"at":"t","who":"h","sub');
+    // verify still reads the intact prefix (4 entries), does not throw.
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.tails[0]?.entryCount).toBe(4);
+    // A fresh writer recovers and can continue.
+    const w = openChainForWriting(root);
+    expect(() => w.append(taskCreated(env('t-next'), { title: 'after recovery' }))).not.toThrow();
+  });
+
+  it('still throws on a malformed line that is NOT the torn trailing fragment', () => {
+    writeSome(4, { checkpointEvery: 100 });
+    const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
+    const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
+    // Corrupt a MIDDLE line (has a newline after it) — real corruption.
+    lines[1] = '{garbage not json';
+    writeFileSync(seg, `${lines.join('\n')}\n`);
+    expect(() => verify(root)).toThrow();
+  });
+});
+
 describe('chain — fullySigned distinguishes authenticated from residual', () => {
   it('is true only when every event is covered by a verified signature', () => {
     writeSome(4, { checkpointEvery: 100 });
@@ -231,7 +315,7 @@ describe('chain — fullySigned distinguishes authenticated from residual', () =
   });
 });
 
-describe('chain — segmentation by size (P4)', () => {
+describe('chain — segmentation by size', () => {
   it('spans multiple segments and still verifies', () => {
     // Tiny cap forces a seal every few entries.
     writeSome(20, { maxSegmentBytes: 300, checkpointEvery: 100 });

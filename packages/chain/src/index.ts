@@ -18,6 +18,7 @@ export {
   type Checkpoint,
   CheckpointParseError,
   type CheckpointVerdict,
+  checkpointHash,
   parseCheckpoint,
   serializeCheckpoint,
   signCheckpoint,

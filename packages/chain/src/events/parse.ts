@@ -6,7 +6,7 @@
  * `CatalogEvent` or fails loudly — it never returns a half-valid event. This is
  * STRUCTURAL validation (the shape the catalog promises), not the workflow
  * gate: the gate ran once at write time and its verdict is already baked into
- * the fact (B2). Reading replays the fact; it does not re-judge it.
+ * the fact. Reading replays the fact; it does not re-judge it.
  *
  * A closed catalog means a CLOSED SHAPE: an event may carry ONLY the fields its
  * kind declares. Parsing rebuilds the event from exactly those fields, so a
