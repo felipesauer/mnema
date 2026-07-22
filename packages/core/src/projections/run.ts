@@ -18,6 +18,15 @@
  * id is unique (a fresh id per session), so a run closes once and stays closed;
  * a second `run.started` for an id already ended is not a legal flow, and the
  * projection — which replays rather than polices — leaves the run closed.
+ *
+ * SIGNATURE CAVEAT (shared by every projection). A projection reflects the facts
+ * as written; it does not itself attest that they are signature-covered. The
+ * fields it reads — `who` above all — carry only the assurance of the chain
+ * layer that covers them: an event past the last checkpoint rests on the keyless
+ * hash chain alone (the declared residual window). So a `who` read from the read
+ * model inherits that caveat: it is authenticated only once `verify(...)`
+ * reports `fullySigned` for the range it sits in. Consult the verifier for the
+ * proof grade; the read model is the queryable state, not the attestation.
  */
 
 import type { CatalogEvent } from '@mnema/chain';

@@ -15,6 +15,15 @@
  * records `supersedes` (the id it replaced) — so a query from either direction
  * is answerable without walking the stream again.
  *
+ * A dangling `supersededBy` is possible only in a PARTIAL clone. A supersede's
+ * successor must exist at write time (the operation refuses a dangling `by`), so
+ * a complete chain always resolves both sides. But a clone that carries the
+ * subject's tail and not the successor's projects a `supersededBy` pointing at a
+ * decision not present — honest (the shared chain still holds it; a partial
+ * checkout is a chosen local window, not a loss) but unsignalled. A consumer
+ * that must resolve the link should verify it against the full chain rather than
+ * trust a partial view.
+ *
  * THE ADR LABEL IS NOT IDENTITY. The id is identity; `adr` is a citation label
  * frozen into the record at write time. Two clones working offline can mint the
  * same `ADR-7` for different decisions — the ids stay unique and the chain
