@@ -83,6 +83,12 @@ export function enrollKey(
  * member may revoke any other (peers, no hierarchy); events the revoked key
  * signed before stay valid. Founds first, so the local key is a member able to
  * revoke.
+ *
+ * The revocation is checkpointed immediately: the verifier trusts a `key.revoked`
+ * to remove a key only once it is signature-covered (a residual revoke is
+ * forgeable and is ignored), so a revocation that stayed in the residual window
+ * would have no effect. Signing a checkpoint over it makes it effective at once,
+ * with this machine's own key — the honest path.
  */
 export function revokeKey(
   ctx: WriteContext,
@@ -96,5 +102,6 @@ export function revokeKey(
       { revokedFp: input.revokedFp, reason: input.reason },
     ),
   );
+  ctx.writer.checkpoint();
   return { ok: true, anchor };
 }
