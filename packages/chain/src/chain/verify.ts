@@ -190,6 +190,25 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
   let expectedPrev: string | null = null;
   let expectedSeq = 0;
   for (const entry of entries) {
+    // Bind the entry to the tail directory it was read from. `entry.link.tail`
+    // is the value stored IN the line and is folded into the entry hash, but the
+    // hash alone only proves the line is self-consistent — not that it lives
+    // where it claims. Without this check, copying a tail's segments into a
+    // fabricated `tails/<other>/` directory (its stored link.tail still naming
+    // the original) reads as a second, independent tail: the hash chain within
+    // it still checks out, so verify stays green and a projection counts every
+    // event twice. Requiring the stored tail to equal the directory closes that
+    // relocation/duplication path — including in the residual window, where no
+    // checkpoint's own `tail` field would otherwise catch it.
+    if (entry.link.tail !== tail) {
+      issues.push({
+        tail,
+        layer: 'T1',
+        seq: entry.link.seq,
+        detail: `entry names tail ${entry.link.tail}, stored under ${tail}`,
+      });
+      return;
+    }
     if (entry.link.seq !== expectedSeq) {
       issues.push({
         tail,
@@ -330,12 +349,16 @@ function verifyCheckpoints(
     // where the authorizing human equals the executing agent (self-authorization),
     // and that invariant must survive to the signed record — otherwise an editor
     // could smuggle `who === which` below the crypto and it would verify green.
-    // So when `which` is present it must differ from `who`.
+    // So when `which` is present it must differ from `who`, compared in the SAME
+    // canonical form the gate uses to refuse it (NFC, trimmed): a raw byte
+    // compare would let `which = who + " "` — the gate's WHO_IS_WHICH, one stray
+    // space apart — slip through as byte-distinct and verify green.
     const bindingBreak = range.find(
       (e) =>
         e.event.signerFp !== checkpoint.signerFp ||
         e.event.who !== deriveAnchor(e.event.signerFp) ||
-        (e.event.which !== undefined && e.event.which === e.event.who),
+        (e.event.which !== undefined &&
+          canonicalIdentityForm(e.event.which) === canonicalIdentityForm(e.event.who)),
     );
     if (bindingBreak !== undefined) {
       issues.push({
@@ -351,6 +374,19 @@ function verifyCheckpoints(
     expectedPrev = checkpointHash(checkpoint);
   }
   return covered;
+}
+
+/**
+ * The canonical form of an identity for the who-vs-which comparison — NFC then
+ * trim, the SAME normalization the core's gate applies before it refuses a
+ * self-authorizing move (`canonicalIdentity`). The verifier lives in the
+ * zero-dependency chain and cannot import the core, so the rule is mirrored
+ * here; a property test pins the two forms in agreement. It is only ever used to
+ * decide whether `which` and `who` are the same identity, never to rewrite the
+ * signed bytes — the event records the identity exactly as it was written.
+ */
+function canonicalIdentityForm(value: string): string {
+  return value.normalize('NFC').trim();
 }
 
 function loadPublicKey(layout: ChainLayout, fingerprint: string): KeyObject | null {

@@ -97,14 +97,36 @@ export function readTailEntries(
   return entries;
 }
 
-/** Reads a tail's checkpoints in stored order. */
+/**
+ * Reads a tail's checkpoints in stored order.
+ *
+ * Like {@link readTailEntries}, this tolerates ONE benign case: a crash while
+ * signing a checkpoint can leave a torn final line (no trailing newline) at the
+ * end of the append-only checkpoints file. A complete checkpoint append always
+ * ends in a newline, so a torn write is exactly "the file does not end in a
+ * newline and its last line fails to parse". That one trailing fragment is
+ * dropped so the intact checkpoints still read; any malformed line elsewhere
+ * still throws. Without this, a torn checkpoint would make BOTH the verifier and
+ * the writer's own recovery throw — the machine could neither verify nor resume
+ * its own tail after a crash mid-checkpoint.
+ */
 export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkpoint[] {
   const file = checkpointsPath(layout, tailId);
   if (!existsSync(file)) return [];
+  const raw = readFileSync(file, 'utf-8');
+  const endsWithNewline = raw.endsWith('\n');
+  const lines = raw.split('\n');
   const checkpoints: Checkpoint[] = [];
-  for (const line of readFileSync(file, 'utf-8').split('\n')) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] as string;
     if (line.length === 0) continue;
-    checkpoints.push(parseCheckpoint(line));
+    const isTrailingFragment = !endsWithNewline && i === lines.length - 1;
+    try {
+      checkpoints.push(parseCheckpoint(line));
+    } catch (error) {
+      if (isTrailingFragment) continue; // torn last checkpoint from a crash — drop it
+      throw error;
+    }
   }
   return checkpoints;
 }

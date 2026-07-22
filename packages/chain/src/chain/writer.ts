@@ -11,7 +11,7 @@
  * construction, so a fresh process continues an existing tail correctly.
  */
 
-import { appendFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, truncateSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -105,7 +105,16 @@ export class ChainWriter {
     if (lastSegment !== undefined) {
       const match = /(\d+)\.jsonl$/.exec(lastSegment);
       this.segment = match ? Number.parseInt(match[1] as string, 10) : 1;
-      this.segmentBytes = statSync(lastSegment).size;
+      // Truncate any torn trailing fragment before resuming. A crash mid-append
+      // leaves a partial line with no newline at the end of the segment.
+      // readTailEntries tolerates it ON READ (drops it), but if we resumed
+      // writing after it, the next complete `...\n` would land AFTER the
+      // fragment — turning the once-benign torn line into a mid-file malformed
+      // line that every later read throws on. So a recovering writer heals the
+      // file: it truncates back to the end of the last COMPLETE line, so the
+      // next append continues a clean tail. A complete append always ends in a
+      // newline, so this only ever removes a genuine crash fragment.
+      this.segmentBytes = healTornTail(lastSegment);
     }
     const lastCp = readTailCheckpoints(this.layout, this.tailId).at(-1);
     if (lastCp !== undefined) {
@@ -223,4 +232,25 @@ export class ChainWriter {
 function ensureDir(filePath: string): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+/**
+ * Heals a segment's torn trailing fragment and returns the size to resume from.
+ * If the file ends in a newline it is intact — its full size is returned and
+ * nothing is written. Otherwise a crash left a partial final line: the file is
+ * truncated back to just after the last newline (or to empty if there is none),
+ * and that length is returned, so the next append continues a clean tail.
+ *
+ * Works in bytes, not characters: the truncation offset is the byte after the
+ * last `\n`, so a multi-byte UTF-8 character split across the crash boundary is
+ * removed whole with the rest of the fragment.
+ */
+function healTornTail(segmentPath: string): number {
+  const bytes = readFileSync(segmentPath);
+  if (bytes.length === 0) return 0;
+  if (bytes[bytes.length - 1] === 0x0a) return bytes.length; // ends in newline: intact
+  const lastNewline = bytes.lastIndexOf(0x0a);
+  const keep = lastNewline + 1; // 0 when there is no newline at all
+  truncateSync(segmentPath, keep);
+  return keep;
 }
