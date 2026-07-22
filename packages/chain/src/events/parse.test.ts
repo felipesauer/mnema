@@ -88,35 +88,35 @@ describe('parseEvent — transition proof fields', () => {
 
   it('rejects an unknown key inside fields (closed shape, no smuggling)', () => {
     const forged =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"n","evil":"x"}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"n","evil":"x"}}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload\.fields field "evil"/);
   });
 
   it('rejects a non-object fields (array, scalar)', () => {
     for (const f of ['"nope"', '42', '[]', 'true']) {
-      const forged = `{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":${f}}}`;
+      const forged = `{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":${f}}}`;
       expect(() => parseEvent(forged, reg)).toThrow(/object at payload\.fields/);
     }
   });
 
   it('rejects an empty fields object (must be omitted, not spelled as {})', () => {
     const forged =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{}}}';
     expect(() => parseEvent(forged, reg)).toThrow(/empty payload\.fields/);
   });
 
   it('rejects a non-string proof field', () => {
     const forged =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"reason":42}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"reason":42}}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.fields\.reason/);
   });
 
   it('rejects an empty links array and a non-string link item', () => {
     const emptyArr =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":[]}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":[]}}}';
     expect(() => parseEvent(emptyArr, reg)).toThrow(/non-empty array at payload\.fields\.links/);
     const badItem =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":["ok",""]}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"links":["ok",""]}}}';
     expect(() => parseEvent(badItem, reg)).toThrow(/payload\.fields\.links\[1\]/);
   });
 
@@ -135,7 +135,7 @@ describe('parseEvent — transition proof fields', () => {
     // JSON.parse keeps the last duplicate; the rebuilt fields reflect only the
     // declared shape. The recomputed canonical form is deterministic regardless.
     const dup =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"first","note":"second"}}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"first","note":"second"}}}';
     const parsed = parseEvent(dup, reg);
     if (parsed.kind === 'task.transitioned') {
       expect(parsed.payload.fields).toEqual({ note: 'second' });
@@ -156,13 +156,13 @@ describe('parseEvent — decision events', () => {
 
   it('requires a non-empty rationale (an ADR with no why records nothing)', () => {
     const forged =
-      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"","adr":"ADR-1"}}';
+      '{"kind":"decision.recorded","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"","adr":"ADR-1"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.rationale/);
   });
 
   it('requires the adr label', () => {
     const forged =
-      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"y"}}';
+      '{"kind":"decision.recorded","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"y"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.adr/);
   });
 
@@ -195,19 +195,19 @@ describe('parseEvent — decision events', () => {
 
   it('rejects an empty `by` (write-only line)', () => {
     const forged =
-      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":""}}';
+      '{"kind":"decision.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":""}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.by/);
   });
 
   it('rejects a non-string `by`', () => {
     const forged =
-      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":42}}';
+      '{"kind":"decision.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":42}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.by/);
   });
 
   it('rejects an unknown payload field on a decision (closed shape)', () => {
     const forged =
-      '{"kind":"decision.recorded","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"y","adr":"ADR-1","evil":"z"}}';
+      '{"kind":"decision.recorded","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"y","adr":"ADR-1","evil":"z"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
   });
 
@@ -215,7 +215,7 @@ describe('parseEvent — decision events', () => {
     // `by` lives at payload level, never inside fields; a forged `by` smuggled
     // into fields is an unknown fields key and is rejected.
     const forged =
-      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","fields":{"by":"d-2"}}}';
+      '{"kind":"decision.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","fields":{"by":"d-2"}}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload\.fields field "by"/);
   });
 
@@ -223,11 +223,11 @@ describe('parseEvent — decision events', () => {
     // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
     // declared shape, so the recomputed canonical bytes match a clean build.
     const dup =
-      '{"kind":"decision.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":"d-2","by":"d-3"}}';
+      '{"kind":"decision.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":"d-2","by":"d-3"}}';
     const parsed = parseEvent(dup, reg);
     if (parsed.kind === 'decision.transitioned') expect(parsed.payload.by).toBe('d-3');
     const clean = decisionTransitioned(
-      { at: 't', who: 'h', signerFp: 'fp', subject: 'd-1' },
+      { at: '2026-07-21T00:00:00.000Z', who: 'h', signerFp: 'fp', subject: 'd-1' },
       { from: 'a', to: 'b', action: 'supersede', by: 'd-3' },
     );
     expect(canonicalStringify(toCanonical(parsed))).toBe(canonicalStringify(toCanonical(clean)));
@@ -272,25 +272,25 @@ describe('parseEvent — enrollment events', () => {
 
   it('rejects an identity.founded missing foundingFp', () => {
     const forged =
-      '{"kind":"identity.founded","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{}}';
+      '{"kind":"identity.founded","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.foundingFp/);
   });
 
   it('rejects a key.enrolled missing reverseSig', () => {
     const forged =
-      '{"kind":"key.enrolled","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new"}}';
+      '{"kind":"key.enrolled","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.reverseSig/);
   });
 
   it('rejects a key.revoked missing reason', () => {
     const forged =
-      '{"kind":"key.revoked","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old"}}';
+      '{"kind":"key.revoked","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/payload\.reason/);
   });
 
   it('rejects an unknown payload field on an enrollment event (closed shape)', () => {
     const forged =
-      '{"kind":"key.enrolled","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new","reverseSig":"ab","evil":"z"}}';
+      '{"kind":"key.enrolled","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new","reverseSig":"ab","evil":"z"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
   });
 
@@ -298,11 +298,11 @@ describe('parseEvent — enrollment events', () => {
     // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
     // declared shape, so the recomputed canonical bytes match a clean build.
     const dup =
-      '{"kind":"key.revoked","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old","reason":"one","reason":"two"}}';
+      '{"kind":"key.revoked","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old","reason":"one","reason":"two"}}';
     const parsed = parseEvent(dup, reg);
     if (parsed.kind === 'key.revoked') expect(parsed.payload.reason).toBe('two');
     const clean = keyRevoked(
-      { at: 't', who: 'h', signerFp: 'fp', subject: 'mnid:a' },
+      { at: '2026-07-21T00:00:00.000Z', who: 'h', signerFp: 'fp', subject: 'mnid:a' },
       { revokedFp: 'fp-old', reason: 'two' },
     );
     expect(canonicalStringify(toCanonical(parsed))).toBe(canonicalStringify(toCanonical(clean)));
@@ -353,7 +353,7 @@ describe('parseEvent — rejects malformed input', () => {
 
   it('rejects a known kind with a broken payload', () => {
     const bad =
-      '{"kind":"task.created","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{}}';
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{}}';
     expect(() => parseEvent(bad, reg)).toThrow(/payload\.title/);
   });
 
@@ -364,14 +364,40 @@ describe('parseEvent — rejects malformed input', () => {
 
   it('rejects an empty-string required field', () => {
     const bad =
-      '{"kind":"task.created","v":1,"at":"t","who":"","signerFp":"fp","subject":"s","payload":{"title":"x"}}';
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"","signerFp":"fp","subject":"s","payload":{"title":"x"}}';
     expect(() => parseEvent(bad, reg)).toThrow(/who/);
   });
 
   it('rejects a line with no signerFp (the signing key is part of the fact)', () => {
     const bad =
-      '{"kind":"task.created","v":1,"at":"t","who":"h","subject":"s","payload":{"title":"x"}}';
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","subject":"s","payload":{"title":"x"}}';
     expect(() => parseEvent(bad, reg)).toThrow(/signerFp/);
+  });
+
+  it('accepts the canonical toISOString form of `at`', () => {
+    const event = taskCreated(
+      { ...envelope, at: '2026-07-21T13:45:07.123Z', subject: 't-1' },
+      { title: 'x' },
+    );
+    expect(parseEvent(line(event), reg)).toEqual(event);
+  });
+
+  it('rejects an `at` that is not the canonical toISOString form', () => {
+    // Every producer stamps `at` via toISOString; a divergent spelling is not a
+    // fact this catalog wrote. The ordering invariant depends on one format.
+    const bad = (at: string) =>
+      `{"kind":"task.created","v":1,"at":${JSON.stringify(at)},"who":"h","signerFp":"fp","subject":"s","payload":{"title":"x"}}`;
+    // A bare placeholder, a timezone OFFSET (not Z), missing sub-second digits,
+    // a date-only value, and a real-looking but impossible instant (month 13).
+    for (const at of [
+      't',
+      '2026-07-21T00:00:00+00:00',
+      '2026-07-21T00:00:00Z',
+      '2026-07-21',
+      '2026-13-01T00:00:00.000Z',
+    ]) {
+      expect(() => parseEvent(bad(at), reg), at).toThrow(/ISO-8601/);
+    }
   });
 
   it('rejects an unknown kind (not in the catalog)', () => {
@@ -383,7 +409,7 @@ describe('parseEvent — rejects malformed input', () => {
     // forged or corrupt line. Accepting it would create a second way to spell
     // birth and blur the single projection rule.
     const bad =
-      '{"kind":"task.transitioned","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"from":"","to":"draft","action":"create"}}';
+      '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"","to":"draft","action":"create"}}';
     expect(() => parseEvent(bad, reg)).toThrow(/payload\.from/);
   });
 });
@@ -391,19 +417,19 @@ describe('parseEvent — rejects malformed input', () => {
 describe('parseEvent — closed shape (no field smuggling)', () => {
   it('rejects an unknown top-level field (a forger cannot ride extra data along)', () => {
     const forged =
-      '{"kind":"run.ended","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{},"evil":"x"}';
+      '{"kind":"run.ended","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{},"evil":"x"}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown event field "evil"/);
   });
 
   it('rejects an unknown payload field', () => {
     const forged =
-      '{"kind":"task.created","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"title":"x","extra":"y"}}';
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"title":"x","extra":"y"}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "extra"/);
   });
 
   it('rejects a non-object payload (array, scalar) rather than reading fields off it', () => {
     for (const pl of ['"nope"', '42', 'true', '[]']) {
-      const forged = `{"kind":"run.ended","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":${pl}}`;
+      const forged = `{"kind":"run.ended","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":${pl}}`;
       expect(() => parseEvent(forged, reg)).toThrow(/object payload/);
     }
   });
@@ -412,8 +438,8 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
     // A caller verifying a chain catches EventParseError to mark a line bad; a
     // leaked TypeError would bypass that handler and crash the verifier.
     for (const line of [
-      '{"kind":"task.created","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s"}',
-      '{"kind":"task.created","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":null}',
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s"}',
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":null}',
     ]) {
       expect(() => parseEvent(line, reg)).toThrow(EventParseError);
     }
@@ -421,7 +447,7 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
 
   it('rejects a __proto__ key (an unknown field, not prototype pollution)', () => {
     const forged =
-      '{"kind":"task.created","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{"title":"x"},"__proto__":{"x":1}}';
+      '{"kind":"task.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"title":"x"},"__proto__":{"x":1}}';
     expect(() => parseEvent(forged, reg)).toThrow(/unknown event field/);
   });
 
@@ -432,7 +458,7 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
     // than verifies. Here we assert the rebuild is total: the returned object
     // has exactly the declared keys, whatever the raw line's structure was.
     const dup =
-      '{"kind":"run.ended","v":1,"at":"t","who":"h","signerFp":"fp","subject":"s","payload":{},"who":"IMPOSTER"}';
+      '{"kind":"run.ended","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{},"who":"IMPOSTER"}';
     const parsed = parseEvent(dup, reg);
     expect(Object.keys(parsed).sort()).toEqual([
       'at',
@@ -445,7 +471,7 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
     ]);
     // The rebuilt value is a fresh object, never the raw parsed reference.
     expect(canonicalStringify(toCanonical(parsed))).toBe(
-      '{"at":"t","kind":"run.ended","payload":{},"signerFp":"fp","subject":"s","v":1,"who":"IMPOSTER"}',
+      '{"at":"2026-07-21T00:00:00.000Z","kind":"run.ended","payload":{},"signerFp":"fp","subject":"s","v":1,"who":"IMPOSTER"}',
     );
   });
 

@@ -126,7 +126,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
     event as unknown as Record<string, unknown>,
     ENVELOPE_FIELDS,
   );
-  requireString(event.kind, 'at', event.at);
+  requireIso8601(event.kind, 'at', event.at);
   requireString(event.kind, 'who', event.who);
   requireString(event.kind, 'signerFp', event.signerFp);
   requireString(event.kind, 'subject', event.subject);
@@ -319,6 +319,39 @@ function requireOptionalString(kind: string, field: string, value: unknown): voi
 function requireStringOrNull(kind: string, field: string, value: unknown): void {
   if (value === null) return;
   requireString(kind, field, value);
+}
+
+/**
+ * The exact shape `Date.prototype.toISOString` produces: UTC, millisecond
+ * precision, trailing `Z`. Every producer stamps `at` through the clock, which
+ * IS `toISOString` — so a well-formed `at` is not merely "some ISO-8601 string"
+ * but this one canonical spelling. Pinning it here makes the ordering invariant
+ * (the k-way merge sorts by `at`) enforceable rather than merely documented: a
+ * timezone offset, a missing/extra sub-second digit, or a non-date is a corrupt
+ * or forged line, not a fact this catalog wrote.
+ */
+const ISO8601_UTC_MS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+/** Requires a non-empty string in the canonical `toISOString` form that is a real instant. */
+function requireIso8601(kind: string, field: string, value: unknown): void {
+  requireString(kind, field, value);
+  const at = value as string;
+  // Shape AND value: the regex fixes the spelling; the round-trip rejects an
+  // impossible date (e.g. month 13, day 32) that still matches the pattern —
+  // such a value makes `new Date` yield an invalid date whose toISOString throws.
+  let roundTrip: string | null = null;
+  if (ISO8601_UTC_MS.test(at)) {
+    try {
+      roundTrip = new Date(at).toISOString();
+    } catch {
+      roundTrip = null;
+    }
+  }
+  if (roundTrip !== at) {
+    throw new EventParseError(
+      `event "${kind}" needs an ISO-8601 UTC millisecond timestamp at ${field} (got ${JSON.stringify(value)})`,
+    );
+  }
 }
 
 function assertNever(value: never): never {
