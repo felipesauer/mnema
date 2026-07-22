@@ -22,6 +22,17 @@
  *
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
+ *
+ * One consequence lives entirely inside that residual window: because a tail
+ * directory is bound to its key only by its name prefix (an installation may own
+ * several tails under one committed fingerprint), a party without the key can
+ * copy an UNCHECKPOINTED tail into a second `<fingerprint>-<other>` directory,
+ * relabel its entries, and recompute the keyless hash chain — so `ok` stays true
+ * over doubled events. This never reaches a signed range: a checkpoint binds the
+ * tail name it signed, so a checkpointed tail cannot be relocated or duplicated
+ * this way, and `fullySigned` is already false whenever any such residual exists.
+ * Binding each tail to its key by signature (not by name) closes it; until then,
+ * a reader that requires `fullySigned` — not merely `ok` — is not misled.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
