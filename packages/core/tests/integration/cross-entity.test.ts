@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import {
   type ChainLayout,
   type ChainWriter,
+  canonicalIdentityForm,
   catalogUpcasters,
   openChainForWriting,
   runEnded,
@@ -229,5 +230,37 @@ describe('who != which agrees between the core gate and the chain verifier', () 
       }
       seq += 1;
     }
+  });
+
+  // The test above only exercises ASCII anchors + whitespace, so it stays green
+  // even if one side dropped its NFC normalization. Pin the two forms DIRECTLY on
+  // inputs where NFC actually bites — the chain's `canonicalIdentityForm` and the
+  // core's `canonicalIdentity` must agree byte for byte, or a `which` in one
+  // composition could evade the `who != which` check in the other. (`who`/`which`
+  // are ASCII anchors today, so this guards the invariant against a future where
+  // they are not, and against either side silently losing its NFC step.)
+  it('canonicalIdentityForm (chain) and canonicalIdentity (core) normalize identically', () => {
+    const inputs = [
+      'José', // precomposed (NFC)
+      'José', // decomposed (e + combining acute) — same text, different bytes
+      'Alice',
+      'alice',
+      'café ', // trailing space + composed
+      'café', // "café" decomposed
+      'Å', // precomposed angstrom-lookalike
+      'Å', // A + combining ring — same as above decomposed
+    ];
+    for (const input of inputs) {
+      const core = canonicalIdentity(input);
+      // canonicalIdentity may reject (undefined) for unrepresentable input; where
+      // it accepts, the chain's form must produce the identical string.
+      if (core !== undefined) {
+        expect(canonicalIdentityForm(input)).toBe(core);
+      }
+    }
+    // The decisive pair: NFD and NFC of the same name must collapse to one string
+    // on BOTH sides — if either dropped NFC, these would differ.
+    expect(canonicalIdentityForm('José')).toBe(canonicalIdentityForm('José'));
+    expect(canonicalIdentity('José')).toBe(canonicalIdentity('José'));
   });
 });
