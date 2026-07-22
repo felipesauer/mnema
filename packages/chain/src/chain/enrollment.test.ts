@@ -530,6 +530,117 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     expect(r.ok).toBe(false);
     expect(r.issues.some((i) => /not a key enrolled/.test(i.detail))).toBe(true);
   });
+
+  it('a keyless residual re-enroll does NOT reverse a signature-covered revoke (FINDING-2 sibling)', () => {
+    // The mirror of the revoke gate: the revoke of B is signature-covered (B is
+    // removed), but a keyless party plants a fabricated tail with an UNCHECKPOINTED
+    // key.enrolled re-adding B, ordered AFTER the covered revoke. If additions were
+    // ungated, this residual re-add would restore B and re-authorize its later,
+    // CHECKPOINTED task — undoing a signed removal with no key. The re-enroll is
+    // reused verbatim from B's published reverse-sig; the voucher fp is A's public.
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
+
+    // A founds, enrolls B, then revokes B — all signature-covered in A's tail.
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        identityFounded(
+          { at: t(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { foundingFp: a.fingerprint },
+        ),
+        keyEnrolled(
+          { at: t(2), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+        keyRevoked(
+          { at: t(3), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { revokedFp: b.fingerprint, reason: 'compromised' },
+        ),
+      ],
+      a,
+    );
+    // B's OWN checkpointed tail: a task AFTER the revoke.
+    writeTail(
+      `${b.fingerprint}-i2`,
+      [
+        taskCreated(
+          { at: t(6), who: anchor, signerFp: b.fingerprint, subject: 't-b' },
+          { title: 'post-revoke work' },
+        ),
+      ],
+      b,
+    );
+    // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL re-enroll
+    // of B at t4 (after the covered revoke) — NO checkpoint, keyless.
+    writeTail(
+      `${b.fingerprint}-attacker`,
+      [
+        keyEnrolled(
+          { at: t(4), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+      ],
+      b,
+      { checkpoint: false },
+    );
+
+    // B stays revoked: its post-revoke task is rejected, the chain fails.
+    const r = verify(root);
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => /not a key enrolled/.test(i.detail))).toBe(true);
+  });
+
+  it('a SIGNATURE-COVERED re-enrollment legitimately supersedes a covered revoke', () => {
+    // The contrast: A revokes B (covered), then A re-enrolls B and CHECKPOINTS the
+    // re-enroll. A signed re-add is the honest key-rotation path — B is valid again
+    // and its later work verifies. The gate only bites the UNSIGNED re-add.
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
+
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        identityFounded(
+          { at: t(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { foundingFp: a.fingerprint },
+        ),
+        keyEnrolled(
+          { at: t(2), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+        keyRevoked(
+          { at: t(3), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { revokedFp: b.fingerprint, reason: 'rotate' },
+        ),
+        keyEnrolled(
+          { at: t(4), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+      ],
+      a,
+    );
+    writeTail(
+      `${b.fingerprint}-i2`,
+      [
+        taskCreated(
+          { at: t(6), who: anchor, signerFp: b.fingerprint, subject: 't-b' },
+          { title: 'after signed re-enroll' },
+        ),
+      ],
+      b,
+    );
+    // B was re-added by a signed re-enroll: the chain verifies green.
+    expect(verify(root).ok).toBe(true);
+  });
 });
 
 describe('enrollment — the residual-dup and HOLE#1 vectors', () => {
