@@ -28,17 +28,20 @@
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
  *
- * One consequence lives entirely inside that residual window. A keyless party
+ * A fabricated tail is shut out of that window on two fronts. A keyless party
  * cannot fabricate a tail under a NON-enrolled fingerprint: its events fail the
- * enrollment fold (the fingerprint is not valid for their `who`), so verify
- * rejects them. What the fold cannot tell apart, in the residual window, is a
- * duplicate tail under a REAL enrolled fingerprint (its events name a valid
- * signer, so membership holds) from a legitimate second installation of that
- * key. That is the same indistinguishability copy-key rests on, and it never
- * reaches a signed range: a checkpoint binds the tail name it signed, so a
- * checkpointed tail cannot be relocated or duplicated, and `fullySigned` is
- * already false whenever any such residual exists. A reader that requires
- * `fullySigned` — not merely `ok` — is not misled.
+ * enrollment fold (the fingerprint is not valid for their `who`). Nor can they
+ * fabricate one under a REAL enrolled fingerprint by copying a residual tail
+ * into `tails/<real-fp>-<forged>/` and relabelling it: every tail must carry a
+ * proof that its key signed its own id (see tailproof.ts), and a keyless party
+ * can neither mint that proof nor relocate a genuine one (the signed message is
+ * the tail id). So the only tails that resolve are those whose key actually
+ * owns them. What remains indistinguishable — by design — is a legitimate
+ * SECOND INSTALLATION of one's own key (copy-key): it holds the key and signs
+ * its own distinct id, exactly as the first did. That is benign duplication of
+ * the owner's own work, not a foreign tail, and a checkpoint later binds each
+ * tail's name so no residual survives into a signed range. A reader that
+ * requires `fullySigned` — not merely `ok` — sees any residual plainly.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -48,13 +51,14 @@ import { resolveIdentity } from './enrollment.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
-import { type ChainLayout, publicKeyPath } from './layout.js';
+import { type ChainLayout, publicKeyPath, tailProofPath } from './layout.js';
 import {
   listPublicKeyFingerprints,
   listTails,
   readTailCheckpoints,
   readTailEntries,
 } from './store.js';
+import { parseTailProof, verifyTailProof } from './tailproof.js';
 
 /** How the external-witness (T3) layer stands for this verification. */
 export type WitnessStatus = 'not-covered';
@@ -167,6 +171,12 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
         seq: 0,
         detail: `tail ${tail} has no committed key fingerprint (fabricated or relocated tail)`,
       });
+    } else {
+      // The fingerprint prefix is committed, but the installation-id suffix is
+      // locally chosen: require the key to have signed THIS tail id at birth, so
+      // a keyless party cannot fabricate a sibling tail under a real fingerprint
+      // and have its residual events counted. See tailproof.ts.
+      verifyTailOwnership(layout, tail, issues);
     }
     verifyHashChain(tail, entries, issues);
     const checkpointedThrough = verifyCheckpoints(layout, tail, entries, issues);
@@ -476,6 +486,38 @@ function loadPublicKey(layout: ChainLayout, fingerprint: string): KeyObject | nu
     return publicKeyFromPem(readFileSync(path, 'utf-8'));
   } catch {
     return null;
+  }
+}
+
+/**
+ * Requires a tail (whose fingerprint prefix is committed) to carry a valid proof
+ * that its key signed this exact tail id. A missing, malformed, or wrong-signed
+ * proof is an issue: it is the mark of a fabricated sibling tail under a real
+ * fingerprint — the residual-window duplication a keyless party could otherwise
+ * mount. A legitimate installation wrote this at birth over its own id.
+ */
+function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssue[]): void {
+  const push = (detail: string) => issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
+  const path = tailProofPath(layout, tail);
+  if (!existsSync(path)) {
+    push(`tail ${tail} has no ownership proof (fabricated or relocated tail)`);
+    return;
+  }
+  let proof: ReturnType<typeof parseTailProof>;
+  try {
+    proof = parseTailProof(readFileSync(path, 'utf-8'));
+  } catch (error) {
+    push(`tail ${tail} has a malformed ownership proof: ${(error as Error).message}`);
+    return;
+  }
+  const publicKey = loadPublicKey(layout, tailFingerprint(tail));
+  if (publicKey === null) {
+    push(`tail ${tail} ownership proof cannot be checked: no committed public key`);
+    return;
+  }
+  const verdict = verifyTailProof({ proof, tail, publicKey });
+  if (!verdict.ok) {
+    push(`tail ${tail} ownership proof is invalid (${verdict.reason})`);
   }
 }
 

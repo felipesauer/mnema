@@ -26,8 +26,9 @@ import { openChainForWriting, verify } from './chain.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
-import { checkpointsPath, publicKeyPath, segmentPath } from './layout.js';
+import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { orderedSegments, readTailEntries } from './store.js';
+import { serializeTailProof, signTailProof } from './tailproof.js';
 import type { ChainWriter } from './writer.js';
 
 let root: string;
@@ -794,6 +795,8 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     writeFileSync(segmentPath({ root }, fp, 1), `${lines.join('\n')}\n`);
     mkdirSync(publicKeyPath({ root }, fp).replace(/\/[^/]+$/, ''), { recursive: true });
     writeFileSync(publicKeyPath({ root }, fp), publicKeyToPem(kp.publicKey));
+    // The key signs its own (bare) tail id, as a real installation would.
+    writeFileSync(tailProofPath({ root }, fp), `${serializeTailProof(signTailProof(fp, kp))}\n`);
     const cp = signCheckpoint({
       tail: fp,
       fromSeq: 0,
@@ -908,6 +911,44 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     const result = verify(root);
     expect(result.ok).toBe(false);
     expect(result.issues.some((i) => /no committed key fingerprint/.test(i.detail))).toBe(true);
+  });
+
+  it('rejects a fabricated sibling under a REAL fingerprint but a forged suffix (residual-dup)', () => {
+    // The sibling of the previous vector, and the one the installation-id suffix
+    // opened: the prefix IS a committed key, so the fingerprint guard alone lets
+    // it through. A keyless party copies a residual tail into
+    // `tails/<real-fp>-<forged>/`, relabels, recomputes the keyless hash — and
+    // without a tail proof would have its events counted twice. The tail proof
+    // closes it: the forged sibling has no signature over its own id (the
+    // attacker lacks the private key), so the copied proof does not match and a
+    // fresh one cannot be minted.
+    const w = writeSome(2, { checkpointEvery: 1000 });
+    void w;
+    const realTail = tailIdOf(root);
+    const fp = fingerprintOfTail(realTail); // a REAL committed fingerprint
+    const forged = `${fp}-forged00000000000000000000000000000000`;
+    cpDir(join(root, 'tails', realTail), join(root, 'tails', forged));
+    const upcasters = catalogUpcasters();
+    const seg = orderedSegments({ root }, forged)[0] as string;
+    const entries = readFileSync(seg, 'utf-8')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as RawEntry);
+    let prev: string | null = null;
+    for (const entry of entries) {
+      entry.link.tail = forged;
+      entry.link.prev = prev;
+      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
+      entry.link.hash = entryHash({ event, tail: forged, seq: entry.link.seq, prev });
+      prev = entry.link.hash;
+    }
+    writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+    // The copied tail proof (if any) still names the REAL tail id, so it does
+    // not match the forged directory; the sibling is rejected either way.
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => /ownership proof/.test(i.detail))).toBe(true);
   });
 });
 
