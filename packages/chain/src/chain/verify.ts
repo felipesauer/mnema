@@ -121,27 +121,30 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   const tailResults: TailResult[] = [];
   const allIssues: TailIssue[] = [];
   let uncheckpointed = 0;
-  // A tail directory is named by the fingerprint of the key that owns it (the
-  // writer's tailId IS its fingerprint). Bind the directory name to a committed
-  // key: a tail whose name is not a committed public-key fingerprint is not a
-  // real tail. Without this, the per-entry `link.tail == <dir>` check only proves
-  // a tail is internally consistent with its own — attacker-chosen — directory
-  // name; a party can copy a tail into `tails/<fabricated>/`, relabel every
-  // `link.tail`, recompute the keyless hash chain (no key needed), and have
-  // verify count the same events twice, green. Requiring the directory to be a
-  // committed fingerprint ties it to the roster and closes that duplication.
+  // A tail directory is named `<fingerprint>-<installationId>`: the owning key's
+  // fingerprint, then a local per-installation suffix. Bind the directory to a
+  // committed key by its fingerprint prefix: a tail whose fingerprint is not a
+  // committed public key is not a real tail. Without this, the per-entry
+  // `link.tail == <dir>` check only proves a tail is internally consistent with
+  // its own — attacker-chosen — directory name; a party can copy a tail into
+  // `tails/<fabricated>/`, relabel every `link.tail`, recompute the keyless hash
+  // chain (no key needed), and have verify count the same events twice, green.
+  // Requiring the fingerprint prefix to be committed ties the directory to the
+  // roster and closes that duplication — a fabricated name has no committed
+  // fingerprint to match, so it is still rejected. (A pre-suffix tail named by a
+  // bare fingerprint matches the whole name, so it is accepted unchanged.)
   const committedFingerprints = new Set(listPublicKeyFingerprints(layout));
 
   for (const tail of tails) {
     const entries = readTailEntries(layout, tail, upcasters);
     const issues: TailIssue[] = [];
 
-    if (!committedFingerprints.has(tail)) {
+    if (!tailFingerprintIsCommitted(tail, committedFingerprints)) {
       issues.push({
         tail,
         layer: 'T2/T4',
         seq: 0,
-        detail: `tail ${tail} is not a committed key fingerprint (fabricated or relocated tail)`,
+        detail: `tail ${tail} has no committed key fingerprint (fabricated or relocated tail)`,
       });
     }
     verifyHashChain(tail, entries, issues);
@@ -175,8 +178,25 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
 }
 
 /**
+ * Whether a tail directory's fingerprint is a committed public key. The
+ * fingerprint is the part before the last `-` (see {@link tailFingerprint}), or
+ * the whole name for a bare-fingerprint tail. A fabricated name has no committed
+ * fingerprint to match and is rejected — that is what keeps a
+ * relocated/duplicated tail from verifying green.
+ */
+function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>): boolean {
+  return committed.has(tailFingerprint(tail));
+}
+
+/**
  * Crosses the committed public keys against the tails present on disk. Each key
- * whose tail is absent becomes a census note.
+ * with NO tail becomes a census note.
+ *
+ * The match is by fingerprint: a key is covered if some tail carries its
+ * fingerprint — the whole name (a bare-fingerprint tail) or the part before the
+ * last `-` (a `<fingerprint>-<installationId>` tail). One key can own several
+ * tails (the same copied key installed on several machines), which is not a
+ * concern — the census flags only a key with none.
  *
  * The reverse — a tail with no committed key — is not a census concern. If that
  * tail has a checkpoint, verifying it already fails with "no committed public
@@ -185,10 +205,10 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
  * existing result covers it, so the census only looks one way: keys → tails.
  */
 function takeCensus(layout: ChainLayout, tails: readonly string[]): CensusNote[] {
-  const present = new Set(tails);
+  const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
   const notes: CensusNote[] = [];
   for (const fingerprint of listPublicKeyFingerprints(layout)) {
-    if (present.has(fingerprint)) continue;
+    if (fingerprintsWithTail.has(fingerprint)) continue;
     notes.push({
       fingerprint,
       detail:
@@ -197,6 +217,12 @@ function takeCensus(layout: ChainLayout, tails: readonly string[]): CensusNote[]
     });
   }
   return notes;
+}
+
+/** The fingerprint a tail directory carries: the part before its last `-`, or the whole name. */
+function tailFingerprint(tail: string): string {
+  const lastDash = tail.lastIndexOf('-');
+  return lastDash === -1 ? tail : tail.slice(0, lastDash);
 }
 
 /**

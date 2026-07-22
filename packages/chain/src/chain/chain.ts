@@ -10,7 +10,7 @@
 
 import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import { loadOrCreateKeyPair } from './keystore.js';
+import { loadOrCreateInstallationId, loadOrCreateKeyPair } from './keystore.js';
 import type { ChainLayout } from './layout.js';
 import { type VerifyResult, verifyChain } from './verify.js';
 import { ChainWriter, type WriterOptions } from './writer.js';
@@ -22,8 +22,9 @@ export function openChainForWriting(
 ): ChainWriter {
   const layout: ChainLayout = { root };
   const keyPair = loadOrCreateKeyPair(layout);
+  const installationId = loadOrCreateInstallationId(layout, keyPair.fingerprint);
   const upcasters = options.upcasters ?? catalogUpcasters();
-  return new ChainWriter(layout, keyPair, upcasters, options);
+  return new ChainWriter(layout, keyPair, installationId, upcasters, options);
 }
 
 /** Verifies the whole chain rooted at `root`. */
