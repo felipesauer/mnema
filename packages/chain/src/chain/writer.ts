@@ -23,7 +23,7 @@ import {
   signCheckpoint,
 } from './checkpoint.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
-import type { KeyPair } from './keys.js';
+import { deriveAnchor, type KeyPair } from './keys.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
 import { orderedSegments, readTailCheckpoints, readTailEntries } from './store.js';
 
@@ -66,6 +66,26 @@ export class ChainWriter {
   /** The tail id is the machine's fingerprint — one tail per key. */
   private get tailId(): string {
     return this.keyPair.fingerprint;
+  }
+
+  /**
+   * The full fingerprint of the key this writer signs with — the `signerFp`
+   * every event it writes must carry, and the same key its checkpoints bind.
+   * Exposed so the operation that builds an event stamps the identity from the
+   * very key that will sign it, never a value passed in from elsewhere.
+   */
+  get signerFingerprint(): string {
+    return this.keyPair.fingerprint;
+  }
+
+  /**
+   * The anchor id this writer authorizes as — WHO its events speak for,
+   * `mnid:<hash>` derived from the signing key. A caller cannot supply it; the
+   * operation reads it here so identity is derived from the local key, not
+   * chosen, and is unique by construction across clones.
+   */
+  get anchor(): string {
+    return deriveAnchor(this.keyPair.fingerprint);
   }
 
   /**
