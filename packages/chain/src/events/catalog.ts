@@ -174,6 +174,81 @@ export interface DecisionTransitionedV1 extends Envelope {
 }
 
 /**
+ * An identity was founded — the birth of an anchor. The founding key declares
+ * itself the first member of the identity it derives.
+ *
+ * The subject is the anchor, and the anchor is DERIVED from the founding key,
+ * not chosen: the verifier requires `subject == deriveAnchor(foundingFp)`, so no
+ * one can found an identity onto a key they do not hold. The event is
+ * self-signed — the founding key both authorizes (`who` = the anchor) and signs
+ * (`signerFp` == `foundingFp`) — because at founding there is no prior member to
+ * vouch for it. This is the root of the enrollment fold: the one member that
+ * every later `key.enrolled` chains back to.
+ */
+export interface IdentityFoundedV1 extends Envelope {
+  readonly kind: 'identity.founded';
+  readonly v: 1;
+  /** Subject is the anchor (`mnid:<hash>`) this founds. */
+  readonly payload: {
+    /** The founding key's full fingerprint — the anchor derives from it. */
+    readonly foundingFp: string;
+  };
+}
+
+/**
+ * A key was enrolled into an identity — a member key vouches for a new one.
+ *
+ * `signerFp` is a key ALREADY valid for the anchor at this point in the chain
+ * (the founder, or a previously enrolled key); it authorizes the new key's
+ * membership. `newFp` is the key being brought in. `reverseSig` is the new key's
+ * OWN Ed25519 signature over the message `enroll:<anchor>:<newFp>` — a
+ * proof-of-possession that binds the enrollment to this exact anchor and this
+ * exact new key, so an existing member cannot fold an unwilling third party's
+ * key into the identity, and a captured reverse-signature cannot be replayed to
+ * enroll the same key into a DIFFERENT anchor.
+ *
+ * The verifier accepts it only when both hold: `signerFp` is valid for the
+ * anchor at this point, and `reverseSig` verifies against `newFp` over that
+ * message. Neither alone suffices — the first stops a stranger from
+ * self-enrolling, the second stops a member from enrolling a key they do not
+ * control.
+ */
+export interface KeyEnrolledV1 extends Envelope {
+  readonly kind: 'key.enrolled';
+  readonly v: 1;
+  /** Subject is the anchor the key joins. */
+  readonly payload: {
+    /** The full fingerprint of the key being enrolled. */
+    readonly newFp: string;
+    /** `newFp`'s hex Ed25519 signature over `enroll:<anchor>:<newFp>`. */
+    readonly reverseSig: string;
+  };
+}
+
+/**
+ * A key was revoked from an identity — a member key retires another (or itself).
+ *
+ * `signerFp` is a key valid for the anchor at this point; `revokedFp` is the key
+ * it removes. Revocation is by PEERS and PROSPECTIVE: any valid member may
+ * revoke any other (including the founder and itself, with no hierarchy), and
+ * removal takes effect from this point FORWARD only. Events the revoked key
+ * signed BEFORE this point stay valid — the log is immutable, and a past fact
+ * proven by a then-valid key does not become unproven when the key later
+ * retires. `reason` records the why of the revocation, part of the fact.
+ */
+export interface KeyRevokedV1 extends Envelope {
+  readonly kind: 'key.revoked';
+  readonly v: 1;
+  /** Subject is the anchor the key is removed from. */
+  readonly payload: {
+    /** The full fingerprint of the key being revoked. */
+    readonly revokedFp: string;
+    /** Why the key was revoked — the proof of the why. */
+    readonly reason: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -184,7 +259,10 @@ export type CatalogEvent =
   | TaskCreatedV1
   | TaskTransitionedV1
   | DecisionRecordedV1
-  | DecisionTransitionedV1;
+  | DecisionTransitionedV1
+  | IdentityFoundedV1
+  | KeyEnrolledV1
+  | KeyRevokedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -200,4 +278,7 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'task.transitioned': 1,
   'decision.recorded': 1,
   'decision.transitioned': 1,
+  'identity.founded': 1,
+  'key.enrolled': 1,
+  'key.revoked': 1,
 };

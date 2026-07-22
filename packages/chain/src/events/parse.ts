@@ -55,6 +55,9 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'task.transitioned': ['from', 'to', 'action', 'fields'],
   'decision.recorded': ['title', 'rationale', 'adr'],
   'decision.transitioned': ['from', 'to', 'action', 'by', 'fields'],
+  'identity.founded': ['foundingFp'],
+  'key.enrolled': ['newFp', 'reverseSig'],
+  'key.revoked': ['revokedFp', 'reason'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -209,6 +212,20 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       const fields = rebuildTransitionFields(kind, event.payload.fields);
       if (fields !== undefined) p.fields = fields;
       return p;
+    }
+    case 'identity.founded': {
+      requireString(kind, 'payload.foundingFp', event.payload.foundingFp);
+      return { foundingFp: event.payload.foundingFp };
+    }
+    case 'key.enrolled': {
+      requireString(kind, 'payload.newFp', event.payload.newFp);
+      requireString(kind, 'payload.reverseSig', event.payload.reverseSig);
+      return { newFp: event.payload.newFp, reverseSig: event.payload.reverseSig };
+    }
+    case 'key.revoked': {
+      requireString(kind, 'payload.revokedFp', event.payload.revokedFp);
+      requireString(kind, 'payload.reason', event.payload.reason);
+      return { revokedFp: event.payload.revokedFp, reason: event.payload.reason };
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.

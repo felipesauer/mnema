@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   decisionRecorded,
   decisionTransitioned,
+  identityFounded,
+  keyEnrolled,
+  keyRevoked,
   runEnded,
   runStarted,
   taskCreated,
@@ -226,6 +229,81 @@ describe('parseEvent — decision events', () => {
     const clean = decisionTransitioned(
       { at: 't', who: 'h', signerFp: 'fp', subject: 'd-1' },
       { from: 'a', to: 'b', action: 'supersede', by: 'd-3' },
+    );
+    expect(canonicalStringify(toCanonical(parsed))).toBe(canonicalStringify(toCanonical(clean)));
+  });
+});
+
+describe('parseEvent — enrollment events', () => {
+  const anchor = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
+
+  it('parses identity.founded and round-trips it', () => {
+    const event = identityFounded({ ...envelope, subject: anchor }, { foundingFp: 'fp-founder' });
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'identity.founded') expect(parsed.payload.foundingFp).toBe('fp-founder');
+  });
+
+  it('parses key.enrolled and round-trips it', () => {
+    const event = keyEnrolled(
+      { ...envelope, subject: anchor },
+      { newFp: 'fp-new', reverseSig: 'ab'.repeat(32) },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'key.enrolled') {
+      expect(parsed.payload.newFp).toBe('fp-new');
+      expect(parsed.payload.reverseSig).toBe('ab'.repeat(32));
+    }
+  });
+
+  it('parses key.revoked and round-trips it', () => {
+    const event = keyRevoked(
+      { ...envelope, subject: anchor },
+      { revokedFp: 'fp-old', reason: 'rotated' },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'key.revoked') {
+      expect(parsed.payload.revokedFp).toBe('fp-old');
+      expect(parsed.payload.reason).toBe('rotated');
+    }
+  });
+
+  it('rejects an identity.founded missing foundingFp', () => {
+    const forged =
+      '{"kind":"identity.founded","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.foundingFp/);
+  });
+
+  it('rejects a key.enrolled missing reverseSig', () => {
+    const forged =
+      '{"kind":"key.enrolled","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.reverseSig/);
+  });
+
+  it('rejects a key.revoked missing reason', () => {
+    const forged =
+      '{"kind":"key.revoked","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.reason/);
+  });
+
+  it('rejects an unknown payload field on an enrollment event (closed shape)', () => {
+    const forged =
+      '{"kind":"key.enrolled","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"newFp":"fp-new","reverseSig":"ab","evil":"z"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
+  });
+
+  it('rebuilds an enrollment so a duplicate payload key cannot pick a value into the bytes', () => {
+    // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
+    // declared shape, so the recomputed canonical bytes match a clean build.
+    const dup =
+      '{"kind":"key.revoked","v":1,"at":"t","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old","reason":"one","reason":"two"}}';
+    const parsed = parseEvent(dup, reg);
+    if (parsed.kind === 'key.revoked') expect(parsed.payload.reason).toBe('two');
+    const clean = keyRevoked(
+      { at: 't', who: 'h', signerFp: 'fp', subject: 'mnid:a' },
+      { revokedFp: 'fp-old', reason: 'two' },
     );
     expect(canonicalStringify(toCanonical(parsed))).toBe(canonicalStringify(toCanonical(clean)));
   });

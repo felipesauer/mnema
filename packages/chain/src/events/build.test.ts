@@ -4,6 +4,10 @@ import {
   decisionBirth,
   decisionRecorded,
   decisionTransitioned,
+  enrollmentMessage,
+  identityFounded,
+  keyEnrolled,
+  keyRevoked,
   runEnded,
   runStarted,
   taskBirth,
@@ -240,6 +244,51 @@ describe('decision builders', () => {
       by: '',
     });
     expect(Object.keys(event.payload)).not.toContain('by');
+  });
+});
+
+describe('enrollment builders', () => {
+  const anchor = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
+
+  it('stamp the latest version and kind', () => {
+    expect(identityFounded({ ...env, subject: anchor }, { foundingFp: 'fp' })).toMatchObject({
+      v: 1,
+      kind: 'identity.founded',
+    });
+    expect(
+      keyEnrolled({ ...env, subject: anchor }, { newFp: 'fp', reverseSig: 'ab' }),
+    ).toMatchObject({ v: 1, kind: 'key.enrolled' });
+    expect(keyRevoked({ ...env, subject: anchor }, { revokedFp: 'fp', reason: 'r' })).toMatchObject(
+      {
+        v: 1,
+        kind: 'key.revoked',
+      },
+    );
+  });
+
+  it('carry the anchor as subject and canonicalize cleanly', () => {
+    for (const event of [
+      identityFounded({ ...env, subject: anchor }, { foundingFp: 'fp' }),
+      keyEnrolled({ ...env, subject: anchor }, { newFp: 'fp', reverseSig: 'ab' }),
+      keyRevoked({ ...env, subject: anchor }, { revokedFp: 'fp', reason: 'r' }),
+    ]) {
+      expect(event.subject).toBe(anchor);
+      expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+    }
+  });
+
+  it('build the enrollment proof-of-possession message binding anchor and new key', () => {
+    // The message must cover BOTH the anchor and the new key so a captured
+    // signature cannot be replayed to enroll the same key into another anchor.
+    const decode = (b: Uint8Array) => new TextDecoder().decode(b);
+    expect(decode(enrollmentMessage(anchor, 'fp-new'))).toBe(`enroll:${anchor}:fp-new`);
+    // Distinct anchor OR distinct key ⇒ distinct message.
+    expect(decode(enrollmentMessage('mnid:other', 'fp-new'))).not.toBe(
+      decode(enrollmentMessage(anchor, 'fp-new')),
+    );
+    expect(decode(enrollmentMessage(anchor, 'fp-other'))).not.toBe(
+      decode(enrollmentMessage(anchor, 'fp-new')),
+    );
   });
 });
 
