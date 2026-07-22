@@ -25,6 +25,11 @@ export {
   verifyCheckpoint,
 } from './chain/checkpoint.js';
 export {
+  type IdentityIssue,
+  type IdentityResolution,
+  resolveIdentity,
+} from './chain/enrollment.js';
+export {
   type Entry,
   type EntryLink,
   EntryParseError,
