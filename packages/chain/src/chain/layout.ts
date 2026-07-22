@@ -19,6 +19,7 @@
  *         000001.jsonl        segment (sealed once it passes the size cap)
  *         000002.jsonl        ...
  *         checkpoints.jsonl   append-only signed checkpoints for this tail
+ *         tailproof.json      the key's signature over this tail's own id
  *     keys/
  *       <fingerprint>.pub     committed public keys (one per key)
  *       <fingerprint>.key     LOCAL private key (never committed)
@@ -60,6 +61,10 @@ export function segmentNumberOf(name: string): number {
 
 export function checkpointsPath(layout: ChainLayout, tailId: string): string {
   return join(tailDir(layout, tailId), 'checkpoints.jsonl');
+}
+
+export function tailProofPath(layout: ChainLayout, tailId: string): string {
+  return join(tailDir(layout, tailId), 'tailproof.json');
 }
 
 export function keysDir(layout: ChainLayout): string {

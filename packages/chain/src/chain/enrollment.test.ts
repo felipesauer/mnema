@@ -26,7 +26,8 @@ import { verify } from './chain.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash } from './hash.js';
 import { deriveAnchor, generateKeyPair, type KeyPair, publicKeyToPem, sign } from './keys.js';
-import { checkpointsPath, publicKeyPath, segmentPath, tailDir } from './layout.js';
+import { checkpointsPath, publicKeyPath, segmentPath, tailDir, tailProofPath } from './layout.js';
+import { serializeTailProof, signTailProof } from './tailproof.js';
 
 let root: string;
 beforeEach(() => {
@@ -54,7 +55,7 @@ function writeTail(
   tailId: string,
   events: readonly CatalogEvent[],
   signer: KeyPair,
-  opts: { checkpoint?: boolean } = {},
+  opts: { checkpoint?: boolean; tailProof?: boolean } = {},
 ): void {
   const dir = tailDir({ root }, tailId);
   mkdirSync(dir, { recursive: true });
@@ -69,6 +70,13 @@ function writeTail(
     prev = hash;
   }
   writeFileSync(segmentPath({ root }, tailId, 1), `${lines.join('\n')}\n`);
+  // A real installation signs its own tail id at birth. `tailProof: false`
+  // models a keyless attacker who fabricates a tail under a real fingerprint
+  // and CANNOT produce this signature — the verifier rejects it outright.
+  if (opts.tailProof !== false) {
+    const proof = signTailProof(tailId, signer);
+    writeFileSync(tailProofPath({ root }, tailId), `${serializeTailProof(proof)}\n`);
+  }
   if (opts.checkpoint !== false) {
     const cp = signCheckpoint({ tail: tailId, fromSeq: 0, events, prev: null, keyPair: signer });
     appendFileSync(checkpointsPath({ root }, tailId), `${serializeCheckpoint(cp)}\n`);
@@ -469,7 +477,10 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     expect(verify(root).ok).toBe(true);
 
     // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL revoke
-    // of A timed (t3) between B's enrollment and A's task — NO checkpoint.
+    // of A timed (t3) between B's enrollment and A's task — NO checkpoint, and
+    // NO tail proof (a keyless party cannot sign B's tail id). The tail proof is
+    // the first line of defence: the fabricated tail is rejected outright,
+    // before its revoke is ever folded.
     writeTail(
       `${b.fingerprint}-attacker`,
       [
@@ -479,12 +490,14 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
         ),
       ],
       b,
-      { checkpoint: false },
+      { checkpoint: false, tailProof: false },
     );
 
-    // The honest chain stays green: the residual revoke never removed A.
+    // The fabricated sibling is rejected for lacking an ownership proof; the
+    // honest chain's authenticity is never even put in question by it.
     const r = verify(root);
-    expect(r.ok).toBe(true);
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => /ownership proof/.test(i.detail))).toBe(true);
   });
 
   it('a CHECKPOINTED revocation still takes effect (the gate does not disable honest revokes)', () => {
@@ -576,7 +589,9 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
       b,
     );
     // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL re-enroll
-    // of B at t4 (after the covered revoke) — NO checkpoint, keyless.
+    // of B at t4 (after the covered revoke) — NO checkpoint, and NO tail proof
+    // (a keyless party cannot sign B's tail id). The tail proof rejects the
+    // fabricated tail outright, so the re-enroll never even enters the fold.
     writeTail(
       `${b.fingerprint}-attacker`,
       [
@@ -586,13 +601,13 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
         ),
       ],
       b,
-      { checkpoint: false },
+      { checkpoint: false, tailProof: false },
     );
 
-    // B stays revoked: its post-revoke task is rejected, the chain fails.
+    // The fabricated re-enroll tail is rejected for lacking an ownership proof.
     const r = verify(root);
     expect(r.ok).toBe(false);
-    expect(r.issues.some((i) => /not a key enrolled/.test(i.detail))).toBe(true);
+    expect(r.issues.some((i) => /ownership proof/.test(i.detail))).toBe(true);
   });
 
   it('a SIGNATURE-COVERED re-enrollment legitimately supersedes a covered revoke', () => {
@@ -640,6 +655,82 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     );
     // B was re-added by a signed re-enroll: the chain verifies green.
     expect(verify(root).ok).toBe(true);
+  });
+
+  it('defence in depth: the re-add gate still bites a RESIDUAL re-enroll on a proven tail', () => {
+    // The tail proof stops a keyless FABRICATED tail; this is the second line,
+    // for a member who DOES hold the key: A (a real, proven tail) checkpoints
+    // through a revoke of B, then appends a re-enroll of B that is NOT
+    // checkpointed. The add gate keeps B revoked because the re-add is not
+    // itself signature-covered — the tail proof does not obscure that.
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
+
+    // A's tail, checkpointed only THROUGH the revoke (seq 0..2), then a residual
+    // re-enroll of B at seq 3 (above the checkpoint) on the SAME proven tail.
+    const covered = [
+      identityFounded(
+        { at: t(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+        { foundingFp: a.fingerprint },
+      ),
+      keyEnrolled(
+        { at: t(2), who: anchor, signerFp: a.fingerprint, subject: anchor },
+        { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+      ),
+      keyRevoked(
+        { at: t(3), who: anchor, signerFp: a.fingerprint, subject: anchor },
+        { revokedFp: b.fingerprint, reason: 'rotate' },
+      ),
+    ];
+    const residualReEnroll = keyEnrolled(
+      { at: t(4), who: anchor, signerFp: a.fingerprint, subject: anchor },
+      { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+    );
+    const tailA = `${a.fingerprint}-i1`;
+    const dir = tailDir({ root }, tailA);
+    mkdirSync(dir, { recursive: true });
+    // Write all four entries in one segment; checkpoint covers only 0..2.
+    const all = [...covered, residualReEnroll];
+    const lines: string[] = [];
+    let prev: string | null = null;
+    for (let seq = 0; seq < all.length; seq += 1) {
+      const event = all[seq] as CatalogEvent;
+      const hash = entryHash({ event, tail: tailA, seq, prev });
+      lines.push(
+        canonicalStringify({ event: event as never, link: { tail: tailA, seq, prev, hash } }),
+      );
+      prev = hash;
+    }
+    writeFileSync(segmentPath({ root }, tailA, 1), `${lines.join('\n')}\n`);
+    // A genuine tail proof (A holds the key) — the tail is NOT fabricated.
+    writeFileSync(
+      tailProofPath({ root }, tailA),
+      `${serializeTailProof(signTailProof(tailA, a))}\n`,
+    );
+    // Checkpoint ONLY 0..2 (through the revoke), leaving the re-enroll residual.
+    const cp = signCheckpoint({ tail: tailA, fromSeq: 0, events: covered, prev: null, keyPair: a });
+    appendFileSync(checkpointsPath({ root }, tailA), `${serializeCheckpoint(cp)}\n`);
+
+    // B writes a task at seq 0 of its own proven tail, AFTER the revoke.
+    writeTail(
+      `${b.fingerprint}-i2`,
+      [
+        taskCreated(
+          { at: t(6), who: anchor, signerFp: b.fingerprint, subject: 't-b' },
+          { title: 'should be rejected' },
+        ),
+      ],
+      b,
+    );
+
+    // The residual re-enroll does not restore B: its task is rejected.
+    const r = verify(root);
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => /not a key enrolled/.test(i.detail))).toBe(true);
   });
 });
 

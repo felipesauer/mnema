@@ -33,15 +33,16 @@
  * A machine that founds its OWN tail (the copy-key and solo cases) is immune:
  * its founding is seq 0 of its own tail, always ahead of its later events.
  *
- * What this canNOT prove, stated plainly: in the residual window (events above
- * the last checkpoint, carrying only the keyless hash chain) a party without any
- * key can still write an event whose envelope NAMES a valid `signerFp`/`who` —
- * the fold accepts it because those fields satisfy membership, exactly as it
- * accepts a legitimate second installation of a copied key. Only a checkpoint
- * binds a range to the key that signed it; `fullySigned` already reports whether
- * any residual exists. This closes the fabricated-tail vector for a key that is
- * NOT enrolled (its events fail membership), which is what a keyless adversary
- * has to reach for.
+ * What this fold does and does not decide, stated plainly: it judges whether an
+ * event's `signerFp` is a member of its `who`, not whether the tail the event
+ * sits in is genuine. A keyless party who fabricates a tail under a real
+ * enrolled fingerprint would name a valid signer and pass THIS check — but that
+ * tail is refused earlier by the verifier, which requires every tail to carry a
+ * proof that its key signed its own id (see tailproof.ts and verify.ts). So the
+ * fold only ever runs over tails whose key owns them; a fabricated sibling never
+ * reaches it. A tail under a NON-enrolled fingerprint is caught here too (its
+ * events fail membership). Above the last checkpoint the events still rest on
+ * the hash chain alone, so `fullySigned` reports the residual honestly.
  *
  * Which enrollment facts the fold trusts from that residual window turns on one
  * question: can the fact alter the validity of SIGNED history? A `key.revoked`

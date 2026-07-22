@@ -21,7 +21,14 @@
  * construction, so a fresh process continues an existing tail correctly.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, truncateSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  truncateSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -35,8 +42,15 @@ import {
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor, type KeyPair } from './keys.js';
 import { readAnchor, writeAnchor } from './keystore.js';
-import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
+import {
+  type ChainLayout,
+  checkpointsPath,
+  segmentPath,
+  tailDir,
+  tailProofPath,
+} from './layout.js';
 import { orderedSegments, readTailCheckpoints, readTailEntries } from './store.js';
+import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** Seal a segment once it grows past this many bytes (segments rotate by size). */
 export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
@@ -75,7 +89,21 @@ export class ChainWriter {
     this.checkpointEvery = options.checkpointEvery ?? DEFAULT_CHECKPOINT_EVERY;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
+    this.ensureTailProof();
     this.recover();
+  }
+
+  /**
+   * Writes this tail's proof of ownership once, at birth: the key signs a
+   * statement naming its own tail id, so the verifier can tie the locally-chosen
+   * installation-id suffix to the key that owns it. Idempotent — a reopened tail
+   * already has one — and never overwrites, so it costs nothing after birth.
+   */
+  private ensureTailProof(): void {
+    const path = tailProofPath(this.layout, this.tailId);
+    if (existsSync(path)) return;
+    const proof = signTailProof(this.tailId, this.keyPair);
+    writeFileSync(path, `${serializeTailProof(proof)}\n`, 'utf-8');
   }
 
   /**
