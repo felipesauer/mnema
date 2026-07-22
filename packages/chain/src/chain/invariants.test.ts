@@ -25,9 +25,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { taskCreated } from '../events/build.js';
+import { identityFounded, taskCreated } from '../events/build.js';
 import { openChainForWriting, verify } from './chain.js';
 import { orderedSegments } from './store.js';
+import type { ChainWriter } from './writer.js';
 
 let root: string;
 beforeEach(() => {
@@ -44,9 +45,20 @@ const env = (w: { anchor: string; signerFingerprint: string }, subject: string) 
   subject,
 });
 
-/** Writes `count` events with the given checkpoint cadence and returns the writer. */
+/**
+ * Founds the writer's anchor: the `identity.founded` that enrolls its own key.
+ * Every tail opens with it (seq 0) so its events satisfy the single identity
+ * rule. It counts as one event, so the accounting below reasons about
+ * `count + 1` events per tail.
+ */
+function found(w: ChainWriter): ChainWriter {
+  w.append(identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }));
+  return w;
+}
+
+/** Writes `count` tasks (after founding) with the given cadence and returns the writer. */
 function writeChain(count: number, checkpointEvery: number) {
-  const w = openChainForWriting(root, { checkpointEvery });
+  const w = found(openChainForWriting(root, { checkpointEvery }));
   for (let i = 0; i < count; i += 1) {
     w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
   }
@@ -54,13 +66,18 @@ function writeChain(count: number, checkpointEvery: number) {
 }
 
 /**
- * The residual of one tail: the events left above its last checkpoint. A
- * checkpoint fires each time `every` more events accumulate, so
- * `floor(count/every)*every` events are covered (0 when `every > count`, all of
- * them when `every` divides `count`).
+ * The residual of one tail: the events left above its last checkpoint, over a
+ * total of `events` (the founding plus every task). A checkpoint fires each time
+ * `every` more events accumulate, so `floor(events/every)*every` are covered (0
+ * when `every > events`, all of them when `every` divides `events`).
  */
-function residualOf(count: number, every: number): number {
-  return count - Math.floor(count / every) * every;
+function residualOf(events: number, every: number): number {
+  return events - Math.floor(events / every) * every;
+}
+
+/** Total events a tail of `count` tasks holds: the tasks plus the founding. */
+function totalEvents(count: number): number {
+  return count + 1;
 }
 
 /** One tail's shape in a multi-tail chain. */
@@ -81,15 +98,17 @@ function writeManyTails(specs: readonly TailSpec[]): number {
   for (const spec of specs) {
     const tailRoot = mkdtempSync(join(tmpdir(), 'mnema-inv-tail-'));
     try {
-      const w = openChainForWriting(tailRoot, {
-        checkpointEvery: spec.every,
-        maxSegmentBytes: spec.maxSegmentBytes,
-      });
+      const w = found(
+        openChainForWriting(tailRoot, {
+          checkpointEvery: spec.every,
+          maxSegmentBytes: spec.maxSegmentBytes,
+        }),
+      );
       for (let i = 0; i < spec.count; i += 1) {
         w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
       }
       mergeInto(tailRoot, root);
-      expectedResidual += residualOf(spec.count, spec.every);
+      expectedResidual += residualOf(totalEvents(spec.count), spec.every);
     } finally {
       rmSync(tailRoot, { recursive: true, force: true });
     }
@@ -143,8 +162,9 @@ describe('invariant — fullySigned iff no residual, and residual accounting is 
         const r = verify(root);
         // fullySigned is exactly "no event rests on the hash chain alone".
         expect(r.fullySigned).toBe(r.uncheckpointedEvents === 0);
-        // The residual is the tail past the last checkpoint the cadence fired.
-        expect(r.uncheckpointedEvents).toBe(residualOf(count, every));
+        // The residual is the tail past the last checkpoint the cadence fired,
+        // over the founding plus every task.
+        expect(r.uncheckpointedEvents).toBe(residualOf(totalEvents(count), every));
       });
     }
   }
@@ -153,7 +173,7 @@ describe('invariant — fullySigned iff no residual, and residual accounting is 
     writeChain(5, 1000); // no cadence checkpoint fires
     let r = verify(root);
     expect(r.fullySigned).toBe(false);
-    expect(r.uncheckpointedEvents).toBe(5);
+    expect(r.uncheckpointedEvents).toBe(6); // founding + 5 tasks, none covered
     openChainForWriting(root, { checkpointEvery: 1000 }).checkpoint();
     r = verify(root);
     expect(r.fullySigned).toBe(true);
@@ -219,14 +239,14 @@ describe('invariant — residual accounting sums across tails; fullySigned iff t
     // residual: the aggregate must reflect the residual, never round up to
     // fullySigned because one of its tails happens to be complete.
     const expectedResidual = writeManyTails([
-      { count: 4, every: 2 }, // fully covered
-      { count: 3, every: 1000 }, // 3 residual
+      { count: 4, every: 2 }, // 5 events (founding + 4), residual 1
+      { count: 3, every: 1000 }, // 4 events, all residual
     ]);
-    expect(expectedResidual).toBe(3);
+    expect(expectedResidual).toBe(5);
     const r = verify(root);
     expect(r.ok).toBe(true);
     expect(r.fullySigned).toBe(false);
-    expect(r.uncheckpointedEvents).toBe(3);
+    expect(r.uncheckpointedEvents).toBe(5);
   });
 });
 
@@ -245,7 +265,7 @@ describe('invariant — the invariants hold when a tail spans several segments',
 
     const r = verify(root);
     expect(r.ok).toBe(true);
-    expect(r.tails[0]?.entryCount).toBe(spec.count);
+    expect(r.tails[0]?.entryCount).toBe(totalEvents(spec.count));
     expect(r.uncheckpointedEvents).toBe(expectedResidual);
   });
 

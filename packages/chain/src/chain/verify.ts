@@ -13,9 +13,14 @@
  *     private key cannot pass. An anonymous clone runs exactly this, offline,
  *     with no secret. And once a checkpoint verifies, every event it covers must
  *     name the signer that attested it — its `signerFp` equals the checkpoint's
- *     and its `who` is the anchor derived from that signer — so a party with
- *     their own key cannot re-sign a range whose events claim a different
- *     identity.
+ *     — so a party with their own key cannot re-sign a range whose events claim a
+ *     different signer.
+ *   - IDENTITY (enrollment): who a signer speaks for is not its own key by
+ *     default; it is resolved by folding the chain's enrollment facts
+ *     (`identity.founded`/`key.enrolled`/`key.revoked`) in deterministic order.
+ *     An event is authentic only if its `signerFp` is a key valid for its `who`
+ *     at that point. This spans tails (a key enrolled on one authorizes events on
+ *     another) and applies to every event, checkpointed or not. See enrollment.ts.
  *   - T3 (external witness): out of scope for local crypto. With no witness
  *     configured, the verifier says so plainly — never a green that reads as
  *     tamper-proof.
@@ -23,24 +28,26 @@
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
  *
- * One consequence lives entirely inside that residual window: because a tail
- * directory is bound to its key only by its name prefix (an installation may own
- * several tails under one committed fingerprint), a party without the key can
- * copy an UNCHECKPOINTED tail into a second `<fingerprint>-<other>` directory,
- * relabel its entries, and recompute the keyless hash chain — so `ok` stays true
- * over doubled events. This never reaches a signed range: a checkpoint binds the
- * tail name it signed, so a checkpointed tail cannot be relocated or duplicated
- * this way, and `fullySigned` is already false whenever any such residual exists.
- * Binding each tail to its key by signature (not by name) closes it; until then,
- * a reader that requires `fullySigned` — not merely `ok` — is not misled.
+ * One consequence lives entirely inside that residual window. A keyless party
+ * cannot fabricate a tail under a NON-enrolled fingerprint: its events fail the
+ * enrollment fold (the fingerprint is not valid for their `who`), so verify
+ * rejects them. What the fold cannot tell apart, in the residual window, is a
+ * duplicate tail under a REAL enrolled fingerprint (its events name a valid
+ * signer, so membership holds) from a legitimate second installation of that
+ * key. That is the same indistinguishability copy-key rests on, and it never
+ * reaches a signed range: a checkpoint binds the tail name it signed, so a
+ * checkpointed tail cannot be relocated or duplicated, and `fullySigned` is
+ * already false whenever any such residual exists. A reader that requires
+ * `fullySigned` — not merely `ok` — is not misled.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointHash, verifyCheckpoint } from './checkpoint.js';
+import { resolveIdentity } from './enrollment.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
-import { deriveAnchor, fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
+import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import { type ChainLayout, publicKeyPath } from './layout.js';
 import {
   listPublicKeyFingerprints,
@@ -129,8 +136,6 @@ export interface VerifyResult {
 /** Verifies an entire chain, aggregating all tails. */
 export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): VerifyResult {
   const tails = listTails(layout);
-  const tailResults: TailResult[] = [];
-  const allIssues: TailIssue[] = [];
   let uncheckpointed = 0;
   // A tail directory is named `<fingerprint>-<installationId>`: the owning key's
   // fingerprint, then a local per-installation suffix. Bind the directory to a
@@ -145,10 +150,15 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // fingerprint to match, so it is still rejected. (A pre-suffix tail named by a
   // bare fingerprint matches the whole name, so it is accepted unchanged.)
   const committedFingerprints = new Set(listPublicKeyFingerprints(layout));
+  const entriesByTail = new Map<string, readonly Entry[]>();
+  const issuesByTail = new Map<string, TailIssue[]>();
+  const checkpointedByTail = new Map<string, number>();
 
   for (const tail of tails) {
     const entries = readTailEntries(layout, tail, upcasters);
+    entriesByTail.set(tail, entries);
     const issues: TailIssue[] = [];
+    issuesByTail.set(tail, issues);
 
     if (!tailFingerprintIsCommitted(tail, committedFingerprints)) {
       issues.push({
@@ -160,16 +170,34 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     }
     verifyHashChain(tail, entries, issues);
     const checkpointedThrough = verifyCheckpoints(layout, tail, entries, issues);
-
+    checkpointedByTail.set(tail, checkpointedThrough);
     uncheckpointed += entries.length - (checkpointedThrough + 1);
-    allIssues.push(...issues);
-    tailResults.push({
-      tail,
-      entryCount: entries.length,
-      checkpointedThrough,
-      issues,
+  }
+
+  // Identity by enrollment, folded across every tail in one deterministic order:
+  // an event is authentic only if its signer is a key valid for its anchor at
+  // its point in the chain. This is the single identity rule — it replaces the
+  // old per-event `who == deriveAnchor(signerFp)` shortcut with membership
+  // proven on the chain. Because enrollment spans tails (a key enrolled on one
+  // machine authorizes events on another), it is resolved once over the merged
+  // order, and each issue is attributed back to the tail and seq of the event
+  // that failed.
+  for (const identityIssue of resolveIdentity(layout, entriesByTail).issues) {
+    (issuesByTail.get(identityIssue.tail) ?? []).push({
+      tail: identityIssue.tail,
+      layer: 'T2/T4',
+      seq: identityIssue.seq,
+      detail: identityIssue.detail,
     });
   }
+
+  const tailResults: TailResult[] = tails.map((tail) => ({
+    tail,
+    entryCount: (entriesByTail.get(tail) ?? []).length,
+    checkpointedThrough: checkpointedByTail.get(tail) ?? -1,
+    issues: issuesByTail.get(tail) ?? [],
+  }));
+  const allIssues: TailIssue[] = tailResults.flatMap((t) => t.issues as TailIssue[]);
 
   const census = takeCensus(layout, tails);
 
@@ -390,28 +418,25 @@ function verifyCheckpoints(
       });
       continue;
     }
-    // Identity binding: the checkpoint proves this key signed this range, but
-    // that alone does not bind the identity each EVENT claims. Require every
-    // event in the range to name the signer that actually attested it
-    // (`signerFp` = the checkpoint's) and to carry the anchor derived from that
-    // signer (`who` = deriveAnchor(signerFp)). Without this a party holding their
-    // own committed key could rewrite the events' `who`/`signerFp` to a
-    // fabricated or victim identity, re-sign the range with their real key, and
-    // still verify green — the envelope's identity would be decorative. The
-    // signature integrity-protects the bytes; this makes those bytes MEAN the
-    // signer.
-    // The same reasoning covers `which` (the agent): the gate refuses a move
-    // where the authorizing human equals the executing agent (self-authorization),
-    // and that invariant must survive to the signed record — otherwise an editor
-    // could smuggle `who === which` below the crypto and it would verify green.
-    // So when `which` is present it must differ from `who`, compared in the SAME
-    // canonical form the gate uses to refuse it (NFC, trimmed): a raw byte
-    // compare would let `which = who + " "` — the gate's WHO_IS_WHICH, one stray
-    // space apart — slip through as byte-distinct and verify green.
+    // Signer binding: the checkpoint proves this key signed this range, but that
+    // alone does not bind each EVENT to that signer. Require every event in the
+    // range to name the signer that actually attested it (`signerFp` = the
+    // checkpoint's). Without this a party holding their own committed key could
+    // rewrite the events' `signerFp` to a fabricated identity, re-sign the range
+    // with their real key, and still verify green here — the signature
+    // integrity-protects the bytes; this makes those bytes name the signer.
+    // Whether that signer is authorized to speak for the event's `who` is the
+    // enrollment fold's concern (resolveIdentity), applied to every event
+    // checkpointed or not; here we only pin that `signerFp` is the real signer.
+    // The `which` clause stays: the gate refuses a move where the authorizing
+    // human equals the executing agent (self-authorization), and that invariant
+    // must survive to the signed record — otherwise an editor could smuggle
+    // `who === which` below the crypto. So when `which` is present it must differ
+    // from `who`, compared in the SAME canonical form the gate uses (NFC,
+    // trimmed): a raw byte compare would let `which = who + " "` slip through.
     const bindingBreak = range.find(
       (e) =>
         e.event.signerFp !== checkpoint.signerFp ||
-        e.event.who !== deriveAnchor(e.event.signerFp) ||
         (e.event.which !== undefined &&
           canonicalIdentityForm(e.event.which) === canonicalIdentityForm(e.event.who)),
     );
@@ -421,7 +446,7 @@ function verifyCheckpoints(
         layer: 'T2/T4',
         seq: bindingBreak.link.seq,
         detail:
-          'event identity does not bind to its signer: who/signerFp disagree with the checkpoint',
+          'event identity does not bind to its signer: signerFp disagrees with the checkpoint',
       });
       continue;
     }

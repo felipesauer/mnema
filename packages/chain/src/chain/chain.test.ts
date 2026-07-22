@@ -12,7 +12,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { runStarted, taskBirth, taskCreated, taskTransitioned } from '../events/build.js';
+import {
+  identityFounded,
+  runStarted,
+  taskBirth,
+  taskCreated,
+  taskTransitioned,
+} from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
 import { parseEvent } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
@@ -49,8 +55,24 @@ const env = (w: ChainWriter, subject: string) => ({
   subject,
 });
 
+/**
+ * Founds this writer's anchor: appends the `identity.founded` that enrolls its
+ * key for its own anchor. Under the single identity rule every event's signer
+ * must be a key enrolled for its `who`, so a fresh tail founds before it writes
+ * any other fact. Returns the writer for chaining.
+ */
+function found(w: ChainWriter): ChainWriter {
+  w.append(identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }));
+  return w;
+}
+
+/** Opens a writer and founds its anchor in one step. */
+function openFounded(opts?: { checkpointEvery?: number; maxSegmentBytes?: number }): ChainWriter {
+  return found(openChainForWriting(root, opts));
+}
+
 function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentBytes?: number }) {
-  const w = openChainForWriting(root, opts);
+  const w = openFounded(opts);
   for (let i = 0; i < count; i += 1) {
     w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
   }
@@ -65,7 +87,8 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     expect(result.ok).toBe(true);
     expect(result.issues).toEqual([]);
     expect(result.tails).toHaveLength(1);
-    expect(result.tails[0]?.entryCount).toBe(10);
+    // 10 tasks + the founding event that opens the tail.
+    expect(result.tails[0]?.entryCount).toBe(11);
   });
 
   it('always declares T3 (external witness) as not covered, never green', () => {
@@ -81,7 +104,8 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     writeSome(5, { checkpointEvery: 100 }); // no checkpoint fires
     const result = verify(root);
     expect(result.ok).toBe(true); // T1 still holds
-    expect(result.uncheckpointedEvents).toBe(5);
+    // 5 tasks + the founding event, none checkpointed.
+    expect(result.uncheckpointedEvents).toBe(6);
     expect(result.tails[0]?.checkpointedThrough).toBe(-1);
   });
 
@@ -89,7 +113,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     // The birth transition's `null` must survive the full round-trip: it is part
     // of the signed content, so if reading coerced or dropped it the checkpoint
     // would fail. Green here proves `from: null` is a first-class signed fact.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     const [created, transitioned] = taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' });
     w.append(created);
     w.append(transitioned);
@@ -100,7 +124,8 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     expect(result.fullySigned).toBe(true);
 
     const entries = readTailEntries({ root }, tailIdOf(root), catalogUpcasters());
-    const birth = entries[1]?.event;
+    // seq 0 is the founding; the birth pair follows at seq 1 (created) and 2.
+    const birth = entries[2]?.event;
     expect(birth?.kind).toBe('task.transitioned');
     if (birth?.kind === 'task.transitioned') expect(birth.payload.from).toBeNull();
   });
@@ -108,15 +133,15 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
 
 describe('chain — appendAll writes a batch atomically', () => {
   it('appends a birth pair as one write, chained and verifiable', () => {
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     const birth = taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' });
     const entries = w.appendAll(birth);
     w.checkpoint();
 
     expect(entries).toHaveLength(2);
-    // Chained: seq 0 then 1, and the second's prev is the first's hash.
-    expect(entries[0]?.link.seq).toBe(0);
-    expect(entries[1]?.link.seq).toBe(1);
+    // The founding took seq 0; the batch chains on at seq 1 then 2.
+    expect(entries[0]?.link.seq).toBe(1);
+    expect(entries[1]?.link.seq).toBe(2);
     expect(entries[1]?.link.prev).toBe(entries[0]?.link.hash);
 
     const result = verify(root);
@@ -124,18 +149,20 @@ describe('chain — appendAll writes a batch atomically', () => {
     expect(result.fullySigned).toBe(true);
 
     const reread = readTailEntries({ root }, tailIdOf(root), catalogUpcasters());
-    expect(reread).toHaveLength(2);
-    expect(reread[0]?.event.kind).toBe('task.created');
-    expect(reread[1]?.event.kind).toBe('task.transitioned');
+    expect(reread).toHaveLength(3); // founding + the birth pair
+    expect(reread[0]?.event.kind).toBe('identity.founded');
+    expect(reread[1]?.event.kind).toBe('task.created');
+    expect(reread[2]?.event.kind).toBe('task.transitioned');
   });
 
   it('a later single append continues the seq after a batch', () => {
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     w.appendAll(taskBirth(env(w, 't-1'), { title: 't', initial: 'draft' }));
     const next = w.append(
       taskTransitioned(env(w, 't-1'), { from: 'draft', to: 'ready', action: 'submit' }),
     );
-    expect(next.link.seq).toBe(2);
+    // seq 0 founding, seq 1/2 birth pair, seq 3 this transition.
+    expect(next.link.seq).toBe(3);
     expect(next.link.prev).not.toBeNull();
     expect(verify(root).ok).toBe(true);
   });
@@ -149,7 +176,7 @@ describe('chain — appendAll writes a batch atomically', () => {
   it('writes the whole batch in ONE segment file (no straddle)', () => {
     // Both lines land in the same segment, so a birth pair is never split across
     // a rotation boundary — part of what makes it one atomic unit on disk.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     w.appendAll(taskBirth(env(w, 't-1'), { title: 't', initial: 'draft' }));
     expect(orderedSegments({ root }, tailIdOf(root))).toHaveLength(1);
   });
@@ -273,7 +300,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // key. Both T1 and the checkpoint signature pass — the ONLY thing that
     // catches it is binding each event's claimed identity to the signer of the
     // range. Without that, the envelope's `who`/`signerFp` are decorative.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
@@ -282,7 +309,9 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     const seg = orderedSegments({ root }, tail)[0] as string;
 
     // Rewrite every event's identity to a fabricated, SELF-CONSISTENT one
-    // (who == deriveAnchor(fakeFp)), then repair the keyless hash chain.
+    // (who == deriveAnchor(fakeFp)), then repair the keyless hash chain. This is
+    // the identity the OLD `who == deriveAnchor(signerFp)` check would have
+    // waved through; the signer binding to the checkpoint is what catches it now.
     const fakeFp = 'dead'.repeat(16); // 64 hex, a fingerprint that signed nothing
     const fakeWho = deriveAnchor(fakeFp);
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
@@ -306,9 +335,16 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
 
     const result = verify(root);
     expect(result.ok).toBe(false);
-    expect(result.issues.some((i) => /identity does not bind to its signer/.test(i.detail))).toBe(
-      true,
-    );
+    // Caught two ways, either of which is fatal: the checkpoint's signer binding
+    // (events claim fakeFp, the honest key signed) and the enrollment fold
+    // (fakeFp is not enrolled for fakeWho — no identity.founded for it).
+    expect(
+      result.issues.some(
+        (i) =>
+          /identity does not bind to its signer/.test(i.detail) ||
+          /not a key enrolled/.test(i.detail),
+      ),
+    ).toBe(true);
   });
 
   it('fails a self-authorization smuggled below the signature (which === who)', () => {
@@ -317,7 +353,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // event so `which` equals `who` — self-authorization — re-sign with their
     // honest key, and (before the binding guard covered `which`) verify green.
     // The signed record must uphold the same who != which the gate enforces.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     for (let i = 0; i < 3; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
@@ -382,8 +418,10 @@ describe('chain — deletion and rollback', () => {
     expect(result.summary).toMatch(/NOT yet signature-covered/);
     // The tail-level checkpointedThrough must show the signed boundary, not the
     // entry count, so a reader cannot mistake residual for signed.
-    expect(result.tails[0]?.checkpointedThrough).toBe(3);
-    expect(result.tails[0]?.entryCount).toBe(5);
+    // Founding (seq 0) + 4 tasks are checkpointed through seq 4; the forged
+    // append is seq 5, the residual.
+    expect(result.tails[0]?.checkpointedThrough).toBe(4);
+    expect(result.tails[0]?.entryCount).toBe(6);
   });
 });
 
@@ -397,23 +435,23 @@ describe('chain — checkpoint chaining defends signed history from a dropped tr
     // defense: build the two-checkpoint chain, then drop the second checkpoint
     // AND its events, and confirm verify does not silently equal a chain that
     // only ever had 0..3.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
-    w.checkpoint(); // signs 0..3 (prev=null)
+    w.checkpoint(); // signs 0..4 (founding + 4 tasks, prev=null)
     for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
-    w.checkpoint(); // signs 4..7 (prev=hash(cp0..3))
+    w.checkpoint(); // signs 5..8 (prev=hash(cp0..4))
     expect(verify(root).fullySigned).toBe(true);
 
     // Adversary drops the SECOND checkpoint line and the events it covered.
     const tail = tailIdOf(root);
     const cpFile = join(root, 'tails', tail, 'checkpoints.jsonl');
     const cps = readFileSync(cpFile, 'utf-8').split('\n').filter(Boolean);
-    writeFileSync(cpFile, `${cps[0]}\n`); // keep only 0..3
+    writeFileSync(cpFile, `${cps[0]}\n`); // keep only 0..4
     const seg = orderedSegments({ root }, tail)[0] as string;
     const kept = readFileSync(seg, 'utf-8')
       .split('\n')
       .filter(Boolean)
-      .filter((l) => (JSON.parse(l) as RawEntry).link.seq <= 3);
+      .filter((l) => (JSON.parse(l) as RawEntry).link.seq <= 4);
     writeFileSync(seg, `${kept.join('\n')}\n`);
 
     // The surviving 0..3 chain + its checkpoint is internally consistent, so
@@ -425,11 +463,11 @@ describe('chain — checkpoint chaining defends signed history from a dropped tr
   });
 
   it('flags a chain break when an EARLIER checkpoint is dropped but later ones kept', () => {
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openFounded({ checkpointEvery: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
-    w.checkpoint(); // 0..3, prev=null
+    w.checkpoint(); // 0..4, prev=null
     for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
-    w.checkpoint(); // 4..7, prev=hash(0..3)
+    w.checkpoint(); // 5..8, prev=hash(0..4)
 
     // Drop the FIRST checkpoint, keep the second. The second's prev now links to
     // a checkpoint that is gone → chain break.
@@ -449,10 +487,10 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     // Simulate a crash mid-append: a partial line with NO trailing newline.
     appendFileSync(seg, '{"event":{"kind":"task.created","v":1,"at":"t","who":"h","sub');
-    // verify still reads the intact prefix (4 entries), does not throw.
+    // verify still reads the intact prefix (founding + 4 tasks), does not throw.
     const result = verify(root);
     expect(result.ok).toBe(true);
-    expect(result.tails[0]?.entryCount).toBe(4);
+    expect(result.tails[0]?.entryCount).toBe(5);
     // A fresh writer recovers and can continue.
     const w = openChainForWriting(root);
     expect(() =>
@@ -491,7 +529,7 @@ describe('chain — segmentation by size', () => {
     expect(segments.length).toBeGreaterThan(1);
     const result = verify(root);
     expect(result.ok).toBe(true);
-    expect(result.tails[0]?.entryCount).toBe(20);
+    expect(result.tails[0]?.entryCount).toBe(21); // founding + 20 tasks
   });
 
   it('recovers writer state across process restarts (continues the same tail)', () => {
@@ -500,7 +538,7 @@ describe('chain — segmentation by size', () => {
     w2.append(taskTransitioned(env(w2, 't-0'), { from: 'ready', to: 'done', action: 'finish' }));
     const result = verify(root);
     expect(result.ok).toBe(true);
-    expect(result.tails[0]?.entryCount).toBe(4);
+    expect(result.tails[0]?.entryCount).toBe(5); // founding + 3 tasks + the transition
   });
 });
 
@@ -511,9 +549,11 @@ describe('chain — aggregation across tails (multi-machine)', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
       const a = openChainForWriting(root);
+      found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
       const b = openChainForWriting(rootB);
+      found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       // Merge: copy B's tail dir and public key into A's chain.
@@ -532,9 +572,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
       const a = openChainForWriting(root);
+      found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
       const b = openChainForWriting(rootB);
+      found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       mergeTails(rootB, root);
@@ -556,9 +598,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
       const a = openChainForWriting(root);
+      found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
       const b = openChainForWriting(rootB);
+      found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
@@ -589,9 +633,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
       const a = openChainForWriting(root);
+      found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
       const b = openChainForWriting(rootB);
+      found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
@@ -650,7 +696,12 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     // merge silently overwrote one with the other — data lost, verify still
     // green. With a per-installation suffix the two tails are distinct, so the
     // merge is a union: every event from both machines survives.
-    const desktop = openChainForWriting(root);
+    // Both installations found their (shared) anchor. The key is copied, so the
+    // anchor is identical and the two `identity.founded` events fold to the same
+    // one-member set — idempotent. Founding on each tail keeps every tail
+    // self-verifiable regardless of merge order: the laptop's task never has to
+    // hope the desktop's founding sorts ahead of it.
+    const desktop = openFounded();
     desktop.append(taskCreated(env(desktop, 't-d0'), { title: 'desktop 0' }));
     desktop.append(taskCreated(env(desktop, 't-d1'), { title: 'desktop 1' }));
     desktop.checkpoint();
@@ -658,7 +709,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
     try {
       copyKeyOnly(root, laptopRoot);
-      const laptop = openChainForWriting(laptopRoot);
+      const laptop = found(openChainForWriting(laptopRoot));
       laptop.append(taskCreated(env(laptop, 't-l0'), { title: 'laptop 0' }));
       laptop.checkpoint();
 
@@ -674,8 +725,8 @@ describe('chain — one key on several installations keeps distinct tails (copy-
       // Two tails survive — nothing was overwritten.
       expect(result.tails).toHaveLength(2);
       const byTail = new Map(result.tails.map((t) => [t.tail, t.entryCount]));
-      expect(byTail.get(desktopTail)).toBe(2);
-      expect(byTail.get(laptopTail)).toBe(1);
+      expect(byTail.get(desktopTail)).toBe(3); // founding + 2 tasks
+      expect(byTail.get(laptopTail)).toBe(2); // founding + 1 task
       // One committed key, so one identity: the census sees no orphan.
       expect(result.census).toEqual([]);
       expect(readdirSync(join(root, 'keys')).filter((n) => n.endsWith('.pub'))).toHaveLength(1);
@@ -722,21 +773,34 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     const kp = generateKeyPair();
     const fp = kp.fingerprint;
     const who = deriveAnchor(fp);
-    const event = taskCreated(
-      { at: '2026-07-21T00:00:00.000Z', who, signerFp: fp, subject: 't-bare' },
-      { title: 'bare' },
-    );
-    const hash = entryHash({ event, tail: fp, seq: 0, prev: null });
-    const line = canonicalStringify({
-      event: event as never,
-      link: { tail: fp, seq: 0, prev: null, hash },
-    });
+    const at = '2026-07-21T00:00:00.000Z';
+    // seq 0 founds the anchor (so its own key is enrolled), seq 1 is the task.
+    const founding = identityFounded({ at, who, signerFp: fp, subject: who }, { foundingFp: fp });
+    const task = taskCreated({ at, who, signerFp: fp, subject: 't-bare' }, { title: 'bare' });
+    const foundingHash = entryHash({ event: founding, tail: fp, seq: 0, prev: null });
+    const taskHash = entryHash({ event: task, tail: fp, seq: 1, prev: foundingHash });
+    const lines = [
+      canonicalStringify({
+        event: founding as never,
+        link: { tail: fp, seq: 0, prev: null, hash: foundingHash },
+      }),
+      canonicalStringify({
+        event: task as never,
+        link: { tail: fp, seq: 1, prev: foundingHash, hash: taskHash },
+      }),
+    ];
     // The tail directory IS the bare fingerprint.
     mkdirSync(segmentPath({ root }, fp, 1).replace(/\/[^/]+$/, ''), { recursive: true });
-    writeFileSync(segmentPath({ root }, fp, 1), `${line}\n`);
+    writeFileSync(segmentPath({ root }, fp, 1), `${lines.join('\n')}\n`);
     mkdirSync(publicKeyPath({ root }, fp).replace(/\/[^/]+$/, ''), { recursive: true });
     writeFileSync(publicKeyPath({ root }, fp), publicKeyToPem(kp.publicKey));
-    const cp = signCheckpoint({ tail: fp, fromSeq: 0, events: [event], prev: null, keyPair: kp });
+    const cp = signCheckpoint({
+      tail: fp,
+      fromSeq: 0,
+      events: [founding, task],
+      prev: null,
+      keyPair: kp,
+    });
     appendFileSync(checkpointsPath({ root }, fp), `${serializeCheckpoint(cp)}\n`);
 
     const result = verify(root);
@@ -760,7 +824,7 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
     expect(() => {
       result = verify(root);
     }).not.toThrow();
-    expect(result.tails[0]?.entryCount).toBe(4);
+    expect(result.tails[0]?.entryCount).toBe(5); // founding + 4 tasks
   });
 
   it('a fresh writer resumes after a torn checkpoint instead of being locked out', () => {
@@ -793,7 +857,7 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
       result = verify(root);
     }).not.toThrow();
     expect(result.ok).toBe(true);
-    expect(result.tails[0]?.entryCount).toBe(4); // 3 intact + the resumed one
+    expect(result.tails[0]?.entryCount).toBe(5); // founding + 3 intact + the resumed one
   });
 });
 

@@ -16,6 +16,7 @@ import {
   type ChainWriter,
   canonicalIdentityForm,
   catalogUpcasters,
+  identityFounded,
   openChainForWriting,
   runEnded,
   runStarted,
@@ -51,6 +52,20 @@ const clock = () => {
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'mnema-cross-'));
   writer = openChainForWriting(root);
+  // Found the writer's anchor so its events pass the single identity rule at
+  // verify. (The gated founding operation is the core's concern in a later wave;
+  // here the integration test seeds it directly, as production will.)
+  writer.append(
+    identityFounded(
+      {
+        at: '2026-07-21T00:00:00.000Z',
+        who: writer.anchor,
+        signerFp: writer.signerFingerprint,
+        subject: writer.anchor,
+      },
+      { foundingFp: writer.signerFingerprint },
+    ),
+  );
   layout = { root };
   upcasters = catalogUpcasters();
   tick = 0;
