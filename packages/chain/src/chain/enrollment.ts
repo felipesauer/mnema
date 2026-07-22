@@ -43,22 +43,35 @@
  * NOT enrolled (its events fail membership), which is what a keyless adversary
  * has to reach for.
  *
- * The asymmetry that governs which enrollment facts the fold trusts from that
- * residual window: an ADDITION (`identity.founded`, `key.enrolled`) can only
- * empower events that name the added key, and a keyless party can only forge such
- * events in the residual — which are already untrusted (fullySigned=false). A
- * REVOCATION is the opposite: it removes a key that judges OTHER, possibly
- * checkpointed, events. So a residual `key.revoked` could let a keyless party
- * fabricate a tail under a real enrolled fingerprint (permitted in the residual),
- * revoke another member from it, and thereby flip an HONEST, fully-signed chain
- * to failing — a denial-of-authenticity with no key. To close that, a
- * `key.revoked` takes effect ONLY when it is itself signature-covered (within a
- * verified checkpoint range): a keyless party cannot checkpoint a fabricated tail
- * (a checkpoint needs the tail's private key), so their revocation stays residual
- * and never removes a key. A legitimate revocation is made effective by its owner
- * checkpointing it (the identity operation does so at once). Additions do not need
- * this gate — they cannot invalidate signed history — so an enroll made before a
- * checkpoint still lets its key write in the same residual window.
+ * Which enrollment facts the fold trusts from that residual window turns on one
+ * question: can the fact alter the validity of SIGNED history? A `key.revoked`
+ * plainly can — it removes a key that judges OTHER, possibly checkpointed,
+ * events. So a residual `key.revoked` could let a keyless party fabricate a tail
+ * under a real enrolled fingerprint (permitted in the residual), revoke a member
+ * from it, and flip an HONEST, fully-signed chain to failing — a
+ * denial-of-authenticity with no key. To close that, a `key.revoked` takes
+ * effect ONLY when it is itself signature-covered (within a verified checkpoint
+ * range): a keyless party cannot checkpoint a fabricated tail (a checkpoint needs
+ * the tail's private key), so their revocation stays residual and never removes a
+ * key. A legitimate revocation is made effective by its owner checkpointing it
+ * (the identity operation does so at once).
+ *
+ * An ADDITION (`identity.founded`, `key.enrolled`) is USUALLY safe ungated — it
+ * only empowers events that name the added key, so a keyless residual enroll of
+ * a genuine key just recreates that key's own (already-untrusted) window, no
+ * different from a benign second install. There is ONE exception, and it is the
+ * mirror of the revoke gate: an addition ordered AFTER a signature-covered
+ * revoke of the SAME key RESTORES it, re-authorizing that key's later
+ * (checkpointed) work — the addition thereby undoes a signed removal. So an
+ * addition that would restore a covered-revoked key is gated exactly as the
+ * revoke was: it takes effect only when it is itself signature-covered
+ * (`addKeyGated`). A first enrollment, or any addition that restores nothing
+ * covered, stays ungated. The invariant that keeps this honest is not "forged
+ * events stay residual" — a forged event's authorship is signature-checked
+ * elsewhere — it is that neither a revoke nor a restoring add can be forged INTO
+ * a signature-covered range without the tail's key; consumers must therefore
+ * gate trust on whole-chain `fullySigned`, never on a per-tail checkpoint cursor
+ * or an event's mere absence from `issues`.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -101,9 +114,10 @@ interface TailCursor {
  * signature (the new key's proof-of-possession), read from the committed roster.
  *
  * `checkpointedThroughByTail` gives the highest signature-covered seq per tail
- * (-1 if none). It gates only `key.revoked`: a revocation removes a key that
- * judges other events, so it must itself be signed to be trusted — see the
- * module doc. Additions (founded/enrolled) are not gated.
+ * (-1 if none). It gates any mutation that could alter signed history: a
+ * `key.revoked` (removes a key that judges other events), and an addition that
+ * would RESTORE a key already revoked under coverage (`addKeyGated`). A first
+ * enrollment — restoring nothing covered — is not gated. See the module doc.
  */
 export function resolveIdentity(
   layout: ChainLayout,
@@ -123,6 +137,33 @@ export function resolveIdentity(
       validKeys.set(anchor, set);
     }
     return set;
+  };
+
+  // Keys removed by a signature-covered revocation, as `<anchor>|<fp>`. An
+  // addition (founded/enrolled) that would restore such a key takes effect only
+  // when it is ITSELF signature-covered — otherwise a keyless party could plant
+  // a residual re-enroll ordered after a covered revoke and silently undo it,
+  // re-authorizing the removed key's later (checkpointed) work. This mirrors the
+  // revoke gate: a mutation that alters the validity of signed history must be
+  // signed. An addition that restores nothing covered stays ungated (a first
+  // enrollment, a benign copy-key second install).
+  const coveredRevoked = new Set<string>();
+  const restoreKey = (anchor: string, fp: string): string => `${anchor}|${fp}`;
+  const addKeyGated = (anchor: string, fp: string, tail: string, seq: number): void => {
+    if (coveredRevoked.has(restoreKey(anchor, fp))) {
+      if (!isCheckpointed(tail, seq)) {
+        // Residual re-add of a covered-revoked key: ignored, stays residual.
+        issues.push({
+          tail,
+          seq,
+          detail: `re-adds ${fp} revoked under signature coverage without being checkpointed itself`,
+        });
+        return;
+      }
+      // A signed re-enrollment legitimately supersedes the covered revoke.
+      coveredRevoked.delete(restoreKey(anchor, fp));
+    }
+    keysOf(anchor).add(fp);
   };
 
   for (const { tail, entry } of order) {
@@ -154,7 +195,7 @@ export function resolveIdentity(
           issues.push({ tail, seq, detail: 'identity.founded who is not the anchor it founds' });
           break;
         }
-        keysOf(event.subject).add(foundingFp);
+        addKeyGated(event.subject, foundingFp, tail, seq);
         break;
       }
       case 'key.enrolled': {
@@ -184,7 +225,7 @@ export function resolveIdentity(
           });
           break;
         }
-        keysOf(anchor).add(newFp);
+        addKeyGated(anchor, newFp, tail, seq);
         break;
       }
       case 'key.revoked': {
@@ -210,6 +251,9 @@ export function resolveIdentity(
         // honest signed chain to failing. A legitimate revoker checkpoints it.
         if (!isCheckpointed(tail, seq)) break;
         keysOf(anchor).delete(event.payload.revokedFp);
+        // Remember this key was removed under coverage: a later addition that
+        // would restore it must itself be signature-covered (see addKeyGated).
+        coveredRevoked.add(restoreKey(anchor, event.payload.revokedFp));
         break;
       }
       default: {
