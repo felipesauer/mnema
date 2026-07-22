@@ -203,6 +203,70 @@ export function decisionBirth(
 }
 
 /**
+ * The proof-of-possession message a key signs to be enrolled: it binds the
+ * enrollment to one anchor and one new key at once. `<anchor>` is the full
+ * anchor id (`mnid:<hash>`) and `<newFp>` the enrolling key's fingerprint, so a
+ * signature captured for one (anchor, key) pair cannot be replayed to enroll the
+ * same key into a different anchor — the verifier recomputes this exact string
+ * and checks `reverseSig` against it.
+ */
+export function enrollmentMessage(anchor: string, newFp: string): Uint8Array {
+  return new TextEncoder().encode(`enroll:${anchor}:${newFp}`);
+}
+
+/**
+ * Builds an `identity.founded` event (subject = the anchor). The founding key
+ * both authorizes and signs it, so the caller stamps `who` = the anchor and
+ * `signerFp` = the founding key on the envelope; `foundingFp` in the payload is
+ * that same fingerprint, which the anchor derives from.
+ */
+export function identityFounded(
+  envelope: EnvelopeInput,
+  payload: { foundingFp: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'identity.founded',
+    ...envelopeFields(envelope),
+    payload: { foundingFp: payload.foundingFp },
+  };
+}
+
+/**
+ * Builds a `key.enrolled` event (subject = the anchor). `signerFp` on the
+ * envelope is a key already valid for the anchor (it vouches for the new one);
+ * `reverseSig` is the new key's signature over {@link enrollmentMessage}.
+ */
+export function keyEnrolled(
+  envelope: EnvelopeInput,
+  payload: { newFp: string; reverseSig: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'key.enrolled',
+    ...envelopeFields(envelope),
+    payload: { newFp: payload.newFp, reverseSig: payload.reverseSig },
+  };
+}
+
+/**
+ * Builds a `key.revoked` event (subject = the anchor). `signerFp` on the
+ * envelope is a key valid for the anchor; `revokedFp` is the key it removes from
+ * this point forward; `reason` records the why.
+ */
+export function keyRevoked(
+  envelope: EnvelopeInput,
+  payload: { revokedFp: string; reason: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'key.revoked',
+    ...envelopeFields(envelope),
+    payload: { revokedFp: payload.revokedFp, reason: payload.reason },
+  };
+}
+
+/**
  * Builds the pair of events that a task's birth always emits, in order: the
  * `task.created` that proves the task exists, then the `task.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state.

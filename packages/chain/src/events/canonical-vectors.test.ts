@@ -21,6 +21,9 @@ import { eventBytes } from '../chain/hash.js';
 import {
   decisionRecorded,
   decisionTransitioned,
+  identityFounded,
+  keyEnrolled,
+  keyRevoked,
   runEnded,
   runStarted,
   taskCreated,
@@ -36,6 +39,7 @@ const digest = (event: CatalogEvent): string =>
 // an operation derives from its key, not a placeholder.
 const WHO = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
 const SIGNER_FP = '2222222222222222222222222222222222222222222222222222222222222222';
+const NEW_FP = '3333333333333333333333333333333333333333333333333333333333333333';
 
 const env = {
   at: '2026-07-21T00:00:00.000Z',
@@ -118,6 +122,34 @@ const vectors: ReadonlyArray<{ name: string; event: CatalogEvent; sha256: string
       },
     ),
     sha256: '24793d2e053cad92ed0d0364ba8f6a8d51b004507a37a645cabbb54ba4012700',
+  },
+  {
+    // The enrollment kinds' subject is the anchor (`mnid:<hash>`), not a task or
+    // decision id, and they carry no `which` — they are identity facts, not agent
+    // work. Freezing their bytes pins that shape so an enrollment written now
+    // stays reproducible by a clone that verifies the fold later.
+    name: 'identity.founded (self-signed by the founder)',
+    event: identityFounded(
+      { at: '2026-07-21T00:00:00.000Z', who: WHO, signerFp: SIGNER_FP, subject: WHO },
+      { foundingFp: SIGNER_FP },
+    ),
+    sha256: '40472210b699781d13c49f550047f2b746ceff42a64accde156187a16a265499',
+  },
+  {
+    name: 'key.enrolled (member vouches for a new key)',
+    event: keyEnrolled(
+      { at: '2026-07-21T00:00:00.000Z', who: WHO, signerFp: SIGNER_FP, subject: WHO },
+      { newFp: NEW_FP, reverseSig: 'ab'.repeat(32) },
+    ),
+    sha256: '4f4b32213a25ebf59e682941bfa28614c92f915addca5288ebdfb241aaa05a5a',
+  },
+  {
+    name: 'key.revoked (prospective removal)',
+    event: keyRevoked(
+      { at: '2026-07-21T00:00:00.000Z', who: WHO, signerFp: SIGNER_FP, subject: WHO },
+      { revokedFp: NEW_FP, reason: 'key rotation' },
+    ),
+    sha256: 'f7f9b5dc090d11a8a909cc2d8cf32327fda764e1762add37874a90e11a1d394b',
   },
 ];
 
