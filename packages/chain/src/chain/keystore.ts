@@ -1,17 +1,25 @@
 /**
- * Persisting and loading a machine's key pair and its installation id.
+ * Persisting and loading a person's key pair, materializing its public half into
+ * a chain, and minting a chain's installation id.
  *
- * The private key is written locally and never committed; the public key is
- * written next to it, named by fingerprint, and IS committed so verifiers can
- * find it. Opening a chain to write generates a fresh pair on first use — a
- * reinstalled machine simply gets a new identity, and past checkpoints stay
- * verifiable against their (still committed) public keys.
+ * The key belongs to the PERSON and lives in ONE place — a key root, separate
+ * from any chain — so a single identity can write to several chains (a project's
+ * public tree, its private one, a global one) without copying the private key.
+ * The key root holds the full pair; a chain never does. A chain instead gets the
+ * public half MATERIALIZED into it ({@link materializePublicKey}), named by
+ * fingerprint and committed, so a verifier — a collaborator, an anonymous clone
+ * — finds the key it needs without ever touching the key root.
  *
- * The installation id is a random value minted once per installation and, like
- * the private key, kept local and never committed. It is what separates two
- * installations that share ONE copied key: each mints its own id, so their tail
- * directories differ and neither overwrites the other on a merge, while both
- * still authorize as the one anchor the shared key derives.
+ * The private key is written under the key root and never committed. Generating
+ * a fresh pair on first use means a reinstalled machine simply gets a new
+ * identity, and past checkpoints stay verifiable against their (still committed)
+ * public keys.
+ *
+ * The installation id is a random value minted once PER CHAIN and, like the
+ * private key, kept local and never committed. It is what separates one person's
+ * several chains (and two installations that share ONE copied key): each chain
+ * mints its own id, so their tail directories differ and none overwrites another
+ * on a merge, while all still authorize as the one anchor the key derives.
  */
 
 import { randomBytes } from 'node:crypto';
@@ -66,7 +74,7 @@ function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
   return null;
 }
 
-/** Writes both halves of a key pair to disk. */
+/** Writes both halves of a key pair to disk (the key root's own copy). */
 export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
   mkdirSync(keysDir(layout), { recursive: true });
   writeFileSync(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey), {
@@ -76,6 +84,22 @@ export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
     encoding: 'utf-8',
     mode: 0o600,
   });
+}
+
+/**
+ * Materializes ONLY the public half of a key into a chain, so an anonymous
+ * verifier finds it there without the key root. Writes `<chain>/keys/<fp>.pub`
+ * if it is absent; the private key is NEVER written to a chain. Idempotent — a
+ * chain already carrying the key is left untouched — and it never overwrites: a
+ * `.pub` already present (materialized before, or, in the pathological case,
+ * swapped) stays as-is, because a swapped public key is caught by the verifier's
+ * fingerprint binding (it re-derives the loaded key's fingerprint), not here.
+ */
+export function materializePublicKey(chainLayout: ChainLayout, keyPair: KeyPair): void {
+  const path = publicKeyPath(chainLayout, keyPair.fingerprint);
+  if (existsSync(path)) return;
+  mkdirSync(keysDir(chainLayout), { recursive: true });
+  writeFileSync(path, publicKeyToPem(keyPair.publicKey), { encoding: 'utf-8' });
 }
 
 /**

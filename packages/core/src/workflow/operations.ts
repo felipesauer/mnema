@@ -31,7 +31,7 @@ import {
   taskTransitioned,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { canonicalId } from '../identity/id.js';
+import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
@@ -89,8 +89,6 @@ export interface TransitionInput {
 
 /** What the caller asks to create. */
 export interface CreateInput {
-  /** The new task's id (the event subject). The caller mints it. */
-  readonly id: string;
   readonly title: string;
   /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
@@ -158,11 +156,13 @@ export function transitionTask(
 }
 
 /**
- * Creates a task: appends the birth pair (`task.created` then the birth
- * `task.transitioned`, `from: null` → the initial state) in order, both stamped
- * with one `at`. Birth is not a gated transition — there is no prior state to
- * judge — but it still binds a `who` (the writer's anchor) that must not be the
- * executing agent `which`, the same authority invariant the gate enforces.
+ * Creates a task: mints its id, then appends the birth pair (`task.created` then
+ * the birth `task.transitioned`, `from: null` → the initial state) in order,
+ * both stamped with one `at`. The id is minted by the operation, never supplied
+ * (see {@link mintId}) — the caller receives it back in {@link CreateOk.id}.
+ * Birth is not a gated transition — there is no prior state to judge — but it
+ * still binds a `who` (the writer's anchor) that must not be the executing agent
+ * `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
   // `who` is derived from the writer's key, so it is always a real anchor — the
@@ -180,10 +180,10 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
     };
   }
 
-  const id = canonicalId(input.id);
-  if (id === undefined) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `"${input.id}" is not a usable id` };
-  }
+  // The id is minted here, not chosen by the caller: derived from randomness so
+  // two offline clones never mint the same one, closing false-merge of entities
+  // at the root (the same move `who` makes). It is canonical by construction.
+  const id = mintId();
 
   // Found this installation's anchor before the birth pair, so both events'
   // signer is a key valid for its anchor at verify. A no-op once founded.

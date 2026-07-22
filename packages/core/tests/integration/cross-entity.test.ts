@@ -8,7 +8,7 @@
  * and gated operations), so it lives here rather than beside a source file.
  */
 
-import { mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -51,7 +51,8 @@ const clock = () => {
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'mnema-cross-'));
-  writer = openChainForWriting(root);
+  // keyRoot == chainRoot: the simple single-root layout for these tests.
+  writer = openChainForWriting(root, { keyRoot: root });
   // Found the writer's anchor so its events pass the single identity rule at
   // verify. (The gated founding operation is the core's concern in a later wave;
   // here the integration test seeds it directly, as production will.)
@@ -103,18 +104,26 @@ function endRun(id: string, outcome?: string): void {
   );
 }
 
+/** Creates a task through the operation, returning its minted id. */
+function mustCreate(input: { title: string; which?: string }): string {
+  const result = createTask(ctx(), input);
+  if (!result.ok) throw new Error(`create failed: ${result.code}`);
+  return result.id;
+}
+/** Records a decision through the operation, returning its minted id. */
+function mustRecord(input: { title: string; rationale: string; which?: string }): string {
+  const result = recordDecision(ctx(), input);
+  if (!result.ok) throw new Error(`record failed: ${result.code}`);
+  return result.id;
+}
+
 describe('one chain carrying task + run + decision facts', () => {
   it('interleaves the three entities and projects each independently', () => {
     startRun('run-1', 'claude');
-    createTask(ctx(), { id: 't-1', title: 'ship', which: 'claude' });
-    recordDecision(ctx(), {
-      id: 'd-1',
-      title: 'use ed25519',
-      rationale: 'anon verify',
-      which: 'claude',
-    });
-    transitionTask(ctx(), { id: 't-1', action: 'submit', which: 'claude' });
-    acceptDecision(ctx(), { id: 'd-1', fields: { note: 'agreed' }, which: 'claude' });
+    const taskId = mustCreate({ title: 'ship', which: 'claude' });
+    const decId = mustRecord({ title: 'use ed25519', rationale: 'anon verify', which: 'claude' });
+    transitionTask(ctx(), { id: taskId, action: 'submit', which: 'claude' });
+    acceptDecision(ctx(), { id: decId, fields: { note: 'agreed' }, which: 'claude' });
     endRun('run-1', 'done');
 
     const events = orderedEvents(layout, upcasters);
@@ -122,10 +131,10 @@ describe('one chain carrying task + run + decision facts', () => {
     const runs = projectRuns(events);
     const decisions = projectDecisions(events);
 
-    expect(tasks.get('t-1')?.state).toBe('READY');
+    expect(tasks.get(taskId)?.state).toBe('READY');
     expect(runs.get('run-1')?.open).toBe(false);
     expect(runs.get('run-1')?.outcome).toBe('done');
-    expect(decisions.get('d-1')?.state).toBe('accepted');
+    expect(decisions.get(decId)?.state).toBe('accepted');
     // The three projections read the SAME stream without interfering.
     expect(tasks.size).toBe(1);
     expect(runs.size).toBe(1);
@@ -134,8 +143,8 @@ describe('one chain carrying task + run + decision facts', () => {
 
   it('the whole chain verifies and, once checkpointed, is fully signed', () => {
     startRun('run-1', 'claude');
-    createTask(ctx(), { id: 't-1', title: 't', which: 'claude' });
-    recordDecision(ctx(), { id: 'd-1', title: 'd', rationale: 'why', which: 'claude' });
+    mustCreate({ title: 't', which: 'claude' });
+    mustRecord({ title: 'd', rationale: 'why', which: 'claude' });
     endRun('run-1');
     writer.checkpoint();
     const v = verify(root);
@@ -147,10 +156,10 @@ describe('one chain carrying task + run + decision facts', () => {
 describe('rebuild converges on a rich mixed chain', () => {
   it('a from-scratch drop+replay reproduces task, run, and decision state', () => {
     startRun('run-1', 'claude');
-    createTask(ctx(), { id: 't-1', title: 'a', which: 'claude' });
-    transitionTask(ctx(), { id: 't-1', action: 'submit', which: 'claude' });
-    transitionTask(ctx(), { id: 't-1', action: 'start', which: 'claude' });
-    recordDecision(ctx(), { id: 'd-1', title: 'd', rationale: 'r', which: 'claude' });
+    const taskId = mustCreate({ title: 'a', which: 'claude' });
+    transitionTask(ctx(), { id: taskId, action: 'submit', which: 'claude' });
+    transitionTask(ctx(), { id: taskId, action: 'start', which: 'claude' });
+    const decId = mustRecord({ title: 'd', rationale: 'r', which: 'claude' });
     endRun('run-1', 'ok');
 
     const cache = ProjectionCache.open(root);
@@ -158,20 +167,20 @@ describe('rebuild converges on a rich mixed chain', () => {
     // A second, independent rebuild from the same chain must agree.
     cache.rebuild();
 
-    expect(cache.getTask('t-1')?.state).toBe('IN_PROGRESS');
+    expect(cache.getTask(taskId)?.state).toBe('IN_PROGRESS');
     expect(cache.getRun('run-1')?.open).toBe(false);
-    expect(cache.getDecision('d-1')?.state).toBe('proposed');
+    expect(cache.getDecision(decId)?.state).toBe('proposed');
     cache.close();
   });
 });
 
 describe('supersede is a multi-entity fact that survives a rebuild', () => {
   it('updates BOTH sides (supersededBy on the subject, supersedes on the successor)', () => {
-    recordDecision(ctx(), { id: 'd-old', title: 'old', rationale: 'r1', which: 'claude' });
-    recordDecision(ctx(), { id: 'd-new', title: 'new', rationale: 'r2', which: 'claude' });
+    const oldId = mustRecord({ title: 'old', rationale: 'r1', which: 'claude' });
+    const newId = mustRecord({ title: 'new', rationale: 'r2', which: 'claude' });
     const sup = supersedeDecision(ctx(), {
-      id: 'd-old',
-      by: 'd-new',
+      id: oldId,
+      by: newId,
       fields: { reason: 'better approach' },
       which: 'claude',
     });
@@ -179,25 +188,63 @@ describe('supersede is a multi-entity fact that survives a rebuild', () => {
 
     const cache = ProjectionCache.open(root);
     cache.rebuild();
-    const old = cache.getDecision('d-old');
-    const neu = cache.getDecision('d-new');
+    const old = cache.getDecision(oldId);
+    const neu = cache.getDecision(newId);
     expect(old?.state).toBe('superseded');
-    expect(old?.supersededBy).toBe('d-new');
-    expect(neu?.supersedes).toBe('d-old');
+    expect(old?.supersededBy).toBe(newId);
+    expect(neu?.supersedes).toBe(oldId);
     cache.close();
   });
 
   it('refuses a supersede whose successor does not exist (anti-dangling), writing nothing', () => {
-    recordDecision(ctx(), { id: 'd-old', title: 'old', rationale: 'r', which: 'claude' });
+    const oldId = mustRecord({ title: 'old', rationale: 'r', which: 'claude' });
     const before = orderedEvents(layout, upcasters).length;
     const sup = supersedeDecision(ctx(), {
-      id: 'd-old',
+      id: oldId,
       by: 'ghost',
       fields: { reason: 'x' },
       which: 'claude',
     });
     expect(sup).toMatchObject({ ok: false, code: 'UNKNOWN_BY' });
     expect(orderedEvents(layout, upcasters).length).toBe(before);
+  });
+});
+
+/**
+ * The minted id closes false-merge of ENTITIES the same way the derived anchor
+ * closes it for identity: two clones working offline can never mint the same id,
+ * so unioning their chains yields two distinct entities, never one with a merged
+ * history. This is the whole reason the id is generated by the operation rather
+ * than chosen — pinned here end to end (two real chains, merged on disk), not
+ * just as a property of the generator.
+ */
+describe('minted ids keep two offline clones from false-merging', () => {
+  it('two clones create tasks; merged, they stay TWO entities (not one)', () => {
+    const rootB = mkdtempSync(join(tmpdir(), 'mnema-cross-fm-'));
+    const merged = mkdtempSync(join(tmpdir(), 'mnema-cross-fm-m-'));
+    try {
+      // Clone A is the suite's `writer`/root; clone B is its own chain and key.
+      const taskA = mustCreate({ title: 'A: ship the API' });
+      const bWriter = openChainForWriting(rootB, { keyRoot: rootB });
+      const ctxB: WriteContext = { writer: bWriter, layout: { root: rootB }, upcasters, clock };
+      const rB = createTask(ctxB, { title: 'B: fix the parser' });
+      if (!rB.ok) throw new Error('create B failed');
+
+      // Distinct keys → distinct anchors, and distinct minted ids.
+      expect(bWriter.anchor).not.toBe(writer.anchor);
+      expect(taskA).not.toBe(rB.id);
+
+      // Union both chains into one root (an offline merge of two trees).
+      cpSync(root, merged, { recursive: true });
+      cpSync(rootB, merged, { recursive: true });
+      const tasks = projectTasks(orderedEvents({ root: merged }, upcasters));
+      // Two entities survive with their own titles — no collapse onto one id.
+      expect(tasks.size).toBe(2);
+      expect(tasks.get(taskA)?.title).toBe('A: ship the API');
+      expect(tasks.get(rB.id)?.title).toBe('B: fix the parser');
+    } finally {
+      for (const d of [rootB, merged]) rmSync(d, { recursive: true, force: true });
+    }
   });
 });
 
@@ -220,7 +267,7 @@ describe('who != which agrees between the core gate and the chain verifier', () 
     for (let i = 0; i < 4; i += 1) {
       const r = mkdtempSync(join(tmpdir(), 'mnema-agree-'));
       try {
-        const w = openChainForWriting(r);
+        const w = openChainForWriting(r, { keyRoot: r });
         const which = sameIdentityAs(w.anchor)[i] as string;
         // The gate's rule collapses this variant onto the anchor (who).
         expect(canonicalIdentity(which)).toBe(w.anchor);

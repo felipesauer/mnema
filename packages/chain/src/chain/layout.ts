@@ -1,19 +1,21 @@
 /**
- * On-disk layout of a chain.
+ * On-disk layout, of two kinds of root: a CHAIN root (what a chain writes and a
+ * verifier reads) and a KEY root (where a person's private key lives, separate
+ * from any chain — see keystore.ts). The paths below serve both; which files
+ * appear depends on the root's kind.
  *
- * Everything a machine writes lives under its own tail directory, so two
- * machines never touch the same file and an offline merge is just copying
- * directories — no in-file merge, ever. A tail is a run of sealed segment
- * files plus its append-only checkpoints.
+ * Everything a machine writes to a chain lives under its own tail directory, so
+ * two machines never touch the same file and an offline merge is just copying
+ * directories — no in-file merge, ever. A tail is a run of sealed segment files
+ * plus its append-only checkpoints.
  *
  * A tail id is `<fingerprint>-<installationId>`: the signing key's fingerprint,
  * then a random id minted once per installation and kept local. The fingerprint
  * prefix ties the tail to a committed key (its owner); the installation suffix
- * keeps two installations of the SAME key on separate tails, so copying one
- * private key across machines yields distinct directories that merge without
- * overwriting each other.
+ * keeps a key's several installations — one per chain, or two of the same copied
+ * key — on separate tails, so they merge without overwriting each other.
  *
- *   <root>/
+ *   <chainRoot>/
  *     tails/
  *       <fingerprint>-<installationId>/
  *         000001.jsonl        segment (sealed once it passes the size cap)
@@ -21,10 +23,16 @@
  *         checkpoints.jsonl   append-only signed checkpoints for this tail
  *         tailproof.json      the key's signature over this tail's own id
  *     keys/
- *       <fingerprint>.pub     committed public keys (one per key)
- *       <fingerprint>.key     LOCAL private key (never committed)
- *       <fingerprint>.inst    LOCAL installation id (never committed)
- *       <fingerprint>.anchor  LOCAL anchor this key serves (never committed)
+ *       <fingerprint>.pub     MATERIALIZED public key, committed (the private
+ *                             half is NOT here — it lives in the key root)
+ *       <fingerprint>.inst    LOCAL installation id for this chain (never committed)
+ *       <fingerprint>.anchor  LOCAL anchor this installation serves (never committed)
+ *
+ *   <keyRoot>/
+ *     keys/
+ *       <fingerprint>.pub     the person's public key
+ *       <fingerprint>.key     the person's LOCAL private key (never committed,
+ *                             never copied into a chain)
  */
 
 import { join } from 'node:path';
