@@ -53,6 +53,8 @@ export {
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
   persistKeyPair,
+  readAnchor,
+  writeAnchor,
 } from './chain/keystore.js';
 export type { ChainLayout } from './chain/layout.js';
 export {

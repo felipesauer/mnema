@@ -49,6 +49,13 @@ export {
   gate,
 } from './gate.js';
 export {
+  enrollKey,
+  ensureFounded,
+  foundIdentity,
+  type IdentityOk,
+  revokeKey,
+} from './identity-operations.js';
+export {
   type CreateInput,
   type CreateOk,
   createTask,

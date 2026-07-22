@@ -37,6 +37,7 @@ import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
+import { ensureFounded } from './identity-operations.js';
 import { INITIAL_STATE } from './states.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
@@ -132,6 +133,9 @@ export function transitionTask(
 
   const which = canonicalIdentity(input.which);
 
+  // Found this installation's anchor before its first fact, so the transition's
+  // signer is a key valid for its anchor at verify. A no-op once founded.
+  ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const event = taskTransitioned(
     {
@@ -181,6 +185,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
     return { ok: false, code: 'UNKNOWN_TASK', message: `"${input.id}" is not a usable id` };
   }
 
+  // Found this installation's anchor before the birth pair, so both events'
+  // signer is a key valid for its anchor at verify. A no-op once founded.
+  ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const birth = taskBirth(
     {

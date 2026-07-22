@@ -8,10 +8,14 @@
  * resolved by reading many tails, not by locking one file.
  *
  * The tail id pairs the signing key's fingerprint with this installation's id,
- * `<fingerprint>-<installationId>`. WHO a writer speaks for (the anchor) and
- * WHICH key signs (the signer fingerprint) still come from the key alone, so
- * two installations of one copied key share an identity but keep distinct tails
- * — copying a key across machines no longer collides one tail onto another.
+ * `<fingerprint>-<installationId>`. WHICH key signs (the signer fingerprint)
+ * comes from the key; WHO the writer speaks for (the anchor) is read from local
+ * material — the anchor this installation founded (its own) or enrolled into
+ * (another key's), or, until one is recorded, the anchor it will found. Recording
+ * that anchor and emitting the founding is the identity operation's job, not the
+ * writer's; the writer only exposes the material (`anchor`, `hasAnchor`,
+ * `recordAnchor`) so that operation can found a fresh installation before its
+ * first fact.
  *
  * State (head hash, next seq, current segment) is recovered from disk on
  * construction, so a fresh process continues an existing tail correctly.
@@ -30,6 +34,7 @@ import {
 } from './checkpoint.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor, type KeyPair } from './keys.js';
+import { readAnchor, writeAnchor } from './keystore.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
 import { orderedSegments, readTailCheckpoints, readTailEntries } from './store.js';
 
@@ -84,13 +89,18 @@ export class ChainWriter {
   }
 
   /**
-   * The anchor id this writer authorizes as — WHO its events speak for,
-   * `mnid:<hash>` derived from the signing key. A caller cannot supply it; the
-   * operation reads it here so identity is derived from the local key, not
-   * chosen, and is unique by construction across clones.
+   * The anchor id this writer authorizes as — WHO its events speak for. Read
+   * from LOCAL material (`keys/<fp>.anchor`): the anchor this installation
+   * founded (its own) or one it enrolled into (another key's). When no anchor is
+   * recorded yet, it derives its own — the anchor it will found on first use —
+   * so a caller always reads a real anchor. A caller cannot supply it, so
+   * identity comes from the local key or its recorded membership, never a typed
+   * string.
    */
   get anchor(): string {
-    return deriveAnchor(this.keyPair.fingerprint);
+    return (
+      readAnchor(this.layout, this.keyPair.fingerprint) ?? deriveAnchor(this.keyPair.fingerprint)
+    );
   }
 
   /**
@@ -126,6 +136,25 @@ export class ChainWriter {
       this.lastCheckpointedSeq = lastCp.toSeq;
       this.lastCheckpointHash = checkpointHash(lastCp);
     }
+  }
+
+  /**
+   * Whether this installation has recorded the anchor it serves — the founding
+   * (its own) or an enrollment into another. The core founds a fresh
+   * installation before its first fact so its events resolve; this lets that
+   * check be made without re-reading the tail.
+   */
+  get hasAnchor(): boolean {
+    return readAnchor(this.layout, this.keyPair.fingerprint) !== null;
+  }
+
+  /**
+   * Records the anchor this installation serves, locally and uncommitted. Called
+   * by the founding/enrollment operation once, so a later `anchor` read returns
+   * the recorded value rather than the derived default.
+   */
+  recordAnchor(anchor: string): void {
+    writeAnchor(this.layout, this.keyPair.fingerprint, anchor);
   }
 
   /**
