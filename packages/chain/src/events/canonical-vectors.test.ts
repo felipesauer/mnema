@@ -31,9 +31,16 @@ import type { CatalogEvent } from './catalog.js';
 const digest = (event: CatalogEvent): string =>
   createHash('sha256').update(eventBytes(event)).digest('hex');
 
+// `who` is an anchor id (`mnid:<hash>`) and `signerFp` a full key fingerprint —
+// both are fixed here so the frozen digests pin the real envelope shape, the one
+// an operation derives from its key, not a placeholder.
+const WHO = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
+const SIGNER_FP = '2222222222222222222222222222222222222222222222222222222222222222';
+
 const env = {
   at: '2026-07-21T00:00:00.000Z',
-  who: 'alice',
+  who: WHO,
+  signerFp: SIGNER_FP,
   which: 'claude',
   subject: 't-1',
 };
@@ -43,12 +50,12 @@ const vectors: ReadonlyArray<{ name: string; event: CatalogEvent; sha256: string
   {
     name: 'task.created',
     event: taskCreated(env, { title: 'Ship the parser' }),
-    sha256: '2eccab82f93fed127228a63ecf780f612bdad214fae4a1b9b29640e417980141',
+    sha256: 'e645a47c2c0a6370e607246f67c5b3040b5a97c9977eb21fb66d894696f6751b',
   },
   {
     name: 'task.transitioned (birth, from: null)',
     event: taskTransitioned(env, { from: null, to: 'todo', action: 'create' }),
-    sha256: 'ad32a907572d507abb66c208bf57e582f071896e07001dec15f766d9b5fefd7c',
+    sha256: '17d68fa59a2c6206ee717da2e2e2516a9ca6237905110727aff6de379f96e7e2',
   },
   {
     name: 'task.transitioned (with proof fields)',
@@ -58,38 +65,50 @@ const vectors: ReadonlyArray<{ name: string; event: CatalogEvent; sha256: string
       action: 'finish',
       fields: { note: 'shipped', pr_url: 'https://example.test/pr/1' },
     }),
-    sha256: '6c55519a0d9818605f370304beb23c41009ad529394507d1a5de52795491db3a',
+    sha256: '8bf3ac330c91a56d138fa28e31973c3b161ede06704c7201af6daf9cb86a6bba',
   },
   {
     name: 'run.started',
     event: runStarted(
-      { at: '2026-07-21T00:00:00.000Z', who: 'alice', subject: 'r-1' },
+      { at: '2026-07-21T00:00:00.000Z', who: WHO, signerFp: SIGNER_FP, subject: 'r-1' },
       { agent: 'claude', goal: 'do the thing' },
     ),
-    sha256: '6be8a7c9854e5923e8268c405610a84b8fbf5d48fb04f22ba336920ca119a6a6',
+    sha256: 'dceb41f6f35480826487ddcea67a3dd5c376d39ada91bd1dba34386bc26a4165',
   },
   {
     name: 'run.ended',
     event: runEnded(
-      { at: '2026-07-21T00:00:00.000Z', who: 'alice', subject: 'r-1' },
+      { at: '2026-07-21T00:00:00.000Z', who: WHO, signerFp: SIGNER_FP, subject: 'r-1' },
       {
         outcome: 'ok',
       },
     ),
-    sha256: 'b87ed8d1b45f93a5f9dbdf5102ea0efc93e67f1ebef2ea821dfb90f09cbc5173',
+    sha256: '814c119819392bc9069e9ce8178ef7efaa84a0379103c3ba5af6ab7d0c4661aa',
   },
   {
     name: 'decision.recorded',
     event: decisionRecorded(
-      { at: '2026-07-21T00:00:00.000Z', who: 'alice', which: 'claude', subject: 'd-1' },
+      {
+        at: '2026-07-21T00:00:00.000Z',
+        who: WHO,
+        signerFp: SIGNER_FP,
+        which: 'claude',
+        subject: 'd-1',
+      },
       { title: 'Use SQLite for the cache', rationale: 'The load is relational.', adr: 'ADR-3' },
     ),
-    sha256: '8e377279f491c1d9c1af2ca4305c4a88a746897030c7c8f48ca748165936cec5',
+    sha256: 'ea7fb49e4f83e30414fdea73303ef309f2322000223229d93826a4b92da99d47',
   },
   {
     name: 'decision.transitioned (supersede, with `by`)',
     event: decisionTransitioned(
-      { at: '2026-07-21T00:00:00.000Z', who: 'alice', which: 'claude', subject: 'd-1' },
+      {
+        at: '2026-07-21T00:00:00.000Z',
+        who: WHO,
+        signerFp: SIGNER_FP,
+        which: 'claude',
+        subject: 'd-1',
+      },
       {
         from: 'accepted',
         to: 'superseded',
@@ -98,7 +117,7 @@ const vectors: ReadonlyArray<{ name: string; event: CatalogEvent; sha256: string
         fields: { reason: 'r' },
       },
     ),
-    sha256: 'af7a914136726ee6a484ced4d602c827e374ee5430dd71c3cafa44acd980e1ec',
+    sha256: '24793d2e053cad92ed0d0364ba8f6a8d51b004507a37a645cabbb54ba4012700',
   },
 ];
 
@@ -115,6 +134,6 @@ describe('canonicalization golden vectors — the byte format must not drift sil
     // frozen hash pins the normalized result, so a change to normalization is a
     // change to the format, caught here.
     const nfd = taskCreated({ ...env, subject: 't-2' }, { title: 'café' });
-    expect(digest(nfd)).toBe('17488a009921589727c7ef462c1673cbb7858314e54ea23aea06fd7ebc6c0508');
+    expect(digest(nfd)).toBe('7d301648812a6079f0f480a487ffb8dd36800e82c9828acfb5b46ca4f8b23b20');
   });
 });

@@ -34,6 +34,8 @@ export {
 } from './chain/entry.js';
 export { contentRoot, entryHash, eventBytes, sha256Hex } from './chain/hash.js';
 export {
+  ANCHOR_PREFIX,
+  deriveAnchor,
   fingerprintOf,
   generateKeyPair,
   type KeyPair,

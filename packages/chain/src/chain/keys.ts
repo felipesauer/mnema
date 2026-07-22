@@ -11,6 +11,19 @@
  * The fingerprint is the SHA-256 of the raw public key, in full. The full
  * fingerprint — not a short prefix — is bound into every signed checkpoint, so
  * a signature cannot be re-pointed at a different key while looking valid.
+ *
+ * Two identities are derived from that fingerprint, of different natures:
+ *   - the SIGNER FINGERPRINT is the fingerprint itself — WHICH physical key
+ *     attested a fact. It rides on the envelope of every event alongside the
+ *     checkpoint that also binds it, so a reader knows exactly which key signed.
+ *   - the ANCHOR is a further hash of the fingerprint — WHO the key speaks for.
+ *     A machine mints its anchor from its own key with no coordination, so two
+ *     offline clones can never derive the same one; that uniqueness by
+ *     construction is what forecloses a false identity merge at the root. Today,
+ *     with one machine and one key, the anchor is the degenerate one-key set:
+ *     `anchor = sha256(fingerprint)`. The two only diverge once several keys are
+ *     brought under one anchor, a later concern; carrying both from the first
+ *     event is what lets that happen without ever changing the event's shape.
  */
 
 import {
@@ -43,6 +56,25 @@ export function generateKeyPair(): KeyPair {
 export function fingerprintOf(publicKey: KeyObject): string {
   const raw = publicKey.export({ type: 'spki', format: 'der' });
   return createHash('sha256').update(raw).digest('hex');
+}
+
+/**
+ * The prefix that marks an anchor id, so a reader can tell an anchor from a
+ * bare fingerprint at a glance and a future scheme has a namespace to grow in.
+ * Cosmetic — it carries no meaning beyond "this is a mnema identity anchor".
+ */
+export const ANCHOR_PREFIX = 'mnid:';
+
+/**
+ * Derives the anchor id — WHO a key speaks for — from a signer fingerprint. A
+ * further SHA-256 over the fingerprint (not the fingerprint itself) so the
+ * anchor is a distinct value from the physical-key identity, leaving room for
+ * several keys to fold under one anchor later without the anchor ever being one
+ * of their fingerprints. Deterministic: the same fingerprint always yields the
+ * same anchor, and no two distinct fingerprints share one.
+ */
+export function deriveAnchor(signerFp: string): string {
+  return ANCHOR_PREFIX + createHash('sha256').update(signerFp).digest('hex');
 }
 
 /** Serializes a public key to PEM text (what gets committed). */

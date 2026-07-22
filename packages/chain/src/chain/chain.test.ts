@@ -32,7 +32,12 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-const env = (subject: string) => ({ at: '2026-07-21T00:00:00.000Z', who: 'felipe', subject });
+const env = (subject: string) => ({
+  at: '2026-07-21T00:00:00.000Z',
+  who: 'mnid:aa',
+  signerFp: 'fp-1',
+  subject,
+});
 
 function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentBytes?: number }) {
   const w = openChainForWriting(root, opts);

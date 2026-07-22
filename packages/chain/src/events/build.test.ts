@@ -13,7 +13,7 @@ import {
 import { canonicalStringify } from './canonical.js';
 import { toCanonical } from './parse.js';
 
-const env = { at: '2026-07-21T00:00:00.000Z', who: 'felipe', subject: 's-1' };
+const env = { at: '2026-07-21T00:00:00.000Z', who: 'mnid:aa', signerFp: 'fp-1', subject: 's-1' };
 
 describe('event builders', () => {
   it('stamp the latest version and kind', () => {
@@ -24,6 +24,19 @@ describe('event builders', () => {
       v: 1,
       kind: 'task.transitioned',
     });
+  });
+
+  it('carry the required envelope identity fields (who anchor + signer fingerprint)', () => {
+    // who and signerFp are mandatory on every event: who is the anchor that
+    // authorized it, signerFp the key that signed it. A builder never drops them.
+    for (const event of [
+      runStarted(env, { agent: 'a' }),
+      taskCreated(env, { title: 't' }),
+      taskTransitioned(env, { from: null, to: 'draft', action: 'create' }),
+    ]) {
+      expect(event.who).toBe('mnid:aa');
+      expect(event.signerFp).toBe('fp-1');
+    }
   });
 
   it('OMIT absent optional fields rather than setting them to undefined', () => {

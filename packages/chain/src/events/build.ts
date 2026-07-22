@@ -17,9 +17,17 @@ type EnvelopeInput = Omit<Envelope, 'v' | 'kind'>;
 
 /** Copies only the defined envelope fields, never writing an explicit undefined. */
 function envelopeFields(input: EnvelopeInput): EnvelopeInput {
-  const base: { at: string; who: string; subject: string; which?: string; run?: string } = {
+  const base: {
+    at: string;
+    who: string;
+    signerFp: string;
+    subject: string;
+    which?: string;
+    run?: string;
+  } = {
     at: input.at,
     who: input.who,
+    signerFp: input.signerFp,
     subject: input.subject,
   };
   if (input.which !== undefined) base.which = input.which;
