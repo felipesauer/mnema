@@ -676,6 +676,39 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     expect(result.ok).toBe(false);
     expect(result.issues.some((i) => i.detail.includes('names tail'))).toBe(true);
   });
+
+  it('rejects a RELABELED residual tail: link.tail rewritten and the keyless hash chain recomputed', () => {
+    // The sharper attack the naive relocation test above misses: after copying a
+    // residual tail into a fabricated directory, the attacker ALSO rewrites every
+    // `link.tail` to the fake name and recomputes the (keyless) hash chain — so
+    // `link.tail == <dir>` holds again. No key is needed. The only thing left to
+    // catch it is that the fabricated directory name is not a committed key
+    // fingerprint. Without that binding this counted every event twice, green.
+    const w = writeSome(2, { checkpointEvery: 1000 });
+    void w;
+    const realFp = tailIdOf(root);
+    const fake = 'f'.repeat(64);
+    cpDir(join(root, 'tails', realFp), join(root, 'tails', fake));
+    const upcasters = catalogUpcasters();
+    const seg = orderedSegments({ root }, fake)[0] as string;
+    const entries = readFileSync(seg, 'utf-8')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as RawEntry);
+    let prev: string | null = null;
+    for (const entry of entries) {
+      entry.link.tail = fake; // relabel so link.tail == <dir> again
+      entry.link.prev = prev;
+      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
+      entry.link.hash = entryHash({ event, tail: fake, seq: entry.link.seq, prev });
+      prev = entry.link.hash;
+    }
+    writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => /not a committed key fingerprint/.test(i.detail))).toBe(true);
+  });
 });
 
 describe('chain — who != which binding survives a canonical-form bypass (audit)', () => {

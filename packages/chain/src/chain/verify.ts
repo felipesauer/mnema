@@ -121,11 +121,29 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   const tailResults: TailResult[] = [];
   const allIssues: TailIssue[] = [];
   let uncheckpointed = 0;
+  // A tail directory is named by the fingerprint of the key that owns it (the
+  // writer's tailId IS its fingerprint). Bind the directory name to a committed
+  // key: a tail whose name is not a committed public-key fingerprint is not a
+  // real tail. Without this, the per-entry `link.tail == <dir>` check only proves
+  // a tail is internally consistent with its own — attacker-chosen — directory
+  // name; a party can copy a tail into `tails/<fabricated>/`, relabel every
+  // `link.tail`, recompute the keyless hash chain (no key needed), and have
+  // verify count the same events twice, green. Requiring the directory to be a
+  // committed fingerprint ties it to the roster and closes that duplication.
+  const committedFingerprints = new Set(listPublicKeyFingerprints(layout));
 
   for (const tail of tails) {
     const entries = readTailEntries(layout, tail, upcasters);
     const issues: TailIssue[] = [];
 
+    if (!committedFingerprints.has(tail)) {
+      issues.push({
+        tail,
+        layer: 'T2/T4',
+        seq: 0,
+        detail: `tail ${tail} is not a committed key fingerprint (fabricated or relocated tail)`,
+      });
+    }
     verifyHashChain(tail, entries, issues);
     const checkpointedThrough = verifyCheckpoints(layout, tail, entries, issues);
 
@@ -385,7 +403,7 @@ function verifyCheckpoints(
  * decide whether `which` and `who` are the same identity, never to rewrite the
  * signed bytes — the event records the identity exactly as it was written.
  */
-function canonicalIdentityForm(value: string): string {
+export function canonicalIdentityForm(value: string): string {
   return value.normalize('NFC').trim();
 }
 

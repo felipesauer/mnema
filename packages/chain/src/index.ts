@@ -55,6 +55,7 @@ export {
 } from './chain/store.js';
 export {
   type CensusNote,
+  canonicalIdentityForm,
   type TailIssue,
   type TailResult,
   type VerifyResult,
