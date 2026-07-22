@@ -42,6 +42,23 @@
  * any residual exists. This closes the fabricated-tail vector for a key that is
  * NOT enrolled (its events fail membership), which is what a keyless adversary
  * has to reach for.
+ *
+ * The asymmetry that governs which enrollment facts the fold trusts from that
+ * residual window: an ADDITION (`identity.founded`, `key.enrolled`) can only
+ * empower events that name the added key, and a keyless party can only forge such
+ * events in the residual — which are already untrusted (fullySigned=false). A
+ * REVOCATION is the opposite: it removes a key that judges OTHER, possibly
+ * checkpointed, events. So a residual `key.revoked` could let a keyless party
+ * fabricate a tail under a real enrolled fingerprint (permitted in the residual),
+ * revoke another member from it, and thereby flip an HONEST, fully-signed chain
+ * to failing — a denial-of-authenticity with no key. To close that, a
+ * `key.revoked` takes effect ONLY when it is itself signature-covered (within a
+ * verified checkpoint range): a keyless party cannot checkpoint a fabricated tail
+ * (a checkpoint needs the tail's private key), so their revocation stays residual
+ * and never removes a key. A legitimate revocation is made effective by its owner
+ * checkpointing it (the identity operation does so at once). Additions do not need
+ * this gate — they cannot invalidate signed history — so an enroll made before a
+ * checkpoint still lets its key write in the same residual window.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -82,12 +99,20 @@ interface TailCursor {
  *
  * The public keys are needed only to verify a `key.enrolled`'s reverse
  * signature (the new key's proof-of-possession), read from the committed roster.
+ *
+ * `checkpointedThroughByTail` gives the highest signature-covered seq per tail
+ * (-1 if none). It gates only `key.revoked`: a revocation removes a key that
+ * judges other events, so it must itself be signed to be trusted — see the
+ * module doc. Additions (founded/enrolled) are not gated.
  */
 export function resolveIdentity(
   layout: ChainLayout,
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  checkpointedThroughByTail: ReadonlyMap<string, number>,
 ): IdentityResolution {
   const order = totalOrder(entriesByTail);
+  const isCheckpointed = (tail: string, seq: number): boolean =>
+    seq <= (checkpointedThroughByTail.get(tail) ?? -1);
   const validKeys = new Map<string, Set<string>>();
   const issues: IdentityIssue[] = [];
 
@@ -178,6 +203,12 @@ export function resolveIdentity(
           });
           break;
         }
+        // A revocation removes a key that judges OTHER events, so it is trusted
+        // to take effect only when signature-covered. A residual (uncheckpointed)
+        // revoke is ignored — a keyless party cannot sign a checkpoint over a
+        // fabricated tail, so this forecloses their revoking a member to flip an
+        // honest signed chain to failing. A legitimate revoker checkpoints it.
+        if (!isCheckpointed(tail, seq)) break;
         keysOf(anchor).delete(event.payload.revokedFp);
         break;
       }
