@@ -11,7 +11,11 @@
  *     against the committed public key it names. Editing an event flips the
  *     root even if every entry hash was repaired, so a forger without the
  *     private key cannot pass. An anonymous clone runs exactly this, offline,
- *     with no secret.
+ *     with no secret. And once a checkpoint verifies, every event it covers must
+ *     name the signer that attested it — its `signerFp` equals the checkpoint's
+ *     and its `who` is the anchor derived from that signer — so a party with
+ *     their own key cannot re-sign a range whose events claim a different
+ *     identity.
  *   - T3 (external witness): out of scope for local crypto. With no witness
  *     configured, the verifier says so plainly — never a green that reads as
  *     tamper-proof.
@@ -25,7 +29,7 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
-import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
+import { deriveAnchor, fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import { type ChainLayout, publicKeyPath } from './layout.js';
 import {
   listPublicKeyFingerprints,
@@ -309,6 +313,30 @@ function verifyCheckpoints(
         layer: 'T2/T4',
         seq: checkpoint.fromSeq,
         detail: `checkpoint failed: ${verdict.reason}`,
+      });
+      continue;
+    }
+    // Identity binding: the checkpoint proves this key signed this range, but
+    // that alone does not bind the identity each EVENT claims. Require every
+    // event in the range to name the signer that actually attested it
+    // (`signerFp` = the checkpoint's) and to carry the anchor derived from that
+    // signer (`who` = deriveAnchor(signerFp)). Without this a party holding their
+    // own committed key could rewrite the events' `who`/`signerFp` to a
+    // fabricated or victim identity, re-sign the range with their real key, and
+    // still verify green — the envelope's identity would be decorative. The
+    // signature integrity-protects the bytes; this makes those bytes MEAN the
+    // signer.
+    const bindingBreak = range.find(
+      (e) =>
+        e.event.signerFp !== checkpoint.signerFp || e.event.who !== deriveAnchor(e.event.signerFp),
+    );
+    if (bindingBreak !== undefined) {
+      issues.push({
+        tail,
+        layer: 'T2/T4',
+        seq: bindingBreak.link.seq,
+        detail:
+          'event identity does not bind to its signer: who/signerFp disagree with the checkpoint',
       });
       continue;
     }
