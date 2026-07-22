@@ -20,6 +20,7 @@ import { openChainForWriting, verify } from './chain.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
+import { checkpointsPath, publicKeyPath, segmentPath } from './layout.js';
 import { orderedSegments, readTailEntries } from './store.js';
 import type { ChainWriter } from './writer.js';
 
@@ -607,6 +608,106 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     } finally {
       rmSync(rootB, { recursive: true, force: true });
     }
+  });
+});
+
+describe('chain — crash resilience beyond the torn last entry (audit)', () => {
+  it('tolerates a torn last checkpoint line: verify does not throw, reads the intact prefix', () => {
+    writeSome(4, { checkpointEvery: 2 });
+    openChainForWriting(root, { checkpointEvery: 2 }).checkpoint();
+    // A crash while signing a second checkpoint leaves a partial line, no newline.
+    appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
+    // Before the fix this THREW a JSON SyntaxError out of verify — a verifier
+    // that crashes on a crash artifact instead of reporting is the worst read
+    // outcome for a proof product.
+    let result!: ReturnType<typeof verify>;
+    expect(() => {
+      result = verify(root);
+    }).not.toThrow();
+    expect(result.tails[0]?.entryCount).toBe(4);
+  });
+
+  it('a fresh writer resumes after a torn checkpoint instead of being locked out', () => {
+    writeSome(4, { checkpointEvery: 2 });
+    openChainForWriting(root, { checkpointEvery: 2 }).checkpoint();
+    appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
+    // recover() reads the checkpoints; a torn line used to throw from the
+    // constructor, wedging the machine shut on its own tail.
+    expect(() => {
+      const w = openChainForWriting(root, { checkpointEvery: 2 });
+      w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
+    }).not.toThrow();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('heals a torn last entry on recovery so the NEXT append does not bury it', () => {
+    writeSome(3, { checkpointEvery: 100 });
+    const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
+    // Crash mid-append: a partial line with no trailing newline.
+    appendFileSync(seg, '{"event":{"v":1,"kind":"task.created"');
+    // Recover + resume. Without the heal, the next complete line lands AFTER the
+    // fragment, turning the once-benign torn line into a permanent mid-file
+    // corruption that every later read throws on.
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
+    // Re-read and re-verify AFTER the resume — this is what the old recovery
+    // test never did, so it missed the resurrection of the torn fragment.
+    let result!: ReturnType<typeof verify>;
+    expect(() => {
+      result = verify(root);
+    }).not.toThrow();
+    expect(result.ok).toBe(true);
+    expect(result.tails[0]?.entryCount).toBe(4); // 3 intact + the resumed one
+  });
+});
+
+describe('chain — an entry is bound to the tail directory it lives in (audit)', () => {
+  it('rejects a residual tail relocated/duplicated under a fabricated directory name', () => {
+    // No checkpoint: the events sit in the residual window, where no checkpoint's
+    // own `tail` field can catch a relocation.
+    const w = writeSome(2, { checkpointEvery: 1000 });
+    void w;
+    const realFp = tailIdOf(root);
+    const fake = 'f'.repeat(64);
+    cpDir(join(root, 'tails', realFp), join(root, 'tails', fake));
+    const result = verify(root);
+    // Before the fix: verify green, 2 tails, every event counted twice. Now the
+    // fabricated tail is caught because its stored link.tail names the original.
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => i.detail.includes('names tail'))).toBe(true);
+  });
+});
+
+describe('chain — who != which binding survives a canonical-form bypass (audit)', () => {
+  it('rejects a which that equals who after NFC+trim (a trailing-space self-authorization)', () => {
+    // Attacker owns their own key (T3): they can sign with a committed key. They
+    // set which = who + " ": byte-distinct from who, so a raw compare passes,
+    // but the SAME identity the gate refuses as WHO_IS_WHICH.
+    const kp = generateKeyPair();
+    const fp = kp.fingerprint;
+    const who = deriveAnchor(fp);
+    const which = `${who} `;
+    const event = taskCreated(
+      { at: '2026-07-21T00:00:00.000Z', who, signerFp: fp, subject: 't-1', which },
+      { title: 'x' },
+    );
+    const hash = entryHash({ event, tail: fp, seq: 0, prev: null });
+    const line = canonicalStringify({
+      event: event as never,
+      link: { tail: fp, seq: 0, prev: null, hash },
+    });
+    mkdirSync(segmentPath({ root }, fp, 1).replace(/\/[^/]+$/, ''), { recursive: true });
+    writeFileSync(segmentPath({ root }, fp, 1), `${line}\n`);
+    mkdirSync(publicKeyPath({ root }, fp).replace(/\/[^/]+$/, ''), { recursive: true });
+    writeFileSync(publicKeyPath({ root }, fp), publicKeyToPem(kp.publicKey));
+    const cp = signCheckpoint({ tail: fp, fromSeq: 0, events: [event], prev: null, keyPair: kp });
+    appendFileSync(checkpointsPath({ root }, fp), `${serializeCheckpoint(cp)}\n`);
+
+    const result = verify(root);
+    // Before the fix (raw ===): ok true, self-authorization smuggled below the
+    // crypto. Now the canonical compare catches it.
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => i.detail.includes('identity does not bind'))).toBe(true);
   });
 });
 
