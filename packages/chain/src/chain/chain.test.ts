@@ -309,6 +309,42 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
       true,
     );
   });
+
+  it('fails a self-authorization smuggled below the signature (which === who)', () => {
+    // The gate refuses a move where the authorizing human equals the executing
+    // agent, but the gate is not on the verify path. An editor could rewrite an
+    // event so `which` equals `who` — self-authorization — re-sign with their
+    // honest key, and (before the binding guard covered `which`) verify green.
+    // The signed record must uphold the same who != which the gate enforces.
+    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    for (let i = 0; i < 3; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
+    expect(verify(root).ok).toBe(true);
+
+    const upcasters = catalogUpcasters();
+    const tail = tailIdOf(root);
+    const seg = orderedSegments({ root }, tail)[0] as string;
+
+    // Rewrite one event so `which` equals its (honest) `who` — self-authorization,
+    // keeping signerFp/who honest so only the new which-clause can catch it.
+    const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
+    const entries = lines.map((l) => JSON.parse(l) as RawEntry);
+    let prev: string | null = null;
+    for (const entry of entries) {
+      if (entry.link.seq === 1) entry.event.which = entry.event.who; // which := who
+      entry.link.prev = prev;
+      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
+      entry.link.hash = entryHash({ event, tail, seq: entry.link.seq, prev });
+      prev = entry.link.hash;
+    }
+    writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+    openChainForWriting(root).checkpoint(); // honest key re-signs the forged range
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => /identity does not bind to its signer/.test(i.detail))).toBe(
+      true,
+    );
+  });
 });
 
 describe('chain — deletion and rollback', () => {

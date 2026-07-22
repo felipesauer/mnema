@@ -326,9 +326,16 @@ function verifyCheckpoints(
     // still verify green — the envelope's identity would be decorative. The
     // signature integrity-protects the bytes; this makes those bytes MEAN the
     // signer.
+    // The same reasoning covers `which` (the agent): the gate refuses a move
+    // where the authorizing human equals the executing agent (self-authorization),
+    // and that invariant must survive to the signed record — otherwise an editor
+    // could smuggle `who === which` below the crypto and it would verify green.
+    // So when `which` is present it must differ from `who`.
     const bindingBreak = range.find(
       (e) =>
-        e.event.signerFp !== checkpoint.signerFp || e.event.who !== deriveAnchor(e.event.signerFp),
+        e.event.signerFp !== checkpoint.signerFp ||
+        e.event.who !== deriveAnchor(e.event.signerFp) ||
+        (e.event.which !== undefined && e.event.which === e.event.who),
     );
     if (bindingBreak !== undefined) {
       issues.push({
