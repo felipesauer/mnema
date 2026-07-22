@@ -431,6 +431,107 @@ describe('enrollment — revocation is prospective (scenario 3)', () => {
   });
 });
 
+describe('enrollment — a residual revocation cannot invalidate an honest signed chain', () => {
+  it('a keyless residual key.revoked on a fabricated real-fp tail does NOT flip an honest chain', () => {
+    // The denial vector: a keyless party fabricates a tail named by a REAL
+    // enrolled fingerprint (permitted in the residual window) and plants an
+    // UNCHECKPOINTED key.revoked of another member, timed before that member's
+    // signed events, trying to make the honest, fully-signed chain fail. Because
+    // a revocation takes effect only when signature-covered — and a keyless party
+    // cannot checkpoint a fabricated tail — the residual revoke is ignored.
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
+
+    // Honest, fully-signed victim chain: A founds, enrolls B, and later A writes
+    // a task — all in one checkpointed tail.
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        identityFounded(
+          { at: t(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { foundingFp: a.fingerprint },
+        ),
+        keyEnrolled(
+          { at: t(2), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+        taskCreated(
+          { at: t(5), who: anchor, signerFp: a.fingerprint, subject: 't-a' },
+          { title: 'a task' },
+        ),
+      ],
+      a,
+    );
+    expect(verify(root).ok).toBe(true);
+
+    // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL revoke
+    // of A timed (t3) between B's enrollment and A's task — NO checkpoint.
+    writeTail(
+      `${b.fingerprint}-attacker`,
+      [
+        keyRevoked(
+          { at: t(3), who: anchor, signerFp: b.fingerprint, subject: anchor },
+          { revokedFp: a.fingerprint, reason: 'evil' },
+        ),
+      ],
+      b,
+      { checkpoint: false },
+    );
+
+    // The honest chain stays green: the residual revoke never removed A.
+    const r = verify(root);
+    expect(r.ok).toBe(true);
+  });
+
+  it('a CHECKPOINTED revocation still takes effect (the gate does not disable honest revokes)', () => {
+    // The contrast: the same revoke, but signature-covered, DOES remove the key.
+    // A can only checkpoint its own tail with its own key, so this is the honest
+    // path — a member revoking another and signing the revocation.
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        identityFounded(
+          { at: t(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { foundingFp: a.fingerprint },
+        ),
+        keyEnrolled(
+          { at: t(2), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
+        ),
+        keyRevoked(
+          { at: t(3), who: anchor, signerFp: a.fingerprint, subject: anchor },
+          { revokedFp: b.fingerprint, reason: 'rotated' },
+        ),
+      ],
+      a,
+    );
+    // B writes AFTER its checkpointed revocation — rejected.
+    writeTail(
+      `${b.fingerprint}-i1`,
+      [
+        taskCreated(
+          { at: t(4), who: anchor, signerFp: b.fingerprint, subject: 't-after' },
+          { title: 'after revoke' },
+        ),
+      ],
+      b,
+    );
+    const r = verify(root);
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => /not a key enrolled/.test(i.detail))).toBe(true);
+  });
+});
+
 describe('enrollment — the residual-dup and HOLE#1 vectors', () => {
   it('rejects a fabricated tail whose fingerprint is NOT enrolled (HOLE#1 stays shut)', () => {
     // A keyless attacker fabricates a tail named by an uncommitted fingerprint

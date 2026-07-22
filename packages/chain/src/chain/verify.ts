@@ -182,7 +182,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // machine authorizes events on another), it is resolved once over the merged
   // order, and each issue is attributed back to the tail and seq of the event
   // that failed.
-  for (const identityIssue of resolveIdentity(layout, entriesByTail).issues) {
+  for (const identityIssue of resolveIdentity(layout, entriesByTail, checkpointedByTail).issues) {
     (issuesByTail.get(identityIssue.tail) ?? []).push({
       tail: identityIssue.tail,
       layer: 'T2/T4',
