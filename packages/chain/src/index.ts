@@ -44,7 +44,11 @@ export {
   sign,
   verify as verifySignature,
 } from './chain/keys.js';
-export { loadOrCreateKeyPair, persistKeyPair } from './chain/keystore.js';
+export {
+  loadOrCreateInstallationId,
+  loadOrCreateKeyPair,
+  persistKeyPair,
+} from './chain/keystore.js';
 export type { ChainLayout } from './chain/layout.js';
 export {
   listPublicKeyFingerprints,

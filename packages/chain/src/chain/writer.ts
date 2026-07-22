@@ -7,6 +7,12 @@
  * tail, there is never an in-file merge — concurrency across machines is
  * resolved by reading many tails, not by locking one file.
  *
+ * The tail id pairs the signing key's fingerprint with this installation's id,
+ * `<fingerprint>-<installationId>`. WHO a writer speaks for (the anchor) and
+ * WHICH key signs (the signer fingerprint) still come from the key alone, so
+ * two installations of one copied key share an identity but keep distinct tails
+ * — copying a key across machines no longer collides one tail onto another.
+ *
  * State (head hash, next seq, current segment) is recovered from disk on
  * construction, so a fresh process continues an existing tail correctly.
  */
@@ -51,21 +57,20 @@ export class ChainWriter {
   private readonly maxSegmentBytes: number;
   private readonly checkpointEvery: number;
 
+  private readonly tailId: string;
+
   constructor(
     private readonly layout: ChainLayout,
     private readonly keyPair: KeyPair,
+    installationId: string,
     private readonly upcasters: UpcasterRegistry,
     options: WriterOptions = {},
   ) {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
     this.checkpointEvery = options.checkpointEvery ?? DEFAULT_CHECKPOINT_EVERY;
+    this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
     this.recover();
-  }
-
-  /** The tail id is the machine's fingerprint — one tail per key. */
-  private get tailId(): string {
-    return this.keyPair.fingerprint;
   }
 
   /**

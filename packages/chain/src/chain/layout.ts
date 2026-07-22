@@ -6,15 +6,23 @@
  * directories — no in-file merge, ever. A tail is a run of sealed segment
  * files plus its append-only checkpoints.
  *
+ * A tail id is `<fingerprint>-<installationId>`: the signing key's fingerprint,
+ * then a random id minted once per installation and kept local. The fingerprint
+ * prefix ties the tail to a committed key (its owner); the installation suffix
+ * keeps two installations of the SAME key on separate tails, so copying one
+ * private key across machines yields distinct directories that merge without
+ * overwriting each other.
+ *
  *   <root>/
  *     tails/
- *       <tailId>/
+ *       <fingerprint>-<installationId>/
  *         000001.jsonl        segment (sealed once it passes the size cap)
  *         000002.jsonl        ...
  *         checkpoints.jsonl   append-only signed checkpoints for this tail
  *     keys/
- *       <fingerprint>.pub     committed public keys (one per machine)
+ *       <fingerprint>.pub     committed public keys (one per key)
  *       <fingerprint>.key     LOCAL private key (never committed)
+ *       <fingerprint>.inst    LOCAL installation id (never committed)
  */
 
 import { join } from 'node:path';
@@ -63,4 +71,13 @@ export function publicKeyPath(layout: ChainLayout, fingerprint: string): string 
 
 export function privateKeyPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}.key`);
+}
+
+/**
+ * Path to the LOCAL installation id for a key — never committed, like the
+ * private key. It holds the random suffix that distinguishes this installation's
+ * tail from another installation of the same key.
+ */
+export function installationIdPath(layout: ChainLayout, fingerprint: string): string {
+  return join(keysDir(layout), `${fingerprint}.inst`);
 }

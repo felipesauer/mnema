@@ -562,9 +562,10 @@ describe('chain — census crosses committed keys against tails on disk', () => 
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
+      const fpB = fingerprintOfTail(tailB);
       mergeTails(rootB, root);
 
-      // Remove tail B's directory but keep keys/<tailB>.pub (the merged key).
+      // Remove tail B's directory but keep keys/<fpB>.pub (the merged key).
       rmSync(join(root, 'tails', tailB), { recursive: true, force: true });
 
       const result = verify(root);
@@ -573,7 +574,7 @@ describe('chain — census crosses committed keys against tails on disk', () => 
       expect(result.tails).toHaveLength(1);
       // The census flags the orphaned key by its fingerprint.
       expect(result.census).toHaveLength(1);
-      expect(result.census[0]?.fingerprint).toBe(tailB);
+      expect(result.census[0]?.fingerprint).toBe(fpB);
       expect(result.summary).toMatch(/committed key\(s\) without a tail/);
     } finally {
       rmSync(rootB, { recursive: true, force: true });
@@ -594,11 +595,12 @@ describe('chain — census crosses committed keys against tails on disk', () => 
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
       const tailB = readdirSync(join(rootB, 'tails'))[0] as string;
+      const fpB = fingerprintOfTail(tailB);
       mergeTails(rootB, root);
 
       // Remove BOTH tail B's directory and its committed public key.
       rmSync(join(root, 'tails', tailB), { recursive: true, force: true });
-      rmSync(join(root, 'keys', `${tailB}.pub`), { force: true });
+      rmSync(join(root, 'keys', `${fpB}.pub`), { force: true });
 
       const result = verify(root);
       expect(result.ok).toBe(true);
@@ -608,6 +610,140 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     } finally {
       rmSync(rootB, { recursive: true, force: true });
     }
+  });
+});
+
+describe('chain — one key on several installations keeps distinct tails (copy-key, audit)', () => {
+  it('the same key copied to a second installation writes a DIFFERENT tail', () => {
+    // A person copies their private key to a second machine. The key is the
+    // same, so the identity (anchor, signerFp) is the same — but each
+    // installation mints its own installation id, so the tail directories
+    // differ. This is the property that stops one installation's tail from
+    // landing on the other's path.
+    const desktop = openChainForWriting(root);
+    desktop.append(taskCreated(env(desktop, 't-desktop'), { title: 'from desktop' }));
+
+    const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
+    try {
+      copyKeyOnly(root, laptopRoot); // copy the private+public key, NOT the .inst
+      const laptop = openChainForWriting(laptopRoot);
+      laptop.append(taskCreated(env(laptop, 't-laptop'), { title: 'from laptop' }));
+
+      // Same key ⇒ same identity, on both installations.
+      expect(laptop.anchor).toBe(desktop.anchor);
+      expect(laptop.signerFingerprint).toBe(desktop.signerFingerprint);
+      // Different installation ⇒ different tail directory.
+      const desktopTail = tailIdOf(root);
+      const laptopTail = tailIdOf(laptopRoot);
+      expect(laptopTail).not.toBe(desktopTail);
+      // Both tails carry the SAME fingerprint prefix (the shared key).
+      expect(fingerprintOfTail(laptopTail)).toBe(fingerprintOfTail(desktopTail));
+      expect(fingerprintOfTail(desktopTail)).toBe(desktop.signerFingerprint);
+    } finally {
+      rmSync(laptopRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('merging the two installations loses NO events and verifies green with one identity', () => {
+    // The regression that this whole change exists to prevent: with the tail id
+    // equal to the fingerprint, both installations wrote `tails/<fp>/` and the
+    // merge silently overwrote one with the other — data lost, verify still
+    // green. With a per-installation suffix the two tails are distinct, so the
+    // merge is a union: every event from both machines survives.
+    const desktop = openChainForWriting(root);
+    desktop.append(taskCreated(env(desktop, 't-d0'), { title: 'desktop 0' }));
+    desktop.append(taskCreated(env(desktop, 't-d1'), { title: 'desktop 1' }));
+    desktop.checkpoint();
+
+    const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
+    try {
+      copyKeyOnly(root, laptopRoot);
+      const laptop = openChainForWriting(laptopRoot);
+      laptop.append(taskCreated(env(laptop, 't-l0'), { title: 'laptop 0' }));
+      laptop.checkpoint();
+
+      const desktopTail = tailIdOf(root);
+      const laptopTail = tailIdOf(laptopRoot);
+
+      // Sync the laptop's tail into the desktop's chain (an offline merge). The
+      // shared public key is already present, so only the tail travels.
+      cpDir(join(laptopRoot, 'tails', laptopTail), join(root, 'tails', laptopTail));
+
+      const result = verify(root);
+      expect(result.ok).toBe(true);
+      // Two tails survive — nothing was overwritten.
+      expect(result.tails).toHaveLength(2);
+      const byTail = new Map(result.tails.map((t) => [t.tail, t.entryCount]));
+      expect(byTail.get(desktopTail)).toBe(2);
+      expect(byTail.get(laptopTail)).toBe(1);
+      // One committed key, so one identity: the census sees no orphan.
+      expect(result.census).toEqual([]);
+      expect(readdirSync(join(root, 'keys')).filter((n) => n.endsWith('.pub'))).toHaveLength(1);
+    } finally {
+      rmSync(laptopRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('still rejects a fabricated tail whose fingerprint prefix is not committed', () => {
+    // The per-installation suffix must NOT weaken the relocation guard: a tail
+    // named `<uncommitted>-<anything>` is still rejected, because its
+    // fingerprint prefix is not a committed key. This is the keyless
+    // duplication attack, now wearing the new tail-id shape.
+    const w = writeSome(2, { checkpointEvery: 1000 });
+    void w;
+    const realTail = tailIdOf(root);
+    const fake = `${'a'.repeat(64)}-deadbeefdeadbeefdeadbeefdeadbeef`; // fake fp prefix
+    cpDir(join(root, 'tails', realTail), join(root, 'tails', fake));
+    const upcasters = catalogUpcasters();
+    const seg = orderedSegments({ root }, fake)[0] as string;
+    const entries = readFileSync(seg, 'utf-8')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as RawEntry);
+    let prev: string | null = null;
+    for (const entry of entries) {
+      entry.link.tail = fake; // relabel so link.tail == <dir>
+      entry.link.prev = prev;
+      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
+      entry.link.hash = entryHash({ event, tail: fake, seq: entry.link.seq, prev });
+      prev = entry.link.hash;
+    }
+    writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => /no committed key fingerprint/.test(i.detail))).toBe(true);
+  });
+
+  it('still verifies a tail named by a bare fingerprint (no installation suffix)', () => {
+    // A tail directory that is exactly a committed fingerprint — no `-<id>`
+    // suffix — must still be accepted: the whole name is on the roster. This
+    // pins that the prefix rule did not stop matching the un-suffixed form.
+    const kp = generateKeyPair();
+    const fp = kp.fingerprint;
+    const who = deriveAnchor(fp);
+    const event = taskCreated(
+      { at: '2026-07-21T00:00:00.000Z', who, signerFp: fp, subject: 't-bare' },
+      { title: 'bare' },
+    );
+    const hash = entryHash({ event, tail: fp, seq: 0, prev: null });
+    const line = canonicalStringify({
+      event: event as never,
+      link: { tail: fp, seq: 0, prev: null, hash },
+    });
+    // The tail directory IS the bare fingerprint.
+    mkdirSync(segmentPath({ root }, fp, 1).replace(/\/[^/]+$/, ''), { recursive: true });
+    writeFileSync(segmentPath({ root }, fp, 1), `${line}\n`);
+    mkdirSync(publicKeyPath({ root }, fp).replace(/\/[^/]+$/, ''), { recursive: true });
+    writeFileSync(publicKeyPath({ root }, fp), publicKeyToPem(kp.publicKey));
+    const cp = signCheckpoint({ tail: fp, fromSeq: 0, events: [event], prev: null, keyPair: kp });
+    appendFileSync(checkpointsPath({ root }, fp), `${serializeCheckpoint(cp)}\n`);
+
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.tails).toHaveLength(1);
+    expect(result.tails[0]?.tail).toBe(fp);
+    expect(result.census).toEqual([]);
   });
 });
 
@@ -682,8 +818,8 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     // residual tail into a fabricated directory, the attacker ALSO rewrites every
     // `link.tail` to the fake name and recomputes the (keyless) hash chain — so
     // `link.tail == <dir>` holds again. No key is needed. The only thing left to
-    // catch it is that the fabricated directory name is not a committed key
-    // fingerprint. Without that binding this counted every event twice, green.
+    // catch it is that the fabricated directory's fingerprint is not a committed
+    // key. Without that binding this counted every event twice, green.
     const w = writeSome(2, { checkpointEvery: 1000 });
     void w;
     const realFp = tailIdOf(root);
@@ -707,7 +843,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
 
     const result = verify(root);
     expect(result.ok).toBe(false);
-    expect(result.issues.some((i) => /not a committed key fingerprint/.test(i.detail))).toBe(true);
+    expect(result.issues.some((i) => /no committed key fingerprint/.test(i.detail))).toBe(true);
   });
 });
 
@@ -748,6 +884,12 @@ describe('chain — who != which binding survives a canonical-form bypass (audit
 
 function tailIdOf(chainRoot: string): string {
   return readdirSync(join(chainRoot, 'tails'))[0] as string;
+}
+
+/** The fingerprint of a tail directory: the part before its last `-`. */
+function fingerprintOfTail(tail: string): string {
+  const lastDash = tail.lastIndexOf('-');
+  return lastDash === -1 ? tail : tail.slice(0, lastDash);
 }
 
 interface RawEntry {
@@ -848,4 +990,20 @@ function mergeTails(fromRoot: string, intoRoot: string): void {
 function cpDir(from: string, into: string): void {
   mkdirSync(into, { recursive: true });
   cpSync(from, into, { recursive: true });
+}
+
+/**
+ * Copies a key pair (both `.key` and `.pub`) from one chain into another,
+ * WITHOUT the local `.inst` — simulating a person moving their private key to a
+ * second machine. The new installation then mints its own installation id.
+ */
+function copyKeyOnly(fromRoot: string, intoRoot: string): void {
+  const fromKeys = join(fromRoot, 'keys');
+  const intoKeys = join(intoRoot, 'keys');
+  mkdirSync(intoKeys, { recursive: true });
+  for (const name of readdirSync(fromKeys)) {
+    if (name.endsWith('.key') || name.endsWith('.pub')) {
+      writeFileSync(join(intoKeys, name), readFileSync(join(fromKeys, name), 'utf-8'));
+    }
+  }
 }
