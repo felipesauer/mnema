@@ -4,7 +4,7 @@ import { canonicalStringify } from './canonical.js';
 import { parseEvent, toCanonical } from './parse.js';
 import { catalogUpcasters } from './registry.js';
 
-const env = { at: '2026-07-21T00:00:00.000Z', who: 'felipe', subject: 's-1' };
+const env = { at: '2026-07-21T00:00:00.000Z', who: 'mnid:aa', signerFp: 'fp-1', subject: 's-1' };
 
 describe('catalogUpcasters', () => {
   it('round-trips every catalog kind through build → canonical → parse', () => {

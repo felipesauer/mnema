@@ -35,7 +35,17 @@ export class EventParseError extends Error {
 }
 
 /** The envelope fields every kind carries, in canonical membership. */
-const ENVELOPE_FIELDS = ['v', 'kind', 'at', 'who', 'which', 'run', 'subject', 'payload'] as const;
+const ENVELOPE_FIELDS = [
+  'v',
+  'kind',
+  'at',
+  'who',
+  'signerFp',
+  'which',
+  'run',
+  'subject',
+  'payload',
+] as const;
 
 /** The payload fields each kind declares. Anything else is rejected. */
 const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] } = {
@@ -100,6 +110,7 @@ interface RebuiltEnvelope {
   kind: string;
   at: string;
   who: string;
+  signerFp: string;
   subject: string;
   which?: string;
   run?: string;
@@ -114,6 +125,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
   );
   requireString(event.kind, 'at', event.at);
   requireString(event.kind, 'who', event.who);
+  requireString(event.kind, 'signerFp', event.signerFp);
   requireString(event.kind, 'subject', event.subject);
   requireOptionalString(event.kind, 'which', event.which);
   requireOptionalString(event.kind, 'run', event.run);
@@ -122,6 +134,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
     kind: event.kind,
     at: event.at,
     who: event.who,
+    signerFp: event.signerFp,
     subject: event.subject,
   };
   if (event.which !== undefined) rebuilt.which = event.which;

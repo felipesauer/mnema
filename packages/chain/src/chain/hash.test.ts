@@ -4,7 +4,12 @@ import { taskCreated } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { contentRoot, entryHash, eventBytes } from './hash.js';
 
-const env = (subject: string) => ({ at: '2026-07-21T00:00:00.000Z', who: 'felipe', subject });
+const env = (subject: string) => ({
+  at: '2026-07-21T00:00:00.000Z',
+  who: 'mnid:aa',
+  signerFp: 'fp-1',
+  subject,
+});
 const ev = (title: string): CatalogEvent => taskCreated(env('t-1'), { title });
 
 describe('contentRoot — framing rules out concatenation collisions', () => {
