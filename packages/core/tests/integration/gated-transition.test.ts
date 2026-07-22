@@ -74,14 +74,17 @@ describe('createTask', () => {
       expect(result.entries[1].event.kind).toBe('task.transitioned');
     }
     expect(stateOf('t-1')).toBe('DRAFT');
-    expect(eventCount()).toBe(2);
+    // The founding (seq 0) precedes the birth pair on a fresh installation.
+    expect(eventCount()).toBe(3);
   });
 
   it('stamps both birth events with one uniform `at`', () => {
     createTask(ctx(), { id: 't-1', title: 't' });
     const events = orderedEvents(layout, upcasters);
-    expect(events[0]?.at).toBe(events[1]?.at);
-    expect(events[0]?.at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    // events[0] is the founding; the birth pair is events[1] and events[2],
+    // which share one `at`.
+    expect(events[1]?.at).toBe(events[2]?.at);
+    expect(events[1]?.at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 
   it('refuses creation where the agent IS the authorizing anchor, and writes nothing', () => {
@@ -106,6 +109,7 @@ describe('createTask', () => {
     const boom = {
       anchor: writer.anchor,
       signerFingerprint: writer.signerFingerprint,
+      hasAnchor: true, // already founded, so ensureFounded is a no-op here
       appendAll() {
         throw new Error('disk full');
       },
@@ -129,7 +133,8 @@ describe('transitionTask — authorized moves persist and project', () => {
     const result = transitionTask(ctx(), { id: 't-1', action: 'submit', which: 'claude' });
     expect(result).toMatchObject({ ok: true, to: 'READY' });
     expect(stateOf('t-1')).toBe('READY');
-    expect(eventCount()).toBe(3);
+    // founding + birth pair + this transition.
+    expect(eventCount()).toBe(4);
   });
 
   it('records `to` from the workflow, not the caller, and carries proof through', () => {

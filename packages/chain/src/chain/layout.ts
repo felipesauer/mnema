@@ -23,6 +23,7 @@
  *       <fingerprint>.pub     committed public keys (one per key)
  *       <fingerprint>.key     LOCAL private key (never committed)
  *       <fingerprint>.inst    LOCAL installation id (never committed)
+ *       <fingerprint>.anchor  LOCAL anchor this key serves (never committed)
  */
 
 import { join } from 'node:path';
@@ -80,4 +81,17 @@ export function privateKeyPath(layout: ChainLayout, fingerprint: string): string
  */
 export function installationIdPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}.inst`);
+}
+
+/**
+ * Path to the LOCAL anchor this key serves — never committed, like the private
+ * key. It records WHICH anchor this installation's events authorize as: the
+ * anchor it founded (its own, `deriveAnchor(fingerprint)`), or one it enrolled
+ * into (another key's anchor). Kept local because committing it would let a
+ * copied key drag a fixed anchor across machines and defeat the per-installation
+ * separation the `.inst` provides. When absent, the machine has not yet recorded
+ * an anchor and founds its own on first use.
+ */
+export function anchorPath(layout: ChainLayout, fingerprint: string): string {
+  return join(keysDir(layout), `${fingerprint}.anchor`);
 }

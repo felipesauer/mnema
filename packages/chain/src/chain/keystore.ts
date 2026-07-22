@@ -26,6 +26,7 @@ import {
   publicKeyToPem,
 } from './keys.js';
 import {
+  anchorPath,
   type ChainLayout,
   installationIdPath,
   keysDir,
@@ -97,4 +98,28 @@ export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: str
   mkdirSync(keysDir(layout), { recursive: true });
   writeFileSync(path, `${installationId}\n`, { encoding: 'utf-8', mode: 0o600 });
   return installationId;
+}
+
+/**
+ * Reads the anchor this key serves, or null when none is recorded yet. Local
+ * and uncommitted, like the installation id: it says WHICH anchor this
+ * installation authorizes as. A machine with no recorded anchor founds its own
+ * on first use.
+ */
+export function readAnchor(layout: ChainLayout, fingerprint: string): string | null {
+  const path = anchorPath(layout, fingerprint);
+  if (!existsSync(path)) return null;
+  const value = readFileSync(path, 'utf-8').trim();
+  return value.length > 0 ? value : null;
+}
+
+/**
+ * Records the anchor this key serves — the anchor it founded (its own) or one it
+ * enrolled into. Written once and never committed; a second write with the same
+ * value is a harmless no-op, a write with a different value would change which
+ * identity this installation speaks for and is the caller's decision to make.
+ */
+export function writeAnchor(layout: ChainLayout, fingerprint: string, anchor: string): void {
+  mkdirSync(keysDir(layout), { recursive: true });
+  writeFileSync(anchorPath(layout, fingerprint), `${anchor}\n`, { encoding: 'utf-8', mode: 0o600 });
 }

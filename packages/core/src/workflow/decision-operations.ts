@@ -40,6 +40,7 @@ import { orderedEvents } from '../projections/order.js';
 import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
+import { ensureFounded } from './identity-operations.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
 export interface DecisionWriteContext {
@@ -164,6 +165,9 @@ export function recordDecision(
   // consistent with what the chain actually proves at this moment.
   const adr = `ADR-${decisions.size + 1}`;
 
+  // Found this installation's anchor before the birth pair, so both events'
+  // signer is a key valid for its anchor at verify. A no-op once founded.
+  ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const birth = decisionBirth(
     {
@@ -265,6 +269,9 @@ function transition(
 
   const which = canonicalIdentity(input.which);
 
+  // Found this installation's anchor before its first fact, so the transition's
+  // signer is a key valid for its anchor at verify. A no-op once founded.
+  ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const event = decisionTransitioned(
     {
