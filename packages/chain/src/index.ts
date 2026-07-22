@@ -13,7 +13,7 @@
 export const PACKAGE_NAME = '@mnema/chain';
 
 // The chain.
-export { openChainForWriting, verify } from './chain/chain.js';
+export { type OpenOptions, openChainForWriting, verify } from './chain/chain.js';
 export {
   type Checkpoint,
   CheckpointParseError,
@@ -52,6 +52,7 @@ export {
 export {
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
+  materializePublicKey,
   persistKeyPair,
   readAnchor,
   writeAnchor,

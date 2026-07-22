@@ -49,7 +49,8 @@ const upcasters: UpcasterRegistry = catalogUpcasters();
 
 function openMachine(prefix: string): Machine {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  const writer = openChainForWriting(root);
+  // keyRoot == chainRoot: each machine keeps its key beside its one chain here.
+  const writer = openChainForWriting(root, { keyRoot: root });
   return { root, writer, fingerprint: writer.signerFingerprint };
 }
 
@@ -168,7 +169,7 @@ describe('enrollment e2e — the core founds on first use', () => {
   it('a plain createTask founds the anchor implicitly and verifies green', () => {
     const ctxA = ctxOf(a);
     // No explicit foundIdentity — createTask must found on first use.
-    const created = createTask(ctxA, { id: 't-1', title: 'ship', which: 'claude' });
+    const created = createTask(ctxA, { title: 'ship', which: 'claude' });
     expect(created.ok).toBe(true);
     a.writer.checkpoint();
     const r = verify(a.root);

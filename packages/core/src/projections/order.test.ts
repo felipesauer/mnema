@@ -35,7 +35,7 @@ function mergeTails(from: string, into: string): void {
 
 describe('orderedEvents — single tail preserves seq order', () => {
   it('returns events in the order they were appended', () => {
-    const w = openChainForWriting(rootA);
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
     w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: 'first' }));
     w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: 'second' }));
     w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'third' }));
@@ -46,10 +46,10 @@ describe('orderedEvents — single tail preserves seq order', () => {
 
 describe('orderedEvents — multi-tail is total and deterministic', () => {
   it('interleaves two tails by timestamp', () => {
-    const a = openChainForWriting(rootA);
+    const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', '2026-07-21T00:00:00.000Z'), { title: 'a1' }));
     a.append(taskCreated(env('a-2', '2026-07-21T00:00:02.000Z'), { title: 'a2' }));
-    const b = openChainForWriting(rootB);
+    const b = openChainForWriting(rootB, { keyRoot: rootB });
     b.append(taskCreated(env('b-1', '2026-07-21T00:00:01.000Z'), { title: 'b1' }));
     mergeTails(rootB, rootA);
 
@@ -62,9 +62,9 @@ describe('orderedEvents — multi-tail is total and deterministic', () => {
     // Both events share the SAME timestamp. The order must still be total and
     // must not depend on which tail happened to be read first.
     const sameAt = '2026-07-21T00:00:00.000Z';
-    const a = openChainForWriting(rootA);
+    const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', sameAt), { title: 'a1' }));
-    const b = openChainForWriting(rootB);
+    const b = openChainForWriting(rootB, { keyRoot: rootB });
     b.append(taskCreated(env('b-1', sameAt), { title: 'b1' }));
     mergeTails(rootB, rootA);
 
@@ -80,7 +80,7 @@ describe('orderedEvents — multi-tail is total and deterministic', () => {
     // Three events in one tail with identical `at`: seq is the tie-break, so
     // append order is preserved (the hash chain proves that order).
     const sameAt = '2026-07-21T00:00:00.000Z';
-    const a = openChainForWriting(rootA);
+    const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', sameAt), { title: 'a1' }));
     a.append(taskCreated(env('a-2', sameAt), { title: 'a2' }));
     a.append(taskCreated(env('a-3', sameAt), { title: 'a3' }));
@@ -95,7 +95,7 @@ describe('orderedEvents — within-tail proven order beats a non-monotonic clock
     // EARLIER `at` than the one before it. The proven order is seq2 then seq3;
     // the wall-clock says the opposite. `seq` must win — anything else lets the
     // cache contradict the chain it is derived from.
-    const w = openChainForWriting(rootA);
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
     const [c, b] = taskBirth(env('t-1', '2026-07-21T00:00:05.000Z'), {
       title: 't',
       initial: 'draft',

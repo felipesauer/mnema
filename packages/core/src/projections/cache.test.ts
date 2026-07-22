@@ -55,7 +55,7 @@ function writeTaskMovedTo(w: ChainWriter, id: string, initial: string, to: strin
 
 describe('ProjectionCache — rebuild materializes the chain', () => {
   it('projects a task after rebuild', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
 
     const cache = openCache();
@@ -71,7 +71,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
   });
 
   it('is empty before rebuild (in-memory cache starts blank)', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'done');
     const cache = openCache();
     expect(cache.listTasks()).toEqual([]); // not populated until rebuild
@@ -80,7 +80,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
   });
 
   it('queries tasks by current state', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'done');
     writeTaskMovedTo(w, 't-2', 'draft', 'in-progress');
     writeTaskMovedTo(w, 't-3', 'draft', 'done');
@@ -94,7 +94,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
 
 describe('ProjectionCache — the cache is NOT the source (drop and replay)', () => {
   it('rebuilds identical state after the cache is wiped, from the chain alone', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
     writeTaskMovedTo(w, 't-2', 'triage', 'done');
 
@@ -117,7 +117,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
   });
 
   it('a rebuild reflects the chain even after the cache was hand-corrupted', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'done');
 
     const cache = openCache();
@@ -131,7 +131,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
   });
 
   it('rebuild is idempotent: running it twice yields the same rows', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'ready');
     writeTaskMovedTo(w, 't-2', 'draft', 'done');
 
@@ -143,7 +143,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
   });
 
   it('picks up new events appended to the chain on the next rebuild', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
 
     const cache = openCache();
@@ -164,9 +164,9 @@ describe('ProjectionCache — multi-tail materialization', () => {
   it('projects tasks written across two merged tails', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-cache-b-'));
     try {
-      const a = openChainForWriting(chainRoot);
+      const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
       writeTaskMovedTo(a, 't-a', 'draft', 'done');
-      const b = openChainForWriting(rootB);
+      const b = openChainForWriting(rootB, { keyRoot: rootB });
       writeTaskMovedTo(b, 't-b', 'triage', 'in-progress');
       // Offline merge: copy B's tail and key into A's chain.
       cpSync(join(rootB, 'tails'), join(chainRoot, 'tails'), { recursive: true });
@@ -185,7 +185,7 @@ describe('ProjectionCache — multi-tail materialization', () => {
 
 describe('ProjectionCache — runs', () => {
   it('projects an open run, then reflects its close on the next rebuild', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(runStarted(env('r-1', 0), { agent: 'claude', goal: 'ship' }));
 
     const cache = openCache();
@@ -210,7 +210,7 @@ describe('ProjectionCache — runs', () => {
   });
 
   it('rebuilds runs identically after the cache is wiped, from the chain alone', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(runStarted(env('r-1', 0), { agent: 'claude' }));
     w.append(runEnded(env('r-1', 1), { outcome: 'ok' }));
     w.append(runStarted(env('r-2', 2), { agent: 'cursor', goal: 'explore' }));
@@ -232,7 +232,7 @@ describe('ProjectionCache — runs', () => {
   });
 
   it('projects tasks and runs from the same chain side by side', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'draft', 'done');
     w.append(runStarted(env('r-1', 3), { agent: 'claude' }));
 
@@ -267,7 +267,7 @@ describe('ProjectionCache — decisions', () => {
   }
 
   it('materializes a decision and queries it by state', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeDecision(w, 'd-1', 'ADR-1', 'accepted', 'accept');
     writeDecision(w, 'd-2', 'ADR-2', 'proposed', 'create');
 
@@ -278,7 +278,7 @@ describe('ProjectionCache — decisions', () => {
   });
 
   it('reports an ADR label collision through the cache', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeDecision(w, 'd-1', 'ADR-1', 'proposed', 'create');
     writeDecision(w, 'd-2', 'ADR-1', 'proposed', 'create'); // same label, distinct ids
 
@@ -288,7 +288,7 @@ describe('ProjectionCache — decisions', () => {
   });
 
   it('rebuilds decisions identically after the cache is wiped', () => {
-    const w = openChainForWriting(chainRoot);
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeDecision(w, 'd-1', 'ADR-1', 'accepted', 'accept');
 
     const dbPath = join(chainRoot, 'cache.db');

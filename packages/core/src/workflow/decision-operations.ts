@@ -33,7 +33,7 @@ import {
   type TransitionFields,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { canonicalId } from '../identity/id.js';
+import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
@@ -60,8 +60,6 @@ export type DecisionWriteError =
    * included — the subject of a supersede is the decision being superseded.
    */
   | { readonly ok: false; readonly code: 'UNKNOWN_DECISION'; readonly message: string }
-  /** A record reused an id that already names a decision. */
-  | { readonly ok: false; readonly code: 'ALREADY_RECORDED'; readonly message: string }
   /** A supersede named a successor `by` that does not exist (a dangling link). */
   | { readonly ok: false; readonly code: 'UNKNOWN_BY'; readonly message: string };
 
@@ -87,8 +85,6 @@ export interface DecisionTransitionOk {
 
 /** What the caller asks to record. */
 export interface RecordInput {
-  /** The new decision's id (the event subject). The caller mints it. */
-  readonly id: string;
   readonly title: string;
   readonly rationale: string;
   /** The agent that executed it, if any. `who` is derived from the writer's key. */
@@ -116,10 +112,13 @@ export interface SupersedeInput extends DecisionTransitionInput {
 }
 
 /**
- * Records a new decision: derives the frozen `ADR-<n>` label from the current
- * decision count, then appends the birth pair (`decision.recorded` then the
- * birth `decision.transitioned`, `from: null` → proposed) atomically. Birth is
- * not a gated transition, but it still requires a human `who` who is not the
+ * Records a new decision: mints its id, derives the frozen `ADR-<n>` label from
+ * the current decision count, then appends the birth pair (`decision.recorded`
+ * then the birth `decision.transitioned`, `from: null` → proposed) atomically.
+ * The id is minted by the operation, never supplied (see {@link mintId}); the
+ * `ADR-<n>` label is separate — a human-citable rubric layered OVER the id, not
+ * the identity, so it stays caller-independent and frozen at write time. Birth
+ * is not a gated transition, but it still requires a human `who` who is not the
  * executing agent — the same authority invariant the gate enforces.
  */
 export function recordDecision(
@@ -138,31 +137,19 @@ export function recordDecision(
     };
   }
 
-  // Take the subject id in the chain's canonical form — the SAME form it is
-  // stored and read back in — so the duplicate check below (and every later
-  // lookup) keys on the identical string the projection does. An id the chain
-  // cannot represent is refused, never appended and then thrown on.
-  const id = canonicalId(input.id);
-  if (id === undefined) {
-    return { ok: false, code: 'UNKNOWN_DECISION', message: `"${input.id}" is not a usable id` };
-  }
+  // The id is minted here, not chosen by the caller: derived from randomness so
+  // two offline clones never mint the same one. That is what dissolves the
+  // reused-id case entirely — a caller cannot ask to record an id that already
+  // exists, so there is no duplicate to refuse. It is canonical by construction.
+  const id = mintId();
 
+  // Derive the citable label from the writer's local view and FREEZE it. Reading
+  // the count from the chain (the source of truth), not the cache, keeps the
+  // number consistent with what the chain actually proves at this moment. Unlike
+  // the id, the label can collide between offline clones (both mint `ADR-7`);
+  // that is a legibility clash the projection surfaces, never a merge (the ids
+  // stay distinct).
   const decisions = projectedDecisions(ctx);
-  // Refuse a reused id (the mirror of UNKNOWN_DECISION on a transition). A
-  // second record for the same subject would fold onto the same projection —
-  // silently rewriting its frozen label and birth time, and losing the number
-  // the first record minted. An id names exactly one decision, once.
-  if (decisions.has(id)) {
-    return {
-      ok: false,
-      code: 'ALREADY_RECORDED',
-      message: `decision "${id}" is already recorded`,
-    };
-  }
-
-  // Derive the label from the writer's local view and FREEZE it. Reading the
-  // count from the chain (the source of truth), not the cache, keeps the number
-  // consistent with what the chain actually proves at this moment.
   const adr = `ADR-${decisions.size + 1}`;
 
   // Found this installation's anchor before the birth pair, so both events'

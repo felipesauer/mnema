@@ -67,9 +67,23 @@ function found(w: ChainWriter): ChainWriter {
   return w;
 }
 
+/**
+ * Opens a writer for a chain root, with its key root the SAME directory — the
+ * simple layout these tests want (the key pair, materialized pub, installation
+ * id, and tails all under one root, exactly the pre-keyRoot shape). The
+ * separate-keyRoot model has its own dedicated tests; here keyRoot == chainRoot
+ * keeps each test focused on what it exercises (hash chain, checkpoint, verify).
+ */
+function openChain(
+  chainRoot: string,
+  opts?: { checkpointEvery?: number; maxSegmentBytes?: number },
+): ChainWriter {
+  return openChainForWriting(chainRoot, { keyRoot: chainRoot, ...opts });
+}
+
 /** Opens a writer and founds its anchor in one step. */
 function openFounded(opts?: { checkpointEvery?: number; maxSegmentBytes?: number }): ChainWriter {
-  return found(openChainForWriting(root, opts));
+  return found(openChain(root, opts));
 }
 
 function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentBytes?: number }) {
@@ -169,7 +183,7 @@ describe('chain — appendAll writes a batch atomically', () => {
   });
 
   it('an empty batch writes nothing', () => {
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openChain(root, { checkpointEvery: 100 });
     expect(w.appendAll([])).toEqual([]);
     expect(readTailEntries({ root }, tailIdOf(root), catalogUpcasters())).toHaveLength(0);
   });
@@ -212,7 +226,7 @@ describe('chain — T1 (hash chain) catches corruption and reordering', () => {
 describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not stored hashes)', () => {
   it('catches a content edit even after ALL entry hashes are repaired', () => {
     writeSome(6, { checkpointEvery: 100 });
-    const w = openChainForWriting(root);
+    const w = openChain(root);
     w.checkpoint(); // sign a checkpoint over all 6
 
     // Adversary edits event 3's content AND repairs the keyless hash chain so
@@ -229,7 +243,7 @@ describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not st
 
   it('a checkpoint verifies with the right key and fails with a wrong-content range', () => {
     writeSome(4, { checkpointEvery: 100 });
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
     // Sanity: unedited chain with a signed checkpoint verifies green.
     expect(verify(root).ok).toBe(true);
   });
@@ -238,7 +252,7 @@ describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not st
 describe('chain — T4 (anonymous verify with only committed material)', () => {
   it('verifies from public keys + files, with the private key removed', () => {
     writeSome(5, { checkpointEvery: 2 });
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
     // Simulate a clone that has no private key (never committed).
     removePrivateKeys(root);
     const result = verify(root);
@@ -247,7 +261,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
 
   it('fails if the committed public key is swapped for a different one', () => {
     writeSome(4, { checkpointEvery: 2 });
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
     swapPublicKeyForAStranger(root);
     const result = verify(root);
     expect(result.ok).toBe(false);
@@ -262,7 +276,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // catches it is re-deriving the loaded key's fingerprint and matching it to
     // the claimed one.
     writeSome(6, { checkpointEvery: 100 });
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
     expect(verify(root).ok).toBe(true);
 
     const upcasters = catalogUpcasters();
@@ -332,7 +346,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // recovers over the rewritten entries and checkpoints them. Its .pub is
     // untouched, so fingerprint-binding passes — but every event now claims
     // `fakeFp`/`fakeWho`, which the signer never was.
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
 
     const result = verify(root);
     expect(result.ok).toBe(false);
@@ -375,7 +389,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
-    openChainForWriting(root).checkpoint(); // honest key re-signs the forged range
+    openChain(root).checkpoint(); // honest key re-signs the forged range
 
     const result = verify(root);
     expect(result.ok).toBe(false);
@@ -388,7 +402,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
 describe('chain — deletion and rollback', () => {
   it('catches deletion of a checkpointed entry (range no longer matches)', () => {
     writeSome(6, { checkpointEvery: 100 });
-    openChainForWriting(root).checkpoint(); // signs 0..5
+    openChain(root).checkpoint(); // signs 0..5
     // Adversary deletes the last checkpointed entry (seq 5): only 0..4 remain,
     // but the checkpoint still claims 0..5.
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
@@ -407,8 +421,8 @@ describe('chain — deletion and rollback', () => {
     // so a party without the key can add one and T1 stays green. verify must
     // count it as residual and say plainly it is not signed — never imply it is.
     writeSome(4, { checkpointEvery: 100 });
-    openChainForWriting(root).checkpoint(); // signs 0..3
-    const w = openChainForWriting(root);
+    openChain(root).checkpoint(); // signs 0..3
+    const w = openChain(root);
     w.append(taskCreated(env(w, 't-forged'), { title: 'appended after checkpoint' }));
     const result = verify(root);
     expect(result.uncheckpointedEvents).toBe(1);
@@ -493,7 +507,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     expect(result.ok).toBe(true);
     expect(result.tails[0]?.entryCount).toBe(5);
     // A fresh writer recovers and can continue.
-    const w = openChainForWriting(root);
+    const w = openChain(root);
     expect(() =>
       w.append(taskCreated(env(w, 't-next'), { title: 'after recovery' })),
     ).not.toThrow();
@@ -513,7 +527,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
 describe('chain — fullySigned distinguishes authenticated from residual', () => {
   it('is true only when every event is covered by a verified signature', () => {
     writeSome(4, { checkpointEvery: 100 });
-    openChainForWriting(root).checkpoint();
+    openChain(root).checkpoint();
     const result = verify(root);
     expect(result.ok).toBe(true);
     expect(result.fullySigned).toBe(true);
@@ -535,7 +549,7 @@ describe('chain — segmentation by size', () => {
 
   it('recovers writer state across process restarts (continues the same tail)', () => {
     writeSome(3, { checkpointEvery: 100 });
-    const w2 = openChainForWriting(root); // fresh writer, same tail
+    const w2 = openChain(root); // fresh writer, same tail
     w2.append(taskTransitioned(env(w2, 't-0'), { from: 'ready', to: 'done', action: 'finish' }));
     const result = verify(root);
     expect(result.ok).toBe(true);
@@ -549,11 +563,11 @@ describe('chain — aggregation across tails (multi-machine)', () => {
     // simulate an offline merge (each machine wrote its own tail).
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
-      const a = openChainForWriting(root);
+      const a = openChain(root);
       found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
-      const b = openChainForWriting(rootB);
+      const b = openChain(rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -572,11 +586,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
   it('baseline: every tail has its key, so no census note (a two-machine chain)', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
-      const a = openChainForWriting(root);
+      const a = openChain(root);
       found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
-      const b = openChainForWriting(rootB);
+      const b = openChain(rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -598,11 +612,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     // the adversarial one (a tail removed to hide events) at once.
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
-      const a = openChainForWriting(root);
+      const a = openChain(root);
       found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
-      const b = openChainForWriting(rootB);
+      const b = openChain(rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -633,11 +647,11 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     // witness (a git history of the committed files) can.
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
-      const a = openChainForWriting(root);
+      const a = openChain(root);
       found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
-      const b = openChainForWriting(rootB);
+      const b = openChain(rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -667,13 +681,13 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     // installation mints its own installation id, so the tail directories
     // differ. This is the property that stops one installation's tail from
     // landing on the other's path.
-    const desktop = openChainForWriting(root);
+    const desktop = openChain(root);
     desktop.append(taskCreated(env(desktop, 't-desktop'), { title: 'from desktop' }));
 
     const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
     try {
       copyKeyOnly(root, laptopRoot); // copy the private+public key, NOT the .inst
-      const laptop = openChainForWriting(laptopRoot);
+      const laptop = openChain(laptopRoot);
       laptop.append(taskCreated(env(laptop, 't-laptop'), { title: 'from laptop' }));
 
       // Same key ⇒ same identity, on both installations.
@@ -710,7 +724,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
     try {
       copyKeyOnly(root, laptopRoot);
-      const laptop = found(openChainForWriting(laptopRoot));
+      const laptop = found(openChain(laptopRoot));
       laptop.append(taskCreated(env(laptop, 't-l0'), { title: 'laptop 0' }));
       laptop.checkpoint();
 
@@ -817,7 +831,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
 describe('chain — crash resilience beyond the torn last entry (audit)', () => {
   it('tolerates a torn last checkpoint line: verify does not throw, reads the intact prefix', () => {
     writeSome(4, { checkpointEvery: 2 });
-    openChainForWriting(root, { checkpointEvery: 2 }).checkpoint();
+    openChain(root, { checkpointEvery: 2 }).checkpoint();
     // A crash while signing a second checkpoint leaves a partial line, no newline.
     appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
     // Before the fix this THREW a JSON SyntaxError out of verify — a verifier
@@ -832,12 +846,12 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
 
   it('a fresh writer resumes after a torn checkpoint instead of being locked out', () => {
     writeSome(4, { checkpointEvery: 2 });
-    openChainForWriting(root, { checkpointEvery: 2 }).checkpoint();
+    openChain(root, { checkpointEvery: 2 }).checkpoint();
     appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
     // recover() reads the checkpoints; a torn line used to throw from the
     // constructor, wedging the machine shut on its own tail.
     expect(() => {
-      const w = openChainForWriting(root, { checkpointEvery: 2 });
+      const w = openChain(root, { checkpointEvery: 2 });
       w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
     }).not.toThrow();
     expect(verify(root).ok).toBe(true);
@@ -851,7 +865,7 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
     // Recover + resume. Without the heal, the next complete line lands AFTER the
     // fragment, turning the once-benign torn line into a permanent mid-file
     // corruption that every later read throws on.
-    const w = openChainForWriting(root, { checkpointEvery: 100 });
+    const w = openChain(root, { checkpointEvery: 100 });
     w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
     // Re-read and re-verify AFTER the resume — this is what the old recovery
     // test never did, so it missed the resurrection of the torn fragment.
@@ -1067,7 +1081,7 @@ function swapPublicKeyForAStranger(chainRoot: string): void {
   const pub = readdirSync(dir).find((n) => n.endsWith('.pub')) as string;
   const strangerRoot = mkdtempSync(join(tmpdir(), 'mnema-stranger-'));
   try {
-    openChainForWriting(strangerRoot); // mints a fresh pair
+    openChain(strangerRoot); // mints a fresh pair
     const strangerPub = readdirSync(join(strangerRoot, 'keys')).find((n) =>
       n.endsWith('.pub'),
     ) as string;
