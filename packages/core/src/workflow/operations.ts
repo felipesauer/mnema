@@ -11,9 +11,14 @@
  * Reading the current state comes from the chain itself (the source of truth),
  * not the SQLite cache — a stale cache must never let an illegal move through.
  * Each operation stamps `at` from one uniform clock so events across tails
- * interleave consistently, and records the canonical `who`/`which` — the same
- * form the identity rule validated — so what was judged legal is what the event
- * proves.
+ * interleave consistently.
+ *
+ * Identity is DERIVED, never supplied. `who` (the authorizing anchor) and
+ * `signerFp` (the signing key) both come from the writer's own key — the very
+ * key that will sign the checkpoint — so a caller cannot forge who authorized a
+ * fact by typing a name. The caller supplies at most `which` (the executing
+ * agent). `who != which` still holds: an anchor hash never collides with an
+ * agent name.
  */
 
 import {
@@ -26,6 +31,7 @@ import {
   taskTransitioned,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import { canonicalId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
@@ -74,9 +80,7 @@ export interface TransitionInput {
   readonly action: string;
   /** Proof and context for the move. */
   readonly fields?: TransitionFields;
-  /** The human who authorized it. */
-  readonly who: string;
-  /** The agent that executed it, if any. */
+  /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
@@ -87,9 +91,7 @@ export interface CreateInput {
   /** The new task's id (the event subject). The caller mints it. */
   readonly id: string;
   readonly title: string;
-  /** The human who authorized the creation. */
-  readonly who: string;
-  /** The agent that executed it, if any. */
+  /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
@@ -105,24 +107,29 @@ export function transitionTask(
   ctx: WriteContext,
   input: TransitionInput,
 ): TransitionOk | WriteError {
-  const current = currentState(ctx, input.id);
-  if (current === undefined) {
+  // Look the task up in the chain's canonical id form — the SAME form its
+  // subject is stored and read back in — so the lookup key matches the
+  // projection's, and a composition variant of the id cannot false-miss. (The
+  // decision operations already do this; the task now agrees.)
+  const id = canonicalId(input.id);
+  const current = id === undefined ? undefined : currentState(ctx, id);
+  if (id === undefined || current === undefined) {
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
 
+  // `who` is the writer's anchor, derived from its key, never supplied — a
+  // caller cannot forge who authorized the move. The gate still checks it
+  // against `which` so an agent cannot pose as the authorizer.
+  const who = ctx.writer.anchor;
   const verdict = gate({
     from: current,
     action: input.action,
     ...(input.fields !== undefined ? { fields: input.fields } : {}),
-    who: input.who,
+    who,
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
   if (!verdict.ok) return verdict;
 
-  // Record the SAME canonical identity the gate validated, never the raw input:
-  // what was judged legal is what the event proves. The gate already accepted a
-  // canonical `who`, so this cannot be undefined here.
-  const who = canonicalIdentity(input.who) as string;
   const which = canonicalIdentity(input.which);
 
   const at = (ctx.clock ?? systemClock)();
@@ -130,7 +137,8 @@ export function transitionTask(
     {
       at,
       who,
-      subject: input.id,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: id,
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
@@ -149,22 +157,16 @@ export function transitionTask(
  * Creates a task: appends the birth pair (`task.created` then the birth
  * `task.transitioned`, `from: null` → the initial state) in order, both stamped
  * with one `at`. Birth is not a gated transition — there is no prior state to
- * judge — but it still requires a human `who`, and `who` must not be the
+ * judge — but it still binds a `who` (the writer's anchor) that must not be the
  * executing agent `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
-  // Birth applies the SAME identity rule as a gated transition: canonicalize
-  // once, then validate and record that canonical form. A `who` that is not a
-  // real string or is empty once trimmed is no human; a `which` that equals
-  // `who` is an agent authorizing itself.
-  const who = canonicalIdentity(input.who);
-  if (who === undefined) {
-    return {
-      ok: false,
-      code: 'MISSING_WHO',
-      message: 'creating a task needs a human who authorized it',
-    };
-  }
+  // `who` is derived from the writer's key, so it is always a real anchor — the
+  // MISSING_WHO path a typed-in name could hit no longer exists. The one
+  // authority check that remains is that the executing agent is not that same
+  // identity (an anchor never equals an agent name, but the check is cheap and
+  // states the invariant explicitly).
+  const who = ctx.writer.anchor;
   const which = canonicalIdentity(input.which);
   if (which !== undefined && which === who) {
     return {
@@ -174,12 +176,18 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
     };
   }
 
+  const id = canonicalId(input.id);
+  if (id === undefined) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `"${input.id}" is not a usable id` };
+  }
+
   const at = (ctx.clock ?? systemClock)();
   const birth = taskBirth(
     {
       at,
       who,
-      subject: input.id,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: id,
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
@@ -189,7 +197,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // state, permanently burning the id (the projection drops a stateless
   // subject, so every later transition on it fails as UNKNOWN_TASK).
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id: input.id, entries: [e1, e2] };
+  return { ok: true, id, entries: [e1, e2] };
 }
 
 /**

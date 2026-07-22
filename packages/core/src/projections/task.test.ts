@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { projectTasks } from './task.js';
 
 const at = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
-const env = (subject: string, n: number) => ({ at: at(n), who: 'felipe', subject });
+const env = (subject: string, n: number) => ({
+  at: at(n),
+  who: 'felipe',
+  signerFp: 'fp-1',
+  subject,
+});
 
 describe('projectTasks — the single reader rule', () => {
   it('projects a task from its birth pair with the initial state', () => {

@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { projectRuns } from './run.js';
 
 const at = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
-const env = (subject: string, n: number, who = 'felipe') => ({ at: at(n), who, subject });
+const env = (subject: string, n: number, who = 'felipe') => ({
+  at: at(n),
+  who,
+  signerFp: 'fp-1',
+  subject,
+});
 
 describe('projectRuns — the reader rule', () => {
   it('projects an open run from run.started with its agent, authorizer, and goal', () => {
