@@ -38,7 +38,12 @@ function openCache(dbPath?: string): ProjectionCache {
 }
 
 const at = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
-const env = (subject: string, n: number) => ({ at: at(n), who: 'felipe', subject });
+const env = (subject: string, n: number) => ({
+  at: at(n),
+  who: 'felipe',
+  signerFp: 'fp-1',
+  subject,
+});
 
 /** Appends a task that is born and then moved once. */
 function writeTaskMovedTo(w: ChainWriter, id: string, initial: string, to: string): void {

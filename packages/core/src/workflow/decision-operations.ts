@@ -90,9 +90,7 @@ export interface RecordInput {
   readonly id: string;
   readonly title: string;
   readonly rationale: string;
-  /** The human who authorized the decision. */
-  readonly who: string;
-  /** The agent that executed it, if any. */
+  /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
@@ -104,9 +102,7 @@ export interface DecisionTransitionInput {
   readonly id: string;
   /** Proof and context for the move. */
   readonly fields?: TransitionFields;
-  /** The human who authorized it. */
-  readonly who: string;
-  /** The agent that executed it, if any. */
+  /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
@@ -129,14 +125,9 @@ export function recordDecision(
   ctx: DecisionWriteContext,
   input: RecordInput,
 ): RecordOk | DecisionWriteError {
-  const who = canonicalIdentity(input.who);
-  if (who === undefined) {
-    return {
-      ok: false,
-      code: 'MISSING_WHO',
-      message: 'recording a decision needs a human who authorized it',
-    };
-  }
+  // `who` is derived from the writer's key, always a real anchor; the only
+  // authority check left is that the executing agent is not that identity.
+  const who = ctx.writer.anchor;
   const which = canonicalIdentity(input.which);
   if (which !== undefined && which === who) {
     return {
@@ -178,6 +169,7 @@ export function recordDecision(
     {
       at,
       who,
+      signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
@@ -243,13 +235,15 @@ function transition(
     };
   }
 
+  // `who` is the writer's anchor, derived from its key, never supplied.
+  const who = ctx.writer.anchor;
   const verdict = decisionGate({
     from: current.state,
     action,
     ...(input.fields !== undefined ? { fields: input.fields } : {}),
     ...(by !== undefined ? { by } : {}),
     subject: id,
-    who: input.who,
+    who,
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
   if (!verdict.ok) return verdict;
@@ -269,7 +263,6 @@ function transition(
     }
   }
 
-  const who = canonicalIdentity(input.who) as string;
   const which = canonicalIdentity(input.which);
 
   const at = (ctx.clock ?? systemClock)();
@@ -277,6 +270,7 @@ function transition(
     {
       at,
       who,
+      signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),

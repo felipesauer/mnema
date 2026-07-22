@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 const upcasters = catalogUpcasters();
-const env = (subject: string, at: string) => ({ at, who: 'felipe', subject });
+const env = (subject: string, at: string) => ({ at, who: 'felipe', signerFp: 'fp-1', subject });
 
 /** Copies tail B's directory and public key into A's chain (an offline merge). */
 function mergeTails(from: string, into: string): void {

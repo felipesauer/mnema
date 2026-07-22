@@ -20,7 +20,6 @@ import {
 } from './decision-operations.js';
 
 const upcasters = catalogUpcasters();
-const WHO = 'felipe';
 const WHICH = 'claude';
 
 let root: string;
@@ -64,7 +63,6 @@ describe('recordDecision — the frozen ADR label', () => {
       id: 'd-1',
       title: 'Use SQLite',
       rationale: 'Relational load.',
-      who: WHO,
       which: WHICH,
     });
     expect(result.ok).toBe(true);
@@ -80,7 +78,7 @@ describe('recordDecision — the frozen ADR label', () => {
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
     for (const id of ['d-1', 'd-2', 'd-3']) {
-      recordDecision(ctx, { id, title: id, rationale: 'r', who: WHO });
+      recordDecision(ctx, { id, title: id, rationale: 'r' });
       tick();
     }
     const d = decisionsOf(root);
@@ -89,27 +87,31 @@ describe('recordDecision — the frozen ADR label', () => {
     expect(d.get('d-3')?.adr).toBe('ADR-3');
   });
 
-  it('refuses a decision with no human who', () => {
+  it('records the writer anchor as who, distinct from the signing fingerprint', () => {
     const w = openChainForWriting(root);
     const { clock } = fixedClock();
     const result = recordDecision(contextFor(w, root, clock), {
       id: 'd-1',
       title: 't',
       rationale: 'r',
-      who: '   ',
     });
-    expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
+    expect(result.ok).toBe(true);
+    for (const e of orderedEvents({ root }, upcasters)) {
+      expect(e.who).toBe(w.anchor);
+      expect(e.signerFp).toBe(w.signerFingerprint);
+    }
+    expect(w.anchor.startsWith('mnid:')).toBe(true);
+    expect(w.anchor).not.toBe(w.signerFingerprint);
   });
 
-  it('refuses a decision an agent authorized for itself', () => {
+  it('refuses a decision where the agent IS the authorizing anchor', () => {
     const w = openChainForWriting(root);
     const { clock } = fixedClock();
     const result = recordDecision(contextFor(w, root, clock), {
       id: 'd-1',
       title: 't',
       rationale: 'r',
-      who: 'claude',
-      which: 'claude',
+      which: w.anchor,
     });
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
   });
@@ -118,10 +120,10 @@ describe('recordDecision — the frozen ADR label', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    const first = recordDecision(ctx, { id: 'd-1', title: 'a', rationale: 'r', who: WHO });
+    const first = recordDecision(ctx, { id: 'd-1', title: 'a', rationale: 'r' });
     expect(first.ok && first.adr).toBe('ADR-1');
     tick();
-    const dup = recordDecision(ctx, { id: 'd-1', title: 'b', rationale: 'r', who: WHO });
+    const dup = recordDecision(ctx, { id: 'd-1', title: 'b', rationale: 'r' });
     expect(dup).toMatchObject({ ok: false, code: 'ALREADY_RECORDED' });
     // The first record is untouched: still ADR-1, still its own title.
     const d = decisionsOf(root).get('d-1');
@@ -144,9 +146,9 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     const a = openChainForWriting(root);
     const ca = fixedClock();
     const ctxA = contextFor(a, root, ca.clock);
-    recordDecision(ctxA, { id: 'd-aaa', title: 'a', rationale: 'r', who: WHO });
+    recordDecision(ctxA, { id: 'd-aaa', title: 'a', rationale: 'r' });
     ca.tick();
-    const cited = recordDecision(ctxA, { id: 'd-ccc', title: 'c', rationale: 'r', who: WHO });
+    const cited = recordDecision(ctxA, { id: 'd-ccc', title: 'c', rationale: 'r' });
     expect(cited.ok && cited.adr).toBe('ADR-2'); // the human cites "ADR-2" = d-ccc
 
     // Clone B (its own tail/key): a concurrent decision, also ADR-1 locally.
@@ -156,7 +158,6 @@ describe('the frozen number does not slip when a concurrent decision merges in',
       id: 'd-bbb',
       title: 'b',
       rationale: 'r',
-      who: WHO,
     });
 
     // Offline merge: B's tail and key land in A's chain.
@@ -178,14 +179,12 @@ describe('the frozen number does not slip when a concurrent decision merges in',
       id: 'd-aaa',
       title: 'a',
       rationale: 'r',
-      who: WHO,
     });
     const b = openChainForWriting(rootB);
     recordDecision(contextFor(b, rootB, fixedClock().clock), {
       id: 'd-bbb',
       title: 'b',
       rationale: 'r',
-      who: WHO,
     });
     cpSync(join(rootB, 'tails'), join(root, 'tails'), { recursive: true });
     cpSync(join(rootB, 'keys'), join(root, 'keys'), { recursive: true });
@@ -200,11 +199,11 @@ describe('the decision transitions are gated against the chain', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r' });
     tick();
-    const missing = acceptDecision(ctx, { id: 'd-1', who: WHO });
+    const missing = acceptDecision(ctx, { id: 'd-1' });
     expect(missing).toMatchObject({ ok: false, code: 'MISSING_PROOF' });
-    const ok = acceptDecision(ctx, { id: 'd-1', fields: { note: 'agreed' }, who: WHO });
+    const ok = acceptDecision(ctx, { id: 'd-1', fields: { note: 'agreed' } });
     expect(ok).toMatchObject({ ok: true, to: 'accepted' });
     expect(decisionsOf(root).get('d-1')?.state).toBe('accepted');
   });
@@ -213,9 +212,9 @@ describe('the decision transitions are gated against the chain', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r' });
     tick();
-    const ok = rejectDecision(ctx, { id: 'd-1', fields: { note: 'no' }, who: WHO });
+    const ok = rejectDecision(ctx, { id: 'd-1', fields: { note: 'no' } });
     expect(ok).toMatchObject({ ok: true, to: 'rejected' });
   });
 
@@ -225,7 +224,6 @@ describe('the decision transitions are gated against the chain', () => {
     const result = acceptDecision(contextFor(w, root, clock), {
       id: 'd-ghost',
       fields: { note: 'n' },
-      who: WHO,
     });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
   });
@@ -234,11 +232,11 @@ describe('the decision transitions are gated against the chain', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-1', title: 't', rationale: 'r' });
     tick();
-    acceptDecision(ctx, { id: 'd-1', fields: { note: 'ok' }, who: WHO });
+    acceptDecision(ctx, { id: 'd-1', fields: { note: 'ok' } });
     tick();
-    const again = acceptDecision(ctx, { id: 'd-1', fields: { note: 'again' }, who: WHO });
+    const again = acceptDecision(ctx, { id: 'd-1', fields: { note: 'again' } });
     expect(again).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
   });
 });
@@ -248,22 +246,21 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    recordDecision(ctx, { id: 'd-1', title: 'old', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-1', title: 'old', rationale: 'r' });
     tick();
-    recordDecision(ctx, { id: 'd-2', title: 'new', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-2', title: 'new', rationale: 'r' });
     tick();
     return { ctx, tick };
   }
 
   it('supersedes an accepted decision and links both sides', () => {
     const { ctx, tick } = twoDecisions();
-    acceptDecision(ctx, { id: 'd-1', fields: { note: 'ok' }, who: WHO });
+    acceptDecision(ctx, { id: 'd-1', fields: { note: 'ok' } });
     tick();
     const ok = supersedeDecision(ctx, {
       id: 'd-1',
       by: 'd-2',
       fields: { reason: 'replaced' },
-      who: WHO,
     });
     expect(ok).toMatchObject({ ok: true, to: 'superseded' });
     const d = decisionsOf(root);
@@ -278,7 +275,6 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
       id: 'd-1',
       by: 'd-2',
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(ok).toMatchObject({ ok: true, to: 'superseded' });
   });
@@ -289,7 +285,6 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
       id: 'd-1',
       by: 'd-ghost',
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_BY' });
     // Nothing was written — d-1 is still proposed.
@@ -302,7 +297,6 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
       id: 'd-1',
       by: 'd-1',
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(result).toMatchObject({ ok: false, code: 'SELF_SUPERSEDE' });
   });
@@ -313,7 +307,6 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
       id: 'd-ghost',
       by: 'd-2',
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
   });
@@ -331,15 +324,14 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
     const w = openChainForWriting(root);
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
-    recordDecision(ctx, { id: 'd-old', title: 'old', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-old', title: 'old', rationale: 'r' });
     tick();
-    recordDecision(ctx, { id: nfd, title: 'new', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: nfd, title: 'new', rationale: 'r' });
     tick();
     const ok = supersedeDecision(ctx, {
       id: 'd-old',
       by: nfd,
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(ok).toMatchObject({ ok: true, to: 'superseded' });
     const d = decisionsOf(root);
@@ -351,15 +343,14 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
   it('refuses to supersede an already-superseded decision (terminal)', () => {
     const { ctx, tick } = twoDecisions();
     // Record a third to be a second successor candidate.
-    recordDecision(ctx, { id: 'd-3', title: 'newer', rationale: 'r', who: WHO });
+    recordDecision(ctx, { id: 'd-3', title: 'newer', rationale: 'r' });
     tick();
-    supersedeDecision(ctx, { id: 'd-1', by: 'd-2', fields: { reason: 'r' }, who: WHO });
+    supersedeDecision(ctx, { id: 'd-1', by: 'd-2', fields: { reason: 'r' } });
     tick();
     const again = supersedeDecision(ctx, {
       id: 'd-1',
       by: 'd-3',
       fields: { reason: 'r' },
-      who: WHO,
     });
     expect(again).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
   });
