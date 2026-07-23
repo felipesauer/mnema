@@ -17,6 +17,7 @@ import { runInit } from './commands/init.js';
 import { runTask } from './commands/task.js';
 import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
+import { buildMcpServer } from './mcp/server.js';
 
 /** Where the CLI writes, and how it signals failure — injected for testing. */
 export interface CliIo {
@@ -103,6 +104,17 @@ export function buildProgram(io: CliIo = processIo): Command {
         }
         io.fail();
       }
+    });
+
+  program
+    .command('mcp')
+    .description('run the mnema MCP server over stdio (for an agent host)')
+    .action(async () => {
+      // stdout carries the JSON-RPC protocol, so the server writes every
+      // diagnostic to stderr. This action does not return until the transport
+      // closes — the process serves for the life of the connection.
+      const { connect } = buildMcpServer({ env: discoveryEnv(), log: (line) => io.err(line) });
+      await connect();
     });
 
   return program;

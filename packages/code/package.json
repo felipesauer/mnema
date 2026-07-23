@@ -26,7 +26,9 @@
   },
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "homepage": "https://felipesauer.github.io/mnema/",
   "repository": {
     "type": "git",
@@ -44,7 +46,10 @@
   },
   "dependencies": {
     "@mnema/chain": "workspace:*",
+    "@mnema/copilot": "workspace:*",
     "@mnema/core": "workspace:*",
-    "commander": "^15.0.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^15.0.0",
+    "zod": "^4.4.3"
   }
 }
