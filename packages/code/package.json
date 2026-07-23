@@ -43,6 +43,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "@mnema/core": "workspace:*"
+    "@mnema/chain": "workspace:*",
+    "@mnema/core": "workspace:*",
+    "commander": "^15.0.0"
   }
 }

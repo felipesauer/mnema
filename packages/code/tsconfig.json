@@ -8,5 +8,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts", "dist"],
-  "references": [{ "path": "../core" }]
+  "references": [{ "path": "../chain" }, { "path": "../core" }]
 }
