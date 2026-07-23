@@ -53,16 +53,11 @@ export {
   materializeTasks,
 } from './projections/task-store.js';
 export {
-  APP_DIR,
   chainRootForScope,
   type DiscoveryEnv,
-  GLOBAL_DIR,
-  IDENTITY_DIR,
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,
-  PRIVATE_DIR,
-  PROJECT_DIR,
   type ResolvedTrees,
   resolveScope,
   resolveTrees,
