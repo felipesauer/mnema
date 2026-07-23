@@ -26,6 +26,16 @@ importers:
 
   packages/chain: {}
 
+  packages/copilot:
+    dependencies:
+      '@mnema/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@mnema/chain':
+        specifier: workspace:*
+        version: link:../chain
+
   packages/core:
     dependencies:
       '@mnema/chain':
