@@ -12,6 +12,8 @@ import {
   openChainForWriting,
   runEnded,
   runStarted,
+  skillBirth,
+  skillTransitioned,
   taskBirth,
   taskTransitioned,
 } from '@mnema/chain';
@@ -461,6 +463,63 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
     expect(second.listObservationsAbout('t-1')).toEqual(before.obs);
     expect(second.listHandoffs('t-1')).toEqual(before.handoffs);
     expect(second.listLinksFrom('m-1')).toEqual(before.links);
+  });
+});
+
+describe('ProjectionCache — skills', () => {
+  /** Writes a skill born proposed and moved to `to` via the given action. */
+  function writeSkill(w: ChainWriter, id: string, to: string, action: string): void {
+    const [created, transitioned] = skillBirth(env(id, 0), {
+      name: `n ${id}`,
+      body: `b ${id}`,
+      initial: 'proposed',
+    });
+    w.append(created);
+    w.append(transitioned);
+    if (to !== 'proposed') {
+      w.append(
+        skillTransitioned(env(id, 1), { from: 'proposed', to, action, fields: { note: 'n' } }),
+      );
+    }
+  }
+
+  it('materializes a skill and queries it by state', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeSkill(w, 'sk-1', 'reviewed', 'review');
+    writeSkill(w, 'sk-2', 'proposed', 'create');
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getSkill('sk-1')).toEqual({
+      id: 'sk-1',
+      name: 'n sk-1',
+      body: 'b sk-1',
+      state: 'reviewed',
+      createdAt: at(0),
+      updatedAt: at(1),
+    });
+    expect(cache.listSkillsByState('proposed').map((s) => s.id)).toEqual(['sk-2']);
+    expect(cache.listSkillsByState('reviewed').map((s) => s.id)).toEqual(['sk-1']);
+  });
+
+  it('rebuilds skills identically after the cache is wiped, from the chain alone', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeSkill(w, 'sk-1', 'reviewed', 'review');
+    writeSkill(w, 'sk-2', 'proposed', 'create');
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = first.listSkills();
+    first.close();
+    caches = caches.filter((c) => c !== first);
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    expect(second.listSkills()).toEqual(before);
   });
 });
 

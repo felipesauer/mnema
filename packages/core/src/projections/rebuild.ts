@@ -36,6 +36,8 @@ import {
 import { orderedEvents } from './order.js';
 import { projectRuns } from './run.js';
 import { materializeRuns } from './run-store.js';
+import { projectSkills } from './skill.js';
+import { materializeSkills } from './skill-store.js';
 import { projectTasks } from './task.js';
 import { materializeTasks } from './task-store.js';
 
@@ -56,6 +58,7 @@ export function rebuild(
   const observations = projectObservations(events);
   const handoffs = projectHandoffs(events);
   const links = projectLinks(events);
+  const skills = projectSkills(events);
 
   const replace = db.transaction(() => {
     dropProjections(db);
@@ -67,6 +70,7 @@ export function rebuild(
     materializeObservations(db, observations.values());
     materializeHandoffs(db, handoffs.values());
     materializeLinks(db, links);
+    materializeSkills(db, skills.values());
   });
   replace();
 }

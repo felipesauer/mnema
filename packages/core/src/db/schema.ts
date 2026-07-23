@@ -26,6 +26,7 @@ export const PROJECTION_TABLES = [
   'observations',
   'handoffs',
   'links',
+  'skills',
 ] as const;
 
 const SCHEMA = `
@@ -160,6 +161,25 @@ CREATE TABLE IF NOT EXISTS links (
 -- is as fast as "what links out of X" — the bidirectional reachability the
 -- supersede's two columns give, generalized to an edge set.
 CREATE INDEX IF NOT EXISTS idx_links_target ON links (target);
+
+CREATE TABLE IF NOT EXISTS skills (
+  -- The skill's id (the event subject). One row per skill.
+  id         TEXT PRIMARY KEY NOT NULL,
+  -- The short title of the pattern, from skill.created.
+  name       TEXT NOT NULL,
+  -- The reusable pattern itself, from skill.created.
+  body       TEXT NOT NULL,
+  -- Current state: the 'to' of the skill's last transition. A skill is not
+  -- relational (no supersede columns) — replacement between skills is a link.
+  state      TEXT NOT NULL,
+  -- 'at' of skill.created, and of the last transition.
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+
+-- Speeds the by-state queries: the 'adopted' skills are the live patterns the
+-- copilot surfaces; 'proposed'/'reviewed' are the curation backlog.
+CREATE INDEX IF NOT EXISTS idx_skills_state ON skills (state);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

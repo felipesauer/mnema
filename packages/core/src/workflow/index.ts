@@ -65,6 +65,41 @@ export {
   type WriteContext,
   type WriteError,
 } from './operations.js';
+export {
+  type SkillGateErr,
+  type SkillGateErrorCode,
+  type SkillGateOk,
+  type SkillGateRequest,
+  type SkillGateResult,
+  skillGate,
+} from './skill-gate.js';
+export {
+  adoptSkill,
+  createSkill,
+  deprecateSkill,
+  rejectSkill,
+  reviewSkill,
+  type SkillCreateInput,
+  type SkillCreateOk,
+  type SkillTransitionInput,
+  type SkillTransitionOk,
+  type SkillWriteContext,
+  type SkillWriteError,
+} from './skill-operations.js';
+export {
+  INITIAL_SKILL_STATE,
+  isSkillState,
+  SKILL_STATES,
+  type SkillState,
+} from './skill-states.js';
+export {
+  findSkillTransition,
+  SKILL_ACTIONS,
+  SKILL_TRANSITIONS,
+  type SkillAction,
+  type SkillProofField,
+  type SkillTransition,
+} from './skill-transitions.js';
 export { INITIAL_STATE, isTaskState, TASK_STATES, type TaskState } from './states.js';
 export {
   findTransition,

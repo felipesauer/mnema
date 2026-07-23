@@ -33,6 +33,8 @@ import {
 import { rebuild } from './rebuild.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
+import type { SkillProjection } from './skill.js';
+import { getSkill, listSkills, listSkillsByState } from './skill-store.js';
 import type { TaskProjection } from './task.js';
 import { getTask, listTasks, listTasksByState } from './task-store.js';
 
@@ -162,6 +164,21 @@ export class ProjectionCache {
   /** Lists the knowledge links that point INTO the given entity. */
   listLinksTo(target: string): LinkEdge[] {
     return listLinksTo(this.db, target);
+  }
+
+  /** Reads one skill by id, or null if it is not projected. */
+  getSkill(id: string): SkillProjection | null {
+    return getSkill(this.db, id);
+  }
+
+  /** Lists all projected skills, ordered by id. */
+  listSkills(): SkillProjection[] {
+    return listSkills(this.db);
+  }
+
+  /** Lists skills currently in the given state. */
+  listSkillsByState(state: string): SkillProjection[] {
+    return listSkillsByState(this.db, state);
   }
 
   /** Closes the underlying database. */

@@ -62,6 +62,8 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'observation.recorded': ['about', 'topic', 'text'],
   'handoff.recorded': ['fromAgent', 'toAgent'],
   'knowledge.linked': ['target', 'rel'],
+  'skill.created': ['name', 'body'],
+  'skill.transitioned': ['from', 'to', 'action', 'fields'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -257,6 +259,26 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       // and a past link with an unfamiliar one is never rejected on read.
       requireString(kind, 'payload.rel', event.payload.rel);
       return { target: event.payload.target, rel: event.payload.rel };
+    }
+    case 'skill.created': {
+      requireString(kind, 'payload.name', event.payload.name);
+      requireString(kind, 'payload.body', event.payload.body);
+      return { name: event.payload.name, body: event.payload.body };
+    }
+    case 'skill.transitioned': {
+      // Mirrors task.transitioned: `from` is a state or the birth's null, and
+      // there is no `by` — a skill is not relational.
+      requireStringOrNull(kind, 'payload.from', event.payload.from);
+      requireString(kind, 'payload.to', event.payload.to);
+      requireString(kind, 'payload.action', event.payload.action);
+      const p: Record<string, PayloadValue> = {
+        from: event.payload.from,
+        to: event.payload.to,
+        action: event.payload.action,
+      };
+      const fields = rebuildTransitionFields(kind, event.payload.fields);
+      if (fields !== undefined) p.fields = fields;
+      return p;
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.
