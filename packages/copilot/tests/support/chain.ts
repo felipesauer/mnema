@@ -13,13 +13,21 @@ import { mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  type CatalogEvent,
+  catalogUpcasters,
+  decisionBirth,
+  decisionTransitioned,
+  knowledgeLinked,
+  observationRecorded,
   runEnded,
   runStarted,
+  skillBirth,
+  skillTransitioned,
   type TransitionFields,
   taskBirth,
   taskTransitioned,
 } from '@mnema/chain';
-import { chainRootForScope, ProjectionCache, resolveTrees } from '@mnema/core';
+import { chainRootForScope, orderedEvents, ProjectionCache, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 
 /** A writer bound to the public tree of a throwaway sandbox, plus its root. */
@@ -31,6 +39,8 @@ export interface Bench {
   now(): string;
   /** Open and rebuild a cache over the tree written so far. */
   cache(): ProjectionCache;
+  /** The raw, ordered event stream over the tree — the intelligence input. */
+  events(): CatalogEvent[];
 }
 
 /** Creates a sandbox, opens the public tree for writing, and returns a Bench. */
@@ -56,6 +66,9 @@ export function makeBench(): Bench {
       const c = ProjectionCache.open(root);
       c.rebuild();
       return c;
+    },
+    events(): CatalogEvent[] {
+      return orderedEvents({ root }, catalogUpcasters());
     },
   };
 }
@@ -125,6 +138,69 @@ export function moveTask(
     taskTransitioned(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
       { from, to, action, ...(fields !== undefined ? { fields } : {}) },
+    ),
+  );
+}
+
+/** Appends a decision's birth pair, returning its id. */
+export function birthDecision(b: Bench, id: string, title: string, initial = 'PROPOSED'): string {
+  for (const e of decisionBirth(
+    { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+    { title, rationale: `why ${title}`, adr: `ADR-${id}`, initial },
+  )) {
+    b.writer.append(e);
+  }
+  return id;
+}
+
+/** Appends a `decision.transitioned {action: 'supersede'}` naming the successor. */
+export function supersedeDecision(b: Bench, id: string, by: string, from = 'ACCEPTED'): void {
+  b.writer.append(
+    decisionTransitioned(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      { from, to: 'SUPERSEDED', action: 'supersede', by },
+    ),
+  );
+}
+
+/** Appends a skill's birth pair, returning its id. */
+export function birthSkill(b: Bench, id: string, name: string, initial = 'PROPOSED'): string {
+  for (const e of skillBirth(
+    { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+    { name, body: `body of ${name}`, initial },
+  )) {
+    b.writer.append(e);
+  }
+  return id;
+}
+
+/** Appends a `skill.transitioned {action: 'deprecate'}`. */
+export function deprecateSkill(b: Bench, id: string, from = 'ADOPTED'): void {
+  b.writer.append(
+    skillTransitioned(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      { from, to: 'DEPRECATED', action: 'deprecate', fields: { reason: 'unused' } },
+    ),
+  );
+}
+
+/** Appends an `observation.recorded` about an entity, returning the note's id. */
+export function observe(b: Bench, obsId: string, about: string, text = 'noted'): string {
+  b.writer.append(
+    observationRecorded(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: obsId },
+      { about, topic: 'note', text },
+    ),
+  );
+  return obsId;
+}
+
+/** Appends a `knowledge.linked` from `subject` to `target` with a relation. */
+export function link(b: Bench, subject: string, target: string, rel = 'relates-to'): void {
+  b.writer.append(
+    knowledgeLinked(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject },
+      { target, rel },
     ),
   );
 }
