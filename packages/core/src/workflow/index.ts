@@ -66,6 +66,16 @@ export {
   type WriteError,
 } from './operations.js';
 export {
+  type EndRunError,
+  type EndRunInput,
+  type EndRunOk,
+  endRun,
+  type StartRunError,
+  type StartRunInput,
+  type StartRunOk,
+  startRun,
+} from './session-operations.js';
+export {
   type SkillGateErr,
   type SkillGateErrorCode,
   type SkillGateOk,
