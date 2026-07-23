@@ -10,16 +10,7 @@
  * projection layer's `orderedEventsAcross`.
  */
 
-export {
-  APP_DIR,
-  type DiscoveryEnv,
-  GLOBAL_DIR,
-  IDENTITY_DIR,
-  PRIVATE_DIR,
-  PROJECT_DIR,
-  type ResolvedTrees,
-  resolveTrees,
-} from './resolve.js';
+export { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from './resolve.js';
 export {
   chainRootForScope,
   type OpenTreeOptions,
