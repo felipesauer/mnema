@@ -19,7 +19,8 @@ import {
   taskBirth,
   taskTransitioned,
 } from '@mnema/chain';
-import { chainRootForScope, openTreeForWriting, ProjectionCache, resolveTrees } from '@mnema/core';
+import { chainRootForScope, ProjectionCache, resolveTrees } from '@mnema/core';
+import { openTreeForWriting } from '@mnema/core/write';
 
 /** A writer bound to the public tree of a throwaway sandbox, plus its root. */
 export interface Bench {
