@@ -15,6 +15,7 @@
 import { Command, CommanderError } from 'commander';
 import { runInit } from './commands/init.js';
 import { runTask } from './commands/task.js';
+import { runTaskTransition } from './commands/task-transition.js';
 import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
 import { buildMcpServer } from './mcp/server.js';
@@ -67,7 +68,10 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
     });
 
-  program
+  // `task` is a group: its default action creates (`mnema task "<title>"`),
+  // and its one subcommand moves an existing task through the workflow
+  // (`mnema task move <action> <id>`). The create invocation is unchanged.
+  const task = program
     .command('task')
     .description('create a task in the current project')
     .argument('<title>', 'the task title')
@@ -84,6 +88,49 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       io.fail();
     });
+
+  // One generic move: the action is an argument the gate validates, not a
+  // hardcoded per-action command. The surface knows nothing of the transition
+  // table — it forwards the action string and whichever proof flag was given,
+  // and prints the gate's own verdict (the new state, or a typed refusal).
+  task
+    .command('move')
+    .description('move a task through the workflow')
+    .argument(
+      '<action>',
+      'the transition (submit, start, block, unblock, submit_review, ' +
+        'request_changes, approve, complete, cancel, reopen)',
+    )
+    .argument('<id>', 'the task id (the value shown when it was created)')
+    .option('--reason <text>', 'why (required by cancel, block, reopen)')
+    .option('--note <text>', 'what was done (required by complete, approve)')
+    .option('--feedback <text>', 'what must change (required by request_changes)')
+    .action(
+      (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
+        const result = runTaskTransition(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            id,
+            action,
+            proof: {
+              ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
+              ...(opts.note !== undefined ? { note: opts.note } : {}),
+              ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
+            },
+          },
+        );
+        if (result.ok) {
+          io.out(`Task ${result.alias} → ${result.to}`);
+          return;
+        }
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`Refused (${result.code}): ${result.message}`);
+        }
+        io.fail();
+      },
+    );
 
   program
     .command('verify')

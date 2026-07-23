@@ -22,7 +22,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { closeSession, openSession, type Session } from './session.js';
-import { runBootstrap, runCaptureMemory } from './tools.js';
+import { runBootstrap, runCaptureMemory, runTaskTransition } from './tools.js';
 
 /** The name the server announces itself as (its own identity, not the client's). */
 const SERVER_NAME = 'mnema';
@@ -122,9 +122,9 @@ export function buildMcpServer(options: McpServerOptions = {}): {
 }
 
 /**
- * Registers the two skeleton tools. Each is a thin wrapper: it ensures the
- * session, calls the pure adapter, and shapes the response. The wiring adds only
- * the schema and the text envelope; all behavior is in the adapter and the core.
+ * Registers the tools. Each is a thin wrapper: it ensures the session, calls the
+ * pure adapter, and shapes the response. The wiring adds only the schema and the
+ * text envelope; all behavior is in the adapter and the core.
  */
 function registerTools(server: McpServer, ensureSession: () => Promise<Session>): void {
   server.registerTool(
@@ -140,6 +140,46 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       const active = await ensureSession();
       const { id } = runCaptureMemory(active, { content });
       return { content: [{ type: 'text', text: `Captured memory ${id}` }] };
+    },
+  );
+
+  server.registerTool(
+    'task_transition',
+    {
+      title: 'Move a task through the workflow',
+      description:
+        'Move an existing task to a new state (submit, start, block, unblock, ' +
+        'submit_review, request_changes, approve, complete, cancel, reopen). The ' +
+        'workflow gate decides whether the move is legal and carries the proof it ' +
+        'requires — cancel/block/reopen need a reason, complete/approve a note, ' +
+        'request_changes a feedback; an illegal move or missing proof is refused.',
+      inputSchema: {
+        id: z.string().min(1).describe('The task id to move.'),
+        action: z.string().min(1).describe('The transition to request.'),
+        reason: z.string().optional().describe('Why (cancel, block, reopen).'),
+        note: z.string().optional().describe('What was done (complete, approve).'),
+        feedback: z.string().optional().describe('What must change (request_changes).'),
+      },
+    },
+    async ({ id, action, reason, note, feedback }) => {
+      const active = await ensureSession();
+      const result = runTaskTransition(active, {
+        id,
+        action,
+        ...(reason !== undefined ? { reason } : {}),
+        ...(note !== undefined ? { note } : {}),
+        ...(feedback !== undefined ? { feedback } : {}),
+      });
+      if (!result.ok) {
+        // The gate refused — surface it as a tool error so the agent sees the
+        // move did not happen, with the gate's own reason. Not a crash: a
+        // refusal is a legitimate answer, returned as data.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: `Task ${result.alias} → ${result.to}` }] };
     },
   );
 
