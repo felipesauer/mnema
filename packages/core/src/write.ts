@@ -15,8 +15,21 @@
  * scope maps to is a read; only OPENING it for writing is here).
  */
 
-// Capturing a memory: the knowledge domain's one write.
-export { type CaptureInput, type CaptureOk, captureMemory } from './knowledge/operations.js';
+// The knowledge domain's writes: each appends one point-in-time fact, no gate.
+export {
+  type CaptureInput,
+  type CaptureOk,
+  captureMemory,
+  type HandoffInput,
+  type HandoffOk,
+  type LinkInput,
+  type LinkOk,
+  linkKnowledge,
+  type ObservationInput,
+  type ObservationOk,
+  recordHandoff,
+  recordObservation,
+} from './knowledge/operations.js';
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the
 // read surface; only opening a writer is a write).
 export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';

@@ -284,6 +284,60 @@ export function memoryCaptured(
 }
 
 /**
+ * Builds an `observation.recorded` event (subject = the observation's OWN minted
+ * id). The observed entity is named in the payload as `about`; the topic and
+ * text are the note. Like a memory, it is a single point-in-time fact with no
+ * birth pair and no state.
+ */
+export function observationRecorded(
+  envelope: EnvelopeInput,
+  payload: { about: string; topic: string; text: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'observation.recorded',
+    ...envelopeFields(envelope),
+    payload: { about: payload.about, topic: payload.topic, text: payload.text },
+  };
+}
+
+/**
+ * Builds a `handoff.recorded` event (subject = the TASK). A handoff is a fact
+ * about a task, so its subject is the task's id, not a fresh one; multiple
+ * handoffs on one task share the subject and the projection lists them.
+ */
+export function handoffRecorded(
+  envelope: EnvelopeInput,
+  payload: { fromAgent: string; toAgent: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'handoff.recorded',
+    ...envelopeFields(envelope),
+    payload: { fromAgent: payload.fromAgent, toAgent: payload.toAgent },
+  };
+}
+
+/**
+ * Builds a `knowledge.linked` event (subject = the entity that originates the
+ * link). `target` is only an id — the target's kind is resolved on read — and
+ * `rel` is an open literal string (see the catalog's recommended set). No
+ * dangling check happens here: a cross-tree target is a legitimate, asserted
+ * fact resolved on read against the union.
+ */
+export function knowledgeLinked(
+  envelope: EnvelopeInput,
+  payload: { target: string; rel: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'knowledge.linked',
+    ...envelopeFields(envelope),
+    payload: { target: payload.target, rel: payload.rel },
+  };
+}
+
+/**
  * Builds the pair of events that a task's birth always emits, in order: the
  * `task.created` that proves the task exists, then the `task.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state.

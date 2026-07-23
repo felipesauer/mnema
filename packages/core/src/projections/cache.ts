@@ -15,8 +15,21 @@ import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
-import type { MemoryProjection } from './knowledge.js';
-import { getMemory, listMemories } from './knowledge-store.js';
+import type {
+  HandoffProjection,
+  LinkEdge,
+  MemoryProjection,
+  ObservationProjection,
+} from './knowledge.js';
+import {
+  getMemory,
+  getObservation,
+  listHandoffs,
+  listLinksFrom,
+  listLinksTo,
+  listMemories,
+  listObservationsAbout,
+} from './knowledge-store.js';
 import { rebuild } from './rebuild.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
@@ -124,6 +137,31 @@ export class ProjectionCache {
   /** Lists all captured memories, ordered by id. */
   listMemories(): MemoryProjection[] {
     return listMemories(this.db);
+  }
+
+  /** Reads one observation by its own id, or null if it is not projected. */
+  getObservation(id: string): ObservationProjection | null {
+    return getObservation(this.db, id);
+  }
+
+  /** Lists the observations recorded about the given entity, oldest first. */
+  listObservationsAbout(about: string): ObservationProjection[] {
+    return listObservationsAbout(this.db, about);
+  }
+
+  /** Lists the handoffs recorded on the given task, oldest first. */
+  listHandoffs(task: string): HandoffProjection[] {
+    return listHandoffs(this.db, task);
+  }
+
+  /** Lists the knowledge links that originate FROM the given entity. */
+  listLinksFrom(subject: string): LinkEdge[] {
+    return listLinksFrom(this.db, subject);
+  }
+
+  /** Lists the knowledge links that point INTO the given entity. */
+  listLinksTo(target: string): LinkEdge[] {
+    return listLinksTo(this.db, target);
   }
 
   /** Closes the underlying database. */

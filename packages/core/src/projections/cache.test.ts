@@ -5,7 +5,10 @@ import {
   type ChainWriter,
   decisionRecorded,
   decisionTransitioned,
+  handoffRecorded,
+  knowledgeLinked,
   memoryCaptured,
+  observationRecorded,
   openChainForWriting,
   runEnded,
   runStarted,
@@ -366,6 +369,98 @@ describe('ProjectionCache — memories', () => {
     // The domains stay separate: the memory is not a task, the task not a memory.
     expect(cache.listTasks()).toHaveLength(1);
     expect(cache.listMemories()).toHaveLength(1);
+  });
+});
+
+describe('ProjectionCache — observations, handoffs, links (the three knowledge facts)', () => {
+  it('materializes observations and lists them BY the observed entity', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(observationRecorded(env('o-1', 0), { about: 't-1', topic: 'a', text: 'first' }));
+    w.append(observationRecorded(env('o-2', 1), { about: 't-1', topic: 'b', text: 'second' }));
+    w.append(observationRecorded(env('o-3', 2), { about: 't-2', topic: 'c', text: 'other' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    // Two observations about t-1 both survive (distinct own ids, no collision).
+    expect(cache.listObservationsAbout('t-1').map((o) => o.id)).toEqual(['o-1', 'o-2']);
+    expect(cache.listObservationsAbout('t-2').map((o) => o.id)).toEqual(['o-3']);
+    expect(cache.getObservation('o-1')?.text).toBe('first');
+  });
+
+  it('materializes multiple handoffs on one task as a time-ordered list', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(handoffRecorded(env('t-1', 0), { fromAgent: 'claude', toAgent: 'felipe' }));
+    w.append(handoffRecorded(env('t-1', 1), { fromAgent: 'felipe', toAgent: 'claude' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    const list = cache.listHandoffs('t-1');
+    expect(list).toHaveLength(2);
+    expect(list.map((h) => h.fromAgent)).toEqual(['claude', 'felipe']);
+  });
+
+  it('materializes a link answerable from BOTH directions', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(knowledgeLinked(env('m-1', 0), { target: 't-1', rel: 'relates-to' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.listLinksFrom('m-1').map((e) => e.target)).toEqual(['t-1']);
+    expect(cache.listLinksTo('t-1').map((e) => e.subject)).toEqual(['m-1']);
+  });
+
+  it('collapses a duplicate link edge in the cache (idempotent primary key)', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    // The same (subject, target, rel) asserted twice folds to ONE row — the
+    // fold dedups before insert, so the primary key never clashes.
+    w.append(knowledgeLinked(env('m-1', 0), { target: 't-1', rel: 'relates-to' }));
+    w.append(knowledgeLinked(env('m-1', 1), { target: 't-1', rel: 'relates-to' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.listLinksFrom('m-1')).toHaveLength(1);
+  });
+
+  it('keeps a dangling link in the cache — the target need not be materialized', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    // A memory links to a task that is not in this chain: the edge still stands.
+    w.append(memoryCaptured(env('m-1', 0), { content: 'a private note' }));
+    w.append(knowledgeLinked(env('m-1', 1), { target: 't-elsewhere', rel: 'relates-to' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getMemory('m-1')).not.toBeNull();
+    expect(cache.listLinksFrom('m-1').map((e) => e.target)).toEqual(['t-elsewhere']);
+    // The dangling target has no memory row — resolved on read against the union.
+    expect(cache.getMemory('t-elsewhere')).toBeNull();
+  });
+
+  it('rebuilds the three facts identically after the cache is wiped', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(observationRecorded(env('o-1', 0), { about: 't-1', topic: 't', text: 'note' }));
+    w.append(handoffRecorded(env('t-1', 1), { fromAgent: 'a', toAgent: 'b' }));
+    w.append(knowledgeLinked(env('m-1', 2), { target: 't-1', rel: 'derived-from' }));
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = {
+      obs: first.listObservationsAbout('t-1'),
+      handoffs: first.listHandoffs('t-1'),
+      links: first.listLinksFrom('m-1'),
+    };
+    first.close();
+    caches = caches.filter((c) => c !== first);
+
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    expect(second.listObservationsAbout('t-1')).toEqual(before.obs);
+    expect(second.listHandoffs('t-1')).toEqual(before.handoffs);
+    expect(second.listLinksFrom('m-1')).toEqual(before.links);
   });
 });
 

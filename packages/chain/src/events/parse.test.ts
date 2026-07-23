@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   decisionRecorded,
   decisionTransitioned,
+  handoffRecorded,
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  knowledgeLinked,
   memoryCaptured,
+  observationRecorded,
   runEnded,
   runStarted,
   taskCreated,
@@ -102,6 +105,75 @@ describe('parseEvent — memory.captured (closed shape)', () => {
     const forged = line(good).replace('"content":"real"', '"content":"evil","content":"real"');
     const parsed = parseEvent(forged, reg);
     expect(line(parsed)).toBe(line(good));
+  });
+});
+
+describe('parseEvent — the three knowledge facts (closed shapes)', () => {
+  it('parses observation.recorded', () => {
+    const event = observationRecorded(
+      { ...envelope, subject: 'o-1' },
+      { about: 't-1', topic: 'flaky', text: 'retries on CI' },
+    );
+    expect(parseEvent(line(event), reg)).toEqual(event);
+  });
+
+  it('rejects an unknown payload field on an observation (no smuggling)', () => {
+    const good = observationRecorded(
+      { ...envelope, subject: 'o-1' },
+      { about: 't-1', topic: 'x', text: 'y' },
+    );
+    const forged = line(good).replace('"topic":"x"', '"topic":"x","state":"stale"');
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "state"/);
+  });
+
+  it('parses handoff.recorded, including a same-agent restart', () => {
+    const event = handoffRecorded(
+      { ...envelope, subject: 't-1' },
+      { fromAgent: 'claude', toAgent: 'claude' },
+    );
+    expect(parseEvent(line(event), reg)).toEqual(event);
+  });
+
+  it('rejects a handoff missing toAgent', () => {
+    const good = handoffRecorded({ ...envelope, subject: 't-1' }, { fromAgent: 'a', toAgent: 'b' });
+    const forged = line(good).replace(',"toAgent":"b"', '');
+    expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
+  });
+
+  it('parses knowledge.linked and accepts ANY non-empty rel (open literal, not an enum)', () => {
+    const known = knowledgeLinked(
+      { ...envelope, subject: 'm-1' },
+      { target: 't-1', rel: 'relates-to' },
+    );
+    expect(parseEvent(line(known), reg)).toEqual(known);
+    // A label outside the recommended set is valid: the parser does not enforce a
+    // closed set, the same as a transition `action`.
+    const novel = knowledgeLinked(
+      { ...envelope, subject: 'm-1' },
+      { target: 't-1', rel: 'inspired-by' },
+    );
+    expect(parseEvent(line(novel), reg)).toEqual(novel);
+  });
+
+  it('rejects an empty rel (a relation with no label is not a fact)', () => {
+    const good = knowledgeLinked(
+      { ...envelope, subject: 'm-1' },
+      { target: 't-1', rel: 'relates-to' },
+    );
+    const forged = line(good).replace('"rel":"relates-to"', '"rel":""');
+    expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
+  });
+
+  it('rejects an unknown payload field on a link (no targetKind smuggling)', () => {
+    const good = knowledgeLinked(
+      { ...envelope, subject: 'm-1' },
+      { target: 't-1', rel: 'relates-to' },
+    );
+    const forged = line(good).replace(
+      '"rel":"relates-to"',
+      '"rel":"relates-to","targetKind":"task"',
+    );
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "targetKind"/);
   });
 });
 

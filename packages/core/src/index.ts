@@ -35,8 +35,25 @@ export {
   listDecisions,
   listDecisionsByState,
 } from './projections/decision-store.js';
-export { type MemoryProjection, projectKnowledge } from './projections/knowledge.js';
-export { getMemory, listMemories } from './projections/knowledge-store.js';
+export {
+  type HandoffProjection,
+  type LinkEdge,
+  type MemoryProjection,
+  type ObservationProjection,
+  projectHandoffs,
+  projectKnowledge,
+  projectLinks,
+  projectObservations,
+} from './projections/knowledge.js';
+export {
+  getMemory,
+  getObservation,
+  listHandoffs,
+  listLinksFrom,
+  listLinksTo,
+  listMemories,
+  listObservationsAbout,
+} from './projections/knowledge-store.js';
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
 export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';

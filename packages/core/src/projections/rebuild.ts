@@ -21,8 +21,18 @@ import { dropProjections, ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import { projectDecisions } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
-import { projectKnowledge } from './knowledge.js';
-import { materializeMemories } from './knowledge-store.js';
+import {
+  projectHandoffs,
+  projectKnowledge,
+  projectLinks,
+  projectObservations,
+} from './knowledge.js';
+import {
+  materializeHandoffs,
+  materializeLinks,
+  materializeMemories,
+  materializeObservations,
+} from './knowledge-store.js';
 import { orderedEvents } from './order.js';
 import { projectRuns } from './run.js';
 import { materializeRuns } from './run-store.js';
@@ -43,6 +53,9 @@ export function rebuild(
   const runs = projectRuns(events);
   const decisions = projectDecisions(events);
   const memories = projectKnowledge(events);
+  const observations = projectObservations(events);
+  const handoffs = projectHandoffs(events);
+  const links = projectLinks(events);
 
   const replace = db.transaction(() => {
     dropProjections(db);
@@ -51,6 +64,9 @@ export function rebuild(
     materializeRuns(db, runs.values());
     materializeDecisions(db, decisions.values());
     materializeMemories(db, memories.values());
+    materializeObservations(db, observations.values());
+    materializeHandoffs(db, handoffs.values());
+    materializeLinks(db, links);
   });
   replace();
 }
