@@ -18,7 +18,7 @@ import type { SqliteDatabase } from './sqlite.js';
  * they are dropped. Listing them here is what lets a rebuild wipe the cache
  * without dropping anything the chain did not put there.
  */
-export const PROJECTION_TABLES = ['tasks', 'runs', 'decisions'] as const;
+export const PROJECTION_TABLES = ['tasks', 'runs', 'decisions', 'memories'] as const;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tasks (
@@ -79,6 +79,20 @@ CREATE INDEX IF NOT EXISTS idx_decisions_state ON decisions (state);
 -- The adr label is not unique (a collision is possible and reported), so this
 -- index speeds the collision scan and by-label lookups, not a uniqueness guard.
 CREATE INDEX IF NOT EXISTS idx_decisions_adr ON decisions (adr);
+
+CREATE TABLE IF NOT EXISTS memories (
+  -- The memory's id (the event subject). One row per captured memory.
+  id          TEXT PRIMARY KEY NOT NULL,
+  -- The captured content, straight from memory.captured.
+  content     TEXT NOT NULL,
+  -- The anchor that captured it (the authorizing 'who').
+  who         TEXT NOT NULL,
+  -- 'at' of the capture. A memory has no state and no updated_at: it is a single
+  -- immutable point-in-time fact, never moved.
+  captured_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS idx_memories_who ON memories (who);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

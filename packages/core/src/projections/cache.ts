@@ -15,6 +15,8 @@ import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
+import type { MemoryProjection } from './knowledge.js';
+import { getMemory, listMemories } from './knowledge-store.js';
 import { rebuild } from './rebuild.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
@@ -112,6 +114,16 @@ export class ProjectionCache {
    */
   adrCollisions(): AdrCollision[] {
     return adrCollisions(listDecisions(this.db));
+  }
+
+  /** Reads one captured memory by id, or null if it is not projected. */
+  getMemory(id: string): MemoryProjection | null {
+    return getMemory(this.db, id);
+  }
+
+  /** Lists all captured memories, ordered by id. */
+  listMemories(): MemoryProjection[] {
+    return listMemories(this.db);
   }
 
   /** Closes the underlying database. */

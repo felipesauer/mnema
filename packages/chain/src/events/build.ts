@@ -267,6 +267,23 @@ export function keyRevoked(
 }
 
 /**
+ * Builds a `memory.captured` event (subject = the memory's id). A memory is a
+ * single point-in-time fact — no birth pair, no state — so this mirrors
+ * `taskCreated` (the simplest one-field builder) and not the birth builders.
+ */
+export function memoryCaptured(
+  envelope: EnvelopeInput,
+  payload: { content: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'memory.captured',
+    ...envelopeFields(envelope),
+    payload: { content: payload.content },
+  };
+}
+
+/**
  * Builds the pair of events that a task's birth always emits, in order: the
  * `task.created` that proves the task exists, then the `task.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state.

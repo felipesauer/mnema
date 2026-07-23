@@ -58,6 +58,7 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'identity.founded': ['foundingFp'],
   'key.enrolled': ['newFp', 'reverseSig'],
   'key.revoked': ['revokedFp', 'reason'],
+  'memory.captured': ['content'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -226,6 +227,10 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       requireString(kind, 'payload.revokedFp', event.payload.revokedFp);
       requireString(kind, 'payload.reason', event.payload.reason);
       return { revokedFp: event.payload.revokedFp, reason: event.payload.reason };
+    }
+    case 'memory.captured': {
+      requireString(kind, 'payload.content', event.payload.content);
+      return { content: event.payload.content };
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.

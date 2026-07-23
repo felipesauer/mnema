@@ -5,6 +5,7 @@ import {
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  memoryCaptured,
   runEnded,
   runStarted,
   taskCreated,
@@ -66,6 +67,41 @@ describe('parseEvent — happy path across the catalog', () => {
     if (parsed.kind === 'task.transitioned') {
       expect(parsed.payload.from).toBeNull();
     }
+  });
+
+  it('parses memory.captured (a single point-in-time fact)', () => {
+    const event = memoryCaptured(
+      { ...envelope, subject: 'm-1', which: 'claude', run: 'r-1' },
+      { content: 'the build breaks without a fresh dist' },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    if (parsed.kind === 'memory.captured') {
+      expect(parsed.payload.content).toBe('the build breaks without a fresh dist');
+    }
+  });
+});
+
+describe('parseEvent — memory.captured (closed shape)', () => {
+  it('rejects an unknown payload field (a forger cannot smuggle state into a fact)', () => {
+    const good = memoryCaptured({ ...envelope, subject: 'm-1' }, { content: 'hi' });
+    const forged = line(good).replace('"content":"hi"', '"content":"hi","state":"stale"');
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "state"/);
+  });
+
+  it('rejects an empty content (a memory with no content records nothing)', () => {
+    const good = memoryCaptured({ ...envelope, subject: 'm-1' }, { content: 'hi' });
+    const forged = line(good).replace('"content":"hi"', '"content":""');
+    expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
+  });
+
+  it('rebuilds so a duplicate content key cannot pick a value into the bytes', () => {
+    const good = memoryCaptured({ ...envelope, subject: 'm-1' }, { content: 'real' });
+    // A hand-forged line with a duplicate key: JSON.parse keeps the last, but the
+    // rebuild re-canonicalizes, so the bytes differ from the stored line.
+    const forged = line(good).replace('"content":"real"', '"content":"evil","content":"real"');
+    const parsed = parseEvent(forged, reg);
+    expect(line(parsed)).toBe(line(good));
   });
 });
 
