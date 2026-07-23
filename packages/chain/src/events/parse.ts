@@ -59,6 +59,9 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'key.enrolled': ['newFp', 'reverseSig'],
   'key.revoked': ['revokedFp', 'reason'],
   'memory.captured': ['content'],
+  'observation.recorded': ['about', 'topic', 'text'],
+  'handoff.recorded': ['fromAgent', 'toAgent'],
+  'knowledge.linked': ['target', 'rel'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -231,6 +234,29 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
     case 'memory.captured': {
       requireString(kind, 'payload.content', event.payload.content);
       return { content: event.payload.content };
+    }
+    case 'observation.recorded': {
+      requireString(kind, 'payload.about', event.payload.about);
+      requireString(kind, 'payload.topic', event.payload.topic);
+      requireString(kind, 'payload.text', event.payload.text);
+      return {
+        about: event.payload.about,
+        topic: event.payload.topic,
+        text: event.payload.text,
+      };
+    }
+    case 'handoff.recorded': {
+      requireString(kind, 'payload.fromAgent', event.payload.fromAgent);
+      requireString(kind, 'payload.toAgent', event.payload.toAgent);
+      return { fromAgent: event.payload.fromAgent, toAgent: event.payload.toAgent };
+    }
+    case 'knowledge.linked': {
+      requireString(kind, 'payload.target', event.payload.target);
+      // `rel` is an open literal string: any non-empty string is accepted, never
+      // matched against a closed set, so a new relation label needs no upcaster
+      // and a past link with an unfamiliar one is never rejected on read.
+      requireString(kind, 'payload.rel', event.payload.rel);
+      return { target: event.payload.target, rel: event.payload.rel };
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.

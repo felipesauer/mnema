@@ -63,3 +63,156 @@ export function projectKnowledge(events: readonly CatalogEvent[]): Map<string, M
   }
   return result;
 }
+
+/** An observation, as projected from its one event. */
+export interface ObservationProjection {
+  /** The observation's OWN id (the event subject). */
+  readonly id: string;
+  /** The id of the entity observed (from the payload, resolved on read). */
+  readonly about: string;
+  /** The topic label. */
+  readonly topic: string;
+  /** The observation text. */
+  readonly text: string;
+  /** The anchor that recorded it (the authorizing `who`). */
+  readonly who: string;
+  /** `at` of the observation. */
+  readonly recordedAt: string;
+}
+
+/**
+ * Folds ordered events into a map of observation id → projection, keeping ONLY
+ * `observation.recorded`. Like a memory, an observation is a point-in-time fact
+ * with no state, so existence is the whole of it and one event projects it.
+ * Because each observation carries its OWN minted id as the subject, two
+ * observations about the same entity never overwrite one another — they are
+ * distinct rows keyed by distinct ids, and the entity they share sits in the
+ * `about` field, not the key.
+ */
+export function projectObservations(
+  events: readonly CatalogEvent[],
+): Map<string, ObservationProjection> {
+  const result = new Map<string, ObservationProjection>();
+  for (const event of events) {
+    if (event.kind === 'observation.recorded') {
+      result.set(event.subject, {
+        id: event.subject,
+        about: event.payload.about,
+        topic: event.payload.topic,
+        text: event.payload.text,
+        who: event.who,
+        recordedAt: event.at,
+      });
+    }
+  }
+  return result;
+}
+
+/** One handoff on a task, as projected from its event. */
+export interface HandoffProjection {
+  /** The task the handoff is about (the event subject). */
+  readonly task: string;
+  /** The agent handing off. */
+  readonly fromAgent: string;
+  /** The agent taking over (may equal `fromAgent`). */
+  readonly toAgent: string;
+  /** The anchor that recorded it (the authorizing `who`). */
+  readonly who: string;
+  /** `at` of the handoff. */
+  readonly recordedAt: string;
+}
+
+/**
+ * Folds ordered events into a map of task id → the LIST of its handoffs, keeping
+ * ONLY `handoff.recorded`. A handoff's subject is the task, and a task may have
+ * many handoffs over its life — so unlike a memory (one fact per id) the fold
+ * ACCUMULATES into a list rather than overwriting last-write. The list is in the
+ * order the events were seen, which the ordered stream keeps stable (by `at`).
+ * A task with no handoff simply has no entry.
+ */
+export function projectHandoffs(events: readonly CatalogEvent[]): Map<string, HandoffProjection[]> {
+  const result = new Map<string, HandoffProjection[]>();
+  for (const event of events) {
+    if (event.kind === 'handoff.recorded') {
+      const handoff: HandoffProjection = {
+        task: event.subject,
+        fromAgent: event.payload.fromAgent,
+        toAgent: event.payload.toAgent,
+        who: event.who,
+        recordedAt: event.at,
+      };
+      const list = result.get(event.subject);
+      if (list === undefined) result.set(event.subject, [handoff]);
+      else list.push(handoff);
+    }
+  }
+  return result;
+}
+
+/**
+ * One knowledge link, as a directed edge. The relation is N:N and cross-type —
+ * a subject may link to many targets and a target may be linked from many
+ * subjects — so a link is projected as an EDGE, not as columns on an entity the
+ * way a 1:1 supersede is. Both endpoints are only ids; what each is (a memory, a
+ * task, a decision) is resolved on read by crossing the other projections.
+ */
+export interface LinkEdge {
+  /** The entity that originates the link (the event subject). */
+  readonly subject: string;
+  /** The entity linked to. */
+  readonly target: string;
+  /** The relation label (an open literal string). */
+  readonly rel: string;
+  /** The anchor that recorded it (the authorizing `who`). */
+  readonly who: string;
+  /** `at` of the link. */
+  readonly linkedAt: string;
+}
+
+/**
+ * Folds ordered events into the list of knowledge-link EDGES, keeping ONLY
+ * `knowledge.linked`. Where a supersede is 1:1 and can be folded into two
+ * columns on the decision (supersededBy/supersedes), a link is N:N cross-type,
+ * so it is projected as a flat set of directed edges. Querying "what links out
+ * of X" and "what links into X" is then a filter on `subject` vs `target` — both
+ * directions answerable from the same edge set, the same bidirectional
+ * reachability the supersede's two columns give, generalized to N:N.
+ *
+ * A duplicate edge — the same (subject, target, rel) recorded twice, e.g. by two
+ * offline clones — is COLLAPSED to one: the relation is idempotent (X relates-to
+ * Y is either true or not; asserting it twice adds nothing), so the fold keeps a
+ * single edge per (subject, target, rel), with the FIRST-seen envelope (`who`,
+ * `linkedAt`) as its origin. This keeps the union of two clones that both
+ * asserted the same link from double-counting it.
+ *
+ * No dangling check: an edge whose target (or subject) is not present in the
+ * projected entities is an honest cross-tree assertion, kept verbatim. The
+ * reader resolves it against the union of trees.
+ */
+export function projectLinks(events: readonly CatalogEvent[]): LinkEdge[] {
+  const seen = new Map<string, LinkEdge>();
+  for (const event of events) {
+    if (event.kind === 'knowledge.linked') {
+      const key = edgeKey(event.subject, event.payload.target, event.payload.rel);
+      if (seen.has(key)) continue; // idempotent: a repeated assertion adds nothing.
+      seen.set(key, {
+        subject: event.subject,
+        target: event.payload.target,
+        rel: event.payload.rel,
+        who: event.who,
+        linkedAt: event.at,
+      });
+    }
+  }
+  return [...seen.values()];
+}
+
+/**
+ * The dedup key for an edge. A newline delimiter is safe because none of the
+ * three parts (two ids, one relation label) can contain a raw newline — ids are
+ * hex-and-dashes and `rel`/labels are single-line — so no two distinct triples
+ * can produce the same key.
+ */
+function edgeKey(subject: string, target: string, rel: string): string {
+  return `${subject}\n${target}\n${rel}`;
+}

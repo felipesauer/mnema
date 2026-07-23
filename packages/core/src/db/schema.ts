@@ -18,7 +18,15 @@ import type { SqliteDatabase } from './sqlite.js';
  * they are dropped. Listing them here is what lets a rebuild wipe the cache
  * without dropping anything the chain did not put there.
  */
-export const PROJECTION_TABLES = ['tasks', 'runs', 'decisions', 'memories'] as const;
+export const PROJECTION_TABLES = [
+  'tasks',
+  'runs',
+  'decisions',
+  'memories',
+  'observations',
+  'handoffs',
+  'links',
+] as const;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tasks (
@@ -93,6 +101,65 @@ CREATE TABLE IF NOT EXISTS memories (
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_memories_who ON memories (who);
+
+CREATE TABLE IF NOT EXISTS observations (
+  -- The observation's OWN id (the event subject). One row per observation.
+  id          TEXT PRIMARY KEY NOT NULL,
+  -- The id of the entity observed (a task, decision, …), resolved on read.
+  about       TEXT NOT NULL,
+  -- A short topic label for the observation.
+  topic       TEXT NOT NULL,
+  -- The observation text.
+  text        TEXT NOT NULL,
+  -- The anchor that recorded it (the authorizing 'who').
+  who         TEXT NOT NULL,
+  -- 'at' of the observation. Like a memory, an observation has no state and no
+  -- updated_at: it is one immutable point-in-time fact.
+  recorded_at TEXT NOT NULL
+) STRICT;
+
+-- Speeds "the observations about entity X" — the natural query on an observation.
+CREATE INDEX IF NOT EXISTS idx_observations_about ON observations (about);
+
+CREATE TABLE IF NOT EXISTS handoffs (
+  -- The task the handoff is about (the event subject). NOT a primary key: a task
+  -- may have many handoffs, so the row is a list entry, not one-per-task.
+  task        TEXT NOT NULL,
+  -- The agent handing off.
+  from_agent  TEXT NOT NULL,
+  -- The agent taking over (may equal from_agent: a chat restart).
+  to_agent    TEXT NOT NULL,
+  -- The anchor that recorded it (the authorizing 'who').
+  who         TEXT NOT NULL,
+  -- 'at' of the handoff.
+  recorded_at TEXT NOT NULL
+) STRICT;
+
+-- Speeds "the handoffs on task X" and keeps the list ordered by time.
+CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs (task, recorded_at);
+
+CREATE TABLE IF NOT EXISTS links (
+  -- The entity that originates the link (the event subject).
+  subject   TEXT NOT NULL,
+  -- The entity linked to. Only an id; its kind is resolved on read.
+  target    TEXT NOT NULL,
+  -- The relation label — an open literal string.
+  rel       TEXT NOT NULL,
+  -- The anchor that recorded it (the authorizing 'who').
+  who       TEXT NOT NULL,
+  -- 'at' of the link.
+  linked_at TEXT NOT NULL,
+  -- The edge is idempotent: one row per (subject, target, rel). A repeated
+  -- assertion (e.g. two offline clones) collapses to one, so the union never
+  -- double-counts the same relation.
+  PRIMARY KEY (subject, target, rel)
+) STRICT;
+
+-- Both directions of the N:N relation are answerable: the primary key indexes
+-- the subject side; this index indexes the target side, so "what links into X"
+-- is as fast as "what links out of X" — the bidirectional reachability the
+-- supersede's two columns give, generalized to an edge set.
+CREATE INDEX IF NOT EXISTS idx_links_target ON links (target);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

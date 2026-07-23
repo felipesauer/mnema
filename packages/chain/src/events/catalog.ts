@@ -276,6 +276,115 @@ export interface MemoryCapturedV1 extends Envelope {
 }
 
 /**
+ * An observation was recorded — a point-in-time note ABOUT an entity.
+ *
+ * Like a memory, an observation is a fact with no state and no birth pair: one
+ * event is the whole of it, and replaying it yields the identical fact. It
+ * differs from a memory in what its subject is. A memory's subject is its OWN
+ * minted id (the memory IS the entity). An observation is a note about
+ * SOMETHING ELSE — a task, a decision — so it mints its OWN id as the subject
+ * (an observation is itself an entity: "I noted X about Y") and names the
+ * observed entity in the payload as `about`. Its own id keeps two observations
+ * on the same entity from colliding on one subject; the `about` link is the
+ * relation to what was observed. That link is not verified against the writer's
+ * tree at write time — the observed entity may live in another tree — so it is
+ * an ASSERTED fact, resolved on read against the union like any cross-tree link.
+ */
+export interface ObservationRecordedV1 extends Envelope {
+  readonly kind: 'observation.recorded';
+  readonly v: 1;
+  /** Subject is the observation's OWN minted id. */
+  readonly payload: {
+    /** The id of the entity this observation is about (a task, decision, …). */
+    readonly about: string;
+    /** A short topic label for the observation. */
+    readonly topic: string;
+    /** The observation itself. */
+    readonly text: string;
+  };
+}
+
+/**
+ * A handoff was recorded — a fact that work on a task passed from one agent to
+ * another (or restarted with the same agent).
+ *
+ * A handoff is a point-in-time fact ABOUT a task: its subject IS the task, not a
+ * fresh id. That is deliberate and unlike an observation — a handoff has no
+ * standalone identity worth minting; it is an entry in the task's own history.
+ * Multiple handoffs on one task carry the same subject and do NOT collide,
+ * because each is a distinct event with its own chain link, and the projection
+ * accumulates them into a LIST on the task rather than overwriting last-write.
+ *
+ * `fromAgent == toAgent` is legitimate: it records a chat restart with the same
+ * agent. A handoff always needs a task for context — a pure session restart with
+ * no task is a new run, not a handoff, and is not recorded here.
+ */
+export interface HandoffRecordedV1 extends Envelope {
+  readonly kind: 'handoff.recorded';
+  readonly v: 1;
+  /** Subject is the TASK the handoff is about. */
+  readonly payload: {
+    /** The agent handing off. */
+    readonly fromAgent: string;
+    /** The agent taking over (may equal `fromAgent`: a chat restart). */
+    readonly toAgent: string;
+  };
+}
+
+/**
+ * A piece of knowledge was linked to another — the first RELATIONAL fact of the
+ * knowledge domain. Its subject is the entity that ORIGINATES the link (the
+ * memory/task/decision that "relates to" the target); `target` is the id it
+ * points at, and `rel` is the relation label.
+ *
+ * Two shapes matter, both chosen to mirror facts the catalog already proves:
+ *   - `target` is ONLY an id (a universal v7). The catalog does not carry the
+ *     target's KIND — a memory, a task, a decision are all just ids here, and
+ *     the reader resolves what the target is by crossing projections. A
+ *     `targetKind` alongside the id would be redundant with the id and could
+ *     drift (say "task" over a decision's id), so it is not carried. This is the
+ *     same choice the supersede's `by` makes: the id alone, kind by context.
+ *   - `rel` is an OPEN literal string, not a closed enum — the same design as a
+ *     transition's `action`. A recommended set (`supersedes`, `relates-to`,
+ *     `derived-from`, `contradicts`) is documented, but the parser accepts any
+ *     non-empty string, so a new relation grows without an upcaster and a past
+ *     link with an unfamiliar label is never rejected on read.
+ *
+ * Unlike a supersede — which is same-tree by construction and refuses a dangling
+ * `by` at write time — a link is legitimately CROSS-TREE (a private memory may
+ * link to a public task) and the writer sees only its own tree, so a dangling
+ * target is NOT refused. The link is an asserted fact; a target absent from the
+ * current view is honest dangling, resolved on read against the union, exactly
+ * as a partial clone's supersede is.
+ */
+export interface KnowledgeLinkedV1 extends Envelope {
+  readonly kind: 'knowledge.linked';
+  readonly v: 1;
+  /** Subject is the entity that originates the link. */
+  readonly payload: {
+    /** The id of the entity linked to. Only an id — the kind is resolved on read. */
+    readonly target: string;
+    /** The relation label — an open literal string (see {@link RECOMMENDED_LINK_RELATIONS}). */
+    readonly rel: string;
+  };
+}
+
+/**
+ * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a
+ * documentation and grouping aid — NOT a closed set the parser enforces. A
+ * projection may group by these known labels and pass any other through
+ * verbatim; a `rel` outside this set is valid and never rejected, the same way a
+ * new transition `action` is. Exported so a reader can group consistently
+ * without hard-coding the strings.
+ */
+export const RECOMMENDED_LINK_RELATIONS = [
+  'supersedes',
+  'relates-to',
+  'derived-from',
+  'contradicts',
+] as const;
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -290,7 +399,10 @@ export type CatalogEvent =
   | IdentityFoundedV1
   | KeyEnrolledV1
   | KeyRevokedV1
-  | MemoryCapturedV1;
+  | MemoryCapturedV1
+  | ObservationRecordedV1
+  | HandoffRecordedV1
+  | KnowledgeLinkedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -310,4 +422,7 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'key.enrolled': 1,
   'key.revoked': 1,
   'memory.captured': 1,
+  'observation.recorded': 1,
+  'handoff.recorded': 1,
+  'knowledge.linked': 1,
 };
