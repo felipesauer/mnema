@@ -15,10 +15,19 @@ import { describe, expect, it } from 'vitest';
  * the operations that append events, and opening a tree's writer). A read-only
  * layer imports the read surface and NEVER the write subpath. A new write
  * operation added to the core is born on `/write`, so it is caught here with no
- * list to update — the guard is "does the source name the write subpath?", and
- * the answer must stay no. (The chain's raw writers/builders are reachable only
- * THROUGH the core, and the core never re-exports them from its read surface, so
- * banning `/write` and the one universal write method below is sufficient.)
+ * list to update — the guard is "does the source name the write subpath?".
+ *
+ * Two writing surfaces exist, so there are two structural bans:
+ *   1. `@mnema/core/write` — the core's own write operations.
+ *   2. `@mnema/chain` DIRECTLY — the chain is reachable transitively (it is the
+ *      core's dependency), and it holds writers the `/write` ban does not cover:
+ *      the raw builders, `openChainForWriting`, and `writeAnchor`/`persistKeyPair`
+ *      which write to disk WITHOUT going through `.append`. The copilot reaches
+ *      every chain TYPE it needs through the core's re-exports, so its source
+ *      never names `@mnema/chain` at all. (Test support under `tests/` may — it
+ *      builds fixture chains — and is not scanned here, which walks `src/` only.)
+ * The `.append(` guard below is a third, independent net for a writer obtained
+ * some other way (passed in as a parameter, say).
  */
 describe('@mnema/copilot boundaries', () => {
   const manifest = JSON.parse(
@@ -35,17 +44,25 @@ describe('@mnema/copilot boundaries', () => {
     expect(Object.keys(deps)).toEqual(['@mnema/core']);
   });
 
-  it('never imports the core WRITE subpath (the structural read-only boundary)', () => {
-    // The one rule that makes read-only future-proof: the write surface lives at
-    // `@mnema/core/write`, and the copilot source must never import it. Any write
-    // the core grows is born there, so this catches it automatically — no list of
-    // names to keep in sync. Matches both `from '@mnema/core/write'` and a
-    // dynamic `import('@mnema/core/write')`, single or double quoted.
+  it('never imports a writing surface (@mnema/core/write, nor @mnema/chain directly)', () => {
+    // The rule that makes read-only future-proof: the copilot source may name
+    // neither writing surface. `@mnema/core/write` holds the core's write
+    // operations; `@mnema/chain` (reachable transitively) holds the raw builders,
+    // `openChainForWriting`, and the disk-writing `writeAnchor`/`persistKeyPair`
+    // that the `/write` ban would miss. A write the core grows is born on
+    // `/write`; a chain writer is only reachable by naming `@mnema/chain` — so
+    // banning both module specifiers catches every path with no list of symbol
+    // names to keep in sync. Matches both `from '<spec>'` and a dynamic
+    // `import('<spec>')`, single or double quoted. The chain match is anchored so
+    // it does not also flag a hypothetical `@mnema/chain-something` read package.
+    const FORBIDDEN_IMPORTS = [/@mnema\/core\/write/, /@mnema\/chain(?![\w-])/];
     const offenders: string[] = [];
     const srcDir = fileURLToPath(new URL('.', import.meta.url));
     for (const file of sourceFiles(srcDir)) {
       const text = readFileSync(file, 'utf-8');
-      if (/@mnema\/core\/write/.test(text)) offenders.push(file.slice(srcDir.length));
+      for (const spec of FORBIDDEN_IMPORTS) {
+        if (spec.test(text)) offenders.push(`${file.slice(srcDir.length)} names ${spec.source}`);
+      }
     }
     expect(offenders).toEqual([]);
   });
