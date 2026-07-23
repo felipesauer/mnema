@@ -23,11 +23,6 @@ export {
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './identity/index.js';
-export {
-  type CaptureInput,
-  type CaptureOk,
-  captureMemory,
-} from './knowledge/operations.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export {
   type AdrCollision,
@@ -39,32 +34,18 @@ export {
   getDecision,
   listDecisions,
   listDecisionsByState,
-  materializeDecisions,
 } from './projections/decision-store.js';
 export { type MemoryProjection, projectKnowledge } from './projections/knowledge.js';
-export { getMemory, listMemories, materializeMemories } from './projections/knowledge-store.js';
+export { getMemory, listMemories } from './projections/knowledge-store.js';
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
-export { rebuild } from './projections/rebuild.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
-export {
-  getRun,
-  listOpenRuns,
-  listRuns,
-  materializeRuns,
-} from './projections/run-store.js';
+export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
-export {
-  getTask,
-  listTasks,
-  listTasksByState,
-  materializeTasks,
-} from './projections/task-store.js';
+export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
 export {
   chainRootForScope,
   type DiscoveryEnv,
-  type OpenTreeOptions,
   type Origin,
-  openTreeForWriting,
   type ResolvedTrees,
   resolveScope,
   resolveTrees,
@@ -72,11 +53,7 @@ export {
   TreeUnavailableError,
 } from './topology/index.js';
 export {
-  acceptDecision,
   type Clock,
-  type CreateInput,
-  type CreateOk,
-  createTask,
   DECISION_ACTIONS,
   DECISION_STATES,
   DECISION_TRANSITIONS,
@@ -89,10 +66,6 @@ export {
   type DecisionProofField,
   type DecisionState,
   type DecisionTransition,
-  type DecisionTransitionInput,
-  type DecisionTransitionOk,
-  type DecisionWriteContext,
-  type DecisionWriteError,
   decisionGate,
   findDecisionTransition,
   findTransition,
@@ -107,12 +80,6 @@ export {
   isDecisionState,
   isTaskState,
   type ProofField,
-  type RecordInput,
-  type RecordOk,
-  recordDecision,
-  rejectDecision,
-  type SupersedeInput,
-  supersedeDecision,
   systemClock,
   TASK_ACTIONS,
   TASK_STATES,
@@ -120,9 +87,4 @@ export {
   type TaskState,
   TRANSITIONS,
   type Transition,
-  type TransitionInput,
-  type TransitionOk,
-  transitionTask,
-  type WriteContext,
-  type WriteError,
 } from './workflow/index.js';
