@@ -94,8 +94,13 @@ export function resolveTrees(cwd: string, env: DiscoveryEnv): ResolvedTrees {
  * non-empty absolute path, else `~/.mnema`. A relative or empty `XDG_DATA_HOME`
  * is treated as unset — the XDG spec requires an absolute path, and honoring a
  * relative one would anchor a machine-global tree to a working directory.
+ *
+ * Exported so anything else that must live in the same app data directory — the
+ * project index (a discovery cache) among them — resolves it by the ONE rule,
+ * never a second copy that could drift from where the global tree and key root
+ * actually land.
  */
-function appDataDir(env: DiscoveryEnv): string {
+export function appDataDir(env: DiscoveryEnv): string {
   const xdg = env.xdgDataHome;
   if (xdg !== undefined && xdg.length > 0 && isAbsolute(xdg)) {
     return join(xdg, APP_DIR);
