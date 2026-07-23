@@ -43,3 +43,22 @@ export {
   guard,
   guardWithFocus,
 } from './guard/guard.js';
+export {
+  type Accountability,
+  type AccountabilityFilter,
+  accountability,
+  type KindCount,
+  type WhichCount,
+  type WhoAccount,
+} from './intelligence/accountability.js';
+export {
+  type Antipatterns,
+  antipatterns,
+  type RecurrenceFinding,
+} from './intelligence/antipatterns.js';
+export type { CatalogEvent, EventKind } from './intelligence/events.js';
+export {
+  type TimelineEntry,
+  type TimelineRole,
+  timeline,
+} from './intelligence/timeline.js';
