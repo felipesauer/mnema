@@ -1,5 +1,5 @@
 {
-  "name": "@mnema/mnema",
+  "name": "@mnema/code",
   "version": "0.0.0",
   "description": "A tamper-evident, local-first audit chain for AI-agent work. An MCP server and CLI that record every action behind workflow gates in a cryptographically verifiable log.",
   "keywords": [

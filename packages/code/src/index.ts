@@ -1,5 +1,5 @@
 /**
- * @mnema/mnema — the product surfaces.
+ * @mnema/code — the product surfaces.
  *
  * The MCP server (primary, for agents) and the CLI (for the human who
  * drives and verifies). Both are thin adapters over @mnema/core: they map
@@ -12,5 +12,5 @@
 
 import { PACKAGE_NAME as CORE_PACKAGE } from '@mnema/core';
 
-export const PACKAGE_NAME = '@mnema/mnema';
+export const PACKAGE_NAME = '@mnema/code';
 export const CORE_DEPENDENCY = CORE_PACKAGE;

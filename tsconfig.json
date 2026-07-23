@@ -4,6 +4,6 @@
     { "path": "packages/chain" },
     { "path": "packages/core" },
     { "path": "packages/copilot" },
-    { "path": "packages/mnema" }
+    { "path": "packages/code" }
   ]
 }

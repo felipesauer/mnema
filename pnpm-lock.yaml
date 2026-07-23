@@ -26,6 +26,12 @@ importers:
 
   packages/chain: {}
 
+  packages/code:
+    dependencies:
+      '@mnema/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/copilot:
     dependencies:
       '@mnema/core':
@@ -48,12 +54,6 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
-
-  packages/mnema:
-    dependencies:
-      '@mnema/core':
-        specifier: workspace:*
-        version: link:../core
 
 packages:
 

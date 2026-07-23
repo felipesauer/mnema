@@ -2,7 +2,7 @@
   "name": "mnema-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "Workspace for the mnema packages. The published product is @mnema/mnema; @mnema/chain and @mnema/core are internal.",
+  "description": "Workspace for the mnema packages. The published product is @mnema/code; @mnema/chain and @mnema/core are internal.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "MIT",
   "type": "module",
