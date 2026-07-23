@@ -210,6 +210,19 @@ describe('projectLinks — the N:N relational edge set, both directions', () => 
     expect(projectLinks(events)).toHaveLength(2);
   });
 
+  it('does NOT collapse distinct edges whose parts contain the key delimiter', () => {
+    // `rel` is an open string and `target` is not format-checked, so either may
+    // contain whatever character the dedup key joins on. Two DISTINCT edges must
+    // never fold to one just because a naive `a\nb\nc` key cannot tell them
+    // apart. The framed (length-prefixed) key keeps them distinct. This is the
+    // regression guard for a real collision found in review.
+    const events = [
+      knowledgeLinked(env('m-1', 0), { target: 'B\nrelates-to', rel: 'X' }),
+      knowledgeLinked(env('m-1', 1), { target: 'B', rel: 'relates-to\nX' }),
+    ];
+    expect(projectLinks(events)).toHaveLength(2);
+  });
+
   it('keeps a dangling edge verbatim — the target need not be present', () => {
     // No entity for `t-absent` is in this stream, yet the edge stands: a
     // cross-tree link is an asserted fact resolved on read, never dropped here.

@@ -208,11 +208,16 @@ export function projectLinks(events: readonly CatalogEvent[]): LinkEdge[] {
 }
 
 /**
- * The dedup key for an edge. A newline delimiter is safe because none of the
- * three parts (two ids, one relation label) can contain a raw newline — ids are
- * hex-and-dashes and `rel`/labels are single-line — so no two distinct triples
- * can produce the same key.
+ * The dedup key for an edge, framed so it is unambiguous for ANY content. Each
+ * part is prefixed with its length (`<len>:<part>`), so no choice of delimiter
+ * can be forged inside a part to make two distinct triples collide. A plain
+ * delimiter would not be safe: `rel` is an open literal string and `target` is
+ * not format-checked, so either could contain the delimiter itself — e.g.
+ * (target `"B\nx"`, rel `"y"`) and (target `"B"`, rel `"x\ny"`) would share a
+ * newline-joined key and the second edge would be dropped as a false duplicate.
+ * Length-prefixing removes that ambiguity the same way the chain frames its hash
+ * inputs.
  */
 function edgeKey(subject: string, target: string, rel: string): string {
-  return `${subject}\n${target}\n${rel}`;
+  return `${subject.length}:${subject}|${target.length}:${target}|${rel.length}:${rel}`;
 }
