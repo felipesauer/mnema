@@ -57,6 +57,8 @@ export {
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
 export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
+export { projectSkills, type SkillProjection } from './projections/skill.js';
+export { getSkill, listSkills, listSkillsByState } from './projections/skill-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
 export {
@@ -85,6 +87,7 @@ export {
   type DecisionTransition,
   decisionGate,
   findDecisionTransition,
+  findSkillTransition,
   findTransition,
   type GateErr,
   type GateErrorCode,
@@ -93,10 +96,25 @@ export {
   type GateResult,
   gate,
   INITIAL_DECISION_STATE,
+  INITIAL_SKILL_STATE,
   INITIAL_STATE,
   isDecisionState,
+  isSkillState,
   isTaskState,
   type ProofField,
+  SKILL_ACTIONS,
+  SKILL_STATES,
+  SKILL_TRANSITIONS,
+  type SkillAction,
+  type SkillGateErr,
+  type SkillGateErrorCode,
+  type SkillGateOk,
+  type SkillGateRequest,
+  type SkillGateResult,
+  type SkillProofField,
+  type SkillState,
+  type SkillTransition,
+  skillGate,
   systemClock,
   TASK_ACTIONS,
   TASK_STATES,

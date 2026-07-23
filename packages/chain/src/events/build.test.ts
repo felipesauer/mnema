@@ -11,6 +11,9 @@ import {
   memoryCaptured,
   runEnded,
   runStarted,
+  skillBirth,
+  skillCreated,
+  skillTransitioned,
   taskBirth,
   taskCreated,
   taskTransitioned,
@@ -325,6 +328,45 @@ describe('decisionBirth', () => {
     expect(recorded.who).toBe(transitioned.who);
     expect(recorded.which).toBe(transitioned.which);
     expect(recorded.run).toBe(transitioned.run);
+  });
+});
+
+describe('skillBirth', () => {
+  it('emits the pair in order: created then the birth transition', () => {
+    const [created, transitioned] = skillBirth(env, {
+      name: 'Small PRs',
+      body: 'One slice per PR.',
+      initial: 'proposed',
+    });
+    expect(created).toMatchObject({
+      kind: 'skill.created',
+      payload: { name: 'Small PRs', body: 'One slice per PR.' },
+    });
+    expect(transitioned).toMatchObject({
+      kind: 'skill.transitioned',
+      payload: { from: null, to: 'proposed', action: BIRTH_ACTION },
+    });
+  });
+
+  it('stamps both events with the same envelope (one atomic fact)', () => {
+    const [created, transitioned] = skillBirth(
+      { ...env, which: 'claude', run: 'r-1' },
+      { name: 'n', body: 'b', initial: 'proposed' },
+    );
+    expect(created.subject).toBe(transitioned.subject);
+    expect(created.at).toBe(transitioned.at);
+    expect(created.who).toBe(transitioned.who);
+    expect(created.which).toBe(transitioned.which);
+    expect(created.run).toBe(transitioned.run);
+  });
+
+  it('a transition with no proof omits fields entirely (byte-identical to none)', () => {
+    const withArg = skillTransitioned(env, { from: 'proposed', to: 'reviewed', action: 'review' });
+    const withoutArg = skillCreated(env, { name: 'n', body: 'b' });
+    expect(canonicalStringify(toCanonical(withArg))).not.toContain('fields');
+    // A skill transition never carries `by`.
+    expect(canonicalStringify(toCanonical(withArg))).not.toContain('"by"');
+    expect(withoutArg.kind).toBe('skill.created');
   });
 });
 

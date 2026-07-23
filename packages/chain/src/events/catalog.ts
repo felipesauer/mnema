@@ -385,6 +385,57 @@ export const RECOMMENDED_LINK_RELATIONS = [
 ] as const;
 
 /**
+ * A skill was created — the birth of a reusable pattern of work.
+ *
+ * A skill is a distilled way of working (a recipe, a checklist, a convention)
+ * that a team curates: proposed, reviewed, then adopted as a live pattern or
+ * rejected, and later deprecated when it falls out of use. Like a task and a
+ * decision it is a WORKFLOW entity — multi-state, born through a birth pair — so
+ * its creation carries only what identifies the pattern (`name`, `body`) and its
+ * initial STATE is established by the birth `skill.transitioned`, never by this
+ * event. There is no citable label like a decision's `adr`: a skill is named by
+ * its id/alias, and where it came from (which rework suggested it) is derived
+ * from the envelope's `run`, not a payload field.
+ */
+export interface SkillCreatedV1 extends Envelope {
+  readonly kind: 'skill.created';
+  readonly v: 1;
+  /** Subject is the skill's id. */
+  readonly payload: {
+    /** A short title for the pattern. */
+    readonly name: string;
+    /** The pattern itself — the reusable instruction or description. */
+    readonly body: string;
+  };
+}
+
+/**
+ * A skill moved between workflow states. Mirrors `task.transitioned` exactly —
+ * `from`/`to`/`action` are literal strings and `fields` carries the textual
+ * proof — and deliberately does NOT carry the `by` a decision's does. A skill is
+ * not relational: one skill replacing another is a `knowledge.linked`
+ * (`rel: "supersedes"`), the relational fact the catalog already proves, not a
+ * field here. So a skill's move is the simpler of the two workflow transitions.
+ *
+ * `from` is `null` for exactly one transition: the birth that gives a skill its
+ * initial state. The same rule as tasks and decisions — current state is the
+ * `to` of the last transition, read without ever consulting the workflow.
+ */
+export interface SkillTransitionedV1 extends Envelope {
+  readonly kind: 'skill.transitioned';
+  readonly v: 1;
+  /** Subject is the skill's id. */
+  readonly payload: {
+    /** The state left behind, or `null` when this is the birth transition. */
+    readonly from: string | null;
+    readonly to: string;
+    readonly action: string;
+    /** The transition's proof and context; omitted when it carries none. */
+    readonly fields?: TransitionFields;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -402,7 +453,9 @@ export type CatalogEvent =
   | MemoryCapturedV1
   | ObservationRecordedV1
   | HandoffRecordedV1
-  | KnowledgeLinkedV1;
+  | KnowledgeLinkedV1
+  | SkillCreatedV1
+  | SkillTransitionedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -425,4 +478,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'observation.recorded': 1,
   'handoff.recorded': 1,
   'knowledge.linked': 1,
+  'skill.created': 1,
+  'skill.transitioned': 1,
 };

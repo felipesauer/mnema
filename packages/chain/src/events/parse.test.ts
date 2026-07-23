@@ -11,6 +11,8 @@ import {
   observationRecorded,
   runEnded,
   runStarted,
+  skillCreated,
+  skillTransitioned,
   taskCreated,
   taskTransitioned,
 } from './build.js';
@@ -174,6 +176,61 @@ describe('parseEvent — the three knowledge facts (closed shapes)', () => {
       '"rel":"relates-to","targetKind":"task"',
     );
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "targetKind"/);
+  });
+});
+
+describe('parseEvent — skill events (a workflow entity, no `by`)', () => {
+  it('parses skill.created and round-trips it', () => {
+    const event = skillCreated(
+      { ...envelope, subject: 'sk-1' },
+      { name: 'Small PRs', body: 'One slice per PR; merge before the next.' },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('requires a non-empty name and body', () => {
+    for (const p of ['"name":""', '"body":""']) {
+      const forged =
+        `{"kind":"skill.created","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"sk-1","payload":{"name":"n","body":"b"}}`.replace(
+          p.startsWith('"name"') ? '"name":"n"' : '"body":"b"',
+          p,
+        );
+      expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
+    }
+  });
+
+  it('rejects an unknown payload field on a skill.created (no smuggling)', () => {
+    const good = skillCreated({ ...envelope, subject: 'sk-1' }, { name: 'n', body: 'b' });
+    const forged = line(good).replace('"body":"b"', '"body":"b","adr":"ADR-1"');
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "adr"/);
+  });
+
+  it('parses a skill.transitioned carrying proof and round-trips it', () => {
+    const event = skillTransitioned(
+      { ...envelope, subject: 'sk-1', which: 'claude', run: 'r-1' },
+      { from: 'proposed', to: 'reviewed', action: 'review', fields: { note: 'looks solid' } },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('re-canonicalizes a birth transition (from: null) to identical bytes', () => {
+    const event = skillTransitioned(
+      { ...envelope, subject: 'sk-1' },
+      { from: null, to: 'proposed', action: 'create' },
+    );
+    const once = line(event);
+    expect(canonicalStringify(toCanonical(parseEvent(once, reg)))).toBe(once);
+  });
+
+  it('rejects a `by` on a skill transition (a skill is not relational)', () => {
+    // `by` is a decision's field, never a skill's; the closed shape rejects it.
+    const forged =
+      '{"kind":"skill.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"sk-1","payload":{"from":"proposed","to":"reviewed","action":"review","by":"sk-2"}}';
+    expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "by"/);
   });
 });
 

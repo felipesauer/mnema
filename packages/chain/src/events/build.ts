@@ -358,3 +358,69 @@ export function taskBirth(
     taskTransitioned(envelope, { from: null, to: payload.initial, action: BIRTH_ACTION }),
   ];
 }
+
+/**
+ * Builds a `skill.created` event (subject = the skill's id). A skill's creation
+ * carries only what names the reusable pattern — `name` and `body` — because,
+ * unlike a decision, its initial state is established by the birth transition and
+ * it has no citable label to freeze.
+ */
+export function skillCreated(
+  envelope: EnvelopeInput,
+  payload: { name: string; body: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'skill.created',
+    ...envelopeFields(envelope),
+    payload: { name: payload.name, body: payload.body },
+  };
+}
+
+/**
+ * Builds a `skill.transitioned` event (subject = the skill's id). Mirrors
+ * `taskTransitioned` — `from` is a literal state or `null` for the birth
+ * transition, and `fields` is omitted when empty so a transition with no proof
+ * stays byte-identical to one built without the argument. A skill's transition
+ * carries no `by`: replacement between skills is a `knowledge.linked`, not a
+ * field here.
+ */
+export function skillTransitioned(
+  envelope: EnvelopeInput,
+  payload: { from: string | null; to: string; action: string; fields?: TransitionFields },
+): CatalogEvent {
+  const p: {
+    from: string | null;
+    to: string;
+    action: string;
+    fields?: TransitionFields;
+  } = { from: payload.from, to: payload.to, action: payload.action };
+  if (payload.fields !== undefined) {
+    const trimmed = transitionFields(payload.fields);
+    if (Object.keys(trimmed).length > 0) p.fields = trimmed;
+  }
+  return {
+    v: 1,
+    kind: 'skill.transitioned',
+    ...envelopeFields(envelope),
+    payload: p,
+  };
+}
+
+/**
+ * Builds the pair of events a skill's birth always emits, in order: the
+ * `skill.created` that proves it exists, then the birth `skill.transitioned`
+ * (`from: null`, `action: "create"`) that establishes its initial state. The two
+ * are one atomic fact — like a task or decision, a skill never exists without a
+ * state. The caller supplies `initial` because which state a skill starts in is
+ * the domain's concern, not the chain's.
+ */
+export function skillBirth(
+  envelope: EnvelopeInput,
+  payload: { name: string; body: string; initial: string },
+): [CatalogEvent, CatalogEvent] {
+  return [
+    skillCreated(envelope, { name: payload.name, body: payload.body }),
+    skillTransitioned(envelope, { from: null, to: payload.initial, action: BIRTH_ACTION }),
+  ];
+}
