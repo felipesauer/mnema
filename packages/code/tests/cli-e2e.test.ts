@@ -97,6 +97,57 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(verify(root).fullySigned).toBe(true);
   });
 
+  it('walks a task through its states: init → create → submit → start → complete → verify', async () => {
+    await run(['init'], capture().io);
+
+    // Create, and read the id back out of the CLI's own output.
+    const c = capture();
+    await run(['task', 'ship the feature'], c.io);
+    const match = c.out.join('\n').match(/Created task t-[0-9a-f]{4} \(([0-9a-f-]{36})\)/);
+    expect(match).not.toBeNull();
+    const id = (match as RegExpMatchArray)[1] as string;
+
+    // Move it forward through the workflow via the generic `task move`.
+    const submit = capture();
+    await run(['task', 'move', 'submit', id], submit.io);
+    expect(submit.failed()).toBe(false);
+    expect(submit.out.join('\n')).toMatch(/→ READY$/);
+
+    const start = capture();
+    await run(['task', 'move', 'start', id], start.io);
+    expect(start.failed()).toBe(false);
+    expect(start.out.join('\n')).toMatch(/→ IN_PROGRESS$/);
+
+    const complete = capture();
+    await run(['task', 'move', 'complete', id, '--note', 'done and shipped'], complete.io);
+    expect(complete.failed()).toBe(false);
+    expect(complete.out.join('\n')).toMatch(/→ DONE$/);
+
+    // The chain that recorded the whole journey still verifies, fully signed.
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+    expect(verify(root).ok).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('an illegal move prints the gate refusal and signals failure', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'a task'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    // start from DRAFT is illegal — the gate refuses, the CLI prints it and fails.
+    const bad = capture();
+    await run(['task', 'move', 'start', id], bad.io);
+    expect(bad.failed()).toBe(true);
+    expect(bad.err.join('\n')).toContain('Refused (ILLEGAL_TRANSITION)');
+  });
+
   it('task before init refuses and signals failure', async () => {
     const t = capture();
     await run(['task', 'homeless'], t.io);

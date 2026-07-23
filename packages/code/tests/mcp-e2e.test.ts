@@ -17,14 +17,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
+import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  orderedEvents,
+  PROJECT_DIR,
+  projectTasks,
+  resolveTrees,
+} from '@mnema/core';
+import { createTask } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
-import { closeSession, openSession } from '../src/mcp/session.js';
-import { runBootstrap, runCaptureMemory } from '../src/mcp/tools.js';
+import { closeSession, openSession, writeContext } from '../src/mcp/session.js';
+import { runBootstrap, runCaptureMemory, runTaskTransition } from '../src/mcp/tools.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -101,6 +109,58 @@ describe('MCP session + tools — unit', () => {
     expect(context.resume.focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
   });
 
+  it('task_transition moves a task through the same gate the CLI uses', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    // Create a task in the session's (private) tree, then move it via the tool.
+    const ctx = writeContext(session.trees, session.scope);
+    const created = createTask(ctx, { title: 'wire the tool', which: session.which });
+    if (!created.ok) throw new Error('setup: create refused');
+    ctx.writer.checkpoint();
+
+    const submitted = runTaskTransition(session, { id: created.id, action: 'submit' });
+    expect(submitted).toMatchObject({ ok: true, to: 'READY' });
+    const started = runTaskTransition(session, { id: created.id, action: 'start' });
+    expect(started).toMatchObject({ ok: true, to: 'IN_PROGRESS' });
+
+    // The move landed in the session's tree and the chain still verifies.
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const state = projectTasks(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
+      created.id,
+    )?.state;
+    expect(state).toBe('IN_PROGRESS');
+  });
+
+  it('task_transition returns the gate refusal as data, never throwing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const ctx = writeContext(session.trees, session.scope);
+    const created = createTask(ctx, { title: 'a task', which: session.which });
+    if (!created.ok) throw new Error('setup: create refused');
+    ctx.writer.checkpoint();
+
+    // DRAFT → start is illegal (submit first); complete with no note is unproven.
+    const illegal = runTaskTransition(session, { id: created.id, action: 'start' });
+    expect(illegal).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
+    const unknown = runTaskTransition(session, { id: created.id, action: 'frobnicate' });
+    expect(unknown).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
+    const missing = runTaskTransition(session, {
+      id: '00000000-0000-7000-8000-000000000000',
+      action: 'submit',
+    });
+    expect(missing).toMatchObject({ ok: false, code: 'UNKNOWN_TASK' });
+  });
+
   it('closeSession ends the run; a second close is a tolerated no-op', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(closeSession(session)).toBe(true);
@@ -139,10 +199,10 @@ describe('MCP server — end to end over a real client', () => {
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
-    // The handshake ran; the two tools are advertised.
+    // The handshake ran; the tools are advertised.
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
-    expect(names).toEqual(['bootstrap', 'capture_memory']);
+    expect(names).toEqual(['bootstrap', 'capture_memory', 'task_transition']);
 
     // capture_memory writes into the resolved project's private tree.
     const captured = await client.callTool({
@@ -160,6 +220,41 @@ describe('MCP server — end to end over a real client', () => {
     const boot = await client.callTool({ name: 'bootstrap' });
     const context = JSON.parse(textOf(boot)) as { resume: { focus: { openRuns: unknown[] } } };
     expect(context.resume.focus.openRuns.length).toBeGreaterThan(0);
+
+    await client.close();
+  });
+
+  it('task_transition moves a task over the real transport, and refuses as a tool error', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+
+    // Seed a task in the project's private tree (the scope an agent session
+    // writes to) so the tool has something to move. Same env → same machine
+    // anchor, so the tool's writer authorizes it.
+    const trees = resolveTrees(project, env);
+    const ctx = writeContext(trees, 'private');
+    const created = createTask(ctx, { title: 'over the wire', which: 'claude-code' });
+    if (!created.ok) throw new Error('setup: create refused');
+    ctx.writer.checkpoint();
+
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // A legal move returns the new state.
+    const moved = await client.callTool({
+      name: 'task_transition',
+      arguments: { id: created.id, action: 'submit' },
+    });
+    expect(moved.isError).toBeFalsy();
+    expect(textOf(moved)).toMatch(/→ READY$/);
+
+    // An illegal move comes back as a tool error carrying the gate's reason —
+    // not a thrown exception that would break the connection.
+    const refused = await client.callTool({
+      name: 'task_transition',
+      arguments: { id: created.id, action: 'complete' },
+    });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (ILLEGAL_TRANSITION)');
 
     await client.close();
   });
