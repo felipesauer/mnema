@@ -23,6 +23,11 @@ export {
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './identity/index.js';
+export {
+  type CaptureInput,
+  type CaptureOk,
+  captureMemory,
+} from './knowledge/operations.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export {
   type AdrCollision,
@@ -36,6 +41,8 @@ export {
   listDecisionsByState,
   materializeDecisions,
 } from './projections/decision-store.js';
+export { type MemoryProjection, projectKnowledge } from './projections/knowledge.js';
+export { getMemory, listMemories, materializeMemories } from './projections/knowledge-store.js';
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
 export { rebuild } from './projections/rebuild.js';
 export { projectRuns, type RunProjection } from './projections/run.js';

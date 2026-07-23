@@ -249,6 +249,33 @@ export interface KeyRevokedV1 extends Envelope {
 }
 
 /**
+ * A memory was captured — a point-in-time fact of knowledge.
+ *
+ * This is a POINTLESS fact in the workflow sense: it has no state and no birth
+ * pair. A memory does not move through a lifecycle, so nothing about it is ever
+ * re-derived on read; there is exactly one event, and replaying it a thousand
+ * times yields the identical fact. That is why it needs no `from: null`
+ * transition the way a task or decision does — the birth pair exists only to
+ * pin an initial STATE, and a fact that has no state has no state to pin. What
+ * proves the memory is the envelope the catalog already carries: `who` captured
+ * it, `at` when, `subject` is the memory's own minted id. The payload adds only
+ * the one thing the envelope does not: the `content` itself.
+ *
+ * "Superseded", "revised", or "obsolete" is never a field here — the fact is
+ * immutable. Those are LATER facts (a relational link or a tombstone) that a
+ * projection respects; the captured memory itself never changes.
+ */
+export interface MemoryCapturedV1 extends Envelope {
+  readonly kind: 'memory.captured';
+  readonly v: 1;
+  /** Subject is the memory's own id. */
+  readonly payload: {
+    /** The captured content. */
+    readonly content: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -262,7 +289,8 @@ export type CatalogEvent =
   | DecisionTransitionedV1
   | IdentityFoundedV1
   | KeyEnrolledV1
-  | KeyRevokedV1;
+  | KeyRevokedV1
+  | MemoryCapturedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -281,4 +309,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'identity.founded': 1,
   'key.enrolled': 1,
   'key.revoked': 1,
+  'memory.captured': 1,
 };

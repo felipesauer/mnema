@@ -8,6 +8,7 @@ import {
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  memoryCaptured,
   runEnded,
   runStarted,
   taskBirth,
@@ -324,5 +325,22 @@ describe('decisionBirth', () => {
     expect(recorded.who).toBe(transitioned.who);
     expect(recorded.which).toBe(transitioned.which);
     expect(recorded.run).toBe(transitioned.run);
+  });
+});
+
+describe('memoryCaptured', () => {
+  it('stamps the latest version and kind, and carries only content in the payload', () => {
+    const event = memoryCaptured(env, { content: 'a fact worth proving' });
+    expect(event).toMatchObject({ v: 1, kind: 'memory.captured' });
+    if (event.kind === 'memory.captured') {
+      expect(event.payload).toEqual({ content: 'a fact worth proving' });
+    }
+  });
+
+  it('is a lone fact — no birth pair, so it is one event and canonicalizes cleanly', () => {
+    const event = memoryCaptured({ ...env, which: 'claude', run: 'r-1' }, { content: 'x' });
+    expect(event.which).toBe('claude');
+    expect(event.run).toBe('r-1');
+    expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
   });
 });

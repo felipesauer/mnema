@@ -5,6 +5,7 @@ import {
   type ChainWriter,
   decisionRecorded,
   decisionTransitioned,
+  memoryCaptured,
   openChainForWriting,
   runEnded,
   runStarted,
@@ -304,6 +305,67 @@ describe('ProjectionCache — decisions', () => {
     const second = openCache(dbPath);
     second.rebuild();
     expect(second.listDecisions()).toEqual(before);
+  });
+});
+
+describe('ProjectionCache — memories', () => {
+  it('materializes a captured memory and reads it back by id', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(memoryCaptured(env('m-1', 0), { content: 'a fact worth proving' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getMemory('m-1')).toEqual({
+      id: 'm-1',
+      content: 'a fact worth proving',
+      who: 'felipe',
+      capturedAt: at(0),
+    });
+  });
+
+  it('projects a LONE memory event — a point-in-time fact needs no birth pair', () => {
+    // The very shape the task projection drops (a single event) is a whole memory.
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(memoryCaptured(env('m-1', 0), { content: 'lone' }));
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getMemory('m-1')?.content).toBe('lone');
+    expect(cache.listMemories()).toHaveLength(1);
+  });
+
+  it('rebuilds memories identically after the cache is wiped, from the chain alone', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(memoryCaptured(env('m-1', 0), { content: 'first' }));
+    w.append(memoryCaptured(env('m-2', 1), { content: 'second' }));
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = first.listMemories();
+    first.close();
+    caches = caches.filter((c) => c !== first);
+
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    expect(second.listMemories()).toEqual(before);
+  });
+
+  it('projects tasks and memories from the same tail side by side', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    w.append(memoryCaptured(env('m-1', 2), { content: 'knowledge' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getMemory('m-1')?.content).toBe('knowledge');
+    // The domains stay separate: the memory is not a task, the task not a memory.
+    expect(cache.listTasks()).toHaveLength(1);
+    expect(cache.listMemories()).toHaveLength(1);
   });
 });
 
