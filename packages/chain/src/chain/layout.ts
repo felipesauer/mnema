@@ -108,3 +108,15 @@ export function installationIdPath(layout: ChainLayout, fingerprint: string): st
 export function anchorPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}.anchor`);
 }
+
+/**
+ * Path to the chain's OWN `.gitignore` — the one the chain writes and owns, at
+ * the root of its own tree. It exists only for a project tree that is meant to
+ * be committed: it keeps the tree's local-only material (the private subtree,
+ * private keys, installation ids, anchors) out of git while letting the proof
+ * files (public keys, segments, checkpoints, tail proofs) through. It is never
+ * the project's own `.gitignore` — the chain touches only what it owns.
+ */
+export function gitignorePath(layout: ChainLayout): string {
+  return join(layout.root, '.gitignore');
+}

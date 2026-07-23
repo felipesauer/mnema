@@ -57,7 +57,7 @@ export {
   readAnchor,
   writeAnchor,
 } from './chain/keystore.js';
-export type { ChainLayout } from './chain/layout.js';
+export { type ChainLayout, gitignorePath } from './chain/layout.js';
 export {
   listPublicKeyFingerprints,
   listTails,
@@ -65,6 +65,7 @@ export {
   readTailCheckpoints,
   readTailEntries,
 } from './chain/store.js';
+export { ensureTree } from './chain/tree.js';
 export {
   type CensusNote,
   canonicalIdentityForm,

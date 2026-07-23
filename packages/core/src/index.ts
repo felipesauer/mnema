@@ -36,7 +36,7 @@ export {
   listDecisionsByState,
   materializeDecisions,
 } from './projections/decision-store.js';
-export { orderedEvents } from './projections/order.js';
+export { orderedEvents, orderedEventsAcross } from './projections/order.js';
 export { rebuild } from './projections/rebuild.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
 export {
@@ -52,6 +52,23 @@ export {
   listTasksByState,
   materializeTasks,
 } from './projections/task-store.js';
+export {
+  APP_DIR,
+  chainRootForScope,
+  type DiscoveryEnv,
+  GLOBAL_DIR,
+  IDENTITY_DIR,
+  type OpenTreeOptions,
+  type Origin,
+  openTreeForWriting,
+  PRIVATE_DIR,
+  PROJECT_DIR,
+  type ResolvedTrees,
+  resolveScope,
+  resolveTrees,
+  type Scope,
+  TreeUnavailableError,
+} from './topology/index.js';
 export {
   acceptDecision,
   type Clock,
