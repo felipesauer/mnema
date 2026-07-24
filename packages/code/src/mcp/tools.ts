@@ -14,12 +14,16 @@
  * transport, and what keeps the surface from growing a second implementation of
  * the domain.
  *
- * The tools here: `capture_memory`, `record_decision`, and `create_skill` (the
- * write mold, one append via a birth operation), `task_transition`,
+ * The tools here: `capture_memory`, `record_decision`, `create_skill`,
+ * `record_observation`, `record_handoff`, and `link_knowledge` (the write mold,
+ * one append via a birth/fact operation), `task_transition`,
  * `decision_transition`, and `skill_transition` (the same mold applied to a gated
  * state change), and `bootstrap` (the read mold, one derivation over the
- * projection cache). The server wires these onto the protocol; the wiring adds
- * nothing but the schema and the response envelope.
+ * projection cache). The knowledge FACTS (observation/handoff/link) share the
+ * memory mold exactly — one append, no gate — and forward the ids they reference
+ * without validating them (a dangling reference is honest cross-tree). The server
+ * wires these onto the protocol; the wiring adds nothing but the schema and the
+ * response envelope.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -42,7 +46,10 @@ import {
   captureMemory,
   createSkill,
   deprecateSkill,
+  linkKnowledge,
   recordDecision,
+  recordHandoff,
+  recordObservation,
   rejectDecision,
   rejectSkill,
   reviewSkill,
@@ -200,6 +207,145 @@ export function runCaptureMemory(
   // Checkpoint so the capture is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   return { ok: true, id: captured.id };
+}
+
+/** An observation was recorded, or the requested scope was not available here. */
+export type RecordObservationResult =
+  | {
+      readonly ok: true;
+      /** The observation's OWN minted id (the event subject). */
+      readonly id: string;
+    }
+  | {
+      readonly ok: false;
+      /** The requested scope names a tree absent in this context. */
+      readonly code: 'SCOPE_UNAVAILABLE';
+      /** The human-readable reason the record was refused. */
+      readonly message: string;
+    };
+
+/** A handoff or a link was recorded, or the requested scope was not available. */
+export type FactRecordedResult =
+  | {
+      readonly ok: true;
+    }
+  | {
+      readonly ok: false;
+      /** The requested scope names a tree absent in this context. */
+      readonly code: 'SCOPE_UNAVAILABLE';
+      /** The human-readable reason the record was refused. */
+      readonly message: string;
+    };
+
+/**
+ * `record_observation` — records one observation about an entity, the MCP
+ * counterpart of `mnema observe`. Like `capture_memory`, the tree is a per-action
+ * choice on top of the session's default: an explicit `scope` wins, else the
+ * session's own scope stands. An observation mints its OWN id (it is an entity),
+ * which is returned.
+ *
+ * The `about` reference is forwarded to the core as-is and NEVER validated — the
+ * observed entity may live in a tree this session cannot see, an honest
+ * cross-tree assertion resolved on read. Opens the scope's writer, records the
+ * observation attributed to the connecting agent (`which`) and pinned to the run,
+ * then checkpoints. An override naming a tree absent here is refused as data
+ * (SCOPE_UNAVAILABLE), never thrown.
+ */
+export function runRecordObservation(
+  session: Session,
+  input: { about: string; topic: string; text: string; scope?: Scope },
+): RecordObservationResult {
+  const scope = input.scope ?? session.scope;
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
+  const recorded = recordObservation(ctx, {
+    about: input.about,
+    topic: input.topic,
+    text: input.text,
+    which: session.which,
+    run: session.runId,
+  });
+  // Checkpoint so the record is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true, id: recorded.id };
+}
+
+/**
+ * `record_handoff` — records one handoff on a task, the MCP counterpart of
+ * `mnema handoff`. The tree is a per-action choice on top of the session default.
+ * A handoff mints NO id (its subject IS the task), so the result carries no id —
+ * only whether it landed.
+ *
+ * The `task` reference is forwarded as-is and NEVER validated. `from == to` is
+ * legitimate (a chat restart) and is not refused. Opens the writer, records the
+ * handoff attributed to the agent (`which`) and pinned to the run, checkpoints.
+ * An override naming an absent tree is refused as data.
+ */
+export function runRecordHandoff(
+  session: Session,
+  input: { task: string; from: string; to: string; scope?: Scope },
+): FactRecordedResult {
+  const scope = input.scope ?? session.scope;
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
+  recordHandoff(ctx, {
+    task: input.task,
+    fromAgent: input.from,
+    toAgent: input.to,
+    which: session.which,
+    run: session.runId,
+  });
+  // Checkpoint so the record is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true };
+}
+
+/**
+ * `link_knowledge` — links one entity to another, the MCP counterpart of `mnema
+ * link`. The tree is a per-action choice on top of the session default. A link
+ * mints NO id (it is an edge), so the result carries no id.
+ *
+ * Neither `subject` nor `target` is validated — a link is legitimately cross-tree
+ * and a dangling reference is honest, resolved on read. `rel` is an OPEN string,
+ * forwarded verbatim (no enum on the surface). Opens the writer, records the link
+ * attributed to the agent (`which`) and pinned to the run, checkpoints. An
+ * override naming an absent tree is refused as data.
+ */
+export function runLinkKnowledge(
+  session: Session,
+  input: { subject: string; target: string; rel: string; scope?: Scope },
+): FactRecordedResult {
+  const scope = input.scope ?? session.scope;
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
+  linkKnowledge(ctx, {
+    subject: input.subject,
+    target: input.target,
+    rel: input.rel,
+    which: session.which,
+    run: session.runId,
+  });
+  // Checkpoint so the record is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true };
 }
 
 /**

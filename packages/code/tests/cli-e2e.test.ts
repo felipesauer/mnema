@@ -16,6 +16,10 @@ import {
   listProjects,
   orderedEvents,
   projectDecisions,
+  projectHandoffs,
+  projectKnowledge,
+  projectLinks,
+  projectObservations,
   projectSkills,
   resolveTrees,
 } from '@mnema/core';
@@ -306,6 +310,10 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(h.out.join('\n')).toContain('task');
     expect(h.out.join('\n')).toContain('decision');
     expect(h.out.join('\n')).toContain('skill');
+    expect(h.out.join('\n')).toContain('memory');
+    expect(h.out.join('\n')).toContain('observe');
+    expect(h.out.join('\n')).toContain('handoff');
+    expect(h.out.join('\n')).toContain('link');
     expect(h.out.join('\n')).toContain('verify');
   });
 
@@ -617,5 +625,158 @@ describe('mnema CLI — skill, end to end', () => {
     await run(['skill', 'homeless', '--body', 'no project'], s.io);
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('Run `mnema init`');
+  });
+});
+
+describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end', () => {
+  function treesOf() {
+    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+  }
+
+  it('memory captures a fact, prints its id, lands in public, and verifies', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['memory', 'the auth flow uses PKCE'], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toMatch(/^Captured memory [0-9a-f-]{36}$/);
+    const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+
+    const root = treesOf().projectPublic as string;
+    expect(projectKnowledge(orderedEvents({ root }, catalogUpcasters())).get(id)?.content).toBe(
+      'the auth flow uses PKCE',
+    );
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('memory --scope private lands in private, not public (parity with the MCP tool)', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['memory', 'this machine only', '--scope', 'private'], c.io);
+    expect(c.failed()).toBe(false);
+    const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+    const trees = treesOf();
+    expect(
+      projectKnowledge(
+        orderedEvents({ root: trees.projectPrivate as string }, catalogUpcasters()),
+      ).has(id),
+    ).toBe(true);
+    const publicRoot = trees.projectPublic as string;
+    const publicMems = existsSync(publicRoot)
+      ? projectKnowledge(orderedEvents({ root: publicRoot }, catalogUpcasters()))
+      : new Map();
+    expect(publicMems.has(id)).toBe(false);
+  });
+
+  it('observe records an observation about an entity (dangling `about` accepted), and verifies', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    // `about` names an entity that does not exist — accepted, not refused.
+    await run(
+      ['observe', '00000000-0000-7000-8000-000000000000', '--topic', 'perf', '--text', 'O(n^2)'],
+      c.io,
+    );
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toMatch(/^Recorded observation [0-9a-f-]{36} about /);
+    const id = (
+      c.out.join('\n').match(/observation ([0-9a-f-]{36})/) as RegExpMatchArray
+    )[1] as string;
+
+    const root = treesOf().projectPublic as string;
+    const o = projectObservations(orderedEvents({ root }, catalogUpcasters())).get(id);
+    expect(o?.about).toBe('00000000-0000-7000-8000-000000000000');
+    expect(o?.topic).toBe('perf');
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('observe requires --topic and --text (a missing one is a usage error)', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['observe', 'some-id', '--topic', 'perf'], c.io); // no --text
+    expect(c.failed()).toBe(true);
+  });
+
+  it('handoff records the fact (no id), from == to accepted, and verifies', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    // The same agent from and to — a chat restart, legitimate.
+    await run(['handoff', 'a-task-id', 'claude-code', 'claude-code'], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toBe('Recorded handoff on a-task-id: claude-code → claude-code');
+
+    const root = treesOf().projectPublic as string;
+    const list = projectHandoffs(orderedEvents({ root }, catalogUpcasters())).get('a-task-id');
+    expect(list?.length).toBe(1);
+    expect(list?.[0]?.toAgent).toBe('claude-code');
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('link records a cross-tree edge with a rel OUTSIDE the recommended set, and verifies', async () => {
+    await run(['init'], capture().io);
+    // subject in private, pointing at a public target that need not exist — a
+    // link is legitimately cross-tree; the rel is not one of the recommended set.
+    const c = capture();
+    await run(
+      [
+        'link',
+        'A',
+        '00000000-0000-7000-8000-000000000000',
+        '--rel',
+        'inspired-by',
+        '--scope',
+        'private',
+      ],
+      c.io,
+    );
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toBe('Linked A —inspired-by→ 00000000-0000-7000-8000-000000000000');
+
+    const trees = treesOf();
+    const edges = projectLinks(
+      orderedEvents({ root: trees.projectPrivate as string }, catalogUpcasters()),
+    );
+    expect(edges).toEqual([
+      expect.objectContaining({
+        subject: 'A',
+        target: '00000000-0000-7000-8000-000000000000',
+        rel: 'inspired-by',
+      }),
+    ]);
+    expect(verify(trees.projectPrivate as string).fullySigned).toBe(true);
+  });
+
+  it('each knowledge verb refuses before init and signals failure', async () => {
+    const m = capture();
+    await run(['memory', 'homeless'], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('Run `mnema init`');
+
+    const o = capture();
+    await run(['observe', 'x', '--topic', 't', '--text', 'obs'], o.io);
+    expect(o.failed()).toBe(true);
+
+    const h = capture();
+    await run(['handoff', 'T', 'a', 'b'], h.io);
+    expect(h.failed()).toBe(true);
+
+    const l = capture();
+    await run(['link', 'A', 'B', '--rel', 'relates-to'], l.io);
+    expect(l.failed()).toBe(true);
+  });
+
+  it('a knowledge verb with --scope global works with no project', async () => {
+    const orphan = join(repo, 'nowhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const c = capture();
+    await run(['memory', 'a cross-project lesson', '--scope', 'global'], c.io);
+    expect(c.failed()).toBe(false);
+    const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+    const trees = resolveTrees(orphan, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    expect(
+      projectKnowledge(orderedEvents({ root: trees.global }, catalogUpcasters())).has(id),
+    ).toBe(true);
   });
 });
