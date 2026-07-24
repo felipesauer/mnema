@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
-import { listProjects, orderedEvents, resolveTrees } from '@mnema/core';
+import { listProjects, orderedEvents, projectDecisions, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 
@@ -298,6 +298,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(h.failed()).toBe(false);
     expect(h.out.join('\n')).toContain('init');
     expect(h.out.join('\n')).toContain('task');
+    expect(h.out.join('\n')).toContain('decision');
     expect(h.out.join('\n')).toContain('verify');
   });
 
@@ -305,5 +306,160 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     const u = capture();
     await run(['frobnicate'], u.io);
     expect(u.failed()).toBe(true);
+  });
+});
+
+describe('mnema CLI — decision, end to end', () => {
+  /** Reads the id out of a `Recorded decision ADR-n (<id>)` line. */
+  function idOf(out: string): string {
+    return (out.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+  }
+
+  it('records a decision, prints its ADR (not an alias), and verifies', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['decision', 'adopt the ledger', 'it is the audit surface'], c.io);
+    expect(c.failed()).toBe(false);
+    // The human name is the ADR — never a `t-xxxx`-style alias, which a decision
+    // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
+    // no alias in between.
+    expect(c.out.join('\n')).toMatch(/^Recorded decision ADR-1 \([0-9a-f-]{36}\)$/);
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    expect(
+      orderedEvents({ root }, catalogUpcasters()).some((e) => e.kind === 'decision.recorded'),
+    ).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('records both a title AND a rationale — a missing rationale is a parser error', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    // Only the title given; the rationale positional is missing.
+    await run(['decision', 'only a title'], c.io);
+    expect(c.failed()).toBe(true);
+  });
+
+  it('accepts a decision with a note and prints ADR → accepted', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['decision', 'a call', 'because'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const a = capture();
+    await run(['decision', 'move', 'accept', id, '--note', 'we adopt it'], a.io);
+    expect(a.failed()).toBe(false);
+    expect(a.out.join('\n')).toMatch(/^Decision ADR-1 → accepted$/);
+  });
+
+  it('accept without a note prints the gate refusal and fails', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['decision', 'a call', 'because'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const a = capture();
+    await run(['decision', 'move', 'accept', id], a.io);
+    expect(a.failed()).toBe(true);
+    expect(a.err.join('\n')).toContain('Refused (MISSING_PROOF)');
+  });
+
+  it('supersede <old> <new> --reason links supersededBy, and verifies', async () => {
+    await run(['init'], capture().io);
+    const o = capture();
+    await run(['decision', 'old approach', 'r1'], o.io);
+    const oldId = idOf(o.out.join('\n'));
+    const n = capture();
+    await run(['decision', 'new approach', 'r2'], n.io);
+    const newId = idOf(n.out.join('\n'));
+
+    const s = capture();
+    await run(['decision', 'supersede', oldId, newId, '--reason', 'a better way'], s.io);
+    expect(s.failed()).toBe(false);
+    expect(s.out.join('\n')).toMatch(/^Decision ADR-1 → superseded$/);
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const d = projectDecisions(orderedEvents({ root }, catalogUpcasters())).get(oldId);
+    expect(d?.state).toBe('superseded');
+    expect(d?.supersededBy).toBe(newId);
+    expect(verify(root).ok).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('supersede without a reason prints the gate refusal and fails', async () => {
+    await run(['init'], capture().io);
+    const o = capture();
+    await run(['decision', 'old', 'r1'], o.io);
+    const oldId = idOf(o.out.join('\n'));
+    const n = capture();
+    await run(['decision', 'new', 'r2'], n.io);
+    const newId = idOf(n.out.join('\n'));
+
+    const s = capture();
+    await run(['decision', 'supersede', oldId, newId], s.io);
+    expect(s.failed()).toBe(true);
+    expect(s.err.join('\n')).toContain('Refused (MISSING_PROOF)');
+  });
+
+  it('supersede of a decision that does not exist reports UNKNOWN_DECISION', async () => {
+    await run(['init'], capture().io);
+    const n = capture();
+    await run(['decision', 'new', 'r'], n.io);
+    const newId = idOf(n.out.join('\n'));
+
+    const s = capture();
+    await run(
+      ['decision', 'supersede', '00000000-0000-7000-8000-000000000000', newId, '--reason', 'x'],
+      s.io,
+    );
+    expect(s.failed()).toBe(true);
+    expect(s.err.join('\n')).toContain('No decision');
+  });
+
+  it('`decision move` takes no --scope: a move follows the entity', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['decision', 'a call', 'because'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const m = capture();
+    await run(['decision', 'move', 'accept', id, '--note', 'x', '--scope', 'private'], m.io);
+    expect(m.failed()).toBe(true);
+  });
+
+  it('--scope private on record routes the birth to the private tree', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['decision', 'a private call', 'this machine', '--scope', 'private'], c.io);
+    expect(c.failed()).toBe(false);
+    const id = idOf(c.out.join('\n'));
+
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const privateForDecision = orderedEvents(
+      { root: trees.projectPrivate as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    expect(privateForDecision.map((e) => e.kind)).toContain('decision.recorded');
+    const publicRoot = trees.projectPublic as string;
+    const publicForDecision = existsSync(publicRoot)
+      ? orderedEvents({ root: publicRoot }, catalogUpcasters()).filter((e) => e.subject === id)
+      : [];
+    expect(publicForDecision).toEqual([]);
+  });
+
+  it('decision before init refuses and signals failure', async () => {
+    const d = capture();
+    await run(['decision', 'homeless', 'no project'], d.io);
+    expect(d.failed()).toBe(true);
+    expect(d.err.join('\n')).toContain('Run `mnema init`');
   });
 });
