@@ -4,7 +4,8 @@
  *
  * commander does the parsing, the subcommand dispatch, `--help`, and the error
  * shapes; each action reads the working directory and environment, calls ONE
- * command adapter (`runInit` / `runTask` / `runVerify`), and formats the result.
+ * command adapter (`runInit` / `runTask` / `runDecision` / `runSkill` / …), and
+ * formats the result.
  * There is no domain logic here and none in the adapters — the logic is the gate
  * and the projections in the core. This file only wires and prints.
  *
@@ -17,6 +18,8 @@ import { Command, CommanderError } from 'commander';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
 import { runInit } from './commands/init.js';
+import { runSkill } from './commands/skill.js';
+import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
 import { runTaskTransition } from './commands/task-transition.js';
 import { runVerify } from './commands/verify.js';
@@ -286,6 +289,104 @@ export function buildProgram(io: CliIo = processIo): Command {
       },
     );
     reportDecisionMove(result, oldId, io);
+  });
+
+  // `skill` is a group, shaped like `task` and `decision`: its default action
+  // proposes a skill (`mnema skill "<name>" --body "<text>"`), and its one
+  // subcommand moves an existing one. A skill needs BOTH a name and a body; the
+  // name is a short positional, the body a flag (`--body`) — content that big
+  // never goes in a positional (the `git commit -m` / `gh --body` convention).
+  // The body is required, but NOT declared as commander's `requiredOption`: an
+  // option on the GROUP is inherited by the `move` subcommand, and a required one
+  // there would force `--body` on a move too. So it is a plain option the create
+  // action checks itself — a missing `--body` on a propose is a usage error the
+  // CLI reports (nothing is born), while `move` is unaffected. Propose takes an
+  // optional `--scope` (the per-action birth override, defaulting to public); the
+  // move takes none (it follows the entity). A skill has no alias — propose prints
+  // its `name` and its `id` (the key).
+  const skill = program
+    .command('skill')
+    .description('propose a reusable skill in the current project')
+    .argument('<name>', 'a short title for the pattern')
+    .option('--body <text>', 'the reusable pattern itself (required)')
+    .option(
+      '--scope <scope>',
+      'where the skill is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((name: string, opts: { body?: string; scope?: string }) => {
+      // The body is required for a propose, but declared as a plain option (so it
+      // is not inherited as mandatory by `move`); enforce it here.
+      if (opts.body === undefined) {
+        io.err('`mnema skill` requires --body: the reusable pattern itself.');
+        io.fail();
+        return;
+      }
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runSkill(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { name, body: opts.body, ...(scope !== undefined ? { scope } : {}) },
+      );
+      if (result.ok) {
+        // Print both the name (orients the human) and the id (the key a move
+        // takes) — a skill has no alias.
+        io.out(`Proposed skill "${result.name}" (${result.id})`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `skill move <action> <id>` — the generic move, the sibling of `task move`.
+  // The action is an argument; the surface knows no transition table. It takes
+  // NO `--scope` (a move follows the entity), and rejects one that leaks in from
+  // the `skill` group's option — routing a move elsewhere would split the skill's
+  // history across the public/private boundary.
+  const skillMove = skill
+    .command('move')
+    .description('move a skill through the workflow (follows the skill; takes no --scope)')
+    .argument('<action>', 'the transition: review, adopt, reject, or deprecate')
+    .argument('<id>', 'the skill id (the value shown when it was proposed)')
+    .option('--note <text>', 'why this verdict (required by review, adopt, reject)')
+    .option('--reason <text>', 'why it fell out of use (required by deprecate)');
+  skillMove.action((action: string, id: string, opts: { note?: string; reason?: string }) => {
+    const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string };
+    if (parentOpts.scope !== undefined) {
+      io.err('`skill move` takes no --scope: a move follows the skill to the tree it was born in.');
+      io.fail();
+      return;
+    }
+    const result = runSkillTransition(
+      { cwd: process.cwd(), env: discoveryEnv() },
+      {
+        id,
+        action,
+        proof: {
+          ...(opts.note !== undefined ? { note: opts.note } : {}),
+          ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
+        },
+      },
+    );
+    if (result.ok) {
+      io.out(`Skill "${result.name}" → ${result.to}`);
+      return;
+    }
+    if (result.reason === 'NO_PROJECT') {
+      io.err('No mnema project here. Run `mnema init` first.');
+    } else if (result.reason === 'UNKNOWN_SKILL') {
+      io.err(`No skill ${id} here.`);
+    } else {
+      io.err(`Refused (${result.code}): ${result.message}`);
+    }
+    io.fail();
   });
 
   program
