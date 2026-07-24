@@ -171,6 +171,92 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(privateForTask).toEqual([]);
   });
 
+  it('--scope private on create routes the birth to the private tree', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'a private draft', '--scope', 'private'], c.io);
+    expect(c.failed()).toBe(false);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    // The task is in PRIVATE, not in the team's public tree.
+    const privateForTask = orderedEvents(
+      { root: trees.projectPrivate as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    expect(privateForTask.map((e) => e.kind)).toContain('task.created');
+    // The public tree has no event for this task — the override truly routed it.
+    const publicRoot = trees.projectPublic as string;
+    const publicForTask = existsSync(publicRoot)
+      ? orderedEvents({ root: publicRoot }, catalogUpcasters()).filter((e) => e.subject === id)
+      : [];
+    expect(publicForTask).toEqual([]);
+  });
+
+  it('--scope global on create works with no project', async () => {
+    // No init — an orphan directory. Global needs no project.
+    const orphan = join(repo, 'nowhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const c = capture();
+    await run(['task', 'a cross-project lesson', '--scope', 'global'], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toMatch(/Created task t-[0-9a-f]{4}/);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    const trees = resolveTrees(orphan, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const globalForTask = orderedEvents({ root: trees.global }, catalogUpcasters()).filter(
+      (e) => e.subject === id,
+    );
+    expect(globalForTask.map((e) => e.kind)).toContain('task.created');
+  });
+
+  it('--scope public with no project refuses (the guard is on the resolved scope)', async () => {
+    const orphan = join(repo, 'nowhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const c = capture();
+    await run(['task', 'homeless public', '--scope', 'public'], c.io);
+    expect(c.failed()).toBe(true);
+    expect(c.err.join('\n')).toContain('Run `mnema init`');
+  });
+
+  it('an unknown --scope value is a usage error the CLI reports itself', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'a task', '--scope', 'team'], c.io);
+    expect(c.failed()).toBe(true);
+    expect(c.err.join('\n')).toContain('Invalid --scope "team"');
+    // Nothing was born: no task event in any tree.
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const publicEvents = existsSync(trees.projectPublic as string)
+      ? orderedEvents({ root: trees.projectPublic as string }, catalogUpcasters())
+      : [];
+    expect(publicEvents.some((e) => e.kind === 'task.created')).toBe(false);
+  });
+
+  it('`task move` takes no scope: a move follows the entity, not a flag', async () => {
+    // The invariant: the override is a NASCIMENTO-only knob. `move` never accepts
+    // --scope; passing one is a usage error, so a caller cannot re-home a move.
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    const m = capture();
+    await run(['task', 'move', 'submit', id, '--scope', 'private'], m.io);
+    expect(m.failed()).toBe(true);
+  });
+
   it('an illegal move prints the gate refusal and signals failure', async () => {
     await run(['init'], capture().io);
     const c = capture();

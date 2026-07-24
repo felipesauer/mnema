@@ -75,4 +75,80 @@ describe('mnema task', () => {
     const result = runTask({ cwd: orphan, env }, { title: 'homeless task' });
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
+
+  it('--scope private is honored: the task is born in the private tree', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask({ cwd: repo, env }, { title: 'a private draft', scope: 'private' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      // The task is in PRIVATE.
+      const privateTasks = projectTasks(
+        orderedEvents({ root: trees.projectPrivate as string }, catalogUpcasters()),
+      );
+      expect(privateTasks.has(result.id)).toBe(true);
+      // and NOT in public — the override truly routed the birth.
+      const publicTasks = projectTasks(
+        orderedEvents({ root: trees.projectPublic as string }, catalogUpcasters()),
+      );
+      expect(publicTasks.has(result.id)).toBe(false);
+    }
+  });
+
+  it('an omitted scope defaults to public (the provisional default)', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask({ cwd: repo, env }, { title: 'no scope stated' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      const tasks = projectTasks(orderedEvents({ root }, catalogUpcasters()));
+      expect(tasks.has(result.id)).toBe(true);
+    }
+  });
+
+  it('--scope global is born in the global tree even inside a project', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask({ cwd: repo, env }, { title: 'cross-project lesson', scope: 'global' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      const globalTasks = projectTasks(orderedEvents({ root: trees.global }, catalogUpcasters()));
+      expect(globalTasks.has(result.id)).toBe(true);
+      // The project's public tree did not receive it.
+      const publicTasks = projectTasks(
+        orderedEvents({ root: trees.projectPublic as string }, catalogUpcasters()),
+      );
+      expect(publicTasks.has(result.id)).toBe(false);
+    }
+  });
+
+  it('--scope global works with no project (global needs no project)', () => {
+    const { repo, env } = setup();
+    // No init anywhere.
+    const orphan = join(repo, 'nowhere');
+    mkdirSync(orphan, { recursive: true });
+
+    const result = runTask({ cwd: orphan, env }, { title: 'homeless but global', scope: 'global' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(orphan, env);
+      const globalTasks = projectTasks(orderedEvents({ root: trees.global }, catalogUpcasters()));
+      expect(globalTasks.has(result.id)).toBe(true);
+    }
+  });
+
+  it('--scope public with no project refuses NO_PROJECT (guard is on the resolved scope)', () => {
+    const { repo, env } = setup();
+    const orphan = join(repo, 'nowhere');
+    mkdirSync(orphan, { recursive: true });
+
+    const result = runTask({ cwd: orphan, env }, { title: 'homeless public', scope: 'public' });
+    expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
+  });
 });

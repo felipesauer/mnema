@@ -133,13 +133,33 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Capture a memory',
       description:
         'Record a point-in-time fact into the mnema chain, attributed to this ' +
-        'agent and pinned to the current session.',
-      inputSchema: { content: z.string().min(1).describe('The memory to record.') },
+        'agent and pinned to the current session. Optionally pick the scope it ' +
+        'lands in — public (team-visible), private (this machine, this project), ' +
+        'or global (personal, cross-project); omitted, it follows the session ' +
+        'default (private in a project, global outside one).',
+      inputSchema: {
+        content: z.string().min(1).describe('The memory to record.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the memory lands; overrides the session default.'),
+      },
     },
-    async ({ content }) => {
+    async ({ content, scope }) => {
       const active = await ensureSession();
-      const { id } = runCaptureMemory(active, { content });
-      return { content: [{ type: 'text', text: `Captured memory ${id}` }] };
+      const result = runCaptureMemory(active, {
+        content,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        // The override named a tree absent here — surface it as a tool error so
+        // the agent sees the capture did not happen, not a silent no-op.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: `Captured memory ${result.id}` }] };
     },
   );
 

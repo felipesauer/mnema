@@ -12,6 +12,7 @@
  * without spawning a process or writing to the real streams.
  */
 
+import type { Scope } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { runInit } from './commands/init.js';
 import { runTask } from './commands/task.js';
@@ -35,6 +36,26 @@ const processIo: CliIo = {
     process.exitCode = 1;
   },
 };
+
+/** The scopes `--scope` accepts — the surface's view of the core's three trees. */
+const SCOPES = ['public', 'private', 'global'] as const;
+
+/** Returned by {@link parseScope} when the value is not a valid scope. */
+const INVALID = Symbol('invalid-scope');
+
+/**
+ * Validates the `--scope` value on the surface. The set of scopes is closed and
+ * known here (it is the core's `Scope`), so a bad value is a usage error the CLI
+ * reports itself — not something to forward to the core. An absent flag returns
+ * undefined (let the command apply its default); a bad one prints and returns the
+ * {@link INVALID} sentinel so the action fails without a task being born.
+ */
+function parseScope(value: string | undefined, io: CliIo): Scope | undefined | typeof INVALID {
+  if (value === undefined) return undefined;
+  if ((SCOPES as readonly string[]).includes(value)) return value as Scope;
+  io.err(`Invalid --scope "${value}". Use one of: ${SCOPES.join(', ')}.`);
+  return INVALID;
+}
 
 /** Builds the configured `mnema` program. `io` defaults to the real streams. */
 export function buildProgram(io: CliIo = processIo): Command {
@@ -70,13 +91,29 @@ export function buildProgram(io: CliIo = processIo): Command {
 
   // `task` is a group: its default action creates (`mnema task "<title>"`),
   // and its one subcommand moves an existing task through the workflow
-  // (`mnema task move <action> <id>`). The create invocation is unchanged.
+  // (`mnema task move <action> <id>`). Create takes an optional `--scope` — the
+  // per-action override for where the task is born; omitted, it defaults to
+  // public (the provisional default). `move` takes NO scope: a move follows the
+  // entity to the tree it was born in, never a scope the caller picks.
   const task = program
     .command('task')
     .description('create a task in the current project')
     .argument('<title>', 'the task title')
-    .action((title: string) => {
-      const result = runTask({ cwd: process.cwd(), env: discoveryEnv() }, { title });
+    .option(
+      '--scope <scope>',
+      'where the task is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((title: string, opts: { scope?: string }) => {
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runTask(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { title, ...(scope !== undefined ? { scope } : {}) },
+      );
       if (result.ok) {
         io.out(`Created task ${result.alias} (${result.id})`);
         return;
@@ -93,9 +130,16 @@ export function buildProgram(io: CliIo = processIo): Command {
   // hardcoded per-action command. The surface knows nothing of the transition
   // table — it forwards the action string and whichever proof flag was given,
   // and prints the gate's own verdict (the new state, or a typed refusal).
-  task
+  //
+  // A move takes NO `--scope`: a transition follows the entity to the tree it
+  // was born in, never a scope the caller picks — routing it elsewhere would
+  // split the task's history across the public/private boundary. Because `move`
+  // sits under `task`, commander lets `task`'s `--scope` be parsed here too, so
+  // the move REJECTS it explicitly (read off the parent's opts) rather than
+  // silently ignoring it.
+  const move = task
     .command('move')
-    .description('move a task through the workflow')
+    .description('move a task through the workflow (follows the task; takes no --scope)')
     .argument(
       '<action>',
       'the transition (submit, start, block, unblock, submit_review, ' +
@@ -104,35 +148,44 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<id>', 'the task id (the value shown when it was created)')
     .option('--reason <text>', 'why (required by cancel, block, reopen)')
     .option('--note <text>', 'what was done (required by complete, approve)')
-    .option('--feedback <text>', 'what must change (required by request_changes)')
-    .action(
-      (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
-        const result = runTaskTransition(
-          { cwd: process.cwd(), env: discoveryEnv() },
-          {
-            id,
-            action,
-            proof: {
-              ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
-              ...(opts.note !== undefined ? { note: opts.note } : {}),
-              ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
-            },
-          },
-        );
-        if (result.ok) {
-          io.out(`Task ${result.alias} → ${result.to}`);
-          return;
-        }
-        if (result.reason === 'NO_PROJECT') {
-          io.err('No mnema project here. Run `mnema init` first.');
-        } else if (result.reason === 'UNKNOWN_TASK') {
-          io.err(`No task ${id} here.`);
-        } else {
-          io.err(`Refused (${result.code}): ${result.message}`);
-        }
+    .option('--feedback <text>', 'what must change (required by request_changes)');
+  move.action(
+    (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
+      // A `--scope` on a move is parsed into `task`'s options (the parent);
+      // its presence means the caller tried to scope a move, which the model
+      // forbids — the move follows the entity's home tree, not a chosen scope.
+      const parentOpts = (move.parent?.opts() ?? {}) as { scope?: string };
+      if (parentOpts.scope !== undefined) {
+        io.err('`task move` takes no --scope: a move follows the task to the tree it was born in.');
         io.fail();
-      },
-    );
+        return;
+      }
+      const result = runTaskTransition(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        {
+          id,
+          action,
+          proof: {
+            ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
+            ...(opts.note !== undefined ? { note: opts.note } : {}),
+            ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
+          },
+        },
+      );
+      if (result.ok) {
+        io.out(`Task ${result.alias} → ${result.to}`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else if (result.reason === 'UNKNOWN_TASK') {
+        io.err(`No task ${id} here.`);
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    },
+  );
 
   program
     .command('verify')
