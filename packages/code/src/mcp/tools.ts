@@ -4,8 +4,11 @@
  * Each tool is the MCP counterpart of a CLI command: it takes the session's
  * resolved context, calls ONE core function, and returns what that function
  * returned. It holds no domain logic — the id is minted by the operation, the
- * scope was decided when the session opened, the actor is the session's `who`.
- * A tool only maps the session + args onto a core call and shapes the result.
+ * actor is the session's `who`. The scope a NEW write lands in is a per-action
+ * choice: the session carries a DEFAULT (fixed when it opened), and a write tool
+ * may override it per call (`capture_memory`'s `scope`); a MOVE, by contrast,
+ * follows the entity's home tree, never a scope the caller picks. A tool only
+ * maps the session + args onto a core call and shapes the result.
  * This is the mold the remaining tools copy; keeping it a pure function (a
  * `Session` in, a result out) is what lets the tools be tested without a
  * transport, and what keeps the surface from growing a second implementation of
@@ -20,15 +23,30 @@
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import { type Bootstrap, bootstrap } from '@mnema/copilot';
-import { chainRootForScope, deriveAlias, locateEntityScope, ProjectionCache } from '@mnema/core';
+import {
+  chainRootForScope,
+  deriveAlias,
+  locateEntityScope,
+  ProjectionCache,
+  type Scope,
+} from '@mnema/core';
 import { captureMemory, transitionTask } from '@mnema/core/write';
 import { type Session, writeContext } from './session.js';
 
-/** A memory was captured. */
-export interface CaptureResult {
-  /** The minted memory id (the event subject). */
-  readonly id: string;
-}
+/** A memory was captured, or the requested scope was not available here. */
+export type CaptureResult =
+  | {
+      readonly ok: true;
+      /** The minted memory id (the event subject). */
+      readonly id: string;
+    }
+  | {
+      readonly ok: false;
+      /** The requested scope names a tree absent in this context. */
+      readonly code: 'SCOPE_UNAVAILABLE';
+      /** The human-readable reason the capture was refused. */
+      readonly message: string;
+    };
 
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
@@ -50,16 +68,40 @@ export type TransitionResult =
     };
 
 /**
- * `capture_memory` — records one point-in-time fact in the session's tree.
+ * `capture_memory` — records one point-in-time fact into a tree.
  *
- * Opens the session scope's writer, captures the memory attributed to the
- * connecting agent (`which`) and pinned to the session's run, then checkpoints
- * so the new fact is signature-covered at once — the same posture every command
- * leaves the tree in. Which tree it lands in is the session's (private in a
- * project, global outside one); this tool does not re-decide that.
+ * The tree is a per-action choice on top of the session's default: an explicit
+ * `scope` in the args wins; when omitted, the session's own scope stands (private
+ * in a project, global outside one — the default fixed when the session opened).
+ * This is the cascade the scope model settles: `arg scope` > `session.scope` >
+ * [a future per-context default]. It corrects the session fixing the scope for
+ * every write — one agent session produces both public and private work, so the
+ * scope is per-call, not per-session. The session's scope remains the DEFAULT;
+ * the tool only overrides it when the arg is present.
+ *
+ * Opens that scope's writer, captures the memory attributed to the connecting
+ * agent (`which`) and pinned to the session's run, then checkpoints so the new
+ * fact is signature-covered at once — the same posture every command leaves the
+ * tree in.
  */
-export function runCaptureMemory(session: Session, input: { content: string }): CaptureResult {
-  const ctx = writeContext(session.trees, session.scope);
+export function runCaptureMemory(
+  session: Session,
+  input: { content: string; scope?: Scope },
+): CaptureResult {
+  const scope = input.scope ?? session.scope;
+  // An override may name a tree this context does not have — `--scope public`
+  // in a session with no project. Refuse as data rather than throwing, so the
+  // server shapes it into a tool error and the agent sees the capture did not
+  // happen. The session's own scope always resolves, so an omitted arg never
+  // hits this.
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — run outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
   const captured = captureMemory(ctx, {
     content: input.content,
     which: session.which,
@@ -67,7 +109,7 @@ export function runCaptureMemory(session: Session, input: { content: string }): 
   });
   // Checkpoint so the capture is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { id: captured.id };
+  return { ok: true, id: captured.id };
 }
 
 /**

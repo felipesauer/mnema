@@ -89,8 +89,9 @@ describe('MCP session + tools — unit', () => {
       env,
     });
 
-    const { id } = runCaptureMemory(session, { content: 'the auth flow uses PKCE' });
-    expect(id.length).toBeGreaterThan(0);
+    const result = runCaptureMemory(session, { content: 'the auth flow uses PKCE' });
+    if (!result.ok) throw new Error('setup: capture refused');
+    expect(result.id.length).toBeGreaterThan(0);
 
     // The write landed in the session's (private) tree and verifies.
     const chainRoot = chainRootForScope(session.trees, session.scope) as string;
@@ -107,6 +108,63 @@ describe('MCP session + tools — unit', () => {
     const context = runBootstrap(session);
     expect(context.resume.actor).toBe(session.who);
     expect(context.resume.focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
+  });
+
+  it('capture_memory scope arg overrides the session default (per-action scope)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // The session's default is private (an agent in a project).
+    expect(session.scope).toBe('private');
+
+    // The agent states scope=public for THIS capture — it must land in public
+    // despite the session default, so one session produces both public and
+    // private work.
+    const captured = runCaptureMemory(session, { content: 'a team-visible fact', scope: 'public' });
+    expect(captured.ok).toBe(true);
+    if (!captured.ok) return;
+
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    const publicMems = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === captured.id,
+    );
+    expect(publicMems.map((e) => e.kind)).toEqual(['memory.captured']);
+    // The session's private tree did not receive it.
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const privateMems = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === captured.id,
+    );
+    expect(privateMems).toEqual([]);
+  });
+
+  it('capture_memory with no scope follows the session default (the cascade base)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const captured = runCaptureMemory(session, { content: 'the session default' });
+    expect(captured.ok).toBe(true);
+    if (!captured.ok) return;
+    // Landed in the session's scope (private), not public.
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const privateMems = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === captured.id,
+    );
+    expect(privateMems.map((e) => e.kind)).toEqual(['memory.captured']);
+  });
+
+  it('capture_memory refuses a scope absent here (public with no project) as data', () => {
+    // A session with no project has only the global tree. Asking for public
+    // names a tree that does not exist — refuse as data, never throw.
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const refused = runCaptureMemory(session, { content: 'no public here', scope: 'public' });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
   });
 
   it('task_transition moves a task through the same gate the CLI uses', () => {
@@ -307,6 +365,33 @@ describe('MCP server — end to end over a real client', () => {
     });
     expect(refused.isError).toBe(true);
     expect(textOf(refused)).toContain('Refused (ILLEGAL_TRANSITION)');
+
+    await client.close();
+  });
+
+  it('capture_memory scope arg routes over the real transport, and refuses absent scopes', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // The tool advertises the scope arg in its schema.
+    const tools = await client.listTools();
+    const captureTool = tools.tools.find((t) => t.name === 'capture_memory');
+    expect(Object.keys(captureTool?.inputSchema.properties ?? {})).toContain('scope');
+
+    // scope=public lands in the public tree, despite the session being private.
+    const captured = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'a team-visible fact', scope: 'public' },
+    });
+    expect(captured.isError).toBeFalsy();
+    expect(textOf(captured)).toMatch(/^Captured memory /);
+    const publicRoot = join(project, PROJECT_DIR);
+    const publicMems = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.kind === 'memory.captured',
+    );
+    expect(publicMems.length).toBe(1);
+    expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });

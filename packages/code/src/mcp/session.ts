@@ -11,10 +11,13 @@
  * This is the session ADAPTER, not domain logic: it composes the core's own
  * operations ({@link startRun}, {@link endRun}) over the resolved tree. The
  * decisions it makes are the two the surface owns — WHICH tree (the cascade)
- * and WHICH scope a write lands in (the core's origin rule: an agent connection
- * always carries a `which`, so a project write defaults PRIVATE; outside a
- * project it is the global tree). It holds no gate and no workflow; those are
- * the core's, reached through the operations.
+ * and the DEFAULT scope a new write lands in (the core's origin rule: an agent
+ * connection always carries a `which`, so a project write defaults PRIVATE;
+ * outside a project it is the global tree). That scope is only the default: a
+ * write tool may override it per call (the per-action scope model), so the
+ * session fixes where a write goes WHEN THE CALLER DOES NOT SAY, not for every
+ * write. It holds no gate and no workflow; those are the core's, reached through
+ * the operations.
  *
  * `who` (the authorizing anchor) is the machine's key, read off the writer —
  * never the client. `which` is the client's name. who != which is trivially
@@ -55,7 +58,7 @@ export interface Session {
   readonly trees: ResolvedTrees;
   /** Whether the session landed in a project (vs the global tree). */
   readonly inProject: boolean;
-  /** The scope every write of this session routes to (private in-project, else global). */
+  /** The DEFAULT scope a new write routes to (private in-project, else global); a write tool may override it per call. */
   readonly scope: Scope;
   /** The connecting agent (the `which` stamped on this session's events). */
   readonly which: string;
@@ -82,10 +85,12 @@ export function openSession(input: OpenSessionInput): Session {
     ...(input.roots !== undefined ? { roots: input.roots } : {}),
   });
 
-  // In a project the connection is an agent (a `which` is always present), so
-  // the origin rule routes its writes PRIVATE — the machine's auto-memory, not
-  // the team's git. Outside a project there is no public/private to distinguish;
-  // it is the global tree.
+  // The session's DEFAULT scope for new writes. In a project the connection is
+  // an agent (a `which` is always present), so the origin rule defaults its
+  // writes PRIVATE — the machine's auto-memory, not the team's git. Outside a
+  // project there is no public/private to distinguish; it is the global tree. A
+  // write tool may override this per call; this is only where a write goes when
+  // the caller does not say.
   const scope: Scope = inProject ? resolveScope({ which: input.clientName }) : 'global';
 
   const ctx = writeContext(trees, scope);
