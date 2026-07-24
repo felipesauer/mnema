@@ -22,6 +22,7 @@ import {
   type DiscoveryEnv,
   orderedEvents,
   PROJECT_DIR,
+  projectDecisions,
   projectTasks,
   resolveTrees,
 } from '@mnema/core';
@@ -32,7 +33,13 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { closeSession, openSession, writeContext } from '../src/mcp/session.js';
-import { runBootstrap, runCaptureMemory, runTaskTransition } from '../src/mcp/tools.js';
+import {
+  runBootstrap,
+  runCaptureMemory,
+  runDecisionTransition,
+  runRecordDecision,
+  runTaskTransition,
+} from '../src/mcp/tools.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -271,6 +278,178 @@ describe('MCP session + tools — unit', () => {
     expect(missing).toMatchObject({ ok: false, code: 'UNKNOWN_TASK' });
   });
 
+  it('record_decision appends a verifiable decision, returning its frozen ADR', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const result = runRecordDecision(session, {
+      title: 'use the ledger',
+      rationale: 'it is the audit surface',
+    });
+    if (!result.ok) throw new Error('setup: record refused');
+    expect(result.adr).toBe('ADR-1');
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
+    const recorded = events.find((e) => e.kind === 'decision.recorded');
+    expect(recorded).toBeDefined();
+    // Attributed to the client (`which`), authorized by the machine (`who`).
+    expect(recorded?.which).toBe('claude-code');
+    expect(recorded?.who).not.toBe('claude-code');
+  });
+
+  it('record_decision scope arg overrides the session default (per-action scope)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+
+    const recorded = runRecordDecision(session, {
+      title: 'a team-visible call',
+      rationale: 'everyone should see it',
+      scope: 'public',
+    });
+    expect(recorded.ok).toBe(true);
+    if (!recorded.ok) return;
+
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    const publicDecisions = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === recorded.id,
+    );
+    expect(publicDecisions.map((e) => e.kind)).toEqual([
+      'decision.recorded',
+      'decision.transitioned',
+    ]);
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const privateDecisions = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === recorded.id,
+    );
+    expect(privateDecisions).toEqual([]);
+  });
+
+  it('record_decision refuses a scope absent here (public with no project) as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const refused = runRecordDecision(session, {
+      title: 'no public here',
+      rationale: 'no project',
+      scope: 'public',
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('decision_transition accepts, and supersede links supersededBy, through the gate', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const oldD = runRecordDecision(session, { title: 'old', rationale: 'r1' });
+    const newD = runRecordDecision(session, { title: 'new', rationale: 'r2' });
+    if (!oldD.ok || !newD.ok) throw new Error('setup');
+
+    // Supersede carries `by` and a reason; the successor link is recorded.
+    const superseded = runDecisionTransition(session, {
+      id: oldD.id,
+      action: 'supersede',
+      by: newD.id,
+      reason: 'a better approach',
+    });
+    expect(superseded).toMatchObject({ ok: true, to: 'superseded', adr: 'ADR-1' });
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const d = projectDecisions(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(oldD.id);
+    expect(d?.state).toBe('superseded');
+    expect(d?.supersededBy).toBe(newD.id);
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+  });
+
+  it('decision_transition follows the entity: an agent moves a PUBLIC decision in PUBLIC', () => {
+    const project = makeProject('proj');
+    const trees = resolveTrees(project, env);
+
+    // A decision is recorded in PUBLIC. A session opened just to seed it, with an
+    // explicit scope=public override, stands in for the human's CLI record.
+    const seed = openSession({ clientName: 'seed', roots: [pathToFileURL(project).href], env });
+    const recordedByHuman = runRecordDecision(seed, {
+      title: 'human call',
+      rationale: 'r',
+      scope: 'public',
+    });
+    if (!recordedByHuman.ok) throw new Error('setup');
+
+    // The agent connects (session writes private) and accepts the public decision.
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+    const moved = runDecisionTransition(session, {
+      id: recordedByHuman.id,
+      action: 'accept',
+      note: 'we adopt it',
+    });
+    expect(moved).toMatchObject({ ok: true, to: 'accepted' });
+
+    // The move landed in PUBLIC (the decision's home), attributed to the agent.
+    const publicRoot = chainRootForScope(trees, 'public') as string;
+    const publicEvents = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === recordedByHuman.id,
+    );
+    expect(publicEvents.map((e) => e.kind)).toEqual([
+      'decision.recorded',
+      'decision.transitioned',
+      'decision.transitioned',
+    ]);
+    expect(publicEvents[2]?.which).toBe('claude-code');
+    // The session's private tree never received the move.
+    const privateRoot = chainRootForScope(trees, 'private') as string;
+    const privateEvents = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === recordedByHuman.id,
+    );
+    expect(privateEvents).toEqual([]);
+  });
+
+  it('decision_transition returns the gate refusal as data, never throwing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const recorded = runRecordDecision(session, { title: 'a decision', rationale: 'r' });
+    if (!recorded.ok) throw new Error('setup');
+
+    // accept with no note is unproven; supersede with no `by` is MISSING_BY.
+    const unproven = runDecisionTransition(session, { id: recorded.id, action: 'accept' });
+    expect(unproven).toMatchObject({ ok: false, code: 'MISSING_PROOF' });
+    const noBy = runDecisionTransition(session, {
+      id: recorded.id,
+      action: 'supersede',
+      reason: 'no successor',
+    });
+    expect(noBy).toMatchObject({ ok: false, code: 'MISSING_BY' });
+    const unknown = runDecisionTransition(session, {
+      id: '00000000-0000-7000-8000-000000000000',
+      action: 'accept',
+    });
+    expect(unknown).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
+    // A bad verb on a REAL decision is UNKNOWN_ACTION — never a silent accept.
+    const badAction = runDecisionTransition(session, { id: recorded.id, action: 'frobnicate' });
+    expect(badAction).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
+  });
+
   it('closeSession ends the run; a second close is a tolerated no-op', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(closeSession(session)).toBe(true);
@@ -312,7 +491,13 @@ describe('MCP server — end to end over a real client', () => {
     // The handshake ran; the tools are advertised.
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
-    expect(names).toEqual(['bootstrap', 'capture_memory', 'task_transition']);
+    expect(names).toEqual([
+      'bootstrap',
+      'capture_memory',
+      'decision_transition',
+      'record_decision',
+      'task_transition',
+    ]);
 
     // capture_memory writes into the resolved project's private tree.
     const captured = await client.callTool({
@@ -392,6 +577,42 @@ describe('MCP server — end to end over a real client', () => {
     );
     expect(publicMems.length).toBe(1);
     expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
+
+    await client.close();
+  });
+
+  it('record_decision then decision_transition move a decision over the real transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Record over the wire; the ADR comes back in the text envelope.
+    const recorded = await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'adopt the ledger', rationale: 'audit surface' },
+    });
+    expect(recorded.isError).toBeFalsy();
+    expect(textOf(recorded)).toMatch(/^Recorded decision ADR-1 \(/);
+    const id = /\(([^)]+)\)/.exec(textOf(recorded))?.[1] as string;
+
+    // A legal accept returns ADR → accepted.
+    const accepted = await client.callTool({
+      name: 'decision_transition',
+      arguments: { id, action: 'accept', note: 'we ship it' },
+    });
+    expect(accepted.isError).toBeFalsy();
+    expect(textOf(accepted)).toMatch(/^Decision ADR-1 → accepted$/);
+
+    // A supersede with no `by` comes back as a tool error carrying MISSING_BY.
+    const noBy = await client.callTool({
+      name: 'decision_transition',
+      arguments: { id, action: 'supersede', reason: 'no successor' },
+    });
+    expect(noBy.isError).toBe(true);
+    expect(textOf(noBy)).toContain('Refused (MISSING_BY)');
+
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });

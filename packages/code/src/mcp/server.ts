@@ -2,12 +2,14 @@
  * The mnema MCP server: a thin transport over the session and the tool adapters.
  *
  * The SDK does the protocol — the handshake, the tool dispatch, the JSON-RPC
- * envelope; this file only wires. It builds the server, registers the two tools
+ * envelope; this file only wires. It builds the server, registers the tools
  * (each delegating to a pure adapter in {@link ./tools.js}), opens a session
  * once the handshake has run (so `clientInfo` and the client's roots are
  * available), and closes that session's run when the connection ends. There is
  * no domain logic here and none in the tools — the logic is the core's gate and
- * operations, reached through the session and the adapters.
+ * operations, reached through the session and the adapters. Each registered tool
+ * (capture_memory, task_transition, record_decision, decision_transition,
+ * bootstrap) delegates to a pure adapter in {@link ./tools.js}.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -22,7 +24,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { closeSession, openSession, type Session } from './session.js';
-import { runBootstrap, runCaptureMemory, runTaskTransition } from './tools.js';
+import {
+  runBootstrap,
+  runCaptureMemory,
+  runDecisionTransition,
+  runRecordDecision,
+  runTaskTransition,
+} from './tools.js';
 
 /** The name the server announces itself as (its own identity, not the client's). */
 const SERVER_NAME = 'mnema';
@@ -200,6 +208,85 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         };
       }
       return { content: [{ type: 'text', text: `Task ${result.alias} → ${result.to}` }] };
+    },
+  );
+
+  server.registerTool(
+    'record_decision',
+    {
+      title: 'Record a decision',
+      description:
+        'Record a decision into the mnema chain, attributed to this agent and ' +
+        'pinned to the current session. A decision needs both a title and a ' +
+        'rationale (why it was made). Optionally pick the scope it lands in — ' +
+        'public (team-visible), private (this machine, this project), or global ' +
+        '(personal, cross-project); omitted, it follows the session default. ' +
+        'Returns the citable ADR-<n> label — a decision has no short alias.',
+      inputSchema: {
+        title: z.string().min(1).describe('The decision title.'),
+        rationale: z.string().min(1).describe('Why the decision was made.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the decision lands; overrides the session default.'),
+      },
+    },
+    async ({ title, rationale, scope }) => {
+      const active = await ensureSession();
+      const result = runRecordDecision(active, {
+        title,
+        rationale,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Recorded decision ${result.adr} (${result.id})` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'decision_transition',
+    {
+      title: 'Move a decision through the workflow',
+      description:
+        'Move an existing decision to a new state. accept and reject a proposed ' +
+        'decision (each needs a note); supersede a proposed or accepted decision ' +
+        'with a later one — supersede needs the successor decision id in `by` and ' +
+        'a reason. `by` applies ONLY to supersede; accept and reject ignore it. ' +
+        'An illegal move or missing proof is refused with the gate’s reason.',
+      inputSchema: {
+        id: z.string().min(1).describe('The decision id to move.'),
+        action: z.string().min(1).describe('The transition: accept, reject, or supersede.'),
+        by: z
+          .string()
+          .optional()
+          .describe('The successor decision id — required by supersede, ignored otherwise.'),
+        note: z.string().optional().describe('Why this verdict (accept, reject).'),
+        reason: z.string().optional().describe('Why it is being replaced (supersede).'),
+      },
+    },
+    async ({ id, action, by, note, reason }) => {
+      const active = await ensureSession();
+      const result = runDecisionTransition(active, {
+        id,
+        action,
+        ...(by !== undefined ? { by } : {}),
+        ...(note !== undefined ? { note } : {}),
+        ...(reason !== undefined ? { reason } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: `Decision ${result.adr} → ${result.to}` }] };
     },
   );
 
