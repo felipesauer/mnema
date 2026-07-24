@@ -43,10 +43,13 @@ import {
   runCaptureMemory,
   runCreateSkill,
   runDecisionTransition,
+  runFocusTool,
   runLinkKnowledge,
+  runNextActionsTool,
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runResumeTool,
   runSkillTransition,
   runTaskTransition,
 } from '../src/mcp/tools.js';
@@ -125,6 +128,76 @@ describe('MCP session + tools — unit', () => {
     const context = runBootstrap(session);
     expect(context.resume.actor).toBe(session.who);
     expect(context.resume.focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
+  });
+
+  it('focus reports the session actor’s own open run, and writes nothing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+
+    const focus = runFocusTool(session);
+    // The actor is the machine's anchor (the session's who), and the run opened
+    // at session start is reported — no other actor's runs.
+    expect(focus.actor).toBe(session.who);
+    expect(focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
+    expect(focus.openRuns.every((r) => r.who === session.who)).toBe(true);
+
+    // The read appended nothing — the chain is the same length.
+    const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+    expect(after).toBe(before);
+  });
+
+  it('resume reports the session actor’s latest run even after it ends', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const runId = session.runId;
+    // End the session's run — resume must still report it as "where I left off".
+    closeSession(session);
+
+    const resume = runResumeTool(session);
+    expect(resume.actor).toBe(session.who);
+    expect(resume.lastRun?.id).toBe(runId);
+    expect(resume.lastRun?.open).toBe(false);
+    // The ended run is not in focus.
+    expect(resume.focus.openRuns.some((r) => r.id === runId)).toBe(false);
+  });
+
+  it('next_actions lists a task’s legal moves, and refuses an unknown id as data', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // Create a task in the session's (private) tree so next_actions can find it.
+    const ctx = writeContext(session.trees, session.scope);
+    const created = createTask(ctx, { title: 'a task', which: session.which, run: session.runId });
+    if (!created.ok) throw new Error('setup: createTask refused');
+    ctx.writer.checkpoint();
+
+    const found = runNextActionsTool(session, { id: created.id });
+    expect(found.ok).toBe(true);
+    if (found.ok) {
+      const actions = found.actions.map((a) => a.action).sort();
+      expect(actions).toEqual(['cancel', 'submit']);
+    }
+
+    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown.
+    const missing = runNextActionsTool(session, { id: 'no-such-id' });
+    expect(missing).toEqual({
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: 'task "no-such-id" does not exist',
+    });
   });
 
   it('capture_memory scope arg overrides the session default (per-action scope)', () => {
@@ -848,10 +921,13 @@ describe('MCP server — end to end over a real client', () => {
       'capture_memory',
       'create_skill',
       'decision_transition',
+      'focus',
       'link_knowledge',
+      'next_actions',
       'record_decision',
       'record_handoff',
       'record_observation',
+      'resume',
       'skill_transition',
       'task_transition',
     ]);
@@ -872,6 +948,41 @@ describe('MCP server — end to end over a real client', () => {
     const boot = await client.callTool({ name: 'bootstrap' });
     const context = JSON.parse(textOf(boot)) as { resume: { focus: { openRuns: unknown[] } } };
     expect(context.resume.focus.openRuns.length).toBeGreaterThan(0);
+
+    await client.close();
+  });
+
+  it('focus / resume / next_actions read the session context over the real transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // focus — the session actor's open runs (the run opened at initialize).
+    const focusRes = await client.callTool({ name: 'focus' });
+    const focus = JSON.parse(textOf(focusRes)) as { actor: string; openRuns: { id: string }[] };
+    expect(focus.actor.length).toBeGreaterThan(0);
+    expect(focus.openRuns.length).toBeGreaterThan(0);
+
+    // resume — the latest run plus focus, over the wire.
+    const resumeRes = await client.callTool({ name: 'resume' });
+    const resume = JSON.parse(textOf(resumeRes)) as { lastRun: { id: string } | null };
+    expect(resume.lastRun).not.toBeNull();
+
+    // next_actions — a freshly created task offers submit and cancel from DRAFT.
+    const trees = resolveTrees(project, env);
+    const ctx = writeContext(trees, 'private');
+    const created = createTask(ctx, { title: 'a task', which: 'claude-code' });
+    if (!created.ok) throw new Error('setup: createTask refused');
+    ctx.writer.checkpoint();
+    const nextRes = await client.callTool({ name: 'next_actions', arguments: { id: created.id } });
+    const actions = (JSON.parse(textOf(nextRes)) as { action: string }[])
+      .map((a) => a.action)
+      .sort();
+    expect(actions).toEqual(['cancel', 'submit']);
+
+    // next_actions on an unknown id is a tool error (never a thrown crash).
+    const missing = await client.callTool({ name: 'next_actions', arguments: { id: 'nope' } });
+    expect(textOf(missing)).toContain('Refused (UNKNOWN_TASK)');
 
     await client.close();
   });

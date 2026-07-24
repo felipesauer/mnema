@@ -10,7 +10,9 @@
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap) delegates to a pure adapter in {@link ./tools.js}.
+ * skill_transition, bootstrap, focus, resume, next_actions) delegates to a pure
+ * adapter in {@link ./tools.js}. The last three, like bootstrap, are READ-ONLY
+ * context reads — they open a cache, rebuild, and derive; they open no writer.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -30,10 +32,13 @@ import {
   runCaptureMemory,
   runCreateSkill,
   runDecisionTransition,
+  runFocusTool,
   runLinkKnowledge,
+  runNextActionsTool,
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runResumeTool,
   runSkillTransition,
   runTaskTransition,
 } from './tools.js';
@@ -508,6 +513,68 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       const active = await ensureSession();
       const context = runBootstrap(active);
       return { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'focus',
+    {
+      title: 'Focus — what I am touching now',
+      description:
+        'Show the open runs of THIS session’s actor — the work in flight right ' +
+        'now. Use it to answer "what am I in the middle of". Read-only: it derives ' +
+        'from the chain and writes nothing. Reports only this machine’s own open ' +
+        'runs (the actor is the session, never a supplied value).',
+    },
+    async () => {
+      const active = await ensureSession();
+      const result = runFocusTool(active);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'resume',
+    {
+      title: 'Resume — where I left off',
+      description:
+        'Show where THIS session’s actor left off: their most recent run (open OR ' +
+        'already ended) plus their current focus. Use it at the start of a session ' +
+        'to answer "where was I" — even a run that ended carries the goal that ' +
+        'reminds you. Read-only: it derives from the chain and writes nothing.',
+    },
+    async () => {
+      const active = await ensureSession();
+      const result = runResumeTool(active);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'next_actions',
+    {
+      title: 'Next actions — what moves a task allows',
+      description:
+        'Show the transitions the workflow allows a task next, from its current ' +
+        'state. Use it to answer "what can I do to this task" — each suggestion is a ' +
+        'real move the gate would authorize. A terminal task returns an empty list ' +
+        '(no legal moves); an id no visible tree holds is refused. Read-only.',
+      inputSchema: {
+        id: z.string().min(1).describe('The task id to inspect.'),
+      },
+    },
+    async ({ id }) => {
+      const active = await ensureSession();
+      const result = runNextActionsTool(active, { id });
+      if (!result.ok) {
+        // No visible tree holds the task — surface it as a tool error so the agent
+        // sees there is no such task, not an empty (misleadable) list.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.actions, null, 2) }] };
     },
   );
 }

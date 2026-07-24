@@ -18,11 +18,14 @@ import type { Scope } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
+import { runFocus } from './commands/focus.js';
 import { runHandoff } from './commands/handoff.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
 import { runMemory } from './commands/memory.js';
+import { runNextActions } from './commands/next-actions.js';
 import { runObserve } from './commands/observe.js';
+import { runResume } from './commands/resume.js';
 import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
@@ -555,6 +558,118 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.err(`Refused (${result.code}): ${result.message}`);
       }
       io.fail();
+    });
+
+  // The three CONTEXT reads — `focus`, `resume`, `next-actions`. Like init/verify
+  // they are top-level verbs (heterogeneous shapes, not an interchangeable
+  // resource family), and unlike every write above they are strictly READ-ONLY:
+  // each opens the projection cache, rebuilds, and calls a PURE copilot
+  // derivation — no writer, no event, no key minted. `--json` emits the faithful
+  // object (the agent's stable contract); without it, a lean human summary (one
+  // line per item). The rich, nested human formatter is a later concern.
+  //
+  // focus/resume are always SOMEONE's context, and the record has no "current
+  // actor" — a `who` is only stamped on past events. The CLI has no session to
+  // read a `who` from, and deriving one would touch key material (minting a key
+  // on a fresh machine) that the surface must not own. So the actor is a REQUIRED
+  // `--actor` flag: the derivation takes it as a parameter, and passing it keeps
+  // the read truly read-only. (next-actions needs no actor — its answer is a
+  // property of the task's state, not of who asks.)
+
+  // `mnema focus --actor <id> [--json]` — the actor's open runs (what they are
+  // touching now). Reports ONLY that actor's runs — never another's.
+  program
+    .command('focus')
+    .description("show an actor's open runs (what they are touching now)")
+    .requiredOption('--actor <id>', 'the anchor id whose focus to show (from `mnema verify`)')
+    .option('--json', 'emit the faithful focus object as JSON')
+    .action((opts: { actor: string; json?: boolean }) => {
+      const result = runFocus({ cwd: process.cwd(), env: discoveryEnv() }, { actor: opts.actor });
+      if (!result.ok) {
+        io.err('No mnema project here. Run `mnema init` first.');
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.focus, null, 2));
+        return;
+      }
+      // Human summary — one line per open run. An actor with nothing open is
+      // stated plainly, not left as silent empty output.
+      const { openRuns } = result.focus;
+      if (openRuns.length === 0) {
+        io.out(`${result.focus.actor} has no open runs.`);
+        return;
+      }
+      io.out(`${result.focus.actor} — ${openRuns.length} open run(s):`);
+      for (const run of openRuns) {
+        io.out(`  ${run.id}  ${run.agent}${run.goal !== undefined ? ` — ${run.goal}` : ''}`);
+      }
+    });
+
+  // `mnema resume --actor <id> [--json]` — where the actor left off: their latest
+  // run (open OR ended), plus their current focus.
+  program
+    .command('resume')
+    .description('show where an actor left off (their latest run, open or ended)')
+    .requiredOption('--actor <id>', 'the anchor id whose last run to show (from `mnema verify`)')
+    .option('--json', 'emit the faithful resume object as JSON')
+    .action((opts: { actor: string; json?: boolean }) => {
+      const result = runResume({ cwd: process.cwd(), env: discoveryEnv() }, { actor: opts.actor });
+      if (!result.ok) {
+        io.err('No mnema project here. Run `mnema init` first.');
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.resume, null, 2));
+        return;
+      }
+      const { lastRun, focus } = result.resume;
+      if (lastRun === null) {
+        io.out(`${result.resume.actor} has no runs yet.`);
+        return;
+      }
+      const state = lastRun.open ? 'open' : 'ended';
+      io.out(
+        `${result.resume.actor} last run ${lastRun.id} (${state})` +
+          `${lastRun.goal !== undefined ? ` — ${lastRun.goal}` : ''}`,
+      );
+      io.out(`  ${focus.openRuns.length} run(s) still open`);
+    });
+
+  // `mnema next-actions <task-id> [--json]` — the moves the workflow allows the
+  // task next. No actor: the answer is a property of the task's state. An unknown
+  // id is refused honestly; a terminal task reports "no legal moves".
+  program
+    .command('next-actions')
+    .description('show the moves the workflow allows a task next')
+    .argument('<task-id>', 'the task id (the value shown when it was created)')
+    .option('--json', 'emit the faithful list of next actions as JSON')
+    .action((id: string, opts: { json?: boolean }) => {
+      const result = runNextActions({ cwd: process.cwd(), env: discoveryEnv() }, { id });
+      if (!result.ok) {
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`No task ${id} here.`);
+        }
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.actions, null, 2));
+        return;
+      }
+      if (result.actions.length === 0) {
+        io.out(`Task ${id} is terminal — no legal moves.`);
+        return;
+      }
+      io.out(`Task ${id} — ${result.actions.length} legal move(s):`);
+      for (const action of result.actions) {
+        const needs = action.requires.length > 0 ? ` (needs ${action.requires.join(', ')})` : '';
+        io.out(`  ${action.action} → ${action.to}${needs}`);
+      }
     });
 
   program

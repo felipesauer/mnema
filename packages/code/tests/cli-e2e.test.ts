@@ -763,6 +763,88 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(l.failed()).toBe(true);
   });
 
+  it('next-actions lists a DRAFT task’s legal moves, and --json emits the faithful list', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    // Human summary lists the moves.
+    const human = capture();
+    await run(['next-actions', id], human.io);
+    expect(human.failed()).toBe(false);
+    expect(human.out.join('\n')).toContain('submit → READY');
+    expect(human.out.join('\n')).toContain('cancel → CANCELED (needs reason)');
+
+    // --json emits the faithful array of next actions.
+    const json = capture();
+    await run(['next-actions', id, '--json'], json.io);
+    const actions = JSON.parse(json.out.join('\n')) as { action: string; to: string }[];
+    expect(actions.map((a) => a.action).sort()).toEqual(['cancel', 'submit']);
+  });
+
+  it('next-actions reports "no legal moves" for a terminal task, and refuses an unknown id', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'to abandon'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+    await run(['task', 'move', 'cancel', id, '--reason', 'abandoned'], capture().io);
+
+    // Terminal task — an existing task with no move (not an error).
+    const terminal = capture();
+    await run(['next-actions', id], terminal.io);
+    expect(terminal.failed()).toBe(false);
+    expect(terminal.out.join('\n')).toContain('terminal — no legal moves');
+
+    // Unknown id — an honest refusal, distinct from terminal.
+    const unknown = capture();
+    await run(['next-actions', 'not-a-real-id'], unknown.io);
+    expect(unknown.failed()).toBe(true);
+    expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
+  });
+
+  it('focus requires --actor and reports an empty focus for an unknown actor (--json faithful)', async () => {
+    await run(['init'], capture().io);
+
+    // A fresh project has no runs (runs are opened by a session, not the CLI), so
+    // any actor's focus is empty — reported honestly, not as silent output.
+    const human = capture();
+    await run(['focus', '--actor', 'whoever'], human.io);
+    expect(human.failed()).toBe(false);
+    expect(human.out.join('\n')).toContain('has no open runs');
+
+    // --json emits the faithful object (the actor and an empty run list).
+    const json = capture();
+    await run(['focus', '--actor', 'whoever', '--json'], json.io);
+    const focus = JSON.parse(json.out.join('\n')) as { actor: string; openRuns: unknown[] };
+    expect(focus.actor).toBe('whoever');
+    expect(focus.openRuns).toEqual([]);
+
+    // Omitting --actor is a usage error the parser reports (nothing read).
+    const missing = capture();
+    await run(['focus'], missing.io);
+    expect(missing.failed()).toBe(true);
+  });
+
+  it('resume reports no runs yet for a fresh project, and refuses outside a project', async () => {
+    await run(['init'], capture().io);
+    const r = capture();
+    await run(['resume', '--actor', 'whoever'], r.io);
+    expect(r.failed()).toBe(false);
+    expect(r.out.join('\n')).toContain('has no runs yet');
+
+    // Outside a project, a context read refuses NO_PROJECT. The orphan must be a
+    // SIBLING of repo, not under it — resolveTrees walks UP and would otherwise
+    // find repo's own `.mnema`.
+    const orphan = join(sandbox, 'elsewhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const out = capture();
+    await run(['resume', '--actor', 'whoever'], out.io);
+    expect(out.failed()).toBe(true);
+    expect(out.err.join('\n')).toContain('No mnema project here');
+  });
+
   it('a knowledge verb with --scope global works with no project', async () => {
     const orphan = join(repo, 'nowhere');
     mkdirSync(orphan, { recursive: true });

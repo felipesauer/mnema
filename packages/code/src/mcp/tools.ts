@@ -27,7 +27,16 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import { type Bootstrap, bootstrap } from '@mnema/copilot';
+import {
+  type Bootstrap,
+  bootstrap,
+  type Focus,
+  focus,
+  type NextAction,
+  nextActionsForTask,
+  type Resume,
+  resume,
+} from '@mnema/copilot';
 import {
   chainRootForScope,
   DECISION_ACTIONS,
@@ -700,4 +709,76 @@ export function runBootstrap(session: Session): Bootstrap {
   const cache = ProjectionCache.open(chainRoot);
   cache.rebuild();
   return bootstrap(cache, { actor: session.who });
+}
+
+/**
+ * `focus` — the session actor's open runs (what they are touching now).
+ *
+ * The read mold applied to the copilot's `focus`: rebuild a cache over the
+ * session's resolved tree and derive for the session's `who`. Read-only — no
+ * writer, no event. The actor is the session's anchor (never a client-supplied
+ * value), so the result carries only the machine's OWN open runs.
+ */
+export function runFocusTool(session: Session): Focus {
+  const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+  const cache = ProjectionCache.open(chainRoot);
+  cache.rebuild();
+  return focus(cache, { actor: session.who });
+}
+
+/**
+ * `resume` — where the session actor left off: their latest run plus focus.
+ *
+ * The read mold applied to the copilot's `resume`. Read-only. Like `focus`, the
+ * actor is the session's `who`, so the latest run reported is the machine's own —
+ * open OR already ended, the "where was I" anchor.
+ */
+export function runResumeTool(session: Session): Resume {
+  const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+  const cache = ProjectionCache.open(chainRoot);
+  cache.rebuild();
+  return resume(cache, { actor: session.who });
+}
+
+/** The task's legal moves, or a typed refusal when no visible tree holds it. */
+export type NextActionsResult =
+  | {
+      readonly ok: true;
+      /** The transitions the workflow allows from the task's state; empty when terminal. */
+      readonly actions: readonly NextAction[];
+    }
+  | {
+      readonly ok: false;
+      /** No visible tree holds a task with this id. */
+      readonly code: 'UNKNOWN_TASK';
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/**
+ * `next_actions` — the moves the workflow allows a task next.
+ *
+ * Keyed by an ENTITY, not the actor: it locates the task's home tree
+ * ({@link locateEntityScope}) — a task lives in exactly one of the session's
+ * trees — opens THAT tree's cache, and returns the copilot's `nextActionsForTask`.
+ * Read-only. An id no visible tree holds is refused `UNKNOWN_TASK` (returned as
+ * data so the server shapes it into a tool error, never thrown); an existing
+ * terminal task yields an empty list — "no legal moves", not "no such task".
+ */
+export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
+  const upcasters = catalogUpcasters();
+  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  if (scope === undefined) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+  }
+  const chainRoot = chainRootForScope(session.trees, scope) as string;
+  const cache = ProjectionCache.open(chainRoot, { upcasters });
+  cache.rebuild();
+  const actions = nextActionsForTask(cache, input.id);
+  // The birth was located, so a null here means the tail is truncated below it —
+  // report it as unknown rather than a false empty terminal list.
+  if (actions === null) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+  }
+  return { ok: true, actions };
 }
