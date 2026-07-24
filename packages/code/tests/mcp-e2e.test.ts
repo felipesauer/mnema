@@ -44,6 +44,7 @@ import {
   runCreateSkill,
   runDecisionTransition,
   runFocusTool,
+  runGuardTool,
   runLinkKnowledge,
   runNextActionsTool,
   runRecordDecision,
@@ -198,6 +199,54 @@ describe('MCP session + tools — unit', () => {
       code: 'UNKNOWN_TASK',
       message: 'task "no-such-id" does not exist',
     });
+  });
+
+  it('guard dry-runs the gate against the task’s state, pairs the verdict with focus, and writes nothing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // Create a task the session can find (its private tree).
+    const ctx = writeContext(session.trees, session.scope);
+    const created = createTask(ctx, { title: 'a task', which: session.which, run: session.runId });
+    if (!created.ok) throw new Error('setup: createTask refused');
+    ctx.writer.checkpoint();
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+
+    // submit is legal from DRAFT and needs no proof → ALLOWED, reaching READY.
+    // The verdict is paired with the session actor's focus (their open runs).
+    const allowed = runGuardTool(session, { id: created.id, action: 'submit' });
+    expect(allowed.ok).toBe(true);
+    if (allowed.ok) {
+      expect(allowed.result.verdict.ok).toBe(true);
+      if (allowed.result.verdict.ok) expect(allowed.result.verdict.to).toBe('READY');
+      // Focus is the session actor's own — the run opened at session start.
+      expect(allowed.result.focus.actor).toBe(session.who);
+      expect(allowed.result.focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
+    }
+
+    // approve is illegal from DRAFT → REFUSED, the gate's own typed reason.
+    const illegal = runGuardTool(session, { id: created.id, action: 'approve', note: 'lgtm' });
+    expect(illegal.ok).toBe(true);
+    if (illegal.ok && !illegal.result.verdict.ok) {
+      expect(illegal.result.verdict.code).toBe('ILLEGAL_TRANSITION');
+    }
+
+    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown.
+    const missing = runGuardTool(session, { id: 'no-such-id', action: 'submit' });
+    expect(missing).toEqual({
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: 'task "no-such-id" does not exist',
+    });
+
+    // The dry-run appended NOTHING — the chain is the same length as before.
+    const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+    expect(after).toBe(before);
   });
 
   it('capture_memory scope arg overrides the session default (per-action scope)', () => {
@@ -922,6 +971,7 @@ describe('MCP server — end to end over a real client', () => {
       'create_skill',
       'decision_transition',
       'focus',
+      'guard',
       'link_knowledge',
       'next_actions',
       'record_decision',
@@ -983,6 +1033,39 @@ describe('MCP server — end to end over a real client', () => {
     // next_actions on an unknown id is a tool error (never a thrown crash).
     const missing = await client.callTool({ name: 'next_actions', arguments: { id: 'nope' } });
     expect(textOf(missing)).toContain('Refused (UNKNOWN_TASK)');
+
+    // guard — a dry-run of the gate over the wire. submit is legal from DRAFT →
+    // an ALLOWED verdict paired with the session actor's focus, having written
+    // nothing.
+    const guardRes = await client.callTool({
+      name: 'guard',
+      arguments: { id: created.id, action: 'submit' },
+    });
+    const guarded = JSON.parse(textOf(guardRes)) as {
+      verdict: { ok: boolean; to?: string };
+      focus: { actor: string };
+    };
+    expect(guarded.verdict).toMatchObject({ ok: true, to: 'READY' });
+    expect(guarded.focus.actor.length).toBeGreaterThan(0);
+
+    // A REFUSED verdict is NOT a tool error — the dry-run succeeded, its answer
+    // is "the move would be refused". approve is illegal from DRAFT.
+    const refused = await client.callTool({
+      name: 'guard',
+      arguments: { id: created.id, action: 'approve', note: 'lgtm' },
+    });
+    expect(refused.isError ?? false).toBe(false);
+    const refusedVerdict = JSON.parse(textOf(refused)) as {
+      verdict: { ok: boolean; code?: string };
+    };
+    expect(refusedVerdict.verdict).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
+
+    // guard on an unknown id IS a tool error (no such task to simulate against).
+    const guardMissing = await client.callTool({
+      name: 'guard',
+      arguments: { id: 'nope', action: 'submit' },
+    });
+    expect(textOf(guardMissing)).toContain('Refused (UNKNOWN_TASK)');
 
     await client.close();
   });

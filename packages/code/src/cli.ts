@@ -19,6 +19,7 @@ import { Command, CommanderError } from 'commander';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
 import { runFocus } from './commands/focus.js';
+import { runGuard } from './commands/guard.js';
 import { runHandoff } from './commands/handoff.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
@@ -671,6 +672,86 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.out(`  ${action.action} → ${action.to}${needs}`);
       }
     });
+
+  // `mnema guard <action> <id> --actor <who> [--note/--reason/--feedback/--which]
+  // [--json]` — a DRY-RUN of the gate: "would this move be allowed on this task,
+  // and if not, why?" It MIRRORS `task move` (the same action and id) but writes
+  // nothing: it reads the task's current state, simulates the gate, and prints
+  // the verdict. ALLOWED names the state the move would reach; REFUSED carries
+  // the gate's own code and message — the same answer the real move would give.
+  //
+  // The actor is a REQUIRED `--actor` for the reason focus/resume are: the CLI
+  // has no session, and deriving the machine's `who` would mint a key (a write).
+  // The proof flags (`--note`/`--reason`/`--feedback`) and `--which` are optional
+  // and simulate the move faithfully — with the required proof it is ALLOWED,
+  // without it REFUSED (MISSING_PROOF), the useful "you are only missing the
+  // note" answer. `--which` simulates an agent asking on a human's behalf, so a
+  // `--which` equal to `--actor` reproduces the WHO_IS_WHICH refusal.
+  program
+    .command('guard')
+    .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
+    .argument(
+      '<action>',
+      'the transition to test (submit, start, block, unblock, submit_review, ' +
+        'request_changes, approve, complete, cancel, reopen)',
+    )
+    .argument('<id>', 'the task id (the value shown when it was created)')
+    .requiredOption('--actor <id>', 'the anchor id asking (the `who`; from `mnema verify`)')
+    .option('--reason <text>', 'simulate the reason (cancel, block, reopen)')
+    .option('--note <text>', 'simulate the note (complete, approve)')
+    .option('--feedback <text>', 'simulate the feedback (request_changes)')
+    .option('--which <id>', 'simulate an executing agent (must differ from --actor)')
+    .option('--json', 'emit the faithful gate verdict as JSON')
+    .action(
+      (
+        action: string,
+        id: string,
+        opts: {
+          actor: string;
+          reason?: string;
+          note?: string;
+          feedback?: string;
+          which?: string;
+          json?: boolean;
+        },
+      ) => {
+        const result = runGuard(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            id,
+            action,
+            actor: opts.actor,
+            proof: {
+              ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
+              ...(opts.note !== undefined ? { note: opts.note } : {}),
+              ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
+            },
+            ...(opts.which !== undefined ? { which: opts.which } : {}),
+          },
+        );
+        if (!result.ok) {
+          if (result.reason === 'NO_PROJECT') {
+            io.err('No mnema project here. Run `mnema init` first.');
+          } else {
+            io.err(`No task ${id} here.`);
+          }
+          io.fail();
+          return;
+        }
+        if (opts.json === true) {
+          io.out(JSON.stringify(result.verdict, null, 2));
+          return;
+        }
+        // Human summary — the gate's verdict, one line. ALLOWED names the state
+        // the move would reach; REFUSED echoes the gate's own code and reason, so
+        // the dry-run reads exactly as the real move's refusal would.
+        if (result.verdict.ok) {
+          io.out(`ALLOWED: ${action} ${id} → ${result.verdict.to}`);
+        } else {
+          io.out(`REFUSED (${result.verdict.code}): ${result.verdict.message}`);
+        }
+      },
+    );
 
   program
     .command('verify')

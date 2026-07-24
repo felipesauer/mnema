@@ -10,9 +10,11 @@
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap, focus, resume, next_actions) delegates to a pure
- * adapter in {@link ./tools.js}. The last three, like bootstrap, are READ-ONLY
- * context reads — they open a cache, rebuild, and derive; they open no writer.
+ * skill_transition, bootstrap, focus, resume, next_actions, guard) delegates to a
+ * pure adapter in {@link ./tools.js}. The last four, like bootstrap, are
+ * READ-ONLY reads — they open a cache, rebuild, and derive; they open no writer.
+ * `guard` is a dry-run of the gate: it simulates a move and returns the verdict,
+ * having written nothing.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -33,6 +35,7 @@ import {
   runCreateSkill,
   runDecisionTransition,
   runFocusTool,
+  runGuardTool,
   runLinkKnowledge,
   runNextActionsTool,
   runRecordDecision,
@@ -575,6 +578,58 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         };
       }
       return { content: [{ type: 'text', text: JSON.stringify(result.actions, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'guard',
+    {
+      title: 'Guard — would a move be allowed?',
+      description:
+        'Simulate whether a task transition would be permitted BEFORE trying it — ' +
+        'a dry-run of the workflow gate that writes NOTHING. Use it to answer "may ' +
+        'I approve/complete/… this task, and if not, why?" without making the move. ' +
+        'It reads the task’s current state and returns the gate’s own verdict: ' +
+        'ALLOWED (with the state the move would reach) or REFUSED (with the gate’s ' +
+        'reason — an illegal move, missing proof, or who == which). Pass the same ' +
+        'proof you would carry (note/reason/feedback) to see if that proof suffices. ' +
+        'The verdict is paired with your current focus. An id no visible tree holds ' +
+        'is refused. Read-only.',
+      inputSchema: {
+        id: z.string().min(1).describe('The task id to test.'),
+        action: z.string().min(1).describe('The transition to simulate.'),
+        reason: z.string().optional().describe('Simulate the reason (cancel, block, reopen).'),
+        note: z.string().optional().describe('Simulate the note (complete, approve).'),
+        feedback: z.string().optional().describe('Simulate the feedback (request_changes).'),
+        which: z
+          .string()
+          .optional()
+          .describe('Simulate an executing agent (must differ from the session actor).'),
+      },
+    },
+    async ({ id, action, reason, note, feedback, which }) => {
+      const active = await ensureSession();
+      const result = runGuardTool(active, {
+        id,
+        action,
+        ...(reason !== undefined ? { reason } : {}),
+        ...(note !== undefined ? { note } : {}),
+        ...(feedback !== undefined ? { feedback } : {}),
+        ...(which !== undefined ? { which } : {}),
+      });
+      if (!result.ok) {
+        // No visible tree holds the task — surface it as a tool error so the agent
+        // sees there is no such task, not a misleadable empty verdict.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // A REFUSED verdict is NOT a tool error — the dry-run succeeded and its
+      // answer is "the move would be refused, here is why". Return the verdict
+      // (and focus) as data so the agent reads the reason, exactly as it would
+      // from the real move's refusal.
+      return { content: [{ type: 'text', text: JSON.stringify(result.result, null, 2) }] };
     },
   );
 }

@@ -18,8 +18,10 @@
  * `record_observation`, `record_handoff`, and `link_knowledge` (the write mold,
  * one append via a birth/fact operation), `task_transition`,
  * `decision_transition`, and `skill_transition` (the same mold applied to a gated
- * state change), and `bootstrap` (the read mold, one derivation over the
- * projection cache). The knowledge FACTS (observation/handoff/link) share the
+ * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
+ * derivation over the projection cache), and `guard` (the read mold applied to a
+ * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
+ * nothing). The knowledge FACTS (observation/handoff/link) share the
  * memory mold exactly — one append, no gate — and forward the ids they reference
  * without validating them (a dangling reference is honest cross-tree). The server
  * wires these onto the protocol; the wiring adds nothing but the schema and the
@@ -32,6 +34,8 @@ import {
   bootstrap,
   type Focus,
   focus,
+  type GuardWithFocus,
+  guardWithFocus,
   type NextAction,
   nextActionsForTask,
   type Resume,
@@ -781,4 +785,74 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
   return { ok: true, actions };
+}
+
+/** A guard verdict (plus the asker's focus), or a typed refusal when no tree holds the task. */
+export type GuardResult =
+  | {
+      readonly ok: true;
+      /** The gate's verdict for the simulated move, paired with the session actor's focus. */
+      readonly result: GuardWithFocus;
+    }
+  | {
+      readonly ok: false;
+      /** No visible tree holds a task with this id. */
+      readonly code: 'UNKNOWN_TASK';
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/**
+ * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
+ * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
+ * locates the task's home tree ({@link locateEntityScope}), opens THAT tree's
+ * cache, reads the task's current state as the `from`, and calls the copilot's
+ * pure {@link guardWithFocus} — no writer, no event. The verdict is the gate's
+ * own, the SAME function `task_transition` consults, so a guard that says ALLOWED
+ * and a move that succeeds can never drift.
+ *
+ * The actor is the session's `who` (never a client-supplied value), so the
+ * simulated authority is the machine's own — and it is paired with the actor's
+ * focus, so the agent gets "you may (or may not) do this, and here is what you
+ * are in the middle of" in one read. The proof (`note`/`reason`/`feedback`) and
+ * `which` are simulated exactly as a real move would carry them: with the
+ * required proof the verdict is ALLOWED, without it REFUSED (MISSING_PROOF), the
+ * useful "you are only missing the note" answer. An id no visible tree holds is
+ * refused `UNKNOWN_TASK`, returned as data so the server shapes it into a tool
+ * error (never thrown).
+ */
+export function runGuardTool(
+  session: Session,
+  input: {
+    id: string;
+    action: string;
+    reason?: string;
+    note?: string;
+    feedback?: string;
+    which?: string;
+  },
+): GuardResult {
+  const upcasters = catalogUpcasters();
+  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  if (scope === undefined) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+  }
+  const chainRoot = chainRootForScope(session.trees, scope) as string;
+  const cache = ProjectionCache.open(chainRoot, { upcasters });
+  cache.rebuild();
+  const task = cache.getTask(input.id);
+  // The birth was located, so a null here means the tail is truncated below it —
+  // report it as unknown rather than simulating from a state we cannot read.
+  if (task === null) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+  }
+  const fields = proofToFields(input);
+  const result = guardWithFocus(cache, {
+    from: task.state,
+    action: input.action,
+    who: session.who,
+    ...(fields !== undefined ? { fields } : {}),
+    ...(input.which !== undefined ? { which: input.which } : {}),
+  });
+  return { ok: true, result };
 }

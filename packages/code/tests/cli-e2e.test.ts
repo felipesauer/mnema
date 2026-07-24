@@ -862,3 +862,88 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     ).toBe(true);
   });
 });
+
+describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
+  /** Creates a task and returns its id — the value shown when it was created. */
+  async function taskId(): Promise<string> {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    return (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+  }
+
+  it('ALLOWS a legal move with its proof, and --json emits the faithful verdict', async () => {
+    const id = await taskId();
+
+    // cancel is legal from DRAFT with a reason → ALLOWED, reaching CANCELED.
+    const human = capture();
+    await run(['guard', 'cancel', id, '--actor', 'human', '--reason', 'dropped'], human.io);
+    expect(human.failed()).toBe(false);
+    expect(human.out.join('\n')).toContain(`ALLOWED: cancel ${id} → CANCELED`);
+
+    // --json emits the gate's own verdict, faithful.
+    const json = capture();
+    await run(
+      ['guard', 'cancel', id, '--actor', 'human', '--reason', 'dropped', '--json'],
+      json.io,
+    );
+    const verdict = JSON.parse(json.out.join('\n')) as {
+      ok: boolean;
+      to?: string;
+      action?: string;
+    };
+    expect(verdict).toMatchObject({ ok: true, to: 'CANCELED', action: 'cancel' });
+  });
+
+  it('REFUSES MISSING_PROOF when the required proof is absent (a useful answer, not a failure)', async () => {
+    const id = await taskId();
+    const c = capture();
+    // cancel is legal but needs a reason; without it → REFUSED (MISSING_PROOF).
+    await run(['guard', 'cancel', id, '--actor', 'human'], c.io);
+    // A refused verdict is a successful dry-run — it does not signal CLI failure.
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toContain('REFUSED (MISSING_PROOF)');
+  });
+
+  it('REFUSES ILLEGAL_TRANSITION for a move the current state does not allow', async () => {
+    const id = await taskId();
+    const c = capture();
+    // approve is not legal from DRAFT → REFUSED (ILLEGAL_TRANSITION).
+    await run(['guard', 'approve', id, '--actor', 'human', '--note', 'lgtm'], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toContain('REFUSED (ILLEGAL_TRANSITION)');
+  });
+
+  it('REFUSES WHO_IS_WHICH when --which equals --actor', async () => {
+    const id = await taskId();
+    const c = capture();
+    await run(['guard', 'submit', id, '--actor', 'same', '--which', 'same'], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).toContain('REFUSED (WHO_IS_WHICH)');
+  });
+
+  it('requires --actor, and refuses an unknown id / no project honestly', async () => {
+    const id = await taskId();
+
+    // Omitting --actor is a usage error the parser reports (nothing read).
+    const missing = capture();
+    await run(['guard', 'submit', id], missing.io);
+    expect(missing.failed()).toBe(true);
+
+    // Unknown id → an honest refusal.
+    const unknown = capture();
+    await run(['guard', 'submit', 'not-a-real-id', '--actor', 'human'], unknown.io);
+    expect(unknown.failed()).toBe(true);
+    expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
+
+    // Outside a project, a read refuses NO_PROJECT. The orphan must be a SIBLING
+    // of repo, not under it (resolveTrees walks UP and would find repo's .mnema).
+    const orphan = join(sandbox, 'elsewhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const out = capture();
+    await run(['guard', 'submit', 'anything', '--actor', 'human'], out.io);
+    expect(out.failed()).toBe(true);
+    expect(out.err.join('\n')).toContain('No mnema project here');
+  });
+});
