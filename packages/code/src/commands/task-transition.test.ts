@@ -1,8 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, verify } from '@mnema/chain';
+import { catalogUpcasters, taskBirth, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectTasks, resolveTrees } from '@mnema/core';
+import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 import { runTask } from './task.js';
@@ -100,21 +101,103 @@ describe('mnema task move', () => {
     expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'UNKNOWN_ACTION' });
   });
 
-  it('reports UNKNOWN_TASK for an id that does not exist', () => {
+  it('refuses UNKNOWN_TASK for an id no visible tree holds (located, not reached)', () => {
+    // The task does not exist, so the move is refused BEFORE the operation runs:
+    // the surface located no home tree, so it never opens a writer. This is the
+    // routing refusal, distinct from the gate's own UNKNOWN_TASK on a reached op.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const result = runTaskTransition(
       { cwd: repo, env },
       { id: '00000000-0000-7000-8000-000000000000', action: 'submit' },
     );
-    expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'UNKNOWN_TASK' });
+    expect(result).toEqual({ ok: false, reason: 'UNKNOWN_TASK' });
   });
 
-  it('refuses with NO_PROJECT when there is no project here', () => {
+  it('refuses with NO_PROJECT when there is no project and no global home', () => {
     const { repo, env } = setup();
     const orphan = join(repo, 'nowhere');
     mkdirSync(orphan, { recursive: true });
     const result = runTaskTransition({ cwd: orphan, env }, { id: 'anything', action: 'submit' });
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
+  });
+});
+
+describe('mnema task move — the transition follows the entity (coherence, S2)', () => {
+  it('moves a task born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
+    // The CLI create is born public; the move must follow it there. The private
+    // tree must never receive the transition (that would split the history).
+    const { repo, env, id } = projectWithTask();
+    const moved = runTaskTransition({ cwd: repo, env }, { id, action: 'submit' });
+    expect(moved).toMatchObject({ ok: true, to: 'READY' });
+
+    const trees = resolveTrees(repo, env);
+    const publicEvents = orderedEvents(
+      { root: trees.projectPublic as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    // Birth pair (created + birth transition) + the submit transition = 3 events,
+    // ALL in public: created and transitioned share one tree — history is whole.
+    expect(publicEvents.map((e) => e.kind)).toEqual([
+      'task.created',
+      'task.transitioned',
+      'task.transitioned',
+    ]);
+
+    // Neutralization: without the routing read the move could land in a different
+    // tree; here the private tree has NO event for this task.
+    const privateEvents = orderedEvents(
+      { root: trees.projectPrivate as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    expect(privateEvents).toEqual([]);
+  });
+
+  it('moves a task born in PRIVATE in the PRIVATE tree, never touching PUBLIC', () => {
+    // A task born in the private tree (as an agent's write would be) must be
+    // moved in private — routing to public would split its history and leak a
+    // private task's move to the team. The CLI create only writes public today,
+    // so the private birth is written directly, then the CLI move is exercised.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    // Write a real DRAFT task birth into the PRIVATE tree. A canonical v7 id
+    // stands in for a minted one (the create operation mints; a reference is
+    // supplied verbatim).
+    const w = openTreeForWriting(trees, 'private');
+    const id = '01920000-0000-7000-8000-00000000abcd';
+    const at = '2026-07-23T00:00:00.000Z';
+    w.appendAll(
+      taskBirth(
+        { at, who: w.anchor, signerFp: w.signerFingerprint, subject: id },
+        { title: 'a private task', initial: 'DRAFT' },
+      ),
+    );
+    w.checkpoint();
+
+    // The CLI move — with the old hardcoded 'public', this would refuse
+    // UNKNOWN_TASK (the task is not in public). Following the entity, it moves it
+    // in private.
+    const moved = runTaskTransition({ cwd: repo, env }, { id, action: 'submit' });
+    expect(moved).toMatchObject({ ok: true, to: 'READY' });
+
+    const privateEvents = orderedEvents(
+      { root: trees.projectPrivate as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    // created + birth transition + submit — all in private.
+    expect(privateEvents.map((e) => e.kind)).toEqual([
+      'task.created',
+      'task.transitioned',
+      'task.transitioned',
+    ]);
+
+    // Public never received the transition — history not split.
+    const publicEvents = orderedEvents(
+      { root: trees.projectPublic as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    expect(publicEvents).toEqual([]);
   });
 });

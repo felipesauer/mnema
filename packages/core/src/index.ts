@@ -66,6 +66,7 @@ export {
   chainRootForScope,
   type DiscoveryEnv,
   listProjects,
+  locateEntityScope,
   type Origin,
   PROJECT_DIR,
   PROJECTS_FILE,

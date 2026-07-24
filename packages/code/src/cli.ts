@@ -125,6 +125,8 @@ export function buildProgram(io: CliIo = processIo): Command {
         }
         if (result.reason === 'NO_PROJECT') {
           io.err('No mnema project here. Run `mnema init` first.');
+        } else if (result.reason === 'UNKNOWN_TASK') {
+          io.err(`No task ${id} here.`);
         } else {
           io.err(`Refused (${result.code}): ${result.message}`);
         }
