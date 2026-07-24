@@ -16,6 +16,8 @@
 
 import type { Scope } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
+import { runAccountability } from './commands/accountability.js';
+import { runAntipatterns } from './commands/antipatterns.js';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
 import { runFocus } from './commands/focus.js';
@@ -31,6 +33,7 @@ import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
 import { runTaskTransition } from './commands/task-transition.js';
+import { runTimeline } from './commands/timeline.js';
 import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
 import { buildMcpServer } from './mcp/server.js';
@@ -752,6 +755,125 @@ export function buildProgram(io: CliIo = processIo): Command {
         }
       },
     );
+
+  // The three INTELLIGENCE reads — `timeline`, `accountability`, `antipatterns`.
+  // Top-level verbs like the context reads, but the AUDITOR's view: each folds
+  // the UNION of the present trees (public/private/global) into one view of the
+  // whole record, not one tree's slice — a story crosses trees, and authorship
+  // and recurrence are properties of everything. Strictly READ-ONLY: each reads
+  // the present trees' tails and folds them with a PURE copilot derivation — no
+  // cache rebuilt to disk, no writer, no key. So none takes `--actor` (the answer
+  // is a property of the record, not of who asks); accountability's `--who`/
+  // `--which` are aggregation FILTERS, not the asker's identity. `--json` emits
+  // the faithful object; without it a one-level human summary (the rich nested
+  // formatter is a later concern). RELATES, never JUDGES — no output editorializes.
+
+  // `mnema timeline <id> [--json]` — the entity's whole story across the trees:
+  // every event where it is the subject, plus those that refer to it (an
+  // observation `about` it, a link whose `target` is it). An id no event touches
+  // yields an empty history — a valid answer, not a refusal.
+  program
+    .command('timeline')
+    .description("show an entity's history across the trees (subject, about, target)")
+    .argument('<id>', 'the entity id (a task, decision, skill, memory, …)')
+    .option('--json', 'emit the faithful timeline entries as JSON')
+    .action((id: string, opts: { json?: boolean }) => {
+      const result = runTimeline({ cwd: process.cwd(), env: discoveryEnv() }, { id });
+      if (!result.ok) {
+        io.err('No mnema project here. Run `mnema init` first.');
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.entries, null, 2));
+        return;
+      }
+      // Human summary — one line per event: when, what kind, the role by which the
+      // entity appears, and who authorized it. The typed payload is in --json.
+      if (result.entries.length === 0) {
+        io.out(`No history recorded for ${id}.`);
+        return;
+      }
+      io.out(`${id} — ${result.entries.length} event(s):`);
+      for (const entry of result.entries) {
+        io.out(`  ${entry.at}  ${entry.kind}  [${entry.role}]  ${entry.who}`);
+      }
+    });
+
+  // `mnema accountability [--from --to --who --which] [--json]` — who authorized
+  // what over the whole record. No filter = everything (git shortlog -sn); the
+  // flags only narrow. The human summary is one level (total, and one line per
+  // who with their count); the nested byKind/byWhich is in --json.
+  program
+    .command('accountability')
+    .description('show who authorized what across the record (optionally windowed/filtered)')
+    .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
+    .option('--to <iso>', 'include only facts at or before this ISO-8601 instant')
+    .option('--who <id>', 'count only facts authorized by this anchor id')
+    .option('--which <agent>', 'count only facts executed by this agent')
+    .option('--json', 'emit the faithful account object as JSON')
+    .action(
+      (opts: { from?: string; to?: string; who?: string; which?: string; json?: boolean }) => {
+        const result = runAccountability(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            ...(opts.from !== undefined ? { from: opts.from } : {}),
+            ...(opts.to !== undefined ? { to: opts.to } : {}),
+            ...(opts.who !== undefined ? { who: opts.who } : {}),
+            ...(opts.which !== undefined ? { which: opts.which } : {}),
+          },
+        );
+        if (!result.ok) {
+          io.err('No mnema project here. Run `mnema init` first.');
+          io.fail();
+          return;
+        }
+        if (opts.json === true) {
+          io.out(JSON.stringify(result.account, null, 2));
+          return;
+        }
+        // Human summary — one level. The total and one line per author with their
+        // count; the per-kind and per-agent breakdown stays in --json.
+        const { total, byWho } = result.account;
+        io.out(`${total} fact(s) · ${byWho.length} author(s)`);
+        for (const account of byWho) {
+          io.out(`  ${account.who}  ${account.total}`);
+        }
+      },
+    );
+
+  // `mnema antipatterns [--json]` — recurring shapes with their evidence. The
+  // human summary is a count per category plus the candidate ids pointed at; the
+  // full evidence per finding is in --json. It POINTS, never CONCLUDES.
+  program
+    .command('antipatterns')
+    .description('show recurring shapes in the record (reopens, supersessions, deprecations)')
+    .option('--json', 'emit the faithful shapes with their evidence as JSON')
+    .action((opts: { json?: boolean }) => {
+      const result = runAntipatterns({ cwd: process.cwd(), env: discoveryEnv() });
+      if (!result.ok) {
+        io.err('No mnema project here. Run `mnema init` first.');
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.patterns, null, 2));
+        return;
+      }
+      // Human summary — one level: a count per category, then the skill candidates
+      // as pointed-at ids. Nothing calls a count good or bad; the evidence per
+      // finding is in --json.
+      const { reopenedTasks, supersededDecisions, deprecatedSkills, skillCandidates } =
+        result.patterns;
+      io.out(`reopened tasks: ${reopenedTasks.length}`);
+      io.out(`superseded decisions: ${supersededDecisions.length}`);
+      io.out(`deprecated skills: ${deprecatedSkills.length}`);
+      if (skillCandidates.length > 0) {
+        io.out(
+          `skill candidates (reopened >1×): ${skillCandidates.map((f) => f.entityId).join(', ')}`,
+        );
+      }
+    });
 
   program
     .command('verify')

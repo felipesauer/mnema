@@ -19,9 +19,12 @@
  * one append via a birth/fact operation), `task_transition`,
  * `decision_transition`, and `skill_transition` (the same mold applied to a gated
  * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
- * derivation over the projection cache), and `guard` (the read mold applied to a
+ * derivation over the projection cache), `guard` (the read mold applied to a
  * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
- * nothing). The knowledge FACTS (observation/handoff/link) share the
+ * nothing), and the three intelligence reads `runTimelineTool`/
+ * `runAccountabilityTool`/`runAntipatternsTool` (the auditor's view — they fold
+ * the UNION of the session's trees, opening no cache and no writer). The knowledge
+ * FACTS (observation/handoff/link) share the
  * memory mold exactly — one append, no gate — and forward the ids they reference
  * without validating them (a dangling reference is honest cross-tree). The server
  * wires these onto the protocol; the wiring adds nothing but the schema and the
@@ -30,6 +33,11 @@
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
+  type Accountability,
+  type AccountabilityFilter,
+  type Antipatterns,
+  accountability,
+  antipatterns,
   type Bootstrap,
   bootstrap,
   type Focus,
@@ -40,6 +48,8 @@ import {
   nextActionsForTask,
   type Resume,
   resume,
+  type TimelineEntry,
+  timeline,
 } from '@mnema/copilot';
 import {
   chainRootForScope,
@@ -69,6 +79,7 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
+import { unionEvents } from '../intelligence-source.js';
 import { type Session, writeContext } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -855,4 +866,100 @@ export function runGuardTool(
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
   return { ok: true, result };
+}
+
+/** An intelligence read's result: the derivation, or a refusal when no project. */
+type IntelligenceResult<T> =
+  | { readonly ok: true; readonly value: T }
+  | {
+      readonly ok: false;
+      /** There is no project here — an intelligence read is about a project's record. */
+      readonly code: 'NO_PROJECT';
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/** The `audit_timeline` result — the entity's history, or a refusal. */
+export type TimelineToolResult = IntelligenceResult<readonly TimelineEntry[]>;
+
+/** The `audit_accountability` result — the account, or a refusal. */
+export type AccountabilityToolResult = IntelligenceResult<Accountability>;
+
+/** The `audit_antipatterns` result — the recurring shapes, or a refusal. */
+export type AntipatternsToolResult = IntelligenceResult<Antipatterns>;
+
+/**
+ * The refusal an intelligence read gives with no project, shared by the three.
+ * An intelligence read is the auditor's view of a PROJECT's record; a session on
+ * the global tree alone has no project to audit, so it refuses `NO_PROJECT`
+ * (returned as data so the server shapes it into a tool error), the same refusal
+ * the CLI intelligence reads give. In a project the read folds the UNION of the
+ * session's trees.
+ */
+function requireProject(
+  session: Session,
+): { readonly ok: false; readonly code: 'NO_PROJECT'; readonly message: string } | undefined {
+  if (!session.inProject) {
+    return {
+      ok: false,
+      code: 'NO_PROJECT',
+      message: 'no project here — an intelligence read is about a project’s record',
+    };
+  }
+  return undefined;
+}
+
+/**
+ * `audit_timeline` — the whole history of one entity across the session's trees.
+ *
+ * The auditor's counterpart of `next_actions`: it takes an id and folds the UNION
+ * of the session's present trees ({@link unionEvents}) into the entity's story —
+ * every event where it is the subject, plus the events that refer to it (an
+ * observation `about` it, a link whose `target` is it), which may live in a
+ * different tree. Read-only: it reads the tails and folds them with the copilot's
+ * pure `timeline`, opening no writer and no cache. An id no event touches yields
+ * an empty history (a valid answer, not a refusal); with no project it refuses
+ * `NO_PROJECT`.
+ */
+export function runTimelineTool(session: Session, input: { id: string }): TimelineToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  const events = unionEvents(session.trees, catalogUpcasters());
+  return { ok: true, value: timeline(events, input.id) };
+}
+
+/**
+ * `audit_accountability` — who authorized what across the session's trees.
+ *
+ * Folds the UNION of the session's present trees into a factual account of
+ * authorship. With no filter it accounts for the whole record (git shortlog -sn);
+ * `from`/`to`/`who`/`which` only narrow it — they are aggregation filters, never
+ * the session actor's identity (the session's `who` is not imposed as a filter).
+ * Read-only: it reads the tails and folds them with the copilot's pure
+ * `accountability`. With no project it refuses `NO_PROJECT`.
+ */
+export function runAccountabilityTool(
+  session: Session,
+  input: AccountabilityFilter = {},
+): AccountabilityToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  const events = unionEvents(session.trees, catalogUpcasters());
+  return { ok: true, value: accountability(events, input) };
+}
+
+/**
+ * `audit_antipatterns` — recurring shapes across the session's trees.
+ *
+ * Folds the UNION of the session's present trees and surfaces the shapes that
+ * recur (reopened tasks, superseded decisions, deprecated skills), each with its
+ * evidence, plus the skill candidates POINTED at. It points, it does not conclude,
+ * and it creates no skill. Read-only: it reads the tails and folds them with the
+ * copilot's pure `antipatterns`. With no project it refuses `NO_PROJECT`.
+ */
+export function runAntipatternsTool(session: Session): AntipatternsToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  const events = unionEvents(session.trees, catalogUpcasters());
+  return { ok: true, value: antipatterns(events) };
 }

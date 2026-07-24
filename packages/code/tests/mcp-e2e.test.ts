@@ -39,6 +39,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { closeSession, openSession, writeContext } from '../src/mcp/session.js';
 import {
+  runAccountabilityTool,
+  runAntipatternsTool,
   runBootstrap,
   runCaptureMemory,
   runCreateSkill,
@@ -53,6 +55,7 @@ import {
   runResumeTool,
   runSkillTransition,
   runTaskTransition,
+  runTimelineTool,
 } from '../src/mcp/tools.js';
 
 let sandbox: string;
@@ -924,6 +927,123 @@ describe('MCP session + tools — unit', () => {
     expect(superseded).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
   });
 
+  it('audit_timeline gathers an entity across the union of the session trees, writing nothing', () => {
+    const project = makeProject('proj');
+    const trees = resolveTrees(project, env);
+    // A task in PUBLIC, and an observation ABOUT it in PRIVATE — its story crosses
+    // the trees, so only the union sees the whole of it.
+    const publicCtx = writeContext(trees, 'public');
+    const task = createTask(publicCtx, { title: 'crosses trees' });
+    if (!task.ok) throw new Error('setup');
+    publicCtx.writer.checkpoint();
+
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // The observation lands in the session's PRIVATE tree, about the public task.
+    const obs = runRecordObservation(session, { about: task.id, topic: 't', text: 'note' });
+    if (!obs.ok) throw new Error('setup');
+
+    const publicRoot = chainRootForScope(trees, 'public') as string;
+    const privateRoot = chainRootForScope(trees, 'private') as string;
+    const before = [
+      orderedEvents({ root: publicRoot }, catalogUpcasters()).length,
+      orderedEvents({ root: privateRoot }, catalogUpcasters()).length,
+    ];
+
+    const result = runTimelineTool(session, { id: task.id });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // The union sees the task's own event (public) AND the observation about it
+    // (private) — a single tree would miss one side.
+    expect(result.value.some((e) => e.role === 'subject' && e.subject === task.id)).toBe(true);
+    const about = result.value.find((e) => e.role === 'about');
+    expect(about?.subject).toBe(obs.id);
+
+    // The read appended nothing to either tree.
+    const after = [
+      orderedEvents({ root: publicRoot }, catalogUpcasters()).length,
+      orderedEvents({ root: privateRoot }, catalogUpcasters()).length,
+    ];
+    expect(after).toEqual(before);
+  });
+
+  it('audit_accountability with no filter accounts for the whole union; --who narrows', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // Two facts under the session's authority, in two trees.
+    if (!runCaptureMemory(session, { content: 'a', scope: 'public' }).ok) throw new Error('setup');
+    if (!runCaptureMemory(session, { content: 'b', scope: 'private' }).ok) throw new Error('setup');
+
+    const all = runAccountabilityTool(session, {});
+    expect(all.ok).toBe(true);
+    if (!all.ok) return;
+    expect(all.value.total).toBeGreaterThanOrEqual(2);
+    // The session's own who authored them.
+    const mine = all.value.byWho.find((w) => w.who === session.who);
+    expect(mine).toBeDefined();
+
+    // A filter on a stranger counts zero — never an error.
+    const none = runAccountabilityTool(session, { who: 'nobody' });
+    expect(none.ok).toBe(true);
+    if (none.ok) {
+      expect(none.value.total).toBe(0);
+      expect(none.value.byWho).toEqual([]);
+    }
+  });
+
+  it('audit_antipatterns points at a task reopened twice as a skill candidate, writing nothing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // Drive a task DRAFT→…→DONE→reopen→…→DONE→reopen via the transition tool.
+    const ctx = writeContext(session.trees, session.scope);
+    const created = createTask(ctx, { title: 'churn', which: session.which, run: session.runId });
+    if (!created.ok) throw new Error('setup');
+    ctx.writer.checkpoint();
+    const move = (action: string, extra: Record<string, string> = {}): void => {
+      const r = runTaskTransition(session, { id: created.id, action, ...extra });
+      if (!r.ok) throw new Error(`setup: ${action} refused`);
+    };
+    move('submit');
+    move('start');
+    move('complete', { note: 'done' });
+    move('reopen', { reason: 'again' });
+    move('complete', { note: 'done' });
+    move('reopen', { reason: 'once more' });
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+
+    const result = runAntipatternsTool(session);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const finding = result.value.reopenedTasks.find((f) => f.entityId === created.id);
+    expect(finding?.count).toBe(2);
+    expect(result.value.skillCandidates.map((f) => f.entityId)).toContain(created.id);
+
+    // The read appended nothing.
+    const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
+    expect(after).toBe(before);
+  });
+
+  it('the intelligence reads refuse NO_PROJECT with no project (as data, never thrown)', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.inProject).toBe(false);
+    expect(runTimelineTool(session, { id: 'x' })).toMatchObject({ ok: false, code: 'NO_PROJECT' });
+    expect(runAccountabilityTool(session, {})).toMatchObject({ ok: false, code: 'NO_PROJECT' });
+    expect(runAntipatternsTool(session)).toMatchObject({ ok: false, code: 'NO_PROJECT' });
+  });
+
   it('closeSession ends the run; a second close is a tolerated no-op', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(closeSession(session)).toBe(true);
@@ -966,6 +1086,9 @@ describe('MCP server — end to end over a real client', () => {
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
     expect(names).toEqual([
+      'audit_accountability',
+      'audit_antipatterns',
+      'audit_timeline',
       'bootstrap',
       'capture_memory',
       'create_skill',
@@ -1274,6 +1397,54 @@ describe('MCP server — end to end over a real client', () => {
     const verdict = verify(globalRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
 
+    await client.close();
+  });
+
+  it('the audit_* intelligence tools are callable by name and return the faithful object', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Seed a task so timeline and accountability have real events to fold.
+    const created = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'seed the record' },
+    });
+    expect(textOf(created)).toMatch(/^Captured memory /);
+    const memoryId = textOf(created).replace('Captured memory ', '').trim();
+
+    // audit_timeline over the seeded memory — its own creation event is there.
+    const timelineRes = await client.callTool({
+      name: 'audit_timeline',
+      arguments: { id: memoryId },
+    });
+    const entries = JSON.parse(textOf(timelineRes)) as Array<{ kind: string; role: string }>;
+    expect(entries.some((e) => e.kind === 'memory.captured' && e.role === 'subject')).toBe(true);
+
+    // audit_accountability with no filter — a faithful account with a nonzero total.
+    const accRes = await client.callTool({ name: 'audit_accountability', arguments: {} });
+    const account = JSON.parse(textOf(accRes)) as { total: number; byWho: unknown[] };
+    expect(account.total).toBeGreaterThan(0);
+    expect(account.byWho.length).toBeGreaterThan(0);
+
+    // audit_antipatterns — the four lists, all empty on a churn-free record.
+    const apRes = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
+    const patterns = JSON.parse(textOf(apRes)) as {
+      reopenedTasks: unknown[];
+      skillCandidates: unknown[];
+    };
+    expect(patterns.reopenedTasks).toEqual([]);
+    expect(patterns.skillCandidates).toEqual([]);
+
+    await client.close();
+  });
+
+  it('an audit_* tool refuses NO_PROJECT as a tool error over the transport (global session)', async () => {
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, []);
+    const refused = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (NO_PROJECT)');
     await client.close();
   });
 });
