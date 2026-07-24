@@ -10,11 +10,14 @@
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap, focus, resume, next_actions, guard) delegates to a
- * pure adapter in {@link ./tools.js}. The last four, like bootstrap, are
- * READ-ONLY reads — they open a cache, rebuild, and derive; they open no writer.
- * `guard` is a dry-run of the gate: it simulates a move and returns the verdict,
- * having written nothing.
+ * skill_transition, bootstrap, focus, resume, next_actions, guard, and the three
+ * `audit_*` intelligence reads — audit_timeline, audit_accountability,
+ * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
+ * reads (focus/resume/next_actions/guard, like bootstrap) are READ-ONLY — they
+ * open a cache, rebuild, and derive; they open no writer. `guard` is a dry-run of
+ * the gate: it simulates a move and returns the verdict, having written nothing.
+ * The `audit_*` reads are read-only too but fold the UNION of the session's trees
+ * (the auditor's view of the whole record), never opening a cache or a writer.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -30,6 +33,8 @@ import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
+  runAccountabilityTool,
+  runAntipatternsTool,
   runBootstrap,
   runCaptureMemory,
   runCreateSkill,
@@ -44,6 +49,7 @@ import {
   runResumeTool,
   runSkillTransition,
   runTaskTransition,
+  runTimelineTool,
 } from './tools.js';
 
 /** The name the server announces itself as (its own identity, not the client's). */
@@ -630,6 +636,108 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // (and focus) as data so the agent reads the reason, exactly as it would
       // from the real move's refusal.
       return { content: [{ type: 'text', text: JSON.stringify(result.result, null, 2) }] };
+    },
+  );
+
+  // The three INTELLIGENCE tools, prefixed `audit_` — the AUDITOR's view over the
+  // UNION of the session's trees (distinct from the session reads focus/resume/
+  // guard, which serve the session's own tree and carry no prefix). Each folds
+  // every present tree into one view of the whole record and returns the faithful
+  // object. Read-only: they read the tails and fold them, opening no writer and
+  // no cache. With no project a session has no record to audit — refused.
+
+  server.registerTool(
+    'audit_timeline',
+    {
+      title: 'Audit — the full history of an entity',
+      description:
+        'Show the complete history of one entity (a task, decision, skill, …) ' +
+        'across ALL of this project’s trees: every event where it is the subject, ' +
+        'plus events that refer to it (an observation about it, a link whose target ' +
+        'is it) — which may live in another tree. Use it to answer "tell me the ' +
+        'whole story of this entity". An id no event touches returns an empty ' +
+        'history (a valid answer). Read-only.',
+      inputSchema: {
+        id: z.string().min(1).describe('The entity id whose history to show.'),
+      },
+    },
+    async ({ id }) => {
+      const active = await ensureSession();
+      const result = runTimelineTool(active, { id });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'audit_accountability',
+    {
+      title: 'Audit — who authorized what',
+      description:
+        'Show who authorized what and which agent executed it, across ALL of this ' +
+        'project’s trees. Use it to answer "who did what" over the whole record — ' +
+        'with no filter it accounts for everything (like git shortlog). Optionally ' +
+        'narrow by a time window (from/to), a single author (who), or a single ' +
+        'executing agent (which). Returns the total and a per-author breakdown ' +
+        '(counts by kind and by executing agent). Read-only.',
+      inputSchema: {
+        from: z
+          .string()
+          .optional()
+          .describe('Include only facts at or after this ISO-8601 instant.'),
+        to: z
+          .string()
+          .optional()
+          .describe('Include only facts at or before this ISO-8601 instant.'),
+        who: z.string().optional().describe('Count only facts authorized by this anchor id.'),
+        which: z.string().optional().describe('Count only facts executed by this agent.'),
+      },
+    },
+    async ({ from, to, who, which }) => {
+      const active = await ensureSession();
+      const result = runAccountabilityTool(active, {
+        ...(from !== undefined ? { from } : {}),
+        ...(to !== undefined ? { to } : {}),
+        ...(who !== undefined ? { who } : {}),
+        ...(which !== undefined ? { which } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'audit_antipatterns',
+    {
+      title: 'Audit — recurring shapes in the record',
+      description:
+        'Show recurring shapes across ALL of this project’s trees — tasks reopened, ' +
+        'decisions superseded, skills deprecated — each with the exact events that ' +
+        'make up the count, plus the tasks reopened more than once as skill ' +
+        'CANDIDATES (a POINTER, not an action — this creates no skill). It reports ' +
+        'the shapes; it does NOT judge them good or bad. Use it to spot patterns a ' +
+        'human might act on. Read-only.',
+    },
+    async () => {
+      const active = await ensureSession();
+      const result = runAntipatternsTool(active);
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
     },
   );
 }
