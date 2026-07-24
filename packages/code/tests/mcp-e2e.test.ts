@@ -23,6 +23,7 @@ import {
   orderedEvents,
   PROJECT_DIR,
   projectDecisions,
+  projectSkills,
   projectTasks,
   resolveTrees,
 } from '@mnema/core';
@@ -36,8 +37,10 @@ import { closeSession, openSession, writeContext } from '../src/mcp/session.js';
 import {
   runBootstrap,
   runCaptureMemory,
+  runCreateSkill,
   runDecisionTransition,
   runRecordDecision,
+  runSkillTransition,
   runTaskTransition,
 } from '../src/mcp/tools.js';
 
@@ -450,6 +453,170 @@ describe('MCP session + tools — unit', () => {
     expect(badAction).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
   });
 
+  it('create_skill appends a verifiable skill, returning its id and name', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const result = runCreateSkill(session, {
+      name: 'stacked-prs',
+      body: 'One slice per PR; merge before the next.',
+    });
+    if (!result.ok) throw new Error('setup: create refused');
+    expect(result.name).toBe('stacked-prs');
+    expect(result.id.length).toBeGreaterThan(0);
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
+    const created = events.find((e) => e.kind === 'skill.created');
+    expect(created).toBeDefined();
+    // Attributed to the client (`which`), authorized by the machine (`who`).
+    expect(created?.which).toBe('claude-code');
+    expect(created?.who).not.toBe('claude-code');
+  });
+
+  it('create_skill scope arg overrides the session default (per-action scope)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+
+    const created = runCreateSkill(session, {
+      name: 'a-team-habit',
+      body: 'everyone follows it',
+      scope: 'public',
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    const publicSkills = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === created.id,
+    );
+    expect(publicSkills.map((e) => e.kind)).toEqual(['skill.created', 'skill.transitioned']);
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const privateSkills = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === created.id,
+    );
+    expect(privateSkills).toEqual([]);
+  });
+
+  it('create_skill refuses a scope absent here (public with no project) as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const refused = runCreateSkill(session, {
+      name: 'no public here',
+      body: 'no project',
+      scope: 'public',
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('skill_transition walks the cycle through the same gate the CLI uses', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const created = runCreateSkill(session, { name: 'a-habit', body: 'the pattern' });
+    if (!created.ok) throw new Error('setup: create refused');
+
+    const reviewed = runSkillTransition(session, {
+      id: created.id,
+      action: 'review',
+      note: 'seen',
+    });
+    expect(reviewed).toMatchObject({ ok: true, to: 'reviewed', name: 'a-habit' });
+    const adopted = runSkillTransition(session, { id: created.id, action: 'adopt', note: 'used' });
+    expect(adopted).toMatchObject({ ok: true, to: 'adopted' });
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const state = projectSkills(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
+      created.id,
+    )?.state;
+    expect(state).toBe('adopted');
+  });
+
+  it('skill_transition follows the entity: an agent moves a PUBLIC skill in PUBLIC', () => {
+    const project = makeProject('proj');
+    const trees = resolveTrees(project, env);
+
+    // A skill is proposed in PUBLIC (a seed session with an explicit override).
+    const seed = openSession({ clientName: 'seed', roots: [pathToFileURL(project).href], env });
+    const seeded = runCreateSkill(seed, {
+      name: 'human-habit',
+      body: 'a pattern',
+      scope: 'public',
+    });
+    if (!seeded.ok) throw new Error('setup');
+
+    // The agent connects (session writes private) and reviews the public skill.
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+    const moved = runSkillTransition(session, { id: seeded.id, action: 'review', note: 'seen' });
+    expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
+
+    // The move landed in PUBLIC (the skill's home), attributed to the agent.
+    const publicRoot = chainRootForScope(trees, 'public') as string;
+    const publicEvents = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === seeded.id,
+    );
+    expect(publicEvents.map((e) => e.kind)).toEqual([
+      'skill.created',
+      'skill.transitioned',
+      'skill.transitioned',
+    ]);
+    expect(publicEvents[2]?.which).toBe('claude-code');
+    // The session's private tree never received the move.
+    const privateRoot = chainRootForScope(trees, 'private') as string;
+    const privateEvents = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === seeded.id,
+    );
+    expect(privateEvents).toEqual([]);
+  });
+
+  it('skill_transition returns the gate refusal as data, never throwing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const created = runCreateSkill(session, { name: 'a-habit', body: 'r' });
+    if (!created.ok) throw new Error('setup');
+
+    // review with no note is unproven; adopt from proposed is illegal.
+    const unproven = runSkillTransition(session, { id: created.id, action: 'review' });
+    expect(unproven).toMatchObject({ ok: false, code: 'MISSING_PROOF' });
+    const illegal = runSkillTransition(session, { id: created.id, action: 'adopt', note: 'x' });
+    expect(illegal).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
+    const unknown = runSkillTransition(session, {
+      id: '00000000-0000-7000-8000-000000000000',
+      action: 'review',
+    });
+    expect(unknown).toMatchObject({ ok: false, code: 'UNKNOWN_SKILL' });
+    // A bad verb on a REAL skill is UNKNOWN_ACTION — never a silent transition.
+    const badAction = runSkillTransition(session, { id: created.id, action: 'frobnicate' });
+    expect(badAction).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
+    // supersede is a decision verb — a skill is not relational.
+    const superseded = runSkillTransition(session, { id: created.id, action: 'supersede' });
+    expect(superseded).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
+  });
+
   it('closeSession ends the run; a second close is a tolerated no-op', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(closeSession(session)).toBe(true);
@@ -494,8 +661,10 @@ describe('MCP server — end to end over a real client', () => {
     expect(names).toEqual([
       'bootstrap',
       'capture_memory',
+      'create_skill',
       'decision_transition',
       'record_decision',
+      'skill_transition',
       'task_transition',
     ]);
 
@@ -610,6 +779,42 @@ describe('MCP server — end to end over a real client', () => {
     });
     expect(noBy.isError).toBe(true);
     expect(textOf(noBy)).toContain('Refused (MISSING_BY)');
+
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+
+    await client.close();
+  });
+
+  it('create_skill then skill_transition move a skill over the real transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Propose over the wire; the name and id come back in the text envelope.
+    const proposed = await client.callTool({
+      name: 'create_skill',
+      arguments: { name: 'stacked-prs', body: 'One slice per PR; merge before the next.' },
+    });
+    expect(proposed.isError).toBeFalsy();
+    expect(textOf(proposed)).toMatch(/^Proposed skill "stacked-prs" \(/);
+    const id = /\(([^)]+)\)/.exec(textOf(proposed))?.[1] as string;
+
+    // A legal review returns "<name>" → reviewed.
+    const reviewed = await client.callTool({
+      name: 'skill_transition',
+      arguments: { id, action: 'review', note: 'looks sound' },
+    });
+    expect(reviewed.isError).toBeFalsy();
+    expect(textOf(reviewed)).toMatch(/^Skill "stacked-prs" → reviewed$/);
+
+    // An unknown verb comes back as a tool error carrying UNKNOWN_ACTION.
+    const bad = await client.callTool({
+      name: 'skill_transition',
+      arguments: { id, action: 'frobnicate' },
+    });
+    expect(bad.isError).toBe(true);
+    expect(textOf(bad)).toContain('Refused (UNKNOWN_ACTION)');
 
     const privateRoot = join(project, PROJECT_DIR, 'private');
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);

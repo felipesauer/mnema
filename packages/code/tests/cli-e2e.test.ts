@@ -12,7 +12,13 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
-import { listProjects, orderedEvents, projectDecisions, resolveTrees } from '@mnema/core';
+import {
+  listProjects,
+  orderedEvents,
+  projectDecisions,
+  projectSkills,
+  resolveTrees,
+} from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 
@@ -299,6 +305,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(h.out.join('\n')).toContain('init');
     expect(h.out.join('\n')).toContain('task');
     expect(h.out.join('\n')).toContain('decision');
+    expect(h.out.join('\n')).toContain('skill');
     expect(h.out.join('\n')).toContain('verify');
   });
 
@@ -461,5 +468,154 @@ describe('mnema CLI — decision, end to end', () => {
     await run(['decision', 'homeless', 'no project'], d.io);
     expect(d.failed()).toBe(true);
     expect(d.err.join('\n')).toContain('Run `mnema init`');
+  });
+});
+
+describe('mnema CLI — skill, end to end', () => {
+  /** Reads the id out of a `Proposed skill "<name>" (<id>)` line. */
+  function idOf(out: string): string {
+    return (out.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+  }
+
+  it('proposes a skill, prints its name and id (no alias), and verifies', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'stacked-prs', '--body', 'One slice per PR; merge before the next.'], c.io);
+    expect(c.failed()).toBe(false);
+    // The output is `"<name>" (<uuid>)`: the display name and the key, no alias.
+    expect(c.out.join('\n')).toMatch(/^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)$/);
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    expect(
+      orderedEvents({ root }, catalogUpcasters()).some((e) => e.kind === 'skill.created'),
+    ).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('--body is required — a missing --body is a usage error, nothing is born', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    // Only the name given; the body flag is missing.
+    await run(['skill', 'no-body'], c.io);
+    expect(c.failed()).toBe(true);
+    // Nothing was born: no skill event in the public tree.
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const publicEvents = existsSync(trees.projectPublic as string)
+      ? orderedEvents({ root: trees.projectPublic as string }, catalogUpcasters())
+      : [];
+    expect(publicEvents.some((e) => e.kind === 'skill.created')).toBe(false);
+  });
+
+  it('walks a skill through its cycle: propose → review → adopt → deprecate → verify', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'a-habit', '--body', 'do the thing'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const review = capture();
+    await run(['skill', 'move', 'review', id, '--note', 'looks sound'], review.io);
+    expect(review.failed()).toBe(false);
+    expect(review.out.join('\n')).toMatch(/^Skill "a-habit" → reviewed$/);
+
+    const adopt = capture();
+    await run(['skill', 'move', 'adopt', id, '--note', 'we use it'], adopt.io);
+    expect(adopt.failed()).toBe(false);
+    expect(adopt.out.join('\n')).toMatch(/→ adopted$/);
+
+    const deprecate = capture();
+    await run(['skill', 'move', 'deprecate', id, '--reason', 'replaced'], deprecate.io);
+    expect(deprecate.failed()).toBe(false);
+    expect(deprecate.out.join('\n')).toMatch(/→ deprecated$/);
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    expect(verify(root).ok).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('review without a note prints the gate refusal and fails', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const r = capture();
+    await run(['skill', 'move', 'review', id], r.io);
+    expect(r.failed()).toBe(true);
+    expect(r.err.join('\n')).toContain('Refused (MISSING_PROOF)');
+  });
+
+  it('an unknown action is UNKNOWN_ACTION — never a silent transition', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const bad = capture();
+    await run(['skill', 'move', 'frobnicate', id], bad.io);
+    expect(bad.failed()).toBe(true);
+    expect(bad.err.join('\n')).toContain('Refused (UNKNOWN_ACTION)');
+  });
+
+  it('move of a skill that does not exist reports UNKNOWN_SKILL', async () => {
+    await run(['init'], capture().io);
+    const m = capture();
+    await run(
+      ['skill', 'move', 'review', '00000000-0000-7000-8000-000000000000', '--note', 'x'],
+      m.io,
+    );
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('No skill');
+  });
+
+  it('`skill move` takes no --scope: a move follows the entity', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    const id = idOf(c.out.join('\n'));
+
+    const m = capture();
+    await run(['skill', 'move', 'review', id, '--note', 'x', '--scope', 'private'], m.io);
+    expect(m.failed()).toBe(true);
+  });
+
+  it('--scope private on propose routes the birth to the private tree', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'a-private-habit', '--body', 'this machine', '--scope', 'private'], c.io);
+    expect(c.failed()).toBe(false);
+    const id = idOf(c.out.join('\n'));
+
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const privateForSkill = orderedEvents(
+      { root: trees.projectPrivate as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    expect(privateForSkill.map((e) => e.kind)).toContain('skill.created');
+    const publicRoot = trees.projectPublic as string;
+    const publicForSkill = existsSync(publicRoot)
+      ? orderedEvents({ root: publicRoot }, catalogUpcasters()).filter((e) => e.subject === id)
+      : [];
+    expect(publicForSkill).toEqual([]);
+    // The projection reads it back by id, name as display.
+    expect(projectSkills(privateForSkill).get(id)?.name).toBe('a-private-habit');
+  });
+
+  it('skill before init refuses and signals failure', async () => {
+    const s = capture();
+    await run(['skill', 'homeless', '--body', 'no project'], s.io);
+    expect(s.failed()).toBe(true);
+    expect(s.err.join('\n')).toContain('Run `mnema init`');
   });
 });

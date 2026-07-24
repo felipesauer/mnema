@@ -14,11 +14,12 @@
  * transport, and what keeps the surface from growing a second implementation of
  * the domain.
  *
- * The tools here: `capture_memory` and `record_decision` (the write mold, one
- * append via a birth operation), `task_transition` and `decision_transition`
- * (the same mold applied to a gated state change), and `bootstrap` (the read
- * mold, one derivation over the projection cache). The server wires these onto
- * the protocol; the wiring adds nothing but the schema and the response envelope.
+ * The tools here: `capture_memory`, `record_decision`, and `create_skill` (the
+ * write mold, one append via a birth operation), `task_transition`,
+ * `decision_transition`, and `skill_transition` (the same mold applied to a gated
+ * state change), and `bootstrap` (the read mold, one derivation over the
+ * projection cache). The server wires these onto the protocol; the wiring adds
+ * nothing but the schema and the response envelope.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -31,13 +32,20 @@ import {
   orderedEvents,
   ProjectionCache,
   projectDecisions,
+  projectSkills,
   type Scope,
+  SKILL_ACTIONS,
 } from '@mnema/core';
 import {
   acceptDecision,
+  adoptSkill,
   captureMemory,
+  createSkill,
+  deprecateSkill,
   recordDecision,
   rejectDecision,
+  rejectSkill,
+  reviewSkill,
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
@@ -103,6 +111,42 @@ export type DecisionTransitionResult =
       /** The decision's citable `ADR-<n>` label, resolved from the projection. */
       readonly adr: string;
       /** The state the decision is now in, resolved by the gate. */
+      readonly to: string;
+    }
+  | {
+      readonly ok: false;
+      /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
+      readonly code: string;
+      /** The human-readable reason the move was refused. */
+      readonly message: string;
+    };
+
+/** A skill was proposed, or the requested scope was not available here. */
+export type CreateSkillResult =
+  | {
+      readonly ok: true;
+      /** The minted skill id — the canonical identifier, the key a move takes. */
+      readonly id: string;
+      /** The skill's short name — DISPLAY only, not a key (not unique). */
+      readonly name: string;
+    }
+  | {
+      readonly ok: false;
+      /** The requested scope names a tree absent in this context. */
+      readonly code: 'SCOPE_UNAVAILABLE';
+      /** The human-readable reason the propose was refused. */
+      readonly message: string;
+    };
+
+/** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
+export type SkillTransitionResult =
+  | {
+      readonly ok: true;
+      /** The skill's id (the one that moved). */
+      readonly id: string;
+      /** The skill's short name, resolved from the projection (DISPLAY only). */
+      readonly name: string;
+      /** The state the skill is now in, resolved by the gate. */
       readonly to: string;
     }
   | {
@@ -361,6 +405,131 @@ export function runDecisionTransition(
  * (accept/reject) and `reason` (supersede).
  */
 function decisionProofToFields(input: {
+  note?: string;
+  reason?: string;
+}): TransitionFields | undefined {
+  const fields: { note?: string; reason?: string } = {};
+  if (input.note !== undefined) fields.note = input.note;
+  if (input.reason !== undefined) fields.reason = input.reason;
+  return Object.keys(fields).length > 0 ? fields : undefined;
+}
+
+/**
+ * `create_skill` — proposes a reusable pattern into a tree, the MCP counterpart
+ * of `mnema skill`. Like `capture_memory` and `record_decision`, the tree is a
+ * per-action choice on top of the session's default: an explicit `scope` wins,
+ * else the session's own scope stands. A skill needs both a `name` and a `body`,
+ * both required by the schema.
+ *
+ * Opens that scope's writer, proposes the skill attributed to the connecting
+ * agent (`which`) and pinned to the session's run, then checkpoints. Returns the
+ * minted `id` (the key a move takes) and the `name` (DISPLAY only) — a skill has
+ * no alias. An override naming a tree this context lacks is refused as data
+ * (SCOPE_UNAVAILABLE), never thrown, so the server shapes it into a tool error.
+ */
+export function runCreateSkill(
+  session: Session,
+  input: { name: string; body: string; scope?: Scope },
+): CreateSkillResult {
+  const scope = input.scope ?? session.scope;
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
+  const created = createSkill(ctx, {
+    name: input.name,
+    body: input.body,
+    which: session.which,
+    run: session.runId,
+  });
+  // A skill birth cannot be gate-refused (birth is not a gated transition; the
+  // only check is who != which, which holds for a real client), but the operation
+  // return is a union — surface any refusal honestly rather than asserting ok.
+  if (!created.ok) {
+    return { ok: false, code: 'SCOPE_UNAVAILABLE', message: created.message };
+  }
+  // Checkpoint so the propose is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true, id: created.id, name: input.name };
+}
+
+/**
+ * `skill_transition` — moves a skill through its workflow, the MCP counterpart of
+ * `mnema skill move`. Both surfaces call the SAME operations, so the gate accepts
+ * and refuses identically; only the transport differs.
+ *
+ * The transition follows the ENTITY, not the session's scope: it locates the
+ * skill's home tree ({@link locateEntityScope}) and opens THAT writer, so the move
+ * never splits the history. If no visible tree holds it, `UNKNOWN_SKILL`.
+ *
+ * The action string routes to the named operation — review/adopt/reject carry a
+ * `note`, deprecate a `reason`. Unlike a decision's supersede, NO action carries a
+ * `by` (a skill is not relational). An action outside `SKILL_ACTIONS` is refused
+ * `UNKNOWN_ACTION` before any op is called, never falling through to a default.
+ * It holds no workflow logic; the gate decides, and a refusal is returned as data
+ * (never thrown).
+ */
+export function runSkillTransition(
+  session: Session,
+  input: { id: string; action: string; note?: string; reason?: string },
+): SkillTransitionResult {
+  const upcasters = catalogUpcasters();
+  // Route by the skill's home tree, not the session's scope: the move follows the
+  // entity so its history stays whole in one tree.
+  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  if (scope === undefined) {
+    return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
+  }
+
+  // Dispatch on the action to pick the right named op. An action outside the
+  // closed vocabulary is refused UNKNOWN_ACTION rather than falling through to a
+  // default op. The transition table itself stays the gate's.
+  if (!(SKILL_ACTIONS as readonly string[]).includes(input.action)) {
+    return {
+      ok: false,
+      code: 'UNKNOWN_ACTION',
+      message: `"${input.action}" is not a skill action`,
+    };
+  }
+
+  const ctx = writeContext(session.trees, scope);
+  const fields = skillProofToFields(input);
+  // Every move carries the session's `which` (the executing agent) and `run`, so
+  // the transition is attributed to the agent even when it lands in the public
+  // tree — who (the machine) != which (the agent) is preserved on a skill move
+  // exactly as it is on a task move.
+  const stamp = { which: session.which, run: session.runId };
+  const args = { id: input.id, ...(fields !== undefined ? { fields } : {}), ...stamp };
+  const moved =
+    input.action === 'review'
+      ? reviewSkill(ctx, args)
+      : input.action === 'adopt'
+        ? adoptSkill(ctx, args)
+        : input.action === 'reject'
+          ? rejectSkill(ctx, args)
+          : deprecateSkill(ctx, args);
+  if (!moved.ok) {
+    return { ok: false, code: moved.code, message: moved.message };
+  }
+  // Checkpoint so the transition is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  // Resolve the name from the projection to orient the human — a skill has no
+  // alias. Read the ONE resolved tree after the append; fall back to the id.
+  const root = chainRootForScope(session.trees, scope) as string;
+  const name = projectSkills(orderedEvents({ root }, upcasters)).get(input.id)?.name ?? input.id;
+  return { ok: true, id: input.id, name, to: moved.to };
+}
+
+/**
+ * Builds a skill's proof fields from the args the agent supplied, dropping any
+ * absent. Only the two a skill action can require are surfaced: `note`
+ * (review/adopt/reject) and `reason` (deprecate).
+ */
+function skillProofToFields(input: {
   note?: string;
   reason?: string;
 }): TransitionFields | undefined {

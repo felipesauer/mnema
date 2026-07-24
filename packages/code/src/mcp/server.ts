@@ -9,7 +9,8 @@
  * no domain logic here and none in the tools — the logic is the core's gate and
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, task_transition, record_decision, decision_transition,
- * bootstrap) delegates to a pure adapter in {@link ./tools.js}.
+ * create_skill, skill_transition, bootstrap) delegates to a pure adapter in
+ * {@link ./tools.js}.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -27,8 +28,10 @@ import { closeSession, openSession, type Session } from './session.js';
 import {
   runBootstrap,
   runCaptureMemory,
+  runCreateSkill,
   runDecisionTransition,
   runRecordDecision,
+  runSkillTransition,
   runTaskTransition,
 } from './tools.js';
 
@@ -287,6 +290,81 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         };
       }
       return { content: [{ type: 'text', text: `Decision ${result.adr} → ${result.to}` }] };
+    },
+  );
+
+  server.registerTool(
+    'create_skill',
+    {
+      title: 'Propose a skill',
+      description:
+        'Propose a reusable pattern (a skill) into the mnema chain, attributed to ' +
+        'this agent and pinned to the current session. A skill needs both a name ' +
+        '(a short title) and a body (the reusable pattern itself). Optionally pick ' +
+        'the scope it lands in — public (team-visible), private (this machine, ' +
+        'this project), or global (personal, cross-project); omitted, it follows ' +
+        'the session default. Returns the minted id (the key to move it) and the ' +
+        'name — a skill has no short alias.',
+      inputSchema: {
+        name: z.string().min(1).describe('A short title for the pattern.'),
+        body: z.string().min(1).describe('The reusable pattern itself.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the skill lands; overrides the session default.'),
+      },
+    },
+    async ({ name, body, scope }) => {
+      const active = await ensureSession();
+      const result = runCreateSkill(active, {
+        name,
+        body,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Proposed skill "${result.name}" (${result.id})` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'skill_transition',
+    {
+      title: 'Move a skill through the workflow',
+      description:
+        'Move an existing skill to a new state: review a proposed skill, adopt a ' +
+        'reviewed one as a live pattern, reject a proposed or reviewed one, or ' +
+        'deprecate an adopted one that fell out of use. review/adopt/reject each ' +
+        'need a note; deprecate needs a reason. An illegal move or missing proof ' +
+        'is refused with the gate’s reason.',
+      inputSchema: {
+        id: z.string().min(1).describe('The skill id to move.'),
+        action: z.string().min(1).describe('The transition: review, adopt, reject, or deprecate.'),
+        note: z.string().optional().describe('Why this verdict (review, adopt, reject).'),
+        reason: z.string().optional().describe('Why it fell out of use (deprecate).'),
+      },
+    },
+    async ({ id, action, note, reason }) => {
+      const active = await ensureSession();
+      const result = runSkillTransition(active, {
+        id,
+        action,
+        ...(note !== undefined ? { note } : {}),
+        ...(reason !== undefined ? { reason } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: `Skill "${result.name}" → ${result.to}` }] };
     },
   );
 
