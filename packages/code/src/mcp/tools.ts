@@ -98,7 +98,7 @@ export function runCaptureMemory(
     return {
       ok: false,
       code: 'SCOPE_UNAVAILABLE',
-      message: `no ${scope} tree here — run outside a project has only the global scope`,
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
   const ctx = writeContext(session.trees, scope);
