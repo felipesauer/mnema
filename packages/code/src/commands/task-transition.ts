@@ -10,13 +10,28 @@
  * an unknown action, an illegal move, or missing proof comes back as the gate's
  * own typed refusal for the CLI to print.
  *
+ * The transition follows the ENTITY, not a fixed tree. A task lives in exactly
+ * one tree (the one it was born in), and its move must land THERE — writing it
+ * to a different tree would split the task's history across the public/private
+ * boundary and leave whoever reads only one tree (the team, on the public tree)
+ * with an incoherent view. So the command first LOCATES the task's home tree
+ * ({@link locateEntityScope}) and opens THAT tree's writer, rather than assuming
+ * the public one. If no visible tree holds the task, it refuses — you cannot
+ * move what you cannot see.
+ *
  * The task is named by its id (the value `task` create returned), not its alias:
  * an alias is a non-reversible display hash, so there is no alias→id lookup to
  * do here — resolving one would be domain logic this surface must not hold.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, deriveAlias, resolveTrees } from '@mnema/core';
+import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  deriveAlias,
+  locateEntityScope,
+  resolveTrees,
+} from '@mnema/core';
 import { openTreeForWriting, transitionTask } from '@mnema/core/write';
 
 /** What the transition command needs — injected so it is testable. */
@@ -52,6 +67,8 @@ export interface TaskTransitioned {
 export type TaskTransitionRefused =
   /** There is no project here — a task lives in a project. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
+  /** No visible tree holds this task — it cannot be moved from here. */
+  | { readonly ok: false; readonly reason: 'UNKNOWN_TASK' }
   /** The core operation refused (an unknown/illegal move, missing proof, …). */
   | {
       readonly ok: false;
@@ -61,9 +78,13 @@ export type TaskTransitionRefused =
     };
 
 /**
- * Moves a task in the current project's public tree. Like `task` create, a task
- * is project work, so with no `.mnema/` found from the cwd this refuses with
- * `NO_PROJECT` rather than touching the global tree. The action and proof are
+ * Moves a task in the tree it was born in. The transition follows the entity: it
+ * locates which tree holds the task ({@link locateEntityScope}) and opens THAT
+ * tree's writer, so the move never lands in a different tree than the birth and
+ * never splits the history. With no `.mnema/` found from the cwd and no global
+ * home for the task, this refuses `NO_PROJECT` (a human moves project work);
+ * with a project present but the task in no visible tree, it refuses
+ * `UNKNOWN_TASK` — you cannot move what you cannot see. The action and proof are
  * forwarded to the core untouched; whether the move is legal is the gate's call,
  * and its refusal is surfaced as `REFUSED` with the gate's own code and message.
  */
@@ -71,18 +92,26 @@ export function runTaskTransition(
   ctx: TaskTransitionContext,
   input: { id: string; action: string; proof?: TaskTransitionProof },
 ): TaskTransitioned | TaskTransitionRefused {
+  const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  if (trees.projectPublic === undefined) {
-    return { ok: false, reason: 'NO_PROJECT' };
+
+  // Find the tree the task lives in; the move must follow it there. When no tree
+  // holds the task, distinguish "you are not in a project" (a human moves
+  // project work) from "this project simply does not have that task".
+  const scope = locateEntityScope(trees, input.id, upcasters);
+  if (scope === undefined) {
+    return trees.projectPublic === undefined
+      ? { ok: false, reason: 'NO_PROJECT' }
+      : { ok: false, reason: 'UNKNOWN_TASK' };
   }
 
-  const writer = openTreeForWriting(trees, 'public');
+  const writer = openTreeForWriting(trees, scope);
   const fields = proofToFields(input.proof);
   const moved = transitionTask(
     {
       writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
+      layout: { root: chainRootForScope(trees, scope) as string },
+      upcasters,
     },
     {
       id: input.id,

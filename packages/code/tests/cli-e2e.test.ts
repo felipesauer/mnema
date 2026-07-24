@@ -135,6 +135,42 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(verify(root).fullySigned).toBe(true);
   });
 
+  it('keeps a task WHOLE in one tree: create + every move land together, private stays empty', async () => {
+    // The study's probe, inverted: prove the history is NOT split. A CLI task is
+    // born public and every move follows it there; the private tree — which the
+    // agent would have written to under the old fixed scope — receives nothing,
+    // so the team (who reads only public) sees the whole history.
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+    await run(['task', 'move', 'submit', id], capture().io);
+    await run(['task', 'move', 'start', id], capture().io);
+
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const publicForTask = orderedEvents(
+      { root: trees.projectPublic as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === id);
+    // created + birth transition + submit + start — the full journey, all public.
+    expect(publicForTask.map((e) => e.kind)).toEqual([
+      'task.created',
+      'task.transitioned',
+      'task.transitioned',
+      'task.transitioned',
+    ]);
+
+    // The private tree has no event for this task at all — nothing was split off.
+    const privateRoot = trees.projectPrivate as string;
+    const privateForTask = existsSync(privateRoot)
+      ? orderedEvents({ root: privateRoot }, catalogUpcasters()).filter((e) => e.subject === id)
+      : [];
+    expect(privateForTask).toEqual([]);
+  });
+
   it('an illegal move prints the gate refusal and signals failure', async () => {
     await run(['init'], capture().io);
     const c = capture();

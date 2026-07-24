@@ -18,9 +18,9 @@
  * nothing but the schema and the response envelope.
  */
 
-import type { TransitionFields } from '@mnema/chain';
+import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import { type Bootstrap, bootstrap } from '@mnema/copilot';
-import { chainRootForScope, deriveAlias, ProjectionCache } from '@mnema/core';
+import { chainRootForScope, deriveAlias, locateEntityScope, ProjectionCache } from '@mnema/core';
 import { captureMemory, transitionTask } from '@mnema/core/write';
 import { type Session, writeContext } from './session.js';
 
@@ -75,6 +75,15 @@ export function runCaptureMemory(session: Session, input: { content: string }): 
  * `mnema task move`. Both call the SAME {@link transitionTask}, so the gate
  * accepts and refuses identically; only the transport and the context differ.
  *
+ * The transition follows the ENTITY, not the session's scope. A task lives in
+ * one tree, and a move must land there — writing it to the session's tree
+ * instead (the session opened private, but the task may be public) would split
+ * the task's history and hide the move from whoever reads only one tree. So the
+ * tool LOCATES the task's home tree ({@link locateEntityScope}) and opens THAT
+ * tree's writer; the session's scope governs where a session's NEW work is born,
+ * not where an existing entity is moved. If no visible tree holds the task, it
+ * refuses `UNKNOWN_TASK`.
+ *
  * The agent supplies the action as a string and whichever proof field it has;
  * the tool forwards them and stamps the session's `which` (the executing agent)
  * and `run`. It holds no workflow logic — the gate decides legality and proof,
@@ -86,7 +95,14 @@ export function runTaskTransition(
   session: Session,
   input: { id: string; action: string; reason?: string; note?: string; feedback?: string },
 ): TransitionResult {
-  const ctx = writeContext(session.trees, session.scope);
+  // Route by the task's home tree, not the session's scope: the move follows the
+  // entity so its history stays whole in one tree.
+  const scope = locateEntityScope(session.trees, input.id, catalogUpcasters());
+  if (scope === undefined) {
+    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+  }
+
+  const ctx = writeContext(session.trees, scope);
   const fields = proofToFields(input);
   const moved = transitionTask(ctx, {
     id: input.id,

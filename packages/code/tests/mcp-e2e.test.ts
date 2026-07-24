@@ -137,6 +137,58 @@ describe('MCP session + tools — unit', () => {
     expect(state).toBe('IN_PROGRESS');
   });
 
+  it('task_transition follows the entity: an agent moves a PUBLIC task in PUBLIC', () => {
+    // The central thesis flow: a human creates a task in the public tree, an
+    // agent (a session that writes PRIVATE) executes the SAME task. The move
+    // must follow the entity to its home (public), NOT land in the session's
+    // private tree — else the team, who reads only public, would see the task
+    // frozen while the agent's move hid in private. With the old fixed
+    // session.scope this refused UNKNOWN_TASK; following the entity, it works.
+    const project = makeProject('proj');
+    const trees = resolveTrees(project, env);
+
+    // The human creates the task in PUBLIC (no `which` → the human origin).
+    const humanCtx = writeContext(trees, 'public');
+    const created = createTask(humanCtx, { title: 'human-created work' });
+    if (!created.ok) throw new Error('setup: create refused');
+    humanCtx.writer.checkpoint();
+
+    // The agent connects — its session routes NEW writes private.
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+
+    // The agent moves the human's task. It lands in PUBLIC (the task's home).
+    const moved = runTaskTransition(session, { id: created.id, action: 'submit' });
+    expect(moved).toMatchObject({ ok: true, to: 'READY' });
+
+    // The move is in PUBLIC, attributed to the agent (`which`), authorized by
+    // the machine (`who`) — who != which preserved even though it is public.
+    const publicRoot = chainRootForScope(trees, 'public') as string;
+    const publicEvents = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === created.id,
+    );
+    expect(publicEvents.map((e) => e.kind)).toEqual([
+      'task.created',
+      'task.transitioned',
+      'task.transitioned',
+    ]);
+    const submit = publicEvents[2];
+    expect(submit?.which).toBe('claude-code');
+    expect(submit?.who).not.toBe('claude-code');
+    expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
+
+    // The session's private tree never received the move — history not split.
+    const privateRoot = chainRootForScope(trees, 'private') as string;
+    const privateTaskEvents = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === created.id,
+    );
+    expect(privateTaskEvents).toEqual([]);
+  });
+
   it('task_transition returns the gate refusal as data, never throwing', () => {
     const project = makeProject('proj');
     const session = openSession({
