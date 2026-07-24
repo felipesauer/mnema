@@ -23,6 +23,10 @@ import {
   orderedEvents,
   PROJECT_DIR,
   projectDecisions,
+  projectHandoffs,
+  projectKnowledge,
+  projectLinks,
+  projectObservations,
   projectSkills,
   projectTasks,
   resolveTrees,
@@ -39,7 +43,10 @@ import {
   runCaptureMemory,
   runCreateSkill,
   runDecisionTransition,
+  runLinkKnowledge,
   runRecordDecision,
+  runRecordHandoff,
+  runRecordObservation,
   runSkillTransition,
   runTaskTransition,
 } from '../src/mcp/tools.js';
@@ -175,6 +182,184 @@ describe('MCP session + tools — unit', () => {
     expect(session.scope).toBe('global');
     const refused = runCaptureMemory(session, { content: 'no public here', scope: 'public' });
     expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('record_observation appends a verifiable observation with its OWN id, attributed to the agent', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const result = runRecordObservation(session, {
+      about: 'a-task-id',
+      topic: 'perf',
+      text: 'this query is O(n^2)',
+    });
+    if (!result.ok) throw new Error('setup: observe refused');
+    expect(result.id).not.toBe('a-task-id');
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
+    const recorded = events.find((e) => e.kind === 'observation.recorded');
+    expect(recorded).toBeDefined();
+    expect(recorded?.which).toBe('claude-code');
+    expect(recorded?.who).not.toBe('claude-code');
+    // The `about` is forwarded as-is, never validated against existence.
+    expect(projectObservations(events).get(result.id)?.about).toBe('a-task-id');
+  });
+
+  it('record_observation scope arg overrides the session default', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+    const recorded = runRecordObservation(session, {
+      about: 'x',
+      topic: 't',
+      text: 'team-visible',
+      scope: 'public',
+    });
+    expect(recorded.ok).toBe(true);
+    if (!recorded.ok) return;
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(
+      projectObservations(orderedEvents({ root: publicRoot }, catalogUpcasters())).has(recorded.id),
+    ).toBe(true);
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(
+      projectObservations(orderedEvents({ root: privateRoot }, catalogUpcasters())).has(
+        recorded.id,
+      ),
+    ).toBe(false);
+  });
+
+  it('record_observation refuses a scope absent here as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const refused = runRecordObservation(session, {
+      about: 'x',
+      topic: 't',
+      text: 'no public here',
+      scope: 'public',
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('record_handoff appends a verifiable handoff (no id), from == to is legitimate', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    // from == to — a chat restart with the same agent, not refused.
+    const result = runRecordHandoff(session, {
+      task: 'a-task-id',
+      from: 'claude-code',
+      to: 'claude-code',
+    });
+    expect(result).toEqual({ ok: true });
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
+    const handoff = projectHandoffs(events).get('a-task-id')?.[0];
+    expect(handoff?.fromAgent).toBe('claude-code');
+    expect(handoff?.toAgent).toBe('claude-code');
+    // Attributed to the agent, authorized by the machine.
+    expect(events.find((e) => e.kind === 'handoff.recorded')?.which).toBe('claude-code');
+  });
+
+  it('record_handoff refuses a scope absent here as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    const refused = runRecordHandoff(session, {
+      task: 'T',
+      from: 'a',
+      to: 'b',
+      scope: 'public',
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('link_knowledge appends a verifiable edge (no id), a rel outside the recommended set is accepted', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    // A dangling target and an unusual rel — both accepted, neither refused.
+    const result = runLinkKnowledge(session, {
+      subject: 'A',
+      target: '00000000-0000-7000-8000-000000000000',
+      rel: 'inspired-by-a-dream',
+    });
+    expect(result).toEqual({ ok: true });
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    const edges = projectLinks(orderedEvents({ root: chainRoot }, catalogUpcasters()));
+    expect(edges).toEqual([
+      expect.objectContaining({
+        subject: 'A',
+        target: '00000000-0000-7000-8000-000000000000',
+        rel: 'inspired-by-a-dream',
+      }),
+    ]);
+  });
+
+  it('link_knowledge refuses a scope absent here as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    const refused = runLinkKnowledge(session, {
+      subject: 'A',
+      target: 'B',
+      rel: 'relates-to',
+      scope: 'public',
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
+  });
+
+  it('a knowledge fact lands in the scope resolved by its override — the whole history in one tree', () => {
+    // A session defaults private; an observation with scope=public lands wholly
+    // in public and nothing in private — the same per-action routing the memory
+    // proves, now for the fact verbs.
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const obs = runRecordObservation(session, {
+      about: 'x',
+      topic: 't',
+      text: 'public note',
+      scope: 'public',
+    });
+    if (!obs.ok) throw new Error('setup');
+    const trees = session.trees;
+    expect(
+      projectObservations(
+        orderedEvents({ root: chainRootForScope(trees, 'public') as string }, catalogUpcasters()),
+      ).has(obs.id),
+    ).toBe(true);
+    const privateObs = projectObservations(
+      orderedEvents({ root: chainRootForScope(trees, 'private') as string }, catalogUpcasters()),
+    );
+    expect(privateObs.has(obs.id)).toBe(false);
+    // The memory projection over private is empty of this too — no leak.
+    expect(
+      projectKnowledge(
+        orderedEvents({ root: chainRootForScope(trees, 'private') as string }, catalogUpcasters()),
+      ).size,
+    ).toBe(0);
   });
 
   it('task_transition moves a task through the same gate the CLI uses', () => {
@@ -663,7 +848,10 @@ describe('MCP server — end to end over a real client', () => {
       'capture_memory',
       'create_skill',
       'decision_transition',
+      'link_knowledge',
       'record_decision',
+      'record_handoff',
+      'record_observation',
       'skill_transition',
       'task_transition',
     ]);
@@ -819,6 +1007,60 @@ describe('MCP server — end to end over a real client', () => {
     const privateRoot = join(project, PROJECT_DIR, 'private');
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
 
+    await client.close();
+  });
+
+  it('record_observation, record_handoff, link_knowledge over the real transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // observe returns its own minted id in the text envelope.
+    const observed = await client.callTool({
+      name: 'record_observation',
+      arguments: { about: 'some-id', topic: 'perf', text: 'slow path here' },
+    });
+    expect(observed.isError).toBeFalsy();
+    expect(textOf(observed)).toMatch(/^Recorded observation .+ about some-id$/);
+
+    // handoff echoes the fact; from == to accepted.
+    const handed = await client.callTool({
+      name: 'record_handoff',
+      arguments: { task: 'some-id', from: 'claude-code', to: 'claude-code' },
+    });
+    expect(handed.isError).toBeFalsy();
+    expect(textOf(handed)).toBe('Recorded handoff on some-id: claude-code → claude-code');
+
+    // link with a rel outside the recommended set and a dangling target — accepted.
+    const linked = await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: 'some-id', target: 'ghost-id', rel: 'reminds-me-of' },
+    });
+    expect(linked.isError).toBeFalsy();
+    expect(textOf(linked)).toBe('Linked some-id —reminds-me-of→ ghost-id');
+
+    // All three landed in the session's private tree and it still verifies.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    const events = orderedEvents({ root: privateRoot }, catalogUpcasters());
+    expect(events.some((e) => e.kind === 'observation.recorded')).toBe(true);
+    expect(events.some((e) => e.kind === 'handoff.recorded')).toBe(true);
+    expect(events.some((e) => e.kind === 'knowledge.linked')).toBe(true);
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+
+    await client.close();
+  });
+
+  it('a knowledge tool refuses an absent scope as a tool error over the transport', async () => {
+    // A client with no roots is served on the global tree — asking for public
+    // names a tree that does not exist, refused as a tool error, not a crash.
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, []);
+    const refused = await client.callTool({
+      name: 'record_observation',
+      arguments: { about: 'x', topic: 't', text: 'no public here', scope: 'public' },
+    });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (SCOPE_UNAVAILABLE)');
     await client.close();
   });
 

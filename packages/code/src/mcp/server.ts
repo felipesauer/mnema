@@ -8,9 +8,9 @@
  * available), and closes that session's run when the connection ends. There is
  * no domain logic here and none in the tools — the logic is the core's gate and
  * operations, reached through the session and the adapters. Each registered tool
- * (capture_memory, task_transition, record_decision, decision_transition,
- * create_skill, skill_transition, bootstrap) delegates to a pure adapter in
- * {@link ./tools.js}.
+ * (capture_memory, record_observation, record_handoff, link_knowledge,
+ * task_transition, record_decision, decision_transition, create_skill,
+ * skill_transition, bootstrap) delegates to a pure adapter in {@link ./tools.js}.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -30,7 +30,10 @@ import {
   runCaptureMemory,
   runCreateSkill,
   runDecisionTransition,
+  runLinkKnowledge,
   runRecordDecision,
+  runRecordHandoff,
+  runRecordObservation,
   runSkillTransition,
   runTaskTransition,
 } from './tools.js';
@@ -171,6 +174,131 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         };
       }
       return { content: [{ type: 'text', text: `Captured memory ${result.id}` }] };
+    },
+  );
+
+  server.registerTool(
+    'record_observation',
+    {
+      title: 'Record an observation',
+      description:
+        'Record an observation ABOUT an entity (a task, decision, …) into the ' +
+        'mnema chain, attributed to this agent and pinned to the current session. ' +
+        'It carries the observed entity id (`about`), a short `topic`, and the ' +
+        'observation `text`. The `about` id is NOT checked to exist — a reference ' +
+        'to an entity in another tree is honest and resolved on read. Optionally ' +
+        'pick the scope it lands in; omitted, it follows the session default. ' +
+        'Returns the observation’s own minted id.',
+      inputSchema: {
+        about: z.string().min(1).describe('The id of the entity being observed.'),
+        topic: z.string().min(1).describe('A short topic label.'),
+        text: z.string().min(1).describe('The observation itself.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the observation lands; overrides the session default.'),
+      },
+    },
+    async ({ about, topic, text, scope }) => {
+      const active = await ensureSession();
+      const result = runRecordObservation(active, {
+        about,
+        topic,
+        text,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Recorded observation ${result.id} about ${about}` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'record_handoff',
+    {
+      title: 'Record a handoff',
+      description:
+        'Record a handoff on a task — work passed from one agent to another — into ' +
+        'the mnema chain, attributed to this agent and pinned to the current ' +
+        'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
+        '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
+        'to exist. Optionally pick the scope; omitted, it follows the session ' +
+        'default. A handoff has no id of its own — its subject is the task.',
+      inputSchema: {
+        task: z.string().min(1).describe('The task the handoff is about.'),
+        from: z.string().min(1).describe('The agent handing off.'),
+        to: z.string().min(1).describe('The agent taking over (may equal `from`).'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the handoff lands; overrides the session default.'),
+      },
+    },
+    async ({ task, from, to, scope }) => {
+      const active = await ensureSession();
+      const result = runRecordHandoff(active, {
+        task,
+        from,
+        to,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Recorded handoff on ${task}: ${from} → ${to}` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'link_knowledge',
+    {
+      title: 'Link knowledge',
+      description:
+        'Link one piece of knowledge to another — a directed edge from a `subject` ' +
+        'entity to a `target` entity, labeled by a relation `rel`. The relation is ' +
+        'an OPEN string (recommended: supersedes, relates-to, derived-from, ' +
+        'contradicts; any label is accepted). Neither endpoint is checked to ' +
+        'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
+        'pick the scope; omitted, it follows the session default. A link has no id ' +
+        'of its own — it is an edge.',
+      inputSchema: {
+        subject: z.string().min(1).describe('The entity that originates the link.'),
+        target: z.string().min(1).describe('The entity linked to.'),
+        rel: z.string().min(1).describe('The relation label (an open string).'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the link lands; overrides the session default.'),
+      },
+    },
+    async ({ subject, target, rel, scope }) => {
+      const active = await ensureSession();
+      const result = runLinkKnowledge(active, {
+        subject,
+        target,
+        rel,
+        ...(scope !== undefined ? { scope } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Linked ${subject} —${rel}→ ${target}` }],
+      };
     },
   );
 

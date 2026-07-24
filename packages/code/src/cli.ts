@@ -4,8 +4,9 @@
  *
  * commander does the parsing, the subcommand dispatch, `--help`, and the error
  * shapes; each action reads the working directory and environment, calls ONE
- * command adapter (`runInit` / `runTask` / `runDecision` / `runSkill` / …), and
- * formats the result.
+ * command adapter (`runInit` / `runTask` / `runDecision` / `runSkill` /
+ * `runMemory` / `runObserve` / `runHandoff` / `runLink` / …), and formats the
+ * result.
  * There is no domain logic here and none in the adapters — the logic is the gate
  * and the projections in the core. This file only wires and prints.
  *
@@ -17,7 +18,11 @@ import type { Scope } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
+import { runHandoff } from './commands/handoff.js';
 import { runInit } from './commands/init.js';
+import { runLink } from './commands/link.js';
+import { runMemory } from './commands/memory.js';
+import { runObserve } from './commands/observe.js';
 import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
@@ -388,6 +393,169 @@ export function buildProgram(io: CliIo = processIo): Command {
     }
     io.fail();
   });
+
+  // The four KNOWLEDGE verbs — `memory`, `observe`, `handoff`, `link`. Unlike
+  // task/decision/skill they are not groups: each is a single top-level verb (the
+  // `git commit` / `init` / `verify` shape), because a knowledge fact is one
+  // atomic append with no CRUD family and no `move` — there is no state to
+  // transition and so no subcommand. They are FACTS: one append, no gate, no
+  // state. Each takes the birth `--scope` override (they are all births), and
+  // NONE validates the ids it references — the core resolves a dangling reference
+  // on read (an honest cross-tree assertion), and the surface only forwards.
+
+  // `mnema memory "<content>"` — capture a memory. The content is a positional:
+  // this is quick capture (jrnl/todo.txt), where the content IS the command and
+  // competes with no label, so it needs no flag.
+  program
+    .command('memory')
+    .description('capture a memory in the current project')
+    .argument('<content>', 'the memory to record')
+    .option(
+      '--scope <scope>',
+      'where the memory is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((content: string, opts: { scope?: string }) => {
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runMemory(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { content, ...(scope !== undefined ? { scope } : {}) },
+      );
+      if (result.ok) {
+        io.out(`Captured memory ${result.id}`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `mnema observe <about> --topic "<t>" --text "<obs>"` — record an observation
+  // about an entity. `about` is a positional (a short id); the topic and the text
+  // are flags — the text would compete with about/topic for the tail of the line,
+  // so it is named (the `gh issue comment --body` convention). `about` is NOT
+  // validated — a dangling reference is honest cross-tree.
+  program
+    .command('observe')
+    .description('record an observation about an entity in the current project')
+    .argument('<about>', 'the id of the entity being observed (a task, decision, …)')
+    .requiredOption('--topic <label>', 'a short topic label')
+    .requiredOption('--text <text>', 'the observation itself')
+    .option(
+      '--scope <scope>',
+      'where the observation is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((about: string, opts: { topic: string; text: string; scope?: string }) => {
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runObserve(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { about, topic: opts.topic, text: opts.text, ...(scope !== undefined ? { scope } : {}) },
+      );
+      if (result.ok) {
+        io.out(`Recorded observation ${result.id} about ${about}`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `mnema handoff <task> <from> <to>` — record a handoff on a task. Three
+  // positionals: all short ids/labels, none a body of text. It mints no id (the
+  // subject IS the task), so the report echoes the fact. `from == to` is
+  // legitimate (a chat restart) and the `task` reference is not validated.
+  program
+    .command('handoff')
+    .description('record a handoff on a task in the current project')
+    .argument('<task>', 'the task the handoff is about')
+    .argument('<from>', 'the agent handing off')
+    .argument('<to>', 'the agent taking over (may equal <from>: a chat restart)')
+    .option(
+      '--scope <scope>',
+      'where the handoff is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((task: string, from: string, to: string, opts: { scope?: string }) => {
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runHandoff(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { task, fromAgent: from, toAgent: to, ...(scope !== undefined ? { scope } : {}) },
+      );
+      if (result.ok) {
+        // No id to report — a handoff has no standalone identity. Echo the fact.
+        io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `mnema link <subject> <target> --rel <label>` — link one entity to another.
+  // subject and target are positionals (short ids); the relation is a flag. The
+  // relation is an OPEN string — the recommended set (supersedes, relates-to,
+  // derived-from, contradicts) is documentation, not enforcement, so no enum. It
+  // mints no id (a link is an edge), so the report echoes the fact. Neither
+  // reference is validated — a link is legitimately cross-tree.
+  program
+    .command('link')
+    .description('link one piece of knowledge to another in the current project')
+    .argument('<subject>', 'the entity that originates the link')
+    .argument('<target>', 'the entity linked to')
+    .requiredOption(
+      '--rel <label>',
+      'the relation (recommended: supersedes, relates-to, derived-from, contradicts; ' +
+        'any label is accepted)',
+    )
+    .option(
+      '--scope <scope>',
+      'where the link is born: public (team-visible), private (this machine), ' +
+        'or global (personal, cross-project). Defaults to public.',
+    )
+    .action((subject: string, target: string, opts: { rel: string; scope?: string }) => {
+      const scope = parseScope(opts.scope, io);
+      if (scope === INVALID) {
+        io.fail();
+        return;
+      }
+      const result = runLink(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { subject, target, rel: opts.rel, ...(scope !== undefined ? { scope } : {}) },
+      );
+      if (result.ok) {
+        // No id to report — a link is an edge, not an entity. Echo the fact.
+        io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema init` first.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
 
   program
     .command('verify')
