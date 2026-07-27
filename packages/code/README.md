@@ -124,10 +124,16 @@ Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio.
 }
 ```
 
-The server resolves the project from the host's working directory, so the agent
-records into the repository it is working in. Every tool mirrors a CLI verb —
-same gate, same refusals — so a move an agent cannot make is one you cannot make
-either.
+The server does **not** read the project off its working directory — a host
+spawns it with an arbitrary cwd. It discovers the project in a fixed cascade: an
+explicit path the host configured, then the client's workspace roots, and
+finally the global tree when neither names a project. It never guesses a project
+at some cwd and never creates one; only `mnema init` does that.
+
+The write tools mirror the CLI verbs — same gate, same refusals — so a move an
+agent cannot make is one you cannot make either. A few verbs live on one side
+only: `init` and `verify` are yours, and `bootstrap` — an agent's opening
+orientation — is the agent's.
 
 ## Layout on disk
 
