@@ -53,12 +53,14 @@ export {
   fingerprintOf,
   generateKeyPair,
   type KeyPair,
+  keyPairFromPrivatePem,
   publicKeyFromPem,
   publicKeyToPem,
   sign,
   verify as verifySignature,
 } from './chain/keys.js';
 export {
+  listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
   materializePublicKey,
