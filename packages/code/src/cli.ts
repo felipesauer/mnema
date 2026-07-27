@@ -58,6 +58,28 @@ const processIo: CliIo = {
   },
 };
 
+/**
+ * Leaves quietly when the reader goes away.
+ *
+ * `mnema … | head` closes the pipe while we are still writing, and node reports
+ * that as an asynchronous `EPIPE` on the stream — which, unhandled, crashes with
+ * a stack trace that reads like mnema failed. It did not: the reader stopped
+ * listening, which is the normal end of a pipeline, and every Unix tool treats it
+ * as one. The output that matters is already through, so exit clean rather than
+ * complain into a pipe nobody is reading.
+ *
+ * Registered on the real streams only, at the entry — the injected io a test
+ * drives never touches these.
+ */
+function exitQuietlyOnClosedPipe(): void {
+  for (const stream of [process.stdout, process.stderr]) {
+    stream.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EPIPE') process.exit(0);
+      throw error;
+    });
+  }
+}
+
 /** The scopes `--scope` accepts — the surface's view of the core's three trees. */
 const SCOPES = ['public', 'private', 'global'] as const;
 
@@ -1162,5 +1184,6 @@ export async function run(argv: readonly string[], io: CliIo = processIo): Promi
 
 // Auto-run when invoked as the binary (not when imported by a test).
 if (process.argv[1] !== undefined && import.meta.url === `file://${process.argv[1]}`) {
+  exitQuietlyOnClosedPipe();
   void run(process.argv.slice(2));
 }

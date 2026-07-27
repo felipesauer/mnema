@@ -1259,6 +1259,38 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     return readdirSync(dir).filter((f) => f.endsWith('.key'));
   }
 
+  it('after joining, `init` reports the adopted identity — not the key its own derives', async () => {
+    // `init` is the command a person runs to check that joining worked, and it is
+    // reached BEFORE the first write settles the anchor on disk. Reporting the
+    // derived anchor there would name an identity the very next write corrects.
+    useMachine('a');
+    const { anchor } = await initHere();
+
+    useMachine('b');
+    const beforeJoining = await initHere();
+    expect(beforeJoining.anchor).not.toBe(anchor);
+    const request = await requestToJoin(anchor);
+
+    useMachine('a');
+    await run(['key', 'enroll', request], capture().io);
+
+    // B has written nothing yet: no anchor is recorded for it in this tree, so
+    // this answer can only come from the record.
+    useMachine('b');
+    const after = capture();
+    await run(['init'], after.io);
+    expect(after.out.join('\n')).toContain(`identity: ${anchor}`);
+
+    // And it is the same identity the next write actually uses.
+    const m = capture();
+    await run(['memory', 'the first write from B'], m.io);
+    expect(m.failed()).toBe(false);
+    const captured = orderedEvents({ root: publicTree() }, catalogUpcasters()).filter(
+      (event) => event.kind === 'memory.captured',
+    );
+    expect(captured[0]?.who).toBe(anchor);
+  });
+
   it('request → enroll → the second machine writes as the FIRST identity', async () => {
     // A founds the project.
     useMachine('a');
