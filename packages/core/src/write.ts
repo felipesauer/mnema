@@ -36,10 +36,14 @@ export {
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the
 // read surface; only opening a writer is a write).
 export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';
-// Identity write operations — founding an anchor, enrolling and revoking keys.
+// Identity write operations — founding an anchor, establishing it WHOLE into a
+// tree (the ≥2-keys policy), and enrolling or revoking keys.
 export {
+  type DeclinedKey,
+  type EstablishedIdentity,
   enrollKey,
   ensureFounded,
+  establishIdentity,
   foundIdentity,
   type IdentityOk,
   revokeKey,

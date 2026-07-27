@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import {
   generateKeyPair,
   type KeyPair,
+  type PublicHalf,
   privateKeyFromPem,
   privateKeyToPem,
   publicKeyFromPem,
@@ -89,17 +90,21 @@ export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
 /**
  * Materializes ONLY the public half of a key into a chain, so an anonymous
  * verifier finds it there without the key root. Writes `<chain>/keys/<fp>.pub`
- * if it is absent; the private key is NEVER written to a chain. Idempotent — a
- * chain already carrying the key is left untouched — and it never overwrites: a
+ * if it is absent; the private key is NEVER written to a chain — which is why it
+ * asks for a {@link PublicHalf}, not a pair: a key whose private half has left
+ * the machine (a cold backup) materializes exactly like one that never did.
+ *
+ * Idempotent — a chain already carrying the key is left untouched — and it never
+ * overwrites: a
  * `.pub` already present (materialized before, or, in the pathological case,
  * swapped) stays as-is, because a swapped public key is caught by the verifier's
  * fingerprint binding (it re-derives the loaded key's fingerprint), not here.
  */
-export function materializePublicKey(chainLayout: ChainLayout, keyPair: KeyPair): void {
-  const path = publicKeyPath(chainLayout, keyPair.fingerprint);
+export function materializePublicKey(chainLayout: ChainLayout, key: PublicHalf): void {
+  const path = publicKeyPath(chainLayout, key.fingerprint);
   if (existsSync(path)) return;
   mkdirSync(keysDir(chainLayout), { recursive: true });
-  writeFileSync(path, publicKeyToPem(keyPair.publicKey), { encoding: 'utf-8' });
+  writeFileSync(path, publicKeyToPem(key.publicKey), { encoding: 'utf-8' });
 }
 
 /**

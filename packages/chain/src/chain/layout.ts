@@ -33,6 +33,14 @@
  *       <fingerprint>.pub     the person's public key
  *       <fingerprint>.key     the person's LOCAL private key (never committed,
  *                             never copied into a chain)
+ *       <fingerprint>.enroll  REGISTRATION of a key that belongs to this identity
+ *                             but does not sign here: the signature proving it
+ *                             consented, replayable into every tree
+ *     backup/
+ *       <fingerprint>.key     the COLD private half of the backup key — kept OUT
+ *                             of keys/, where the FIRST private key found becomes
+ *                             this machine's identity, and meant to leave the
+ *                             machine entirely
  */
 
 import { join } from 'node:path';
@@ -85,6 +93,34 @@ export function publicKeyPath(layout: ChainLayout, fingerprint: string): string 
 
 export function privateKeyPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}.key`);
+}
+
+/**
+ * The key root's COLD directory: private halves deliberately kept OUT of
+ * `keys/`. A private key inside `keys/` is a candidate for THIS machine's
+ * identity — the keystore adopts the first one it finds there — so a second
+ * private key in `keys/` would make WHICH key the machine speaks as depend on
+ * directory order. The backup key's private half therefore lives here, where
+ * nothing looks for an identity.
+ */
+export function backupDir(layout: ChainLayout): string {
+  return join(layout.root, 'backup');
+}
+
+/** Path to the cold private half of a backup key — outside `keys/`, never committed. */
+export function backupPrivateKeyPath(layout: ChainLayout, fingerprint: string): string {
+  return join(backupDir(layout), `${fingerprint}.key`);
+}
+
+/**
+ * Path to a key's REGISTRATION at the key root: the proof that this key
+ * consented to join an identity, kept beside the `.pub` it belongs to. It is
+ * public material — a signature over fixed values, not a secret — and, because
+ * those values are fixed, one registration is replayable into every tree this
+ * machine founds.
+ */
+export function registrationPath(layout: ChainLayout, fingerprint: string): string {
+  return join(keysDir(layout), `${fingerprint}.enroll`);
 }
 
 /**
