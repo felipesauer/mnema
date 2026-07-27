@@ -86,7 +86,7 @@ export type TaskRefused =
  */
 export function runTask(
   ctx: TaskContext,
-  input: { title: string; scope?: Scope; which?: string },
+  input: { title: string; scope?: Scope; which?: string; run?: string },
 ): TaskCreated | TaskRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -104,7 +104,11 @@ export function runTask(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { title: input.title, ...(input.which !== undefined ? { which: input.which } : {}) },
+    {
+      title: input.title,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
+    },
   );
   if (!created.ok) {
     return { ok: false, reason: 'REFUSED', code: created.code, message: created.message };

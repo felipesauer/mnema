@@ -74,7 +74,14 @@ export type ObserveRefused =
  */
 export function runObserve(
   ctx: ObserveContext,
-  input: { about: string; topic: string; text: string; scope?: Scope; which?: string },
+  input: {
+    about: string;
+    topic: string;
+    text: string;
+    scope?: Scope;
+    which?: string;
+    run?: string;
+  },
 ): ObservationRecorded | ObserveRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -94,6 +101,7 @@ export function runObserve(
       topic: input.topic,
       text: input.text,
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!recorded.ok) {

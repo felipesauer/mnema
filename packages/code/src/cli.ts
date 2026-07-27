@@ -33,6 +33,8 @@ import { runMemory } from './commands/memory.js';
 import { runNextActions } from './commands/next-actions.js';
 import { runObserve } from './commands/observe.js';
 import { runResume } from './commands/resume.js';
+import { runRunEnd } from './commands/run-end.js';
+import { runRunStart } from './commands/run-start.js';
 import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
@@ -41,6 +43,7 @@ import { runTimeline } from './commands/timeline.js';
 import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
 import { buildMcpServer } from './mcp/server.js';
+import { resolvePinnedRun } from './pinned-run.js';
 
 /** Where the CLI writes, and how it signals failure — injected for testing. */
 export interface CliIo {
@@ -125,8 +128,77 @@ const WHICH_ON_SUBCOMMAND_HELP = [
   '                   the entity to the tree it was born in.',
 ].join('\n');
 
+/**
+ * The environment variable a shell carries an open session in, between the
+ * `mnema run start` that opened it and the `mnema run end` that closes it.
+ *
+ * It is a variable and not a file because a session belongs to a SHELL: two
+ * terminals may work in the same project inside different sessions, and a file
+ * would make them fight over one. `run start` prints the export line for the
+ * person to evaluate — a process cannot set a variable in the shell that spawned
+ * it, and pretending otherwise would leave them wondering why nothing was pinned.
+ */
+const RUN_ENV = 'MNEMA_RUN';
+
+/** Returned by {@link pinnedRunResolver} when the pinned run cannot be proven. */
+const PIN_REFUSED = Symbol('pin-refused');
+
+/**
+ * Resolves — ONCE per command — the run this process's writes are pinned to.
+ *
+ * The value enters from outside (the {@link RUN_ENV} variable), which is exactly
+ * why it is checked: a fact stamped with a run that does not exist is a broken
+ * chain of authorization on an append-only log. It is checked HERE, at the
+ * transport, rather than inside each write operation: per-operation validation
+ * would replay the run projection on every append, including on the MCP path
+ * where the run came from the server's own session and there is nothing to learn.
+ *
+ * The resolver is memoized so "once per command" is a property of the code and
+ * not of how many verbs happen to ask. With the variable unset it returns before
+ * any tree is resolved, so a person who never opened a session pays nothing — and
+ * a refusal is reported once, here, in the same `Refused (CODE)` shape every
+ * other refusal takes.
+ */
+function pinnedRunResolver(io: CliIo): () => string | undefined | typeof PIN_REFUSED {
+  let settled = false;
+  let pinned: string | undefined | typeof PIN_REFUSED;
+  return () => {
+    if (!settled) {
+      settled = true;
+      const resolved = resolvePinnedRun(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        process.env[RUN_ENV],
+      );
+      if (resolved.ok) {
+        pinned = resolved.run;
+      } else {
+        io.err(`Refused (${resolved.code}): ${resolved.message}`);
+        pinned = PIN_REFUSED;
+      }
+    }
+    return pinned;
+  };
+}
+
 /** The scopes `--scope` accepts — the surface's view of the core's three trees. */
 const SCOPES = ['public', 'private', 'global'] as const;
+
+/**
+ * What `focus` and `resume` add when an actor has no run to report.
+ *
+ * The empty answer is the TRUTH for most people who use the CLI: a run is an
+ * agent's session, and work a person does themselves has none — nor needs one,
+ * since the `who` on each fact already carries the authority a run exists to
+ * delegate. Left bare, though, the answer reads as something missing (and
+ * "no runs YET" reads as a state about to change, which for that person it is
+ * not). So the reads say what a run is and where one comes from, and stop
+ * there — no invented state, no suggestion that anything is wrong.
+ */
+const NO_RUNS_HINT = [
+  "  A run is an agent's working session. An MCP client opens one per connection;",
+  '  on the command line, `mnema run start --which <agent>` opens one.',
+  '  Work you do yourself is recorded without one.',
+];
 
 /** Returned by {@link parseScope} when the value is not a valid scope. */
 const INVALID = Symbol('invalid-scope');
@@ -198,6 +270,12 @@ export function buildProgram(io: CliIo = processIo): Command {
       writeErr: (str) => io.err(str.replace(/\n$/, '')),
     });
 
+  // The open session's run, resolved lazily and at most once (see
+  // {@link pinnedRunResolver}). Every WRITING verb asks it and forwards what it
+  // returns; the reads, `init`, `verify`, `key` and `run` itself never do —
+  // none of them stamps a `run`, so none of them has a reason to prove one.
+  const pinnedRun = pinnedRunResolver(io);
+
   program
     .command('init')
     .description('establish a mnema project in the current directory')
@@ -244,12 +322,18 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runTask(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
           title,
           ...(scope !== undefined ? { scope } : {}),
           ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -302,6 +386,11 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runTaskTransition(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
@@ -313,6 +402,7 @@ export function buildProgram(io: CliIo = processIo): Command {
             ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
           },
           ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -354,6 +444,11 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runDecision(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
@@ -361,6 +456,7 @@ export function buildProgram(io: CliIo = processIo): Command {
           rationale,
           ...(scope !== undefined ? { scope } : {}),
           ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -397,6 +493,11 @@ export function buildProgram(io: CliIo = processIo): Command {
       io.fail();
       return;
     }
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
     const result = runDecisionTransition(
       { cwd: process.cwd(), env: discoveryEnv() },
       {
@@ -404,6 +505,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         action,
         proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
         ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+        ...(run !== undefined ? { run } : {}),
       },
     );
     reportDecisionMove(result, id, io);
@@ -430,6 +532,11 @@ export function buildProgram(io: CliIo = processIo): Command {
       io.fail();
       return;
     }
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
     const result = runDecisionTransition(
       { cwd: process.cwd(), env: discoveryEnv() },
       {
@@ -438,6 +545,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         by: newId,
         proof: { ...(opts.reason !== undefined ? { reason: opts.reason } : {}) },
         ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+        ...(run !== undefined ? { run } : {}),
       },
     );
     reportDecisionMove(result, oldId, io);
@@ -480,6 +588,11 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runSkill(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
@@ -487,6 +600,7 @@ export function buildProgram(io: CliIo = processIo): Command {
           body: opts.body,
           ...(scope !== undefined ? { scope } : {}),
           ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -523,6 +637,11 @@ export function buildProgram(io: CliIo = processIo): Command {
       io.fail();
       return;
     }
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
     const result = runSkillTransition(
       { cwd: process.cwd(), env: discoveryEnv() },
       {
@@ -533,6 +652,7 @@ export function buildProgram(io: CliIo = processIo): Command {
           ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
         },
         ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+        ...(run !== undefined ? { run } : {}),
       },
     );
     if (result.ok) {
@@ -577,12 +697,18 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runMemory(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
           content,
           ...(scope !== undefined ? { scope } : {}),
           ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -621,6 +747,11 @@ export function buildProgram(io: CliIo = processIo): Command {
           io.fail();
           return;
         }
+        const run = pinnedRun();
+        if (run === PIN_REFUSED) {
+          io.fail();
+          return;
+        }
         const result = runObserve(
           { cwd: process.cwd(), env: discoveryEnv() },
           {
@@ -629,6 +760,7 @@ export function buildProgram(io: CliIo = processIo): Command {
             text: opts.text,
             ...(scope !== undefined ? { scope } : {}),
             ...(opts.which !== undefined ? { which: opts.which } : {}),
+            ...(run !== undefined ? { run } : {}),
           },
         );
         if (result.ok) {
@@ -668,6 +800,11 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
         return;
       }
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
       const result = runHandoff(
         { cwd: process.cwd(), env: discoveryEnv() },
         {
@@ -676,6 +813,7 @@ export function buildProgram(io: CliIo = processIo): Command {
           toAgent: to,
           ...(scope !== undefined ? { scope } : {}),
           ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
         },
       );
       if (result.ok) {
@@ -720,6 +858,11 @@ export function buildProgram(io: CliIo = processIo): Command {
           io.fail();
           return;
         }
+        const run = pinnedRun();
+        if (run === PIN_REFUSED) {
+          io.fail();
+          return;
+        }
         const result = runLink(
           { cwd: process.cwd(), env: discoveryEnv() },
           {
@@ -728,6 +871,7 @@ export function buildProgram(io: CliIo = processIo): Command {
             rel: opts.rel,
             ...(scope !== undefined ? { scope } : {}),
             ...(opts.which !== undefined ? { which: opts.which } : {}),
+            ...(run !== undefined ? { run } : {}),
           },
         );
         if (result.ok) {
@@ -743,6 +887,106 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.fail();
       },
     );
+
+  // `run` is a group, and the only one whose subject is a SESSION rather than a
+  // piece of the record: `start` opens the session an agent works inside, `end`
+  // seals it. A run is the unit of AUTHORIZATION — it records that a human opened
+  // a session for an agent, and every fact written inside it inherits that chain.
+  // The MCP server opens one per connection; these two verbs are how an agent
+  // working through the CLI (a script, a CI step, an agent with no MCP) gets one.
+  //
+  // Neither verb takes `--scope`: a run is born in this machine's PRIVATE tree,
+  // where runs live and where `focus`/`resume` read them. A work session is local
+  // by nature, and letting one land in the team's tree would fill it with
+  // sessions. Neither stamps a `run` on its own envelope either — a run's birth
+  // and its close ARE the run (its subject), so they belong to no parent session.
+  const runGroup = program
+    .command('run')
+    .description('open and close the session an agent works inside');
+
+  // `mnema run start --which <agent> [--goal <text>]`. The agent is REQUIRED, and
+  // that is the model rather than strictness: a run with no agent proves no
+  // delegation — it degrades into a correlation id, which is what makes a run
+  // worth writing in the first place. Declaring it on this SUBCOMMAND (not on the
+  // group) keeps it off `run end`, which needs no agent.
+  runGroup
+    .command('start')
+    .description('open a session for an agent (facts written in it are pinned to it)')
+    .requiredOption(
+      '--which <agent>',
+      'the agent this session is for — required: a run with no agent authorizes nothing',
+    )
+    .option('--goal <text>', 'what this session sets out to do')
+    .action((opts: { which: string; goal?: string }) => {
+      const result = runRunStart(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { agent: opts.which, ...(opts.goal !== undefined ? { goal: opts.goal } : {}) },
+      );
+      if (!result.ok) {
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`Refused (${result.code}): ${result.message}`);
+        }
+        io.fail();
+        return;
+      }
+      io.out(`Started run ${result.id}`);
+      io.out(`  for ${result.agent}${opts.goal !== undefined ? ` — ${opts.goal}` : ''}`);
+      // The export line alone, so it can be selected, pasted or eval'd. A process
+      // cannot set a variable in the shell that started it, so printing the line
+      // is the whole of what this command can honestly do about it.
+      io.out('');
+      io.out(`export ${RUN_ENV}=${result.id}`);
+      io.out('');
+      io.out('  Run that in this shell: every fact written after it is pinned to this');
+      io.out('  session. `mnema run end` closes it.');
+    });
+
+  // `mnema run end [<id>] [--outcome <text>]`. The id is OPTIONAL and falls back
+  // to the open session in the environment — closing the session you are in is
+  // the common case, and making it retype an id would be ceremony. With neither,
+  // it says how to close one instead of guessing which.
+  runGroup
+    .command('end')
+    .description('close a session (by default the one MNEMA_RUN names)')
+    .argument('[id]', `the run to close; omitted, the one ${RUN_ENV} names`)
+    .option('--outcome <text>', 'a short note on how the session went')
+    .action((id: string | undefined, opts: { outcome?: string }) => {
+      const fromEnv = process.env[RUN_ENV]?.trim();
+      const target = id ?? fromEnv;
+      if (target === undefined || target.length === 0) {
+        io.err(
+          '`mnema run end` needs a run: pass its id, or set ' +
+            `${RUN_ENV} to the one \`mnema run start\` printed.`,
+        );
+        io.fail();
+        return;
+      }
+      const result = runRunEnd(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { run: target, ...(opts.outcome !== undefined ? { outcome: opts.outcome } : {}) },
+      );
+      if (!result.ok) {
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`Refused (${result.code}): ${result.message}`);
+        }
+        io.fail();
+        return;
+      }
+      io.out(`Ended run ${result.id}`);
+      // A shell still pinned to the run just closed would have every write
+      // refused (the run is no longer open), so say how to let go of it — but
+      // only when the variable really names THIS run.
+      if (fromEnv === target) {
+        io.out('');
+        io.out(`unset ${RUN_ENV}`);
+        io.out('');
+        io.out('  Run that too: a shell pinned to a closed session cannot write.');
+      }
+    });
 
   // The three CONTEXT reads — `focus`, `resume`, `next-actions`. Like init/verify
   // they are top-level verbs (heterogeneous shapes, not an interchangeable
@@ -779,10 +1023,14 @@ export function buildProgram(io: CliIo = processIo): Command {
         return;
       }
       // Human summary — one line per open run. An actor with nothing open is
-      // stated plainly, not left as silent empty output.
+      // stated plainly, not left as silent empty output, and told what a run IS:
+      // most people working the CLI directly will never have one, and an
+      // unexplained empty answer reads as something missing rather than as the
+      // truth (see {@link NO_RUNS_HINT}).
       const { openRuns } = result.focus;
       if (openRuns.length === 0) {
         io.out(`${result.focus.actor} has no open runs.`);
+        for (const line of NO_RUNS_HINT) io.out(line);
         return;
       }
       io.out(`${result.focus.actor} — ${openRuns.length} open run(s):`);
@@ -811,7 +1059,10 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const { lastRun, focus } = result.resume;
       if (lastRun === null) {
-        io.out(`${result.resume.actor} has no runs yet.`);
+        // Not "no runs YET": for a person working the CLI directly that reads as
+        // a state about to change, and it never will — nor should it.
+        io.out(`${result.resume.actor} has no runs.`);
+        for (const line of NO_RUNS_HINT) io.out(line);
         return;
       }
       const state = lastRun.open ? 'open' : 'ended';

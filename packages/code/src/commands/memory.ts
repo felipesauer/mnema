@@ -73,7 +73,7 @@ export type MemoryRefused =
  */
 export function runMemory(
   ctx: MemoryContext,
-  input: { content: string; scope?: Scope; which?: string },
+  input: { content: string; scope?: Scope; which?: string; run?: string },
 ): MemoryCaptured | MemoryRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -91,7 +91,11 @@ export function runMemory(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { content: input.content, ...(input.which !== undefined ? { which: input.which } : {}) },
+    {
+      content: input.content,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
+    },
   );
   if (!captured.ok) {
     return { ok: false, reason: 'REFUSED', code: captured.code, message: captured.message };

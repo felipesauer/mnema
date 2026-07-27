@@ -73,7 +73,14 @@ export type HandoffRefused =
  */
 export function runHandoff(
   ctx: HandoffContext,
-  input: { task: string; fromAgent: string; toAgent: string; scope?: Scope; which?: string },
+  input: {
+    task: string;
+    fromAgent: string;
+    toAgent: string;
+    scope?: Scope;
+    which?: string;
+    run?: string;
+  },
 ): HandoffRecorded | HandoffRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -93,6 +100,7 @@ export function runHandoff(
       fromAgent: input.fromAgent,
       toAgent: input.toAgent,
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!recorded.ok) {

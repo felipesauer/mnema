@@ -78,7 +78,7 @@ export type DecisionRefused =
  */
 export function runDecision(
   ctx: DecisionContext,
-  input: { title: string; rationale: string; scope?: Scope; which?: string },
+  input: { title: string; rationale: string; scope?: Scope; which?: string; run?: string },
 ): DecisionRecorded | DecisionRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -100,6 +100,7 @@ export function runDecision(
       title: input.title,
       rationale: input.rationale,
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!recorded.ok) {

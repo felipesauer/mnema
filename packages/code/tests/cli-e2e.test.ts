@@ -36,6 +36,7 @@ import {
   projectKnowledge,
   projectLinks,
   projectObservations,
+  projectRuns,
   projectSkills,
   resolveTrees,
 } from '@mnema/core';
@@ -76,10 +77,14 @@ beforeEach(() => {
   originalHome = process.env.HOME;
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   process.env.HOME = join(sandbox, 'home');
+  // No session is open unless a test opens one: MNEMA_RUN must never leak in
+  // from the machine running the suite, nor out of one test into the next.
+  delete process.env.MNEMA_RUN;
   process.chdir(repo);
 });
 
 afterEach(() => {
+  delete process.env.MNEMA_RUN;
   process.chdir(originalCwd);
   if (originalXdg === undefined) delete process.env.XDG_DATA_HOME;
   else process.env.XDG_DATA_HOME = originalXdg;
@@ -930,6 +935,8 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     await run(['focus', '--actor', 'whoever'], human.io);
     expect(human.failed()).toBe(false);
     expect(human.out.join('\n')).toContain('has no open runs');
+    // And it says what a run IS, so an empty answer does not read as a fault.
+    expect(human.out.join('\n')).toContain("A run is an agent's working session");
 
     // --json emits the faithful object (the actor and an empty run list).
     const json = capture();
@@ -944,12 +951,17 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(missing.failed()).toBe(true);
   });
 
-  it('resume reports no runs yet for a fresh project, and refuses outside a project', async () => {
+  it('resume reports no runs for a fresh project, and refuses outside a project', async () => {
     await run(['init'], capture().io);
     const r = capture();
     await run(['resume', '--actor', 'whoever'], r.io);
     expect(r.failed()).toBe(false);
-    expect(r.out.join('\n')).toContain('has no runs yet');
+    // Not "no runs YET": for someone working the CLI directly that state never
+    // changes, so the read says what a run IS instead of implying one is coming.
+    expect(r.out.join('\n')).toContain('has no runs.');
+    expect(r.out.join('\n')).not.toContain('yet');
+    expect(r.out.join('\n')).toContain("A run is an agent's working session");
+    expect(r.out.join('\n')).toContain('mnema run start --which <agent>');
 
     // Outside a project, a context read refuses NO_PROJECT. The orphan must be a
     // SIBLING of repo, not under it — resolveTrees walks UP and would otherwise
@@ -1561,5 +1573,237 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
         (event) => event.kind === 'memory.captured' && /which identity/.test(String(event.payload)),
       ),
     ).toBe(false);
+  });
+});
+
+/**
+ * The SESSION on the command line, end to end: open a run, work inside it, close
+ * it — and prove the chain of authorization the run exists to carry.
+ *
+ * The property under test is not "the commands succeed". It is that the facts
+ * written between `run start` and `run end` all name the SAME session, that the
+ * session is the one a human opened for a named agent, and that a value the
+ * environment merely CLAIMS is a run cannot get anywhere near the chain.
+ */
+describe('mnema CLI — run (the session), end to end', () => {
+  /** Inits and returns the anchor `init` printed — the actor of every read here. */
+  async function initHere(): Promise<string> {
+    const i = capture();
+    await run(['init'], i.io);
+    return /identity: (mnid:[0-9a-f]{64})/.exec(i.out.join('\n'))?.[1] as string;
+  }
+
+  /** Opens a run through the CLI and returns its id, read off the output. */
+  async function startRun(agent: string, goal?: string): Promise<{ id: string; out: string }> {
+    const s = capture();
+    await run(
+      goal === undefined
+        ? ['run', 'start', '--which', agent]
+        : ['run', 'start', '--which', agent, '--goal', goal],
+      s.io,
+    );
+    expect(s.failed()).toBe(false);
+    const out = s.out.join('\n');
+    return {
+      id: (/^Started run ([0-9a-f-]{36})$/m.exec(out) as RegExpMatchArray)[1] as string,
+      out,
+    };
+  }
+
+  function treesOf() {
+    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+  }
+
+  /** Every event of a tree, or [] when that tree was never written. */
+  function eventsOf(root: string | undefined) {
+    return root !== undefined && existsSync(root)
+      ? orderedEvents({ root }, catalogUpcasters())
+      : [];
+  }
+
+  it('start → two facts pinned to one session → focus → end → resume, and it all verifies', async () => {
+    const anchor = await initHere();
+
+    // 1. The session opens, for a NAMED agent, and hands back the line that pins
+    //    a shell to it — a process cannot export into its parent shell.
+    const started = await startRun('claude-code', 'wire the run into the CLI');
+    expect(started.out).toContain(`export MNEMA_RUN=${started.id}`);
+    expect(started.out).toContain('for claude-code — wire the run into the CLI');
+
+    // 2. The person (or their script) evaluates that line. From here the shell is
+    //    inside the session.
+    process.env.MNEMA_RUN = started.id;
+
+    const m = capture();
+    await run(['memory', 'the run is the unit of authorization', '--which', 'claude-code'], m.io);
+    expect(m.failed()).toBe(false);
+    const t = capture();
+    await run(['task', 'close the pair', '--which', 'claude-code'], t.io);
+    expect(t.failed()).toBe(false);
+
+    // 3. BOTH facts carry the SAME run on the envelope — the chain of
+    //    authorization, not two unrelated events that happen to share an author.
+    const trees = treesOf();
+    const written = [...eventsOf(trees.projectPrivate), ...eventsOf(trees.projectPublic)].filter(
+      (e) => e.kind === 'memory.captured' || e.kind === 'task.created',
+    );
+    expect(written).toHaveLength(2);
+    expect(written.map((e) => e.run)).toEqual([started.id, started.id]);
+    // And the run they name really is a session a human opened for that agent.
+    const session = projectRuns(eventsOf(trees.projectPrivate)).get(started.id);
+    expect(session).toMatchObject({ agent: 'claude-code', who: anchor, open: true });
+
+    // 4. focus ANSWERS now — the read that was empty forever for a CLI user.
+    const f = capture();
+    await run(['focus', '--actor', anchor], f.io);
+    expect(f.failed()).toBe(false);
+    expect(f.out.join('\n')).toContain('1 open run(s)');
+    expect(f.out.join('\n')).toContain(started.id);
+    expect(f.out.join('\n')).toContain('wire the run into the CLI');
+
+    // 5. The session closes — by MNEMA_RUN, with no id retyped — and says how to
+    //    let go of a variable that would otherwise refuse every later write.
+    const e = capture();
+    await run(['run', 'end', '--outcome', 'shipped'], e.io);
+    expect(e.failed()).toBe(false);
+    expect(e.out.join('\n')).toContain(`Ended run ${started.id}`);
+    expect(e.out.join('\n')).toContain('unset MNEMA_RUN');
+
+    // 6. resume shows the session that ended, with the goal that says what it was.
+    const r = capture();
+    await run(['resume', '--actor', anchor], r.io);
+    expect(r.failed()).toBe(false);
+    expect(r.out.join('\n')).toContain(`last run ${started.id} (ended)`);
+    expect(r.out.join('\n')).toContain('0 run(s) still open');
+
+    // 7. Everything the session touched still verifies, fully signed.
+    delete process.env.MNEMA_RUN;
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+    for (const root of [trees.projectPublic as string, trees.projectPrivate as string]) {
+      expect(verify(root, catalogUpcasters())).toMatchObject({ ok: true, fullySigned: true });
+    }
+  });
+
+  it('a MNEMA_RUN naming a run that does not exist REFUSES the write, and writes nothing', async () => {
+    await initHere();
+    process.env.MNEMA_RUN = '00000000-0000-7000-8000-000000000000';
+
+    const m = capture();
+    await run(['memory', 'a fact with an invented session'], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('Refused (UNKNOWN_RUN)');
+    expect(m.err.join('\n')).toContain('mnema run start --which <agent>');
+
+    // Nothing reached any tree: a fact stamped with a run nobody opened would be
+    // a broken chain of authorization that no later command can retract.
+    const trees = treesOf();
+    for (const root of [trees.projectPublic, trees.projectPrivate, trees.global]) {
+      expect(eventsOf(root).some((e) => e.kind === 'memory.captured')).toBe(false);
+    }
+  });
+
+  it('a MNEMA_RUN naming a CLOSED session refuses too', async () => {
+    await initHere();
+    const started = await startRun('ci-runner');
+    process.env.MNEMA_RUN = started.id;
+    await run(['run', 'end'], capture().io);
+
+    const m = capture();
+    await run(['memory', 'written after the session ended'], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('Refused (RUN_ENDED)');
+    expect(eventsOf(treesOf().projectPublic).some((e) => e.kind === 'memory.captured')).toBe(false);
+  });
+
+  it('a run opened in ANOTHER project is not accepted here', async () => {
+    // A session vouches for work in the project it was opened in — never in a
+    // repository it never saw.
+    await initHere();
+    const started = await startRun('claude-code');
+
+    const other = join(sandbox, 'other-repo');
+    mkdirSync(other, { recursive: true });
+    process.chdir(other);
+    await run(['init'], capture().io);
+    process.env.MNEMA_RUN = started.id;
+
+    const m = capture();
+    await run(['memory', 'a session from next door'], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('Refused (UNKNOWN_RUN)');
+  });
+
+  it('with NO MNEMA_RUN nothing changed: the fact is written, with no run on it', async () => {
+    // The non-regression that matters most: a person who never heard of runs must
+    // see exactly what they saw before.
+    await initHere();
+    const m = capture();
+    await run(['memory', 'a person working directly'], m.io);
+    expect(m.failed()).toBe(false);
+
+    const captured = eventsOf(treesOf().projectPublic).find((e) => e.kind === 'memory.captured');
+    expect(captured?.run).toBeUndefined();
+    expect(captured?.which).toBeUndefined();
+  });
+
+  it('`run start` without --which is a usage error, and no session is born', async () => {
+    // A run with no agent proves no delegation — it is the correlation id the
+    // design rejected, so there is no way to ask for one.
+    await initHere();
+    const s = capture();
+    await run(['run', 'start'], s.io);
+    expect(s.failed()).toBe(true);
+    expect(eventsOf(treesOf().projectPrivate).some((e) => e.kind === 'run.started')).toBe(false);
+  });
+
+  it('`run end` with neither an id nor MNEMA_RUN says how to close one', async () => {
+    await initHere();
+    await startRun('claude-code');
+    const e = capture();
+    await run(['run', 'end'], e.io);
+    expect(e.failed()).toBe(true);
+    expect(e.err.join('\n')).toContain('needs a run');
+    expect(e.err.join('\n')).toContain('MNEMA_RUN');
+  });
+
+  it('closing the same run twice is refused, never silent', async () => {
+    await initHere();
+    const started = await startRun('claude-code');
+    const first = capture();
+    await run(['run', 'end', started.id], first.io);
+    expect(first.failed()).toBe(false);
+
+    const again = capture();
+    await run(['run', 'end', started.id], again.io);
+    expect(again.failed()).toBe(true);
+    expect(again.err.join('\n')).toContain('Refused (ALREADY_ENDED)');
+    // Exactly one close is on the log.
+    expect(eventsOf(treesOf().projectPrivate).filter((e) => e.kind === 'run.ended')).toHaveLength(
+      1,
+    );
+  });
+
+  it('the session is born PRIVATE and takes no --scope', async () => {
+    await initHere();
+    const started = await startRun('claude-code');
+    const trees = treesOf();
+    expect(eventsOf(trees.projectPrivate).some((e) => e.subject === started.id)).toBe(true);
+    expect(eventsOf(trees.projectPublic).some((e) => e.subject === started.id)).toBe(false);
+
+    const scoped = capture();
+    await run(['run', 'start', '--which', 'claude-code', '--scope', 'public'], scoped.io);
+    expect(scoped.failed()).toBe(true);
+  });
+
+  it('`run start` outside a project refuses (a session belongs to a project)', async () => {
+    const orphan = join(sandbox, 'elsewhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const s = capture();
+    await run(['run', 'start', '--which', 'claude-code'], s.io);
+    expect(s.failed()).toBe(true);
+    expect(s.err.join('\n')).toContain('Run `mnema init`');
   });
 });
