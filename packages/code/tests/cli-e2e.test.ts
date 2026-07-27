@@ -9,6 +9,7 @@
  */
 
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -1197,5 +1198,336 @@ describe('mnema CLI — key restore, end to end', () => {
     await run(['key', 'restore', coldPath], out.io);
     expect(out.failed()).toBe(true);
     expect(out.err.join('\n')).toContain('No mnema project here');
+  });
+});
+
+/**
+ * A SECOND MACHINE joining one identity, driven through the real CLI: two key
+ * roots, one shared record, and the three verbs that put them together.
+ *
+ * The property under test is not "the commands succeed" — it is that after the
+ * handshake the two machines are ONE author. A record where a person's second
+ * machine appears as a stranger is the failure this whole flow exists to prevent,
+ * and it is a failure that cannot be undone: the events are appended.
+ *
+ * Both machines share the repository directory (the state a `git pull` leaves) and
+ * differ only in their key root, which is what makes them two machines.
+ */
+describe('mnema CLI — a second machine joins one identity, end to end', () => {
+  /** Points the next commands at one machine's key root. Two roots, two machines. */
+  function useMachine(name: string): void {
+    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
+    process.env.HOME = join(sandbox, name, 'home');
+  }
+
+  function keyRootOf(name: string): string {
+    return join(sandbox, name, 'data', 'mnema', 'identity');
+  }
+
+  function publicTree(): string {
+    return join(repo, '.mnema');
+  }
+
+  /** The identity `init` printed, and the cold backup path it told the person to move. */
+  async function initHere(): Promise<{ anchor: string; coldPath: string }> {
+    const i = capture();
+    await run(['init'], i.io);
+    const output = i.out.join('\n');
+    return {
+      anchor: /identity: (mnid:[0-9a-f]{64})/.exec(output)?.[1] as string,
+      coldPath: /private half at (\S+)/.exec(output)?.[1] as string,
+    };
+  }
+
+  /** Runs `key request` and returns the one line it printed for the person to carry. */
+  async function requestToJoin(anchor: string, keyFile?: string): Promise<string> {
+    const r = capture();
+    await run(
+      keyFile === undefined
+        ? ['key', 'request', '--anchor', anchor]
+        : ['key', 'request', '--anchor', anchor, '--key', keyFile],
+      r.io,
+    );
+    expect(r.failed()).toBe(false);
+    return r.out.find((line) => line.startsWith('mnema-key-request:')) as string;
+  }
+
+  /** The private keys a machine holds — the ambiguity that must never be created. */
+  function privateKeysOf(name: string): string[] {
+    const dir = join(keyRootOf(name), 'keys');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).filter((f) => f.endsWith('.key'));
+  }
+
+  it('request → enroll → the second machine writes as the FIRST identity', async () => {
+    // A founds the project.
+    useMachine('a');
+    const { anchor } = await initHere();
+
+    // B asks to join. It has no key yet, so this is also where its key is born —
+    // and it records NO anchor: asking is not being accepted.
+    useMachine('b');
+    const request = await requestToJoin(anchor);
+    expect(request).toBeDefined();
+
+    // A vouches. This is the only step that must run on a machine already in the
+    // identity: membership is granted by a member's signature.
+    useMachine('a');
+    const e = capture();
+    await run(['key', 'enroll', request], e.io);
+    expect(e.failed()).toBe(false);
+    expect(e.out.join('\n')).toContain(`into ${anchor}`);
+    expect(e.out.join('\n')).toContain('Commit and share the record');
+
+    // B writes for the first time. THIS is the moment the identity is decided.
+    useMachine('b');
+    const m = capture();
+    await run(['memory', 'written from the second machine'], m.io);
+    expect(m.failed()).toBe(false);
+    const t = capture();
+    await run(['task', 'shipped from the second machine'], t.io);
+    expect(t.failed()).toBe(false);
+
+    // The proof: B's facts carry A's anchor, and the record holds exactly ONE
+    // founding — no second identity was minted.
+    const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
+    const fromB = events.filter((event) => event.kind === 'memory.captured');
+    expect(fromB).toHaveLength(1);
+    expect(fromB[0]?.who).toBe(anchor);
+    expect(events.filter((event) => event.kind === 'identity.founded')).toHaveLength(1);
+
+    // One author across the whole record, read the way a person reads it.
+    const acc = capture();
+    await run(['accountability'], acc.io);
+    expect(acc.out[0]).toMatch(/^\d+ fact\(s\) · 1 author\(s\)$/);
+
+    // And it is all proven: two tails, ok, every event signature-covered.
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+    const verdict = verify(publicTree(), catalogUpcasters());
+    expect(verdict).toMatchObject({ ok: true, fullySigned: true });
+    expect(verdict.tails).toHaveLength(2);
+  });
+
+  it('WITHOUT the enrollment the same second machine becomes a stranger', async () => {
+    // The neutralization: skip the handshake and let B just write. Two identities in
+    // a record the team shares — the state the three verbs exist to avoid.
+    useMachine('a');
+    const { anchor } = await initHere();
+
+    useMachine('b');
+    const m = capture();
+    await run(['memory', 'written by a machine nobody vouched for'], m.io);
+    expect(m.failed()).toBe(false);
+
+    const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
+    expect(events.find((event) => event.kind === 'memory.captured')?.who).not.toBe(anchor);
+    expect(events.filter((event) => event.kind === 'identity.founded')).toHaveLength(2);
+    const acc = capture();
+    await run(['accountability'], acc.io);
+    expect(acc.out[0]).toContain('2 author(s)');
+  });
+
+  it('refuses a request made for ANOTHER identity before it can become a fact', async () => {
+    useMachine('a');
+    await initHere();
+    useMachine('b');
+    const elsewhere = `mnid:${'a'.repeat(64)}`;
+    const request = await requestToJoin(elsewhere);
+
+    useMachine('a');
+    const e = capture();
+    await run(['key', 'enroll', request], e.io);
+
+    expect(e.failed()).toBe(true);
+    expect(e.err.join('\n')).toContain('Refused (UNPROVEN_REQUEST)');
+    // Nothing was appended: the record carries no enrollment beyond the backup's.
+    const enrollments = orderedEvents({ root: publicTree() }, catalogUpcasters()).filter(
+      (event) => event.kind === 'key.enrolled',
+    );
+    expect(enrollments).toHaveLength(1);
+  });
+
+  it('refuses to retire the last key, and retires one once a second is in', async () => {
+    useMachine('a');
+    const { anchor } = await initHere();
+    // The identity has two keys from founding (this machine's and the cold backup),
+    // so retiring one is allowed — and then the other is the last.
+    const own = privateKeysOf('a')[0]?.replace('.key', '') as string;
+    const backup = orderedEvents({ root: publicTree() }, catalogUpcasters())
+      .filter((event) => event.kind === 'key.enrolled')
+      .map((event) => (event.payload as { newFp: string }).newFp)[0] as string;
+
+    const first = capture();
+    await run(['key', 'revoke', backup, '--reason', 'the vault copy leaked'], first.io);
+    expect(first.failed()).toBe(false);
+    expect(first.out.join('\n')).toContain('1 key(s) left');
+
+    const last = capture();
+    await run(['key', 'revoke', own, '--reason', 'no longer used'], last.io);
+    expect(last.failed()).toBe(true);
+    expect(last.err.join('\n')).toContain('Refused (LAST_KEY)');
+    expect(last.err.join('\n')).toContain('Enroll the replacement first');
+
+    // The identity still verifies, and still has the key it refused to take away.
+    expect(verify(publicTree(), catalogUpcasters())).toMatchObject({ ok: true });
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+    expect(anchor).toMatch(/^mnid:/);
+  });
+});
+
+/**
+ * Getting OUT of a split: a machine that lost its key, minted another, and wrote —
+ * so a record the team shares now carries the same person twice.
+ *
+ * This is the case `key restore` could not reach (it refuses while a key is
+ * installed, and rightly: two private keys would make the machine's identity
+ * depend on directory order). What the handshake adds is a way to ask on behalf of
+ * a key the machine does NOT sign with — the cold copy — while the wrong key still
+ * occupies the key root.
+ */
+describe('mnema CLI — asking with the cold copy while the wrong key is installed', () => {
+  function useMachine(name: string): void {
+    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
+    process.env.HOME = join(sandbox, name, 'home');
+  }
+
+  function keyRootOf(name: string): string {
+    return join(sandbox, name, 'data', 'mnema', 'identity');
+  }
+
+  function privateKeysOf(name: string): string[] {
+    const dir = join(keyRootOf(name), 'keys');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).filter((f) => f.endsWith('.key'));
+  }
+
+  /**
+   * The state: the person's identity, their cold copy in a vault, the machine's own
+   * key gone, and one fact written after the loss — which minted a fresh key and
+   * founded a SECOND identity in the shared record.
+   */
+  async function loseTheKeyThenWrite(): Promise<{
+    anchor: string;
+    vaultCopy: string;
+    wrongKey: string;
+  }> {
+    useMachine('m');
+    const i = capture();
+    await run(['init'], i.io);
+    const output = i.out.join('\n');
+    const anchor = /identity: (mnid:[0-9a-f]{64})/.exec(output)?.[1] as string;
+    const coldPath = /private half at (\S+)/.exec(output)?.[1] as string;
+
+    const vaultCopy = join(sandbox, 'vault', 'backup.key');
+    mkdirSync(join(sandbox, 'vault'), { recursive: true });
+    writeFileSync(vaultCopy, readFileSync(coldPath, 'utf-8'), { mode: 0o600 });
+    rmSync(join(keyRootOf('m'), 'backup'), { recursive: true, force: true });
+    const backupFp = basename(coldPath, '.key');
+    const own = privateKeysOf('m').find((f) => f !== `${backupFp}.key`) as string;
+    rmSync(join(keyRootOf('m'), 'keys', own));
+
+    // The write that consummates the split: no key, so a fresh one is minted and
+    // founds an identity of its own.
+    const m = capture();
+    await run(['memory', 'written after the loss'], m.io);
+    expect(m.failed()).toBe(false);
+    const wrongKey = (privateKeysOf('m')[0] as string).replace('.key', '');
+    return { anchor, vaultCopy, wrongKey };
+  }
+
+  it('produces the request with the WRONG key installed, and installs nothing', async () => {
+    const lost = await loseTheKeyThenWrite();
+    // The split is real: two identities in one record.
+    const acc = capture();
+    await run(['accountability'], acc.io);
+    expect(acc.out[0]).toContain('2 author(s)');
+
+    // The old remedy cannot help: restoring would leave two private keys.
+    const restore = capture();
+    await run(['key', 'restore', lost.vaultCopy], restore.io);
+    expect(restore.failed()).toBe(true);
+    expect(restore.err.join('\n')).toContain('Refused (KEY_PRESENT)');
+
+    // But the cold copy can still ASK, signing for itself without being installed.
+    const asked = capture();
+    await run(['key', 'request', '--anchor', lost.anchor, '--key', lost.vaultCopy], asked.io);
+    expect(asked.failed()).toBe(false);
+    expect(asked.out.join('\n')).toContain('read from the file you named, not installed');
+    expect(asked.out.some((line) => line.startsWith('mnema-key-request:'))).toBe(true);
+    // The one thing that must not have happened: a second private key.
+    expect(privateKeysOf('m')).toEqual([`${lost.wrongKey}.key`]);
+    expect(readFileSync(lost.vaultCopy, 'utf-8')).toContain('PRIVATE KEY');
+  });
+
+  it('a clean machine restores the cold copy and speaks for the ORIGINAL identity again', async () => {
+    const lost = await loseTheKeyThenWrite();
+
+    // The path back: a key root that does NOT hold the wrong key. The cold copy is
+    // restored there, and the record proves which identity it belongs to.
+    useMachine('clean');
+    const restored = capture();
+    await run(['key', 'restore', lost.vaultCopy], restored.io);
+    expect(restored.failed()).toBe(false);
+    expect(restored.out.join('\n')).toContain(`identity: ${lost.anchor}`);
+
+    const m = capture();
+    await run(['memory', 'back on the original identity'], m.io);
+    expect(m.failed()).toBe(false);
+    const events = orderedEvents({ root: join(repo, '.mnema') }, catalogUpcasters());
+    const recovered = events.filter((event) => event.kind === 'memory.captured').at(-1);
+    expect(recovered?.who).toBe(lost.anchor);
+    expect(verify(join(repo, '.mnema'), catalogUpcasters())).toMatchObject({ ok: true });
+  });
+
+  it('and enrolling the wrong key makes the ambiguity REFUSE the write, never guess it', async () => {
+    const lost = await loseTheKeyThenWrite();
+    // The tempting move: bring the wrong-but-present key into the original identity.
+    // It works — and now that key belongs to TWO identities in this record, because
+    // it also founded one. A machine cannot choose between them on the person's
+    // behalf, so the next write into a tree it has no recorded anchor for refuses.
+    useMachine('m');
+    const request = await (async (): Promise<string> => {
+      const r = capture();
+      await run(['key', 'request', '--anchor', lost.anchor], r.io);
+      return r.out.find((line) => line.startsWith('mnema-key-request:')) as string;
+    })();
+
+    useMachine('clean');
+    const restore = capture();
+    await run(['key', 'restore', lost.vaultCopy], restore.io);
+    expect(restore.failed()).toBe(false);
+    const enrolled = capture();
+    await run(['key', 'enroll', request], enrolled.io);
+    expect(enrolled.failed()).toBe(false);
+
+    // A fresh clone: git carries the record but not the LOCAL anchor files, so the
+    // identity is decided from the record again.
+    const clone = join(sandbox, 'clone');
+    mkdirSync(clone, { recursive: true });
+    cpSync(join(repo, '.mnema'), join(clone, '.mnema'), { recursive: true });
+    for (const file of readdirSync(join(clone, '.mnema', 'keys'))) {
+      if (file.endsWith('.anchor') || file.endsWith('.inst')) {
+        rmSync(join(clone, '.mnema', 'keys', file));
+      }
+    }
+    process.chdir(clone);
+    useMachine('m');
+
+    const refused = capture();
+    await run(['memory', 'which identity is this?'], refused.io);
+
+    expect(refused.failed()).toBe(true);
+    expect(refused.err.join('\n')).toContain('Refused (AMBIGUOUS_MEMBERSHIP)');
+    expect(refused.err.join('\n')).toContain(lost.anchor);
+    // Nothing was written on a guess.
+    expect(
+      orderedEvents({ root: join(clone, '.mnema') }, catalogUpcasters()).some(
+        (event) => event.kind === 'memory.captured' && /which identity/.test(String(event.payload)),
+      ),
+    ).toBe(false);
   });
 });

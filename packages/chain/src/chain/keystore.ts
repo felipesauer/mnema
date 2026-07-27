@@ -26,7 +26,9 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import {
+  fingerprintOf,
   generateKeyPair,
+  type KeyObject,
   type KeyPair,
   type PublicHalf,
   privateKeyFromPem,
@@ -129,6 +131,38 @@ export function materializePublicKey(chainLayout: ChainLayout, key: PublicHalf):
   if (existsSync(path)) return;
   mkdirSync(keysDir(chainLayout), { recursive: true });
   writeFileSync(path, publicKeyToPem(key.publicKey), { encoding: 'utf-8' });
+}
+
+/**
+ * Reads a public key MATERIALIZED into a chain, bound to the name it is filed
+ * under — {@link materializePublicKey}'s inverse. Returns null when the key is
+ * absent, unreadable, or is not the key its filename names.
+ *
+ * The fingerprint is re-derived from the loaded key and compared, because the
+ * filename is the only thing tying a file to a fingerprint: without that check,
+ * swapping `keys/<fp>.pub` for another key would let a signature THAT key made
+ * pass as this fingerprint's. Anyone deciding something about a committed key —
+ * whether it consented to join an identity, say — needs the key it names, not
+ * whatever the file now holds.
+ *
+ * It reads a CHAIN root, so what it returns is the committed, shareable half: no
+ * key root, no private material, nothing local. An anonymous clone answers the
+ * same question with the same bytes.
+ */
+export function committedPublicKey(
+  chainLayout: ChainLayout,
+  fingerprint: string,
+): PublicHalf | null {
+  const path = publicKeyPath(chainLayout, fingerprint);
+  if (!existsSync(path)) return null;
+  let publicKey: KeyObject;
+  try {
+    publicKey = publicKeyFromPem(readFileSync(path, 'utf-8'));
+  } catch {
+    return null;
+  }
+  if (fingerprintOf(publicKey) !== fingerprint) return null;
+  return { publicKey, fingerprint };
 }
 
 /**

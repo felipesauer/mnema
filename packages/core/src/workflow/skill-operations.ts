@@ -27,7 +27,7 @@ import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
 import { type Clock, systemClock } from './clock.js';
-import { ensureFounded } from './identity-operations.js';
+import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
 import { INITIAL_SKILL_STATE } from './skill-states.js';
 
@@ -100,9 +100,9 @@ export function createSkill(
   ctx: SkillWriteContext,
   input: SkillCreateInput,
 ): SkillCreateOk | SkillWriteError {
-  // `who` is derived from the writer's key, always a real anchor; the only
-  // authority check left is that the executing agent is not that identity.
-  const who = ctx.writer.anchor;
+  // `who` is derived from local material and the record, always a real anchor;
+  // the only authority check left is that the executing agent is not that identity.
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -182,8 +182,8 @@ function transition(
     return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
   }
 
-  // `who` is the writer's anchor, derived from its key, never supplied.
-  const who = ctx.writer.anchor;
+  // `who` is this installation's authorizing anchor, never supplied.
+  const who = authorizingAnchor(ctx);
   const verdict = skillGate({
     from: current.state,
     action,

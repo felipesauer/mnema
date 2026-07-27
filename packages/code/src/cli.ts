@@ -14,7 +14,7 @@
  * without spawning a process or writing to the real streams.
  */
 
-import type { Scope } from '@mnema/core';
+import { IdentityUnavailableError, type Scope } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { runAccountability } from './commands/accountability.js';
 import { runAntipatterns } from './commands/antipatterns.js';
@@ -24,7 +24,10 @@ import { runFocus } from './commands/focus.js';
 import { runGuard } from './commands/guard.js';
 import { runHandoff } from './commands/handoff.js';
 import { type InitResult, runInit } from './commands/init.js';
+import { runKeyEnroll } from './commands/key-enroll.js';
+import { runKeyRequest } from './commands/key-request.js';
 import { runKeyRestore } from './commands/key-restore.js';
+import { runKeyRevoke } from './commands/key-revoke.js';
 import { runLink } from './commands/link.js';
 import { runMemory } from './commands/memory.js';
 import { runNextActions } from './commands/next-actions.js';
@@ -915,9 +918,14 @@ export function buildProgram(io: CliIo = processIo): Command {
     });
 
   // `key` is a group, and the only one whose subject is not the record but the
-  // machine's key material. It holds `restore` today; the between-machines verbs
-  // (enroll, revoke, list) are its later siblings, which is why the group exists
-  // now rather than a bare top-level verb that would have to move.
+  // machine's key material: `restore` brings a key back onto a machine, and
+  // `request`/`enroll`/`revoke` operate the identity's roster — the three steps of
+  // putting a second machine on one identity, and taking a key back out.
+  //
+  // The split across machines is not cosmetic: `request` runs where the key wants
+  // IN and needs no project, while `enroll` and `revoke` run on a machine that is
+  // already a member and write to the committed tree. Membership is granted by a
+  // member's signature, so no machine can admit itself.
   const key = program.command('key').description("manage this machine's signing keys");
 
   // `mnema key restore <file>` — install a key from a copy of its private half and
@@ -948,6 +956,109 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       if (result.reason === 'NO_PROJECT') {
         io.err('No mnema project here. Run `mnema key restore` inside the project to recover.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `mnema key request --anchor <id> [--key <file>]` — on the machine that wants
+  // in. The anchor is a REQUIRED flag, not a positional: it is not the subject of
+  // the command (the subject is this machine's key), and it is a value the person
+  // pastes from elsewhere, so naming it keeps a mis-paste from reading as a path.
+  // `--key` points at a private key to speak for INSTEAD of this machine's own —
+  // the way out of a machine that already minted the wrong key.
+  key
+    .command('request')
+    .description('ask to bring this machine into an identity (run this on the joining machine)')
+    .requiredOption('--anchor <id>', 'the identity to join (the `mnid:…` its machine prints)')
+    .option('--key <file>', "a private key to speak for instead of this machine's own")
+    .action((opts: { anchor: string; key?: string }) => {
+      const result = runKeyRequest(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { anchor: opts.anchor, ...(opts.key !== undefined ? { privateKeyPath: opts.key } : {}) },
+      );
+      if (!result.ok) {
+        io.err(`Refused (${result.code}): ${result.message}`);
+        io.fail();
+        return;
+      }
+      if (result.minted) {
+        io.out(`Created this machine's key ${result.fingerprint}`);
+      } else {
+        io.out(
+          `Requesting for key ${result.fingerprint}` +
+            `${result.source === 'file' ? ' (read from the file you named, not installed)' : ''}`,
+        );
+      }
+      io.out(`  to join ${result.anchor}`);
+      // The request itself, alone on its line so it can be selected and pasted.
+      io.out('');
+      io.out(result.request);
+      io.out('');
+      io.out('  Hand that line to a machine already in that identity, which runs:');
+      io.out('    mnema key enroll <the line>');
+      io.out('  It proves consent to join that ONE identity and is not a secret.');
+    });
+
+  // `mnema key enroll <request>` — on a machine that is already a member. The
+  // request is a POSITIONAL: it is the whole subject of the command. It is long,
+  // which is exactly why it is not typed but pasted.
+  key
+    .command('enroll')
+    .description('vouch for a requesting key so it joins this identity (run this on a member)')
+    .argument('<request>', 'the line `mnema key request` printed on the joining machine')
+    .action((request: string) => {
+      const result = runKeyEnroll({ cwd: process.cwd(), env: discoveryEnv() }, { request });
+      if (result.ok) {
+        if (result.alreadyMember) {
+          io.out(`Key ${result.fingerprint} is already in ${result.anchor} — nothing recorded.`);
+          return;
+        }
+        io.out(`Enrolled key ${result.fingerprint}`);
+        io.out(`  into ${result.anchor}`);
+        io.out(`  recorded in ${result.root}`);
+        io.out('  Commit and share the record: the other machine joins by reading it.');
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema key enroll` inside the project to record it.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
+    });
+
+  // `mnema key revoke <fingerprint> --reason <text>` — retire a key. The
+  // fingerprint is a positional (the subject); the reason is a required flag, as
+  // every other verb that demands its evidence does. It is the full fingerprint,
+  // not a prefix: there is no id-prefix resolution anywhere yet, and guessing
+  // which key a short value means is not a guess to make about key material.
+  key
+    .command('revoke')
+    .description('retire a key from this identity, from this point forward')
+    .argument('<fingerprint>', 'the full fingerprint of the key to retire')
+    .requiredOption('--reason <text>', 'why it is being retired (recorded in the fact)')
+    .action((fingerprint: string, opts: { reason: string }) => {
+      const result = runKeyRevoke(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { fingerprint, reason: opts.reason },
+      );
+      if (result.ok) {
+        io.out(`Revoked key ${result.fingerprint}`);
+        io.out(`  from ${result.anchor} — ${result.remaining} key(s) left`);
+        if (result.self) {
+          // The person just retired the key this machine signs with. Nothing stops
+          // it from writing again, and anything it writes now fails verification —
+          // so say it plainly, at the only moment it can still be acted on.
+          io.out("  That is THIS machine's key: it must not write to this project again.");
+          io.out('  Bring another key in first if this machine is to keep working here.');
+        }
+        io.out('  Commit and share the record: a retirement others cannot read retires nothing.');
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema key revoke` inside the project to record it.');
       } else {
         io.err(`Refused (${result.code}): ${result.message}`);
       }
@@ -1029,6 +1140,17 @@ export async function run(argv: readonly string[], io: CliIo = processIo): Promi
     // Honor its exit code; do not re-print.
     if (error instanceof CommanderError) {
       if (error.exitCode !== 0) io.fail();
+      return;
+    }
+    // The record does not name ONE identity for this machine's key, so the write
+    // refused rather than guessing whose record this is. It is thrown, not
+    // returned, because the decision sits below every write — every verb would
+    // otherwise carry the same branch — so it is reported HERE, in the one place
+    // that already turns a throw into an honest failure, and it reads exactly like
+    // any other refusal.
+    if (error instanceof IdentityUnavailableError) {
+      io.err(`Refused (${error.code}): ${error.message}`);
+      io.fail();
       return;
     }
     // Any other throw — e.g. a chain too corrupt to parse — is an honest
