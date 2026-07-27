@@ -8,9 +8,17 @@
  * the real app data directory.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import {
   catalogUpcasters,
   enrollmentMessage,
@@ -1052,6 +1060,141 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     process.chdir(orphan);
     const out = capture();
     await run(['guard', 'submit', 'anything', '--actor', 'human'], out.io);
+    expect(out.failed()).toBe(true);
+    expect(out.err.join('\n')).toContain('No mnema project here');
+  });
+});
+
+/**
+ * The recovery, end to end and in the person's own order: init, keep the cold
+ * copy, lose the key, restore, keep working.
+ *
+ * This is the proof the backup key was worth making. The property under test is
+ * not "the command succeeds" — it is that the identity AFTER the loss is the
+ * identity from before it, so the record stays one person's record rather than
+ * splitting into two strangers who share a name.
+ */
+describe('mnema CLI — key restore, end to end', () => {
+  /** The key root of the sandboxed machine. */
+  function keyRoot(): string {
+    return join(sandbox, 'data', 'mnema', 'identity');
+  }
+
+  /** The tree of the current repo. */
+  function publicTree(): string {
+    return resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+  }
+
+  /**
+   * Inits, moves the cold private half to a vault outside the machine, and
+   * deletes the machine's own private key. Returns the identity from before the
+   * loss and the path of the vault copy.
+   */
+  async function initThenLoseTheKey(): Promise<{
+    anchorBefore: string;
+    vaultCopy: string;
+  }> {
+    const i = capture();
+    await run(['init'], i.io);
+    const output = i.out.join('\n');
+    const anchorBefore = /identity: (mnid:[0-9a-f]+)/.exec(output)?.[1] as string;
+    // The path init printed is the one the person is told to move off the machine.
+    const coldPath = /private half at (\S+)/.exec(output)?.[1] as string;
+    expect(anchorBefore).toMatch(/^mnid:[0-9a-f]{64}$/);
+
+    const vaultCopy = join(sandbox, 'vault', 'mnema-backup.key');
+    mkdirSync(join(sandbox, 'vault'), { recursive: true });
+    writeFileSync(vaultCopy, readFileSync(coldPath, 'utf-8'), { mode: 0o600 });
+    rmSync(join(keyRoot(), 'backup'), { recursive: true, force: true });
+
+    // The loss: the private half of the machine's own key. Nothing else — the
+    // cold path init printed is named by the backup's fingerprint, so the other
+    // `.key` at the key root is the machine's own.
+    const backupFp = basename(coldPath, '.key');
+    const primary = readdirSync(join(keyRoot(), 'keys'))
+      .filter((name) => name.endsWith('.key'))
+      .find((name) => name !== `${backupFp}.key`) as string;
+    rmSync(join(keyRoot(), 'keys', primary));
+
+    return { anchorBefore, vaultCopy };
+  }
+
+  it('recovers the identity: the fact written after the loss carries the ORIGINAL who', async () => {
+    const lost = await initThenLoseTheKey();
+
+    // The restore: one file, one command, offline.
+    const r = capture();
+    await run(['key', 'restore', lost.vaultCopy], r.io);
+    expect(r.failed()).toBe(false);
+    const restored = r.out.join('\n');
+    expect(restored).toContain(`identity: ${lost.anchorBefore}`);
+    expect(restored).toContain('this project enrolled this key');
+    // The person is told the copy is still their copy, at the moment they would
+    // think it had done its job.
+    expect(restored).toContain('was read, not moved');
+    expect(existsSync(lost.vaultCopy)).toBe(true);
+
+    // Keep working: a fact written after the recovery.
+    const m = capture();
+    await run(['memory', 'the disk survived; the key did not'], m.io);
+    expect(m.failed()).toBe(false);
+
+    // The proof: the new event speaks for the SAME identity, and the tree carries
+    // exactly ONE founding — no split.
+    const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
+    const memory = events.find((e) => e.kind === 'memory.captured');
+    expect(memory?.who).toBe(lost.anchorBefore);
+    expect(events.filter((e) => e.kind === 'identity.founded')).toHaveLength(1);
+
+    // And it is all still proven: ok, and every event signature-covered.
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+    expect(verify(publicTree(), catalogUpcasters())).toMatchObject({
+      ok: true,
+      fullySigned: true,
+    });
+  });
+
+  it('WITHOUT the restore the same loss splits the identity — what the command prevents', async () => {
+    const lost = await initThenLoseTheKey();
+
+    // No restore. The machine has no private key, so it mints a fresh one and
+    // founds a SECOND identity in the team's tree — appended, unappendable-back.
+    const m = capture();
+    await run(['memory', 'written by a machine that lost its key'], m.io);
+    expect(m.failed()).toBe(false);
+
+    const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
+    const memory = events.find((e) => e.kind === 'memory.captured');
+    expect(memory?.who).not.toBe(lost.anchorBefore);
+    expect(events.filter((e) => e.kind === 'identity.founded')).toHaveLength(2);
+  });
+
+  it('refuses to restore while the machine still holds a key, and outside a project', async () => {
+    // A healthy machine: the cold copy exists, so does the machine's own key.
+    const i = capture();
+    await run(['init'], i.io);
+    const coldPath = /private half at (\S+)/.exec(i.out.join('\n'))?.[1] as string;
+
+    const refused = capture();
+    await run(['key', 'restore', coldPath], refused.io);
+    expect(refused.failed()).toBe(true);
+    expect(refused.err.join('\n')).toContain('Refused (KEY_PRESENT)');
+    // The ambiguity was never created: exactly one private key at the key root.
+    expect(
+      readdirSync(join(keyRoot(), 'keys')).filter((name) => name.endsWith('.key')),
+    ).toHaveLength(1);
+
+    // Outside a project there is no record to prove membership against.
+    const orphan = join(sandbox, 'elsewhere');
+    mkdirSync(orphan, { recursive: true });
+    process.chdir(orphan);
+    const out = capture();
+    await run(['key', 'restore', coldPath], out.io);
     expect(out.failed()).toBe(true);
     expect(out.err.join('\n')).toContain('No mnema project here');
   });

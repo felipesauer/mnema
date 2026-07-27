@@ -8,12 +8,15 @@
  * shorthand the other suites use.
  */
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { identityFounded, taskCreated } from '../events/build.js';
+import { ensureBackupKey } from './backup.js';
 import { openChainForWriting, verify } from './chain.js';
+import { generateKeyPair, publicKeyToPem } from './keys.js';
+import { listPrivateKeyFingerprints } from './keystore.js';
 import { privateKeyPath, publicKeyPath } from './layout.js';
 import type { ChainWriter } from './writer.js';
 
@@ -139,5 +142,51 @@ describe('lifecycle — add a second chain later, with zero migration', () => {
     expect(second.signerFingerprint).toBe(fpBefore);
     expect(verify(chainA).fullySigned).toBe(true);
     expect(verify(chainB).fullySigned).toBe(true);
+  });
+});
+
+/**
+ * What the key root holds a private key FOR is the machine's one identity, and
+ * the keystore picks it by taking the first one it finds. So "which private keys
+ * are here?" is the question an operation that installs a key has to ask before
+ * it creates a second — the hazard is the CHOICE, not the file.
+ */
+describe('listPrivateKeyFingerprints — the candidates for this machine identity', () => {
+  it('is empty for a key root that does not exist yet (the first init path)', () => {
+    expect(listPrivateKeyFingerprints({ root: join(keyRoot, 'not-created-yet') })).toEqual([]);
+  });
+
+  it('names the key the machine minted, and nothing else in keys/', () => {
+    const w = openChainForWriting(chainA, { keyRoot });
+    expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([w.signerFingerprint]);
+  });
+
+  it('does NOT count the cold backup: its private half is outside keys/', () => {
+    const w = openChainForWriting(chainA, { keyRoot });
+    const backup = ensureBackupKey({ root: keyRoot }, w.anchor);
+
+    expect(backup?.created).toBe(true);
+    // The backup registers a `.pub` and an `.enroll` in keys/ — public material.
+    // Its private half lives in backup/, so the machine still has exactly ONE
+    // candidate identity and does not depend on directory order to find it.
+    expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([w.signerFingerprint]);
+    expect(existsSync(privateKeyPath({ root: keyRoot }, backup?.fingerprint as string))).toBe(
+      false,
+    );
+  });
+
+  it('names the key material that is present, ignoring a public half with no private one', () => {
+    // A stranger's public key materialized at the key root (or one left behind by
+    // a key whose private half was deleted) is not a candidate identity: only a
+    // `.key` is.
+    const w = openChainForWriting(chainA, { keyRoot });
+    const stranger = generateKeyPair();
+    writeFileSync(
+      publicKeyPath({ root: keyRoot }, stranger.fingerprint),
+      publicKeyToPem(stranger.publicKey),
+      'utf-8',
+    );
+
+    expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([w.signerFingerprint]);
   });
 });

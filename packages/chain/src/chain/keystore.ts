@@ -57,13 +57,30 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
   return keyPair;
 }
 
+const PRIVATE_KEY_SUFFIX = '.key';
+
+/**
+ * Every private key present at a key root, by fingerprint, in the order the
+ * filesystem lists them — the candidates {@link loadOrCreateKeyPair} picks this
+ * machine's identity from.
+ *
+ * The CHOICE is the hazard, which is why this is exposed: the machine adopts the
+ * FIRST pair it finds, so a second private key here makes WHICH key it speaks as
+ * depend on directory order. An operation that installs a key must be able to see
+ * what is already there before creating that ambiguity — and a name is all it
+ * needs, so no private key is read to answer.
+ */
+export function listPrivateKeyFingerprints(layout: ChainLayout): string[] {
+  const dir = keysDir(layout);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(PRIVATE_KEY_SUFFIX))
+    .map((name) => name.slice(0, -PRIVATE_KEY_SUFFIX.length));
+}
+
 /** Finds a local key pair (a public key whose matching private key is present). */
 function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
-  const dir = keysDir(layout);
-  if (!existsSync(dir)) return null;
-  for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.key')) continue;
-    const fingerprint = name.slice(0, -'.key'.length);
+  for (const fingerprint of listPrivateKeyFingerprints(layout)) {
     const pubPath = publicKeyPath(layout, fingerprint);
     if (!existsSync(pubPath)) continue;
     const privateKey = privateKeyFromPem(
@@ -75,16 +92,23 @@ function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
   return null;
 }
 
-/** Writes both halves of a key pair to disk (the key root's own copy). */
-export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
+/**
+ * Writes both halves of a key pair to disk (the key root's own copy) and returns
+ * where the private half landed. The path is reported for the same reason a
+ * backup key's is: an operation that INSTALLS a key has to be able to tell the
+ * person where their key now lives.
+ */
+export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): string {
   mkdirSync(keysDir(layout), { recursive: true });
   writeFileSync(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey), {
     encoding: 'utf-8',
   });
-  writeFileSync(privateKeyPath(layout, keyPair.fingerprint), privateKeyToPem(keyPair.privateKey), {
+  const privatePath = privateKeyPath(layout, keyPair.fingerprint);
+  writeFileSync(privatePath, privateKeyToPem(keyPair.privateKey), {
     encoding: 'utf-8',
     mode: 0o600,
   });
+  return privatePath;
 }
 
 /**

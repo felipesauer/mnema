@@ -114,6 +114,15 @@ export interface EstablishedIdentity {
  * the registration into each tree is what closes that: the signature covers
  * fixed values, so it proves consent in every tree, forever.
  *
+ * What this covers, stated plainly: the trees created DELIBERATELY, which today
+ * means a project's public tree. The private and global trees are founded on the
+ * way to a write (`ensureFounded`), which sees no key root, so they are born
+ * knowing one key — and a key lost is a key lost for them. That is a smaller hole
+ * than it reads: both are local and uncommitted, so the disk that takes the key
+ * takes them too, and no backup would have helped. What the backup does cover is
+ * the case where the KEY is gone and the disk is not — and there the committed
+ * tree, which survives in git, is exactly where the proof of membership is found.
+ *
  * A key the tree has ALREADY decided about is skipped — enrolled, founded, or
  * REVOKED. Skipping the revoked ones is the point of reading the chain rather
  * than the key root's files: a key retired from this identity must not be

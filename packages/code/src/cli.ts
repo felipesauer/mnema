@@ -24,6 +24,7 @@ import { runFocus } from './commands/focus.js';
 import { runGuard } from './commands/guard.js';
 import { runHandoff } from './commands/handoff.js';
 import { type InitResult, runInit } from './commands/init.js';
+import { runKeyRestore } from './commands/key-restore.js';
 import { runLink } from './commands/link.js';
 import { runMemory } from './commands/memory.js';
 import { runNextActions } from './commands/next-actions.js';
@@ -911,6 +912,46 @@ export function buildProgram(io: CliIo = processIo): Command {
           `skill candidates (reopened >1×): ${skillCandidates.map((f) => f.entityId).join(', ')}`,
         );
       }
+    });
+
+  // `key` is a group, and the only one whose subject is not the record but the
+  // machine's key material. It holds `restore` today; the between-machines verbs
+  // (enroll, revoke, list) are its later siblings, which is why the group exists
+  // now rather than a bare top-level verb that would have to move.
+  const key = program.command('key').description("manage this machine's signing keys");
+
+  // `mnema key restore <file>` — install a key from a copy of its private half and
+  // adopt, in this project, the identity the record proves it belongs to. The file
+  // is a POSITIONAL: it is the whole subject of the command and competes with
+  // nothing. It is READ, never moved or consumed — the output says so, because this
+  // is the moment a person would think the copy has done its job and delete it.
+  key
+    .command('restore')
+    .description("restore this machine's identity from a copy of a key's private half")
+    .argument('<file>', 'the PEM file holding the private half (your backup copy)')
+    .action((file: string) => {
+      const result = runKeyRestore(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        {
+          privateKeyPath: file,
+        },
+      );
+      if (result.ok) {
+        io.out(`Restored key ${result.fingerprint}`);
+        io.out(
+          `  identity: ${result.anchor}` +
+            `${result.membership === 'founded' ? ' (this project was founded by this key)' : ' (this project enrolled this key)'}`,
+        );
+        io.out(`  private half installed at ${result.installedAt}`);
+        io.out(`  Your copy at ${file} was read, not moved — keep it where it is.`);
+        return;
+      }
+      if (result.reason === 'NO_PROJECT') {
+        io.err('No mnema project here. Run `mnema key restore` inside the project to recover.');
+      } else {
+        io.err(`Refused (${result.code}): ${result.message}`);
+      }
+      io.fail();
     });
 
   program

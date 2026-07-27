@@ -18,6 +18,17 @@
 // The one refusal a point-in-time fact can earn: the authority invariant. It
 // travels with the knowledge writes because it is in their result union.
 export type { SelfAuthorizedErr } from './identity/authority.js';
+// Restoring a key from a copy of its private half — the only recovery there is.
+// It appends nothing, but it installs key material and records which anchor a key
+// serves, so it is a write: a read-only layer must not be able to name it.
+export {
+  type RestoredMembership,
+  type RestoreErr,
+  type RestoreErrorCode,
+  type RestoreInput,
+  type RestoreOk,
+  restoreKey,
+} from './identity/restore.js';
 // The knowledge domain's writes: each appends one point-in-time fact, no gate.
 export {
   type CaptureInput,
