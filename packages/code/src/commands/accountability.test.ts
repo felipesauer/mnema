@@ -103,6 +103,43 @@ describe('mnema accountability (who authorized what)', () => {
     }
   });
 
+  it('tells an agent apart from the human, now that the CLI can declare one', () => {
+    // This is what declaring the agent buys: before, every CLI write was
+    // indistinguishable from a person's. The same author (one machine key) now
+    // splits into work a person did directly and work an agent did for them.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    runTask({ cwd: repo, env }, { title: 'the human typed this', scope: 'public' });
+    runTask(
+      { cwd: repo, env },
+      { title: 'the agent ran this', scope: 'public', which: 'ci-runner' },
+    );
+
+    const all = runAccountability({ cwd: repo, env }, {});
+    expect(all.ok).toBe(true);
+    if (!all.ok) return;
+    // One author (one machine), whose facts break down by executing agent —
+    // `null` is the person acting directly.
+    const agents = all.account.byWho.flatMap((w) => w.byWhich).filter((c) => c.which !== null);
+    expect(agents.map((c) => c.which)).toContain('ci-runner');
+
+    // And the --which filter narrows to just that agent's facts.
+    const agentOnly = runAccountability({ cwd: repo, env }, { which: 'ci-runner' });
+    expect(agentOnly.ok).toBe(true);
+    if (!agentOnly.ok) return;
+    expect(agentOnly.account.total).toBeGreaterThan(0);
+    // Nothing the person did directly is counted under the agent.
+    expect(
+      agentOnly.account.byWho.flatMap((w) => w.byWhich).every((c) => c.which === 'ci-runner'),
+    ).toBe(true);
+    // The agent's task birth is there; the human's is not.
+    const created = agentOnly.account.byWho
+      .flatMap((w) => w.byKind)
+      .filter((k) => k.kind === 'task.created')
+      .reduce((n, k) => n + k.count, 0);
+    expect(created).toBe(1);
+  });
+
   it('refuses NO_PROJECT outside a project', () => {
     const { repo, env } = setup(); // no init
     const result = runAccountability({ cwd: repo, env }, {});

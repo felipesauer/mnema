@@ -282,3 +282,73 @@ describe('mnema decision move — the transition follows the entity (coherence, 
     expect(publicEvents).toEqual([]);
   });
 });
+
+describe('mnema decision move / supersede --which — the agent that executed', () => {
+  /**
+   * The agent each `decision.transitioned` on a decision names, in chain order.
+   * The FIRST entry is always the birth transition (`decision` record appends the
+   * pair recorded + `from: null` → proposed), so a human's record then an agent's
+   * move reads as `[undefined, 'ci-runner']`.
+   */
+  function agentsOf(root: string, id: string): (string | undefined)[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'decision.transitioned' && e.subject === id)
+      .map((e) => e.which);
+  }
+
+  it('records the declared agent on an accept', () => {
+    const { repo, env, id } = projectWithDecision();
+
+    const moved = runDecisionTransition(
+      { cwd: repo, env },
+      { id, action: 'accept', proof: { note: 'agreed' }, which: 'ci-runner' },
+    );
+    expect(moved.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, id)).toEqual([undefined, 'ci-runner']);
+  });
+
+  it('records the declared agent on a supersede (its own verb, its own op)', () => {
+    const { repo, env, id } = projectWithDecision();
+    const successor = runDecision(
+      { cwd: repo, env },
+      { title: 'the successor', rationale: 'newer' },
+    );
+    if (!successor.ok) throw new Error('setup: successor record refused');
+
+    const moved = runDecisionTransition(
+      { cwd: repo, env },
+      {
+        id,
+        action: 'supersede',
+        by: successor.id,
+        proof: { reason: 'replaced' },
+        which: 'ci-runner',
+      },
+    );
+    expect(moved.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, id)).toEqual([undefined, 'ci-runner']);
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, moving nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+    const recorded = runDecision({ cwd: repo, env }, { title: 'a decision', rationale: 'because' });
+    if (!recorded.ok) throw new Error('setup: record refused');
+
+    const result = runDecisionTransition(
+      { cwd: repo, env },
+      { id: recorded.id, action: 'accept', proof: { note: 'agreed' }, which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, recorded.id)).toEqual([undefined]);
+    expect(stateOf(repo, env, recorded.id)).toBe('proposed');
+  });
+});

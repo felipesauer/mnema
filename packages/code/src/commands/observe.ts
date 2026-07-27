@@ -21,7 +21,9 @@
  * surface only forwards it. There is no `UNKNOWN_*` for the reference here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands.
+ * `scope` wins; when omitted, the routing default (public) stands — private when
+ * an agent operating the CLI declares itself (`which`), which is also recorded on
+ * the fact.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -66,14 +68,16 @@ export type ObserveRefused =
  * rule is identical to a memory's: an explicit `scope` wins, else the routing
  * default (public). A PROJECT scope needs a project; with none this refuses
  * `NO_PROJECT`. The `about` reference is forwarded to the core as-is and never
- * validated — a dangling reference is honest cross-tree, not a refusal.
+ * validated — a dangling reference is honest cross-tree, not a refusal. A declared
+ * `which` shifts the omitted default to private and is recorded on the event; an
+ * explicit `scope` still wins over it.
  */
 export function runObserve(
   ctx: ObserveContext,
-  input: { about: string; topic: string; text: string; scope?: Scope },
+  input: { about: string; topic: string; text: string; scope?: Scope; which?: string },
 ): ObservationRecorded | ObserveRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -85,7 +89,12 @@ export function runObserve(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { about: input.about, topic: input.topic, text: input.text },
+    {
+      about: input.about,
+      topic: input.topic,
+      text: input.text,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
   );
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };

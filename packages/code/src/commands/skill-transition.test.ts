@@ -221,3 +221,50 @@ describe('mnema skill move — the transition follows the entity (coherence, S2)
     expect(publicEvents).toEqual([]);
   });
 });
+
+describe('mnema skill move --which — the agent that executed the move', () => {
+  /**
+   * The agent each `skill.transitioned` on a skill names, in chain order. The
+   * FIRST entry is always the birth transition (`skill` propose appends the pair
+   * created + `from: null` → proposed), so a human's propose then an agent's move
+   * reads as `[undefined, 'ci-runner']`.
+   */
+  function agentsOf(root: string, id: string): (string | undefined)[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'skill.transitioned' && e.subject === id)
+      .map((e) => e.which);
+  }
+
+  it('records the declared agent on the transition', () => {
+    const { repo, env, id } = projectWithSkill();
+
+    const moved = runSkillTransition(
+      { cwd: repo, env },
+      { id, action: 'review', proof: { note: 'looks reusable' }, which: 'ci-runner' },
+    );
+    expect(moved.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, id)).toEqual([undefined, 'ci-runner']);
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, moving nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+    const proposed = runSkill({ cwd: repo, env }, { name: 'a skill', body: 'a pattern' });
+    if (!proposed.ok) throw new Error('setup: propose refused');
+
+    const result = runSkillTransition(
+      { cwd: repo, env },
+      { id: proposed.id, action: 'review', proof: { note: 'ok' }, which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, proposed.id)).toEqual([undefined]);
+    expect(stateOf(repo, env, proposed.id)).toBe('proposed');
+  });
+});

@@ -20,7 +20,9 @@
  * does the surface. The reference is an asserted fact resolved on read.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands.
+ * `scope` wins; when omitted, the routing default (public) stands — private when
+ * an agent operating the CLI declares itself (`which`), which is also recorded on
+ * the fact.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -69,14 +71,16 @@ export type LinkRefused =
  * rule is identical to a memory's. Both `subject` and `target` are forwarded to
  * the core as-is and never validated — a dangling target is honest cross-tree,
  * never a refusal. The `rel` is an open string, forwarded verbatim. On success
- * it echoes the fact back (subject, rel, target) — there is no minted id.
+ * it echoes the fact back (subject, rel, target) — there is no minted id. A
+ * declared `which` shifts the omitted default to private and is recorded on the
+ * event; an explicit `scope` still wins over it.
  */
 export function runLink(
   ctx: LinkContext,
-  input: { subject: string; target: string; rel: string; scope?: Scope },
+  input: { subject: string; target: string; rel: string; scope?: Scope; which?: string },
 ): LinkRecorded | LinkRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -88,7 +92,12 @@ export function runLink(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { subject: input.subject, target: input.target, rel: input.rel },
+    {
+      subject: input.subject,
+      target: input.target,
+      rel: input.rel,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
   );
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };

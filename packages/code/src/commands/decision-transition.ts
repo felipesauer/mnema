@@ -26,6 +26,11 @@
  * A decision is named by its id (the value `decision` record returned), not an
  * alias: a decision HAS no alias — its human name is the `ADR-<n>` label, which
  * this resolves from the projection so the caller sees `ADR-7 → accepted`.
+ *
+ * A move carries the executing agent (`which`) when the caller declares one, on
+ * whichever op the action routes to. Unlike a birth, `which` has NO say in where
+ * the event lands — the move follows the entity — so it is only what the event
+ * records, and the gate still refuses a `which` that IS the authorizing identity.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -101,7 +106,13 @@ export type DecisionTransitionRefused =
  */
 export function runDecisionTransition(
   ctx: DecisionTransitionContext,
-  input: { id: string; action: string; by?: string; proof?: DecisionTransitionProof },
+  input: {
+    id: string;
+    action: string;
+    by?: string;
+    proof?: DecisionTransitionProof;
+    which?: string;
+  },
 ): DecisionTransitioned | DecisionTransitionRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -138,10 +149,14 @@ export function runDecisionTransition(
       message: `"${input.action}" is not a decision action`,
     };
   }
+  // The executing agent, stamped on whichever op the action routes to — built
+  // once so no branch can be the one that forgets it.
+  const stamp = input.which !== undefined ? { which: input.which } : {};
   const moved =
     input.action === 'supersede'
       ? supersedeDecision(opCtx, {
           id: input.id,
+          ...stamp,
           // A missing `by` becomes '', which the gate reads as no successor and
           // refuses MISSING_BY — the honest refusal. The CLI's supersede verb
           // makes `by` a required positional so this only bites the MCP tool,
@@ -153,10 +168,12 @@ export function runDecisionTransition(
       : input.action === 'reject'
         ? rejectDecision(opCtx, {
             id: input.id,
+            ...stamp,
             ...(fields !== undefined ? { fields } : {}),
           })
         : acceptDecision(opCtx, {
             id: input.id,
+            ...stamp,
             ...(fields !== undefined ? { fields } : {}),
           });
   if (!moved.ok) {

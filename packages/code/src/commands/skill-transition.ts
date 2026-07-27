@@ -29,6 +29,12 @@
  * skill HAS no alias, and its `name` is not unique, so the move takes only the id.
  * The report resolves the `name` from the projection to orient the human, falling
  * back to the id if the projection has none.
+ *
+ * A move carries the executing agent (`which`) when the caller declares one, on
+ * whichever of the four ops the action routes to. Unlike a birth, `which` has NO
+ * say in where the event lands — the move follows the entity — so it is only what
+ * the event records, and the gate still refuses a `which` that IS the authorizing
+ * identity.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -105,7 +111,7 @@ export type SkillTransitionRefused =
  */
 export function runSkillTransition(
   ctx: SkillTransitionContext,
-  input: { id: string; action: string; proof?: SkillTransitionProof },
+  input: { id: string; action: string; proof?: SkillTransitionProof; which?: string },
 ): SkillTransitioned | SkillTransitionRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -137,7 +143,13 @@ export function runSkillTransition(
   const writer = openTreeForWriting(trees, scope);
   const opCtx = { writer, layout: { root }, upcasters };
   const fields = proofToFields(input.proof);
-  const args = { id: input.id, ...(fields !== undefined ? { fields } : {}) };
+  // The four ops take the same shape, so the executing agent is stamped once, in
+  // the shared args — no branch can be the one that forgets it.
+  const args = {
+    id: input.id,
+    ...(fields !== undefined ? { fields } : {}),
+    ...(input.which !== undefined ? { which: input.which } : {}),
+  };
   const moved =
     input.action === 'review'
       ? reviewSkill(opCtx, args)

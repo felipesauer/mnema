@@ -115,3 +115,64 @@ describe('mnema handoff', () => {
     expect(handoffsOf(trees.projectPublic as string).has('T')).toBe(false);
   });
 });
+
+describe('mnema handoff --which — the agent that RECORDED it', () => {
+  /** Every `handoff.recorded` in a tree, with the agent each one names. */
+  function handoffsIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'handoff.recorded')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact, distinct from the two it is about', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    // The author is the recorder, not `from` or `to` — those are the subject.
+    expect(handoffsIn(root).find((e) => e.subject === 'T')?.which).toBe('ci-runner');
+    expect(handoffsOf(root).get('T')?.[0]?.fromAgent).toBe('alpha');
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', which: 'ci-runner' },
+    );
+    expect(result.ok).toBe(true);
+    const trees = resolveTrees(repo, env);
+    expect(handoffsOf(trees.projectPrivate as string).has('T')).toBe(true);
+    expect(handoffsOf(trees.projectPublic as string).has('T')).toBe(false);
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, recording nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const trees = resolveTrees(repo, env);
+    const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(
+      (root): root is string => root !== undefined,
+    );
+    const before = roots.reduce((n, root) => n + handoffsIn(root).length, 0);
+
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    expect(roots.reduce((n, root) => n + handoffsIn(root).length, 0)).toBe(before);
+  });
+});

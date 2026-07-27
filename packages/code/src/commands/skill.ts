@@ -24,7 +24,9 @@
  * The birth scope is a per-action choice, exactly as for a task or a decision:
  * an explicit `scope` wins; when omitted, the routing rule's default stands
  * (public, a deliberate human capture). That omitted default is PROVISIONAL —
- * the mechanism (the override on top) is what is settled here.
+ * the mechanism (the override on top) is what is settled here. An agent operating
+ * the CLI declares itself (`which`), which both shifts that default to private and
+ * names the agent on the fact.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -74,13 +76,16 @@ export type SkillRefused =
  * the cwd this refuses `NO_PROJECT` rather than falling through. The GLOBAL scope
  * needs none, so `--scope global` works anywhere; the guard is on the RESOLVED
  * scope, not the flag.
+ *
+ * A declared `which` (an agent operating the CLI) shifts the omitted default to
+ * private and is recorded on the event; an explicit `scope` still wins over it.
  */
 export function runSkill(
   ctx: SkillContext,
-  input: { name: string; body: string; scope?: Scope },
+  input: { name: string; body: string; scope?: Scope; which?: string },
 ): SkillCreated | SkillRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -95,7 +100,11 @@ export function runSkill(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { name: input.name, body: input.body },
+    {
+      name: input.name,
+      body: input.body,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
   );
   if (!created.ok) {
     return { ok: false, reason: 'REFUSED', code: created.code, message: created.message };

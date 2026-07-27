@@ -80,6 +80,51 @@ function exitQuietlyOnClosedPipe(): void {
   }
 }
 
+/**
+ * The help for `--which`, one wording on every writing verb.
+ *
+ * `which` is the agent that EXECUTED, and it is DECLARED, not detected — there is
+ * nothing on a command line to detect it from. Omitting it says a person acted
+ * directly, which is what the record then asserts, so an agent driving the CLI (a
+ * script, a CI step, an agent with no MCP server) has to name itself or the record
+ * credits its work to the person. The MCP surface has the same field filled from
+ * the connecting client's name; this is the CLI's way to say the same thing.
+ *
+ * It also decides the default tree for a BIRTH: an agent's capture is high-volume
+ * and lands private, a person's deliberate capture lands public. `--scope` still
+ * overrides that.
+ */
+const WHICH_HELP =
+  'the agent that executed this, when an agent (a script, a CI step) is driving ' +
+  'mnema — omit it when you are acting directly. Declared, never assumed; a ' +
+  "birth an agent makes defaults to this machine's private tree.";
+
+/**
+ * The `--which` reminder for a group's SUBCOMMAND (`task move`, `decision move`,
+ * `decision supersede`, `skill move`).
+ *
+ * The flag is declared ONCE, on the group, and commander gives a group's option to
+ * the group wherever it appears on the line — so `mnema task move submit <id>
+ * --which <agent>` works, but the subcommand's own `--help` does not list a flag it
+ * does not own. Declaring it on the subcommand too would not fix that: the group's
+ * declaration SHADOWS it, the subcommand would read undefined, and the agent's
+ * declaration would be silently dropped — the exact fiction `--which` exists to
+ * close. So the reminder is help text, not a second declaration.
+ *
+ * It is worded for a MOVE, not copied from {@link WHICH_HELP}: the birth clause
+ * there ("defaults to the private tree") is about where a new entity lands, and a
+ * move lands wherever the entity already lives. Repeating it here would state a
+ * rule that does not apply.
+ */
+const WHICH_ON_SUBCOMMAND_HELP = [
+  '',
+  'Also accepted here (declared on the parent group):',
+  '  --which <agent>  the agent that executed this move, when an agent (a script,',
+  '                   a CI step) is driving mnema — omit it when you are acting',
+  '                   directly. It names the executor only: a move always follows',
+  '                   the entity to the tree it was born in.',
+].join('\n');
+
 /** The scopes `--scope` accepts — the surface's view of the core's three trees. */
 const SCOPES = ['public', 'private', 'global'] as const;
 
@@ -176,6 +221,13 @@ export function buildProgram(io: CliIo = processIo): Command {
   // per-action override for where the task is born; omitted, it defaults to
   // public (the provisional default). `move` takes NO scope: a move follows the
   // entity to the tree it was born in, never a scope the caller picks.
+  //
+  // `--which` is declared HERE, on the group, and serves both the create and the
+  // move: commander hands a group's option to the group wherever it appears on the
+  // line, so the move reads it off the parent (see {@link
+  // WHICH_ON_SUBCOMMAND_HELP}). Unlike `--scope`, which the move rejects, `--which`
+  // is honored on a move — the agent that executed a transition is exactly what the
+  // record should name.
   const task = program
     .command('task')
     .description('create a task in the current project')
@@ -185,7 +237,8 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the task is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((title: string, opts: { scope?: string }) => {
+    .option('--which <agent>', WHICH_HELP)
+    .action((title: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();
@@ -193,7 +246,11 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const result = runTask(
         { cwd: process.cwd(), env: discoveryEnv() },
-        { title, ...(scope !== undefined ? { scope } : {}) },
+        {
+          title,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+        },
       );
       if (result.ok) {
         io.out(`Created task ${result.alias} (${result.id})`);
@@ -229,13 +286,17 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<id>', 'the task id (the value shown when it was created)')
     .option('--reason <text>', 'why (required by cancel, block, reopen)')
     .option('--note <text>', 'what was done (required by complete, approve)')
-    .option('--feedback <text>', 'what must change (required by request_changes)');
+    .option('--feedback <text>', 'what must change (required by request_changes)')
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
   move.action(
     (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
-      // A `--scope` on a move is parsed into `task`'s options (the parent);
-      // its presence means the caller tried to scope a move, which the model
-      // forbids — the move follows the entity's home tree, not a chosen scope.
-      const parentOpts = (move.parent?.opts() ?? {}) as { scope?: string };
+      // Both `--scope` and `--which` on a move are parsed into `task`'s options
+      // (the parent), because that is where they are declared. Their verdicts
+      // differ: a `--scope` means the caller tried to scope a move, which the model
+      // forbids — the move follows the entity's home tree, not a chosen scope — so
+      // it is rejected; a `--which` is the agent that executed the move, which the
+      // record should name, so it is forwarded.
+      const parentOpts = (move.parent?.opts() ?? {}) as { scope?: string; which?: string };
       if (parentOpts.scope !== undefined) {
         io.err('`task move` takes no --scope: a move follows the task to the tree it was born in.');
         io.fail();
@@ -251,6 +312,7 @@ export function buildProgram(io: CliIo = processIo): Command {
             ...(opts.note !== undefined ? { note: opts.note } : {}),
             ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
           },
+          ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
         },
       );
       if (result.ok) {
@@ -285,7 +347,8 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the decision is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((title: string, rationale: string, opts: { scope?: string }) => {
+    .option('--which <agent>', WHICH_HELP)
+    .action((title: string, rationale: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();
@@ -293,7 +356,12 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const result = runDecision(
         { cwd: process.cwd(), env: discoveryEnv() },
-        { title, rationale, ...(scope !== undefined ? { scope } : {}) },
+        {
+          title,
+          rationale,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+        },
       );
       if (result.ok) {
         io.out(`Recorded decision ${result.adr} (${result.id})`);
@@ -318,9 +386,10 @@ export function buildProgram(io: CliIo = processIo): Command {
     .description('accept or reject a decision (follows the decision; takes no --scope)')
     .argument('<action>', 'the transition: accept or reject')
     .argument('<id>', 'the decision id (the value shown when it was recorded)')
-    .option('--note <text>', 'why this verdict (required by accept and reject)');
+    .option('--note <text>', 'why this verdict (required by accept and reject)')
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
   decisionMove.action((action: string, id: string, opts: { note?: string }) => {
-    const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string };
+    const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err(
         '`decision move` takes no --scope: a move follows the decision to the tree it was born in.',
@@ -330,7 +399,12 @@ export function buildProgram(io: CliIo = processIo): Command {
     }
     const result = runDecisionTransition(
       { cwd: process.cwd(), env: discoveryEnv() },
-      { id, action, proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) } },
+      {
+        id,
+        action,
+        proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
+        ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+      },
     );
     reportDecisionMove(result, id, io);
   });
@@ -345,9 +419,10 @@ export function buildProgram(io: CliIo = processIo): Command {
     .description('supersede a decision with a later one (follows the decision; takes no --scope)')
     .argument('<old-id>', 'the decision being superseded')
     .argument('<new-id>', 'the successor decision that replaces it')
-    .option('--reason <text>', 'why it is being replaced (required)');
+    .option('--reason <text>', 'why it is being replaced (required)')
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
   supersede.action((oldId: string, newId: string, opts: { reason?: string }) => {
-    const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string };
+    const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err(
         '`decision supersede` takes no --scope: a move follows the decision to the tree it was born in.',
@@ -362,6 +437,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         action: 'supersede',
         by: newId,
         proof: { ...(opts.reason !== undefined ? { reason: opts.reason } : {}) },
+        ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       },
     );
     reportDecisionMove(result, oldId, io);
@@ -390,7 +466,8 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the skill is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((name: string, opts: { body?: string; scope?: string }) => {
+    .option('--which <agent>', WHICH_HELP)
+    .action((name: string, opts: { body?: string; scope?: string; which?: string }) => {
       // The body is required for a propose, but declared as a plain option (so it
       // is not inherited as mandatory by `move`); enforce it here.
       if (opts.body === undefined) {
@@ -405,7 +482,12 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const result = runSkill(
         { cwd: process.cwd(), env: discoveryEnv() },
-        { name, body: opts.body, ...(scope !== undefined ? { scope } : {}) },
+        {
+          name,
+          body: opts.body,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+        },
       );
       if (result.ok) {
         // Print both the name (orients the human) and the id (the key a move
@@ -432,9 +514,10 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<action>', 'the transition: review, adopt, reject, or deprecate')
     .argument('<id>', 'the skill id (the value shown when it was proposed)')
     .option('--note <text>', 'why this verdict (required by review, adopt, reject)')
-    .option('--reason <text>', 'why it fell out of use (required by deprecate)');
+    .option('--reason <text>', 'why it fell out of use (required by deprecate)')
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
   skillMove.action((action: string, id: string, opts: { note?: string; reason?: string }) => {
-    const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string };
+    const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err('`skill move` takes no --scope: a move follows the skill to the tree it was born in.');
       io.fail();
@@ -449,6 +532,7 @@ export function buildProgram(io: CliIo = processIo): Command {
           ...(opts.note !== undefined ? { note: opts.note } : {}),
           ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
         },
+        ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       },
     );
     if (result.ok) {
@@ -486,7 +570,8 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the memory is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((content: string, opts: { scope?: string }) => {
+    .option('--which <agent>', WHICH_HELP)
+    .action((content: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();
@@ -494,7 +579,11 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const result = runMemory(
         { cwd: process.cwd(), env: discoveryEnv() },
-        { content, ...(scope !== undefined ? { scope } : {}) },
+        {
+          content,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+        },
       );
       if (result.ok) {
         io.out(`Captured memory ${result.id}`);
@@ -524,27 +613,36 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the observation is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((about: string, opts: { topic: string; text: string; scope?: string }) => {
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
+    .option('--which <agent>', WHICH_HELP)
+    .action(
+      (about: string, opts: { topic: string; text: string; scope?: string; which?: string }) => {
+        const scope = parseScope(opts.scope, io);
+        if (scope === INVALID) {
+          io.fail();
+          return;
+        }
+        const result = runObserve(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            about,
+            topic: opts.topic,
+            text: opts.text,
+            ...(scope !== undefined ? { scope } : {}),
+            ...(opts.which !== undefined ? { which: opts.which } : {}),
+          },
+        );
+        if (result.ok) {
+          io.out(`Recorded observation ${result.id} about ${about}`);
+          return;
+        }
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`Refused (${result.code}): ${result.message}`);
+        }
         io.fail();
-        return;
-      }
-      const result = runObserve(
-        { cwd: process.cwd(), env: discoveryEnv() },
-        { about, topic: opts.topic, text: opts.text, ...(scope !== undefined ? { scope } : {}) },
-      );
-      if (result.ok) {
-        io.out(`Recorded observation ${result.id} about ${about}`);
-        return;
-      }
-      if (result.reason === 'NO_PROJECT') {
-        io.err('No mnema project here. Run `mnema init` first.');
-      } else {
-        io.err(`Refused (${result.code}): ${result.message}`);
-      }
-      io.fail();
-    });
+      },
+    );
 
   // `mnema handoff <task> <from> <to>` — record a handoff on a task. Three
   // positionals: all short ids/labels, none a body of text. It mints no id (the
@@ -561,7 +659,10 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the handoff is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((task: string, from: string, to: string, opts: { scope?: string }) => {
+    // The agent RECORDING the handoff, which is not necessarily either of the two
+    // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
+    .option('--which <agent>', WHICH_HELP)
+    .action((task: string, from: string, to: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();
@@ -569,7 +670,13 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       const result = runHandoff(
         { cwd: process.cwd(), env: discoveryEnv() },
-        { task, fromAgent: from, toAgent: to, ...(scope !== undefined ? { scope } : {}) },
+        {
+          task,
+          fromAgent: from,
+          toAgent: to,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+        },
       );
       if (result.ok) {
         // No id to report — a handoff has no standalone identity. Echo the fact.
@@ -605,28 +712,37 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the link is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .action((subject: string, target: string, opts: { rel: string; scope?: string }) => {
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
+    .option('--which <agent>', WHICH_HELP)
+    .action(
+      (subject: string, target: string, opts: { rel: string; scope?: string; which?: string }) => {
+        const scope = parseScope(opts.scope, io);
+        if (scope === INVALID) {
+          io.fail();
+          return;
+        }
+        const result = runLink(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            subject,
+            target,
+            rel: opts.rel,
+            ...(scope !== undefined ? { scope } : {}),
+            ...(opts.which !== undefined ? { which: opts.which } : {}),
+          },
+        );
+        if (result.ok) {
+          // No id to report — a link is an edge, not an entity. Echo the fact.
+          io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+          return;
+        }
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(`Refused (${result.code}): ${result.message}`);
+        }
         io.fail();
-        return;
-      }
-      const result = runLink(
-        { cwd: process.cwd(), env: discoveryEnv() },
-        { subject, target, rel: opts.rel, ...(scope !== undefined ? { scope } : {}) },
-      );
-      if (result.ok) {
-        // No id to report — a link is an edge, not an entity. Echo the fact.
-        io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
-        return;
-      }
-      if (result.reason === 'NO_PROJECT') {
-        io.err('No mnema project here. Run `mnema init` first.');
-      } else {
-        io.err(`Refused (${result.code}): ${result.message}`);
-      }
-      io.fail();
-    });
+      },
+    );
 
   // The three CONTEXT reads — `focus`, `resume`, `next-actions`. Like init/verify
   // they are top-level verbs (heterogeneous shapes, not an interchangeable
