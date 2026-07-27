@@ -82,7 +82,7 @@ export type SkillRefused =
  */
 export function runSkill(
   ctx: SkillContext,
-  input: { name: string; body: string; scope?: Scope; which?: string },
+  input: { name: string; body: string; scope?: Scope; which?: string; run?: string },
 ): SkillCreated | SkillRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -104,6 +104,7 @@ export function runSkill(
       name: input.name,
       body: input.body,
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!created.ok) {

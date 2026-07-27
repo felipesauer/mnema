@@ -112,6 +112,7 @@ export function runDecisionTransition(
     by?: string;
     proof?: DecisionTransitionProof;
     which?: string;
+    run?: string;
   },
 ): DecisionTransitioned | DecisionTransitionRefused {
   const upcasters = catalogUpcasters();
@@ -149,9 +150,12 @@ export function runDecisionTransition(
       message: `"${input.action}" is not a decision action`,
     };
   }
-  // The executing agent, stamped on whichever op the action routes to — built
-  // once so no branch can be the one that forgets it.
-  const stamp = input.which !== undefined ? { which: input.which } : {};
+  // The executing agent and the run it belongs to, stamped on whichever op the
+  // action routes to — built once so no branch can be the one that forgets them.
+  const stamp = {
+    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(input.run !== undefined ? { run: input.run } : {}),
+  };
   const moved =
     input.action === 'supersede'
       ? supersedeDecision(opCtx, {

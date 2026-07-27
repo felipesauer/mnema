@@ -132,6 +132,39 @@ Nothing verifies the name: `--which` is a declaration, exactly as the MCP server
 is the client's own announced name. What is *proven* is the signature — the
 identity that authorized the write, which is derived from the key and never typed.
 
+### Framing that work in a session
+
+`--which` names the agent on each fact. A **run** frames the session those facts
+belong to, and records that *you* opened it for that agent — so the work is not
+just attributed to an agent, it is authorized by a person. The MCP server opens
+one per connection; on the command line you open it yourself:
+
+```sh
+mnema run start --which release-bot --goal "regenerate the fixtures"
+#> Started run 019fa572-32c2-7780-b1a7-0fe895a1c7ef
+#>   for release-bot — regenerate the fixtures
+#>
+#> export MNEMA_RUN=019fa572-32c2-7780-b1a7-0fe895a1c7ef
+
+export MNEMA_RUN=019fa572-32c2-7780-b1a7-0fe895a1c7ef
+
+# Every fact written from here on names that session.
+mnema task "Regenerate the fixtures" --which release-bot
+
+mnema run end --outcome "fixtures regenerated"
+unset MNEMA_RUN
+```
+
+While it is open, `mnema focus --actor "$ME"` shows the session; afterwards
+`mnema resume --actor "$ME"` shows where it left off. Two rules keep the record
+honest: a run always names an agent (one that named nobody would prove no
+delegation), and the id in `MNEMA_RUN` is checked against the record before
+anything is written — a run this project has no record of, or one already ended,
+refuses the write instead of stamping a session nothing can vouch for.
+
+Working the CLI yourself needs no run: the identity that signs each fact already
+carries the authority a run exists to delegate.
+
 ### Bringing a second machine into your identity
 
 Your identity is one anchor with several keys, and each machine holds its own key
