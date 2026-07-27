@@ -45,6 +45,7 @@ surfaces never upgrade that verdict into a stronger claim.
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine. |
 | **Nothing was deleted** | Not proven locally. A hash chain shows what changed, never what was removed. Committing the record to git is what preserves the files a deletion would take with it. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
+| **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
 
 The honest summary: **local cryptography covers alteration; an external witness
 covers omission and ties the record to an identity.** No such witness is wired

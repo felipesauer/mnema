@@ -106,6 +106,25 @@ export function privateKeyFromPem(pem: string): KeyObject {
   return createPrivateKey(pem);
 }
 
+/**
+ * Reconstructs a WHOLE key pair from the private half alone: the public key is
+ * derived from the private one, not read from a second file.
+ *
+ * This is what makes a cold key ONE file. The copy a person keeps off the machine
+ * needs no `.pub` beside it, so there is no second file to lose, and no pair of
+ * files that could disagree about which key this is — the fingerprint is
+ * re-derived here from the material itself. Throws when the text is not a private
+ * key, so a caller can tell "unreadable" from "not a member".
+ */
+export function keyPairFromPrivatePem(pem: string): KeyPair {
+  const privateKey = createPrivateKey(pem);
+  // The PUBLIC key is read out of the same PEM: an Ed25519 private key carries
+  // its public point, so `createPublicKey` over private material derives the
+  // public half rather than requiring a second file.
+  const publicKey = createPublicKey(pem);
+  return { privateKey, publicKey, fingerprint: fingerprintOf(publicKey) };
+}
+
 /** Signs a message with an Ed25519 private key. */
 export function sign(message: Uint8Array, privateKey: KeyObject): Uint8Array {
   // Ed25519 takes a null algorithm (the algorithm is implied by the key).
