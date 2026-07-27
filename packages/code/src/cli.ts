@@ -23,7 +23,7 @@ import { runDecisionTransition } from './commands/decision-transition.js';
 import { runFocus } from './commands/focus.js';
 import { runGuard } from './commands/guard.js';
 import { runHandoff } from './commands/handoff.js';
-import { runInit } from './commands/init.js';
+import { type InitResult, runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
 import { runMemory } from './commands/memory.js';
 import { runNextActions } from './commands/next-actions.js';
@@ -74,6 +74,43 @@ function parseScope(value: string | undefined, io: CliIo): Scope | undefined | t
   return INVALID;
 }
 
+/**
+ * Reports what establishing the identity did, on the one occasion it matters:
+ * the run that created the tree.
+ *
+ * The line that earns its place is the backup key's — a key the person cannot
+ * regenerate and cannot recover, because mnema has no central recovery. When
+ * this run created it, the person is told WHERE the private half is and that it
+ * has to leave the machine: a backup that stays on this disk is lost with the
+ * disk, which is the exact loss it exists to survive. That warning is printed
+ * only on the run that creates the key — repeated on every init it would become
+ * noise a person learns to scroll past.
+ *
+ * A registered key this tree refused is always reported, never swallowed: a
+ * person who believes they hold a usable backup and does not is worse off than
+ * one who knows. For the same reason every OTHER key the tree enrolled is named
+ * too — the backup is not the only key a roster can hold, and enrolling one
+ * changes WHO may speak for the identity. That is not something to learn by
+ * reading the chain later.
+ */
+function reportIdentity(identity: InitResult['identity'], io: CliIo): void {
+  if (identity === undefined) return;
+  const backup = identity.backup;
+  if (backup?.created === true) {
+    io.out(`  backup key: created and enrolled — private half at ${backup.privateKeyPath}`);
+    io.out('  Move that file off this machine: a backup left on this disk is lost with it.');
+  } else if (backup !== null && identity.enrolled.includes(backup.fingerprint)) {
+    io.out('  backup key: enrolled in this project');
+  }
+  for (const fingerprint of identity.enrolled) {
+    if (fingerprint === backup?.fingerprint) continue;
+    io.out(`  key ${fingerprint} enrolled in this project`);
+  }
+  for (const declined of identity.declined) {
+    io.out(`  key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`);
+  }
+}
+
 /** Builds the configured `mnema` program. `io` defaults to the real streams. */
 export function buildProgram(io: CliIo = processIo): Command {
   const program = new Command();
@@ -98,6 +135,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       if (result.created) {
         io.out(`Initialized mnema project at ${result.root}`);
         io.out(`  identity: ${result.anchor}`);
+        reportIdentity(result.identity, io);
         io.out('  registered in the project index');
       } else {
         io.out(`Already a mnema project at ${result.root} — nothing to found.`);
