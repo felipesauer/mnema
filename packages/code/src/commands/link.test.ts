@@ -96,3 +96,62 @@ describe('mnema link', () => {
     expect(linksOf(trees.projectPublic as string).length).toBe(0);
   });
 });
+
+describe('mnema link --which — the agent that executed', () => {
+  /** Every `knowledge.linked` in a tree, with the agent each one names. */
+  function edgesIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'knowledge.linked')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runLink(
+      { cwd: repo, env },
+      { subject: 'A', target: 'B', rel: 'relates-to', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(edgesIn(root).find((e) => e.subject === 'A')?.which).toBe('ci-runner');
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runLink(
+      { cwd: repo, env },
+      { subject: 'A', target: 'B', rel: 'relates-to', which: 'ci-runner' },
+    );
+    expect(result.ok).toBe(true);
+    const trees = resolveTrees(repo, env);
+    expect(linksOf(trees.projectPrivate as string).length).toBe(1);
+    expect(linksOf(trees.projectPublic as string).length).toBe(0);
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, linking nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const trees = resolveTrees(repo, env);
+    const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(
+      (root): root is string => root !== undefined,
+    );
+    const before = roots.reduce((n, root) => n + edgesIn(root).length, 0);
+
+    const result = runLink(
+      { cwd: repo, env },
+      { subject: 'A', target: 'B', rel: 'relates-to', which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    expect(roots.reduce((n, root) => n + edgesIn(root).length, 0)).toBe(before);
+  });
+});

@@ -17,6 +17,14 @@
  * deliberate human capture (no executing agent) goes to the public tree. That
  * omitted default is PROVISIONAL: the team-wide default is left open to decide
  * against real use, and only the mechanism (the override on top) is settled here.
+ *
+ * The executing agent (`which`) is an input, not an assumption. A caller that is
+ * an AGENT operating the CLI — a script, a CI step, an agent with no MCP server —
+ * says so, and the fact records it; a person acting directly names none and the
+ * fact says a person acted. It is forwarded to BOTH the routing rule (an agent's
+ * capture defaults private, a person's public) and the operation (which records it
+ * and refuses when the agent IS the identity that authorizes the write), so the
+ * tree a fact lands in and the agent it names come from the one declaration.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -71,13 +79,17 @@ export type TaskRefused =
  * elsewhere. The GLOBAL scope needs no project (it is personal cross-project
  * knowledge), so `--scope global` works anywhere; the guard is on the RESOLVED
  * scope, not on the flag, so an omitted flag outside a project still refuses.
+ *
+ * A declared `which` (an agent operating the CLI) shifts the omitted default to
+ * private — the same rule the MCP session applies — and is recorded on the event.
+ * An explicit `scope` still wins over it.
  */
 export function runTask(
   ctx: TaskContext,
-  input: { title: string; scope?: Scope },
+  input: { title: string; scope?: Scope; which?: string },
 ): TaskCreated | TaskRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -92,7 +104,7 @@ export function runTask(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { title: input.title },
+    { title: input.title, ...(input.which !== undefined ? { which: input.which } : {}) },
   );
   if (!created.ok) {
     return { ok: false, reason: 'REFUSED', code: created.code, message: created.message };

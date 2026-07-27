@@ -126,3 +126,95 @@ describe('mnema memory', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 });
+
+describe('mnema memory --which — the agent that executed', () => {
+  /** Every `memory.captured` in a tree, with the agent each one names. */
+  function capturesIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'memory.captured')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runMemory(
+      { cwd: repo, env },
+      { content: 'the agent noticed this', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      expect(capturesIn(root).find((e) => e.subject === result.id)?.which).toBe('ci-runner');
+    }
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runMemory({ cwd: repo, env }, { content: 'auto note', which: 'ci-runner' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      expect(capturesIn(trees.projectPrivate as string).some((e) => e.subject === result.id)).toBe(
+        true,
+      );
+      expect(capturesIn(trees.projectPublic as string).some((e) => e.subject === result.id)).toBe(
+        false,
+      );
+    }
+  });
+
+  it('an explicit scope still wins over the agent default', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runMemory(
+      { cwd: repo, env },
+      { content: 'the team should see this', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      expect(capturesIn(trees.projectPublic as string).some((e) => e.subject === result.id)).toBe(
+        true,
+      );
+    }
+  });
+
+  it('an agent named only by whitespace is no agent: public, and nothing stamped', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runMemory({ cwd: repo, env }, { content: 'not an agent', which: ' ' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      const captured = capturesIn(root).find((e) => e.subject === result.id);
+      expect(captured).toBeDefined();
+      expect(captured?.which).toBeUndefined();
+    }
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, capturing nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const trees = resolveTrees(repo, env);
+    const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(
+      (root): root is string => root !== undefined,
+    );
+    const before = roots.reduce((n, root) => n + capturesIn(root).length, 0);
+
+    const result = runMemory({ cwd: repo, env }, { content: 'self-authorized', which: anchor });
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    expect(roots.reduce((n, root) => n + capturesIn(root).length, 0)).toBe(before);
+  });
+});

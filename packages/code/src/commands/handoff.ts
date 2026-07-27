@@ -17,7 +17,10 @@
  * dangling, never a refusal here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands.
+ * `scope` wins; when omitted, the routing default (public) stands — private when
+ * an agent operating the CLI declares itself (`which`), which is also recorded on
+ * the fact. That `which` is the agent that RECORDED the handoff, distinct from the
+ * `from`/`to` agents the handoff is about: the recorder may be neither of them.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -65,14 +68,15 @@ export type HandoffRefused =
  * Records a handoff, routing its birth to the resolved scope. The scope rule is
  * identical to a memory's. The `task` reference is forwarded to the core as-is
  * and never validated. On success it echoes the fact back (task, from, to) —
- * there is no minted id to return.
+ * there is no minted id to return. A declared `which` shifts the omitted default
+ * to private and is recorded on the event; an explicit `scope` still wins over it.
  */
 export function runHandoff(
   ctx: HandoffContext,
-  input: { task: string; fromAgent: string; toAgent: string; scope?: Scope },
+  input: { task: string; fromAgent: string; toAgent: string; scope?: Scope; which?: string },
 ): HandoffRecorded | HandoffRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -84,7 +88,12 @@ export function runHandoff(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { task: input.task, fromAgent: input.fromAgent, toAgent: input.toAgent },
+    {
+      task: input.task,
+      fromAgent: input.fromAgent,
+      toAgent: input.toAgent,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
   );
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };

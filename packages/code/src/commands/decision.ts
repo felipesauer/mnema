@@ -20,7 +20,9 @@
  * The birth scope is a per-action choice, exactly as for a task: an explicit
  * `scope` wins; when omitted, the routing rule's default stands (public, a
  * deliberate human capture). That omitted default is PROVISIONAL — the mechanism
- * (the override on top) is what is settled here.
+ * (the override on top) is what is settled here. An agent operating the CLI
+ * declares itself (`which`), which both shifts that default to private and names
+ * the agent on the fact.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -70,13 +72,16 @@ export type DecisionRefused =
  * refuses `NO_PROJECT` rather than falling through. The GLOBAL scope needs none,
  * so `--scope global` works anywhere; the guard is on the RESOLVED scope, not the
  * flag.
+ *
+ * A declared `which` (an agent operating the CLI) shifts the omitted default to
+ * private and is recorded on the event; an explicit `scope` still wins over it.
  */
 export function runDecision(
   ctx: DecisionContext,
-  input: { title: string; rationale: string; scope?: Scope },
+  input: { title: string; rationale: string; scope?: Scope; which?: string },
 ): DecisionRecorded | DecisionRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -91,7 +96,11 @@ export function runDecision(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { title: input.title, rationale: input.rationale },
+    {
+      title: input.title,
+      rationale: input.rationale,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
   );
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
