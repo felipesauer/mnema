@@ -96,7 +96,7 @@ export type TaskTransitionRefused =
  */
 export function runTaskTransition(
   ctx: TaskTransitionContext,
-  input: { id: string; action: string; proof?: TaskTransitionProof; which?: string },
+  input: { id: string; action: string; proof?: TaskTransitionProof; which?: string; run?: string },
 ): TaskTransitioned | TaskTransitionRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -124,6 +124,7 @@ export function runTaskTransition(
       action: input.action,
       ...(fields !== undefined ? { fields } : {}),
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!moved.ok) {

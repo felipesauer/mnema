@@ -77,7 +77,14 @@ export type LinkRefused =
  */
 export function runLink(
   ctx: LinkContext,
-  input: { subject: string; target: string; rel: string; scope?: Scope; which?: string },
+  input: {
+    subject: string;
+    target: string;
+    rel: string;
+    scope?: Scope;
+    which?: string;
+    run?: string;
+  },
 ): LinkRecorded | LinkRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope({ which: input.which }, input.scope);
@@ -97,6 +104,7 @@ export function runLink(
       target: input.target,
       rel: input.rel,
       ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
   if (!recorded.ok) {
