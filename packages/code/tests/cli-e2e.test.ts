@@ -302,6 +302,61 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(again.out.join('\n')).toContain('Already a mnema project');
   });
 
+  it('init creates the cold backup key, tells the person to move it, and says it once', async () => {
+    const first = capture();
+    await run(['init'], first.io);
+    expect(first.failed()).toBe(false);
+
+    // The one line the person must act on: where the private half is, and that it
+    // has to leave this machine — a backup on this disk is lost with the disk.
+    const backupLine = first.out.find((line) => line.includes('backup key:')) as string;
+    expect(backupLine).toContain('created and enrolled — private half at');
+    const privateKeyPath = backupLine.slice(backupLine.indexOf('at ') + 3);
+    expect(existsSync(privateKeyPath)).toBe(true);
+    expect(privateKeyPath.startsWith(join(sandbox, 'data'))).toBe(true);
+    expect(privateKeyPath.startsWith(repo)).toBe(false);
+    expect(first.out.join('\n')).toContain('Move that file off this machine');
+
+    // A second init in the same project repeats nothing: the warning would become
+    // noise, and there is no new key to warn about.
+    const again = capture();
+    await run(['init'], again.io);
+    expect(again.out.join('\n')).not.toContain('Move that file off this machine');
+    expect(again.out.join('\n')).not.toContain('backup key:');
+  });
+
+  it('a SECOND project is born with the backup enrolled, and both verify fully signed', async () => {
+    // The whole point of replaying the registration per tree: a project created
+    // after the backup existed must carry it too, or it is uncovered from birth.
+    await run(['init'], capture().io);
+    const other = join(sandbox, 'other-repo');
+    mkdirSync(other, { recursive: true });
+    process.chdir(other);
+
+    const second = capture();
+    await run(['init'], second.io);
+    expect(second.failed()).toBe(false);
+    // The backup is enrolled here, and it is NOT created again (one per machine).
+    expect(second.out.join('\n')).toContain('backup key: enrolled in this project');
+    expect(second.out.join('\n')).not.toContain('created and enrolled');
+
+    const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+    const firstRoot = resolveTrees(repo, env).projectPublic as string;
+    const secondRoot = resolveTrees(other, env).projectPublic as string;
+
+    const rosters = [firstRoot, secondRoot].map((root) => {
+      const events = orderedEvents({ root }, catalogUpcasters());
+      expect(events.map((e) => e.kind)).toEqual(['identity.founded', 'key.enrolled']);
+      const verdict = verify(root);
+      expect(verdict.ok).toBe(true);
+      expect(verdict.fullySigned).toBe(true);
+      return events.map((e) => `${e.who}:${JSON.stringify(e.payload)}`);
+    });
+    // Same anchor, same founding key, same enrolled backup — one identity, two
+    // trees, each carrying the proof on its own.
+    expect(rosters[0]).toEqual(rosters[1]);
+  });
+
   it('--help prints usage without signalling failure', async () => {
     const h = capture();
     await run(['--help'], h.io);

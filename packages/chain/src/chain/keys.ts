@@ -46,6 +46,15 @@ export interface KeyPair {
   readonly fingerprint: string;
 }
 
+/**
+ * The half of a key a CHAIN ever carries: the public key and its fingerprint.
+ * Materializing a key into a chain needs exactly this much — never the private
+ * half — so the operation asks for exactly this much. It also lets a key that is
+ * a member of an identity WITHOUT signing here (a cold backup, whose private
+ * half has left the machine) be materialized like any other.
+ */
+export type PublicHalf = Pick<KeyPair, 'publicKey' | 'fingerprint'>;
+
 /** Generates a fresh Ed25519 key pair with its fingerprint. */
 export function generateKeyPair(): KeyPair {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');

@@ -49,8 +49,11 @@ export {
   gate,
 } from './gate.js';
 export {
+  type DeclinedKey,
+  type EstablishedIdentity,
   enrollKey,
   ensureFounded,
+  establishIdentity,
   foundIdentity,
   type IdentityOk,
   revokeKey,

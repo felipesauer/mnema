@@ -13,6 +13,15 @@
 export const PACKAGE_NAME = '@mnema/chain';
 
 // The chain.
+export {
+  BACKUP_ROLE,
+  type BackupKey,
+  ensureBackupKey,
+  type KeyRegistration,
+  listRegistrations,
+  type RegistrationFault,
+  readRegistration,
+} from './chain/backup.js';
 export { type OpenOptions, openChainForWriting, verify } from './chain/chain.js';
 export {
   type Checkpoint,
