@@ -88,6 +88,9 @@ export function runMemory(
     },
     { content: input.content },
   );
+  if (!captured.ok) {
+    return { ok: false, reason: 'REFUSED', code: captured.code, message: captured.message };
+  }
 
   // Checkpoint so the new memory is signature-covered at once — the tree stays
   // fully signed after every command, the same posture init leaves it in.

@@ -78,7 +78,7 @@ export function runHandoff(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  recordHandoff(
+  const recorded = recordHandoff(
     {
       writer,
       layout: { root: chainRootForScope(trees, scope) as string },
@@ -86,6 +86,9 @@ export function runHandoff(
     },
     { task: input.task, fromAgent: input.fromAgent, toAgent: input.toAgent },
   );
+  if (!recorded.ok) {
+    return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
+  }
 
   // Checkpoint so the new handoff is signature-covered at once.
   writer.checkpoint();

@@ -20,6 +20,7 @@ import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
+  deriveAlias,
   orderedEvents,
   PROJECT_DIR,
   projectDecisions,
@@ -37,13 +38,14 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
-import { closeSession, openSession, writeContext } from '../src/mcp/session.js';
+import { closeSession, openSession, type Session, writeContext } from '../src/mcp/session.js';
 import {
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
   runCaptureMemory,
   runCreateSkill,
+  runCreateTask,
   runDecisionTransition,
   runFocusTool,
   runGuardTool,
@@ -485,6 +487,118 @@ describe('MCP session + tools — unit', () => {
         orderedEvents({ root: chainRootForScope(trees, 'private') as string }, catalogUpcasters()),
       ).size,
     ).toBe(0);
+  });
+
+  it('a client naming itself the machine anchor cannot open a session at all', () => {
+    // The authority invariant's first line of defense on this surface: the run
+    // that opens the session is itself an authorized fact, so a client whose name
+    // IS the machine's anchor is refused before any tool exists to call.
+    const project = makeProject('proj');
+    const roots = [pathToFileURL(project).href];
+    const first = openSession({ clientName: 'claude-code', roots, env });
+    expect(() => openSession({ clientName: first.who, roots, env })).toThrow(/WHO_IS_WHICH/);
+  });
+
+  it('the knowledge tools report a core refusal as data and write nothing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // The session guard above is what a real client hits; these four facts run no
+    // gate of their own, so drive the adapters with an agent equal to the anchor
+    // to prove they PROPAGATE the core's refusal instead of asserting success.
+    const forged: Session = { ...session, which: session.who };
+
+    const results = [
+      runCaptureMemory(forged, { content: 'x' }),
+      runRecordObservation(forged, { about: 'e', topic: 't', text: 'x' }),
+      runRecordHandoff(forged, { task: 'e', from: 'a', to: 'b' }),
+      runLinkKnowledge(forged, { subject: 's', target: 't', rel: 'relates_to' }),
+    ];
+    for (const result of results) {
+      expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    }
+
+    // Nothing was appended, and the tree the session opened still verifies — the
+    // refusal happened before the write, not after it.
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const kinds = orderedEvents({ root: chainRoot }, catalogUpcasters()).map((e) => e.kind);
+    expect(kinds).not.toContain('memory.captured');
+    expect(kinds).not.toContain('observation.recorded');
+    expect(kinds).not.toContain('handoff.recorded');
+    expect(kinds).not.toContain('knowledge.linked');
+    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+  });
+
+  it('create_task appends a verifiable birth, returning the id AND the alias', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const created = runCreateTask(session, { title: 'break the epic down' });
+    if (!created.ok) throw new Error('create refused');
+    // The alias is what the human reads afterwards; the id is what a move takes.
+    expect(created.alias).toBe(deriveAlias('task', created.id));
+    expect(created.alias).toMatch(/^t-[0-9a-f]{4}$/);
+
+    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    // Checkpointed by the tool, so the birth is signature-covered on return.
+    const verdict = verify(chainRoot, catalogUpcasters());
+    expect(verdict.ok).toBe(true);
+    expect(verdict.fullySigned).toBe(true);
+
+    const events = orderedEvents({ root: chainRoot }, catalogUpcasters()).filter(
+      (e) => e.subject === created.id,
+    );
+    expect(events.map((e) => e.kind)).toEqual(['task.created', 'task.transitioned']);
+    // Attributed to the client (`which`), authorized by the machine (`who`), and
+    // pinned to the session's run — the same stamping the other nine writes do.
+    expect(events[0]?.which).toBe('claude-code');
+    expect(events[0]?.who).not.toBe('claude-code');
+    expect(events[0]?.run).toBe(session.runId);
+    // The task is born in the workflow's initial state, movable from there.
+    const task = projectTasks(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
+      created.id,
+    );
+    expect(task?.title).toBe('break the epic down');
+    const moved = runTaskTransition(session, { id: created.id, action: 'submit' });
+    expect(moved).toMatchObject({ ok: true, to: 'READY' });
+  });
+
+  it('create_task scope arg overrides the session default (per-action scope)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+
+    const created = runCreateTask(session, { title: 'a team task', scope: 'public' });
+    if (!created.ok) throw new Error('create refused');
+
+    const publicEvents = orderedEvents(
+      { root: chainRootForScope(session.trees, 'public') as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === created.id);
+    expect(publicEvents.map((e) => e.kind)).toEqual(['task.created', 'task.transitioned']);
+    const privateEvents = orderedEvents(
+      { root: chainRootForScope(session.trees, 'private') as string },
+      catalogUpcasters(),
+    ).filter((e) => e.subject === created.id);
+    expect(privateEvents).toEqual([]);
+  });
+
+  it('create_task refuses a scope absent here (public with no project) as data', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const refused = runCreateTask(session, { title: 'nowhere', scope: 'public' });
+    expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
   });
 
   it('task_transition moves a task through the same gate the CLI uses', () => {
@@ -1092,6 +1206,7 @@ describe('MCP server — end to end over a real client', () => {
       'bootstrap',
       'capture_memory',
       'create_skill',
+      'create_task',
       'decision_transition',
       'focus',
       'guard',
@@ -1189,6 +1304,51 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { id: 'nope', action: 'submit' },
     });
     expect(textOf(guardMissing)).toContain('Refused (UNKNOWN_TASK)');
+
+    await client.close();
+  });
+
+  it('create_task opens a task over the real transport, moves it, and verifies clean', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // The tool is advertised with its title and the optional scope arg.
+    const tools = await client.listTools();
+    const createTool = tools.tools.find((t) => t.name === 'create_task');
+    expect(createTool?.inputSchema.properties).toHaveProperty('scope');
+
+    const created = await client.callTool({
+      name: 'create_task',
+      arguments: { title: 'wire the agent-first loop' },
+    });
+    expect(created.isError).toBeFalsy();
+    // The response carries both names: the alias for the human, the id for a move.
+    const reported = /^Created task (t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)$/.exec(textOf(created));
+    expect(reported).not.toBeNull();
+    const [, alias, id] = reported as RegExpExecArray;
+    expect(alias).toBe(deriveAlias('task', id as string));
+
+    // The id the agent got back is the key the move takes — the round trip an
+    // agent breaking down work actually walks.
+    const moved = await client.callTool({
+      name: 'task_transition',
+      arguments: { id, action: 'submit' },
+    });
+    expect(moved.isError).toBeFalsy();
+    expect(textOf(moved)).toBe(`Task ${alias} → READY`);
+
+    // Both writes landed in the session's private tree, fully signed.
+    const trees = resolveTrees(project, env);
+    const chainRoot = chainRootForScope(trees, 'private') as string;
+    const verdict = verify(chainRoot, catalogUpcasters());
+    expect(verdict.ok).toBe(true);
+    expect(verdict.fullySigned).toBe(true);
+    const task = projectTasks(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
+      id as string,
+    );
+    expect(task?.state).toBe('READY');
+    expect(task?.title).toBe('wire the agent-first loop');
 
     await client.close();
   });

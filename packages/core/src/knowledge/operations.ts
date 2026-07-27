@@ -13,6 +13,11 @@
  *   - `who` (the authorizing anchor) and `signerFp` (the signing key) come from
  *     the writer's own key, never supplied — a caller cannot forge who captured
  *     a memory by typing a name.
+ *   - the executing agent is never that same identity ({@link
+ *     resolveExecutingAgent}). No gate runs here, but this is not a gate rule:
+ *     it is the authority invariant, and the verifier applies it to EVERY kind.
+ *     Checking it at the door is what keeps a self-authorized fact out of an
+ *     append-only log, where it could not be repaired afterwards.
  *   - the memory's id is MINTED by the operation (see {@link mintId}), never
  *     chosen by the caller, so two offline clones never mint the same id and two
  *     unrelated memories cannot false-merge when their chains are unioned.
@@ -23,8 +28,9 @@
  * for the resolved scope (`openTreeForWriting`) and hands the resulting writer
  * in via the context. This operation writes to whatever chain that writer owns.
  *
- * The other knowledge writes share this shape exactly — one append, no gate, no
- * error union — because they are all point-in-time FACTS:
+ * The other knowledge writes share this shape exactly — one append, no gate, and
+ * the one refusal a fact can earn (the authority invariant) — because they are
+ * all point-in-time FACTS:
  *   - {@link recordObservation}: a note ABOUT an entity. It mints its OWN id
  *     (the observation is an entity), and names the observed one in the payload.
  *   - {@link recordHandoff}: work on a task passed between agents. Its subject
@@ -41,8 +47,8 @@ import {
   memoryCaptured,
   observationRecorded,
 } from '@mnema/chain';
+import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { canonicalIdentity } from '../identity/who.js';
 import { systemClock } from '../workflow/clock.js';
 import { ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -73,9 +79,14 @@ export interface CaptureInput {
  * whose presence is exactly what the scope resolver reads to default an
  * automatic capture to the private tree.
  */
-export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk {
+export function captureMemory(
+  ctx: WriteContext,
+  input: CaptureInput,
+): CaptureOk | SelfAuthorizedErr {
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
 
   // Minted here, not chosen by the caller: derived from randomness so two
   // offline clones never mint the same one, closing false-merge of memories at
@@ -134,9 +145,14 @@ export interface ObservationInput {
  * another tree the writer cannot see, so a dangling `about` is an honest
  * cross-tree assertion resolved on read, never a refusal here.
  */
-export function recordObservation(ctx: WriteContext, input: ObservationInput): ObservationOk {
+export function recordObservation(
+  ctx: WriteContext,
+  input: ObservationInput,
+): ObservationOk | SelfAuthorizedErr {
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
   // The observed entity is a REFERENCE to an already-minted id: canonicalized
   // (NFC, the chain's stored form) so a reader keys on the same string, but
   // never minted here and never refused for absence.
@@ -194,9 +210,14 @@ export interface HandoffInput {
  * The task subject is NOT verified to exist here — it is a reference resolved on
  * read, the same cross-tree-honest treatment the observation and link use.
  */
-export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk {
+export function recordHandoff(
+  ctx: WriteContext,
+  input: HandoffInput,
+): HandoffOk | SelfAuthorizedErr {
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
   const task = canonicalId(input.task) ?? input.task;
 
   ensureFounded(ctx);
@@ -249,9 +270,11 @@ export interface LinkInput {
  * current view is honest dangling, resolved on read against the union. Refusing
  * it here would break the very cross-tree relations the link exists to record.
  */
-export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk {
+export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | SelfAuthorizedErr {
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
   const subject = canonicalId(input.subject) ?? input.subject;
   const target = canonicalId(input.target) ?? input.target;
 

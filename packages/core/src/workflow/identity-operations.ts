@@ -62,6 +62,16 @@ export function foundIdentity(ctx: WriteContext): IdentityOk {
  * proves it consents. The caller supplies that material (the new machine
  * produces it); this only signs the vouch and appends the fact. Founds first, so
  * the local key is a member able to vouch.
+ *
+ * The enrollment is checkpointed immediately — for a different reason than a
+ * revocation is. An ADDITION takes effect even while residual (the verifier gates
+ * only the mutations that can alter signed history), so the checkpoint is not
+ * what makes the membership valid; it is what keeps the chain fully signed.
+ * A legitimate membership change proves itself at once instead of resting on the
+ * hash chain alone, so `fullySigned` keeps discriminating: an unsigned residual
+ * means unproven work, never "the owner just enrolled a key". It also covers the
+ * one addition the verifier DOES gate — an enrollment that restores a key revoked
+ * under coverage takes effect only when itself covered.
  */
 export function enrollKey(
   ctx: WriteContext,
@@ -75,6 +85,7 @@ export function enrollKey(
       { newFp: input.newFp, reverseSig: input.reverseSig },
     ),
   );
+  ctx.writer.checkpoint();
   return { ok: true, anchor };
 }
 

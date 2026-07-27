@@ -14,9 +14,9 @@
  * transport, and what keeps the surface from growing a second implementation of
  * the domain.
  *
- * The tools here: `capture_memory`, `record_decision`, `create_skill`,
- * `record_observation`, `record_handoff`, and `link_knowledge` (the write mold,
- * one append via a birth/fact operation), `task_transition`,
+ * The tools here: `capture_memory`, `record_decision`, `create_task`,
+ * `create_skill`, `record_observation`, `record_handoff`, and `link_knowledge`
+ * (the write mold, one append via a birth/fact operation), `task_transition`,
  * `decision_transition`, and `skill_transition` (the same mold applied to a gated
  * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
  * derivation over the projection cache), `guard` (the read mold applied to a
@@ -68,6 +68,7 @@ import {
   adoptSkill,
   captureMemory,
   createSkill,
+  createTask,
   deprecateSkill,
   linkKnowledge,
   recordDecision,
@@ -91,9 +92,30 @@ export type CaptureResult =
     }
   | {
       readonly ok: false;
-      /** The requested scope names a tree absent in this context. */
-      readonly code: 'SCOPE_UNAVAILABLE';
+      /**
+       * Why it was refused: `SCOPE_UNAVAILABLE` when the requested scope names a
+       * tree absent here, else the core operation's own code (the authority
+       * invariant, `WHO_IS_WHICH`).
+       */
+      readonly code: string;
       /** The human-readable reason the capture was refused. */
+      readonly message: string;
+    };
+
+/** A task was created, or the write was refused (the scope guard, or the core). */
+export type CreateTaskResult =
+  | {
+      readonly ok: true;
+      /** The minted task id (the event subject) — the key a move takes. */
+      readonly id: string;
+      /** The short human-facing alias (`t-xxxx`), derived from the id. */
+      readonly alias: string;
+    }
+  | {
+      readonly ok: false;
+      /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
+      readonly code: string;
+      /** The human-readable reason the create was refused. */
       readonly message: string;
     };
 
@@ -127,8 +149,8 @@ export type RecordDecisionResult =
     }
   | {
       readonly ok: false;
-      /** The requested scope names a tree absent in this context. */
-      readonly code: 'SCOPE_UNAVAILABLE';
+      /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
+      readonly code: string;
       /** The human-readable reason the record was refused. */
       readonly message: string;
     };
@@ -163,8 +185,8 @@ export type CreateSkillResult =
     }
   | {
       readonly ok: false;
-      /** The requested scope names a tree absent in this context. */
-      readonly code: 'SCOPE_UNAVAILABLE';
+      /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
+      readonly code: string;
       /** The human-readable reason the propose was refused. */
       readonly message: string;
     };
@@ -228,6 +250,11 @@ export function runCaptureMemory(
     which: session.which,
     run: session.runId,
   });
+  // A capture runs no gate, but the authority invariant still applies — surface
+  // the core's refusal rather than asserting ok, and checkpoint nothing.
+  if (!captured.ok) {
+    return { ok: false, code: captured.code, message: captured.message };
+  }
   // Checkpoint so the capture is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   return { ok: true, id: captured.id };
@@ -242,8 +269,8 @@ export type RecordObservationResult =
     }
   | {
       readonly ok: false;
-      /** The requested scope names a tree absent in this context. */
-      readonly code: 'SCOPE_UNAVAILABLE';
+      /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
+      readonly code: string;
       /** The human-readable reason the record was refused. */
       readonly message: string;
     };
@@ -255,8 +282,8 @@ export type FactRecordedResult =
     }
   | {
       readonly ok: false;
-      /** The requested scope names a tree absent in this context. */
-      readonly code: 'SCOPE_UNAVAILABLE';
+      /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
+      readonly code: string;
       /** The human-readable reason the record was refused. */
       readonly message: string;
     };
@@ -295,6 +322,9 @@ export function runRecordObservation(
     which: session.which,
     run: session.runId,
   });
+  if (!recorded.ok) {
+    return { ok: false, code: recorded.code, message: recorded.message };
+  }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   return { ok: true, id: recorded.id };
@@ -324,13 +354,16 @@ export function runRecordHandoff(
     };
   }
   const ctx = writeContext(session.trees, scope);
-  recordHandoff(ctx, {
+  const recorded = recordHandoff(ctx, {
     task: input.task,
     fromAgent: input.from,
     toAgent: input.to,
     which: session.which,
     run: session.runId,
   });
+  if (!recorded.ok) {
+    return { ok: false, code: recorded.code, message: recorded.message };
+  }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   return { ok: true };
@@ -360,16 +393,63 @@ export function runLinkKnowledge(
     };
   }
   const ctx = writeContext(session.trees, scope);
-  linkKnowledge(ctx, {
+  const recorded = linkKnowledge(ctx, {
     subject: input.subject,
     target: input.target,
     rel: input.rel,
     which: session.which,
     run: session.runId,
   });
+  if (!recorded.ok) {
+    return { ok: false, code: recorded.code, message: recorded.message };
+  }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   return { ok: true };
+}
+
+/**
+ * `create_task` — creates a task, the MCP counterpart of `mnema task`. Until it
+ * existed the agent could MOVE tasks but never open one, so an agent told to
+ * break work down had no tool for it — the asymmetry this closes.
+ *
+ * The birth mold of `create_skill` exactly: the tree is a per-action choice on
+ * top of the session's default (an explicit `scope` wins, else the session's own
+ * scope stands), the id is MINTED by the operation, and the write is attributed
+ * to the connecting agent (`which`) and pinned to the session's run.
+ *
+ * Returns the minted `id` (the key a move takes) AND the derived `alias` — the
+ * short name the human reads afterwards, the same pair the CLI reports. An
+ * override naming a tree this context lacks is refused as data
+ * (SCOPE_UNAVAILABLE), never thrown, so the server shapes it into a tool error.
+ */
+export function runCreateTask(
+  session: Session,
+  input: { title: string; scope?: Scope },
+): CreateTaskResult {
+  const scope = input.scope ?? session.scope;
+  if (chainRootForScope(session.trees, scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  const ctx = writeContext(session.trees, scope);
+  const created = createTask(ctx, {
+    title: input.title,
+    which: session.which,
+    run: session.runId,
+  });
+  // A birth is not a gated transition, but the operation's return is a union —
+  // surface the refusal it can carry (the authority invariant) rather than
+  // asserting ok, and checkpoint nothing when no event was appended.
+  if (!created.ok) {
+    return { ok: false, code: created.code, message: created.message };
+  }
+  // Checkpoint so the new task is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true, id: created.id, alias: deriveAlias('task', created.id) };
 }
 
 /**
@@ -475,7 +555,7 @@ export function runRecordDecision(
   // only check is who != which, which holds for a real client), but the operation
   // return is a union — surface any refusal honestly rather than asserting ok.
   if (!recorded.ok) {
-    return { ok: false, code: 'SCOPE_UNAVAILABLE', message: recorded.message };
+    return { ok: false, code: recorded.code, message: recorded.message };
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
@@ -620,7 +700,7 @@ export function runCreateSkill(
   // only check is who != which, which holds for a real client), but the operation
   // return is a union — surface any refusal honestly rather than asserting ok.
   if (!created.ok) {
-    return { ok: false, code: 'SCOPE_UNAVAILABLE', message: created.message };
+    return { ok: false, code: created.code, message: created.message };
   }
   // Checkpoint so the propose is fully signed the moment the tool returns.
   ctx.writer.checkpoint();

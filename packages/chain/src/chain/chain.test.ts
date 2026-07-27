@@ -23,9 +23,10 @@ import { canonicalStringify } from '../events/canonical.js';
 import { parseEvent } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
-import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
+import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
+import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { orderedSegments, readTailEntries } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
@@ -493,6 +494,69 @@ describe('chain — checkpoint chaining defends signed history from a dropped tr
     const result = verify(root);
     expect(result.ok).toBe(false);
     expect(result.issues.some((i) => /chain break/.test(i.detail))).toBe(true);
+  });
+});
+
+describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsigned hole)', () => {
+  /**
+   * Signs a checkpoint over an arbitrary range of the tail with the tail's OWN
+   * key — everything a checkpoint needs to be genuine (real signature, real
+   * content root recomputed from the bytes, real committed key) EXCEPT contiguous
+   * coverage. That isolation is the point: these tests must fail on the coverage
+   * clause alone, not on a broken signature.
+   */
+  function signRange(tail: string, fromSeq: number, toSeq: number, prev: string | null) {
+    const entries = readTailEntries({ root }, tail, catalogUpcasters());
+    const range = entries.filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq);
+    return signCheckpoint({
+      tail,
+      fromSeq,
+      events: range.map((e) => e.event),
+      prev,
+      keyPair: loadOrCreateKeyPair({ root }),
+    });
+  }
+
+  it('flags a first checkpoint that starts above seq 0, leaving the prefix unsigned', () => {
+    // Three events (the founding plus two tasks), and a checkpoint that covers
+    // 1..2 — validly signed, but silent about seq 0. Without the coverage clause
+    // the verifier would advance its cursor to 2 and report the whole tail as
+    // fully signed, attesting an event no signature ever covered.
+    writeSome(2, { checkpointEvery: 100 });
+    const tail = tailIdOf(root);
+    const gapped = signRange(tail, 1, 2, null);
+    writeFileSync(checkpointsPath({ root }, tail), `${serializeCheckpoint(gapped)}\n`);
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    const gap = result.issues.find((i) => /checkpoint coverage gap/.test(i.detail));
+    expect(gap?.detail).toMatch(/expected to start at 0, starts at 1/);
+    // Coverage does not advance over the hole, so nothing is claimed as signed.
+    expect(result.fullySigned).toBe(false);
+    expect(result.uncheckpointedEvents).toBe(3);
+  });
+
+  it('flags a hole BETWEEN two checkpoints, and keeps the coverage before it', () => {
+    // 0..1 signed, then 3..4 signed with a correct `prev` link — the checkpoint
+    // chain is intact and both signatures verify, so seq 2 would slip through as
+    // covered on the strength of its neighbours alone.
+    writeSome(4, { checkpointEvery: 100 });
+    const tail = tailIdOf(root);
+    const first = signRange(tail, 0, 1, null);
+    const second = signRange(tail, 3, 4, checkpointHash(first));
+    writeFileSync(
+      checkpointsPath({ root }, tail),
+      `${serializeCheckpoint(first)}\n${serializeCheckpoint(second)}\n`,
+    );
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    const gaps = result.issues.filter((i) => /checkpoint coverage gap/.test(i.detail));
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0]?.detail).toMatch(/expected to start at 2, starts at 3/);
+    // The honest prefix keeps its coverage (0..1); the rest is residual.
+    expect(result.tails[0]?.checkpointedThrough).toBe(1);
+    expect(result.uncheckpointedEvents).toBe(3);
   });
 });
 

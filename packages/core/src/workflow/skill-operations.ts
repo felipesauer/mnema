@@ -21,6 +21,7 @@ import {
   type TransitionFields,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
@@ -102,14 +103,9 @@ export function createSkill(
   // `who` is derived from the writer's key, always a real anchor; the only
   // authority check left is that the executing agent is not that identity.
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
-  if (which !== undefined && which === who) {
-    return {
-      ok: false,
-      code: 'WHO_IS_WHICH',
-      message: 'the authorizing human and the executing agent must be different identities',
-    };
-  }
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
 
   // The id is minted here, not chosen by the caller: derived from randomness so
   // two offline clones never mint the same one, closing false-merge of entities
