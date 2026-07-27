@@ -8,10 +8,17 @@
  * the real app data directory.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, verify } from '@mnema/chain';
+import {
+  catalogUpcasters,
+  enrollmentMessage,
+  generateKeyPair,
+  publicKeyToPem,
+  sign,
+  verify,
+} from '@mnema/chain';
 import {
   listProjects,
   orderedEvents,
@@ -355,6 +362,53 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     // Same anchor, same founding key, same enrolled backup — one identity, two
     // trees, each carrying the proof on its own.
     expect(rosters[0]).toEqual(rosters[1]);
+  });
+
+  it('names every key it enrolls, not only the backup', async () => {
+    // Enrolling a key changes WHO may speak for the identity. The backup is the
+    // one the person must act on, but it is not the only key a roster can hold —
+    // and a key that joins in silence is one nobody can notice joining.
+    const first = capture();
+    await run(['init'], first.io);
+    const identityLine = first.out.find((line) => line.includes('identity:')) as string;
+    const anchor = identityLine.split('identity: ')[1] as string;
+
+    // A second key registered at the key root, the way another machine's would
+    // be: its public half plus its own signature consenting to this anchor.
+    const keyRoot = join(sandbox, 'data', 'mnema', 'identity');
+    const joining = generateKeyPair();
+    writeFileSync(
+      join(keyRoot, 'keys', `${joining.fingerprint}.pub`),
+      publicKeyToPem(joining.publicKey),
+    );
+    const consent = Buffer.from(
+      sign(enrollmentMessage(anchor, joining.fingerprint), joining.privateKey),
+    ).toString('hex');
+    writeFileSync(
+      join(keyRoot, 'keys', `${joining.fingerprint}.enroll`),
+      `${JSON.stringify({ anchor, role: 'second-machine', reverseSig: consent })}\n`,
+    );
+
+    const other = join(sandbox, 'joined-repo');
+    mkdirSync(other, { recursive: true });
+    process.chdir(other);
+    const second = capture();
+    await run(['init'], second.io);
+
+    // Both keys are enrolled, and BOTH are said out loud.
+    const said = second.out.join('\n');
+    expect(said).toContain('backup key: enrolled in this project');
+    expect(said).toContain(`key ${joining.fingerprint} enrolled in this project`);
+
+    const root = resolveTrees(other, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const enrolled = orderedEvents({ root }, catalogUpcasters()).filter(
+      (e) => e.kind === 'key.enrolled',
+    );
+    expect(enrolled).toHaveLength(2);
+    expect(verify(root).ok).toBe(true);
   });
 
   it('--help prints usage without signalling failure', async () => {

@@ -88,7 +88,10 @@ function parseScope(value: string | undefined, io: CliIo): Scope | undefined | t
  *
  * A registered key this tree refused is always reported, never swallowed: a
  * person who believes they hold a usable backup and does not is worse off than
- * one who knows.
+ * one who knows. For the same reason every OTHER key the tree enrolled is named
+ * too — the backup is not the only key a roster can hold, and enrolling one
+ * changes WHO may speak for the identity. That is not something to learn by
+ * reading the chain later.
  */
 function reportIdentity(identity: InitResult['identity'], io: CliIo): void {
   if (identity === undefined) return;
@@ -98,6 +101,10 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo): void {
     io.out('  Move that file off this machine: a backup left on this disk is lost with it.');
   } else if (backup !== null && identity.enrolled.includes(backup.fingerprint)) {
     io.out('  backup key: enrolled in this project');
+  }
+  for (const fingerprint of identity.enrolled) {
+    if (fingerprint === backup?.fingerprint) continue;
+    io.out(`  key ${fingerprint} enrolled in this project`);
   }
   for (const declined of identity.declined) {
     io.out(`  key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`);
