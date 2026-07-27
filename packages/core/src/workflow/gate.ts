@@ -35,6 +35,7 @@
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { isTaskState, type TaskState } from './states.js';
 import { findTransition, type ProofField, TASK_ACTIONS, type TaskAction } from './transitions.js';
@@ -108,15 +109,11 @@ export function gate(request: GateRequest): GateResult {
   if (who === undefined) {
     return err('MISSING_WHO', 'a transition needs a human who authorized it');
   }
-  if (request.which !== undefined) {
-    const which = canonicalIdentity(request.which);
-    if (which !== undefined && which === who) {
-      return err(
-        'WHO_IS_WHICH',
-        'the authorizing human and the executing agent must be different identities',
-      );
-    }
-  }
+  // The one invariant that is not this workflow's own: the agent may not be the
+  // identity that authorizes it. Shared with every other write, so a fact and a
+  // transition refuse it identically (see resolveExecutingAgent).
+  const agent = resolveExecutingAgent(who, request.which);
+  if (!agent.ok) return agent;
 
   if (!isTaskState(request.from)) {
     return err('UNKNOWN_STATE', `"${request.from}" is not a workflow state`);

@@ -15,6 +15,9 @@
  * scope maps to is a read; only OPENING it for writing is here).
  */
 
+// The one refusal a point-in-time fact can earn: the authority invariant. It
+// travels with the knowledge writes because it is in their result union.
+export type { SelfAuthorizedErr } from './identity/authority.js';
 // The knowledge domain's writes: each appends one point-in-time fact, no gate.
 export {
   type CaptureInput,

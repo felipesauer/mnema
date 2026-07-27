@@ -37,8 +37,8 @@
  */
 
 import { runEnded, runStarted } from '@mnema/chain';
+import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { systemClock } from './clock.js';
@@ -104,14 +104,9 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
   // `which`, so it is checked against `who` in canonical form: an agent must not
   // be the anchor that authorizes its own session.
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.agent);
-  if (which !== undefined && which === who) {
-    return {
-      ok: false,
-      code: 'WHO_IS_WHICH',
-      message: 'the authorizing human and the executing agent must be different identities',
-    };
-  }
+  const agent = resolveExecutingAgent(who, input.agent);
+  if (!agent.ok) return agent;
+  const which = agent.which;
 
   // Minted here, not chosen by the caller (see mintId): derived from randomness
   // so two offline clones never mint the same run id, closing false-merge of

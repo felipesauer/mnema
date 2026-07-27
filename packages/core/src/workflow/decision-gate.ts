@@ -31,6 +31,7 @@
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { type DecisionState, isDecisionState } from './decision-states.js';
@@ -119,15 +120,11 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
   if (who === undefined) {
     return err('MISSING_WHO', 'a decision transition needs a human who authorized it');
   }
-  if (request.which !== undefined) {
-    const which = canonicalIdentity(request.which);
-    if (which !== undefined && which === who) {
-      return err(
-        'WHO_IS_WHICH',
-        'the authorizing human and the executing agent must be different identities',
-      );
-    }
-  }
+  // The one invariant that is not this workflow's own: the agent may not be the
+  // identity that authorizes it. Shared with every other write, so a fact and a
+  // transition refuse it identically (see resolveExecutingAgent).
+  const agent = resolveExecutingAgent(who, request.which);
+  if (!agent.ok) return agent;
 
   if (!isDecisionState(request.from)) {
     return err('UNKNOWN_STATE', `"${request.from}" is not a decision state`);

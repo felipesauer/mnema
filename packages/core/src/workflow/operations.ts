@@ -31,6 +31,7 @@ import {
   taskTransitioned,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
@@ -171,14 +172,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // identity (an anchor never equals an agent name, but the check is cheap and
   // states the invariant explicitly).
   const who = ctx.writer.anchor;
-  const which = canonicalIdentity(input.which);
-  if (which !== undefined && which === who) {
-    return {
-      ok: false,
-      code: 'WHO_IS_WHICH',
-      message: 'the authorizing human and the executing agent must be different identities',
-    };
-  }
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
 
   // The id is minted here, not chosen by the caller: derived from randomness so
   // two offline clones never mint the same one, closing false-merge of entities

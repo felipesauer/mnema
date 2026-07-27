@@ -9,7 +9,7 @@
  * no domain logic here and none in the tools — the logic is the core's gate and
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
- * task_transition, record_decision, decision_transition, create_skill,
+ * create_task, task_transition, record_decision, decision_transition, create_skill,
  * skill_transition, bootstrap, focus, resume, next_actions, guard, and the three
  * `audit_*` intelligence reads — audit_timeline, audit_accountability,
  * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
@@ -38,6 +38,7 @@ import {
   runBootstrap,
   runCaptureMemory,
   runCreateSkill,
+  runCreateTask,
   runDecisionTransition,
   runFocusTool,
   runGuardTool,
@@ -312,6 +313,41 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       }
       return {
         content: [{ type: 'text', text: `Linked ${subject} —${rel}→ ${target}` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'create_task',
+    {
+      title: 'Create a task',
+      description:
+        'Open a task in the mnema chain, attributed to this agent and pinned to ' +
+        'the current session. A task needs a title; it starts in the workflow’s ' +
+        'initial state and is moved from there with task_transition. Optionally ' +
+        'pick the scope it lands in — public (team-visible), private (this ' +
+        'machine, this project), or global (personal, cross-project); omitted, it ' +
+        'follows the session default. Returns the minted id (the key to move it) ' +
+        'and the short alias a human reads.',
+      inputSchema: {
+        title: z.string().min(1).describe('What the task is.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Where the task lands; overrides the session default.'),
+      },
+    },
+    async ({ title, scope }) => {
+      const active = await ensureSession();
+      const result = runCreateTask(active, { title, ...(scope !== undefined ? { scope } : {}) });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `Created task ${result.alias} (${result.id})` }],
       };
     },
   );

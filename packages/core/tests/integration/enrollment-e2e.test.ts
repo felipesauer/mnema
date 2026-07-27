@@ -85,6 +85,19 @@ function reverseSigOf(anchor: string, machine: Machine): string {
   );
 }
 
+/**
+ * Commits B's public key into A's chain, without B's tail — the state right
+ * after an enroll handshake, before B has written anything. The reverse
+ * signature is provable only against the committed key it names, so this is the
+ * material the handshake carries.
+ */
+function commitPublicKeyOfB(): void {
+  cpSync(
+    join(b.root, 'keys', `${b.fingerprint}.pub`),
+    join(a.root, 'keys', `${b.fingerprint}.pub`),
+  );
+}
+
 /** Copies B's tail + committed public key into A's chain (an offline merge). */
 function mergeIntoA(): void {
   cpSync(join(b.root, 'tails'), join(a.root, 'tails'), { recursive: true });
@@ -126,6 +139,27 @@ describe('enrollment e2e — a distinct second key joins one anchor', () => {
     expect(r.ok).toBe(true);
     // Two tails (A and B), one identity.
     expect(r.tails).toHaveLength(2);
+  });
+});
+
+describe('enrollment e2e — a legitimate enrollment proves itself at once', () => {
+  it('leaves no residual window: after enrolling, the chain is fully signed', () => {
+    const ctxA = ctxOf(a);
+    const anchor = foundIdentity(ctxA).anchor;
+    commitPublicKeyOfB();
+    b.writer.recordAnchor(anchor);
+
+    enrollKey(ctxA, { newFp: b.fingerprint, reverseSig: reverseSigOf(anchor, b) });
+
+    // The enrollment checkpoints itself, so both of A's events (the founding and
+    // the enrollment) are signature-covered the moment the operation returns.
+    // Without that, a membership change a machine made honestly would sit in the
+    // keyless residual window and read as unproven work — the same signal a
+    // truncation leaves.
+    const r = verify(a.root);
+    expect(r.ok).toBe(true);
+    expect(r.fullySigned).toBe(true);
+    expect(r.uncheckpointedEvents).toBe(0);
   });
 });
 

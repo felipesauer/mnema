@@ -195,6 +195,70 @@ describe('linkKnowledge — the relational operation', () => {
   });
 });
 
+describe('knowledge facts — the authority invariant refuses at the door', () => {
+  let chainRoot: string;
+
+  beforeEach(() => {
+    chainRoot = mkdtempSync(join(tmpdir(), 'mnema-authority-'));
+  });
+
+  afterEach(() => {
+    rmSync(chainRoot, { recursive: true, force: true });
+  });
+
+  function ctxFor(root: string): WriteContext {
+    const writer = openChainForWriting(root, { keyRoot: root });
+    return { writer, layout: { root }, upcasters };
+  }
+
+  /**
+   * A fact whose executing agent IS the authorizing anchor has nothing outside
+   * the agent behind it. The verifier applies that rule to every kind, so a fact
+   * like this entering the chain would be a permanent break in an append-only log
+   * — there is no later repair. The write must refuse instead, and refuse the
+   * same way a transition does.
+   */
+  it('refuses all four facts when the executing agent IS the authorizing anchor', () => {
+    const ctx = ctxFor(chainRoot);
+    const which = ctx.writer.anchor;
+
+    const refusals = [
+      captureMemory(ctx, { content: 'x', which }),
+      recordObservation(ctx, { about: 'e', topic: 't', text: 'x', which }),
+      recordHandoff(ctx, { task: 'e', fromAgent: 'a', toAgent: 'b', which }),
+      linkKnowledge(ctx, { subject: 's', target: 't', rel: 'relates_to', which }),
+    ];
+
+    for (const refusal of refusals) {
+      expect(refusal.ok).toBe(false);
+      if (!refusal.ok) expect(refusal.code).toBe('WHO_IS_WHICH');
+    }
+  });
+
+  it('appends NOTHING when it refuses — not even the founding', () => {
+    const ctx = ctxFor(chainRoot);
+    captureMemory(ctx, { content: 'x', which: ctx.writer.anchor });
+    // The check runs before the id is minted and before the anchor is founded, so
+    // a refused capture leaves no trace at all in the chain.
+    expect(orderedEvents({ root: chainRoot }, upcasters)).toEqual([]);
+  });
+
+  it('compares in canonical form: padding cannot smuggle the anchor past the check', () => {
+    const ctx = ctxFor(chainRoot);
+    // The chain trims and NFC-normalizes what it stores, so an agent that differs
+    // from the anchor only by whitespace would become byte-identical to it in the
+    // signed event. Comparing the canonical form is what forecloses that.
+    const padded = captureMemory(ctx, { content: 'x', which: `  ${ctx.writer.anchor}  ` });
+    expect(padded).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+  });
+
+  it('does not refuse an agent that merely resembles the anchor', () => {
+    const ctx = ctxFor(chainRoot);
+    const captured = captureMemory(ctx, { content: 'x', which: `${ctx.writer.anchor}-agent` });
+    expect(captured.ok).toBe(true);
+  });
+});
+
 describe('captureMemory — routing across the three trees (PoC)', () => {
   let sandbox: string;
   let trees: ResolvedTrees;

@@ -82,7 +82,7 @@ export function runLink(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  linkKnowledge(
+  const recorded = linkKnowledge(
     {
       writer,
       layout: { root: chainRootForScope(trees, scope) as string },
@@ -90,6 +90,9 @@ export function runLink(
     },
     { subject: input.subject, target: input.target, rel: input.rel },
   );
+  if (!recorded.ok) {
+    return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
+  }
 
   // Checkpoint so the new link is signature-covered at once.
   writer.checkpoint();

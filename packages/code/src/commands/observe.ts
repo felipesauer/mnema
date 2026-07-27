@@ -87,6 +87,9 @@ export function runObserve(
     },
     { about: input.about, topic: input.topic, text: input.text },
   );
+  if (!recorded.ok) {
+    return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
+  }
 
   // Checkpoint so the new observation is signature-covered at once.
   writer.checkpoint();
