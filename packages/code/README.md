@@ -111,6 +111,27 @@ mnema verify
 `mnema verify` exits non-zero when the chain is broken, so it drops into CI as a
 check with no extra wiring.
 
+### When an agent is the one running the CLI
+
+Omitting the agent says a **person** acted, and that is what the record then
+asserts. So an agent driving the CLI — a script, a CI step, an agent with no MCP
+server — names itself with `--which`, on every verb that writes:
+
+```sh
+mnema task "Regenerate the fixtures" --which release-bot
+mnema task move complete "$TASK" --note "fixtures regenerated" --which release-bot
+```
+
+`mnema accountability` then separates its work from yours instead of crediting
+both to you. Two things follow from declaring it: a *birth* an agent makes goes to
+this machine's private tree by default (`--scope` still overrides), the same rule
+the MCP server applies to the agent it serves; and naming your own identity as the
+agent is refused — whoever authorized the work cannot also be who executed it.
+
+Nothing verifies the name: `--which` is a declaration, exactly as the MCP server's
+is the client's own announced name. What is *proven* is the signature — the
+identity that authorized the write, which is derived from the key and never typed.
+
 ### Bringing a second machine into your identity
 
 Your identity is one anchor with several keys, and each machine holds its own key

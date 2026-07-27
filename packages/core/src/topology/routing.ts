@@ -23,6 +23,7 @@
  */
 
 import { type ChainWriter, ensureTree, openChainForWriting } from '@mnema/chain';
+import { canonicalIdentity } from '../identity/who.js';
 import type { ResolvedTrees } from './resolve.js';
 
 /** The three trees a write can be routed to. */
@@ -44,10 +45,18 @@ export interface Origin {
  * default is inferred from origin — an agent capture (a `which` is present) goes
  * PRIVATE, a human capture goes PUBLIC. There is no arbitrary tie: the two
  * inputs have a fixed precedence.
+ *
+ * "Present" is decided by {@link canonicalIdentity}, the same rule the write
+ * operations apply to the `which` they RECORD. A blank or uncanonicalizable value
+ * is no agent at all — so it cannot route a capture to the private tree while the
+ * event it produces carries no agent, which is the one way the scope and the
+ * envelope could disagree about who acted. Surfaces forward what the caller typed
+ * (a `--which ""`, a client announcing an empty name) without pre-cleaning it, so
+ * the rule has to hold here rather than at each of them.
  */
 export function resolveScope(origin: Origin, override?: Scope): Scope {
   if (override !== undefined) return override;
-  return origin.which !== undefined ? 'private' : 'public';
+  return canonicalIdentity(origin.which) !== undefined ? 'private' : 'public';
 }
 
 /** Thrown when a scope names a tree that does not exist in this context. */

@@ -22,6 +22,12 @@
  * The task is named by its id (the value `task` create returned), not its alias:
  * an alias is a non-reversible display hash, so there is no alias→id lookup to
  * do here — resolving one would be domain logic this surface must not hold.
+ *
+ * A move carries the executing agent (`which`) when the caller declares one, so a
+ * move an agent made is attributable to it. Unlike a birth, `which` has NO say in
+ * where the event lands: the move follows the entity to the tree it was born in,
+ * so there is no scope default for an agent to shift. The gate still refuses a
+ * `which` that IS the identity authorizing the move.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -90,7 +96,7 @@ export type TaskTransitionRefused =
  */
 export function runTaskTransition(
   ctx: TaskTransitionContext,
-  input: { id: string; action: string; proof?: TaskTransitionProof },
+  input: { id: string; action: string; proof?: TaskTransitionProof; which?: string },
 ): TaskTransitioned | TaskTransitionRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -117,6 +123,7 @@ export function runTaskTransition(
       id: input.id,
       action: input.action,
       ...(fields !== undefined ? { fields } : {}),
+      ...(input.which !== undefined ? { which: input.which } : {}),
     },
   );
   if (!moved.ok) {

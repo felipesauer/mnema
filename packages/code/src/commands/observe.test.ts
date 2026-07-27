@@ -128,3 +128,66 @@ describe('mnema observe', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 });
+
+describe('mnema observe --which — the agent that executed', () => {
+  /** Every `observation.recorded` in a tree, with the agent each one names. */
+  function observationsIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'observation.recorded')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runObserve(
+      { cwd: repo, env },
+      { about: 'T', topic: 'flake', text: 'fails on retry', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      expect(observationsIn(root).find((e) => e.subject === result.id)?.which).toBe('ci-runner');
+    }
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runObserve(
+      { cwd: repo, env },
+      { about: 'T', topic: 'flake', text: 'noticed by a script', which: 'ci-runner' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      expect(observationsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
+      expect(observationsOf(trees.projectPublic as string).has(result.id)).toBe(false);
+    }
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, recording nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const trees = resolveTrees(repo, env);
+    const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(
+      (root): root is string => root !== undefined,
+    );
+    const before = roots.reduce((n, root) => n + observationsIn(root).length, 0);
+
+    const result = runObserve(
+      { cwd: repo, env },
+      { about: 'T', topic: 't', text: 'self-authorized', which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    expect(roots.reduce((n, root) => n + observationsIn(root).length, 0)).toBe(before);
+  });
+});

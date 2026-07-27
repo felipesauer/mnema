@@ -201,3 +201,68 @@ describe('mnema task move — the transition follows the entity (coherence, S2)'
     expect(publicEvents).toEqual([]);
   });
 });
+
+describe('mnema task move --which — the agent that executed the move', () => {
+  /**
+   * The agent each `task.transitioned` on a task names, in chain order. The FIRST
+   * entry is always the birth transition (`task` create appends the pair
+   * created + `from: null` → DRAFT), so a human's create then an agent's move
+   * reads as `[undefined, 'ci-runner']` — the two are attributable apart.
+   */
+  function agentsOf(root: string, id: string): (string | undefined)[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'task.transitioned' && e.subject === id)
+      .map((e) => e.which);
+  }
+
+  it('records the declared agent on the transition, leaving the human birth alone', () => {
+    const { repo, env, id } = projectWithTask();
+
+    const moved = runTaskTransition(
+      { cwd: repo, env },
+      { id, action: 'submit', which: 'ci-runner' },
+    );
+    expect(moved.ok).toBe(true);
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, id)).toEqual([undefined, 'ci-runner']);
+  });
+
+  it('a move with an agent still follows the entity — `which` never re-routes it', () => {
+    // A birth reads `which` to pick a tree; a move does not. A task born PUBLIC
+    // stays public when an agent moves it, even though an agent's BIRTH would
+    // have defaulted private.
+    const { repo, env, id } = projectWithTask();
+
+    const moved = runTaskTransition(
+      { cwd: repo, env },
+      { id, action: 'submit', which: 'ci-runner' },
+    );
+    expect(moved.ok).toBe(true);
+    const trees = resolveTrees(repo, env);
+    expect(agentsOf(trees.projectPublic as string, id)).toEqual([undefined, 'ci-runner']);
+    expect(agentsOf(trees.projectPrivate as string, id)).toEqual([]);
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, moving nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+    const created = runTask({ cwd: repo, env }, { title: 'a task' });
+    if (!created.ok) throw new Error('setup: create refused');
+
+    const result = runTaskTransition(
+      { cwd: repo, env },
+      { id: created.id, action: 'submit', which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    // Only the birth transition is there — the move appended nothing...
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(agentsOf(root, created.id)).toEqual([undefined]);
+    // ...and the task did not move.
+    expect(stateOf(repo, env, created.id)).toBe('DRAFT');
+  });
+});

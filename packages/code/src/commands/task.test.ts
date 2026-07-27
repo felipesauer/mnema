@@ -152,3 +152,105 @@ describe('mnema task', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 });
+
+describe('mnema task --which — the agent that executed', () => {
+  /** Every `task.created` in a tree, with the agent each one names. */
+  function creationsIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'task.created')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask(
+      { cwd: repo, env },
+      { title: 'work an agent did', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      const created = creationsIn(root).find((e) => e.subject === result.id);
+      expect(created?.which).toBe('ci-runner');
+    }
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask({ cwd: repo, env }, { title: 'an agent capture', which: 'ci-runner' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      // Private, the same default the MCP session applies to an agent's write...
+      expect(creationsIn(trees.projectPrivate as string).some((e) => e.subject === result.id)).toBe(
+        true,
+      );
+      // ...and the team's public tree stays clean.
+      expect(creationsIn(trees.projectPublic as string).some((e) => e.subject === result.id)).toBe(
+        false,
+      );
+    }
+  });
+
+  it('an explicit scope still wins over the agent default', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask(
+      { cwd: repo, env },
+      { title: 'an agent capture the team should see', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      expect(creationsIn(trees.projectPublic as string).some((e) => e.subject === result.id)).toBe(
+        true,
+      );
+    }
+  });
+
+  it('an agent named only by whitespace is no agent: public, and nothing stamped', () => {
+    // The core reads a blank identity as absent, so the scope default must read it
+    // the same way — otherwise the capture goes private on the strength of a value
+    // the event will not carry.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runTask({ cwd: repo, env }, { title: 'not an agent', which: '   ' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      const created = creationsIn(root).find((e) => e.subject === result.id);
+      expect(created).toBeDefined();
+      expect(created?.which).toBeUndefined();
+    }
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, creating nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const before = countCreations(repo, env);
+    const result = runTask({ cwd: repo, env }, { title: 'self-authorized', which: anchor });
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    // Nothing was born, in any tree — the refusal is at the door.
+    expect(countCreations(repo, env)).toBe(before);
+  });
+
+  /** How many tasks exist across every tree this env can see. */
+  function countCreations(repo: string, env: DiscoveryEnv): number {
+    const trees = resolveTrees(repo, env);
+    return [trees.projectPublic, trees.projectPrivate, trees.global]
+      .filter((root): root is string => root !== undefined)
+      .reduce((total, root) => total + creationsIn(root).length, 0);
+  }
+});

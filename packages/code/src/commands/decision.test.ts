@@ -135,3 +135,66 @@ describe('mnema decision', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 });
+
+describe('mnema decision --which — the agent that executed', () => {
+  /** Every `decision.recorded` in a tree, with the agent each one names. */
+  function recordsIn(root: string): { subject: string | undefined; which?: string }[] {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'decision.recorded')
+      .map((e) => ({ subject: e.subject, ...(e.which !== undefined ? { which: e.which } : {}) }));
+  }
+
+  it('records the declared agent on the fact', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runDecision(
+      { cwd: repo, env },
+      { title: 'use PKCE', rationale: 'no client secret', which: 'ci-runner', scope: 'public' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const root = resolveTrees(repo, env).projectPublic as string;
+      expect(recordsIn(root).find((e) => e.subject === result.id)?.which).toBe('ci-runner');
+    }
+  });
+
+  it('a declared agent shifts the OMITTED scope default to private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runDecision(
+      { cwd: repo, env },
+      { title: 'an agent decision', rationale: 'why', which: 'ci-runner' },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const trees = resolveTrees(repo, env);
+      expect(decisionsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
+      expect(decisionsOf(trees.projectPublic as string).has(result.id)).toBe(false);
+    }
+  });
+
+  it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, recording nothing', () => {
+    const { repo, env } = setup();
+    const { anchor } = runInit({ cwd: repo, env });
+
+    const trees = resolveTrees(repo, env);
+    const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(
+      (root): root is string => root !== undefined,
+    );
+    const before = roots.reduce((n, root) => n + recordsIn(root).length, 0);
+
+    const result = runDecision(
+      { cwd: repo, env },
+      { title: 'self-authorized', rationale: 'why', which: anchor },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: 'REFUSED',
+      code: 'WHO_IS_WHICH',
+      message: 'the authorizing human and the executing agent must be different identities',
+    });
+    expect(roots.reduce((n, root) => n + recordsIn(root).length, 0)).toBe(before);
+  });
+});

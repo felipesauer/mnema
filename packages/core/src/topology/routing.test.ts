@@ -32,6 +32,23 @@ describe('resolveScope — the L4 default-by-origin cascade', () => {
     expect(resolveScope({}, 'private')).toBe('private');
     expect(resolveScope({}, 'global')).toBe('global');
   });
+
+  it('reads a blank `which` as NO agent — the same reading the event records', () => {
+    // A caller that typed `--which ""` (or a client announcing an empty name)
+    // named no agent: the operations drop it from the envelope, so routing must
+    // not send the capture private on the strength of a value that will not be
+    // recorded. Otherwise the tree it lands in and the fact it produces disagree
+    // about whether an agent acted.
+    expect(resolveScope({ which: '' })).toBe('public');
+    expect(resolveScope({ which: '   ' })).toBe('public');
+    expect(resolveScope({ which: '\t\n' })).toBe('public');
+  });
+
+  it('reads a whitespace-padded agent as that agent (trimmed, not discarded)', () => {
+    // The canonical form of "  codex  " IS an identity, so it routes private —
+    // the padding is an accident, not a way to opt out of the agent default.
+    expect(resolveScope({ which: '  codex  ' })).toBe('private');
+  });
 });
 
 describe('chainRootForScope', () => {

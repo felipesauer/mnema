@@ -15,9 +15,11 @@
  *
  * The birth scope is a per-action choice, exactly as for a task/decision/skill:
  * an explicit `scope` wins; when omitted, the routing rule's default stands
- * (public, a deliberate human capture). A human capture on the CLI carries no
- * `which` — that is what the scope resolver reads to keep a deliberate capture
- * public rather than defaulting it private the way an agent's would.
+ * (public, a deliberate human capture). A human capture carries no `which` — that
+ * is what the scope resolver reads to keep a deliberate capture public rather than
+ * defaulting it private the way an agent's would. An agent operating the CLI
+ * DECLARES itself (`which`), and then both halves follow: the capture defaults
+ * private, and the fact names the agent that made it.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -65,13 +67,16 @@ export type MemoryRefused =
  * refuses `NO_PROJECT` rather than falling through. The GLOBAL scope needs none,
  * so `--scope global` works anywhere; the guard is on the RESOLVED scope, not the
  * flag.
+ *
+ * A declared `which` (an agent operating the CLI) shifts the omitted default to
+ * private and is recorded on the event; an explicit `scope` still wins over it.
  */
 export function runMemory(
   ctx: MemoryContext,
-  input: { content: string; scope?: Scope },
+  input: { content: string; scope?: Scope; which?: string },
 ): MemoryCaptured | MemoryRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({}, input.scope);
+  const scope = resolveScope({ which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -86,7 +91,7 @@ export function runMemory(
       layout: { root: chainRootForScope(trees, scope) as string },
       upcasters: catalogUpcasters(),
     },
-    { content: input.content },
+    { content: input.content, ...(input.which !== undefined ? { which: input.which } : {}) },
   );
   if (!captured.ok) {
     return { ok: false, reason: 'REFUSED', code: captured.code, message: captured.message };
