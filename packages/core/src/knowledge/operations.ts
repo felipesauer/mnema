@@ -50,7 +50,7 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { systemClock } from '../workflow/clock.js';
-import { ensureFounded } from '../workflow/identity-operations.js';
+import { authorizingAnchor, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 
 /** A memory was captured: the fact was appended. */
@@ -83,7 +83,7 @@ export function captureMemory(
   ctx: WriteContext,
   input: CaptureInput,
 ): CaptureOk | SelfAuthorizedErr {
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -149,7 +149,7 @@ export function recordObservation(
   ctx: WriteContext,
   input: ObservationInput,
 ): ObservationOk | SelfAuthorizedErr {
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -214,7 +214,7 @@ export function recordHandoff(
   ctx: WriteContext,
   input: HandoffInput,
 ): HandoffOk | SelfAuthorizedErr {
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -271,7 +271,7 @@ export interface LinkInput {
  * it here would break the very cross-tree relations the link exists to record.
  */
 export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | SelfAuthorizedErr {
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
