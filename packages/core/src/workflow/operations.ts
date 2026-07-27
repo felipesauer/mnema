@@ -38,7 +38,7 @@ import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
-import { ensureFounded } from './identity-operations.js';
+import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import { INITIAL_STATE } from './states.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
@@ -117,10 +117,11 @@ export function transitionTask(
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
 
-  // `who` is the writer's anchor, derived from its key, never supplied — a
-  // caller cannot forge who authorized the move. The gate still checks it
-  // against `which` so an agent cannot pose as the authorizer.
-  const who = ctx.writer.anchor;
+  // `who` is this installation's authorizing anchor — its own key's, or the
+  // identity the record proves that key joined — never supplied, so a caller
+  // cannot forge who authorized the move. The gate still checks it against
+  // `which` so an agent cannot pose as the authorizer.
+  const who = authorizingAnchor(ctx);
   const verdict = gate({
     from: current,
     action: input.action,
@@ -166,12 +167,12 @@ export function transitionTask(
  * `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
-  // `who` is derived from the writer's key, so it is always a real anchor — the
-  // MISSING_WHO path a typed-in name could hit no longer exists. The one
+  // `who` is derived from local material and the record, so it is always a real
+  // anchor — the MISSING_WHO path a typed-in name could hit no longer exists. The one
   // authority check that remains is that the executing agent is not that same
   // identity (an anchor never equals an agent name, but the check is cheap and
   // states the invariant explicitly).
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;

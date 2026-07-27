@@ -24,7 +24,12 @@ import {
   registerProject,
   resolveTrees,
 } from '@mnema/core';
-import { type EstablishedIdentity, establishIdentity, openTreeForWriting } from '@mnema/core/write';
+import {
+  authorizingAnchor,
+  type EstablishedIdentity,
+  establishIdentity,
+  openTreeForWriting,
+} from '@mnema/core/write';
 
 /** What init needs from its environment — injected so it is testable. */
 export interface InitContext {
@@ -73,9 +78,23 @@ export function runInit(ctx: InitContext): InitResult {
 
   if (alreadyHere) {
     // Re-assert the index entry: the tree is real, the cache may have lost it,
-    // and registering is idempotent.
+    // and registering is idempotent. Done BEFORE the anchor is settled, so a tree
+    // whose identity cannot be answered still gets its index entry back.
     registerProject(root, ctx.env);
-    return { created: false, root, anchor: writer.anchor };
+    // The anchor this machine WILL write as here — not the one its key derives.
+    // On a machine another has enrolled, those differ until its first write in
+    // this tree: reading the derived one would report an identity that the very
+    // next write corrects, and this is the command a person runs to check that
+    // joining worked.
+    return {
+      created: false,
+      root,
+      anchor: authorizingAnchor({
+        writer,
+        layout: { root: chainRootForScope(trees, 'public') as string },
+        upcasters: catalogUpcasters(),
+      }),
+    };
   }
 
   const identity = establishIdentity(

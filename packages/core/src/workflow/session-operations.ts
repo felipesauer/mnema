@@ -42,7 +42,7 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { systemClock } from './clock.js';
-import { ensureFounded } from './identity-operations.js';
+import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
 /** A run was opened: the `run.started` fact was appended. */
@@ -99,11 +99,11 @@ export interface EndRunInput {
  * has no prior state to judge.
  */
 export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | StartRunError {
-  // `who` is derived from the writer's key, always a real anchor. The executing
+  // `who` is derived from local material and the record, always a real anchor. The executing
   // agent — which the catalog carries in the payload — is also the envelope's
   // `which`, so it is checked against `who` in canonical form: an agent must not
   // be the anchor that authorizes its own session.
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.agent);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -161,7 +161,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
     return { ok: false, code: 'ALREADY_ENDED', message: `run "${input.run}" is already ended` };
   }
 
-  const who = ctx.writer.anchor;
+  const who = authorizingAnchor(ctx);
 
   // Found this installation's anchor before the fact, so the close is signed by
   // a key valid for its anchor at verify. A no-op once founded.

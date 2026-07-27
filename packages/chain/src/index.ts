@@ -54,12 +54,14 @@ export {
   generateKeyPair,
   type KeyPair,
   keyPairFromPrivatePem,
+  type PublicHalf,
   publicKeyFromPem,
   publicKeyToPem,
   sign,
   verify as verifySignature,
 } from './chain/keys.js';
 export {
+  committedPublicKey,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,

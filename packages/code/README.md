@@ -46,6 +46,7 @@ surfaces never upgrade that verdict into a stronger claim.
 | **Nothing was deleted** | Not proven locally. A hash chain shows what changed, never what was removed. Committing the record to git is what preserves the files a deletion would take with it. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
+| **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
 
 The honest summary: **local cryptography covers alteration; an external witness
 covers omission and ties the record to an identity.** No such witness is wired
@@ -109,6 +110,55 @@ mnema verify
 
 `mnema verify` exits non-zero when the chain is broken, so it drops into CI as a
 check with no extra wiring.
+
+### Bringing a second machine into your identity
+
+Your identity is one anchor with several keys, and each machine holds its own key
+— the private half never travels. So a laptop joining your desktop's identity is
+a handshake in three steps, run on the machine each step belongs to:
+
+```sh
+# On the NEW machine, in a clone of the repo (or anywhere: this touches no
+# record). It creates this machine's key if it has none, and prints a request.
+mnema key request --anchor mnid:c0fc3c713f09a43384ac08f7d91fca43…
+#> Created this machine's key 8f21ab…
+#>   to join mnid:c0fc3c713f09a43384ac08f7d91fca43…
+#>
+#> mnema-key-request:1:eyJwdWIiOiItLS0tLUJFR0lO…
+
+# On a machine ALREADY in that identity, inside the project. Paste the line.
+mnema key enroll 'mnema-key-request:1:eyJwdWIiOiItLS0tLUJFR0lO…'
+#> Enrolled key 8f21ab…
+#>   into mnid:c0fc3c713f09a43384ac08f7d91fca43…
+#>   Commit and share the record: the other machine joins by reading it.
+
+# Commit and push, so the new machine can read the vouch. Then, back on it:
+mnema memory "first note from the laptop"
+#> Captured memory 019fa4ef-1425-72f9-9058-0cd55236376f
+```
+
+That last write is where the new machine settles which identity it serves here:
+it reads the vouch out of the record and speaks as that anchor from its first
+fact onward. Nothing was decided by asking — only by being vouched for.
+
+The request is not a secret: it is a public key plus a signature over public
+values, so it is safe to paste into a chat or a ticket. It proves consent to join
+**one** identity and is worthless to anyone who is not already a member of it —
+only a member's vouch turns it into a fact. And a machine never admits itself:
+that is why the middle step runs somewhere else.
+
+`mnema accountability` is the check that it worked — one author, not two.
+
+To take a key back out (a stolen laptop, a leaked backup copy):
+
+```sh
+mnema key revoke 8f21ab… --reason "laptop stolen"
+```
+
+Retirement is **forward-only**: what that key signed while it was a member stays
+valid, because a rotation should not make past work unattributable. The identity's
+last key cannot be retired — it would leave an identity unable to sign anything
+again, including its own repair — so bring the replacement in first.
 
 ### As an MCP server
 

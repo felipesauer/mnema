@@ -4,15 +4,17 @@
  * These are the low-level mechanism behind mnema's identity — one anchor with N
  * keys enrolled by signature. They emit the enrollment facts (`identity.founded`
  * / `key.enrolled` / `key.revoked`) that the chain verifier folds to decide WHO
- * a signer speaks for. The between-machines flow that produces the material a
- * `key.enrolled` needs — the new machine's fingerprint and its reverse signature
- * — is a surface concern (a future `mnema enroll`); here a caller supplies that
- * material directly, so the mechanism is testable and complete on its own.
+ * a signer speaks for. The material a `key.enrolled` needs — the joining
+ * machine's public key and its reverse signature — is produced elsewhere (the
+ * handshake) and supplied here, so the mechanism is testable and complete on its
+ * own.
  *
  * Founding is what makes the single identity rule hold for a fresh installation:
  * an event is authentic only if its signer is a key valid for its anchor, so a
  * machine's first fact must be its founding. `ensureFounded` seeds that once,
- * before the first gated write, so a caller never has to remember to.
+ * before the first gated write, so a caller never has to remember to — and it
+ * founds only when the record proves no membership, because a key another machine
+ * already enrolled must ADOPT that identity instead of minting a second one.
  *
  * On top of that mechanism sits one policy, `establishIdentity`: a tree that is
  * deliberately created is born knowing the identity's WHOLE key roster, not just
@@ -24,6 +26,7 @@
 import {
   type BackupKey,
   type CatalogEvent,
+  committedPublicKey,
   ensureBackupKey,
   identityFounded,
   keyEnrolled,
@@ -32,6 +35,7 @@ import {
   materializePublicKey,
   type RegistrationFault,
 } from '@mnema/chain';
+import { IdentityUnavailableError, type Membership, membershipIn } from '../identity/membership.js';
 import { orderedEvents } from '../projections/order.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
@@ -44,25 +48,119 @@ export interface IdentityOk {
 }
 
 /**
- * Founds this installation's anchor if it has not recorded one yet: records the
- * anchor locally and appends the `identity.founded` that enrolls its key for its
- * own anchor. A no-op once an anchor is recorded — the installation already
- * founded or enrolled into one — so it is safe to call before every write.
+ * Settles which anchor this installation serves in a tree, WITHOUT writing
+ * anything.
+ *
+ * With an anchor already recorded locally there is nothing to settle — that file
+ * is the decision, made once. With none, the RECORD is asked first: a key another
+ * machine already enrolled belongs to that machine's identity, and the tree
+ * carries the proof. Only when the record proves nothing does the key fall back
+ * to the anchor it derives from itself — the anchor it will found.
+ *
+ * Asking the record is what stops the trap this closes: a key that is already a
+ * member, writing into a tree where it has not yet recorded an anchor (a fresh
+ * clone of the team's repo), would otherwise derive its OWN anchor and found a
+ * SECOND identity in a record the team shares — one person appearing as two
+ * strangers, appended, unappendable-back.
+ *
+ * When the record proves the key belongs to more than one identity, or proves the
+ * identity RETIRED it, there is no honest answer and this throws
+ * {@link IdentityUnavailableError} instead of picking one. Choosing would decide
+ * whose record this is on the person's behalf; writing under a retired key would
+ * leave the whole tree failing verification.
+ */
+export function decideAnchor(ctx: WriteContext): AnchorDecision {
+  if (ctx.writer.hasAnchor) return { anchor: ctx.writer.anchor, source: 'recorded' };
+
+  // The key's own public half as the TREE carries it — materialized when this
+  // writer opened, or by the member that enrolled it. Reading it from the record
+  // rather than the key root keeps the decision to material an anonymous clone
+  // could check, and binds the consent signature to the key it names. A tree that
+  // carries no public half for this key is a tree that never admitted it.
+  const key = committedPublicKey(ctx.layout, ctx.writer.signerFingerprint);
+  if (key !== null) {
+    const proven = membershipIn({ tree: ctx.layout.root, upcasters: ctx.upcasters }, key);
+    if (proven.ok) {
+      return { anchor: proven.anchor, source: 'adopted', membership: proven.membership };
+    }
+    // NOT_A_MEMBER is the ordinary shape of a first write — a fresh installation,
+    // a new project — so it falls through to founding. The other two are
+    // unanswerable, and an unanswerable identity does not write.
+    if (proven.code !== 'NOT_A_MEMBER') {
+      throw new IdentityUnavailableError(proven.code, proven.message);
+    }
+  }
+  return { anchor: ctx.writer.anchor, source: 'unfounded' };
+}
+
+/**
+ * WHO this installation authorizes as in a tree: the value every event's `who`
+ * must carry, decided without writing anything.
+ *
+ * Every write operation reads this before it builds its event, and
+ * {@link ensureFounded} settles the same question on the way to appending it —
+ * so both go through {@link decideAnchor} and cannot disagree. They once could:
+ * reading the writer's anchor directly was harmless while the only answer was
+ * "the anchor this key derives", because that is what founding recorded anyway.
+ * With adoption it stopped being harmless — a key another machine had enrolled
+ * would build its FIRST event under its own derived anchor and then record the
+ * adopted one, leaving exactly one event speaking for an identity that never
+ * existed. One function, both moments.
+ *
+ * On the hot path it costs what reading the writer's anchor cost: the recorded
+ * anchor answers immediately, and the record is only consulted while no anchor is
+ * recorded yet.
+ */
+export function authorizingAnchor(ctx: WriteContext): string {
+  return decideAnchor(ctx).anchor;
+}
+
+/** Where the anchor an installation serves in one tree came from. */
+export type AnchorDecision =
+  /** Already recorded locally: decided by an earlier founding, adoption, or restore. */
+  | { readonly source: 'recorded'; readonly anchor: string }
+  /** The record proves this key a member of that anchor; nothing needs founding. */
+  | { readonly source: 'adopted'; readonly anchor: string; readonly membership: Membership }
+  /** The record proves no membership: the key's own anchor, not yet founded here. */
+  | { readonly source: 'unfounded'; readonly anchor: string };
+
+/**
+ * Makes sure this installation serves an anchor in this tree before its first
+ * fact: records which anchor it is, and appends the `identity.founded` when the
+ * anchor is its OWN to found. A no-op once an anchor is recorded, so it is safe
+ * to call before every write.
+ *
+ * Two paths reach a recorded anchor, and only one of them founds. A key the
+ * record already proves a member ADOPTS that identity — it must not found,
+ * because an anchor can only be founded by the key it derives from, and appending
+ * a founding for its own anchor is exactly the second identity this avoids. A key
+ * the record knows nothing about founds its own, as a first installation does.
+ *
+ * The record is read ONLY on the path where no anchor is recorded yet. Every
+ * gated write calls this, so consulting the chain unconditionally would put a
+ * full replay on the hot path; behind that check the cost is paid once per tree,
+ * and from then on the recorded anchor answers. That is why the read lives inside
+ * the branch and not before it.
  *
  * Returns the anchor this installation serves either way.
  */
 export function ensureFounded(ctx: WriteContext): string {
-  const anchor = ctx.writer.anchor;
-  if (ctx.writer.hasAnchor) return anchor;
+  if (ctx.writer.hasAnchor) return ctx.writer.anchor;
+
+  const decided = decideAnchor(ctx);
+  ctx.writer.recordAnchor(decided.anchor);
+  // An adopted identity is already on the record, vouched for by a member: there
+  // is nothing to found, and founding would mint a second identity.
+  if (decided.source === 'adopted') return decided.anchor;
+
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.recordAnchor(anchor);
   ctx.writer.append(
     identityFounded(
-      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+      { at, who: decided.anchor, signerFp: ctx.writer.signerFingerprint, subject: decided.anchor },
       { foundingFp: ctx.writer.signerFingerprint },
     ),
   );
-  return anchor;
+  return decided.anchor;
 }
 
 /**

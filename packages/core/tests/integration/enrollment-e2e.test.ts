@@ -8,9 +8,10 @@
  * identity, several distinct keys, each proven by signature, with prospective
  * revocation.
  *
- * The between-machines UX (how machine B hands its fingerprint and reverse
- * signature to A) is a surface concern; here the test assembles that material
- * directly, the same way the mechanism is meant to be driven.
+ * The between-machines HANDSHAKE (how machine B's public key and reverse signature
+ * reach A) is exercised on its own, over the operations that produce and read it;
+ * here the test assembles that material directly, so these cases pin the mechanism
+ * without depending on the shape the request travels in.
  */
 
 import { cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';

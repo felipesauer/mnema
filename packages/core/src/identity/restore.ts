@@ -40,17 +40,14 @@
 
 import { readFileSync } from 'node:fs';
 import {
-  deriveAnchor,
-  enrollmentMessage,
   type KeyPair,
   keyPairFromPrivatePem,
   listPrivateKeyFingerprints,
   persistKeyPair,
   type UpcasterRegistry,
-  verifySignature,
   writeAnchor,
 } from '@mnema/chain';
-import { orderedEvents } from '../projections/order.js';
+import { type Membership, type MembershipRefusalCode, membershipIn } from './membership.js';
 
 /** What restoring a key needs. Paths are absolute — the surface resolves them. */
 export interface RestoreInput {
@@ -63,12 +60,12 @@ export interface RestoreInput {
   readonly upcasters: UpcasterRegistry;
 }
 
-/** How the tree proves the key belongs to the anchor it adopted. */
-export type RestoredMembership =
-  /** The key founded this anchor — it is the identity's first key. */
-  | 'founded'
-  /** A member vouched for the key, and the key's own signature proves it consented. */
-  | 'enrolled';
+/**
+ * How the tree proves the key belongs to the anchor it adopted — the same
+ * verdict the shared membership reading produces, because a restore and a first
+ * write must never disagree about who a key is.
+ */
+export type RestoredMembership = Membership;
 
 /** The key was installed and now speaks for the anchor the tree proves it joined. */
 export interface RestoreOk {
@@ -92,12 +89,8 @@ export type RestoreErrorCode =
   | 'UNREADABLE_KEY'
   /** A private key of another fingerprint is already installed at the key root. */
   | 'KEY_PRESENT'
-  /** Nothing in that tree proves this key belongs to any identity. */
-  | 'NOT_A_MEMBER'
-  /** The tree proves the key belonged to an identity and was retired from it. */
-  | 'REVOKED_KEY'
-  /** The tree proves membership in more than one identity — which one is the person's call. */
-  | 'AMBIGUOUS_MEMBERSHIP';
+  /** The tree does not prove exactly one identity for this key (see the reading). */
+  | MembershipRefusalCode;
 
 /** The restore was refused; nothing was written. */
 export interface RestoreErr {
@@ -157,7 +150,7 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
     };
   }
 
-  const found = membershipIn(input, keyPair);
+  const found = membershipIn({ tree: input.tree, upcasters: input.upcasters }, keyPair);
   if (!found.ok) return found;
 
   writeAnchor({ root: input.tree }, keyPair.fingerprint, found.anchor);
@@ -178,110 +171,5 @@ function readKeyPair(path: string): KeyPair | null {
     return keyPairFromPrivatePem(readFileSync(path, 'utf-8'));
   } catch {
     return null;
-  }
-}
-
-/**
- * The identity a tree proves this key currently belongs to.
- *
- * The facts are folded in the chain's own order, so a key enrolled, revoked, and
- * enrolled again ends a member — the order of the record decides, exactly as it
- * does for the verifier. A revocation is honored whether or not it is
- * signature-covered, which is deliberately stricter than the verifier: the
- * verifier ignores a residual revoke so a keyless party cannot deny an honest
- * chain, but here the worst a wrongly-honored revoke can do is refuse a restore
- * the person can retry, while the worst a wrongly-IGNORED one can do is append
- * events under a retired key — permanently red, and unappendable-back.
- */
-function membershipIn(
-  input: RestoreInput,
-  keyPair: KeyPair,
-): { ok: true; anchor: string; membership: RestoredMembership } | RestoreErr {
-  const fingerprint = keyPair.fingerprint;
-  /** Anchors this key currently belongs to, and how each is proven. */
-  const member = new Map<string, RestoredMembership>();
-  /** Anchors that retired this key and did not take it back. */
-  const retired = new Set<string>();
-
-  for (const event of orderedEvents({ root: input.tree }, input.upcasters)) {
-    const anchor = event.subject;
-    switch (event.kind) {
-      case 'identity.founded': {
-        if (event.payload.foundingFp !== fingerprint) break;
-        // The same two bindings the verifier requires of a founding: the founding
-        // key signed it, and the anchor derives from that key. A founding failing
-        // either is not this key's identity — it is a broken event.
-        if (event.signerFp !== fingerprint) break;
-        if (anchor !== deriveAnchor(fingerprint)) break;
-        member.set(anchor, 'founded');
-        retired.delete(anchor);
-        break;
-      }
-      case 'key.enrolled': {
-        if (event.payload.newFp !== fingerprint) break;
-        if (event.who !== anchor) break;
-        // The part only this key's holder could have produced. Everything else an
-        // enrollment asserts, a stranger's tree could assert too.
-        if (!consented(keyPair, anchor, event.payload.reverseSig)) break;
-        // A founding is the stronger fact about the same anchor; keep it.
-        if (!member.has(anchor)) member.set(anchor, 'enrolled');
-        retired.delete(anchor);
-        break;
-      }
-      case 'key.revoked': {
-        if (event.payload.revokedFp !== fingerprint) break;
-        if (event.who !== anchor) break;
-        member.delete(anchor);
-        retired.add(anchor);
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  const anchors = [...member.keys()];
-  if (anchors.length > 1) {
-    return {
-      ok: false,
-      code: 'AMBIGUOUS_MEMBERSHIP',
-      message:
-        `this key belongs to more than one identity in that tree (${anchors.join(', ')}) — ` +
-        'which one it should speak for here is not a choice to make on its behalf',
-    };
-  }
-  const anchor = anchors[0];
-  if (anchor === undefined) {
-    const [retiredFrom] = [...retired];
-    if (retiredFrom !== undefined) {
-      return {
-        ok: false,
-        code: 'REVOKED_KEY',
-        message:
-          `this key was revoked from ${retiredFrom} — a retired key that writes again ` +
-          'leaves the whole record failing verification, so it is not installed',
-      };
-    }
-    return {
-      ok: false,
-      code: 'NOT_A_MEMBER',
-      message:
-        `nothing in that record proves the key ${fingerprint} belongs to an identity — ` +
-        'a key is restored where it was proven a member, while the first key still existed',
-    };
-  }
-  return { ok: true, anchor, membership: member.get(anchor) as RestoredMembership };
-}
-
-/** Whether `reverseSig` is this key's own signature over `enroll:<anchor>:<fp>`. */
-function consented(keyPair: KeyPair, anchor: string, reverseSig: string): boolean {
-  try {
-    return verifySignature(
-      enrollmentMessage(anchor, keyPair.fingerprint),
-      Buffer.from(reverseSig, 'hex'),
-      keyPair.publicKey,
-    );
-  } catch {
-    return false;
   }
 }

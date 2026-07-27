@@ -94,12 +94,16 @@ export function openSession(input: OpenSessionInput): Session {
   const scope: Scope = inProject ? resolveScope({ which: input.clientName }) : 'global';
 
   const ctx = writeContext(trees, scope);
-  const who = ctx.writer.anchor;
 
   const started = startRun(ctx, { agent: input.clientName });
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
+  // Read AFTER the run is recorded, never before. The first write to a tree is
+  // what settles which identity this machine serves there — its own, or one the
+  // record proves its key joined — and only then is the answer on disk. Reading
+  // first would hand the session an identity that the very next write corrects.
+  const who = ctx.writer.anchor;
 
   return {
     trees,

@@ -18,6 +18,20 @@
 // The one refusal a point-in-time fact can earn: the authority invariant. It
 // travels with the knowledge writes because it is in their result union.
 export type { SelfAuthorizedErr } from './identity/authority.js';
+// The handshake a machine joining an identity produces: its public key plus the
+// signature proving it consents. It can mint this machine's key on first use, so
+// it belongs on the writing side even though it appends nothing.
+export {
+  decodeKeyRequest,
+  encodeKeyRequest,
+  type KeyRequest,
+  type RequestErr,
+  type RequestErrorCode,
+  type RequestInput,
+  type RequestOk,
+  type RequestSource,
+  requestEnrollment,
+} from './identity/handshake.js';
 // Restoring a key from a copy of its private half — the only recovery there is.
 // It appends nothing, but it installs key material and records which anchor a key
 // serves, so it is a write: a read-only layer must not be able to name it.
@@ -29,6 +43,19 @@ export {
   type RestoreOk,
   restoreKey,
 } from './identity/restore.js';
+// Operating the roster: enrolling a requested key, and retiring one.
+export {
+  type EnrollRequestErr,
+  type EnrollRequestErrorCode,
+  type EnrollRequestInput,
+  type EnrollRequestOk,
+  enrollFromRequest,
+  type RevokeMemberErr,
+  type RevokeMemberErrorCode,
+  type RevokeMemberInput,
+  type RevokeMemberOk,
+  revokeMember,
+} from './identity/roster.js';
 // The knowledge domain's writes: each appends one point-in-time fact, no gate.
 export {
   type CaptureInput,
@@ -50,7 +77,10 @@ export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';
 // Identity write operations — founding an anchor, establishing it WHOLE into a
 // tree (the ≥2-keys policy), and enrolling or revoking keys.
 export {
+  type AnchorDecision,
+  authorizingAnchor,
   type DeclinedKey,
+  decideAnchor,
   type EstablishedIdentity,
   enrollKey,
   ensureFounded,

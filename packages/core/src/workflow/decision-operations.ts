@@ -41,7 +41,7 @@ import { orderedEvents } from '../projections/order.js';
 import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
-import { ensureFounded } from './identity-operations.js';
+import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
 export interface DecisionWriteContext {
@@ -126,9 +126,9 @@ export function recordDecision(
   ctx: DecisionWriteContext,
   input: RecordInput,
 ): RecordOk | DecisionWriteError {
-  // `who` is derived from the writer's key, always a real anchor; the only
-  // authority check left is that the executing agent is not that identity.
-  const who = ctx.writer.anchor;
+  // `who` is derived from local material and the record, always a real anchor;
+  // the only authority check left is that the executing agent is not that identity.
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
@@ -222,8 +222,8 @@ function transition(
     };
   }
 
-  // `who` is the writer's anchor, derived from its key, never supplied.
-  const who = ctx.writer.anchor;
+  // `who` is this installation's authorizing anchor, never supplied.
+  const who = authorizingAnchor(ctx);
   const verdict = decisionGate({
     from: current.state,
     action,

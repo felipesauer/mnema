@@ -23,6 +23,14 @@ export {
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './identity/index.js';
+// The refusal a write earns when the record does not name ONE identity for this
+// machine's key. It is thrown, not returned (the decision sits below every write),
+// so a surface needs to be able to name the class to report it as the refusal it
+// is — the same reason `TreeUnavailableError` lives on the read surface.
+export {
+  IdentityUnavailableError,
+  type MembershipRefusalCode,
+} from './identity/membership.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export {
   type AdrCollision,
