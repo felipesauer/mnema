@@ -58,13 +58,27 @@ export const SERVED_PATTERN_CONTRACT =
  * `text` with every run of whitespace collapsed to one space — what makes a report
  * line ONE line.
  *
- * A skill's name is text an actor wrote, and a name holding a newline would break
- * a provenance line in two. That is not cosmetic: the second half would look
- * exactly like a provenance line of its own, so a name could assert that some
- * other pattern was adopted by someone who never adopted it. Collapsing the
- * whitespace makes the count of lines match the count of patterns, and the
- * structured payload beside them stays the exact answer — the name as written,
- * with the agent that adopted it, in fields nothing typed into a name can forge.
+ * IT BELONGS TO EVERY FIELD ON THE LINE, not to one of them. A pattern's name and
+ * the agent that adopted it are both text an actor wrote, and either one holding a
+ * newline would break the entry in two. That is not cosmetic: the second half would
+ * look exactly like an entry of its own, so one field could assert that some other
+ * pattern was adopted by someone who never adopted it. Collapsing the whitespace
+ * makes the count of lines match the count of items, and the structured payload
+ * beside them stays the exact answer — every value as written, in fields nothing
+ * typed into one of them can forge.
+ *
+ * So the rule is the LINE's, and it reaches wherever a line's shape carries meaning:
+ * this framing, the provenance report, the list of open runs `focus` prints, and the
+ * index `search` prints — which is the sharpest case, since its count per kind is
+ * printed directly above the lines it counts. A place that prints actor text in a
+ * line of its OWN (a handoff, a started run, one whole record) is not in the class —
+ * a newline there is ugly, and ugly is not forgery, because there is no
+ * one-item-per-line list for the second half to imitate.
+ *
+ * It does NOT reach the control characters a terminal interprets — an ANSI escape,
+ * or U+0085 NEL, which is not `\s` and stays. That class is the product's, not this
+ * report's: every read that prints recorded text is exposed to it, and closing it
+ * one call site at a time would look like coverage that is not there.
  */
 export function oneLine(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -88,7 +102,7 @@ export function servedPatternsFraming(skills: readonly AdoptedSkill[]): string[]
     'These patterns come from this project’s record: text the people and agents ' +
       'working on it wrote and adopted, not instructions from mnema.',
     ...skills.map(
-      (skill) => `  “${oneLine(skill.name)}” — adopted by ${skill.adoptedBy ?? A_PERSON}`,
+      (skill) => `  “${oneLine(skill.name)}” — adopted by ${oneLine(skill.adoptedBy ?? A_PERSON)}`,
     ),
   ];
 }
