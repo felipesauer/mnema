@@ -71,10 +71,12 @@ export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
 export {
   appDataDir,
+  type BirthProbe,
   chainRootForScope,
   type DiscoveryEnv,
   listProjects,
   locateEntityScope,
+  locateEntityScopeWith,
   type Origin,
   PROJECT_DIR,
   PROJECTS_FILE,

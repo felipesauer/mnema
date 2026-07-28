@@ -23,10 +23,21 @@
  * tree) and knows nothing of the others. Finding the home is a READ the surface
  * composes before it opens the writer, keeping the write a single-tree act.
  *
- * Cost: it replays every present tree until it finds the birth (short-circuiting
- * on the first match). There are at most three trees and the replay is the same
- * a projection already runs, so this is acceptable; if it ever became hot a
- * caller could pass a narrower tree set, but no cache is warranted here.
+ * THE RULE IS HERE; HOW A TREE IS ASKED IS THE CALLER'S. Two things decide the
+ * answer: which trees are searched and in what order, and what counts as the
+ * same id — both are domain rules and both stay in this module. What varies is
+ * only the mechanical question "does the tree rooted HERE hold this birth?",
+ * which {@link locateEntityScopeWith} takes as a {@link BirthProbe}. Replaying
+ * the chain is one way to answer it and the default one ({@link locateEntityScope});
+ * a caller holding a materialized read model over that same chain can answer it
+ * with an indexed lookup instead. Because both go through the same walk, the two
+ * cannot disagree about the rule — only about how one tree is interrogated.
+ *
+ * Cost of the default: it replays every present tree until it finds the birth
+ * (short-circuiting on the first match). There are at most three trees, but the
+ * replay is linear in the chain and this read runs before every entity-keyed
+ * operation, so it grows with the record — which is precisely why the probe is a
+ * parameter rather than a fixed strategy.
  */
 
 import type { CatalogEvent, UpcasterRegistry } from '@mnema/chain';
@@ -53,20 +64,49 @@ const BIRTH_KINDS = new Set<CatalogEvent['kind']>([
 const SEARCH_ORDER: readonly Scope[] = ['public', 'private', 'global'];
 
 /**
- * Finds the scope of the tree the entity with `id` was born in, or undefined
- * when no present tree holds its birth (it is not visible here — a partial
- * clone, or an id that never existed). Generic across entity kinds: it matches
- * ANY birth event (task/decision/skill) whose subject is the id, so the same
- * read serves every workflow entity.
+ * Answers, for ONE tree, whether it holds the birth of the entity with this id.
  *
- * The id is compared in its canonical form — the same form a birth's subject is
- * stored in — so a composition variant of the id cannot false-miss (the write
- * operations look tasks up the same way).
+ * The id arrives already canonical — the caller of a probe never has to
+ * canonicalize, and a probe must not apply a policy of its own, or the two
+ * halves of the read would disagree about what "the same id" means.
+ *
+ * A probe answers about the tree rooted at `chainRoot` and nothing else. It is
+ * called at most once per searched tree, in the search order, and not at all for
+ * trees the context does not have.
+ *
+ * ⚠️ A probe that reads a PROJECTION rather than the raw chain answers about
+ * entities the projection holds, and a projection holds only COMPLETE ones (a
+ * birth is two appends: the record and its initial transition). A tree carrying
+ * a truncated birth — the record with no transition — is located by a replaying
+ * probe and not by a projecting one. Every operation keyed on such an entity
+ * refuses `UNKNOWN_<KIND>` either way, so the difference does not reach the
+ * caller through the ordinary paths; a caller adding a new one should know the
+ * boundary exists.
  */
-export function locateEntityScope(
+export type BirthProbe = (chainRoot: string, id: string) => boolean;
+
+/**
+ * Finds the scope of the tree the entity with `id` was born in — the whole rule,
+ * with `holdsBirth` answering the per-tree question. Returns undefined when no
+ * present tree holds the birth (it is not visible here — a partial clone, or an
+ * id that never existed). Generic across entity kinds: a birth is a birth,
+ * whichever of the three workflow entities it belongs to.
+ *
+ * Two things happen here that a probe must never repeat or override:
+ *
+ *   - The id is canonicalized once, into the same form a birth's subject is
+ *     stored in, so a composition variant cannot false-miss (the write
+ *     operations look entities up the same way). An id the chain cannot
+ *     canonicalize matches nothing and short-circuits to undefined without a
+ *     single tree being touched.
+ *   - The trees are searched in {@link SEARCH_ORDER}, skipping those the context
+ *     does not have, and the walk stops at the first hit — so a probe is never
+ *     asked about a tree the answer no longer depends on.
+ */
+export function locateEntityScopeWith(
   trees: ResolvedTrees,
   id: string,
-  upcasters: UpcasterRegistry,
+  holdsBirth: BirthProbe,
 ): Scope | undefined {
   const canonical = canonicalId(id);
   if (canonical === undefined) return undefined;
@@ -74,10 +114,37 @@ export function locateEntityScope(
   for (const scope of SEARCH_ORDER) {
     const root = chainRootForScope(trees, scope);
     if (root === undefined) continue; // that tree is not present in this context
-    const events = orderedEvents({ root }, upcasters);
-    if (events.some((event) => BIRTH_KINDS.has(event.kind) && event.subject === canonical)) {
-      return scope;
-    }
+    if (holdsBirth(root, canonical)) return scope;
   }
   return undefined;
+}
+
+/**
+ * The probe that reads the chain itself: replays the tree and looks for a birth
+ * event with this subject. It sees every birth on the chain, complete or not,
+ * because it reads the facts rather than a view derived from them.
+ */
+function replayHoldsBirth(upcasters: UpcasterRegistry): BirthProbe {
+  return (chainRoot, id) => {
+    const events = orderedEvents({ root: chainRoot }, upcasters);
+    return events.some((event) => BIRTH_KINDS.has(event.kind) && event.subject === id);
+  };
+}
+
+/**
+ * Finds the scope of the tree the entity with `id` was born in by replaying each
+ * tree's chain — the read with no dependency beyond the chain itself, and the
+ * one every surface uses unless it is holding something faster.
+ *
+ * This is {@link locateEntityScopeWith} over the replaying probe, not a second
+ * implementation: the search order, the canonicalization and the short-circuit
+ * are the same code, so a caller that swaps the probe changes how one tree is
+ * asked and nothing else.
+ */
+export function locateEntityScope(
+  trees: ResolvedTrees,
+  id: string,
+  upcasters: UpcasterRegistry,
+): Scope | undefined {
+  return locateEntityScopeWith(trees, id, replayHoldsBirth(upcasters));
 }
