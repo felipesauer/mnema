@@ -85,6 +85,18 @@ export interface Session {
    * write made it necessary and not once per call.
    */
   readonly caches: CacheRegistry;
+  /**
+   * The skills already recorded as consulted in this run — the ids, not the
+   * facts. A consultation is recorded ONCE per (run, skill): reading a pattern
+   * three times in one session is one session that used it, and three identical
+   * facts would inflate the record without adding anything to it.
+   *
+   * It lives in memory, and that is sufficient rather than a shortcut: the scope
+   * of the deduplication is exactly the run, and the run dies with this session.
+   * Asking the chain "did I already record this?" would replay it to learn
+   * something process memory already knows.
+   */
+  readonly consulted: Set<string>;
 }
 
 /**
@@ -135,6 +147,7 @@ export function openSession(input: OpenSessionInput): Session {
     runId: started.id,
     env: input.env,
     caches,
+    consulted: new Set<string>(),
   };
 }
 

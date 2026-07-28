@@ -1,6 +1,13 @@
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Bench, birthTask, makeBench, moveTask, startRun } from '../../tests/support/chain.js';
+import {
+  type Bench,
+  birthSkill,
+  birthTask,
+  makeBench,
+  moveTask,
+  startRun,
+} from '../../tests/support/chain.js';
 import { bootstrap } from './bootstrap.js';
 
 describe('bootstrap — the opening context, focused on the actor', () => {
@@ -17,7 +24,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, { actor: bench.who });
+      const b = bootstrap(cache, { actor: bench.who }, [cache]);
       // Resume: the actor's open run is the anchor.
       expect(b.resume.lastRun?.id).toBe('run-1');
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
@@ -39,7 +46,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, dead, 'DRAFT', 'CANCELED', 'cancel', { reason: 'dropped' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, { actor: bench.who });
+      const b = bootstrap(cache, { actor: bench.who }, [cache]);
       expect(b.work.map((w) => w.id)).toEqual(['task-live']);
     } finally {
       cache.close();
@@ -54,7 +61,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'IN_PROGRESS', 'DONE', 'complete', { note: 'done' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, { actor: bench.who });
+      const b = bootstrap(cache, { actor: bench.who }, [cache]);
       const done = b.work.find((w) => w.id === 'task-done');
       expect(done?.actions.map((a) => a.action)).toEqual(['reopen']);
     } finally {
@@ -71,7 +78,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, a, 'DRAFT', 'READY', 'submit');
     const cache = bench.cache();
     try {
-      const boot = bootstrap(cache, { actor: bench.who });
+      const boot = bootstrap(cache, { actor: bench.who }, [cache]);
       expect(boot.work.map((w) => w.id)).toEqual(['task-a', 'task-b']);
     } finally {
       cache.close();
@@ -84,11 +91,60 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     startRun(bench, 'run-theirs', { agent: 'claude', who: 'bob' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, { actor: 'alice' });
+      const b = bootstrap(cache, { actor: 'alice' }, [cache]);
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-mine']);
       expect(b.resume.lastRun?.id).toBe('run-mine');
     } finally {
       cache.close();
+    }
+  });
+
+  it('announces the adopted skills by NAME and id — never the body', () => {
+    bench = makeBench();
+    birthSkill(bench, 'sk-1', 'Small PRs', 'adopted');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap(cache, { actor: bench.who }, [cache]);
+      expect(b.skills).toEqual([{ id: 'sk-1', name: 'Small PRs' }]);
+      // The pattern itself never enters the opening context.
+      expect(JSON.stringify(b)).not.toContain('body of Small PRs');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('announces only the ADOPTED patterns (a proposal is not a way of working)', () => {
+    bench = makeBench();
+    birthSkill(bench, 'sk-live', 'Adopted', 'adopted');
+    birthSkill(bench, 'sk-idea', 'Proposed', 'proposed');
+    birthSkill(bench, 'sk-old', 'Deprecated', 'deprecated');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap(cache, { actor: bench.who }, [cache]);
+      expect(b.skills.map((s) => s.id)).toEqual(['sk-live']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('takes the skills from the caches it is given, not from the actor’s tree alone', () => {
+    bench = makeBench();
+    const team = makeBench();
+    try {
+      birthSkill(bench, 'sk-mine', 'Mine', 'adopted');
+      birthSkill(team, 'sk-team', 'Team', 'adopted');
+      const mineCache = bench.cache();
+      const teamCache = team.cache();
+      try {
+        // The actor's world is one tree; the patterns come from both.
+        const b = bootstrap(mineCache, { actor: bench.who }, [mineCache, teamCache]);
+        expect(b.skills.map((s) => s.name)).toEqual(['Mine', 'Team']);
+      } finally {
+        mineCache.close();
+        teamCache.close();
+      }
+    } finally {
+      rmSync(team.root, { recursive: true, force: true });
     }
   });
 
@@ -99,7 +155,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'DRAFT', 'READY', 'submit');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, { actor: 'newcomer' });
+      const b = bootstrap(cache, { actor: 'newcomer' }, [cache]);
       expect(b.resume.lastRun).toBeNull();
       expect(b.resume.focus.openRuns).toEqual([]);
       // The work list is workspace-wide, so it is still there.

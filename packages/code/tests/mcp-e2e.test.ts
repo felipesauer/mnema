@@ -12,7 +12,8 @@
  * adapters. It is the handshake exercised for real, without a child process.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -56,6 +57,7 @@ import {
   runRecordHandoff,
   runRecordObservation,
   runResumeTool,
+  runSkills,
   runSkillTransition,
   runTaskTransition,
   runTimelineTool,
@@ -1042,6 +1044,297 @@ describe('MCP session + tools — unit', () => {
     expect(superseded).toMatchObject({ ok: false, code: 'UNKNOWN_ACTION' });
   });
 
+  /** Walks a skill all the way to `adopted` through the real gate; returns its id. */
+  function adoptSkill(
+    session: Session,
+    input: { name: string; body: string; scope?: 'public' | 'private' | 'global' },
+  ): string {
+    const created = runCreateSkill(session, input);
+    if (!created.ok) throw new Error(`setup: create refused (${created.code})`);
+    const reviewed = runSkillTransition(session, {
+      id: created.id,
+      action: 'review',
+      note: 'read it',
+    });
+    if (!reviewed.ok) throw new Error(`setup: review refused (${reviewed.code})`);
+    const adopted = runSkillTransition(session, {
+      id: created.id,
+      action: 'adopt',
+      note: 'we work this way',
+    });
+    if (!adopted.ok) throw new Error(`setup: adopt refused (${adopted.code})`);
+    return created.id;
+  }
+
+  /** The `skill.consulted` events in a tree, as [subject, run] pairs. */
+  function consultations(root: string): Array<[string, string | undefined]> {
+    return orderedEvents({ root }, catalogUpcasters())
+      .filter((e) => e.kind === 'skill.consulted')
+      .map((e) => [e.subject, e.run]);
+  }
+
+  /**
+   * A content digest of every file under `dir` — the proof a `skills` call that
+   * serves nothing records nothing: not an event, not a checkpoint, not a byte.
+   */
+  function digest(dir: string): string {
+    const hash = createHash('sha256');
+    const walk = (current: string): void => {
+      for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      )) {
+        const full = join(current, entry.name);
+        if (entry.isDirectory()) {
+          hash.update(`D:${full}\n`);
+          walk(full);
+        } else {
+          hash.update(`F:${full}:`);
+          hash.update(readFileSync(full));
+          hash.update('\n');
+        }
+      }
+    };
+    walk(dir);
+    return hash.digest('hex');
+  }
+
+  it('skills serves the adopted pattern WITH its body, and records the consultation', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const id = adoptSkill(session, { name: 'stacked-prs', body: 'One slice per PR.' });
+
+    const result = runSkills(session);
+
+    expect(result).toEqual({
+      ok: true,
+      skills: [{ id, name: 'stacked-prs', body: 'One slice per PR.' }],
+    });
+    // The consultation landed in the session's own tree, tied to its run.
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(consultations(privateRoot)).toEqual([[id, session.runId]]);
+    // And it is attributed to the agent, authorized by the machine.
+    const fact = orderedEvents({ root: privateRoot }, catalogUpcasters()).find(
+      (e) => e.kind === 'skill.consulted',
+    );
+    expect(fact?.which).toBe('claude-code');
+    expect(fact?.who).toBe(session.who);
+    // The tree stays verifiable and fully signed after a consultation.
+    const verdict = verify(privateRoot, catalogUpcasters());
+    expect(verdict.ok).toBe(true);
+    expect(verdict.fullySigned).toBe(true);
+  });
+
+  it('skills called twice records ONE consultation per (run, skill)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const id = adoptSkill(session, { name: 'stacked-prs', body: 'One slice per PR.' });
+
+    // Read the whole list, then the same skill by id: three servings, one fact.
+    expect(runSkills(session).ok).toBe(true);
+    expect(runSkills(session).ok).toBe(true);
+    expect(runSkills(session, { id }).ok).toBe(true);
+
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(consultations(privateRoot)).toEqual([[id, session.runId]]);
+  });
+
+  it('skills records one fact per skill — which pattern, not just that one was read', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const first = adoptSkill(session, { name: 'aaa', body: 'A' });
+    const second = adoptSkill(session, { name: 'bbb', body: 'B' });
+
+    runSkills(session);
+
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(
+      consultations(privateRoot)
+        .map(([subject]) => subject)
+        .sort(),
+    ).toEqual([first, second].sort());
+  });
+
+  it('two sessions count separately: each consultation carries its own run', () => {
+    const project = makeProject('proj');
+    const roots = [pathToFileURL(project).href];
+    const first = openSession({ clientName: 'claude-code', roots, env });
+    const id = adoptSkill(first, { name: 'shared', body: 'both read it' });
+    runSkills(first);
+    const second = openSession({ clientName: 'cursor', roots, env });
+
+    runSkills(second);
+
+    const privateRoot = chainRootForScope(first.trees, 'private') as string;
+    const recorded = consultations(privateRoot);
+    // The same pattern, two facts — one per session, each carrying its own run.
+    expect(recorded.map(([subject]) => subject)).toEqual([id, id]);
+    expect(new Set(recorded.map(([, run]) => run))).toEqual(new Set([first.runId, second.runId]));
+    expect(first.runId).not.toBe(second.runId);
+  });
+
+  it('skills refuses a deprecated pattern and records NOTHING (it served nothing)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const id = adoptSkill(session, { name: 'retired', body: 'the old way' });
+    const gone = runSkillTransition(session, {
+      id,
+      action: 'deprecate',
+      reason: 'superseded by a better one',
+    });
+    if (!gone.ok) throw new Error('setup: deprecate refused');
+
+    // The list no longer carries it…
+    expect(runSkills(session)).toEqual({ ok: true, skills: [] });
+    // …and asking by id says what happened, without the body.
+    const refused = runSkills(session, { id });
+    expect(refused).toMatchObject({ ok: false, code: 'NOT_ADOPTED' });
+    if (!refused.ok) expect(refused.message).toContain('deprecated');
+    expect(JSON.stringify(refused)).not.toContain('the old way');
+
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(consultations(privateRoot)).toEqual([]);
+  });
+
+  it('skills refuses an unknown id as data, recording nothing', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    expect(runSkills(session, { id: 'sk-nowhere' })).toMatchObject({
+      ok: false,
+      code: 'UNKNOWN_SKILL',
+    });
+
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    expect(consultations(privateRoot)).toEqual([]);
+  });
+
+  it('a skills call that serves nothing leaves the sandbox BYTE-IDENTICAL', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // A proposed skill is not a pattern to work by, so nothing is served.
+    const created = runCreateSkill(session, { name: 'just an idea', body: 'not adopted yet' });
+    if (!created.ok) throw new Error('setup: create refused');
+    const before = digest(sandbox);
+
+    expect(runSkills(session)).toEqual({ ok: true, skills: [] });
+    expect(runSkills(session, { id: created.id })).toMatchObject({ ok: false });
+    expect(runSkills(session, { id: 'sk-nowhere' })).toMatchObject({ ok: false });
+
+    // Not an event, not a checkpoint, not a byte — across every tree and the key
+    // root. Serving nothing is a pure read.
+    expect(digest(sandbox)).toBe(before);
+  });
+
+  it('skills crosses the trees: a PUBLIC pattern is served, the consultation lands PRIVATE', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    expect(session.scope).toBe('private');
+    // The team adopts a pattern in the public tree; the agent's own is private.
+    const team = adoptSkill(session, { name: 'team habit', body: 'how we work', scope: 'public' });
+    const mine = adoptSkill(session, { name: 'my habit', body: 'how I work' });
+
+    const result = runSkills(session);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skills.map((s) => s.id).sort()).toEqual([mine, team].sort());
+
+    // Both consultations are the agent's own facts: they land in PRIVATE, and the
+    // public one names a subject that lives in another tree (honest cross-tree).
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(
+      consultations(privateRoot)
+        .map(([subject]) => subject)
+        .sort(),
+    ).toEqual([mine, team].sort());
+    expect(consultations(publicRoot)).toEqual([]);
+    expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+  });
+
+  it('bootstrap announces the adopted patterns by NAME across the trees, never the body', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const team = adoptSkill(session, { name: 'team habit', body: 'how we work', scope: 'public' });
+    const mine = adoptSkill(session, { name: 'my habit', body: 'how I work' });
+    runCreateSkill(session, { name: 'not adopted', body: 'still an idea' });
+
+    const context = runBootstrap(session);
+
+    expect(context.skills.map((s) => s.name)).toEqual(['my habit', 'team habit']);
+    expect(context.skills.map((s) => s.id).sort()).toEqual([mine, team].sort());
+    const serialized = JSON.stringify(context);
+    expect(serialized).not.toContain('how we work');
+    expect(serialized).not.toContain('how I work');
+    expect(serialized).not.toContain('not adopted');
+  });
+
+  it('skills works with no project: the global tree serves and takes the fact', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.scope).toBe('global');
+    const id = adoptSkill(session, { name: 'personal habit', body: 'across every project' });
+
+    const result = runSkills(session);
+
+    expect(result).toEqual({
+      ok: true,
+      skills: [{ id, name: 'personal habit', body: 'across every project' }],
+    });
+    expect(runBootstrap(session).skills).toEqual([{ id, name: 'personal habit' }]);
+    const globalRoot = chainRootForScope(session.trees, 'global') as string;
+    expect(consultations(globalRoot)).toEqual([[id, session.runId]]);
+  });
+
+  it('bootstrap reads the patterns and writes nothing (only `skills` records)', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    adoptSkill(session, { name: 'a pattern', body: 'the body' });
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const before = orderedEvents({ root: privateRoot }, catalogUpcasters()).length;
+
+    runBootstrap(session);
+
+    expect(orderedEvents({ root: privateRoot }, catalogUpcasters())).toHaveLength(before);
+    expect(consultations(privateRoot)).toEqual([]);
+  });
+
   it('audit_timeline gathers an entity across the union of the session trees, writing nothing', () => {
     const project = makeProject('proj');
     const trees = resolveTrees(project, env);
@@ -1218,6 +1511,7 @@ describe('MCP server — end to end over a real client', () => {
       'record_observation',
       'resume',
       'skill_transition',
+      'skills',
       'task_transition',
     ]);
 
@@ -1530,6 +1824,89 @@ describe('MCP server — end to end over a real client', () => {
     expect(events.some((e) => e.kind === 'knowledge.linked')).toBe(true);
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
 
+    await client.close();
+  });
+
+  it('bootstrap names the pattern, skills serves its body, and the consultation is on the chain', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // A pattern the team adopts, over the wire, through the real gate.
+    const proposed = await client.callTool({
+      name: 'create_skill',
+      arguments: {
+        name: 'stacked-prs',
+        body: 'One slice per PR; validate locally; merge before the next.',
+        scope: 'public',
+      },
+    });
+    const id = /\(([^)]+)\)/.exec(textOf(proposed))?.[1] as string;
+    for (const [action, proof] of [
+      ['review', { note: 'read it' }],
+      ['adopt', { note: 'we work this way' }],
+    ] as const) {
+      const moved = await client.callTool({
+        name: 'skill_transition',
+        arguments: { id, action, ...proof },
+      });
+      expect(moved.isError).toBeFalsy();
+    }
+
+    // The opening context carries the NAME (and id) — never the body.
+    const boot = await client.callTool({ name: 'bootstrap' });
+    const context = JSON.parse(textOf(boot)) as { skills: { id: string; name: string }[] };
+    expect(context.skills).toEqual([{ id, name: 'stacked-prs' }]);
+    expect(textOf(boot)).not.toContain('One slice per PR');
+
+    // The name rings a bell: ask for the pattern itself.
+    const served = await client.callTool({ name: 'skills', arguments: {} });
+    expect(served.isError).toBeFalsy();
+    const bodies = JSON.parse(textOf(served)) as { id: string; body: string }[];
+    expect(bodies).toEqual([
+      {
+        id,
+        name: 'stacked-prs',
+        body: 'One slice per PR; validate locally; merge before the next.',
+      },
+    ]);
+
+    // Reading it again serves the same body and records nothing new.
+    expect((await client.callTool({ name: 'skills', arguments: { id } })).isError).toBeFalsy();
+
+    // The consultation is on the chain, in the agent's PRIVATE tree, carrying the
+    // run the session opened — one fact, though the pattern was served twice.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    const consulted = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.kind === 'skill.consulted',
+    );
+    expect(consulted).toHaveLength(1);
+    expect(consulted[0]?.subject).toBe(id);
+    expect(consulted[0]?.which).toBe('claude-code');
+    const runs = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+      (e) => e.kind === 'run.started',
+    );
+    expect(consulted[0]?.run).toBe(runs[0]?.subject);
+
+    // Both trees verify, and the tree that took the write is fully signed.
+    const publicVerdict = verify(join(project, PROJECT_DIR), catalogUpcasters());
+    const privateVerdict = verify(privateRoot, catalogUpcasters());
+    expect(publicVerdict.ok).toBe(true);
+    expect(privateVerdict.ok).toBe(true);
+    expect(privateVerdict.fullySigned).toBe(true);
+
+    await client.close();
+  });
+
+  it('skills refuses an unknown id as a tool error over the transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const refused = await client.callTool({ name: 'skills', arguments: { id: 'sk-nowhere' } });
+
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (UNKNOWN_SKILL)');
     await client.close();
   });
 
