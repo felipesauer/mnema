@@ -29,6 +29,14 @@
  * without validating them (a dangling reference is honest cross-tree). The server
  * wires these onto the protocol; the wiring adds nothing but the schema and the
  * response envelope.
+ *
+ * The read mold does not OPEN a cache: it asks the session's registry for the
+ * one over the tree it serves — the session's own for the actor reads, the
+ * ENTITY's home tree for `next_actions` and `guard`. So a connection replays a
+ * chain when a write has made that necessary, not once per call, and the answer
+ * is the same either way (the registry rebuilds a stale cache before handing it
+ * over). The write mold needs no counterpart discipline: every write builds its
+ * context through `writeContext`, which is where the invalidation lives.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -57,7 +65,6 @@ import {
   deriveAlias,
   locateEntityScope,
   orderedEvents,
-  ProjectionCache,
   projectDecisions,
   projectSkills,
   type Scope,
@@ -244,7 +251,7 @@ export function runCaptureMemory(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const captured = captureMemory(ctx, {
     content: input.content,
     which: session.which,
@@ -314,7 +321,7 @@ export function runRecordObservation(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const recorded = recordObservation(ctx, {
     about: input.about,
     topic: input.topic,
@@ -353,7 +360,7 @@ export function runRecordHandoff(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const recorded = recordHandoff(ctx, {
     task: input.task,
     fromAgent: input.from,
@@ -392,7 +399,7 @@ export function runLinkKnowledge(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const recorded = linkKnowledge(ctx, {
     subject: input.subject,
     target: input.target,
@@ -435,7 +442,7 @@ export function runCreateTask(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const created = createTask(ctx, {
     title: input.title,
     which: session.which,
@@ -484,7 +491,7 @@ export function runTaskTransition(
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
 
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const fields = proofToFields(input);
   const moved = transitionTask(ctx, {
     id: input.id,
@@ -544,7 +551,7 @@ export function runRecordDecision(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const recorded = recordDecision(ctx, {
     title: input.title,
     rationale: input.rationale,
@@ -608,7 +615,7 @@ export function runDecisionTransition(
     };
   }
 
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
@@ -689,7 +696,7 @@ export function runCreateSkill(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const created = createSkill(ctx, {
     name: input.name,
     body: input.body,
@@ -746,7 +753,7 @@ export function runSkillTransition(
     };
   }
 
-  const ctx = writeContext(session.trees, scope);
+  const ctx = writeContext(session.trees, scope, session.caches);
   const fields = skillProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
@@ -792,33 +799,33 @@ function skillProofToFields(input: {
 /**
  * `bootstrap` — the opening context for the session's actor.
  *
- * Rebuilds a projection cache over the session's resolved tree and composes the
- * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the
- * actor left off and the actionable work. Read-only — it opens no writer and
- * emits no event. The cache is over the ONE resolved tree (the session's), not
- * the union of all three; a session works on one tree, and that is the context
- * it serves.
+ * Takes the session's cache over its resolved tree and composes the copilot's
+ * `bootstrap` derivation for the machine's anchor (`who`): where the actor left
+ * off and the actionable work. Read-only — it opens no writer and emits no
+ * event. The cache is over the ONE resolved tree (the session's), not the union
+ * of all three; a session works on one tree, and that is the context it serves.
+ *
+ * The cache comes from the session's registry rather than being opened here, so
+ * a second read in the same connection reuses the replay this one paid for. The
+ * registry rebuilds it when a write has made it stale, so what this reads is
+ * always the chain as it stands — the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  const cache = ProjectionCache.open(chainRoot);
-  cache.rebuild();
-  return bootstrap(cache, { actor: session.who });
+  return bootstrap(session.caches.get(chainRoot), { actor: session.who });
 }
 
 /**
  * `focus` — the session actor's open runs (what they are touching now).
  *
- * The read mold applied to the copilot's `focus`: rebuild a cache over the
- * session's resolved tree and derive for the session's `who`. Read-only — no
- * writer, no event. The actor is the session's anchor (never a client-supplied
- * value), so the result carries only the machine's OWN open runs.
+ * The read mold applied to the copilot's `focus`: take the session's cache over
+ * its resolved tree and derive for the session's `who`. Read-only — no writer,
+ * no event. The actor is the session's anchor (never a client-supplied value),
+ * so the result carries only the machine's OWN open runs.
  */
 export function runFocusTool(session: Session): Focus {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  const cache = ProjectionCache.open(chainRoot);
-  cache.rebuild();
-  return focus(cache, { actor: session.who });
+  return focus(session.caches.get(chainRoot), { actor: session.who });
 }
 
 /**
@@ -830,9 +837,7 @@ export function runFocusTool(session: Session): Focus {
  */
 export function runResumeTool(session: Session): Resume {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  const cache = ProjectionCache.open(chainRoot);
-  cache.rebuild();
-  return resume(cache, { actor: session.who });
+  return resume(session.caches.get(chainRoot), { actor: session.who });
 }
 
 /** The task's legal moves, or a typed refusal when no visible tree holds it. */
@@ -855,10 +860,15 @@ export type NextActionsResult =
  *
  * Keyed by an ENTITY, not the actor: it locates the task's home tree
  * ({@link locateEntityScope}) — a task lives in exactly one of the session's
- * trees — opens THAT tree's cache, and returns the copilot's `nextActionsForTask`.
+ * trees — takes THAT tree's cache, and returns the copilot's `nextActionsForTask`.
  * Read-only. An id no visible tree holds is refused `UNKNOWN_TASK` (returned as
  * data so the server shapes it into a tool error, never thrown); an existing
  * terminal task yields an empty list — "no legal moves", not "no such task".
+ *
+ * This is the read that makes the session's caches per-TREE rather than one: the
+ * tree it serves is the entity's, which need not be the session's own. Asking
+ * the registry by chain root keeps those apart — a task read out of the public
+ * tree can never be answered from the private tree's projection.
  */
 export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
   const upcasters = catalogUpcasters();
@@ -867,9 +877,7 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
   const chainRoot = chainRootForScope(session.trees, scope) as string;
-  const cache = ProjectionCache.open(chainRoot, { upcasters });
-  cache.rebuild();
-  const actions = nextActionsForTask(cache, input.id);
+  const actions = nextActionsForTask(session.caches.get(chainRoot), input.id);
   // The birth was located, so a null here means the tail is truncated below it —
   // report it as unknown rather than a false empty terminal list.
   if (actions === null) {
@@ -896,7 +904,7 @@ export type GuardResult =
 /**
  * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
  * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
- * locates the task's home tree ({@link locateEntityScope}), opens THAT tree's
+ * locates the task's home tree ({@link locateEntityScope}), takes THAT tree's
  * cache, reads the task's current state as the `from`, and calls the copilot's
  * pure {@link guardWithFocus} — no writer, no event. The verdict is the gate's
  * own, the SAME function `task_transition` consults, so a guard that says ALLOWED
@@ -929,8 +937,7 @@ export function runGuardTool(
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
   const chainRoot = chainRootForScope(session.trees, scope) as string;
-  const cache = ProjectionCache.open(chainRoot, { upcasters });
-  cache.rebuild();
+  const cache = session.caches.get(chainRoot);
   const task = cache.getTask(input.id);
   // The birth was located, so a null here means the tail is truncated below it —
   // report it as unknown rather than simulating from a state we cannot read.
