@@ -8,6 +8,7 @@
  * the real app data directory.
  */
 
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   existsSync,
@@ -66,6 +67,31 @@ function capture(): { io: CliIo; out: string[]; err: string[]; failed: () => boo
     err,
     failed: () => failed,
   };
+}
+
+/**
+ * A content digest of every file under `dir` — what a read that must write
+ * NOTHING is proven against: not an event, not a checkpoint, not a byte.
+ */
+function digestOf(dir: string): string {
+  const hash = createHash('sha256');
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        hash.update(`D:${full}\n`);
+        walk(full);
+      } else {
+        hash.update(`F:${full}:`);
+        hash.update(readFileSync(full));
+        hash.update('\n');
+      }
+    }
+  };
+  walk(dir);
+  return hash.digest('hex');
 }
 
 beforeEach(() => {
@@ -990,6 +1016,177 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(
       projectKnowledge(orderedEvents({ root: trees.global }, catalogUpcasters())).has(id),
     ).toBe(true);
+  });
+});
+
+describe('mnema CLI — search and show (the record made readable), end to end', () => {
+  /** Runs a verb and returns its stdout as one string. */
+  async function output(argv: string[]): Promise<string> {
+    const c = capture();
+    await run(argv, c.io);
+    expect(c.failed()).toBe(false);
+    return c.out.join('\n');
+  }
+
+  /** The id printed by a verb that mints one. */
+  function idOf(text: string): string {
+    return (text.match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+  }
+
+  it('records three kinds, finds the one a term names, reads its body, then lists the recent', async () => {
+    await run(['init'], capture().io);
+    const memory = idOf(await output(['memory', 'the auth flow uses PKCE with a rotating secret']));
+    await output(['decision', 'Adopt trunk-based development', 'fewer merges']);
+    const task = idOf(await output(['task', 'wire the callback']));
+    await output(['observe', task, '--topic', 'perf', '--text', 'the callback is hot']);
+
+    // 1. A term that appears in ONE record finds exactly it, grouped by kind.
+    const found = await output(['search', 'PKCE']);
+    expect(found).toContain('1 record(s) matching "PKCE"');
+    expect(found).toContain('memory (1)');
+    expect(found).toContain(memory);
+    // The index line is an excerpt of the content, not the whole of it.
+    expect(found).toContain('the auth flow uses PKCE');
+
+    // 2. The body comes from the id the index gave.
+    const body = await output(['show', memory]);
+    expect(body).toContain('the auth flow uses PKCE with a rotating secret');
+    expect(body).toContain('memory');
+
+    // 3. With no term at all: the most recent records, across kinds.
+    const recent = await output(['search']);
+    expect(recent).toContain('4 record(s):');
+    for (const kind of ['memory (1)', 'decision (1)', 'task (1)', 'observation (1)']) {
+      expect(recent).toContain(kind);
+    }
+  });
+
+  it('--json emits one flat ordered list; the human summary is what groups it', async () => {
+    await run(['init'], capture().io);
+    await output(['memory', 'a note about caching']);
+    await output(['task', 'fix the caching bug']);
+
+    const json = JSON.parse(await output(['search', 'caching', '--json'])) as {
+      hits: { kind: string; scope: string; id: string }[];
+      total: number;
+    };
+    expect(json.total).toBe(2);
+    expect(json.hits).toHaveLength(2);
+    // Flat: no grouping key anywhere in the object the agent's surface serves.
+    expect(json.hits.every((hit) => hit.scope === 'public')).toBe(true);
+  });
+
+  it('says how much it is showing when the limit cuts the answer', async () => {
+    await run(['init'], capture().io);
+    for (let i = 0; i < 4; i += 1) await output(['memory', `a repeated word number ${i}`]);
+
+    const cut = await output(['search', 'repeated', '--limit', '2']);
+    expect(cut).toContain('2 of 4 record(s) matching "repeated"');
+  });
+
+  it('narrows by kind and by tree, and marks the tree on every line', async () => {
+    await run(['init'], capture().io);
+    await output(['memory', 'a shared word, in public']);
+    await output(['memory', 'a shared word, on this machine', '--scope', 'private']);
+    await output(['task', 'a shared word in a task']);
+
+    const onlyMemories = await output(['search', 'shared', '--kind', 'memory']);
+    expect(onlyMemories).toContain('2 record(s)');
+    expect(onlyMemories).toContain('  public  ');
+    expect(onlyMemories).toContain('  private  ');
+    expect(onlyMemories).not.toContain('task (');
+
+    const onlyPrivate = await output(['search', 'shared', '--scope', 'private']);
+    expect(onlyPrivate).toContain('1 record(s)');
+    expect(onlyPrivate).toContain('on this machine');
+  });
+
+  it('answers a term nothing matches plainly, and an empty record too', async () => {
+    await run(['init'], capture().io);
+
+    expect(await output(['search'])).toContain('Nothing recorded here yet.');
+    await output(['memory', 'something']);
+    expect(await output(['search', 'zebra'])).toContain('Nothing recorded matching "zebra".');
+  });
+
+  it('rejects a kind, a scope and a limit that are not valid — nothing is searched', async () => {
+    await run(['init'], capture().io);
+
+    const kind = capture();
+    await run(['search', 'x', '--kind', 'memories'], kind.io);
+    expect(kind.failed()).toBe(true);
+    expect(kind.err.join('\n')).toContain('Invalid --kind "memories"');
+
+    const scope = capture();
+    await run(['search', 'x', '--scope', 'team'], scope.io);
+    expect(scope.failed()).toBe(true);
+    expect(scope.err.join('\n')).toContain('Invalid --scope "team"');
+
+    const limit = capture();
+    await run(['search', 'x', '--limit', 'lots'], limit.io);
+    expect(limit.failed()).toBe(true);
+    expect(limit.err.join('\n')).toContain('Invalid --limit "lots"');
+  });
+
+  it('shows each kind with the field a reader opened it for', async () => {
+    await run(['init'], capture().io);
+    const decision = idOf(await output(['decision', 'Adopt SQLite', 'it is local-first']));
+    const skill = idOf(await output(['skill', 'One slice per PR', '--body', 'the pattern itself']));
+
+    const shownDecision = await output(['show', decision]);
+    expect(shownDecision).toContain('ADR-1 — Adopt SQLite (proposed)');
+    expect(shownDecision).toContain('it is local-first');
+
+    // A skill's body IS served here: this reader is curating patterns, and the
+    // agent's surface makes the opposite call (see `runShow`).
+    const shownSkill = await output(['show', skill]);
+    expect(shownSkill).toContain('One slice per PR (proposed)');
+    expect(shownSkill).toContain('the pattern itself');
+
+    const json = JSON.parse(await output(['show', decision, '--json'])) as {
+      kind: string;
+      scope: string;
+      record: { rationale: string };
+    };
+    expect(json.kind).toBe('decision');
+    expect(json.scope).toBe('public');
+    expect(json.record.rationale).toBe('it is local-first');
+  });
+
+  it('refuses an id no tree holds, and works with no project at all', async () => {
+    const missing = capture();
+    await run(['init'], capture().io);
+    await run(['show', 'not-a-real-id'], missing.io);
+    expect(missing.failed()).toBe(true);
+    expect(missing.err.join('\n')).toContain('No record not-a-real-id here.');
+
+    // Outside a project the global tree is still a record worth searching — the
+    // one place these two part from the intelligence reads, which refuse.
+    const outside = join(sandbox, 'elsewhere');
+    mkdirSync(outside, { recursive: true });
+    process.chdir(outside);
+    try {
+      const personal = capture();
+      await run(['memory', 'a personal note', '--scope', 'global'], personal.io);
+      expect(personal.failed()).toBe(false);
+      const found = capture();
+      await run(['search', 'personal'], found.io);
+      expect(found.failed()).toBe(false);
+      expect(found.out.join('\n')).toContain('global');
+    } finally {
+      process.chdir(repo);
+    }
+  });
+
+  it('leaves the trees byte-identical: a read that writes nothing', async () => {
+    await run(['init'], capture().io);
+    const id = idOf(await output(['memory', 'a fact worth finding']));
+
+    const before = digestOf(sandbox);
+    await output(['search', 'fact']);
+    await output(['search']);
+    await output(['show', id]);
+    expect(digestOf(sandbox)).toBe(before);
   });
 });
 

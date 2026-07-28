@@ -17,7 +17,9 @@ import {
   catalogUpcasters,
   decisionBirth,
   decisionTransitioned,
+  handoffRecorded,
   knowledgeLinked,
+  memoryCaptured,
   observationRecorded,
   runEnded,
   runStarted,
@@ -180,6 +182,27 @@ export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
     skillTransitioned(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
       { from, to: 'deprecated', action: 'deprecate', fields: { reason: 'unused' } },
+    ),
+  );
+}
+
+/** Appends a `memory.captured`, returning its id. */
+export function capture(b: Bench, id: string, content: string): string {
+  b.writer.append(
+    memoryCaptured(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      { content },
+    ),
+  );
+  return id;
+}
+
+/** Appends a `handoff.recorded` on a task — a fact with no prose of its own. */
+export function handoff(b: Bench, task: string, fromAgent: string, toAgent: string): void {
+  b.writer.append(
+    handoffRecorded(
+      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: task },
+      { fromAgent, toAgent },
     ),
   );
 }

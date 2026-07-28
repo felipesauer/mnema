@@ -53,10 +53,12 @@ import {
   runGuardTool,
   runLinkKnowledge,
   runNextActionsTool,
+  runReadRecordTool,
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
   runResumeTool,
+  runSearchTool,
   runSkills,
   runSkillTransition,
   runTaskTransition,
@@ -1452,6 +1454,193 @@ describe('MCP session + tools — unit', () => {
     expect(runAntipatternsTool(session)).toMatchObject({ ok: false, code: 'NO_PROJECT' });
   });
 
+  it('search finds a record in EVERY tree the session sees, marking each with its own', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    // The agent's own capture is private; the team's is public; a personal note
+    // is global. All three are the same words and all three must come back.
+    const mine = runCaptureMemory(session, { content: 'the deploy runbook, as I know it' });
+    const team = runCaptureMemory(session, {
+      content: 'the deploy runbook, as the team wrote it',
+      scope: 'public',
+    });
+    const personal = runCaptureMemory(session, {
+      content: 'the deploy runbook, my own habit',
+      scope: 'global',
+    });
+    if (!mine.ok || !team.ok || !personal.ok) throw new Error('setup: capture refused');
+
+    const found = runSearchTool(session, { term: 'runbook' });
+
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    expect(found.value.total).toBe(3);
+    expect(new Map(found.value.hits.map((h) => [h.id, h.scope]))).toEqual(
+      new Map([
+        [mine.id, 'private'],
+        [team.id, 'public'],
+        [personal.id, 'global'],
+      ]),
+    );
+  });
+
+  it('search serves an index, never a body, and no relevance score', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const captured = runCaptureMemory(session, {
+      content: `the beginning is findable ${'filler '.repeat(60)} and the ending is not`,
+    });
+    if (!captured.ok) throw new Error('setup: capture refused');
+
+    const found = runSearchTool(session, { term: 'findable' });
+
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    const serialized = JSON.stringify(found.value);
+    expect(serialized).not.toContain('the ending is not');
+    expect(serialized).not.toContain('score');
+    expect(found.value.hits[0]?.derived).toBe(true);
+  });
+
+  it('search lists the most recent when there is no term, and narrows by filter', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    runCaptureMemory(session, { content: 'a note about caching' });
+    const task = runCreateTask(session, { title: 'fix the caching bug' });
+    if (!task.ok) throw new Error('setup: task refused');
+
+    expect(runSearchTool(session, {}).ok && runSearchTool(session, {}).ok).toBe(true);
+    const listed = runSearchTool(session, {});
+    if (!listed.ok) return;
+    expect(listed.value.total).toBe(2);
+
+    const byKind = runSearchTool(session, { term: 'caching', kind: 'task' });
+    if (!byKind.ok) return;
+    expect(byKind.value.hits.map((h) => h.id)).toEqual([task.id]);
+  });
+
+  it('search refuses an absent scope and an unknown kind as data, never a silent empty', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+
+    expect(runSearchTool(session, { scope: 'public' })).toMatchObject({
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+    });
+    expect(runSearchTool(session, { kind: 'memories' as never })).toMatchObject({
+      ok: false,
+      code: 'UNKNOWN_KIND',
+    });
+  });
+
+  it('read_record serves the whole record the index only pointed at', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const content = `the beginning ${'filler '.repeat(60)} and the very ending`;
+    const captured = runCaptureMemory(session, { content, scope: 'public' });
+    if (!captured.ok) throw new Error('setup: capture refused');
+
+    const read = runReadRecordTool(session, { id: captured.id });
+
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.value.kind).toBe('memory');
+    expect(read.value.scope).toBe('public');
+    expect(read.value.kind === 'memory' && read.value.record.content).toBe(content);
+  });
+
+  it('read_record sends a SKILL to the skills tool — the body has one door', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const id = adoptSkill(session, { name: 'stacked-prs', body: 'One slice per PR.' });
+
+    const read = runReadRecordTool(session, { id });
+
+    expect(read).toMatchObject({ ok: false, code: 'USE_SKILLS_TOOL' });
+    // The refusal must not carry the body it declined to serve.
+    expect(JSON.stringify(read)).not.toContain('One slice per PR.');
+    // …and the skill's NAME is still findable, so the agent can reach the pattern.
+    const found = runSearchTool(session, { term: 'stacked' });
+    if (!found.ok) return;
+    expect(found.value.hits.map((h) => h.kind)).toEqual(['skill']);
+  });
+
+  it('read_record refuses an unknown id, and a run/handoff/link id, as data', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    expect(runReadRecordTool(session, { id: 'nope' })).toMatchObject({
+      ok: false,
+      code: 'UNKNOWN_RECORD',
+    });
+    // The session's own run is a real id in the record — and still not a record
+    // to read: `focus`/`resume` serve a run.
+    expect(runReadRecordTool(session, { id: session.runId })).toMatchObject({
+      ok: false,
+      code: 'UNKNOWN_RECORD',
+    });
+  });
+
+  it('search and read_record leave the sandbox BYTE-IDENTICAL — including for a skill', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const skill = adoptSkill(session, { name: 'a pattern', body: 'the body' });
+    const captured = runCaptureMemory(session, { content: 'a fact worth finding' });
+    if (!captured.ok) throw new Error('setup: capture refused');
+    const before = digest(sandbox);
+
+    runSearchTool(session, { term: 'fact' });
+    runSearchTool(session, {});
+    runSearchTool(session, { term: 'pattern' });
+    runReadRecordTool(session, { id: captured.id });
+    // Refused, and therefore no consultation either — the routing must not be a
+    // back door into recording one.
+    runReadRecordTool(session, { id: skill });
+
+    expect(digest(sandbox)).toBe(before);
+    expect(consultations(chainRootForScope(session.trees, 'private') as string)).toEqual([]);
+  });
+
+  it('search works with no project: the global tree is a record too', () => {
+    const session = openSession({ clientName: 'claude-code', roots: [], env });
+    expect(session.inProject).toBe(false);
+    const captured = runCaptureMemory(session, { content: 'a personal note, no project' });
+    if (!captured.ok) throw new Error('setup: capture refused');
+
+    const found = runSearchTool(session, { term: 'personal' });
+
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    expect(found.value.hits.map((h) => h.scope)).toEqual(['global']);
+  });
+
   it('closeSession ends the run; a second close is a tolerated no-op', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(closeSession(session)).toBe(true);
@@ -1506,10 +1695,12 @@ describe('MCP server — end to end over a real client', () => {
       'guard',
       'link_knowledge',
       'next_actions',
+      'read_record',
       'record_decision',
       'record_handoff',
       'record_observation',
       'resume',
+      'search',
       'skill_transition',
       'skills',
       'task_transition',
@@ -1894,6 +2085,78 @@ describe('MCP server — end to end over a real client', () => {
     expect(publicVerdict.ok).toBe(true);
     expect(privateVerdict.ok).toBe(true);
     expect(privateVerdict.fullySigned).toBe(true);
+
+    await client.close();
+  });
+
+  it('search finds a record over the transport, and read_record serves its body', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Three records over the wire, in two trees. Only one carries the term.
+    await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'the auth flow uses PKCE with a rotating secret', scope: 'public' },
+    });
+    await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'Adopt trunk-based development', rationale: 'fewer merges' },
+    });
+    await client.callTool({ name: 'create_task', arguments: { title: 'wire the callback' } });
+
+    const found = await client.callTool({ name: 'search', arguments: { term: 'PKCE' } });
+    expect(found.isError).toBeFalsy();
+    const index = JSON.parse(textOf(found)) as {
+      hits: { id: string; kind: string; scope: string; title: string; derived: boolean }[];
+      total: number;
+    };
+    expect(index.total).toBe(1);
+    expect(index.hits[0]?.kind).toBe('memory');
+    expect(index.hits[0]?.scope).toBe('public');
+    expect(index.hits[0]?.derived).toBe(true);
+
+    // The id the index gave reads the whole thing.
+    const read = await client.callTool({
+      name: 'read_record',
+      arguments: { id: index.hits[0]?.id },
+    });
+    expect(read.isError).toBeFalsy();
+    expect(textOf(read)).toContain('the auth flow uses PKCE with a rotating secret');
+
+    // With no term at all: the most recent, across kinds and trees.
+    const recent = await client.callTool({ name: 'search', arguments: {} });
+    const listed = JSON.parse(textOf(recent)) as { hits: { kind: string }[]; total: number };
+    expect(listed.total).toBe(3);
+    expect(listed.hits.map((h) => h.kind).sort()).toEqual(['decision', 'memory', 'task']);
+
+    // A term nothing matches is an ANSWER, not a tool error.
+    const nothing = await client.callTool({ name: 'search', arguments: { term: 'zebra' } });
+    expect(nothing.isError).toBeFalsy();
+    expect(JSON.parse(textOf(nothing))).toEqual({ hits: [], total: 0 });
+
+    await client.close();
+  });
+
+  it('read_record refuses a skill and an unknown id as tool errors over the transport', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const proposed = await client.callTool({
+      name: 'create_skill',
+      arguments: { name: 'stacked-prs', body: 'One slice per PR.' },
+    });
+    const id = /\(([^)]+)\)/.exec(textOf(proposed))?.[1] as string;
+
+    const refused = await client.callTool({ name: 'read_record', arguments: { id } });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (USE_SKILLS_TOOL)');
+    expect(textOf(refused)).not.toContain('One slice per PR.');
+
+    const unknown = await client.callTool({ name: 'read_record', arguments: { id: 'nope' } });
+    expect(unknown.isError).toBe(true);
+    expect(textOf(unknown)).toContain('Refused (UNKNOWN_RECORD)');
 
     await client.close();
   });
