@@ -14,16 +14,21 @@
  * `audit_*` intelligence reads — audit_timeline, audit_accountability,
  * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
  * reads (focus/resume/next_actions/guard, like bootstrap) are READ-ONLY — they
- * open a cache, rebuild, and derive; they open no writer. `guard` is a dry-run of
- * the gate: it simulates a move and returns the verdict, having written nothing.
+ * derive from the session's projection cache; they open no writer. `guard` is a
+ * dry-run of the gate: it simulates a move and returns the verdict, having
+ * written nothing.
  * The `audit_*` reads are read-only too but fold the UNION of the session's trees
- * (the auditor's view of the whole record), never opening a cache or a writer.
+ * (the auditor's view of the whole record), never touching a cache or a writer.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
  * ahead of the initialized callback still finds a session rather than failing.
  * A failure to open the session is surfaced honestly as a tool error, never a
  * silent no-op.
+ *
+ * A session holds live resources — its open run and the warm projection caches
+ * its reads share — so the connection ending has to release both. `closeSession`
+ * does both, and the transport's `onclose` is what calls it.
  */
 
 import type { DiscoveryEnv } from '@mnema/core';
@@ -128,9 +133,10 @@ export function buildMcpServer(options: McpServerOptions = {}): {
   const connect = async (): Promise<void> => {
     const transport = new StdioServerTransport();
     // Best-effort close: when stdin closes (the client disconnects), end the
-    // session's run. Only a session that actually opened is closed; a run left
-    // open by a crash is tolerated (the projection reads it as still open), so
-    // this never throws.
+    // session's run and release its caches. Only a session that actually opened
+    // is closed; a run left open by a crash is tolerated (the projection reads
+    // it as still open), so this never throws. A session that FAILED to open
+    // holds nothing to release — it never reached the point of reading a tree.
     transport.onclose = () => {
       if (sessionPromise === undefined) return;
       void sessionPromise
