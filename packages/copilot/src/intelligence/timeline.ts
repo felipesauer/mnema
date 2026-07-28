@@ -4,41 +4,53 @@
  * "Tell me the story of this task / decision / skill / memory." The story is the
  * events where the entity is the PROTAGONIST (`subject`) plus the events where it
  * is REFERRED to — an observation `about` it, a knowledge link whose `target` is
- * it. A task's narrative is richer than its own transitions: it was created,
- * moved, then someone observed something about it and linked it to a decision.
- * Those referring facts live on OTHER subjects (the observation's own id, the
- * linking entity's id), so a filter on `subject` alone would miss them; timeline
- * gathers all three axes.
+ * it, a supersede whose successor (`by`) is it. A task's narrative is richer than
+ * its own transitions: it was created, moved, then someone observed something
+ * about it and linked it to a decision. Those referring facts live on OTHER
+ * subjects (the observation's own id, the linking entity's id), so a filter on
+ * `subject` alone would miss them.
+ *
+ * Which is exactly what the REFERENCE INDEX holds — one row per (event, entity,
+ * role) — so this reads the index rather than scanning the stream. Two things
+ * follow from that, and both are the point:
+ *
+ *   - The fourth role costs nothing. `by` used to be invisible from the
+ *     successor's side: the fact naming it lives on the SUPERSEDED decision's
+ *     event, so a scan for "events whose subject is this decision" never found
+ *     it and the successor's story never said it had superseded anything. As a
+ *     row it is found by the same query as the other three.
+ *   - It is answered from the cache. A history used to re-read every tree's
+ *     tails on every call; now it is an indexed lookup per tree, which is what
+ *     a warm session makes nearly free.
  *
  * It RELATES, it does not JUDGE. Each entry is the event as written — when, what
- * kind, who authorized it, which agent executed it, and the role by which the
- * entity appears. No entry says a history is "long", "troubled", or "healthy":
- * that reading is the caller's. The line the whole intelligence layer holds.
+ * kind, who authorized it, which agent executed it, which tree it lives in, and
+ * the role by which the entity appears. No entry says a history is "long",
+ * "troubled", or "healthy": that reading is the caller's. The line the whole
+ * intelligence layer holds.
  *
- * The stream is already in one total, deterministic order (`orderedEvents`), so
- * timeline PRESERVES that order rather than re-sorting — the k-way merge's order
- * is the faithful interleaving, and re-sorting by `at` alone would break a tail's
- * proven within-tail order when two events share an `at`. It filters and maps; it
- * never reorders.
+ * ## The order
+ *
+ * Within a tree the index keeps the stream's own position (`ord`), so a tree's
+ * entries come back in its proven order — never re-sorted by `at`, which would
+ * move a later-sequenced fact earlier whenever a clock stepped back. Across trees
+ * they are merged by the SAME rule the chain's own union uses: repeatedly take
+ * the tree whose next entry has the smallest `at`, ties broken by the fixed tree
+ * order. That is a k-way merge, and a k-way merge is associative — merging each
+ * tree's already-merged tails and then merging those lists lands exactly where
+ * merging every tail at once lands, because every tail of an earlier tree sorts
+ * before every tail of a later one. So this reproduces `orderedEventsAcross`
+ * rather than approximating it, and a test holds it to that.
  *
  * What it does NOT do: resolve what KIND the entity is, or what kind a referring
- * target is. The catalog carries ids, not kinds, across a relation (a link's
- * `target` is only an id); resolving "linked to a DECISION" means crossing
- * projections, a debt carried since the knowledge slice. timeline answers in
- * events and ids — the honest minimum. A surface that wants types crosses the
- * projections on top.
+ * target is. timeline answers in events and ids — the honest minimum. A surface
+ * that wants types crosses the projections on top (`references` does exactly
+ * that for the graph reading).
  */
 
+import type { ReferenceRole, ReferenceRow, Scope } from '@mnema/core';
+import type { ScopedCache } from '../sources.js';
 import type { CatalogEvent, EventKind } from './events.js';
-
-/** Why an entity appears in an event: as its subject, or referred to by it. */
-export type TimelineRole =
-  /** The entity IS the event's subject — the protagonist of the fact. */
-  | 'subject'
-  /** An observation is `about` the entity — it is referred to, not the subject. */
-  | 'about'
-  /** A knowledge link's `target` is the entity — it is pointed at. */
-  | 'target';
 
 /** One event in an entity's history, normalized to what a reader needs. */
 export interface TimelineEntry {
@@ -53,49 +65,81 @@ export interface TimelineEntry {
   /** The event's own subject id (NOT necessarily the queried entity). */
   readonly subject: string;
   /** How the queried entity appears in this event. */
-  readonly role: TimelineRole;
+  readonly role: ReferenceRole;
+  /** The tree the fact lives in: the team's, this machine's, or the person's own. */
+  readonly scope: Scope;
   /** The event as written, for a reader that needs the typed payload. */
   readonly event: CatalogEvent;
 }
 
 /**
- * The history of `entityId`: every event where it is the subject, or is referred
- * to by an observation's `about` or a knowledge link's `target`, in the stream's
- * own order. An entity that no event touches yields an empty list. A blank
- * entityId matches nothing (a whitespace id is never a real minted id).
+ * The history of `entityId` across `sources`: every event where it is the
+ * subject, or is referred to by an observation's `about`, a knowledge link's
+ * `target`, or a supersede's `by` — in the union's own order. An entity that no
+ * event touches yields an empty list (a legitimate answer, never an error), and
+ * a blank entityId matches nothing.
  *
- * An event that touches the entity on more than one axis at once cannot occur in
- * this catalog — the referring axes (`about`, `target`) live on events whose own
- * subject is a different id — so each matched event yields exactly one entry, and
- * `role` records the single axis by which it matched.
+ * An event that names the entity on more than one axis yields ONE entry, whose
+ * `role` is the strongest of them: being the protagonist of a fact outranks
+ * being referred to by it. The index applies that rule per tree, and an event
+ * belongs to exactly one tree, so it holds across the merge too.
  */
-export function timeline(events: readonly CatalogEvent[], entityId: string): TimelineEntry[] {
-  if (entityId.trim() === '') return [];
-  const out: TimelineEntry[] = [];
-  for (const event of events) {
-    const role = roleOf(event, entityId);
-    if (role === undefined) continue;
-    out.push({
-      at: event.at,
-      kind: event.kind,
-      who: event.who,
-      ...(event.which !== undefined ? { which: event.which } : {}),
-      subject: event.subject,
-      role,
-      event,
-    });
+export function timeline(sources: readonly ScopedCache[], entityId: string): TimelineEntry[] {
+  const streams = sources
+    .map((source) => ({
+      scope: source.scope,
+      rows: source.cache.references(entityId),
+      cursor: 0,
+    }))
+    .filter((stream) => stream.rows.length > 0);
+
+  const merged: TimelineEntry[] = [];
+  for (;;) {
+    const next = earliest(streams);
+    if (next === undefined) break;
+    merged.push(toEntry(next.rows[next.cursor] as ReferenceRow, next.scope));
+    next.cursor += 1;
   }
-  return out;
+  return merged;
+}
+
+/** One tree's entries for the queried entity, and how far they are drained. */
+interface Stream {
+  readonly scope: Scope;
+  readonly rows: readonly ReferenceRow[];
+  cursor: number;
 }
 
 /**
- * The role by which `entityId` appears in `event`, or undefined if it does not.
- * Subject wins first (the entity is the protagonist); otherwise the referring
- * axes are checked on exactly the kinds that carry them.
+ * The stream to take the next entry from: the one whose head has the smallest
+ * `at`, ties broken by the order the trees were given. Consuming heads this way
+ * never reorders a tree against its own proven order — only heads of DIFFERENT
+ * trees are ever compared, exactly as the chain's own merge does it.
  */
-function roleOf(event: CatalogEvent, entityId: string): TimelineRole | undefined {
-  if (event.subject === entityId) return 'subject';
-  if (event.kind === 'observation.recorded' && event.payload.about === entityId) return 'about';
-  if (event.kind === 'knowledge.linked' && event.payload.target === entityId) return 'target';
-  return undefined;
+function earliest(streams: readonly Stream[]): Stream | undefined {
+  let chosen: Stream | undefined;
+  for (const stream of streams) {
+    if (stream.cursor >= stream.rows.length) continue;
+    if (chosen === undefined) {
+      chosen = stream;
+      continue;
+    }
+    const head = (stream.rows[stream.cursor] as ReferenceRow).at;
+    const best = (chosen.rows[chosen.cursor] as ReferenceRow).at;
+    if (head < best) chosen = stream;
+  }
+  return chosen;
+}
+
+function toEntry(row: ReferenceRow, scope: Scope): TimelineEntry {
+  return {
+    at: row.at,
+    kind: row.kind,
+    who: row.who,
+    ...(row.which !== undefined ? { which: row.which } : {}),
+    subject: row.subject,
+    role: row.role,
+    scope,
+    event: row.event,
+  };
 }

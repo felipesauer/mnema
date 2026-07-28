@@ -4,15 +4,15 @@
  * The first INTELLIGENCE read, and the auditor's counterpart of `next-actions`:
  * it takes an id and tells the entity's whole story — every event where it is
  * the subject, plus the events that REFER to it (an observation `about` it, a
- * knowledge link whose `target` is it). Those referring facts live on other
- * subjects in possibly other trees, so the source is the UNION of the present
- * trees ({@link unionEvents}), not one tree's cache — a task's narrative crosses
- * the public/private/global boundary and the read must too.
+ * knowledge link whose `target` is it, a supersede whose successor it is). Those
+ * referring facts live on other subjects in possibly other trees, so it reads
+ * EVERY visible tree's reference index and merges them — a task's narrative
+ * crosses the public/private/global boundary and the read must too.
  *
- * Read-only in the strict sense: it reads the tails of the present trees and
- * folds them with the copilot's pure `timeline`. No cache is rebuilt to disk, no
- * writer is opened, no key is minted — so it needs no `--actor` (the story is a
- * property of the record, not of who asks).
+ * Read-only in the strict sense: it opens a cache per tree, rebuilds it in
+ * memory, and calls the copilot's pure `timeline`. No writer is opened, no key
+ * is minted — so it needs no `--actor` (the story is a property of the record,
+ * not of who asks).
  *
  * An id no event touches yields an empty history — a legitimate answer ("nothing
  * is recorded about this yet"), not a refusal. There is no UNKNOWN_ID: an entity
@@ -22,10 +22,9 @@
  * context and guard reads do.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
 import { type TimelineEntry, timeline } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { unionEvents } from '../intelligence-source.js';
+import { withScopedCaches } from '../tree-sources.js';
 
 /** What the timeline command needs — injected so it is testable. */
 export interface TimelineContext {
@@ -52,10 +51,10 @@ export interface TimelineRefused {
 
 /**
  * Reports the history of the entity with `id`: every event across the present
- * trees where it is the subject, or is referred to by an observation's `about`
- * or a knowledge link's `target`, in the union's own deterministic order. An
- * empty list means no event touches it (never seen, or nothing recorded yet).
- * Read-only: it reads the tails and folds them, opening no writer and no cache.
+ * trees where it is the subject, or is referred to by an observation's `about`,
+ * a knowledge link's `target`, or a supersede's `by`, in the union's own
+ * deterministic order. An empty list means no event touches it (never seen, or
+ * nothing recorded yet). Read-only: no writer, no key.
  */
 export function runTimeline(
   ctx: TimelineContext,
@@ -68,6 +67,9 @@ export function runTimeline(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  const events = unionEvents(trees, catalogUpcasters());
-  return { ok: true, id: input.id, entries: timeline(events, input.id) };
+  return withScopedCaches(trees, (sources) => ({
+    ok: true,
+    id: input.id,
+    entries: timeline(sources, input.id),
+  }));
 }

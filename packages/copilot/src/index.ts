@@ -21,6 +21,16 @@ export const PACKAGE_NAME = '@mnema/copilot';
 // are re-exported here so a consumer of @mnema/copilot can build a guard request
 // and read its verdict without reaching into @mnema/core directly.
 export type { GateErr, GateErrorCode, GateOk, GateRequest, GateResult } from '@mnema/core';
+// The reference index's own vocabulary — the four roles and the direction of a
+// walk — is the core's, and re-exported for the same reason: a consumer reads a
+// timeline entry's `role` or asks for a direction without reaching past this
+// layer.
+export {
+  REFERENCE_ROLES,
+  type ReferenceDirection,
+  type ReferenceRole,
+  type ReferringRole,
+} from '@mnema/core';
 export {
   type Bootstrap,
   bootstrap,
@@ -44,7 +54,6 @@ export {
   type RecordQuery,
   type RecordSearch,
   readRecord,
-  type ScopedCache,
   searchRecords,
 } from './context/search.js';
 export {
@@ -74,7 +83,17 @@ export {
 } from './intelligence/antipatterns.js';
 export type { CatalogEvent, EventKind } from './intelligence/events.js';
 export {
+  effectiveDepth,
+  REFERENCE_DEFAULT_DEPTH,
+  REFERENCE_MAX_DEPTH,
+  type ReferenceGraph,
+  type ReferenceLink,
+  type ReferenceNode,
+  type ReferenceQuery,
+  references,
+} from './intelligence/references.js';
+export {
   type TimelineEntry,
-  type TimelineRole,
   timeline,
 } from './intelligence/timeline.js';
+export type { ScopedCache } from './sources.js';

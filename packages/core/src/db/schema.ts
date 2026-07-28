@@ -31,6 +31,8 @@ export const PROJECTION_TABLES = [
   // dropping it drops the shadow tables FTS5 keeps behind it, so the rebuild
   // wipes the index with the same one line it wipes a relational table.
   'record_search',
+  // The reference index: one row per (event, entity, role).
+  'refs',
 ] as const;
 
 const SCHEMA = `
@@ -215,6 +217,64 @@ CREATE VIRTUAL TABLE IF NOT EXISTS record_search USING fts5(
   at UNINDEXED,
   tokenize = 'unicode61 remove_diacritics 2'
 );
+
+-- The reference index: one row per (event, entity, ROLE) — every way an entity
+-- appears in a fact.
+--
+-- Unlike every other table here, this one is not a fold: it is one row per
+-- APPEARANCE, so the same event contributes a row for its subject and another
+-- for each entity it refers to. That single shape answers the two questions the
+-- record is asked from opposite ends — "which events touch this entity" (its
+-- history) and "which entities does this entity reach" (the graph) — because an
+-- edge between two entities is nothing but two rows of one event: the subject
+-- row and a referring one.
+--
+-- The four roles are the whole graph of the product, and they are not a
+-- vocabulary this table invents: each is a field the catalog already proves.
+-- The subject role is the envelope's own; about is an observation's; target is
+-- a link's; by is the successor a decision's supersede names. That fourth one
+-- is the reason the index exists rather than a query over the links table: it
+-- lives in a transition payload, so a reader that only knew about links could
+-- see that a decision WAS superseded and never that another superseded it.
+--
+-- ord is the event's position in THIS tree's ordered stream, so ordering by it
+-- replays the tree's own proven order without re-sorting by a wall clock. It is
+-- also the join key: two rows share an ord exactly when they come from one
+-- event.
+--
+-- The event column carries the fact as written, JSON-encoded. It is what lets a
+-- history be answered from the index alone — the typed payload an auditor reads
+-- (which action, which state, which relation label) exists nowhere else in the
+-- cache. It is duplicated onto the referring rows rather than joined back to
+-- the subject row: a referring row is a minority of the table, and a history is
+-- the hot read.
+CREATE TABLE IF NOT EXISTS refs (
+  -- The event's position in this tree's ordered stream. Shared by every row of
+  -- one event.
+  ord     INTEGER NOT NULL,
+  -- The entity this row is about — the one the role names.
+  entity  TEXT NOT NULL,
+  -- How the entity appears: 'subject', 'about', 'target' or 'by'.
+  role    TEXT NOT NULL,
+  -- The envelope, denormalized so a history needs no second table.
+  at      TEXT NOT NULL,
+  kind    TEXT NOT NULL,
+  who     TEXT NOT NULL,
+  -- The executing agent, or NULL when the human acted directly.
+  which   TEXT,
+  -- The event's OWN subject, whatever this row's role is. It is what makes an
+  -- edge readable off a single referring row: subject → entity.
+  subject TEXT NOT NULL,
+  -- The event as written, JSON-encoded.
+  event   TEXT NOT NULL,
+  -- One row per (entity, role, event). The key also indexes the by-entity read,
+  -- which is the history query.
+  PRIMARY KEY (entity, role, ord)
+) STRICT;
+
+-- The join that turns two rows into an edge: given one event's ord, find its
+-- other rows. Without it, resolving an edge would scan the table.
+CREATE INDEX IF NOT EXISTS idx_refs_ord ON refs (ord, role);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

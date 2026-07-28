@@ -39,7 +39,6 @@ import {
   effectiveLimit,
   type MemoryProjection,
   type ObservationProjection,
-  type ProjectionCache,
   type Scope,
   type SearchHit,
   type SearchKind,
@@ -47,14 +46,7 @@ import {
   type SkillProjection,
   type TaskProjection,
 } from '@mnema/core';
-
-/** One tree's projection cache, and which tree it is. */
-export interface ScopedCache {
-  /** The tree this cache projects — the scope every hit from it carries. */
-  readonly scope: Scope;
-  /** The cache itself, already rebuilt by whoever owns it. */
-  readonly cache: ProjectionCache;
-}
+import type { ScopedCache } from '../sources.js';
 
 /** What to look for, plus the one filter that is about trees rather than rows. */
 export interface RecordQuery extends SearchQuery {

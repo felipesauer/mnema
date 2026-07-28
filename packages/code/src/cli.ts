@@ -14,7 +14,13 @@
  * without spawning a process or writing to the real streams.
  */
 
-import type { RecordBody, RecordSearch } from '@mnema/copilot';
+import {
+  REFERENCE_DEFAULT_DEPTH,
+  REFERENCE_MAX_DEPTH,
+  type RecordBody,
+  type RecordSearch,
+  type ReferenceGraph,
+} from '@mnema/copilot';
 import {
   IdentityUnavailableError,
   type Scope,
@@ -40,6 +46,7 @@ import { runLink } from './commands/link.js';
 import { runMemory } from './commands/memory.js';
 import { runNextActions } from './commands/next-actions.js';
 import { runObserve } from './commands/observe.js';
+import { REFERENCE_DIRECTIONS, runReferences } from './commands/references.js';
 import { runResume } from './commands/resume.js';
 import { runRunEnd } from './commands/run-end.js';
 import { runRunStart } from './commands/run-start.js';
@@ -323,6 +330,62 @@ function printRecord(body: RecordBody, io: CliIo): void {
       io.out('');
       io.out(body.record.body);
       break;
+  }
+}
+
+/**
+ * Prints the reference graph as an entity and the edges around it: what points
+ * INTO it (`←`) and what it points AT (`→`), each with the relation as written
+ * and the tree the assertion lives in.
+ *
+ * The entity's OWN edges come first, whatever their instant, and the edges further
+ * out follow. `--json` emits the read's single instant-ordered list; this grouping
+ * is the terminal's judgement that a reader looking at one thing wants that
+ * thing's own connections at the top. Beyond one hop the nodes are then listed by
+ * distance, because at that point the edge list stops reading as a shape and the
+ * distances are what the reader came for.
+ *
+ * An unresolved far end is marked, never dropped: the reference is a fact even
+ * when the thing it names is not visible from here. And when the depth cut the
+ * answer the last line says so — a bounded answer that does not say it was
+ * bounded reads as everything there is.
+ */
+function printReferences(graph: ReferenceGraph, io: CliIo): void {
+  const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
+  const origin = nodes.get(graph.id);
+  const known = origin?.resolved === true ? (origin.kind ?? 'entity') : 'unresolved';
+  io.out(`${graph.id}  ·  ${known}`);
+  if (graph.links.length === 0) {
+    io.out('  nothing references it, and it references nothing.');
+    return;
+  }
+  const label = (id: string) => {
+    const node = nodes.get(id);
+    if (node === undefined) return id;
+    if (!node.resolved) return `${id} (unresolved)`;
+    return node.kind !== undefined ? `${id} (${node.kind})` : id;
+  };
+  const touchesOrigin = (link: ReferenceGraph['links'][number]) =>
+    link.from === graph.id || link.to === graph.id;
+  for (const link of [
+    ...graph.links.filter(touchesOrigin),
+    ...graph.links.filter((l) => !touchesOrigin(l)),
+  ]) {
+    const rel = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
+    if (link.from === graph.id) io.out(`  → ${rel}  ${label(link.to)}  [${link.scope}]`);
+    else if (link.to === graph.id) io.out(`  ← ${rel}  ${label(link.from)}  [${link.scope}]`);
+    else io.out(`    ${label(link.from)} → ${rel} → ${label(link.to)}  [${link.scope}]`);
+  }
+  if (graph.depth > 1) {
+    io.out('');
+    for (const node of graph.nodes) {
+      if (node.depth === 0) continue;
+      io.out(`  ${node.depth} hop(s)  ${label(node.id)}`);
+    }
+  }
+  if (graph.truncated) {
+    io.out('');
+    io.out(`  cut at ${graph.depth} hop(s) — more lies beyond. Raise --depth to see it.`);
   }
 }
 
@@ -1516,6 +1579,56 @@ export function buildProgram(io: CliIo = processIo): Command {
           `skill candidates (reopened >1×): ${skillCandidates.map((f) => f.entityId).join(', ')}`,
         );
       }
+    });
+
+  // `mnema refs <id> [--direction --depth] [--json]` — the graph reading of the
+  // same index `timeline` reads: not the events that touch an entity but the
+  // ENTITIES it connects to. One verb, two shapes: the default is the
+  // neighbourhood (one hop, either way), and a direction with more depth is a
+  // lineage. It says when the depth cut the answer, and reports a far end no tree
+  // ever authored as unresolved rather than dropping it.
+  program
+    .command('refs')
+    .description('show what an entity is connected to across the trees')
+    .argument('<id>', 'the entity id (a task, decision, memory, skill, …)')
+    .option(
+      '--direction <way>',
+      `which way to follow edges: ${REFERENCE_DIRECTIONS.join(', ')}`,
+      'both',
+    )
+    .option(
+      '--depth <n>',
+      `how many hops (max ${REFERENCE_MAX_DEPTH})`,
+      String(REFERENCE_DEFAULT_DEPTH),
+    )
+    .option('--json', 'emit the faithful graph as JSON')
+    .action((id: string, opts: { direction?: string; depth?: string; json?: boolean }) => {
+      const depth = Number.parseInt(opts.depth ?? '', 10);
+      if (Number.isNaN(depth)) {
+        io.err(`Not a number of hops: ${opts.depth}`);
+        io.fail();
+        return;
+      }
+      const result = runReferences(
+        { cwd: process.cwd(), env: discoveryEnv() },
+        { id, depth, ...(opts.direction !== undefined ? { direction: opts.direction } : {}) },
+      );
+      if (!result.ok) {
+        if (result.reason === 'NO_PROJECT') {
+          io.err('No mnema project here. Run `mnema init` first.');
+        } else {
+          io.err(
+            `Not a direction: ${result.direction}. One of: ${REFERENCE_DIRECTIONS.join(', ')}.`,
+          );
+        }
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.graph, null, 2));
+        return;
+      }
+      printReferences(result.graph, io);
     });
 
   // `key` is a group, and the only one whose subject is not the record but the

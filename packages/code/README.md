@@ -27,9 +27,10 @@ CLI and the MCP tools behave identically, because they are the same call.
 - **Reads that answer questions** — what is in flight (`focus`), where you left
   off (`resume`), what the workflow allows next (`next-actions`), and whether a
   move would be allowed at all (`guard`, a dry run that writes nothing).
-- **Audit reads** — an entity's history across trees (`timeline`), who
-  authorized what (`accountability`), and recurring shapes like reopens and
-  supersessions (`antipatterns`). They report; they do not judge.
+- **Audit reads** — an entity's history across trees (`timeline`), what it is
+  connected to (`refs`), who authorized what (`accountability`), and recurring
+  shapes like reopens and supersessions (`antipatterns`). They report; they do
+  not judge.
 
 ## What it proves — and what it does not
 
