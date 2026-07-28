@@ -163,8 +163,8 @@ export function supersedeDecision(b: Bench, id: string, by: string, from = 'ACCE
   );
 }
 
-/** Appends a skill's birth pair, returning its id. */
-export function birthSkill(b: Bench, id: string, name: string, initial = 'PROPOSED'): string {
+/** Appends a skill's birth pair, returning its id. States are the workflow's own. */
+export function birthSkill(b: Bench, id: string, name: string, initial = 'proposed'): string {
   for (const e of skillBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
     { name, body: `body of ${name}`, initial },
@@ -175,11 +175,11 @@ export function birthSkill(b: Bench, id: string, name: string, initial = 'PROPOS
 }
 
 /** Appends a `skill.transitioned {action: 'deprecate'}`. */
-export function deprecateSkill(b: Bench, id: string, from = 'ADOPTED'): void {
+export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
   b.writer.append(
     skillTransitioned(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-      { from, to: 'DEPRECATED', action: 'deprecate', fields: { reason: 'unused' } },
+      { from, to: 'deprecated', action: 'deprecate', fields: { reason: 'unused' } },
     ),
   );
 }

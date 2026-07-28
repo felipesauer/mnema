@@ -39,6 +39,13 @@ export {
   nextActionsForTask,
 } from './context/next-action.js';
 export {
+  type AdoptedSkill,
+  adoptedSkills,
+  lookupAdoptedSkill,
+  type SkillLookup,
+  type SkillRef,
+} from './context/skills.js';
+export {
   type GuardWithFocus,
   guard,
   guardWithFocus,

@@ -16,6 +16,7 @@ import {
   adoptSkill,
   createSkill,
   deprecateSkill,
+  recordConsultation,
   rejectSkill,
   reviewSkill,
   type SkillWriteContext,
@@ -223,6 +224,97 @@ describe('the skill transitions are gated against the chain', () => {
       ok: false,
       code: 'ILLEGAL_TRANSITION',
     });
+  });
+});
+
+describe('recordConsultation — a fact about a skill, not a move of it', () => {
+  it('appends one skill.consulted whose subject IS the skill, with an empty payload', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustCreate(ctx, { name: 'Small PRs', body: 'One slice per PR.', which: WHICH });
+    tick();
+
+    expect(recordConsultation(ctx, { skill: id, which: WHICH, run: 'r-1' })).toEqual({ ok: true });
+
+    const consulted = orderedEvents({ root }, upcasters).filter(
+      (e) => e.kind === 'skill.consulted',
+    );
+    expect(consulted).toHaveLength(1);
+    expect(consulted[0]?.subject).toBe(id);
+    expect(consulted[0]?.payload).toEqual({});
+    // The whole fact is the envelope: the agent that read it and the session.
+    expect(consulted[0]?.which).toBe(WHICH);
+    expect(consulted[0]?.run).toBe('r-1');
+    expect(consulted[0]?.who).toBe(w.anchor);
+  });
+
+  it('does NOT move the skill: its state and its projection are untouched', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustCreate(ctx, { name: 'Small PRs', body: 'One slice per PR.' });
+    const before = skillsOf(root).get(id);
+    tick();
+
+    recordConsultation(ctx, { skill: id, which: WHICH, run: 'r-1' });
+
+    // Same state, same updatedAt — a consultation is not a transition.
+    expect(skillsOf(root).get(id)).toEqual(before);
+  });
+
+  it('records a consultation of a skill this tree does not hold (cross-tree, no refusal)', () => {
+    // The skill a session serves may live in the PUBLIC tree while the
+    // consultation lands PRIVATE. The reference is asserted, resolved on read.
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+
+    expect(recordConsultation(ctx, { skill: 'sk-elsewhere', which: WHICH })).toEqual({ ok: true });
+    expect(
+      orderedEvents({ root }, upcasters).filter((e) => e.kind === 'skill.consulted'),
+    ).toHaveLength(1);
+  });
+
+  it('records many consultations of the same skill without colliding', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustCreate(ctx, { name: 't', body: 'b' });
+    for (const run of ['r-1', 'r-2', 'r-3']) {
+      tick();
+      recordConsultation(ctx, { skill: id, which: WHICH, run });
+    }
+    const runs = orderedEvents({ root }, upcasters)
+      .filter((e) => e.kind === 'skill.consulted')
+      .map((e) => e.run);
+    expect(runs).toEqual(['r-1', 'r-2', 'r-3']);
+  });
+
+  it('refuses (and appends nothing) when the agent IS the authorizing anchor', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const before = orderedEvents({ root }, upcasters).length;
+
+    const result = recordConsultation(ctx, { skill: 'sk-1', which: w.anchor });
+
+    expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    expect(orderedEvents({ root }, upcasters)).toHaveLength(before);
+  });
+
+  it('leaves the chain verifiable: a consultation is a first-class signed fact', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustCreate(ctx, { name: 't', body: 'b' });
+    tick();
+    recordConsultation(ctx, { skill: id, which: WHICH, run: 'r-1' });
+    w.checkpoint();
+
+    const verdict = verify(root);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.fullySigned).toBe(true);
   });
 });
 

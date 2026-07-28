@@ -12,6 +12,7 @@ import {
   runEnded,
   runStarted,
   skillBirth,
+  skillConsulted,
   skillCreated,
   skillTransitioned,
   taskBirth,
@@ -367,6 +368,29 @@ describe('skillBirth', () => {
     // A skill transition never carries `by`.
     expect(canonicalStringify(toCanonical(withArg))).not.toContain('"by"');
     expect(withoutArg.kind).toBe('skill.created');
+  });
+});
+
+describe('skillConsulted', () => {
+  it('stamps the latest version and kind, and carries an EMPTY payload', () => {
+    const event = skillConsulted({ ...env, subject: 'sk-1', which: 'claude', run: 'r-1' });
+    expect(event).toMatchObject({ v: 1, kind: 'skill.consulted', subject: 'sk-1' });
+    expect(event.payload).toEqual({});
+  });
+
+  it('keeps the whole fact in the envelope: subject is the skill, run ties the session', () => {
+    const event = skillConsulted({ ...env, subject: 'sk-1', which: 'claude', run: 'r-1' });
+    expect(event.subject).toBe('sk-1');
+    expect(event.which).toBe('claude');
+    expect(event.run).toBe('r-1');
+    // The payload adds nothing — `{}` is the entire canonical payload.
+    expect(canonicalStringify(toCanonical(event))).toContain('"payload":{}');
+  });
+
+  it('omits an absent which/run rather than writing them undefined', () => {
+    const event = skillConsulted({ ...env, subject: 'sk-1' });
+    expect(Object.keys(event)).not.toContain('which');
+    expect(Object.keys(event)).not.toContain('run');
   });
 });
 

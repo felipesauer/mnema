@@ -4,8 +4,15 @@
  */
 import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bootstrap, guard } from '../src/index.js';
-import { type Bench, birthTask, makeBench, moveTask, startRun } from './support/chain.js';
+import { adoptedSkills, bootstrap, guard } from '../src/index.js';
+import {
+  type Bench,
+  birthSkill,
+  birthTask,
+  makeBench,
+  moveTask,
+  startRun,
+} from './support/chain.js';
 
 describe('README example', () => {
   it('runs exactly as documented', () => {
@@ -16,15 +23,20 @@ describe('README example', () => {
     const task = birthTask(bench, 'task-7', 'Parse tokens');
     moveTask(bench, task, 'DRAFT', 'READY', 'submit');
     moveTask(bench, task, 'READY', 'IN_PROGRESS', 'start');
+    birthSkill(bench, 'skill-3', 'Small PRs', 'adopted');
     const cache = bench.cache();
 
     try {
       // ---- README example begins ----
-      // Where did I leave off, and what can I do next?
-      const opening = bootstrap(cache, { actor: 'alice' });
+      // Where did I leave off, what can I do next, and by what patterns?
+      const opening = bootstrap(cache, { actor: 'alice' }, [cache]);
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
       const firstJob = opening.work[0]; // the freshest actionable task
       const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", ...]
+      const patterns = opening.skills.map((s) => s.name); // names only
+
+      // A name that matches the task at hand: ask for the pattern itself.
+      const [pattern] = adoptedSkills([cache]); // each carries its `body`
 
       // Before asking to move a task, is the move even allowed?
       const verdict = guard({
@@ -39,6 +51,8 @@ describe('README example', () => {
       expect(lastGoal).toBe('ship the parser');
       expect(firstJob?.id).toBe('task-7');
       expect(moves).toContain('complete');
+      expect(patterns).toEqual(['Small PRs']);
+      expect(pattern?.body).toBe('body of Small PRs');
       expect(verdict.ok).toBe(false);
       if (!verdict.ok) expect(verdict.code).toBe('MISSING_PROOF');
     } finally {

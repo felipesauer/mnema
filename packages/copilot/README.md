@@ -14,8 +14,12 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 ## What it gives you
 
 - **`bootstrap`** — the opening context for a session, focused on one actor:
-  where they left off (their latest run and open focus) plus the actionable work,
-  freshest first, each task carrying the moves the workflow allows on it.
+  where they left off (their latest run and open focus), the actionable work,
+  freshest first, each task carrying the moves the workflow allows on it, and the
+  names of the adopted patterns to work by.
+- **`adoptedSkills` / `lookupAdoptedSkill`** — the adopted patterns with their
+  body, all of them or one by id. Only `adopted` is served: the other states are
+  stages of deciding about a pattern, not patterns to work by.
 - **`focus` / `resume`** — what an actor is touching now (their open runs) and
   where they left off (their most recent run, open or ended, with its goal).
 - **`nextActions`** — from a task's state, the moves the workflow allows next,
@@ -59,13 +63,17 @@ Given a rebuilt `ProjectionCache` over your chain (see `@mnema/core`), read the
 opening context for an actor and ask whether a move is allowed:
 
 ```ts
-import { bootstrap, guard } from '@mnema/copilot';
+import { adoptedSkills, bootstrap, guard } from '@mnema/copilot';
 
-// Where did I leave off, and what can I do next?
-const opening = bootstrap(cache, { actor: 'alice' });
+// Where did I leave off, what can I do next, and by what patterns?
+const opening = bootstrap(cache, { actor: 'alice' }, [cache]);
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
 const firstJob = opening.work[0]; // the freshest actionable task
 const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", "complete", ...]
+const patterns = opening.skills.map((s) => s.name); // names only — one line each
+
+// A name that matches the task at hand: ask for the pattern itself.
+const [pattern] = adoptedSkills([cache]); // each carries its `body`
 
 // Before asking to move a task, is the move even allowed?
 const verdict = guard({
@@ -81,11 +89,16 @@ Every function here takes the actor (or the move) as a parameter and reads the
 cache — none of them resolve "who am I" or touch a writer. That is the surface's
 job, not a derivation's.
 
+`bootstrap`'s third argument is the list of caches whose adopted patterns count.
+The actor's work lives in one cache, but a pattern is a capability rather than a
+piece of work: a caller that can see several chains passes all of them, and
+`[cache]` is the honest answer when there is only one.
+
 ## The modules
 
 - **`context/`** — the session context derivations: `bootstrap` (the opening
-  read), `focus`/`resume` (an actor's current and last work), and `next-action`
-  (the moves a state allows).
+  read), `focus`/`resume` (an actor's current and last work), `next-action`
+  (the moves a state allows), and `skills` (the adopted patterns).
 - **`guard/`** — `guard`, the workflow gate exposed as a read-only consultation.
 
 To understand the boundary that justifies this being a package of its own, read

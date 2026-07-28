@@ -237,8 +237,15 @@ at some cwd and never creates one; only `mnema init` does that.
 
 The write tools mirror the CLI verbs — same gate, same refusals — so a move an
 agent cannot make is one you cannot make either. A few verbs live on one side
-only: `init` and `verify` are yours, and `bootstrap` — an agent's opening
-orientation — is the agent's.
+only: `init` and `verify` are yours, while `bootstrap` — an agent's opening
+orientation — and `skills` are the agent's.
+
+`skills` is what makes a recorded pattern usable: `bootstrap` lists the adopted
+skills by name, and `skills` hands over the pattern itself, all of them or one by
+id. It is the one read that also writes — consulting a pattern is recorded
+against the session, once per skill, so the record can later show which work was
+informed by which pattern. It records that the pattern was *read*, never that it
+was followed; nothing observable here can tell those apart.
 
 ## Layout on disk
 

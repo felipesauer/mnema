@@ -436,6 +436,36 @@ export interface SkillTransitionedV1 extends Envelope {
 }
 
 /**
+ * A skill was consulted — someone read the pattern, in this session.
+ *
+ * The fact answers "was this work informed by a pattern?", and it answers it
+ * HONESTLY: consulted, not followed. Whether the pattern actually shaped the
+ * work is not observable from serving its body, so the catalog records the only
+ * half that is — that the body was asked for and handed over. Recording
+ * "guided" would assert what nothing here proves; the same discipline that
+ * keeps `ok` and `fullySigned` apart in the verifier rather than rounding up to
+ * the stronger claim.
+ *
+ * Its subject is the SKILL, like a handoff's subject is the task: a consultation
+ * has no standalone identity worth minting, it is an entry in the skill's own
+ * history. Many consultations share one subject and do not collide — each is a
+ * distinct event with its own chain link.
+ *
+ * The payload is EMPTY, and that is the whole shape rather than a stub. Every
+ * part of the fact is already in the envelope the catalog carries for all
+ * kinds: `subject` is which skill, `who` authorized, `which` agent read it, `run`
+ * ties it to the session, `at` is when. A payload field would either duplicate
+ * the envelope or invent data — the skill's name and state at the time are both
+ * derivable from the record, and a derived copy can only drift from it.
+ */
+export interface SkillConsultedV1 extends Envelope {
+  readonly kind: 'skill.consulted';
+  readonly v: 1;
+  /** Subject is the SKILL that was read. */
+  readonly payload: Readonly<Record<string, never>>;
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -455,7 +485,8 @@ export type CatalogEvent =
   | HandoffRecordedV1
   | KnowledgeLinkedV1
   | SkillCreatedV1
-  | SkillTransitionedV1;
+  | SkillTransitionedV1
+  | SkillConsultedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -480,4 +511,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'knowledge.linked': 1,
   'skill.created': 1,
   'skill.transitioned': 1,
+  'skill.consulted': 1,
 };

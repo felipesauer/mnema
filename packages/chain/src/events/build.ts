@@ -408,6 +408,22 @@ export function skillTransitioned(
 }
 
 /**
+ * Builds a `skill.consulted` event (subject = the SKILL that was read). It takes
+ * no payload argument because there is none: the whole fact lives in the
+ * envelope — which skill (`subject`), who authorized, which agent read it, in
+ * what run, when. The empty object is written explicitly so the event still
+ * carries the `payload` key every kind has, canonicalizing to `{}`.
+ */
+export function skillConsulted(envelope: EnvelopeInput): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'skill.consulted',
+    ...envelopeFields(envelope),
+    payload: {},
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two
