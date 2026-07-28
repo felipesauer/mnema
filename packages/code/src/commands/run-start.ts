@@ -42,6 +42,8 @@ export interface RunStarted extends Replacement {
   readonly id: string;
   /** The agent the session is for, in the canonical form recorded. */
   readonly agent: string;
+  /** The goal AS RECORDED — screened, absent when none was stated. */
+  readonly goal?: string;
 }
 
 /** Opening the run was refused. */
@@ -103,8 +105,9 @@ export function runRunStart(
   return {
     ok: true,
     id: started.id,
-    // The label AS RECORDED — screened, so the echo shows what landed.
+    // The label and goal AS RECORDED — screened, so the echo shows what landed.
     agent: started.agent,
+    ...(started.goal !== undefined ? { goal: started.goal } : {}),
     ...forwardReplacement(started),
   };
 }

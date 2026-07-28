@@ -58,6 +58,12 @@ export interface StartRunOk extends ScreenedWrite {
   readonly id: string;
   /** The agent label AS RECORDED — screened, so an echo shows what landed. */
   readonly agent: string;
+  /**
+   * The goal AS RECORDED — screened, absent when none was stated. Reported for the
+   * same reason the agent is: a caller that echoed the value it passed IN would
+   * print a credential on the line above the one saying it had been replaced.
+   */
+  readonly goal?: string;
 }
 
 /** A run was closed: the `run.ended` fact was appended. */
@@ -164,6 +170,7 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
     ok: true,
     id,
     agent: text.fields.agent,
+    ...(text.fields.goal !== undefined ? { goal: text.fields.goal } : {}),
     ...screened([...text.replaced, ...agent.replaced]),
   };
 }

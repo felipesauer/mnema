@@ -2069,6 +2069,20 @@ describe('mnema CLI — what enters the record', () => {
     expect(v.failed()).toBe(false);
   });
 
+  it('run start echoes the goal AS RECORDED, not as typed', async () => {
+    await run(['init'], capture().io);
+    const s = capture();
+    await run(['run', 'start', '--which', 'an-agent', '--goal', `deploy with ${SECRET}`], s.io);
+    const printed = s.out.join('\n');
+
+    // The echo and the notice sit on consecutive lines, so printing the typed
+    // value would put a credential directly above the line saying it was
+    // replaced — the product contradicting itself in two lines.
+    expect(printed).not.toContain(SECRET);
+    expect(printed).toContain('deploy with <SECRET:aws-access-key>');
+    expect(printed).toContain('1 value(s) replaced before recording');
+  });
+
   it('the notice stays away when nothing was replaced', async () => {
     await run(['init'], capture().io);
     const m = capture();

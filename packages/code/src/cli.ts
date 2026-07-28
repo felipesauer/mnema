@@ -1172,7 +1172,9 @@ export function buildProgram(io: CliIo = processIo): Command {
         return;
       }
       io.out(`Started run ${result.id}`);
-      io.out(`  for ${result.agent}${opts.goal !== undefined ? ` — ${opts.goal}` : ''}`);
+      // Both halves AS RECORDED, never as typed: echoing `opts.goal` would print a
+      // credential on the line directly above the one reporting it was replaced.
+      io.out(`  for ${result.agent}${result.goal !== undefined ? ` — ${result.goal}` : ''}`);
       reportReplacement(result, io);
       // The export line alone, so it can be selected, pasted or eval'd. A process
       // cannot set a variable in the shell that started it, so printing the line
