@@ -63,7 +63,6 @@ import {
   chainRootForScope,
   DECISION_ACTIONS,
   deriveAlias,
-  locateEntityScope,
   orderedEvents,
   projectDecisions,
   projectSkills,
@@ -88,6 +87,7 @@ import {
   transitionTask,
 } from '@mnema/core/write';
 import { unionEvents } from '../intelligence-source.js';
+import { locateEntityInSession } from './locate.js';
 import { type Session, writeContext } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -468,7 +468,7 @@ export function runCreateTask(
  * one tree, and a move must land there — writing it to the session's tree
  * instead (the session opened private, but the task may be public) would split
  * the task's history and hide the move from whoever reads only one tree. So the
- * tool LOCATES the task's home tree ({@link locateEntityScope}) and opens THAT
+ * tool LOCATES the task's home tree ({@link locateEntityInSession}) and opens THAT
  * tree's writer; the session's scope governs where a session's NEW work is born,
  * not where an existing entity is moved. If no visible tree holds the task, it
  * refuses `UNKNOWN_TASK`.
@@ -486,7 +486,7 @@ export function runTaskTransition(
 ): TransitionResult {
   // Route by the task's home tree, not the session's scope: the move follows the
   // entity so its history stays whole in one tree.
-  const scope = locateEntityScope(session.trees, input.id, catalogUpcasters());
+  const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
@@ -578,7 +578,7 @@ export function runRecordDecision(
  * arg on the single tool.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
- * decision's home tree ({@link locateEntityScope}) and opens THAT writer, so the
+ * decision's home tree ({@link locateEntityInSession}) and opens THAT writer, so the
  * move never splits the history. If no visible tree holds it, `UNKNOWN_DECISION`.
  *
  * The action string routes to the operation — `accept`/`reject` carry the `note`,
@@ -594,7 +594,7 @@ export function runDecisionTransition(
   const upcasters = catalogUpcasters();
   // Route by the decision's home tree, not the session's scope: the move follows
   // the entity so its history stays whole in one tree.
-  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
     return {
       ok: false,
@@ -720,7 +720,7 @@ export function runCreateSkill(
  * and refuses identically; only the transport differs.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
- * skill's home tree ({@link locateEntityScope}) and opens THAT writer, so the move
+ * skill's home tree ({@link locateEntityInSession}) and opens THAT writer, so the move
  * never splits the history. If no visible tree holds it, `UNKNOWN_SKILL`.
  *
  * The action string routes to the named operation — review/adopt/reject carry a
@@ -737,7 +737,7 @@ export function runSkillTransition(
   const upcasters = catalogUpcasters();
   // Route by the skill's home tree, not the session's scope: the move follows the
   // entity so its history stays whole in one tree.
-  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
     return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
   }
@@ -859,7 +859,7 @@ export type NextActionsResult =
  * `next_actions` — the moves the workflow allows a task next.
  *
  * Keyed by an ENTITY, not the actor: it locates the task's home tree
- * ({@link locateEntityScope}) — a task lives in exactly one of the session's
+ * ({@link locateEntityInSession}) — a task lives in exactly one of the session's
  * trees — takes THAT tree's cache, and returns the copilot's `nextActionsForTask`.
  * Read-only. An id no visible tree holds is refused `UNKNOWN_TASK` (returned as
  * data so the server shapes it into a tool error, never thrown); an existing
@@ -871,8 +871,7 @@ export type NextActionsResult =
  * tree can never be answered from the private tree's projection.
  */
 export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
-  const upcasters = catalogUpcasters();
-  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
@@ -904,7 +903,7 @@ export type GuardResult =
 /**
  * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
  * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
- * locates the task's home tree ({@link locateEntityScope}), takes THAT tree's
+ * locates the task's home tree ({@link locateEntityInSession}), takes THAT tree's
  * cache, reads the task's current state as the `from`, and calls the copilot's
  * pure {@link guardWithFocus} — no writer, no event. The verdict is the gate's
  * own, the SAME function `task_transition` consults, so a guard that says ALLOWED
@@ -931,8 +930,7 @@ export function runGuardTool(
     which?: string;
   },
 ): GuardResult {
-  const upcasters = catalogUpcasters();
-  const scope = locateEntityScope(session.trees, input.id, upcasters);
+  const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
