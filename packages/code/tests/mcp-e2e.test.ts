@@ -57,6 +57,7 @@ import {
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runReferencesTool,
   runResumeTool,
   runSearchTool,
   runSkills,
@@ -1446,10 +1447,57 @@ describe('MCP session + tools — unit', () => {
     expect(after).toBe(before);
   });
 
+  it('audit_refs finds an edge whose ends live in different session trees, writing nothing', () => {
+    const project = makeProject('proj');
+    const trees = resolveTrees(project, env);
+    // A task in PUBLIC; the observation about it lands in the session's PRIVATE
+    // tree. The edge itself lives in private, its far end in public.
+    const publicCtx = writeContext(trees, 'public', createCacheRegistry());
+    const task = createTask(publicCtx, { title: 'connected' });
+    if (!task.ok) throw new Error('setup');
+    publicCtx.writer.checkpoint();
+
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const obs = runRecordObservation(session, { about: task.id, topic: 't', text: 'note' });
+    if (!obs.ok) throw new Error('setup');
+
+    const publicRoot = chainRootForScope(trees, 'public') as string;
+    const privateRoot = chainRootForScope(trees, 'private') as string;
+    const before = [
+      orderedEvents({ root: publicRoot }, catalogUpcasters()).length,
+      orderedEvents({ root: privateRoot }, catalogUpcasters()).length,
+    ];
+
+    const result = runReferencesTool(session, { id: task.id });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.links.map((l) => [l.from, l.role, l.to, l.scope])).toEqual([
+      [obs.id, 'about', task.id, 'private'],
+    ]);
+    // Both ends resolved, each to the tree that actually holds it.
+    const nodes = new Map(result.value.nodes.map((n) => [n.id, n]));
+    expect(nodes.get(task.id)).toMatchObject({ kind: 'task', scope: 'public', depth: 0 });
+    expect(nodes.get(obs.id)).toMatchObject({ kind: 'observation', scope: 'private', depth: 1 });
+
+    const after = [
+      orderedEvents({ root: publicRoot }, catalogUpcasters()).length,
+      orderedEvents({ root: privateRoot }, catalogUpcasters()).length,
+    ];
+    expect(after).toEqual(before);
+  });
+
   it('the intelligence reads refuse NO_PROJECT with no project (as data, never thrown)', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(session.inProject).toBe(false);
     expect(runTimelineTool(session, { id: 'x' })).toMatchObject({ ok: false, code: 'NO_PROJECT' });
+    expect(runReferencesTool(session, { id: 'x' })).toMatchObject({
+      ok: false,
+      code: 'NO_PROJECT',
+    });
     expect(runAccountabilityTool(session, {})).toMatchObject({ ok: false, code: 'NO_PROJECT' });
     expect(runAntipatternsTool(session)).toMatchObject({ ok: false, code: 'NO_PROJECT' });
   });
@@ -1685,6 +1733,7 @@ describe('MCP server — end to end over a real client', () => {
     expect(names).toEqual([
       'audit_accountability',
       'audit_antipatterns',
+      'audit_refs',
       'audit_timeline',
       'bootstrap',
       'capture_memory',
@@ -2241,6 +2290,100 @@ describe('MCP server — end to end over a real client', () => {
     };
     expect(patterns.reopenedTasks).toEqual([]);
     expect(patterns.skillCandidates).toEqual([]);
+
+    await client.close();
+  });
+
+  it('search gives the id, audit_refs gives the neighbourhood, and then the lineage', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // The record: a decision, its successor, and a memory that links to the first.
+    const first = await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'store tokens in the keychain', rationale: 'the OS protects it' },
+    });
+    const firstId = /\(([^)]+)\)/.exec(textOf(first))?.[1] as string;
+    const second = await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'store tokens in the keychain, revisited', rationale: 'scoped now' },
+    });
+    const secondId = /\(([^)]+)\)/.exec(textOf(second))?.[1] as string;
+    await client.callTool({
+      name: 'decision_transition',
+      arguments: { id: firstId, action: 'accept', note: 'agreed' },
+    });
+    await client.callTool({
+      name: 'decision_transition',
+      arguments: { id: firstId, action: 'supersede', by: secondId, reason: 'scope was too wide' },
+    });
+    const note = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'the keychain call came out of the token incident' },
+    });
+    const noteId = textOf(note).replace('Captured memory ', '').trim();
+    await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: noteId, target: firstId, rel: 'derived-from' },
+    });
+
+    // 1. SEARCH — the entry point, which hands back a usable id.
+    const found = await client.callTool({ name: 'search', arguments: { term: 'keychain' } });
+    const hits = (JSON.parse(textOf(found)) as { hits: Array<{ id: string; kind: string }> }).hits;
+    const hit = hits.find((h) => h.id === firstId);
+    expect(hit?.kind).toBe('decision');
+
+    // 2. The NEIGHBOURHOOD of that id: what points at it, what it points at.
+    const around = await client.callTool({ name: 'audit_refs', arguments: { id: firstId } });
+    const graph = JSON.parse(textOf(around)) as {
+      links: Array<{ from: string; to: string; role: string; rel?: string }>;
+      nodes: Array<{ id: string; depth: number; kind?: string; resolved: boolean }>;
+      truncated: boolean;
+    };
+    expect(graph.links.map((l) => [l.from, l.role, l.to]).sort()).toEqual(
+      [
+        [firstId, 'by', secondId],
+        [noteId, 'target', firstId],
+      ].sort(),
+    );
+    // The link's own label travels out verbatim; the supersede edge has none.
+    expect(graph.links.find((l) => l.role === 'target')?.rel).toBe('derived-from');
+    expect(graph.links.find((l) => l.role === 'by')?.rel).toBeUndefined();
+    expect(graph.nodes.every((n) => n.resolved)).toBe(true);
+
+    // 3. The LINEAGE from the memory: two directed hops, the second reached only
+    //    through the supersede — the edge that was invisible before the index.
+    const lineage = await client.callTool({
+      name: 'audit_refs',
+      arguments: { id: noteId, direction: 'out', depth: 2 },
+    });
+    const walked = JSON.parse(textOf(lineage)) as {
+      nodes: Array<{ id: string; depth: number; kind?: string }>;
+      truncated: boolean;
+    };
+    expect(walked.nodes.map((n) => [n.id, n.depth])).toEqual([
+      [noteId, 0],
+      [firstId, 1],
+      [secondId, 2],
+    ]);
+    expect(walked.nodes.map((n) => n.kind)).toEqual(['memory', 'decision', 'decision']);
+    expect(walked.truncated).toBe(false);
+
+    // …and at one hop the answer SAYS it was cut rather than reading as complete.
+    const cut = await client.callTool({
+      name: 'audit_refs',
+      arguments: { id: noteId, direction: 'out', depth: 1 },
+    });
+    expect((JSON.parse(textOf(cut)) as { truncated: boolean }).truncated).toBe(true);
+
+    // The whole walk wrote nothing: the record still verifies clean.
+    const trees = resolveTrees(project, env);
+    for (const scope of ['public', 'private'] as const) {
+      const root = chainRootForScope(trees, scope);
+      if (root === undefined) continue;
+      expect(verify(root, catalogUpcasters()).ok).toBe(true);
+    }
 
     await client.close();
   });

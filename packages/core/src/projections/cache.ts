@@ -31,6 +31,18 @@ import {
   listObservationsAbout,
 } from './knowledge-store.js';
 import { rebuild } from './rebuild.js';
+import {
+  type AuthorshipFilter,
+  type AuthorshipTally,
+  isKnownEntity,
+  listReferences,
+  type ReferenceDirection,
+  type ReferenceEdgeRow,
+  type ReferenceRow,
+  type ReferenceSeed,
+  tallyAuthorship,
+  walkReferences,
+} from './reference-store.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
 import { type SearchQuery, type SearchResult, searchRecord } from './search-store.js';
@@ -190,6 +202,44 @@ export class ProjectionCache {
    */
   search(query: SearchQuery = {}): SearchResult {
     return searchRecord(this.db, query);
+  }
+
+  /**
+   * Every event in this tree that touches `entityId` — as its subject, or by
+   * referring to it — in the tree's own order, one entry per event. The
+   * entity's history as this tree holds it.
+   */
+  references(entityId: string): ReferenceRow[] {
+    return listReferences(this.db, entityId);
+  }
+
+  /**
+   * True when some event in this tree has `entityId` as its subject. The test of
+   * whether the record AUTHORED the thing, as opposed to merely pointing at it.
+   */
+  knows(entityId: string): boolean {
+    return isKnownEntity(this.db, entityId);
+  }
+
+  /**
+   * The authorship tally over this tree — how many facts each author wrote, by
+   * kind and by executing agent — narrowed by the optional filter.
+   */
+  authorship(filter: AuthorshipFilter = {}): AuthorshipTally[] {
+    return tallyAuthorship(this.db, filter);
+  }
+
+  /**
+   * Walks this tree's reference graph from `seeds`, following edges in
+   * `direction` for at most `maxDepth` hops, and returns the edges traversed.
+   * Cycle-safe and capped by construction.
+   */
+  walk(
+    seeds: readonly ReferenceSeed[],
+    direction: ReferenceDirection,
+    maxDepth: number,
+  ): ReferenceEdgeRow[] {
+    return walkReferences(this.db, seeds, direction, maxDepth);
   }
 
   /** Closes the underlying database. */

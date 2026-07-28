@@ -4,7 +4,7 @@
  * This is the derivation the proof exists FOR. Every event carries `who` (the
  * human who AUTHORIZED the fact, an anchor derived from a key — unforgeable) and,
  * when an agent acted, `which` (the agent that EXECUTED it, a free name). The two
- * are distinct identities by construction. accountability folds a stream into a
+ * are distinct identities by construction. accountability folds the record into a
  * factual account of authorship: per authorizing `who`, how many facts, of which
  * kinds, and which agents acted under that authority. The human authorized; the
  * agent executed — kept visibly separate, because that separation is the whole
@@ -15,31 +15,33 @@
  * count only so the output is deterministic and stable, NOT as a verdict of
  * importance; a reader who wants a different order sorts the rows themselves. The
  * moment this said "excessive" or "concerning" it would stop being a derivation
- * of the proof and start inventing a fact the chain never recorded. It reports
- * what the events say; the interpretation is the reader's.
+ * of the proof and start inventing a fact the chain never recorded.
  *
- * The scope is the caller's: it folds exactly the events handed to it (one tree,
- * or the union across trees), narrowed by the optional filters. It reads only the
- * envelope — `who`, `which`, `kind`, `at` — never a payload, so it is blind to
- * WHAT each fact was beyond its kind, which is right: authorship is an envelope
- * property.
+ * ## Counted in SQL, not in a scan
+ *
+ * The counting happens in the REFERENCE INDEX, one grouped query per tree, and
+ * the trees' tallies are summed here. It counts subject rows, of which every
+ * event has exactly one — so an event that refers to three entities is still one
+ * fact, and the total is a count of events, not of references.
+ *
+ * The two breakdowns (by kind, by agent) come from ONE grouping, summed along
+ * different axes. Deriving them from a single tally is what keeps them from
+ * disagreeing: they cannot report different totals for the same author, because
+ * they are two sums of the same cells.
+ *
+ * It reads only the envelope — `who`, `which`, `kind`, `at` — never a payload, so
+ * it is blind to WHAT each fact was beyond its kind, which is right: authorship
+ * is an envelope property.
  */
 
-import type { CatalogEvent, EventKind } from './events.js';
+import type { AuthorshipFilter, AuthorshipTally } from '@mnema/core';
+import type { ScopedCache } from '../sources.js';
+import type { EventKind } from './events.js';
 
-/** Optional narrowing of the stream before it is aggregated. */
-export interface AccountabilityFilter {
-  /** Include only events at or after this ISO-8601 instant (inclusive). */
-  readonly from?: string;
-  /** Include only events at or before this ISO-8601 instant (inclusive). */
-  readonly to?: string;
-  /** Include only events authorized by this `who` (an anchor id). */
-  readonly who?: string;
-  /** Include only events executed by this agent (`which`). */
-  readonly which?: string;
-}
+/** Optional narrowing of the record before it is aggregated. */
+export type AccountabilityFilter = AuthorshipFilter;
 
-/** One authorizing identity's factual account of authorship over the stream. */
+/** One authorizing identity's factual account of authorship over the record. */
 export interface WhoAccount {
   /** The authorizing human (an anchor id). */
   readonly who: string;
@@ -72,7 +74,7 @@ export interface WhichCount {
   readonly count: number;
 }
 
-/** A factual account of authorship over a stream, within an optional window. */
+/** A factual account of authorship over the record, within an optional window. */
 export interface Accountability {
   /** The `from` filter applied, echoed back for the reader (undefined if none). */
   readonly from?: string;
@@ -85,22 +87,23 @@ export interface Accountability {
 }
 
 /**
- * Folds `events` into a factual account of authorship, after narrowing by the
- * optional filters. The window is inclusive on both ends and compared on the ISO
- * strings directly (ISO-8601 UTC stamps sort lexically, the same order the chain
- * merges on). An empty stream — or filters that exclude everything — yields a
- * zero account (`total: 0`, empty `byWho`), never an error.
+ * The account of authorship across `sources`, after narrowing by the optional
+ * filter. The window is inclusive on both ends and compared on the ISO strings
+ * directly (ISO-8601 UTC stamps sort lexically, the same order the chain merges
+ * on). An empty record — or filters that exclude everything — yields a zero
+ * account (`total: 0`, empty `byWho`), never an error.
  */
 export function accountability(
-  events: readonly CatalogEvent[],
+  sources: readonly ScopedCache[],
   filter: AccountabilityFilter = {},
 ): Accountability {
   const perWho = new Map<string, WhoAccumulator>();
   let total = 0;
-  for (const event of events) {
-    if (!inScope(event, filter)) continue;
-    total += 1;
-    accumulate(perWho, event);
+  for (const source of sources) {
+    for (const cell of source.cache.authorship(filter)) {
+      total += cell.count;
+      accumulate(perWho, cell);
+    }
   }
   const byWho = [...perWho.values()].map(finishWho).sort(byTotalThenWho);
   return {
@@ -119,26 +122,19 @@ interface WhoAccumulator {
   readonly byWhich: Map<string | null, number>;
 }
 
-/** True if an event passes every provided filter. */
-function inScope(event: CatalogEvent, filter: AccountabilityFilter): boolean {
-  if (filter.from !== undefined && event.at < filter.from) return false;
-  if (filter.to !== undefined && event.at > filter.to) return false;
-  if (filter.who !== undefined && event.who !== filter.who) return false;
-  if (filter.which !== undefined && event.which !== filter.which) return false;
-  return true;
-}
-
-/** Adds one event to its author's tallies, creating the author on first sight. */
-function accumulate(perWho: Map<string, WhoAccumulator>, event: CatalogEvent): void {
-  let acc = perWho.get(event.who);
+/**
+ * Adds one tally cell to its author's totals, creating the author on first
+ * sight. The same cell feeds both breakdowns, which is why they always agree.
+ */
+function accumulate(perWho: Map<string, WhoAccumulator>, cell: AuthorshipTally): void {
+  let acc = perWho.get(cell.who);
   if (acc === undefined) {
-    acc = { who: event.who, total: 0, byKind: new Map(), byWhich: new Map() };
-    perWho.set(event.who, acc);
+    acc = { who: cell.who, total: 0, byKind: new Map(), byWhich: new Map() };
+    perWho.set(cell.who, acc);
   }
-  acc.total += 1;
-  acc.byKind.set(event.kind, (acc.byKind.get(event.kind) ?? 0) + 1);
-  const which = event.which ?? null;
-  acc.byWhich.set(which, (acc.byWhich.get(which) ?? 0) + 1);
+  acc.total += cell.count;
+  acc.byKind.set(cell.kind, (acc.byKind.get(cell.kind) ?? 0) + cell.count);
+  acc.byWhich.set(cell.which, (acc.byWhich.get(cell.which) ?? 0) + cell.count);
 }
 
 /** Finishes an accumulator into an immutable, stably-ordered account. */

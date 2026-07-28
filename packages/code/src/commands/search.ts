@@ -23,24 +23,15 @@
  * a person's own notes, which are a legitimate thing to search from anywhere.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
-import {
-  type RecordQuery,
-  type RecordSearch,
-  type ScopedCache,
-  searchRecords,
-} from '@mnema/copilot';
+import { type RecordQuery, type RecordSearch, searchRecords } from '@mnema/copilot';
 import {
   chainRootForScope,
   type DiscoveryEnv,
   isSearchKind,
-  ProjectionCache,
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-
-/** The trees a search reads, in a fixed order. The order reaches no answer. */
-const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
+import { withScopedCaches } from '../tree-sources.js';
 
 /** What the search command needs — injected so it is testable. */
 export interface SearchContext {
@@ -79,18 +70,8 @@ export function runSearch(ctx: SearchContext, input: RecordQuery = {}): SearchDo
     return { ok: false, reason: 'SCOPE_UNAVAILABLE', scope: input.scope };
   }
 
-  const upcasters = catalogUpcasters();
-  const sources: ScopedCache[] = [];
-  try {
-    for (const scope of SCOPES) {
-      const root = chainRootForScope(trees, scope);
-      if (root === undefined) continue;
-      const cache = ProjectionCache.open(root, { upcasters });
-      cache.rebuild();
-      sources.push({ scope, cache });
-    }
-    return { ok: true, result: searchRecords(sources, input) };
-  } finally {
-    for (const source of sources) source.cache.close();
-  }
+  return withScopedCaches(trees, (sources) => ({
+    ok: true,
+    result: searchRecords(sources, input),
+  }));
 }

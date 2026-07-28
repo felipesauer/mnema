@@ -64,8 +64,10 @@ import {
   type RecordBody,
   type RecordQuery,
   type RecordSearch,
+  type ReferenceGraph,
   type Resume,
   readRecord,
+  references,
   resume,
   type ScopedCache,
   searchRecords,
@@ -81,6 +83,7 @@ import {
   type ProjectionCache,
   projectDecisions,
   projectSkills,
+  type ReferenceDirection,
   type Scope,
   SEARCH_KINDS,
   SKILL_ACTIONS,
@@ -1269,31 +1272,57 @@ function requireProject(
 /**
  * `audit_timeline` — the whole history of one entity across the session's trees.
  *
- * The auditor's counterpart of `next_actions`: it takes an id and folds the UNION
- * of the session's present trees ({@link unionEvents}) into the entity's story —
- * every event where it is the subject, plus the events that refer to it (an
- * observation `about` it, a link whose `target` is it), which may live in a
- * different tree. Read-only: it reads the tails and folds them with the copilot's
- * pure `timeline`, opening no writer and no cache. An id no event touches yields
- * an empty history (a valid answer, not a refusal); with no project it refuses
+ * The auditor's counterpart of `next_actions`: it takes an id and merges every
+ * tree's reference index into the entity's story — every event where it is the
+ * subject, plus the events that refer to it (an observation `about` it, a link
+ * whose `target` is it, a supersede whose successor it is), which may live in a
+ * different tree. Read-only: it asks the session's warm caches and composes the
+ * copilot's pure `timeline`, opening no writer. An id no event touches yields an
+ * empty history (a valid answer, not a refusal); with no project it refuses
  * `NO_PROJECT`.
  */
 export function runTimelineTool(session: Session, input: { id: string }): TimelineToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  const events = unionEvents(session.trees, catalogUpcasters());
-  return { ok: true, value: timeline(events, input.id) };
+  return { ok: true, value: timeline(scopedCaches(session), input.id) };
+}
+
+/** The `audit_refs` result — the graph around an entity, or a refusal. */
+export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
+
+/**
+ * `audit_refs` — what an entity is connected to, across the session's trees.
+ *
+ * The graph reading of the index `audit_timeline` reads: not the events that
+ * touch an entity but the ENTITIES it connects to. One hop either way is its
+ * neighbourhood — the natural next question after a `search` hit; a direction
+ * and more depth is a lineage (a decision's supersede chain, everything derived
+ * from a memory).
+ *
+ * It walks across trees, because an edge lives in the tree its event was written
+ * to while its far end may live in another. A far end no visible tree ever
+ * authored comes back marked unresolved rather than dropped, and an answer the
+ * depth cut says so. Read-only: the session's warm caches and the copilot's pure
+ * `references`; with no project it refuses `NO_PROJECT`.
+ */
+export function runReferencesTool(
+  session: Session,
+  input: { id: string; direction?: ReferenceDirection; depth?: number },
+): ReferencesToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  return { ok: true, value: references(scopedCaches(session), input) };
 }
 
 /**
  * `audit_accountability` — who authorized what across the session's trees.
  *
- * Folds the UNION of the session's present trees into a factual account of
- * authorship. With no filter it accounts for the whole record (git shortlog -sn);
+ * Sums every present tree's grouped counts into a factual account of authorship.
+ * With no filter it accounts for the whole record (git shortlog -sn);
  * `from`/`to`/`who`/`which` only narrow it — they are aggregation filters, never
  * the session actor's identity (the session's `who` is not imposed as a filter).
- * Read-only: it reads the tails and folds them with the copilot's pure
- * `accountability`. With no project it refuses `NO_PROJECT`.
+ * Read-only: the session's warm caches and the copilot's pure `accountability`.
+ * With no project it refuses `NO_PROJECT`.
  */
 export function runAccountabilityTool(
   session: Session,
@@ -1301,8 +1330,7 @@ export function runAccountabilityTool(
 ): AccountabilityToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  const events = unionEvents(session.trees, catalogUpcasters());
-  return { ok: true, value: accountability(events, input) };
+  return { ok: true, value: accountability(scopedCaches(session), input) };
 }
 
 /**

@@ -63,6 +63,22 @@ export {
   listObservationsAbout,
 } from './projections/knowledge-store.js';
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
+export {
+  type AuthorshipFilter,
+  type AuthorshipTally,
+  isKnownEntity,
+  listReferences,
+  materializeReferences,
+  REFERENCE_ROLES,
+  type ReferenceDirection,
+  type ReferenceEdgeRow,
+  type ReferenceRole,
+  type ReferenceRow,
+  type ReferenceSeed,
+  type ReferringRole,
+  tallyAuthorship,
+  walkReferences,
+} from './projections/reference-store.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
 export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
 export {
