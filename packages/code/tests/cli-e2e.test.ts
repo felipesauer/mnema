@@ -43,8 +43,9 @@ import {
   resolveTrees,
 } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
+import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { buildProgram, type CliIo, run } from '../src/cli.js';
 
 let sandbox: string;
 let repo: string;
@@ -2004,6 +2005,207 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['run', 'start', '--which', 'claude-code'], s.io);
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('Run `mnema init`');
+  });
+});
+
+/**
+ * A `--which` that names nobody, end to end.
+ *
+ * The property under test is not "the flag is validated". It is that an agent
+ * cannot become indistinguishable from a person by DECLARING itself and naming
+ * nothing — which is what `--which "$AGENT"` with an unset variable does in a CI
+ * step, and what the record used to swallow twice over: the `which` dropped out of
+ * every event (so the fact asserted a human acted directly) and the birth was
+ * routed to the team's COMMITTED tree, because "no agent" is read as "a person
+ * captured this".
+ *
+ * The three forms are not decoration. `canonicalIdentity` is the one rule that
+ * decides this, and what it says about a form is the answer here — so a form it
+ * reads as an identity (the zero-width one) is asserted to be ACCEPTED, not
+ * refused. Guessing would have written the opposite test.
+ */
+describe('mnema CLI — a --which that names nobody', () => {
+  function treesOf() {
+    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+  }
+
+  /** Every event of a tree, or [] when that tree was never written. */
+  function eventsOf(root: string | undefined) {
+    return root !== undefined && existsSync(root)
+      ? orderedEvents({ root }, catalogUpcasters())
+      : [];
+  }
+
+  /**
+   * The forms that name NO agent, and one that does.
+   *
+   * Whitespace is the accident (`"$VAR"` empty, a copy-paste that brought a
+   * non-breaking space along); the lone surrogate is the value the chain cannot
+   * canonicalize at all, which the same rule catches for free.
+   */
+  const NAMES_NOBODY: readonly (readonly [string, string])[] = [
+    ['a space', '   '],
+    ['a tab', '\t'],
+    ['a non-breaking space (U+00A0)', ' '],
+    ['an ideographic space (U+3000)', '　'],
+    ['a byte-order mark (U+FEFF)', '﻿'],
+    ['a lone surrogate', '\ud800'],
+  ];
+
+  for (const [label, value] of NAMES_NOBODY) {
+    it(`REFUSES --which that is ${label}, and nothing is recorded`, async () => {
+      await run(['init'], capture().io);
+      const before = eventsOf(treesOf().projectPublic).length;
+
+      const t = capture();
+      await run(['task', 'ship it', '--which', value], t.io);
+      expect(t.failed()).toBe(true);
+      // The message says both ways out: name the agent, or drop the flag.
+      const said = t.err.join('\n');
+      expect(said).toContain('--which');
+      expect(said).toContain('names no agent');
+      expect(said).toContain('a person acted directly');
+
+      // Nothing was born — in ANY tree. The refusal is at the door, before a
+      // scope is even resolved, so there is no "it landed somewhere else".
+      const trees = treesOf();
+      expect(eventsOf(trees.projectPublic).length).toBe(before);
+      expect(eventsOf(trees.projectPrivate).some((e) => e.kind === 'task.created')).toBe(false);
+      expect(eventsOf(trees.global).some((e) => e.kind === 'task.created')).toBe(false);
+    });
+  }
+
+  it('a MOVE refuses it too — the flag is read off the parent group, the rule is not', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+    // A birth is a PAIR (created + the transition into the initial state), so the
+    // count before is what "it did not move" is measured against — not zero.
+    const transitions = () =>
+      eventsOf(treesOf().projectPublic).filter((e) => e.kind === 'task.transitioned').length;
+    const before = transitions();
+
+    const m = capture();
+    await run(['task', 'move', 'submit', id, '--which', '   '], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('names no agent');
+    // The task did not move: the refusal is at parse time, before the action runs.
+    expect(transitions()).toBe(before);
+  });
+
+  it('`run start --which "   "` refuses, and no session is born', async () => {
+    // The old failure here was an INTERNAL error leaking out ("needs a non-empty
+    // string at payload.agent") for a value the surface should never have taken.
+    await run(['init'], capture().io);
+    const s = capture();
+    await run(['run', 'start', '--which', ' '], s.io);
+    expect(s.failed()).toBe(true);
+    expect(s.err.join('\n')).toContain('names no agent');
+    expect(s.err.join('\n')).not.toContain('payload.agent');
+    expect(eventsOf(treesOf().projectPrivate).some((e) => e.kind === 'run.started')).toBe(false);
+  });
+
+  it('`guard --which "   "` refuses — the dry-run answers for the move it mirrors', async () => {
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['task', 'ship it'], c.io);
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+
+    const g = capture();
+    await run(['guard', 'submit', id, '--actor', 'human', '--which', '   '], g.io);
+    expect(g.failed()).toBe(true);
+    expect(g.err.join('\n')).toContain('names no agent');
+  });
+
+  it('a zero-width name is a NAME, not a blank: it is recorded and lands private', async () => {
+    // What `canonicalIdentity` does with U+200C is the answer, and it keeps it: the
+    // char is not whitespace, so this is an (invisible) agent name and not an
+    // absent one. That means the two things the hole broke are intact — the `which`
+    // is on the event, and the birth went to this machine's private tree — so there
+    // is nothing here to refuse. Asserting the opposite would have been asserting
+    // a guess.
+    await run(['init'], capture().io);
+    const t = capture();
+    await run(['task', 'ship it', '--which', '‌'], t.io);
+    expect(t.failed()).toBe(false);
+
+    const trees = treesOf();
+    const created = eventsOf(trees.projectPrivate).find((e) => e.kind === 'task.created');
+    expect(created?.which).toBe('‌');
+    expect(eventsOf(trees.projectPublic).some((e) => e.kind === 'task.created')).toBe(false);
+  });
+
+  it('an ORDINARY agent name did not regress: recorded, and the birth lands private', async () => {
+    await run(['init'], capture().io);
+    const t = capture();
+    await run(['task', 'ship it', '--which', 'claude-code'], t.io);
+    expect(t.failed()).toBe(false);
+
+    const trees = treesOf();
+    const created = eventsOf(trees.projectPrivate).find((e) => e.kind === 'task.created');
+    expect(created?.which).toBe('claude-code');
+    // A name with stray whitespace around it is still that name (trimmed), never
+    // a refusal — the accident the canonical rule exists to absorb.
+    const padded = capture();
+    await run(['task', 'and again', '--which', '  claude-code  '], padded.io);
+    expect(padded.failed()).toBe(false);
+    expect(
+      eventsOf(treesOf().projectPrivate)
+        .filter((e) => e.kind === 'task.created')
+        .map((e) => e.which),
+    ).toEqual(['claude-code', 'claude-code']);
+  });
+
+  it('an ABSENT --which still means a person acted: no which, and the birth is PUBLIC', async () => {
+    // The rule that must NOT change. Defaulting an omitted flag to some agent name
+    // would invent an agent where there was a person — the same fiction, inverted.
+    await run(['init'], capture().io);
+    const t = capture();
+    await run(['task', 'ship it'], t.io);
+    expect(t.failed()).toBe(false);
+
+    const trees = treesOf();
+    const created = eventsOf(trees.projectPublic).find((e) => e.kind === 'task.created');
+    expect(created?.which).toBeUndefined();
+    expect(eventsOf(trees.projectPrivate).some((e) => e.kind === 'task.created')).toBe(false);
+  });
+
+  it('EVERY verb that declares an executing agent validates it — no site can forget', () => {
+    // The structural half of the proof: the behaviour above is asserted on a few
+    // verbs, and this is what makes it true of the rest — and of the next one
+    // somebody adds. A `--which` with no parser is a verb where the hole is open.
+    const program = buildProgram(capture().io);
+    const declaring: string[] = [];
+    const unvalidated: string[] = [];
+    const walk = (command: Command, path: string): void => {
+      for (const option of command.options) {
+        if (option.long !== '--which') continue;
+        declaring.push(path);
+        if (option.parseArg === undefined) unvalidated.push(path);
+      }
+      for (const child of command.commands) walk(child, `${path} ${child.name()}`.trim());
+    };
+    walk(program, '');
+
+    // Every verb that DECLARES the flag is listed, so a new one shows up here.
+    expect(declaring.sort()).toEqual(
+      [
+        'accountability',
+        'decision',
+        'guard',
+        'memory',
+        'observe',
+        'handoff',
+        'link',
+        'run start',
+        'skill',
+        'task',
+      ].sort(),
+    );
+    // …and exactly one is exempt: accountability's `--which` is a FILTER over who
+    // already acted, not a declaration of who is acting now.
+    expect(unvalidated).toEqual(['accountability']);
   });
 });
 
