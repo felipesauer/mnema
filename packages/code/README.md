@@ -28,9 +28,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   off (`resume`), what the workflow allows next (`next-actions`), and whether a
   move would be allowed at all (`guard`, a dry run that writes nothing).
 - **Audit reads** — an entity's history across trees (`timeline`), what it is
-  connected to (`refs`), who authorized what (`accountability`), and recurring
-  shapes like reopens and supersessions (`antipatterns`). They report; they do
-  not judge.
+  connected to (`refs`), who authorized what (`accountability`), recurring
+  shapes like reopens and supersessions (`antipatterns`), and where each adopted
+  pattern came from (`skills`). They report; they do not judge.
 
 ## What it proves — and what it does not
 
@@ -280,16 +280,34 @@ finally the global tree when neither names a project. It never guesses a project
 at some cwd and never creates one; only `mnema init` does that.
 
 The write tools mirror the CLI verbs — same gate, same refusals — so a move an
-agent cannot make is one you cannot make either. A few verbs live on one side
-only: `init` and `verify` are yours, while `bootstrap` — an agent's opening
-orientation — and `skills` are the agent's.
+agent cannot make is one you cannot make either. A few names do not pair up:
+`init` and `verify` are yours only, `bootstrap` — an agent's opening orientation
+— is the agent's only, and `skills` exists on both sides doing **different
+things**.
 
-`skills` is what makes a recorded pattern usable: `bootstrap` lists the adopted
-skills by name, and `skills` hands over the pattern itself, all of them or one by
-id. It is the one read that also writes — consulting a pattern is recorded
-against the session, once per skill, so the record can later show which work was
-informed by which pattern. It records that the pattern was *read*, never that it
-was followed; nothing observable here can tell those apart.
+The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
+adopted skills by name, and the tool hands over the pattern itself, all of them
+or one by id. It is the one read that also writes — consulting a pattern is
+recorded against the session, once per skill, so the record can later show which
+work was informed by which pattern. It records that the pattern was *read*, never
+that it was followed; nothing observable here can tell those apart.
+
+A pattern's body is the one thing mnema hands back as an instruction, so it does
+not arrive bare: alongside the bodies the reply states that this is content from
+your record rather than an instruction from mnema, and names the agent that
+adopted each one — or says a person did.
+
+```bash
+# The terminal side of the same name: not the patterns, but where they came from.
+mnema skills
+#> 2 pattern(s):
+#>   019faa06-30e1-…  adopted     private  stacked-prs  ·  proposed by claude-code · adopted by claude-code (the same agent)
+#>   019faa06-335f-…  adopted     public   trunk-based  ·  proposed by a person · adopted by a person
+```
+
+Adopting a pattern is not restricted — an agent can propose one and adopt it, the
+same way it can submit a task and approve it. What this shows you is who did,
+which is the part that used to be invisible to everyone downstream.
 
 ## Layout on disk
 

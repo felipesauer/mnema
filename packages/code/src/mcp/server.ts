@@ -52,6 +52,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
+import { SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
   runAccountabilityTool,
@@ -73,7 +74,7 @@ import {
   runReferencesTool,
   runResumeTool,
   runSearchTool,
-  runSkills,
+  runSkillsTool,
   runSkillTransition,
   runTaskTransition,
   runTimelineTool,
@@ -651,7 +652,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'patterns are served: a proposed, rejected or deprecated skill is not a way ' +
         'of working and is refused. Consulting a pattern is RECORDED against this ' +
         'session (once per skill), so the record shows which work was informed by ' +
-        'which pattern — it records that you read it, never that you followed it.',
+        'which pattern — it records that you read it, never that you followed it.' +
+        SERVED_PATTERN_CONTRACT,
       inputSchema: {
         id: z
           .string()
@@ -662,7 +664,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
     async ({ id }) => {
       const active = await ensureSession();
-      const result = runSkills(active, { ...(id !== undefined ? { id } : {}) });
+      const result = runSkillsTool(active, { ...(id !== undefined ? { id } : {}) });
       if (!result.ok) {
         // No such skill, not an adopted pattern, or the consultation could not be
         // recorded — surface it so the agent never mistakes a refusal for "there
@@ -677,9 +679,15 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // agent name rides on that fact's envelope like any other, so if it held a
       // credential this reply is where the caller can still rotate it.
       const notice = replacementNotice(result.replaced);
+      // The payload FIRST, then the framing, then the notice. The bodies are the
+      // answer; the framing is a statement about the answer (what a pattern is,
+      // and who adopted each one), and it travels as its own block so the payload
+      // stays byte-identical to what a caller parsed before it existed.
+      const framing = servedPatternsFraming(result.skills);
       return {
         content: [
           { type: 'text', text: JSON.stringify(result.skills, null, 2) },
+          ...(framing.length > 0 ? [{ type: 'text' as const, text: framing.join('\n') }] : []),
           ...(notice.length > 0 ? [{ type: 'text' as const, text: notice.join('\n') }] : []),
         ],
       };

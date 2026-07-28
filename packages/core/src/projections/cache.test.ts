@@ -521,6 +521,50 @@ describe('ProjectionCache — skills', () => {
     second.rebuild();
     expect(second.listSkills()).toEqual(before);
   });
+
+  it('carries the provenance of both acts through SQLite', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    const [created, transitioned] = skillBirth(
+      { ...env('sk-1', 0), which: 'agent-A' },
+      { name: 'n', body: 'b', initial: 'proposed' },
+    );
+    w.append(created);
+    w.append(transitioned);
+    w.append(
+      skillTransitioned(
+        { ...env('sk-1', 1), which: 'agent-A' },
+        { from: 'proposed', to: 'reviewed', action: 'review', fields: { note: 'n' } },
+      ),
+    );
+    w.append(
+      skillTransitioned(
+        { ...env('sk-1', 2), which: 'agent-B' },
+        { from: 'reviewed', to: 'adopted', action: 'adopt', fields: { note: 'n' } },
+      ),
+    );
+
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getSkill('sk-1')).toMatchObject({
+      proposedBy: 'agent-A',
+      adoption: { at: at(2), by: 'agent-B' },
+    });
+  });
+
+  it('tells "a person adopted it" from "nobody has" across the round trip', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    // sk-1: adopted with no agent on the envelope — a person acted directly.
+    writeSkill(w, 'sk-1', 'adopted', 'adopt');
+    // sk-2: never adopted at all.
+    writeSkill(w, 'sk-2', 'proposed', 'create');
+
+    const cache = openCache();
+    cache.rebuild();
+    // The two columns that carry it: an instant with no agent, versus neither.
+    expect(cache.getSkill('sk-1')?.adoption).toEqual({ at: at(1) });
+    expect(cache.getSkill('sk-2')).not.toHaveProperty('adoption');
+    expect(cache.getSkill('sk-1')).not.toHaveProperty('proposedBy');
+  });
 });
 
 /**

@@ -105,7 +105,11 @@ export {
   type SearchResult,
   searchRecord,
 } from './projections/search-store.js';
-export { projectSkills, type SkillProjection } from './projections/skill.js';
+export {
+  projectSkills,
+  type SkillAdoption,
+  type SkillProjection,
+} from './projections/skill.js';
 export { getSkill, listSkills, listSkillsByState } from './projections/skill-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';

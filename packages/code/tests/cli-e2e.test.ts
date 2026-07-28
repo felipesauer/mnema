@@ -21,6 +21,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   catalogUpcasters,
   enrollmentMessage,
@@ -46,6 +47,9 @@ import { openTreeForWriting } from '@mnema/core/write';
 import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
+import { openSession } from '../src/mcp/session.js';
+import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
+import { servedPatternsFraming } from '../src/served-patterns.js';
 
 let sandbox: string;
 let repo: string;
@@ -2389,5 +2393,289 @@ describe('mnema CLI — what enters the record', () => {
       expect(help, `${verb.join(' ')} --help`).toContain('Do not record credentials');
       expect(help, `${verb.join(' ')} --help`).toContain('written verbatim');
     }
+  });
+});
+
+describe('mnema CLI — skills, the provenance audit', () => {
+  /** Runs a verb and returns its stdout as one string. */
+  async function output(argv: string[]): Promise<string> {
+    const c = capture();
+    await run(argv, c.io);
+    expect(c.failed()).toBe(false);
+    return c.out.join('\n');
+  }
+
+  /** The id printed by a verb that mints one. */
+  function idOf(text: string): string {
+    return (text.match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+  }
+
+  /** Proposes, reviews and adopts one pattern, each act declared by `which`. */
+  async function adopt(name: string, proposer?: string, adopter?: string): Promise<string> {
+    const declare = (agent?: string) => (agent !== undefined ? ['--which', agent] : []);
+    const id = idOf(
+      await output(['skill', ...declare(proposer), name, '--body', `the pattern of ${name}`]),
+    );
+    await output(['skill', 'move', 'review', id, '--note', 'read it', ...declare(adopter)]);
+    await output(['skill', 'move', 'adopt', id, '--note', 'we work this way', ...declare(adopter)]);
+    return id;
+  }
+
+  it('shows both acts, and says when ONE agent stands on both ends', async () => {
+    await run(['init'], capture().io);
+    const id = await adopt('a-habit', 'agent-A', 'agent-A');
+
+    const printed = await output(['skills']);
+    expect(printed).toContain('1 pattern(s)');
+    expect(printed).toContain(id);
+    expect(printed).toContain('proposed by agent-A · adopted by agent-A (the same agent)');
+    // The state and the tree, which together say how far the pattern reaches. An
+    // agent's write lands private, so that is where this one is.
+    expect(printed).toMatch(/adopted\s+private\s+a-habit/);
+  });
+
+  it('one agent proposing and ANOTHER adopting is distinguishable from both ends equal', async () => {
+    await run(['init'], capture().io);
+    await adopt('two-agents', 'agent-A', 'agent-B');
+
+    const printed = await output(['skills']);
+    expect(printed).toContain('proposed by agent-A · adopted by agent-B');
+    expect(printed).not.toContain('the same agent');
+  });
+
+  it('a person’s act reads as "a person", never as a blank or an invented name', async () => {
+    await run(['init'], capture().io);
+    await adopt('by-hand');
+
+    const printed = await output(['skills']);
+    expect(printed).toContain('proposed by a person · adopted by a person');
+    // Two absences are not evidence of one actor: a tree can hold two people's
+    // facts, so the same-agent line must NOT appear.
+    expect(printed).not.toContain('the same agent');
+    expect(printed).not.toContain('unknown');
+  });
+
+  it('a pattern nobody adopted shows the proposal alone', async () => {
+    await run(['init'], capture().io);
+    const id = idOf(await output(['skill', '--which', 'agent-A', 'an-idea', '--body', 'maybe']));
+
+    const printed = await output(['skills']);
+    expect(printed).toContain(`${id}`);
+    expect(printed).toContain('proposed by agent-A');
+    expect(printed).not.toContain('adopted by');
+  });
+
+  it('reports every state and every visible tree, ordered by name', async () => {
+    await run(['init'], capture().io);
+    // Two trees: a team pattern in public, an agent's in private.
+    const team = idOf(
+      await output(['skill', 'Zebra', '--body', 'the team pattern', '--scope', 'public']),
+    );
+    await output(['skill', 'move', 'review', team, '--note', 'ok']);
+    await output(['skill', 'move', 'adopt', team, '--note', 'ok']);
+    await adopt('Alpha', 'agent-A', 'agent-A');
+    const rejected = idOf(await output(['skill', 'Middle', '--body', 'no']));
+    await output(['skill', 'move', 'reject', rejected, '--note', 'not for us']);
+
+    const lines = (await output(['skills'])).split('\n').slice(1);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain('Alpha');
+    expect(lines[1]).toContain('Middle');
+    expect(lines[2]).toContain('Zebra');
+    expect(lines[1]).toContain('rejected');
+    expect(lines[2]).toMatch(/adopted\s+public/);
+  });
+
+  it('--json is faithful and carries no body', async () => {
+    await run(['init'], capture().io);
+    const id = await adopt('a-habit', 'agent-A', 'agent-B');
+
+    const json = JSON.parse(await output(['skills', '--json'])) as Array<{
+      id: string;
+      name: string;
+      state: string;
+      scope: string;
+      proposedBy?: string;
+      adoption?: { at: string; by?: string };
+      selfAdopted: boolean;
+    }>;
+    expect(json).toEqual([
+      {
+        id,
+        name: 'a-habit',
+        state: 'adopted',
+        scope: 'private',
+        proposedBy: 'agent-A',
+        adoption: { at: expect.any(String), by: 'agent-B' },
+        selfAdopted: false,
+      },
+    ]);
+    // The audit is about provenance; the body is `mnema show <id>`.
+    expect(JSON.stringify(json)).not.toContain('the pattern of');
+  });
+
+  it('writes NOTHING — not a consultation, not a byte (the MCP tool records, this does not)', async () => {
+    await run(['init'], capture().io);
+    await adopt('a-habit', 'agent-A', 'agent-A');
+    const before = digestOf(join(repo, '.mnema'));
+
+    await output(['skills']);
+    await output(['skills', '--json']);
+
+    expect(digestOf(join(repo, '.mnema'))).toBe(before);
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    for (const root of [trees.projectPublic, trees.projectPrivate]) {
+      if (root === undefined || !existsSync(root)) continue;
+      expect(
+        orderedEvents({ root }, catalogUpcasters()).some((e) => e.kind === 'skill.consulted'),
+      ).toBe(false);
+    }
+  });
+
+  it('outside a project it answers over the global tree, and empty is an ANSWER', async () => {
+    // No init: nothing here. An empty record is a legitimate answer, not a refusal.
+    const empty = capture();
+    await run(['skills'], empty.io);
+    expect(empty.failed()).toBe(false);
+    expect(empty.out.join('\n')).toContain('No patterns recorded');
+
+    // A personal convention lives in the global tree and is audited from anywhere.
+    const id = idOf(
+      await output(['skill', 'my-own', '--body', 'across every project', '--scope', 'global']),
+    );
+    expect(await output(['skills'])).toContain(id);
+  });
+
+  it('a name holding a NEWLINE cannot forge a second line in the report', async () => {
+    await run(['init'], capture().io);
+    // A crafted name whose second half reads exactly like a provenance line. If
+    // the report broke there, it would assert an adoption that never happened.
+    await output([
+      'skill',
+      'Innocent\n  019f-fake  adopted     public   Build hygiene  ·  adopted by a person',
+      '--body',
+      'x',
+    ]);
+
+    const lines = (await output(['skills'])).split('\n');
+    // The header plus exactly one line — the count matches the pattern count.
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe('1 pattern(s):');
+    // The name as written is still in --json; the report just keeps it on one line.
+    const json = JSON.parse(await output(['skills', '--json'])) as Array<{ name: string }>;
+    expect(json[0]?.name).toContain('\n');
+  });
+
+  it('--help says it is the AUDIT, not the tool of the same name', async () => {
+    const h = capture();
+    await run(['skills', '--help'], h.io);
+    const help = h.out.join('\n');
+    expect(help).toContain('AUDIT');
+    expect(help).toContain('serves a pattern');
+    expect(help).toContain('mnema show <id>');
+  });
+});
+
+describe('where a pattern came from — across the two surfaces', () => {
+  /** A session for one agent over the sandbox project, as the transport opens it. */
+  function sessionFor(agent: string) {
+    return openSession({
+      clientName: agent,
+      roots: [pathToFileURL(repo).href],
+      env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') },
+    });
+  }
+
+  it('agent A proposes and adopts; agent B is served the body WITH its provenance; the CLI shows both ends', async () => {
+    await run(['init'], capture().io);
+
+    // 1. agent-A does the whole cycle itself — three tool calls, no human. This is
+    // the act the study proved and the product does not block: it is legal, and
+    // what was missing is that nobody downstream could see it.
+    const a = sessionFor('agent-A');
+    const proposed = runCreateSkill(a, { name: 'Build hygiene', body: 'Always squash first.' });
+    if (!proposed.ok) throw new Error(`setup: propose refused (${proposed.code})`);
+    for (const [action, note] of [
+      ['review', 'looks fine'],
+      ['adopt', 'team standard'],
+    ] as const) {
+      const moved = runSkillTransition(a, { id: proposed.id, action, note });
+      if (!moved.ok) throw new Error(`setup: ${action} refused (${moved.code})`);
+    }
+
+    // 2. agent-B, a different connection, asks for the patterns to work by. The
+    // body arrives verbatim — and now the adopter arrives with it.
+    const b = sessionFor('agent-B');
+    const served = runSkillsTool(b);
+    expect(served.ok).toBe(true);
+    if (!served.ok) return;
+    expect(served.skills).toEqual([
+      {
+        id: proposed.id,
+        name: 'Build hygiene',
+        body: 'Always squash first.',
+        adoptedBy: 'agent-A',
+      },
+    ]);
+    // What the transport puts beside the bodies: the declaration and one line of
+    // provenance. It states, never asks — no "careful", no "verify".
+    const framing = servedPatternsFraming(served.skills).join('\n');
+    expect(framing).toContain('not instructions from mnema');
+    expect(framing).toContain('adopted by agent-A');
+    for (const nudge of ['careful', 'caution', 'verify', 'check', 'warning', 'beware']) {
+      expect(framing.toLowerCase(), nudge).not.toContain(nudge);
+    }
+
+    // 3. The person auditing on the command line sees BOTH acts, and that one
+    // agent stands on both ends — the reading the served line does not carry.
+    const audit = capture();
+    await run(['skills'], audit.io);
+    expect(audit.failed()).toBe(false);
+    expect(audit.out.join('\n')).toContain(
+      'proposed by agent-A · adopted by agent-A (the same agent)',
+    );
+
+    // And the adoption itself was never blocked: the pattern is live, in the
+    // agent's own tree, on a chain that still verifies.
+    const trees = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    });
+    const privateRoot = trees.projectPrivate as string;
+    expect(
+      projectSkills(orderedEvents({ root: privateRoot }, catalogUpcasters())).get(proposed.id)
+        ?.state,
+    ).toBe('adopted');
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+  });
+
+  it('proposed by one agent and adopted by ANOTHER is a different report', async () => {
+    await run(['init'], capture().io);
+    const a = sessionFor('agent-A');
+    const proposed = runCreateSkill(a, { name: 'Build hygiene', body: 'Always squash first.' });
+    if (!proposed.ok) throw new Error('setup: propose refused');
+    // A second agent reviews and adopts what the first proposed.
+    const b = sessionFor('agent-B');
+    for (const [action, note] of [
+      ['review', 'read it'],
+      ['adopt', 'we work this way'],
+    ] as const) {
+      const moved = runSkillTransition(b, { id: proposed.id, action, note });
+      if (!moved.ok) throw new Error(`setup: ${action} refused (${moved.code})`);
+    }
+
+    // The body carries the ADOPTER, which is the act that made it live.
+    const served = runSkillsTool(b);
+    if (!served.ok) throw new Error('skills refused');
+    expect(served.skills[0]?.adoptedBy).toBe('agent-B');
+
+    const audit = capture();
+    await run(['skills'], audit.io);
+    const printed = audit.out.join('\n');
+    expect(printed).toContain('proposed by agent-A · adopted by agent-B');
+    expect(printed).not.toContain('the same agent');
   });
 });

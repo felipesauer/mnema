@@ -30,6 +30,10 @@ export {
   type ReferenceDirection,
   type ReferenceRole,
   type ReferringRole,
+  // A skill's adoption — the instant and the agent, straight off the projection —
+  // is re-exported for the same reason: it appears in what a provenance report
+  // hands back, so reading one needs no reach past this layer.
+  type SkillAdoption,
 } from '@mnema/core';
 export {
   type Bootstrap,
@@ -88,6 +92,10 @@ export {
   exposure,
   type ScopedEvents,
 } from './intelligence/exposure.js';
+export {
+  type PatternProvenance,
+  patternProvenance,
+} from './intelligence/provenance.js';
 export {
   effectiveDepth,
   REFERENCE_DEFAULT_DEPTH,

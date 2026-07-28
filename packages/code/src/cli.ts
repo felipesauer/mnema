@@ -16,6 +16,7 @@
 
 import {
   type Exposure,
+  type PatternProvenance,
   REFERENCE_DEFAULT_DEPTH,
   REFERENCE_MAX_DEPTH,
   type RecordBody,
@@ -57,6 +58,7 @@ import { runSearch } from './commands/search.js';
 import { runShow } from './commands/show.js';
 import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
+import { runSkills } from './commands/skills.js';
 import { runTask } from './commands/task.js';
 import { runTaskTransition } from './commands/task-transition.js';
 import { runTimeline } from './commands/timeline.js';
@@ -65,6 +67,7 @@ import { discoveryEnv } from './env.js';
 import { buildMcpServer } from './mcp/server.js';
 import { resolvePinnedRun } from './pinned-run.js';
 import { RECORD_CONTRACT_HELP, type Replacement, replacementNotice } from './recorded-content.js';
+import { A_PERSON, oneLine } from './served-patterns.js';
 
 /** Where the CLI writes, and how it signals failure — injected for testing. */
 export interface CliIo {
@@ -489,6 +492,48 @@ function printExposure(report: Exposure, io: CliIo): void {
   io.out('');
   io.out('  These records are permanent — nothing deletes a fact. Rotate the credentials.');
   io.out('  A public record is committed and on every machine that cloned the repository.');
+}
+
+/**
+ * Prints the provenance of every pattern: one line each, with the state and the
+ * tree first and the two acts after it.
+ *
+ * The id leads, as it does in `search`, because it is what the next command takes.
+ * Then the state and the tree, which together say how far the pattern reaches —
+ * only an `adopted` one is served to an agent, and the tree decides whether that
+ * is this machine, every project on it, or every machine that clones the
+ * repository. Then the two acts, in the order they happened.
+ *
+ * An act with no agent reads as "a person", never as blank: an absent `which` is a
+ * fact (someone acted directly), and a gap there would read as data the record
+ * failed to keep. The same-agent case is stated as what it is — one name on both
+ * ends — and nothing here calls that good or bad; a reader with the context
+ * decides, which is exactly why this report exists on the surface a person uses.
+ *
+ * ONE LINE PER PATTERN, always: the name is text an actor wrote, and one holding a
+ * newline would split its entry in two — the second half reading as a provenance
+ * line of its own, asserting an adoption that never happened. `--json` carries the
+ * name as written; this report carries it on one line.
+ */
+function printPatternProvenance(patterns: readonly PatternProvenance[], io: CliIo): void {
+  if (patterns.length === 0) {
+    io.out('No patterns recorded in the trees visible from here.');
+    return;
+  }
+  io.out(`${patterns.length} pattern(s):`);
+  for (const pattern of patterns) {
+    const acts = [`proposed by ${pattern.proposedBy ?? A_PERSON}`];
+    if (pattern.adoption !== undefined) {
+      acts.push(
+        `adopted by ${pattern.adoption.by ?? A_PERSON}` +
+          (pattern.selfAdopted ? ' (the same agent)' : ''),
+      );
+    }
+    io.out(
+      `  ${pattern.id}  ${pattern.state.padEnd(10)}  ${pattern.scope.padEnd(7)}  ` +
+        `${oneLine(pattern.name)}  ·  ${acts.join(' · ')}`,
+    );
+  }
 }
 
 /**
@@ -1790,6 +1835,39 @@ export function buildProgram(io: CliIo = processIo): Command {
         return;
       }
       printReferences(result.graph, io);
+    });
+
+  // `mnema skills [--json]` — where each pattern came from: its state, the tree it
+  // lives in, who proposed it and who adopted it.
+  //
+  // A top-level READ, like every other reading in this product, and plural so it is
+  // not mistaken for the `skill` group, which writes. It shares its name with an MCP
+  // tool that does something else — the tool serves a pattern to an agent about to
+  // work by it, this audits the provenance for a person deciding whether it should
+  // be — and the help says so, because a reader has every reason to assume one verb
+  // per tool.
+  program
+    .command('skills')
+    .description('show where each pattern came from (who proposed it, who adopted it)')
+    .option('--json', 'emit the faithful provenance as JSON')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'This is the AUDIT of the patterns, not the patterns themselves:',
+        '  The `skills` tool on the MCP surface serves a pattern’s body to an agent.',
+        '  This verb reads who put each one there. `mnema show <id>` reads a body.',
+        '  Only an adopted pattern is served to an agent; the other states are not.',
+        '  An act with no agent behind it was a person acting directly.',
+      ].join('\n'),
+    )
+    .action((opts: { json?: boolean }) => {
+      const result = runSkills({ cwd: process.cwd(), env: discoveryEnv() });
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.patterns, null, 2));
+        return;
+      }
+      printPatternProvenance(result.patterns, io);
     });
 
   // `key` is a group, and the only one whose subject is not the record but the
