@@ -926,6 +926,16 @@ export type SkillsResult =
  * opening context lists patterns by name (one line each), and this is where the
  * body comes from when a name turns out to match the task at hand.
  *
+ * Named `…Tool` because the command line has a `runSkills` of its own doing
+ * something else — this serves a pattern to an agent, that audits where every
+ * pattern came from for a person — the same split `runFocus`/`runFocusTool` and
+ * `runSearch`/`runSearchTool` already carry.
+ *
+ * Each pattern comes back with the agent that adopted it, which the projection
+ * folds off the adopting transition's envelope. The transport frames that in one
+ * line beside the bodies: a body is served as instruction, and until it carried
+ * its adopter nobody receiving it could see who put it there.
+ *
  * It is a read that WRITES, deliberately, and it is the only one. Whether work
  * was informed by a pattern is not derivable after the fact — nothing else in
  * the record would ever show it — so the moment of serving is the only moment
@@ -944,7 +954,7 @@ export type SkillsResult =
  * perishable fact this exists to capture, so it is reported like any other
  * refused write.
  */
-export function runSkills(session: Session, input: { id?: string } = {}): SkillsResult {
+export function runSkillsTool(session: Session, input: { id?: string } = {}): SkillsResult {
   // READ before WRITE: the caches are consulted first, because building a write
   // context marks the written tree stale — doing it the other way round would
   // make every call rebuild the tree it is about to read.

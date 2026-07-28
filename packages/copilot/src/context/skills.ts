@@ -23,6 +23,12 @@
  * the entity), so the per-tree fold and the union fold see the same events for
  * it. Concatenating warm caches is the same answer as replaying every tail, at
  * an indexed lookup instead of a linear scan.
+ *
+ * WITH THE BODY GOES ITS PROVENANCE — the agent that adopted it, or nobody when a
+ * person did. This is the only entity whose content comes back as instruction, so
+ * it is the only one whose consumer could not otherwise see who put it there.
+ * ONE fact, not an account: the fuller reading (who proposed it too, and whether
+ * both ends are the same agent) belongs where a person is looking at it.
  */
 
 import type { ProjectionCache, SkillProjection, SkillState } from '@mnema/core';
@@ -42,6 +48,18 @@ export interface SkillRef {
 export interface AdoptedSkill extends SkillRef {
   /** The reusable pattern — the whole point of having recorded the skill. */
   readonly body: string;
+  /**
+   * The agent that adopted it — the act that made this body something an agent is
+   * served. ABSENT means a person adopted it directly, which is a fact about the
+   * pattern and not a missing value.
+   *
+   * It travels WITH the body, in one line, because nothing else the consumer
+   * receives says where the pattern came from: a task or a decision carries its
+   * movers on the events a timeline shows, and a served body carried nothing. It
+   * is provenance, not a verdict — the fuller account (who proposed it, whether
+   * the two ends are one agent) is the command line's, where a person is reading.
+   */
+  readonly adoptedBy?: string;
 }
 
 /** Asking for one skill by id: served, present but not adopted, or absent. */
@@ -88,7 +106,13 @@ export function lookupAdoptedSkill(caches: readonly ProjectionCache[], id: strin
 }
 
 function toAdopted(skill: SkillProjection): AdoptedSkill {
-  return { id: skill.id, name: skill.name, body: skill.body };
+  const adoptedBy = skill.adoption?.by;
+  return {
+    id: skill.id,
+    name: skill.name,
+    body: skill.body,
+    ...(adoptedBy !== undefined ? { adoptedBy } : {}),
+  };
 }
 
 function byNameThenId(a: SkillRef, b: SkillRef): number {

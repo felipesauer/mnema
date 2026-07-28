@@ -165,15 +165,54 @@ export function supersedeDecision(b: Bench, id: string, by: string, from = 'ACCE
   );
 }
 
-/** Appends a skill's birth pair, returning its id. States are the workflow's own. */
-export function birthSkill(b: Bench, id: string, name: string, initial = 'proposed'): string {
+/**
+ * Appends a skill's birth pair, returning its id. States are the workflow's own.
+ * `which` names the agent that executed the birth; omitted, the events carry no
+ * agent — which is what a person acting directly leaves behind.
+ */
+export function birthSkill(
+  b: Bench,
+  id: string,
+  name: string,
+  initial = 'proposed',
+  which?: string,
+): string {
   for (const e of skillBirth(
-    { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+    {
+      at: b.now(),
+      who: b.who,
+      signerFp: b.writer.signerFingerprint,
+      subject: id,
+      ...(which !== undefined ? { which } : {}),
+    },
     { name, body: `body of ${name}`, initial },
   )) {
     b.writer.append(e);
   }
   return id;
+}
+
+/** Appends a `skill.transitioned`, optionally executed by an agent. */
+export function moveSkill(
+  b: Bench,
+  id: string,
+  from: string,
+  to: string,
+  action: string,
+  which?: string,
+): void {
+  b.writer.append(
+    skillTransitioned(
+      {
+        at: b.now(),
+        who: b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: id,
+        ...(which !== undefined ? { which } : {}),
+      },
+      { from, to, action, fields: { note: `${action}ed` } },
+    ),
+  );
 }
 
 /** Appends a `skill.transitioned {action: 'deprecate'}`. */
