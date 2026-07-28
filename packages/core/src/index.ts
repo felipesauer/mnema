@@ -12,6 +12,17 @@
 
 export const PACKAGE_NAME = '@mnema/core';
 
+// What a credential looks like, and how much text a field may hold. Detecting is
+// a READ — a pure question about a string — so it belongs here, and the audit of
+// an existing record reaches it through this barrel. Only SCREENING (refusing and
+// rewriting on the way to an append) lives on the writing side.
+export { FIELD_BYTE_LIMIT } from './content/screen.js';
+export {
+  detectSecrets,
+  SECRET_CLASSES,
+  type SecretClass,
+  secretPlaceholder,
+} from './content/secrets.js';
 export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
 export {
   ALIAS_PREFIXES,

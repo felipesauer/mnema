@@ -17,7 +17,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
+import { catalogUpcasters, ensureTree, memoryCaptured, verify } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -33,7 +33,7 @@ import {
   projectTasks,
   resolveTrees,
 } from '@mnema/core';
-import { createTask } from '@mnema/core/write';
+import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -398,7 +398,9 @@ describe('MCP session + tools — unit', () => {
       from: 'claude-code',
       to: 'claude-code',
     });
-    expect(result).toEqual({ ok: true });
+    // No id (the subject IS the task) — the labels AS RECORDED are what a caller
+    // has to report the fact by.
+    expect(result).toEqual({ ok: true, recorded: ['claude-code', 'claude-code'] });
 
     const chainRoot = chainRootForScope(session.trees, session.scope) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
@@ -435,7 +437,7 @@ describe('MCP session + tools — unit', () => {
       target: '00000000-0000-7000-8000-000000000000',
       rel: 'inspired-by-a-dream',
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, recorded: ['inspired-by-a-dream'] });
 
     const chainRoot = chainRootForScope(session.trees, session.scope) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
@@ -1701,9 +1703,10 @@ describe('MCP session + tools — unit', () => {
 async function connectClient(
   server: ReturnType<typeof buildMcpServer>['server'],
   roots: readonly string[],
+  clientName = 'claude-code',
 ): Promise<Client> {
   const client = new Client(
-    { name: 'claude-code', version: '1.0.0' },
+    { name: clientName, version: '1.0.0' },
     { capabilities: { roots: {} } },
   );
   client.setRequestHandler(ListRootsRequestSchema, () => ({
@@ -1733,6 +1736,7 @@ describe('MCP server — end to end over a real client', () => {
     expect(names).toEqual([
       'audit_accountability',
       'audit_antipatterns',
+      'audit_exposure',
       'audit_refs',
       'audit_timeline',
       'bootstrap',
@@ -2392,6 +2396,206 @@ describe('MCP server — end to end over a real client', () => {
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, []);
     const refused = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (NO_PROJECT)');
+    await client.close();
+  });
+});
+
+describe('MCP — what enters the record', () => {
+  const SECRET = 'AKIAIOSFODNN7EXAMPLE';
+
+  /** Every string anywhere in every payload of a tree — the generic sweep. */
+  function recordedText(root: string): string[] {
+    const found: string[] = [];
+    const collect = (value: unknown): void => {
+      if (typeof value === 'string') {
+        found.push(value);
+        return;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) collect(item);
+        return;
+      }
+      if (value !== null && typeof value === 'object') {
+        for (const item of Object.values(value)) collect(item);
+      }
+    };
+    for (const event of orderedEvents({ root }, catalogUpcasters())) collect(event.payload);
+    return found;
+  }
+
+  it('an agent records a credential over the wire: the chain holds a placeholder and the reply says so', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const captured = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: `the deploy key is ${SECRET}` },
+    });
+    // Not an error: the fact WAS recorded, with a placeholder in it.
+    expect(captured.isError).not.toBe(true);
+    const reply = textOf(captured);
+    expect(reply).toContain('Captured memory');
+
+    // What landed does not contain the value — the assertion over the record.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    for (const value of recordedText(privateRoot)) expect(value).not.toContain(SECRET);
+    expect(recordedText(privateRoot)).toContain('the deploy key is <SECRET:aws-access-key>');
+
+    // The reply told the agent, and told it what to do.
+    expect(reply).toContain('1 value(s) replaced before recording');
+    expect(reply).toContain('<SECRET:aws-access-key>');
+    expect(reply).toContain('rotate them');
+
+    // The chain still verifies.
+    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+
+    await client.close();
+  });
+
+  it('a field over the limit comes back as a tool error, with nothing recorded', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // A first write, so the tree exists and the count is a real before/after.
+    await client.callTool({ name: 'capture_memory', arguments: { content: 'a real note' } });
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    const before = recordedText(privateRoot).length;
+
+    const refused = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'x'.repeat(65_537) },
+    });
+    expect(refused.isError).toBe(true);
+    expect(textOf(refused)).toContain('Refused (CONTENT_TOO_LARGE)');
+
+    expect(recordedText(privateRoot).length).toBe(before);
+    await client.close();
+  });
+
+  it('every write tool declares the contract in its own description', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const tools = await client.listTools();
+    const writes = [
+      'capture_memory',
+      'record_observation',
+      'record_handoff',
+      'link_knowledge',
+      'create_task',
+      'task_transition',
+      'record_decision',
+      'decision_transition',
+      'create_skill',
+      'skill_transition',
+    ];
+    for (const name of writes) {
+      const description = tools.tools.find((t) => t.name === name)?.description ?? '';
+      // The three facts the contract has to state, at the point the agent reads it.
+      expect(description, `${name}: permanence`).toContain('RECORDING IS PERMANENT');
+      expect(description, `${name}: where it lands`).toContain('committed to the repository');
+      expect(description, `${name}: the limit of the defense`).toContain('written verbatim');
+    }
+
+    // And a READ carries none of it — there is nothing to declare about a read.
+    const read = tools.tools.find((t) => t.name === 'search')?.description ?? '';
+    expect(read).not.toContain('RECORDING IS PERMANENT');
+
+    await client.close();
+  });
+
+  it('audit_exposure reports where a credential format sits, and never the value', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // A record the door would have cleaned, appended the way a pre-door write
+    // left it — the past the report exists to answer for.
+    // The tree's OWN writer, the one every write verb opens, so the entry is
+    // hash-chained and signed by this machine's key — a record the verifier
+    // accepts, which is the case that matters.
+    const writer = openTreeForWriting(resolveTrees(project, env), 'private');
+    writer.append(
+      memoryCaptured(
+        {
+          at: '2026-01-01T00:00:00.000Z',
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: '019fa8b7-0410-717b-9af2-cfeb013fc4ac',
+        },
+        { content: `the old note held ${SECRET}` },
+      ),
+    );
+    writer.checkpoint();
+
+    const audited = await client.callTool({ name: 'audit_exposure' });
+    expect(audited.isError).not.toBe(true);
+    const body = textOf(audited);
+    const report = JSON.parse(body) as {
+      findings: { id: string; scope: string; classes: string[] }[];
+      scanned: number;
+    };
+    const finding = report.findings.find((f) => f.id === '019fa8b7-0410-717b-9af2-cfeb013fc4ac');
+    expect(finding?.scope).toBe('private');
+    expect(finding?.classes).toEqual(['aws-access-key']);
+    expect(report.scanned).toBeGreaterThan(0);
+
+    // The whole reply — the text an agent puts in its transcript — holds no value.
+    expect(body).not.toContain(SECRET);
+    expect(body).not.toContain('AKIA');
+
+    await client.close();
+  });
+
+  it('the server logs the agent name as the chain records it, and still warns on the append', async () => {
+    const project = makeProject('proj');
+    // The host's log, collected where the server would write stderr — a channel
+    // that leaves mnema and may be persisted, so it goes through the door too.
+    const logged: string[] = [];
+    const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+    // A client announcing a name with a credential in it. Nobody types this name
+    // and nobody reads it, which is what makes it the field to worry about.
+    const client = await connectClient(server, [pathToFileURL(project).href], `agent-${SECRET}`);
+
+    // A clean write. The reply STILL warns, because the door screens the announced
+    // name on this append — the whole reason the session carries it announced. A
+    // session that screened once at open and stored the clean value would record
+    // exactly the same fact and tell the agent nothing.
+    const captured = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'a note with nothing in it' },
+    });
+    const reply = textOf(captured);
+    expect(reply).toContain('1 value(s) replaced before recording');
+    expect(reply).toContain('<SECRET:aws-access-key>');
+
+    // The assertion over the log is ABSENCE of the value, in every line collected.
+    expect(logged.some((line) => line.startsWith('session opened:'))).toBe(true);
+    for (const line of logged) expect(line).not.toContain(SECRET);
+
+    // And the log and the record agree on WHO ACTED: the string the lines show is
+    // read back off the chain, not restated here.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    const recorded = new Set(
+      [...orderedEvents({ root: privateRoot }, catalogUpcasters())]
+        .map((event) => event.which)
+        .filter((which): which is string => which !== undefined),
+    );
+    expect([...recorded]).toEqual(['agent-<SECRET:aws-access-key>']);
+    expect(logged.some((line) => line.includes(`which=${[...recorded][0]}`))).toBe(true);
+
+    await client.close();
+  });
+
+  it('audit_exposure refuses NO_PROJECT outside a project', async () => {
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, []);
+    const refused = await client.callTool({ name: 'audit_exposure' });
     expect(refused.isError).toBe(true);
     expect(textOf(refused)).toContain('Refused (NO_PROJECT)');
     await client.close();

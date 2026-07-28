@@ -19,6 +19,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { endRun, openTreeForWriting } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the run-end command needs — injected so it is testable. */
 export interface RunEndContext {
@@ -29,7 +30,7 @@ export interface RunEndContext {
 }
 
 /** The run was closed. */
-export interface RunEnded {
+export interface RunEnded extends Replacement {
   readonly ok: true;
   /** The run that was closed. */
   readonly id: string;
@@ -76,5 +77,5 @@ export function runRunEnd(
 
   writer.checkpoint();
 
-  return { ok: true, id: input.run };
+  return { ok: true, id: input.run, ...forwardReplacement(ended) };
 }

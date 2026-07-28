@@ -71,8 +71,28 @@ export interface Session {
   readonly inProject: boolean;
   /** The DEFAULT scope a new write routes to (private in-project, else global); a write tool may override it per call. */
   readonly scope: Scope;
-  /** The connecting agent (the `which` stamped on this session's events). */
+  /**
+   * The connecting agent as the client ANNOUNCED it (`clientInfo.name`) — the
+   * value handed to every write, where the content door screens it.
+   *
+   * It is deliberately the announced name and not the screened one. If the
+   * announced name holds a credential, the door replaces it and REPORTS what it
+   * replaced, and that report is the only way the agent learns its own name
+   * carried one — the handshake has no channel to say so. Screening once here and
+   * storing the clean value would record exactly the same facts and tell nobody.
+   * So what a fact records is {@link Session.recordedWhich}, not this.
+   */
   readonly which: string;
+  /**
+   * The same agent AS RECORDED: the screened label the run's own fact carries.
+   *
+   * For ECHO only — a log line, a reply. What a reader is shown has to be what
+   * the chain holds, or the record and the report disagree about who acted, which
+   * in a product built to answer that question is the defect and not the detail.
+   * Never hand it to a write: the door has to see the announced value to report
+   * what it took out.
+   */
+  readonly recordedWhich: string;
   /** The authorizing anchor (the machine's key) — the `who` and the bootstrap actor. */
   readonly who: string;
   /** The open run's id — the root of authority the tools pin their writes to. */
@@ -143,6 +163,10 @@ export function openSession(input: OpenSessionInput): Session {
     inProject,
     scope,
     which: input.clientName,
+    // The label the run's fact HOLDS, reported by the operation that wrote it —
+    // the same value the CLI echoes after `run start`. Taking it from the write
+    // rather than screening it again here is what keeps the door the only screen.
+    recordedWhich: started.agent,
     who,
     runId: started.id,
     env: input.env,

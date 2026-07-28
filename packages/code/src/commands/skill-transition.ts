@@ -54,6 +54,7 @@ import {
   rejectSkill,
   reviewSkill,
 } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface SkillTransitionContext {
@@ -72,7 +73,7 @@ export interface SkillTransitionProof {
 }
 
 /** A skill moved to a new state. */
-export interface SkillTransitioned {
+export interface SkillTransitioned extends Replacement {
   readonly ok: true;
   /** The skill's id (the one that moved). */
   readonly id: string;
@@ -170,7 +171,7 @@ export function runSkillTransition(
   // alias, so its display handle is the name. Read after the append so the
   // projection reflects the move that just landed; fall back to the id if absent.
   const name = projectSkills(orderedEvents({ root }, upcasters)).get(input.id)?.name ?? input.id;
-  return { ok: true, id: input.id, name, to: moved.to };
+  return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
 }
 
 /**

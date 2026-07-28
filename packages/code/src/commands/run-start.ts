@@ -25,6 +25,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { canonicalIdentity, chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { openTreeForWriting, startRun } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the run-start command needs — injected so it is testable. */
 export interface RunStartContext {
@@ -35,12 +36,14 @@ export interface RunStartContext {
 }
 
 /** A run was opened. */
-export interface RunStarted {
+export interface RunStarted extends Replacement {
   readonly ok: true;
   /** The minted run id — the value callers pin their writes to. */
   readonly id: string;
   /** The agent the session is for, in the canonical form recorded. */
   readonly agent: string;
+  /** The goal AS RECORDED — screened, absent when none was stated. */
+  readonly goal?: string;
 }
 
 /** Opening the run was refused. */
@@ -99,5 +102,12 @@ export function runRunStart(
   // other writing verb leaves the tree in.
   writer.checkpoint();
 
-  return { ok: true, id: started.id, agent };
+  return {
+    ok: true,
+    id: started.id,
+    // The label and goal AS RECORDED — screened, so the echo shows what landed.
+    agent: started.agent,
+    ...(started.goal !== undefined ? { goal: started.goal } : {}),
+    ...forwardReplacement(started),
+  };
 }

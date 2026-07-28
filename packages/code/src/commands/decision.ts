@@ -34,6 +34,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordDecision } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the decision command needs — injected so it is testable. */
 export interface DecisionContext {
@@ -44,7 +45,7 @@ export interface DecisionContext {
 }
 
 /** A decision was recorded. */
-export interface DecisionRecorded {
+export interface DecisionRecorded extends Replacement {
   readonly ok: true;
   /** The minted decision id (the event subject). */
   readonly id: string;
@@ -111,5 +112,5 @@ export function runDecision(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: recorded.id, adr: recorded.adr };
+  return { ok: true, id: recorded.id, adr: recorded.adr, ...forwardReplacement(recorded) };
 }

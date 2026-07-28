@@ -31,6 +31,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { captureMemory, openTreeForWriting } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the memory command needs — injected so it is testable. */
 export interface MemoryContext {
@@ -41,7 +42,7 @@ export interface MemoryContext {
 }
 
 /** A memory was captured. */
-export interface MemoryCaptured {
+export interface MemoryCaptured extends Replacement {
   readonly ok: true;
   /** The minted memory id (the event subject). */
   readonly id: string;
@@ -105,5 +106,5 @@ export function runMemory(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: captured.id };
+  return { ok: true, id: captured.id, ...forwardReplacement(captured) };
 }
