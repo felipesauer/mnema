@@ -65,6 +65,19 @@ export {
 export { orderedEvents, orderedEventsAcross } from './projections/order.js';
 export { projectRuns, type RunProjection } from './projections/run.js';
 export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
+export {
+  compareSearchHits,
+  effectiveLimit,
+  isSearchKind,
+  SEARCH_DEFAULT_LIMIT,
+  SEARCH_KINDS,
+  SEARCH_MAX_LIMIT,
+  type SearchHit,
+  type SearchKind,
+  type SearchQuery,
+  type SearchResult,
+  searchRecord,
+} from './projections/search-store.js';
 export { projectSkills, type SkillProjection } from './projections/skill.js';
 export { getSkill, listSkills, listSkillsByState } from './projections/skill-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';

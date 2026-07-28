@@ -27,6 +27,10 @@ export const PROJECTION_TABLES = [
   'handoffs',
   'links',
   'skills',
+  // The full-text index. A virtual table, but a projection like any other:
+  // dropping it drops the shadow tables FTS5 keeps behind it, so the rebuild
+  // wipes the index with the same one line it wipes a relational table.
+  'record_search',
 ] as const;
 
 const SCHEMA = `
@@ -180,6 +184,37 @@ CREATE TABLE IF NOT EXISTS skills (
 -- Speeds the by-state queries: the 'adopted' skills are the live patterns the
 -- copilot surfaces; 'proposed'/'reviewed' are the curation backlog.
 CREATE INDEX IF NOT EXISTS idx_skills_state ON skills (state);
+
+-- The full-text index over the record: ONE row per searchable entity, holding
+-- only the text a PERSON wrote.
+--
+-- Two columns are indexed and four are not, and that split is the whole design.
+-- Indexed: the entity's own title and the prose under it — the words someone
+-- chose. NOT indexed: kind, state, the instant, the id. Those are STRUCTURE, and
+-- structure is a filter, never a search term: matching an anchor id or a state
+-- name as if it were prose would bury the words a person actually looked for,
+-- and every structural question already has a reader that answers it exactly
+-- (accountability by author, timeline by entity, the by-state lists).
+-- An UNINDEXED column is still stored and still selectable, so a filter reads it
+-- straight off the row.
+--
+-- The title is weighted above the body at query time: a term in the name of a
+-- thing identifies it, the same term buried in a paragraph only mentions it.
+--
+-- The tokenizer folds case AND diacritics, so "memoria" finds "memória" — the
+-- record is written in whatever language the team works in, and an accent is not
+-- a distinction a searcher means to make. No stemmer: it would be one language's
+-- rules applied to all of them, and a prefix query covers the common case
+-- ("invalida" reaching invalidation and invalidação) without guessing.
+CREATE VIRTUAL TABLE IF NOT EXISTS record_search USING fts5(
+  title,
+  body,
+  id UNINDEXED,
+  kind UNINDEXED,
+  state UNINDEXED,
+  at UNINDEXED,
+  tokenize = 'unicode61 remove_diacritics 2'
+);
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

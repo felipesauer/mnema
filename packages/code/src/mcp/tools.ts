@@ -23,7 +23,9 @@
  * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
  * nothing), `skills` (the one read that also WRITES: it serves the adopted
  * patterns and records that they were served, because that fact is derivable
- * from nothing else afterwards), and the three intelligence reads `runTimelineTool`/
+ * from nothing else afterwards), `search`/`read_record` (the read mold widened to
+ * every tree the session can see: an index of what matched, then one whole record
+ * by the id that index gave), and the three intelligence reads `runTimelineTool`/
  * `runAccountabilityTool`/`runAntipatternsTool` (the auditor's view — they fold
  * the UNION of the session's trees, opening no cache and no writer). The knowledge
  * FACTS (observation/handoff/link) share the
@@ -59,8 +61,14 @@ import {
   lookupAdoptedSkill,
   type NextAction,
   nextActionsForTask,
+  type RecordBody,
+  type RecordQuery,
+  type RecordSearch,
   type Resume,
+  readRecord,
   resume,
+  type ScopedCache,
+  searchRecords,
   type TimelineEntry,
   timeline,
 } from '@mnema/copilot';
@@ -68,11 +76,13 @@ import {
   chainRootForScope,
   DECISION_ACTIONS,
   deriveAlias,
+  isSearchKind,
   orderedEvents,
   type ProjectionCache,
   projectDecisions,
   projectSkills,
   type Scope,
+  SEARCH_KINDS,
   SKILL_ACTIONS,
 } from '@mnema/core';
 import {
@@ -826,23 +836,34 @@ export function runBootstrap(session: Session): Bootstrap {
 }
 
 /**
- * The caches whose adopted skills this session can see: every tree it resolved,
- * in a fixed order. Outside a project that is the global tree alone; inside one
- * it is public, private and global — the team's patterns, this machine's, and
- * the personal cross-project ones.
+ * Every tree this session can see, each paired with the scope it stands for, in
+ * a fixed order. Outside a project that is the global tree alone; inside one it
+ * is public, private and global — the team's record, this machine's, and the
+ * personal cross-project one.
  *
  * Asking the registry means each is warm after the first read of that tree, and
- * rebuilt when this session's own writes left it behind. The ORDER here does not
- * reach the answer: the copilot sorts by name, precisely so that the reading
- * order of the trees cannot reshuffle what the agent sees.
+ * rebuilt when this session's own writes left it behind. The order here does not
+ * reach an answer: every reader over these sorts by a property of the CONTENT,
+ * precisely so the order the trees are read in cannot reshuffle what an agent
+ * sees.
  */
-function skillCaches(session: Session): ProjectionCache[] {
-  const roots: string[] = [];
+function scopedCaches(session: Session): ScopedCache[] {
+  const sources: ScopedCache[] = [];
   for (const scope of ['public', 'private', 'global'] as const) {
     const root = chainRootForScope(session.trees, scope);
-    if (root !== undefined) roots.push(root);
+    if (root !== undefined) sources.push({ scope, cache: session.caches.get(root) });
   }
-  return roots.map((root) => session.caches.get(root));
+  return sources;
+}
+
+/**
+ * The caches whose adopted skills this session can see — every tree, because a
+ * pattern is a CAPABILITY and applies to the work whatever tree it was adopted
+ * in. The scope is dropped here: a skill is served by name and body, and which
+ * tree it was adopted in is not something an agent acts on.
+ */
+function skillCaches(session: Session): ProjectionCache[] {
+  return scopedCaches(session).map((source) => source.cache);
 }
 
 /** The adopted patterns served, or a typed refusal when one was asked for by id. */
@@ -1090,6 +1111,118 @@ export function runGuardTool(
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
   return { ok: true, result };
+}
+
+/** The index of what matched, or a refusal (a scope or a kind that is not there). */
+export type SearchToolResult =
+  | {
+      readonly ok: true;
+      /** The hits, each marked with the tree it came from, plus the true total. */
+      readonly value: RecordSearch;
+    }
+  | {
+      readonly ok: false;
+      /** `SCOPE_UNAVAILABLE` (a tree absent here) or `UNKNOWN_KIND`. */
+      readonly code: 'SCOPE_UNAVAILABLE' | 'UNKNOWN_KIND';
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/**
+ * `search` — find records across the trees this session can see, or list the
+ * most recent ones.
+ *
+ * The read that makes the record readable. Everything an agent captures — a
+ * memory, an observation, a decision, a task, a skill — was write-only until
+ * now: recoverable by id if you still had the id, and otherwise gone. This
+ * returns an INDEX of what matched (id, kind, tree, instant, one line each),
+ * never the bodies; `read_record` serves one whole record when the index says
+ * which one is worth reading.
+ *
+ * The term is OPTIONAL. Without one the answer is the most recent records —
+ * "what has been going on here" — and with one it is the best matches. They are
+ * the same read because an inverted index makes them the same query.
+ *
+ * Read-only in the strict sense: it asks the session's warm caches and composes
+ * the copilot's pure `searchRecords`. No writer, no event — including for a
+ * skill, whose NAME may appear here. Only serving a skill's BODY is a
+ * consultation worth recording, and that has its own tool.
+ */
+export function runSearchTool(session: Session, input: RecordQuery = {}): SearchToolResult {
+  // A scope this context does not have would silently return nothing, which
+  // reads as "no matches" when the truth is "that tree is not here".
+  if (input.scope !== undefined && chainRootForScope(session.trees, input.scope) === undefined) {
+    return {
+      ok: false,
+      code: 'SCOPE_UNAVAILABLE',
+      message: `no ${input.scope} tree here — a session outside a project has only the global scope`,
+    };
+  }
+  // The kinds are a closed vocabulary. The transport's schema already names
+  // them, but this adapter is a function anyone may call, and an unrecognized
+  // kind that quietly matched nothing would be indistinguishable from an empty
+  // record.
+  if (input.kind !== undefined && !isSearchKind(input.kind)) {
+    return {
+      ok: false,
+      code: 'UNKNOWN_KIND',
+      message: `"${input.kind}" is not a kind of record — one of: ${SEARCH_KINDS.join(', ')}`,
+    };
+  }
+  return { ok: true, value: searchRecords(scopedCaches(session), input) };
+}
+
+/** One whole record, or a typed refusal. */
+export type ReadRecordResult =
+  | {
+      readonly ok: true;
+      /** The record with the projection the chain proves, and the tree it lives in. */
+      readonly value: RecordBody;
+    }
+  | {
+      readonly ok: false;
+      /** `UNKNOWN_RECORD`, or `USE_SKILLS_TOOL` for a pattern's body. */
+      readonly code: 'UNKNOWN_RECORD' | 'USE_SKILLS_TOOL';
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/**
+ * `read_record` — the whole of one record, by the id the index gave.
+ *
+ * The second half of the search: the index says what exists and this says what
+ * it says. It looks in every tree the session can see (an id lives in exactly
+ * one) and returns the projection the chain proves, marked with that tree.
+ * Read-only: no writer, no event.
+ *
+ * A SKILL is refused here, and pointed at the `skills` tool instead. Two reasons,
+ * both of them the skills tool's own rules: serving a pattern's body is a
+ * consultation, and that fact is derivable from nothing else afterwards; and
+ * only ADOPTED patterns are served, because handing an agent the body of a way
+ * of working the team retired is worse than handing it nothing. Letting a body
+ * out through a second door would quietly undo both. The auditor's surface (the
+ * CLI) makes the opposite call for the opposite reason: a person curating
+ * patterns has to be able to read the one they are about to reject.
+ */
+export function runReadRecordTool(session: Session, input: { id: string }): ReadRecordResult {
+  const record = readRecord(scopedCaches(session), input.id);
+  if (record === null) {
+    return {
+      ok: false,
+      code: 'UNKNOWN_RECORD',
+      message: `no record with id "${input.id}" in any tree this session can see`,
+    };
+  }
+  if (record.kind === 'skill') {
+    return {
+      ok: false,
+      code: 'USE_SKILLS_TOOL',
+      message:
+        `"${input.id}" is a skill — read it with the \`skills\` tool, which serves ` +
+        'the adopted patterns and records that they were consulted',
+    };
+  }
+  return { ok: true, value: record };
 }
 
 /** An intelligence read's result: the derivation, or a refusal when no project. */
