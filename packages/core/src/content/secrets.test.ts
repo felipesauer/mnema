@@ -70,6 +70,22 @@ describe('scrubSecrets — the value is absent from the output', () => {
     expect(scrubbed.text).toBe('the key is:\n<SECRET:private-key-block>\ndone');
   });
 
+  it('spans a real key of the largest size anyone uses', () => {
+    // The span the block pattern follows is bounded (an unbounded lazy scan before
+    // a literal terminator is quadratic in a field packed with headers), and the
+    // bound is set from the cost of that hostile input. So the size of a REAL key
+    // has to be asserted, not assumed: an RSA-4096 private key is the biggest one
+    // in practice at roughly 3.2 KB of base64, and an Ed25519 one is ~400 bytes.
+    for (const bodyBytes of [400, 3200]) {
+      const body = 'A'.repeat(bodyBytes);
+      const scrubbed = scrubSecrets(
+        `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----`,
+      );
+      expect(scrubbed.text).not.toContain(body);
+      expect(scrubbed.text).toBe('<SECRET:private-key-block>');
+    }
+  });
+
   it('replaces BOTH values when one field carries two different classes', () => {
     const aws = 'AKIAIOSFODNN7EXAMPLE';
     const password = 'hunter2hunter2';
@@ -161,6 +177,23 @@ describe('scrubSecrets — the limits, stated as tests', () => {
     { why: 'a secret split across two records', text: 'the first half is AKIAIOSF' },
     { why: 'a key with a space injected', text: 'AKIA IOSFODNN7EXAMPLE' },
     { why: 'a password described rather than written', text: 'the password is the usual one' },
+    // The two below are a MEASURED refusal, not an oversight. A class anchored on
+    // the variable NAME (`password=`, `api_key:`, `token=`) was written and run: it
+    // flagged nothing on a real archive of 4,277 events, which reads as safe until
+    // you measure the other side — against twelve notes a knowledge base plausibly
+    // records ("api_key: environment", "token: 15000000 tokens spent", "password:
+    // unchanged since the migration") it obfuscated NINE. And it missed both values
+    // that motivated it: `DATABASE_PASSWORD=…` because `\b` does not fire after an
+    // underscore, and `aws_secret_access_key = …` because the name that precedes the
+    // separator is `key`, not `secret`. Dropping the boundary to reach the first
+    // still missed the second and destroyed the same nine. So it fails the test that
+    // killed entropy, for the same reason: it wrecks the record without protecting
+    // anything. What covers these is the declared contract, not a pattern.
+    { why: 'a password in an assignment', text: 'DATABASE_PASSWORD=S3nh4F0rte' },
+    {
+      why: 'an AWS secret access key (no prefix of its own)',
+      text: 'aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    },
   ];
 
   for (const uncaught of ESCAPES) {

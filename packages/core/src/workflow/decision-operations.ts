@@ -41,7 +41,6 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { canonicalIdentity } from '../identity/who.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
 import { type Clock, systemClock } from './clock.js';
@@ -183,7 +182,13 @@ export function recordDecision(
     },
   );
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id, adr, entries: [e1, e2], ...screened(text.replaced) };
+  return {
+    ok: true,
+    id,
+    adr,
+    entries: [e1, e2],
+    ...screened([...text.replaced, ...agent.replaced]),
+  };
 }
 
 /** Accepts a proposed decision (requires a note). */
@@ -251,6 +256,15 @@ function transition(
 
   // `who` is this installation's authorizing anchor, never supplied.
   const who = authorizingAnchor(ctx);
+
+  // Resolved before the gate, and the RESOLVED value is both what the gate judges
+  // and what the envelope records — `which` is free text and goes through the same
+  // door as the proof, so screening it and then recording something else would be
+  // the very mismatch the resolution exists to prevent.
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
   const verdict = decisionGate({
     from: current.state,
     action,
@@ -258,7 +272,7 @@ function transition(
     ...(by !== undefined ? { by } : {}),
     subject: id,
     who,
-    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(which !== undefined ? { which } : {}),
   });
   if (!verdict.ok) return verdict;
 
@@ -276,8 +290,6 @@ function transition(
       };
     }
   }
-
-  const which = canonicalIdentity(input.which);
 
   // Found this installation's anchor before its first fact, so the transition's
   // signer is a key valid for its anchor at verify. A no-op once founded.
@@ -301,7 +313,12 @@ function transition(
     },
   );
   const entry = ctx.writer.append(event);
-  return { ok: true, to: verdict.to, entry, ...screened(proof?.replaced ?? []) };
+  return {
+    ok: true,
+    to: verdict.to,
+    entry,
+    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+  };
 }
 
 /**

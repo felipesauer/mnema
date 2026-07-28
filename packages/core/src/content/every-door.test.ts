@@ -35,6 +35,12 @@ import { detectSecrets } from './secrets.js';
  *
  * And the assertion is always the same one: the value is ABSENT from what was
  * appended. Never that a counter moved (see `secrets.test.ts` for why).
+ *
+ * THE SWEEP READS THE WHOLE EVENT, envelope included. It used to read payloads
+ * only, and that is precisely how `which` — the envelope's one free-text field, and
+ * the one stamped on EVERY event of a session — reached the chain unscreened while
+ * this file stayed green. A sweep that knows which half of an event to look at is a
+ * list, and a list is what nobody remembers to extend.
  */
 
 const upcasters = catalogUpcasters();
@@ -59,7 +65,7 @@ describe('the content door runs at every write point', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  /** Every string anywhere in every appended payload — the generic sweep. */
+  /** Every string anywhere in every appended event — the generic sweep. */
   function recordedText(): string[] {
     const found: string[] = [];
     const collect = (value: unknown): void => {
@@ -75,7 +81,9 @@ describe('the content door runs at every write point', () => {
         for (const item of Object.values(value)) collect(item);
       }
     };
-    for (const event of orderedEvents(ctx.layout, upcasters)) collect(event.payload);
+    // The whole event, not `event.payload`: the envelope carries `which`, and a
+    // payload-only sweep is exactly what let a credential through it.
+    for (const event of orderedEvents(ctx.layout, upcasters)) collect(event);
     return found;
   }
 
@@ -186,7 +194,7 @@ describe('the content door runs at every write point', () => {
     );
 
     // THE assertion, over the whole chain: nothing appended holds either value,
-    // and no payload string anywhere reads as a credential of any class.
+    // and no string anywhere — envelope or payload — reads as a credential.
     const text = recordedText();
     expect(text.length).toBeGreaterThan(0);
     for (const value of text) {
@@ -217,6 +225,194 @@ describe('the content door runs at every write point', () => {
     expect(clean.ok).toBe(true);
     if (!clean.ok) return;
     expect(clean.replaced).toBeUndefined();
+  });
+});
+
+/**
+ * The envelope's one free-text field, which the sweep above used to miss.
+ *
+ * `which` is the agent that executed a fact. Everything else on an envelope is
+ * derived — `who` and `signerFp` from a key, `at` from a clock, `subject` and `run`
+ * from a mint — so `which` is the only place a credential can reach an event
+ * without passing through a payload, and the worst place for one: it is stamped on
+ * EVERY event of a session, so one dirty value is as many disclosures as the
+ * session has facts. Over MCP it is worse still, because it comes from the client's
+ * announced name — nobody types it and nobody reads it.
+ */
+describe('the executing agent goes through the same door', () => {
+  let root: string;
+  let ctx: WriteContext;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'mnema-which-'));
+    ctx = { writer: openChainForWriting(root, { keyRoot: root }), layout: { root }, upcasters };
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** Every string of every appended event, envelope included. */
+  function recorded(): string[] {
+    const found: string[] = [];
+    const collect = (value: unknown): void => {
+      if (typeof value === 'string') {
+        found.push(value);
+        return;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) collect(item);
+        return;
+      }
+      if (value !== null && typeof value === 'object') {
+        for (const item of Object.values(value)) collect(item);
+      }
+    };
+    for (const event of orderedEvents(ctx.layout, upcasters)) collect(event);
+    return found;
+  }
+
+  /** An agent name carrying a credential — the value that must never be recorded. */
+  const DIRTY = `agent-${SECRET}`;
+
+  it('takes the credential out of the agent name at every write point', () => {
+    // The whole writing surface again, but with the secret in `which` ONLY and
+    // every payload field clean. A payload-only sweep passes this while the chain
+    // holds the credential on every one of these events — which is what happened.
+    const task = createTask(ctx, { title: 'clean title', which: DIRTY });
+    expect(task.ok).toBe(true);
+    if (!task.ok) return;
+    expect(transitionTask(ctx, { id: task.id, action: 'submit', which: DIRTY }).ok).toBe(true);
+
+    const decision = recordDecision(ctx, { title: 'clean', rationale: 'clean', which: DIRTY });
+    expect(decision.ok).toBe(true);
+    if (!decision.ok) return;
+    expect(
+      acceptDecision(ctx, { id: decision.id, fields: { note: 'clean' }, which: DIRTY }).ok,
+    ).toBe(true);
+
+    const skill = createSkill(ctx, { name: 'clean', body: 'clean', which: DIRTY });
+    expect(skill.ok).toBe(true);
+    if (!skill.ok) return;
+    expect(reviewSkill(ctx, { id: skill.id, fields: { note: 'clean' }, which: DIRTY }).ok).toBe(
+      true,
+    );
+    expect(recordConsultation(ctx, { skill: skill.id, which: DIRTY }).ok).toBe(true);
+
+    expect(captureMemory(ctx, { content: 'clean', which: DIRTY }).ok).toBe(true);
+    expect(
+      recordObservation(ctx, { about: 'x', topic: 'clean', text: 'clean', which: DIRTY }).ok,
+    ).toBe(true);
+    expect(recordHandoff(ctx, { task: 'x', fromAgent: 'a', toAgent: 'b', which: DIRTY }).ok).toBe(
+      true,
+    );
+    expect(linkKnowledge(ctx, { subject: 'a', target: 'b', rel: 'r', which: DIRTY }).ok).toBe(true);
+    // The session's agent IS its `which`, in the payload and on the envelope both.
+    expect(startRun(ctx, { agent: DIRTY, goal: 'clean' }).ok).toBe(true);
+
+    const text = recorded();
+    expect(text.length).toBeGreaterThan(0);
+    for (const value of text) {
+      expect(value).not.toContain(SECRET);
+      expect(detectSecrets(value)).toEqual([]);
+    }
+    // And the agent survived as an agent — the record still says which one executed.
+    expect(text).toContain('agent-<SECRET:aws-access-key>');
+  });
+
+  it('reports the agent name it cleaned even when the payload was clean', () => {
+    // The failure this closes is not a leak but a SILENCE: the fact was recorded
+    // with a placeholder and nobody was told, so a live credential stayed
+    // unrotated because the reply read as an ordinary success.
+    const task = createTask(ctx, { title: 'nothing sensitive here', which: DIRTY });
+    expect(task.ok && task.replaced).toEqual(['aws-access-key']);
+
+    const memory = captureMemory(ctx, { content: 'nothing sensitive here', which: DIRTY });
+    expect(memory.ok && memory.replaced).toEqual(['aws-access-key']);
+
+    // Both halves in one report, the payload's class and the agent's, with no
+    // caller having to merge two reports (or forget to).
+    const both = captureMemory(ctx, { content: `db at ${PASSWORD_URL}`, which: DIRTY });
+    expect(both.ok && both.replaced).toEqual(['url-password', 'aws-access-key']);
+
+    // A gated move reports it too — its own screen only ever saw the proof fields.
+    expect(task.ok).toBe(true);
+    if (!task.ok) return;
+    const moved = transitionTask(ctx, {
+      id: task.id,
+      action: 'submit',
+      fields: { note: 'clean' },
+      which: DIRTY,
+    });
+    expect(moved.ok && moved.replaced).toEqual(['aws-access-key']);
+
+    // And the consultation, the one write whose report used to have nowhere to go.
+    const skill = createSkill(ctx, { name: 'n', body: 'b' });
+    expect(skill.ok).toBe(true);
+    if (!skill.ok) return;
+    const consulted = recordConsultation(ctx, { skill: skill.id, which: DIRTY });
+    expect(consulted.ok && consulted.replaced).toEqual(['aws-access-key']);
+
+    // Absence still means "nothing was taken out", on the same field.
+    const clean = captureMemory(ctx, { content: 'clean', which: 'agent' });
+    expect(clean.ok && clean.replaced).toBeUndefined();
+  });
+
+  it('records an all-credential agent name as the bare placeholder', () => {
+    // The degenerate case, decided rather than left to chance: a `which` that is
+    // ENTIRELY a credential comes back as `<SECRET:…>`. Odd to read, but honest,
+    // and strictly better than stamping the key itself on every event of a session
+    // — and the caller is told, so it can reconnect with a name.
+    const task = createTask(ctx, { title: 'clean', which: SECRET });
+    expect(task.ok && task.replaced).toEqual(['aws-access-key']);
+    expect(recorded()).toContain('<SECRET:aws-access-key>');
+    expect(recorded().join('\n')).not.toContain(SECRET);
+  });
+
+  it('refuses an oversize agent name without appending anything', () => {
+    // Nothing has been written, so "appended nothing" is checkable as an absolute.
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(0);
+    const oversize = 'y'.repeat(FIELD_BYTE_LIMIT + 1);
+
+    const refusals = [
+      createTask(ctx, { title: 'ok', which: oversize }),
+      recordDecision(ctx, { title: 'ok', rationale: 'ok', which: oversize }),
+      createSkill(ctx, { name: 'n', body: 'b', which: oversize }),
+      captureMemory(ctx, { content: 'ok', which: oversize }),
+      recordObservation(ctx, { about: 'x', topic: 'k', text: 't', which: oversize }),
+      recordHandoff(ctx, { task: 'x', fromAgent: 'a', toAgent: 'b', which: oversize }),
+      linkKnowledge(ctx, { subject: 'a', target: 'b', rel: 'r', which: oversize }),
+      recordConsultation(ctx, { skill: 'x', which: oversize }),
+      startRun(ctx, { agent: oversize }),
+    ];
+    for (const refusal of refusals) {
+      expect(refusal.ok).toBe(false);
+      if (refusal.ok) continue;
+      expect(refusal.code).toBe('CONTENT_TOO_LARGE');
+    }
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(0);
+  });
+
+  it('still refuses the anchor as the agent, on the screened value', () => {
+    // The authority invariant is unchanged and is still judged on the string the
+    // chain would store: screening runs BEFORE the comparison, so no caller can
+    // compare one form and record another.
+    const task = createTask(ctx, { title: 'a task' });
+    expect(task.ok).toBe(true);
+    const who = ctx.writer.anchor;
+
+    const self = createTask(ctx, { title: 'clean', which: who });
+    expect(self.ok).toBe(false);
+    if (self.ok) return;
+    expect(self.code).toBe('WHO_IS_WHICH');
+
+    // A gated move too, and with surrounding whitespace, which canonicalization
+    // strips before the comparison.
+    if (!task.ok) return;
+    const moved = transitionTask(ctx, { id: task.id, action: 'submit', which: `  ${who}  ` });
+    expect(moved.ok).toBe(false);
+    if (moved.ok) return;
+    expect(moved.code).toBe('WHO_IS_WHICH');
   });
 });
 

@@ -23,7 +23,10 @@
  *     resolveExecutingAgent}). No gate runs here, but this is not a gate rule:
  *     it is the authority invariant, and the verifier applies it to EVERY kind.
  *     Checking it at the door is what keeps a self-authorized fact out of an
- *     append-only log, where it could not be repaired afterwards.
+ *     append-only log, where it could not be repaired afterwards. That resolution
+ *     SCREENS the agent name as well — it is the envelope's one free-text field —
+ *     so what it replaced joins the payload's in one report, and a caller reads a
+ *     single list rather than remembering to merge two.
  *   - the memory's id is MINTED by the operation (see {@link mintId}), never
  *     chosen by the caller, so two offline clones never mint the same id and two
  *     unrelated memories cannot false-merge when their chains are unioned.
@@ -134,7 +137,7 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
       { content: content.fields.content },
     ),
   );
-  return { ok: true, id, ...screened(content.replaced) };
+  return { ok: true, id, ...screened([...content.replaced, ...agent.replaced]) };
 }
 
 /** An observation was recorded: the fact was appended. */
@@ -216,7 +219,7 @@ export function recordObservation(
       { about, topic: text.fields.topic, text: text.fields.text },
     ),
   );
-  return { ok: true, id, ...screened(text.replaced) };
+  return { ok: true, id, ...screened([...text.replaced, ...agent.replaced]) };
 }
 
 /** A handoff was recorded: the fact was appended. */
@@ -294,7 +297,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
     ok: true,
     fromAgent: agents.fields.fromAgent,
     toAgent: agents.fields.toAgent,
-    ...screened(agents.replaced),
+    ...screened([...agents.replaced, ...agent.replaced]),
   };
 }
 
@@ -366,5 +369,9 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
       { target, rel: relation.fields.rel },
     ),
   );
-  return { ok: true, rel: relation.fields.rel, ...screened(relation.replaced) };
+  return {
+    ok: true,
+    rel: relation.fields.rel,
+    ...screened([...relation.replaced, ...agent.replaced]),
+  };
 }

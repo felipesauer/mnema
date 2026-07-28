@@ -24,7 +24,8 @@
  * key that will sign the checkpoint — so a caller cannot forge who authorized a
  * fact by typing a name. The caller supplies at most `which` (the executing
  * agent). `who != which` still holds: an anchor hash never collides with an
- * agent name.
+ * agent name. And `which` is free text, so it goes through the door too: it is the
+ * envelope's only typed-in field, and the report it produces joins the payload's.
  */
 
 import {
@@ -45,7 +46,6 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { type Clock, systemClock } from './clock.js';
@@ -123,6 +123,10 @@ export interface CreateInput {
  * the caller was told it had been cleaned. Screening first also means the gate
  * judges the same text the chain will hold — a placeholder is never empty, so a
  * required note that was scrubbed still satisfies the proof requirement.
+ *
+ * The executing agent is resolved before the gate for the same reason, and the
+ * gate is handed the RESOLVED value: a `which` screened here and re-canonicalized
+ * later would be a string the check never saw going onto the envelope.
  */
 export function transitionTask(
   ctx: WriteContext,
@@ -147,16 +151,25 @@ export function transitionTask(
   // cannot forge who authorized the move. The gate still checks it against
   // `which` so an agent cannot pose as the authorizer.
   const who = authorizingAnchor(ctx);
+
+  // The agent is resolved BEFORE the gate and the RESOLVED value is what the gate
+  // judges and the envelope records. `which` is free text like any payload field —
+  // and the one on the envelope, stamped on every event of a session — so it goes
+  // through the same door; resolving it here rather than canonicalizing it again
+  // below is what keeps the string that was screened and compared identical to the
+  // string that is stored.
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
   const verdict = gate({
     from: current,
     action: input.action,
     ...(proof !== undefined ? { fields: proof.fields } : {}),
     who,
-    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(which !== undefined ? { which } : {}),
   });
   if (!verdict.ok) return verdict;
-
-  const which = canonicalIdentity(input.which);
 
   // Found this installation's anchor before its first fact, so the transition's
   // signer is a key valid for its anchor at verify. A no-op once founded.
@@ -179,7 +192,12 @@ export function transitionTask(
     },
   );
   const entry = ctx.writer.append(event);
-  return { ok: true, to: verdict.to, entry, ...screened(proof?.replaced ?? []) };
+  return {
+    ok: true,
+    to: verdict.to,
+    entry,
+    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+  };
 }
 
 /**
@@ -229,7 +247,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // state, permanently burning the id (the projection drops a stateless
   // subject, so every later transition on it fails as UNKNOWN_TASK).
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id, entries: [e1, e2], ...screened(title.replaced) };
+  return { ok: true, id, entries: [e1, e2], ...screened([...title.replaced, ...agent.replaced]) };
 }
 
 /**

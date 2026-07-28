@@ -41,6 +41,25 @@ describe('exposure — what it finds', () => {
     ]);
   });
 
+  it('reaches the ENVELOPE, where the executing agent lives', () => {
+    // The hole this closes, and the worst kind there is: with a payload-only sweep
+    // this record answered "nothing recognizable" while the credential sat on disk
+    // in `which`. Not a record written unprotected — the AUDIT declaring it clean,
+    // which ends the investigation. `which` is the envelope's one free-text field
+    // and it is stamped on every event of a session, so one value is many records.
+    const report = exposure([
+      source('public', [
+        {
+          ...event('memory.captured', 'm-1', '2026-07-01T12:00:00.000Z', { content: 'clean' }),
+          which: `agent-${SECRET}`,
+        } as unknown as CatalogEvent,
+      ]),
+    ]);
+
+    expect(report.findings).toHaveLength(1);
+    expect(report.findings[0]?.classes).toEqual(['aws-access-key']);
+  });
+
   it('reaches a proof field NESTED inside a transition payload', () => {
     // No projection exposes a transition's `fields` whole, so a per-kind reader
     // would miss exactly the notes and reasons a person types fastest. The generic
@@ -156,9 +175,12 @@ describe('exposure — what it does NOT claim', () => {
     expect(report.scanned).toBe(2);
   });
 
-  it('does NOT scan the envelope — anchors, fingerprints and ids are not typed text', () => {
-    // An over-eager rule reading the envelope would flag the record's own identity
-    // on every single event, which is the failure the whole design avoids.
+  it('finds nothing in the DERIVED envelope fields, which is what makes scanning them safe', () => {
+    // The anchor, the fingerprint, the v7 id and the instant are on every event, so
+    // a rule that read them as text would flag the record's own identity forever.
+    // A known-prefix rule reads none of them — which is exactly why the envelope can
+    // be swept whole, and why an entropy rule could never be (it flagged 13,094 of
+    // these over a real archive).
     const report = exposure([
       source('public', [
         event(

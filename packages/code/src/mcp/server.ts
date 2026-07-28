@@ -622,7 +622,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.skills, null, 2) }] };
+      // Serving a pattern RECORDS a consultation, so this read is also a write —
+      // and the one report a write must never swallow is what it replaced. The
+      // agent name rides on that fact's envelope like any other, so if it held a
+      // credential this reply is where the caller can still rotate it.
+      const notice = replacementNotice(result.replaced);
+      return {
+        content: [
+          { type: 'text', text: JSON.stringify(result.skills, null, 2) },
+          ...(notice.length > 0 ? [{ type: 'text' as const, text: notice.join('\n') }] : []),
+        ],
+      };
     },
   );
 

@@ -81,10 +81,27 @@ export function secretPlaceholder(secret: SecretClass): string {
  * The bound is what keeps the search linear. An unbounded lazy `[\s\S]*?` before
  * a literal terminator has to scan to the end of the field once per header when
  * no terminator exists, so a field packed with headers would cost the square of
- * its length. A private key in PEM is a few kilobytes, so a bound generous by an
- * order of magnitude costs nothing real and caps the work.
+ * its length.
+ *
+ * The SIZE of the bound is measured, not guessed. A field of 64 KiB packed with
+ * 2,427 unclosed headers is the worst input reachable under the size limit, and the
+ * span is what its cost is linear in — this pattern alone over that input, the two
+ * spans measured side by side in one process:
+ *
+ *   span 16384 : 105.3 ms
+ *   span  8192 :  55.3 ms
+ *
+ * Against 0.35 ms for a whole scrub of a clean 64 KiB field and 0.0011 ms for a
+ * typical one, so the bound is the only thing standing between a hostile field and
+ * a hundred milliseconds of regex.
+ *
+ * 8 KiB is still generous by a wide margin against what it has to hold: an RSA-4096
+ * private key in PEM is about 3.2 KB of body and an Ed25519 one about 400 bytes, so
+ * the span covers the largest key anyone uses twice over. Halving it halves the
+ * worst case for nothing given up — both of those keys are still replaced whole,
+ * asserted in the tests rather than assumed here.
  */
-const PEM_BODY_SPAN = 16_384;
+const PEM_BODY_SPAN = 8_192;
 
 /** A recognized credential format: the class it belongs to and the shape it takes. */
 interface SecretPattern {

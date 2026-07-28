@@ -90,6 +90,7 @@ import {
   type ReferenceDirection,
   type Scope,
   SEARCH_KINDS,
+  type SecretClass,
   SKILL_ACTIONS,
 } from '@mnema/core';
 import {
@@ -900,11 +901,11 @@ function skillCaches(session: Session): ProjectionCache[] {
 
 /** The adopted patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The adopted patterns, each with its body. Empty when none are adopted. */
       readonly skills: readonly AdoptedSkill[];
-    }
+    })
   | {
       readonly ok: false;
       /**
@@ -963,7 +964,12 @@ export function runSkills(session: Session, input: { id?: string } = {}): Skills
 
   const recorded = recordConsultations(session, skills);
   if (!recorded.ok) return recorded;
-  return { ok: true, skills };
+  // This is a READ that writes, so it is the one place a replacement report could
+  // reasonably be dropped — and dropping it is exactly the silence the report
+  // exists against. A consultation carries the session's agent name on its
+  // envelope like every other fact, so if that name held a credential this call is
+  // the one that recorded it, and this reply is where the caller can still act.
+  return { ok: true, skills, ...forwardReplacement(recorded) };
 }
 
 /**
@@ -981,12 +987,18 @@ export function runSkills(session: Session, input: { id?: string } = {}): Skills
 function recordConsultations(
   session: Session,
   skills: readonly AdoptedSkill[],
-): { readonly ok: true } | { readonly ok: false; readonly code: string; readonly message: string } {
+):
+  | (Replacement & { readonly ok: true })
+  | { readonly ok: false; readonly code: string; readonly message: string } {
   const fresh = skills.filter((skill) => !session.consulted.has(skill.id));
   if (fresh.length === 0) return { ok: true };
 
   const ctx = writeContext(session.trees, session.scope, session.caches);
   let appended = 0;
+  // The classes across every consultation this call appended, distinct: the agent
+  // name is the same on all of them, so listing it once per skill would turn one
+  // dirty session name into a report as long as the pattern list.
+  const replaced = new Set<SecretClass>();
   for (const skill of fresh) {
     const done = recordConsultation(ctx, {
       skill: skill.id,
@@ -1001,10 +1013,11 @@ function recordConsultations(
     }
     session.consulted.add(skill.id);
     appended += 1;
+    for (const secret of done.replaced ?? []) replaced.add(secret);
   }
   // Checkpoint so the consultations are fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true };
+  return { ok: true, ...(replaced.size > 0 ? { replaced: [...replaced] } : {}) };
 }
 
 /**

@@ -39,7 +39,6 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
 import { type Clock, systemClock } from './clock.js';
@@ -158,11 +157,17 @@ export function createSkill(
     { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
   );
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id, name: text.fields.name, entries: [e1, e2], ...screened(text.replaced) };
+  return {
+    ok: true,
+    id,
+    name: text.fields.name,
+    entries: [e1, e2],
+    ...screened([...text.replaced, ...agent.replaced]),
+  };
 }
 
 /** A consultation was recorded: the fact was appended. */
-export interface ConsultationOk {
+export interface ConsultationOk extends ScreenedWrite {
   readonly ok: true;
 }
 
@@ -234,7 +239,11 @@ export function recordConsultation(
       ...(input.run !== undefined ? { run: input.run } : {}),
     }),
   );
-  return { ok: true };
+  // It reports what was replaced like every other write, even though its own two
+  // fields cannot realistically hold anything: the agent name CAN, it is stamped on
+  // this fact as much as on any other, and a write that scrubbed in silence is the
+  // one failure the report exists to make impossible.
+  return { ok: true, ...screened([...named.replaced, ...agent.replaced]) };
 }
 
 /** Reviews a proposed skill (requires a note). */
@@ -297,16 +306,23 @@ function transition(
 
   // `who` is this installation's authorizing anchor, never supplied.
   const who = authorizingAnchor(ctx);
+
+  // Resolved before the gate, and the RESOLVED value is both what the gate judges
+  // and what the envelope records — `which` is free text and goes through the same
+  // door as the proof, so screening it and then recording something else would be
+  // the very mismatch the resolution exists to prevent.
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
   const verdict = skillGate({
     from: current.state,
     action,
     ...(proof !== undefined ? { fields: proof.fields } : {}),
     who,
-    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(which !== undefined ? { which } : {}),
   });
   if (!verdict.ok) return verdict;
-
-  const which = canonicalIdentity(input.which);
 
   // Found this installation's anchor before the transition, so its signer is a
   // key valid for its anchor at verify. A no-op once founded.
@@ -329,7 +345,12 @@ function transition(
     },
   );
   const entry = ctx.writer.append(event);
-  return { ok: true, to: verdict.to, entry, ...screened(proof?.replaced ?? []) };
+  return {
+    ok: true,
+    to: verdict.to,
+    entry,
+    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+  };
 }
 
 /**

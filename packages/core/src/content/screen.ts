@@ -4,11 +4,15 @@
  *
  * One function, for the reason the authority invariant is one function: the
  * shapes that need it are not alike — a birth's title, a transition's proof, a
- * fact's whole body, a session's goal — and spread across those shapes as a
- * copied block a check is simply MISSING from whichever one nobody remembered.
- * On an append-only log that turns a refusable input into a permanent entry, so
- * failing at the door is the whole point: one function makes "every append is
- * screened" a property of the code instead of a habit.
+ * fact's whole body, a session's goal, the ENVELOPE's executing agent — and
+ * spread across those shapes as a copied block a check is simply MISSING from
+ * whichever one nobody remembered. On an append-only log that turns a refusable
+ * input into a permanent entry, so failing at the door is the whole point: one
+ * function makes "every append is screened" a property of the code instead of a
+ * habit. The agent name is the case that proves it: the first cut of this door
+ * read "every free-text field" as "every free-text field of the payload", and
+ * `which` — the one on the envelope, stamped on every event of a session — went
+ * through unscreened while a payload-only sweep reported everything clean.
  *
  * THE LIMIT COMES FIRST, AND IT IS NOT A PREFERENCE. Nothing capped the size of
  * a text field before this, and a single 5 MB event was accepted in 321 ms and

@@ -78,7 +78,13 @@ export type GateErrorCode =
   /** No human `who` authorized the move. */
   | 'MISSING_WHO'
   /** `who` and `which` are the same identity — an agent cannot self-authorize. */
-  | 'WHO_IS_WHICH';
+  | 'WHO_IS_WHICH'
+  /**
+   * The agent name was over the size limit. It comes from the same door every
+   * free-text field goes through (see `screenContent`), and the gate reports it
+   * rather than translating it, so a refusal reads the same wherever it happened.
+   */
+  | 'CONTENT_TOO_LARGE';
 
 /** The gate refused: a typed reason and a human-readable message. */
 export interface GateErr {
@@ -111,7 +117,11 @@ export function gate(request: GateRequest): GateResult {
   }
   // The one invariant that is not this workflow's own: the agent may not be the
   // identity that authorizes it. Shared with every other write, so a fact and a
-  // transition refuse it identically (see resolveExecutingAgent).
+  // transition refuse it identically (see resolveExecutingAgent) — including its
+  // screen of the agent name, so a dry-run verdict is judged on the same string an
+  // append would record. What the screen REPLACED is not reported here: a verdict
+  // records nothing, so there is nothing yet to rotate; the operation that appends
+  // resolves the agent itself and carries that report.
   const agent = resolveExecutingAgent(who, request.which);
   if (!agent.ok) return agent;
 

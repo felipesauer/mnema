@@ -17,15 +17,23 @@
  * and nothing else (see `detectSecrets`), so there is no value here to print even
  * by accident, in the human summary or in the JSON.
  *
- * IT SCANS THE PAYLOAD GENERICALLY. Every string anywhere in an event's payload
- * goes through the detector, rather than a per-kind list of the fields that hold
- * text. Two reasons, and the second is the one that matters: a transition's proof
- * lives in a nested `fields` object that no projection exposes whole, so a
- * field-by-field reader would miss exactly the notes and reasons a person types
- * fastest; and a new kind of event is covered the day it is added, with nobody
- * having to remember this file exists. The envelope is deliberately NOT scanned —
- * it holds anchors, fingerprints, ids and instants, none of them typed by a
- * person, and all of them shapes an over-eager rule would misread.
+ * IT SCANS THE WHOLE EVENT GENERICALLY. Every string anywhere in an event —
+ * envelope and payload alike — goes through the detector, rather than a per-kind
+ * list of the fields that hold text. Two reasons, and the second is the one that
+ * matters: a transition's proof lives in a nested `fields` object that no
+ * projection exposes whole, so a field-by-field reader would miss exactly the
+ * notes and reasons a person types fastest; and a new kind of event is covered the
+ * day it is added, with nobody having to remember this file exists.
+ *
+ * THE ENVELOPE IS IN THE SWEEP, and leaving it out was a hole rather than a
+ * saving. `which` — the executing agent — is the envelope's one free-text field,
+ * and a payload-only scan answered "nothing recognizable" about a record whose
+ * envelope held a credential on disk. That is the exact failure the audit exists
+ * to prevent, one level up: not a record written unprotected, but the report
+ * declaring it clean. The other envelope fields cost nothing to include — an
+ * anchor, a fingerprint, a v7 id and an ISO instant match no known-prefix pattern,
+ * which the known-prefix rule is precisely what makes safe (an entropy rule would
+ * have flagged all of them, which is why there is none).
  *
  * WHAT IT FINDS AND WHAT IT DOES NOT are the detector's, exactly: recognized
  * formats, and nothing else. A password in prose or a proprietary token is not
@@ -87,7 +95,7 @@ export function exposure(sources: readonly ScopedEvents[]): Exposure {
   for (const source of sources) {
     for (const event of source.events) {
       scanned += 1;
-      const classes = classesIn(event.payload);
+      const classes = classesIn(event);
       if (classes.length === 0) continue;
       findings.push({
         id: event.subject,
@@ -104,11 +112,12 @@ export function exposure(sources: readonly ScopedEvents[]): Exposure {
 }
 
 /**
- * The distinct classes found anywhere in a payload, sorted. Walks strings, arrays
+ * The distinct classes found anywhere in an event, sorted. Walks strings, arrays
  * and nested objects alike, so a proof field inside `fields` is reached without
- * this function knowing that `fields` exists.
+ * this function knowing that `fields` exists — and so is the envelope's `which`,
+ * without this function knowing there is an envelope.
  */
-function classesIn(payload: unknown): SecretClass[] {
+function classesIn(event: unknown): SecretClass[] {
   const found = new Set<SecretClass>();
   const walk = (value: unknown): void => {
     if (typeof value === 'string') {
@@ -123,7 +132,7 @@ function classesIn(payload: unknown): SecretClass[] {
       for (const item of Object.values(value)) walk(item);
     }
   };
-  walk(payload);
+  walk(event);
   return [...found].sort(compare);
 }
 

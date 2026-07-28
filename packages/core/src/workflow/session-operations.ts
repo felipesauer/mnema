@@ -156,7 +156,16 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
       },
     ),
   );
-  return { ok: true, id, agent: text.fields.agent, ...screened(text.replaced) };
+  // Both reports, merged like every other operation's — and the count is right
+  // rather than doubled because the screen is idempotent: this agent name went
+  // through it above, so the resolution found nothing left to take out. Merging
+  // anyway is what keeps this operation the same shape as the others.
+  return {
+    ok: true,
+    id,
+    agent: text.fields.agent,
+    ...screened([...text.replaced, ...agent.replaced]),
+  };
 }
 
 /**
