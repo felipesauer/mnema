@@ -14,7 +14,15 @@
  * without spawning a process or writing to the real streams.
  */
 
-import { IdentityUnavailableError, type Scope } from '@mnema/core';
+import type { RecordBody, RecordSearch } from '@mnema/copilot';
+import {
+  IdentityUnavailableError,
+  type Scope,
+  SEARCH_DEFAULT_LIMIT,
+  SEARCH_KINDS,
+  SEARCH_MAX_LIMIT,
+  type SearchKind,
+} from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { runAccountability } from './commands/accountability.js';
 import { runAntipatterns } from './commands/antipatterns.js';
@@ -35,6 +43,8 @@ import { runObserve } from './commands/observe.js';
 import { runResume } from './commands/resume.js';
 import { runRunEnd } from './commands/run-end.js';
 import { runRunStart } from './commands/run-start.js';
+import { runSearch } from './commands/search.js';
+import { runShow } from './commands/show.js';
 import { runSkill } from './commands/skill.js';
 import { runSkillTransition } from './commands/skill-transition.js';
 import { runTask } from './commands/task.js';
@@ -215,6 +225,105 @@ function parseScope(value: string | undefined, io: CliIo): Scope | undefined | t
   if ((SCOPES as readonly string[]).includes(value)) return value as Scope;
   io.err(`Invalid --scope "${value}". Use one of: ${SCOPES.join(', ')}.`);
   return INVALID;
+}
+
+/** Returned by {@link parseLimit} when the value is not a positive whole number. */
+const INVALID_LIMIT = Symbol('invalid-limit');
+
+/**
+ * Validates `--limit` on the surface. commander hands every option through as a
+ * string, and a silent `NaN` would turn "show me 10" into the default without
+ * saying so. An absent flag returns undefined (the read applies its own default
+ * and cap).
+ */
+function parseLimit(
+  value: string | undefined,
+  io: CliIo,
+): number | undefined | typeof INVALID_LIMIT {
+  if (value === undefined) return undefined;
+  const limit = Number(value);
+  if (!Number.isInteger(limit) || limit < 1) {
+    io.err(`Invalid --limit "${value}". Use a whole number of 1 or more.`);
+    return INVALID_LIMIT;
+  }
+  return limit;
+}
+
+/**
+ * Prints a search as a person reads it: a header saying how much matched and how
+ * much is shown, then the hits GROUPED BY KIND.
+ *
+ * The grouping is presentation and only presentation — the read returns one
+ * ordered list, and `--json` emits exactly that. Grouping here is the CLI's
+ * judgement that a person scanning a terminal finds a decision faster among
+ * decisions; an agent, which consumes the JSON, is better served by the single
+ * ranked list. The groups follow the record's own kind order, and within a group
+ * the served order is untouched, so the output is stable for the same query.
+ */
+function printSearch(result: RecordSearch, term: string | undefined, io: CliIo): void {
+  const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${term}"` : '';
+  if (result.hits.length === 0) {
+    io.out(term !== undefined ? `Nothing recorded${forTerm}.` : 'Nothing recorded here yet.');
+    return;
+  }
+  // "5 of 137" is the honest header when the limit cut the answer: a capped list
+  // that does not say it was capped reads as everything there is.
+  const shown =
+    result.total > result.hits.length
+      ? `${result.hits.length} of ${result.total}`
+      : `${result.total}`;
+  io.out(`${shown} record(s)${forTerm}:`);
+  for (const kind of SEARCH_KINDS) {
+    const group = result.hits.filter((hit) => hit.kind === kind);
+    if (group.length === 0) continue;
+    io.out('');
+    io.out(`${kind} (${group.length})`);
+    for (const hit of group) {
+      const state = hit.state !== undefined ? ` (${hit.state})` : '';
+      io.out(`  ${hit.id}  ${hit.scope}  ${hit.at.slice(0, 10)}  ${hit.title}${state}`);
+    }
+  }
+}
+
+/**
+ * Prints one whole record: a header line naming what it is and where it lives,
+ * then the fields that kind actually has. A memory is its content, a decision is
+ * its rationale, an observation is what it is about — printing one shape for all
+ * five would hide exactly the field the reader opened the record for.
+ */
+function printRecord(body: RecordBody, io: CliIo): void {
+  io.out(`${body.kind} ${body.id}  ·  ${body.scope}`);
+  switch (body.kind) {
+    case 'memory':
+      io.out(`  captured ${body.record.capturedAt} by ${body.record.who}`);
+      io.out('');
+      io.out(body.record.content);
+      break;
+    case 'observation':
+      io.out(`  about ${body.record.about} · recorded ${body.record.recordedAt}`);
+      io.out(`  topic: ${body.record.topic}`);
+      io.out('');
+      io.out(body.record.text);
+      break;
+    case 'decision':
+      io.out(`  ${body.record.adr} — ${body.record.title} (${body.record.state})`);
+      if (body.record.supersedes !== undefined) io.out(`  supersedes ${body.record.supersedes}`);
+      if (body.record.supersededBy !== undefined) {
+        io.out(`  superseded by ${body.record.supersededBy}`);
+      }
+      io.out('');
+      io.out(body.record.rationale);
+      break;
+    case 'task':
+      io.out(`  ${body.record.title} (${body.record.state})`);
+      io.out(`  created ${body.record.createdAt} · updated ${body.record.updatedAt}`);
+      break;
+    case 'skill':
+      io.out(`  ${body.record.name} (${body.record.state})`);
+      io.out('');
+      io.out(body.record.body);
+      break;
+  }
 }
 
 /**
@@ -1186,6 +1295,109 @@ export function buildProgram(io: CliIo = processIo): Command {
         }
       },
     );
+
+  // The two RECORD reads — `search` and `show`. Together they are one idea in two
+  // halves: find by an INDEX (a line per record, never the bodies), then read the
+  // one that was worth reading. Both cross every visible tree and say which one
+  // each answer came from — a note of the team's and a note of your own are
+  // different things, and a reader who cannot tell them apart will cite one as the
+  // other. Neither takes `--actor`: what matches is a property of the record.
+  // Neither refuses outside a project either — the global tree is a record too.
+
+  // `mnema search [term] [--kind --scope --state --from --to --limit] [--json]`.
+  // The term is OPTIONAL: with one it is a search, without one the most recent
+  // records. `--json` emits the faithful object (one flat list, as the agent's
+  // surface serves it); the human summary GROUPS by kind, which is presentation
+  // and nothing else — the read returns one ordered list either way.
+  program
+    .command('search')
+    .description('find what has been recorded, or list the most recent (no term)')
+    .argument('[term]', 'words to look for; omit to list the most recent records')
+    .option('--kind <kind>', `only this kind of record: ${SEARCH_KINDS.join(', ')}`)
+    .option('--scope <scope>', `only this tree: ${SCOPES.join(', ')}`)
+    .option('--state <state>', 'only records in this state (excludes kinds that have none)')
+    .option('--from <iso>', 'only records at or after this ISO-8601 instant')
+    .option('--to <iso>', 'only records at or before this ISO-8601 instant')
+    .option(
+      '--limit <n>',
+      `how many to return (default ${SEARCH_DEFAULT_LIMIT}, max ${SEARCH_MAX_LIMIT})`,
+    )
+    .option('--json', 'emit the faithful index as JSON (one ordered list)')
+    .action(
+      (
+        term: string | undefined,
+        opts: {
+          kind?: string;
+          scope?: string;
+          state?: string;
+          from?: string;
+          to?: string;
+          limit?: string;
+          json?: boolean;
+        },
+      ) => {
+        const scope = parseScope(opts.scope, io);
+        if (scope === INVALID) {
+          io.fail();
+          return;
+        }
+        const limit = parseLimit(opts.limit, io);
+        if (limit === INVALID_LIMIT) {
+          io.fail();
+          return;
+        }
+        const result = runSearch(
+          { cwd: process.cwd(), env: discoveryEnv() },
+          {
+            ...(term !== undefined ? { term } : {}),
+            ...(opts.kind !== undefined ? { kind: opts.kind as SearchKind } : {}),
+            ...(scope !== undefined ? { scope } : {}),
+            ...(opts.state !== undefined ? { state: opts.state } : {}),
+            ...(opts.from !== undefined ? { from: opts.from } : {}),
+            ...(opts.to !== undefined ? { to: opts.to } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          },
+        );
+        if (!result.ok) {
+          if (result.reason === 'UNKNOWN_KIND') {
+            io.err(`Invalid --kind "${result.kind}". Use one of: ${SEARCH_KINDS.join(', ')}.`);
+          } else {
+            io.err(`No ${result.scope} tree here. Run \`mnema init\` in a project first.`);
+          }
+          io.fail();
+          return;
+        }
+        if (opts.json === true) {
+          io.out(JSON.stringify(result.result, null, 2));
+          return;
+        }
+        printSearch(result.result, term, io);
+      },
+    );
+
+  // `mnema show <id> [--json]` — the whole record behind an id from `search`.
+  // Serves a skill's body too: on this surface the reader is CURATING patterns,
+  // and refusing them the text of the thing they are reviewing would make the
+  // curation impossible (the agent's surface makes the opposite call, for the
+  // opposite reason — see `runShow`).
+  program
+    .command('show')
+    .description('show one whole record by id (the body a search only pointed at)')
+    .argument('<id>', 'the record id (from `mnema search`)')
+    .option('--json', 'emit the faithful record as JSON')
+    .action((id: string, opts: { json?: boolean }) => {
+      const result = runShow({ cwd: process.cwd(), env: discoveryEnv() }, { id });
+      if (!result.ok) {
+        io.err(`No record ${id} here.`);
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.record, null, 2));
+        return;
+      }
+      printRecord(result.record, io);
+    });
 
   // The three INTELLIGENCE reads — `timeline`, `accountability`, `antipatterns`.
   // Top-level verbs like the context reads, but the AUDITOR's view: each folds

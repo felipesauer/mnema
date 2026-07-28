@@ -523,6 +523,137 @@ describe('ProjectionCache — skills', () => {
   });
 });
 
+describe('ProjectionCache — searching the record', () => {
+  /** Writes one of every recordable thing, so a search sees the whole record. */
+  function writeEverything(w: ChainWriter): void {
+    const [created, transitioned] = taskBirth(env('t-1', 0), {
+      title: 'pineapple on the roadmap',
+      initial: 'draft',
+    });
+    w.append(created);
+    w.append(transitioned);
+    w.append(memoryCaptured(env('m-1', 1), { content: 'the pineapple was a mistake' }));
+    const [recorded, decided] = [
+      decisionRecorded(env('d-1', 2), {
+        adr: 'ADR-1',
+        title: 'Ship it',
+        rationale: 'because the pineapple ripened',
+      }),
+      decisionTransitioned(env('d-1', 3), {
+        from: 'proposed',
+        to: 'accepted',
+        action: 'accept',
+        fields: { rationale: 'r' },
+      }),
+    ];
+    w.append(recorded);
+    w.append(decided);
+    const [skillCreated, skillMoved] = skillBirth(env('s-1', 4), {
+      name: 'pineapple pattern',
+      body: 'how we do it',
+      initial: 'proposed',
+    });
+    w.append(skillCreated);
+    w.append(skillMoved);
+    w.append(
+      observationRecorded(env('o-1', 5), { about: 't-1', topic: 'fruit', text: 'pineapple' }),
+    );
+    // The three kinds that carry no prose of their own.
+    w.append(handoffRecorded(env('t-1', 6), { fromAgent: 'claude', toAgent: 'felipe' }));
+    w.append(knowledgeLinked(env('m-1', 7), { target: 'd-1', rel: 'informs' }));
+    w.append(runStarted(env('r-1', 8), { agent: 'claude', goal: 'pineapple' }));
+  }
+
+  it('finds every indexed kind by a word the chain actually carries', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeEverything(w);
+
+    const cache = openCache();
+    cache.rebuild();
+
+    const found = cache.search({ term: 'pineapple' });
+    expect(found.hits.map((hit) => hit.id).sort()).toEqual(['d-1', 'm-1', 'o-1', 's-1', 't-1']);
+    expect(found.total).toBe(5);
+  });
+
+  it('indexes no handoff, no link and no run — a run goal is not a record', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeEverything(w);
+
+    const cache = openCache();
+    cache.rebuild();
+
+    // The run's goal is the word 'pineapple' too, and the handoff and link both
+    // name subjects that matched — none of them is a searchable record.
+    for (const hit of cache.search({ term: 'pineapple' }).hits) {
+      expect(['memory', 'observation', 'decision', 'task', 'skill']).toContain(hit.kind);
+    }
+    expect(cache.search().total).toBe(5);
+  });
+
+  it('is empty before a rebuild and follows the chain after one', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(memoryCaptured(env('m-1', 0), { content: 'the first fact' }));
+
+    const cache = openCache();
+    expect(cache.search({ term: 'first' }).hits).toEqual([]);
+    cache.rebuild();
+    expect(cache.search({ term: 'first' }).hits.map((h) => h.id)).toEqual(['m-1']);
+
+    // A record appended after the rebuild is invisible until the next one — the
+    // index is a projection, with exactly the projection's freshness.
+    w.append(memoryCaptured(env('m-2', 1), { content: 'the second fact' }));
+    expect(cache.search({ term: 'second' }).hits).toEqual([]);
+    cache.rebuild();
+    expect(cache.search({ term: 'second' }).hits.map((h) => h.id)).toEqual(['m-2']);
+  });
+
+  it('rebuilds the index identically after the cache is wiped, from the chain alone', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeEverything(w);
+
+    const dbPath = join(chainRoot, 'cache.db');
+    const first = openCache(dbPath);
+    first.rebuild();
+    const before = first.search({ term: 'pineapple' });
+    first.close();
+    caches = caches.filter((c) => c !== first);
+
+    rmSync(dbPath, { force: true });
+    rmSync(`${dbPath}-wal`, { force: true });
+    rmSync(`${dbPath}-shm`, { force: true });
+
+    const second = openCache(dbPath);
+    second.rebuild();
+    // Byte-identical, scores included: the index is derived from the chain and
+    // from nothing else, so wiping it costs a replay and changes no answer.
+    expect(second.search({ term: 'pineapple' })).toEqual(before);
+  });
+
+  it('does not double-index when a rebuild runs twice', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeEverything(w);
+
+    const cache = openCache();
+    cache.rebuild();
+    const once = cache.search({ term: 'pineapple' });
+    cache.rebuild();
+
+    expect(cache.search({ term: 'pineapple' })).toEqual(once);
+  });
+
+  it('serves the CURRENT state of an entity that moved, not the one it was born in', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.search({ term: 'title' }).hits[0]?.state).toBe('done');
+    expect(cache.search({ state: 'draft' }).hits).toEqual([]);
+  });
+});
+
 describe('openDatabase', () => {
   it('opens an in-memory database usable for a throwaway cache', () => {
     const db = openDatabase(':memory:');

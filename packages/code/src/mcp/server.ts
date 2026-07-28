@@ -10,10 +10,11 @@
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * create_task, task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap, focus, resume, next_actions, guard, skills, and the
+ * skill_transition, bootstrap, focus, resume, next_actions, guard, skills,
+ * search, read_record, and the
  * three `audit_*` intelligence reads — audit_timeline, audit_accountability,
  * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
- * reads (focus/resume/next_actions/guard, like bootstrap) are READ-ONLY — they
+ * reads (focus/resume/next_actions/guard/search/read_record, like bootstrap) are READ-ONLY — they
  * derive from the session's projection cache; they open no writer. `guard` is a
  * dry-run of the gate: it simulates a move and returns the verdict, having
  * written nothing. `skills` is the one read that also writes: it serves the
@@ -33,7 +34,12 @@
  * does both, and the transport's `onclose` is what calls it.
  */
 
-import type { DiscoveryEnv } from '@mnema/core';
+import {
+  type DiscoveryEnv,
+  SEARCH_DEFAULT_LIMIT,
+  SEARCH_KINDS,
+  SEARCH_MAX_LIMIT,
+} from '@mnema/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -51,10 +57,12 @@ import {
   runGuardTool,
   runLinkKnowledge,
   runNextActionsTool,
+  runReadRecordTool,
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
   runResumeTool,
+  runSearchTool,
   runSkills,
   runSkillTransition,
   runTaskTransition,
@@ -719,6 +727,98 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // (and focus) as data so the agent reads the reason, exactly as it would
       // from the real move's refusal.
       return { content: [{ type: 'text', text: JSON.stringify(result.result, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'search',
+    {
+      title: 'Search — find what has been recorded',
+      description:
+        'Search everything recorded in this project and on this machine — ' +
+        'memories, observations, decisions, tasks and skills — by the words a ' +
+        'person wrote in them. Use it to answer "have we written about X?" or ' +
+        '"what did we decide about Y?" BEFORE assuming nothing is recorded. ' +
+        'With NO term it lists the most recent records instead ("what has been ' +
+        'going on here" — call it with an empty argument object). Narrow with ' +
+        'kind, scope, state or a time window. ' +
+        'Returns an INDEX — id, kind, tree, when, and one line each — not the ' +
+        'bodies; take an id to `read_record` for the whole thing. Searches every ' +
+        'tree you can see (the team’s, this machine’s, your own) and says which ' +
+        'each hit came from. Read-only.',
+      inputSchema: {
+        term: z
+          .string()
+          .optional()
+          .describe('Words to look for; omit to list the most recent records.'),
+        kind: z.enum(SEARCH_KINDS).optional().describe('Only this kind of record.'),
+        scope: z
+          .enum(['public', 'private', 'global'])
+          .optional()
+          .describe('Only this tree; omitted, every tree this session can see.'),
+        state: z
+          .string()
+          .optional()
+          .describe('Only records in this state (excludes kinds that have none).'),
+        from: z.string().optional().describe('Only records at or after this ISO-8601 instant.'),
+        to: z.string().optional().describe('Only records at or before this ISO-8601 instant.'),
+        limit: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            `How many hits to return (default ${SEARCH_DEFAULT_LIMIT}, max ${SEARCH_MAX_LIMIT}).`,
+          ),
+      },
+    },
+    async ({ term, kind, scope, state, from, to, limit }) => {
+      const active = await ensureSession();
+      const result = runSearchTool(active, {
+        ...(term !== undefined ? { term } : {}),
+        ...(kind !== undefined ? { kind } : {}),
+        ...(scope !== undefined ? { scope } : {}),
+        ...(state !== undefined ? { state } : {}),
+        ...(from !== undefined ? { from } : {}),
+        ...(to !== undefined ? { to } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // An empty index is an ANSWER ("nothing here matches"), never an error.
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'read_record',
+    {
+      title: 'Read record — one whole record by id',
+      description:
+        'Read ONE record in full — a memory’s content, a decision’s rationale, an ' +
+        'observation’s text, a task — by the id `search` gave. This is the second ' +
+        'half of a search: the index tells you what exists, this tells you what it ' +
+        'says. A skill id is refused here and pointed at the `skills` tool, which ' +
+        'serves the adopted patterns and records the consultation. An id no visible ' +
+        'tree holds is refused. Read-only.',
+      inputSchema: {
+        id: z.string().min(1).describe('The record id (from `search`).'),
+      },
+    },
+    async ({ id }) => {
+      const active = await ensureSession();
+      const result = runReadRecordTool(active, { id });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
     },
   );
 

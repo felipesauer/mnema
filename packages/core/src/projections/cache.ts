@@ -33,6 +33,7 @@ import {
 import { rebuild } from './rebuild.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
+import { type SearchQuery, type SearchResult, searchRecord } from './search-store.js';
 import type { SkillProjection } from './skill.js';
 import { getSkill, listSkills, listSkillsByState } from './skill-store.js';
 import type { TaskProjection } from './task.js';
@@ -179,6 +180,16 @@ export class ProjectionCache {
   /** Lists skills currently in the given state. */
   listSkillsByState(state: string): SkillProjection[] {
     return listSkillsByState(this.db, state);
+  }
+
+  /**
+   * Searches this tree's record, or lists its most recent entries when the query
+   * carries no term. Returns an INDEX — an id, a kind, an instant and one line
+   * per hit — plus how many matched in all; the body of any one of them comes
+   * from the by-id read above.
+   */
+  search(query: SearchQuery = {}): SearchResult {
+    return searchRecord(this.db, query);
   }
 
   /** Closes the underlying database. */

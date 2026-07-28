@@ -39,6 +39,15 @@ export {
   nextActionsForTask,
 } from './context/next-action.js';
 export {
+  type RecordBody,
+  type RecordHit,
+  type RecordQuery,
+  type RecordSearch,
+  readRecord,
+  type ScopedCache,
+  searchRecords,
+} from './context/search.js';
+export {
   type AdoptedSkill,
   adoptedSkills,
   lookupAdoptedSkill,

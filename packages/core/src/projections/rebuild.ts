@@ -36,6 +36,7 @@ import {
 import { orderedEvents } from './order.js';
 import { projectRuns } from './run.js';
 import { materializeRuns } from './run-store.js';
+import { materializeSearch } from './search-store.js';
 import { projectSkills } from './skill.js';
 import { materializeSkills } from './skill-store.js';
 import { projectTasks } from './task.js';
@@ -71,6 +72,16 @@ export function rebuild(
     materializeHandoffs(db, handoffs.values());
     materializeLinks(db, links);
     materializeSkills(db, skills.values());
+    // The full-text index is filled from the projections just materialized, not
+    // from a second pass over the chain: one read, one fold, two views — so the
+    // index and the tables cannot come to disagree about what the chain says.
+    materializeSearch(db, {
+      tasks: tasks.values(),
+      decisions: decisions.values(),
+      memories: memories.values(),
+      observations: observations.values(),
+      skills: skills.values(),
+    });
   });
   replace();
 }
