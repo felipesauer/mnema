@@ -32,6 +32,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordHandoff } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the handoff command needs — injected so it is testable. */
 export interface HandoffContext {
@@ -42,7 +43,7 @@ export interface HandoffContext {
 }
 
 /** A handoff was recorded — the fact, with its references (there is no id). */
-export interface HandoffRecorded {
+export interface HandoffRecorded extends Replacement {
   readonly ok: true;
   /** The task the handoff is about (the event subject). */
   readonly task: string;
@@ -110,5 +111,13 @@ export function runHandoff(
   // Checkpoint so the new handoff is signature-covered at once.
   writer.checkpoint();
 
-  return { ok: true, task: input.task, fromAgent: input.fromAgent, toAgent: input.toAgent };
+  return {
+    ok: true,
+    task: input.task,
+    // The labels AS RECORDED, not as asked for: if a label carried a credential the
+    // record holds a placeholder, and the echo has to show what landed.
+    fromAgent: recorded.fromAgent,
+    toAgent: recorded.toAgent,
+    ...forwardReplacement(recorded),
+  };
 }

@@ -35,6 +35,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordObservation } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the observe command needs — injected so it is testable. */
 export interface ObserveContext {
@@ -45,7 +46,7 @@ export interface ObserveContext {
 }
 
 /** An observation was recorded. */
-export interface ObservationRecorded {
+export interface ObservationRecorded extends Replacement {
   readonly ok: true;
   /** The observation's OWN minted id (the event subject). */
   readonly id: string;
@@ -111,5 +112,5 @@ export function runObserve(
   // Checkpoint so the new observation is signature-covered at once.
   writer.checkpoint();
 
-  return { ok: true, id: recorded.id };
+  return { ok: true, id: recorded.id, ...forwardReplacement(recorded) };
 }

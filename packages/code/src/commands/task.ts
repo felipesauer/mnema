@@ -37,6 +37,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the task command needs — injected so it is testable. */
 export interface TaskContext {
@@ -47,7 +48,7 @@ export interface TaskContext {
 }
 
 /** A task was created. */
-export interface TaskCreated {
+export interface TaskCreated extends Replacement {
   readonly ok: true;
   /** The minted task id. */
   readonly id: string;
@@ -118,5 +119,10 @@ export function runTask(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: created.id, alias: deriveAlias('task', created.id) };
+  return {
+    ok: true,
+    id: created.id,
+    alias: deriveAlias('task', created.id),
+    ...forwardReplacement(created),
+  };
 }

@@ -38,6 +38,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { createSkill, openTreeForWriting } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the skill command needs — injected so it is testable. */
 export interface SkillContext {
@@ -48,7 +49,7 @@ export interface SkillContext {
 }
 
 /** A skill was proposed. */
-export interface SkillCreated {
+export interface SkillCreated extends Replacement {
   readonly ok: true;
   /** The minted skill id — the canonical identifier, the key a move takes. */
   readonly id: string;
@@ -115,5 +116,6 @@ export function runSkill(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: created.id, name: input.name };
+  // The name AS RECORDED — screened, so the echo shows what landed.
+  return { ok: true, id: created.id, name: created.name, ...forwardReplacement(created) };
 }

@@ -25,7 +25,13 @@
  */
 
 import type { CatalogEvent, ChainLayout, UpcasterRegistry } from '@mnema/chain';
-import { orderedEventsAcross, type ResolvedTrees } from '@mnema/core';
+import type { ScopedEvents } from '@mnema/copilot';
+import {
+  chainRootForScope,
+  orderedEvents,
+  orderedEventsAcross,
+  type ResolvedTrees,
+} from '@mnema/core';
 
 /**
  * The chain layouts of every tree `trees` names, in a fixed order (public,
@@ -49,4 +55,28 @@ export function unionLayouts(trees: ResolvedTrees): ChainLayout[] {
  */
 export function unionEvents(trees: ResolvedTrees, upcasters: UpcasterRegistry): CatalogEvent[] {
   return orderedEventsAcross(unionLayouts(trees), upcasters);
+}
+
+/**
+ * The same present trees, but each tree's events kept SEPARATE and tagged with the
+ * scope they came from.
+ *
+ * The union is the right source for a question about the record as a whole; it is
+ * the wrong one when the answer has to say WHICH TREE, because a merge drops that.
+ * A report about credentials is exactly that case: a fact in the public tree is
+ * committed and clones to everyone, and the same fact in the global tree is on one
+ * disk — the same finding, two different situations, and a reader who cannot tell
+ * them apart cannot act on either. Read-only, like the union: it reads the present
+ * trees' tails, opening no cache and no writer.
+ */
+export function scopedEvents(
+  trees: ResolvedTrees,
+  upcasters: UpcasterRegistry,
+): readonly ScopedEvents[] {
+  const sources: ScopedEvents[] = [];
+  for (const scope of ['public', 'private', 'global'] as const) {
+    const root = chainRootForScope(trees, scope);
+    if (root !== undefined) sources.push({ scope, events: orderedEvents({ root }, upcasters) });
+  }
+  return sources;
 }

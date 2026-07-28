@@ -49,6 +49,7 @@ import {
   rejectDecision,
   supersedeDecision,
 } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface DecisionTransitionContext {
@@ -67,7 +68,7 @@ export interface DecisionTransitionProof {
 }
 
 /** A decision moved to a new state. */
-export interface DecisionTransitioned {
+export interface DecisionTransitioned extends Replacement {
   readonly ok: true;
   /** The decision's id (the one that moved). */
   readonly id: string;
@@ -191,7 +192,7 @@ export function runDecisionTransition(
   // name is the frozen `ADR-<n>` label. Read after the append so the projection
   // reflects the move that just landed.
   const adr = projectDecisions(orderedEvents({ root }, upcasters)).get(input.id)?.adr ?? input.id;
-  return { ok: true, id: input.id, adr, to: moved.to };
+  return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
 }
 
 /**

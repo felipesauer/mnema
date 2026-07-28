@@ -34,6 +34,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the link command needs — injected so it is testable. */
 export interface LinkContext {
@@ -44,7 +45,7 @@ export interface LinkContext {
 }
 
 /** A link was recorded — the fact, with its references (there is no id). */
-export interface LinkRecorded {
+export interface LinkRecorded extends Replacement {
   readonly ok: true;
   /** The entity that ORIGINATES the link (the event subject). */
   readonly subject: string;
@@ -114,5 +115,12 @@ export function runLink(
   // Checkpoint so the new link is signature-covered at once.
   writer.checkpoint();
 
-  return { ok: true, subject: input.subject, target: input.target, rel: input.rel };
+  return {
+    ok: true,
+    subject: input.subject,
+    target: input.target,
+    // The relation AS RECORDED — screened, so the echo shows what landed.
+    rel: recorded.rel,
+    ...forwardReplacement(recorded),
+  };
 }
