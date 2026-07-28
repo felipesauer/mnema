@@ -37,6 +37,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createCacheRegistry } from '../src/mcp/cache-registry.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { closeSession, openSession, type Session, writeContext } from '../src/mcp/session.js';
 import {
@@ -185,7 +186,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Create a task in the session's (private) tree so next_actions can find it.
-    const ctx = writeContext(session.trees, session.scope);
+    const ctx = writeContext(session.trees, session.scope, session.caches);
     const created = createTask(ctx, { title: 'a task', which: session.which, run: session.runId });
     if (!created.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();
@@ -214,7 +215,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Create a task the session can find (its private tree).
-    const ctx = writeContext(session.trees, session.scope);
+    const ctx = writeContext(session.trees, session.scope, session.caches);
     const created = createTask(ctx, { title: 'a task', which: session.which, run: session.runId });
     if (!created.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();
@@ -610,7 +611,7 @@ describe('MCP session + tools — unit', () => {
     });
 
     // Create a task in the session's (private) tree, then move it via the tool.
-    const ctx = writeContext(session.trees, session.scope);
+    const ctx = writeContext(session.trees, session.scope, session.caches);
     const created = createTask(ctx, { title: 'wire the tool', which: session.which });
     if (!created.ok) throw new Error('setup: create refused');
     ctx.writer.checkpoint();
@@ -640,7 +641,7 @@ describe('MCP session + tools — unit', () => {
     const trees = resolveTrees(project, env);
 
     // The human creates the task in PUBLIC (no `which` → the human origin).
-    const humanCtx = writeContext(trees, 'public');
+    const humanCtx = writeContext(trees, 'public', createCacheRegistry());
     const created = createTask(humanCtx, { title: 'human-created work' });
     if (!created.ok) throw new Error('setup: create refused');
     humanCtx.writer.checkpoint();
@@ -688,7 +689,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    const ctx = writeContext(session.trees, session.scope);
+    const ctx = writeContext(session.trees, session.scope, session.caches);
     const created = createTask(ctx, { title: 'a task', which: session.which });
     if (!created.ok) throw new Error('setup: create refused');
     ctx.writer.checkpoint();
@@ -1046,7 +1047,7 @@ describe('MCP session + tools — unit', () => {
     const trees = resolveTrees(project, env);
     // A task in PUBLIC, and an observation ABOUT it in PRIVATE — its story crosses
     // the trees, so only the union sees the whole of it.
-    const publicCtx = writeContext(trees, 'public');
+    const publicCtx = writeContext(trees, 'public', createCacheRegistry());
     const task = createTask(publicCtx, { title: 'crosses trees' });
     if (!task.ok) throw new Error('setup');
     publicCtx.writer.checkpoint();
@@ -1120,7 +1121,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Drive a task DRAFT→…→DONE→reopen→…→DONE→reopen via the transition tool.
-    const ctx = writeContext(session.trees, session.scope);
+    const ctx = writeContext(session.trees, session.scope, session.caches);
     const created = createTask(ctx, { title: 'churn', which: session.which, run: session.runId });
     if (!created.ok) throw new Error('setup');
     ctx.writer.checkpoint();
@@ -1257,11 +1258,16 @@ describe('MCP server — end to end over a real client', () => {
     expect(resume.lastRun).not.toBeNull();
 
     // next_actions — a freshly created task offers submit and cancel from DRAFT.
-    const trees = resolveTrees(project, env);
-    const ctx = writeContext(trees, 'private');
-    const created = createTask(ctx, { title: 'a task', which: 'claude-code' });
-    if (!created.ok) throw new Error('setup: createTask refused');
-    ctx.writer.checkpoint();
+    // The task is created THROUGH the server (create_task over the wire), not
+    // behind its back: focus and resume above already warmed the session's cache,
+    // and a read must see a write the same connection made. That is the property
+    // the warm cache has to preserve, exercised here at the transport level.
+    const createdRes = await client.callTool({
+      name: 'create_task',
+      arguments: { title: 'a task' },
+    });
+    const created = { id: /\(([^)]+)\)/.exec(textOf(createdRes))?.[1] as string };
+    expect(created.id.length).toBeGreaterThan(0);
     const nextRes = await client.callTool({ name: 'next_actions', arguments: { id: created.id } });
     const actions = (JSON.parse(textOf(nextRes)) as { action: string }[])
       .map((a) => a.action)
@@ -1361,7 +1367,7 @@ describe('MCP server — end to end over a real client', () => {
     // writes to) so the tool has something to move. Same env → same machine
     // anchor, so the tool's writer authorizes it.
     const trees = resolveTrees(project, env);
-    const ctx = writeContext(trees, 'private');
+    const ctx = writeContext(trees, 'private', createCacheRegistry());
     const created = createTask(ctx, { title: 'over the wire', which: 'claude-code' });
     if (!created.ok) throw new Error('setup: create refused');
     ctx.writer.checkpoint();
