@@ -339,6 +339,12 @@ function parseLimit(
  * decisions; an agent, which consumes the JSON, is better served by the single
  * ranked list. The groups follow the record's own kind order, and within a group
  * the served order is untouched, so the output is stable for the same query.
+ *
+ * ONE LINE PER HIT, and here the count is printed right above it: a title is text
+ * an actor wrote, and one holding a newline would put a second line under a group
+ * whose header says how many there are — an id, a tree and a state for a record
+ * nothing ever wrote, with the count beside it saying otherwise. `--json` carries
+ * each title as written (see {@link oneLine}).
  */
 function printSearch(result: RecordSearch, term: string | undefined, io: CliIo): void {
   const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${term}"` : '';
@@ -360,7 +366,7 @@ function printSearch(result: RecordSearch, term: string | undefined, io: CliIo):
     io.out(`${kind} (${group.length})`);
     for (const hit of group) {
       const state = hit.state !== undefined ? ` (${hit.state})` : '';
-      io.out(`  ${hit.id}  ${hit.scope}  ${hit.at.slice(0, 10)}  ${hit.title}${state}`);
+      io.out(`  ${hit.id}  ${hit.scope}  ${hit.at.slice(0, 10)}  ${oneLine(hit.title)}${state}`);
     }
   }
 }
@@ -510,10 +516,12 @@ function printExposure(report: Exposure, io: CliIo): void {
  * ends — and nothing here calls that good or bad; a reader with the context
  * decides, which is exactly why this report exists on the surface a person uses.
  *
- * ONE LINE PER PATTERN, always: the name is text an actor wrote, and one holding a
- * newline would split its entry in two — the second half reading as a provenance
- * line of its own, asserting an adoption that never happened. `--json` carries the
- * name as written; this report carries it on one line.
+ * ONE LINE PER PATTERN, always — and that holds for EVERY field on the line, not
+ * just the name. The name and the two agent names are all text an actor wrote, and
+ * any one of them holding a newline would split the entry in two, the second half
+ * reading as a provenance line of its own and asserting an adoption that never
+ * happened. `--json` carries each value as written; this report carries them on one
+ * line (see {@link oneLine}).
  */
 function printPatternProvenance(patterns: readonly PatternProvenance[], io: CliIo): void {
   if (patterns.length === 0) {
@@ -522,10 +530,10 @@ function printPatternProvenance(patterns: readonly PatternProvenance[], io: CliI
   }
   io.out(`${patterns.length} pattern(s):`);
   for (const pattern of patterns) {
-    const acts = [`proposed by ${pattern.proposedBy ?? A_PERSON}`];
+    const acts = [`proposed by ${oneLine(pattern.proposedBy ?? A_PERSON)}`];
     if (pattern.adoption !== undefined) {
       acts.push(
-        `adopted by ${pattern.adoption.by ?? A_PERSON}` +
+        `adopted by ${oneLine(pattern.adoption.by ?? A_PERSON)}` +
           (pattern.selfAdopted ? ' (the same agent)' : ''),
       );
     }
@@ -1367,11 +1375,15 @@ export function buildProgram(io: CliIo = processIo): Command {
         io.out(JSON.stringify(result.focus, null, 2));
         return;
       }
-      // Human summary — one line per open run. An actor with nothing open is
-      // stated plainly, not left as silent empty output, and told what a run IS:
-      // most people working the CLI directly will never have one, and an
-      // unexplained empty answer reads as something missing rather than as the
-      // truth (see {@link NO_RUNS_HINT}).
+      // Human summary — one line per open run, and one line per run is what the
+      // reader counts by: the agent and the goal are both text an actor wrote, so
+      // either one holding a newline would print a run this record never opened
+      // (see {@link oneLine}). `--json` carries both as written.
+      //
+      // An actor with nothing open is stated plainly, not left as silent empty
+      // output, and told what a run IS: most people working the CLI directly will
+      // never have one, and an unexplained empty answer reads as something missing
+      // rather than as the truth (see {@link NO_RUNS_HINT}).
       const { openRuns } = result.focus;
       if (openRuns.length === 0) {
         io.out(`${result.focus.actor} has no open runs.`);
@@ -1380,7 +1392,10 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       io.out(`${result.focus.actor} — ${openRuns.length} open run(s):`);
       for (const run of openRuns) {
-        io.out(`  ${run.id}  ${run.agent}${run.goal !== undefined ? ` — ${run.goal}` : ''}`);
+        io.out(
+          `  ${run.id}  ${oneLine(run.agent)}` +
+            `${run.goal !== undefined ? ` — ${oneLine(run.goal)}` : ''}`,
+        );
       }
     });
 
