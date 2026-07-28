@@ -41,6 +41,7 @@
 
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
+  canonicalIdentity,
   type DiscoveryEnv,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_KINDS,
@@ -82,6 +83,49 @@ import {
 const SERVER_NAME = 'mnema';
 const SERVER_VERSION = '0.0.0';
 
+/**
+ * The agent a connection is recorded as when the client's own name is no name.
+ *
+ * On this transport an agent exists BY CONSTRUCTION: a stdio connection is a
+ * program talking to a program, and "a person acted directly" — what an absent
+ * `which` means everywhere else in mnema — cannot be true here. So a client that
+ * announces nothing usable is recorded as an agent whose name we do not know, which
+ * is honest, rather than as nobody, which is false.
+ */
+const UNKNOWN_AGENT = 'unknown-agent';
+
+/**
+ * The agent this connection is for: the name the client announced, or
+ * {@link UNKNOWN_AGENT} when that name is no identity at all.
+ *
+ * "No identity" is decided by {@link canonicalIdentity} — the rule that decides
+ * what the chain records — and not by a check of our own, because a second reading
+ * of "blank" could disagree with the first, and then a name would pass here and
+ * vanish from the event. One call covers the absent name, a non-string from a
+ * client that ignores the schema, whitespace of every kind, and a string the chain
+ * cannot canonicalize.
+ *
+ * The blank name takes the SAME default the absent name always took, and that is
+ * the coherent rule rather than a new one: the two are the same fact (no agent was
+ * named) reaching us through a filled-in field instead of an empty one.
+ *
+ * A usable name passes through EXACTLY as announced, never canonicalized: the
+ * content door screens the announced value and reports what it replaced, and that
+ * report is the only way an agent learns its own name carried a credential (see
+ * {@link Session.which}).
+ *
+ * It is decided HERE, before the session opens, because the session derives three
+ * things from this ONE value — the default scope a write lands in, the `agent` on
+ * the run's own fact, and the `which` stamped on every event of the connection.
+ * Deciding it later, or twice, is what lets them disagree: a blank name used to
+ * announce an agent, record none, and route the session's writes to the team's
+ * committed tree, because "no agent" reads as "a person captured this".
+ */
+function connectingAgent(announced: string | undefined): string {
+  if (announced !== undefined && canonicalIdentity(announced) !== undefined) return announced;
+  return UNKNOWN_AGENT;
+}
+
 /** What the server needs from its host, injected so it is testable. */
 export interface McpServerOptions {
   /** The discovery environment; defaults to the real process environment. */
@@ -116,14 +160,15 @@ export function buildMcpServer(options: McpServerOptions = {}): {
 
   /**
    * Opens the session if it is not open yet, from what the handshake exposed:
-   * the client's name (the `which`) and its workspace roots (for the project
+   * the client's name (the `which`, defaulted when the client announced no usable
+   * one — see {@link connectingAgent}) and its workspace roots (for the project
    * cascade). Idempotent under concurrency — the first caller starts the open;
    * every caller awaits the one result.
    */
   const ensureSession = (): Promise<Session> => {
     if (sessionPromise !== undefined) return sessionPromise;
     sessionPromise = (async () => {
-      const clientName = server.server.getClientVersion()?.name ?? 'unknown-agent';
+      const clientName = connectingAgent(server.server.getClientVersion()?.name);
       const roots = await listRootsSafely(server, log);
       const opened = openSession({
         clientName,
