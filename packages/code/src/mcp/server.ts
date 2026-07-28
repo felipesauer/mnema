@@ -131,8 +131,13 @@ export function buildMcpServer(options: McpServerOptions = {}): {
         env,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
       });
+      // The agent AS RECORDED, never as announced. This line goes to the host's
+      // log — a channel that leaves mnema and may be kept — and printing the
+      // announced name would put a credential there in a product that replaces one
+      // before writing it, AND would leave the log and the chain naming two
+      // different agents for the same session.
       log(
-        `session opened: which=${clientName} who=${opened.who} ` +
+        `session opened: which=${opened.recordedWhich} who=${opened.who} ` +
           `scope=${opened.scope} run=${opened.runId}`,
       );
       return opened;

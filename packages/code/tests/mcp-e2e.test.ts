@@ -1703,9 +1703,10 @@ describe('MCP session + tools — unit', () => {
 async function connectClient(
   server: ReturnType<typeof buildMcpServer>['server'],
   roots: readonly string[],
+  clientName = 'claude-code',
 ): Promise<Client> {
   const client = new Client(
-    { name: 'claude-code', version: '1.0.0' },
+    { name: clientName, version: '1.0.0' },
     { capabilities: { roots: {} } },
   );
   client.setRequestHandler(ListRootsRequestSchema, () => ({
@@ -2547,6 +2548,46 @@ describe('MCP — what enters the record', () => {
     // The whole reply — the text an agent puts in its transcript — holds no value.
     expect(body).not.toContain(SECRET);
     expect(body).not.toContain('AKIA');
+
+    await client.close();
+  });
+
+  it('the server logs the agent name as the chain records it, and still warns on the append', async () => {
+    const project = makeProject('proj');
+    // The host's log, collected where the server would write stderr — a channel
+    // that leaves mnema and may be persisted, so it goes through the door too.
+    const logged: string[] = [];
+    const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+    // A client announcing a name with a credential in it. Nobody types this name
+    // and nobody reads it, which is what makes it the field to worry about.
+    const client = await connectClient(server, [pathToFileURL(project).href], `agent-${SECRET}`);
+
+    // A clean write. The reply STILL warns, because the door screens the announced
+    // name on this append — the whole reason the session carries it announced. A
+    // session that screened once at open and stored the clean value would record
+    // exactly the same fact and tell the agent nothing.
+    const captured = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'a note with nothing in it' },
+    });
+    const reply = textOf(captured);
+    expect(reply).toContain('1 value(s) replaced before recording');
+    expect(reply).toContain('<SECRET:aws-access-key>');
+
+    // The assertion over the log is ABSENCE of the value, in every line collected.
+    expect(logged.some((line) => line.startsWith('session opened:'))).toBe(true);
+    for (const line of logged) expect(line).not.toContain(SECRET);
+
+    // And the log and the record agree on WHO ACTED: the string the lines show is
+    // read back off the chain, not restated here.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    const recorded = new Set(
+      [...orderedEvents({ root: privateRoot }, catalogUpcasters())]
+        .map((event) => event.which)
+        .filter((which): which is string => which !== undefined),
+    );
+    expect([...recorded]).toEqual(['agent-<SECRET:aws-access-key>']);
+    expect(logged.some((line) => line.includes(`which=${[...recorded][0]}`))).toBe(true);
 
     await client.close();
   });
