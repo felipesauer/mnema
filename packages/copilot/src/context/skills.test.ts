@@ -1,6 +1,12 @@
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Bench, birthSkill, deprecateSkill, makeBench } from '../../tests/support/chain.js';
+import {
+  type Bench,
+  birthSkill,
+  deprecateSkill,
+  makeBench,
+  moveSkill,
+} from '../../tests/support/chain.js';
 import { adoptedSkills, lookupAdoptedSkill } from './skills.js';
 
 describe('adoptedSkills — the patterns an agent may work by', () => {
@@ -115,6 +121,68 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
     try {
       expect(adoptedSkills([cache])).toEqual([]);
       expect(adoptedSkills([])).toEqual([]);
+    } finally {
+      cache.close();
+    }
+  });
+});
+
+describe('adoptedSkills — the body comes with the agent that adopted it', () => {
+  let benches: Bench[] = [];
+  afterEach(() => {
+    for (const b of benches) rmSync(b.root, { recursive: true, force: true });
+    benches = [];
+  });
+
+  function bench(): Bench {
+    const b = makeBench();
+    benches.push(b);
+    return b;
+  }
+
+  it('names the agent that adopted the pattern', () => {
+    const b = bench();
+    birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', 'agent-A');
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', 'agent-A');
+    const cache = b.cache();
+    try {
+      expect(adoptedSkills([cache])).toEqual([
+        { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs', adoptedBy: 'agent-A' },
+      ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('carries NO agent when a person adopted it — nothing is invented', () => {
+    const b = bench();
+    birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review');
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt');
+    const cache = b.cache();
+    try {
+      const [served] = adoptedSkills([cache]);
+      expect(served).not.toHaveProperty('adoptedBy');
+      // And who PROPOSED it does not travel with the body — that is the audit's.
+      expect(served).not.toHaveProperty('proposedBy');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('reports the ADOPTER, not the proposer, when they are different agents', () => {
+    const b = bench();
+    birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', 'agent-A');
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', 'agent-B');
+    const cache = b.cache();
+    try {
+      expect(adoptedSkills([cache])[0]?.adoptedBy).toBe('agent-B');
+      expect(lookupAdoptedSkill([cache], 'sk-1')).toMatchObject({
+        outcome: 'adopted',
+        skill: { adoptedBy: 'agent-B' },
+      });
     } finally {
       cache.close();
     }

@@ -178,6 +178,21 @@ CREATE TABLE IF NOT EXISTS skills (
   -- Current state: the 'to' of the skill's last transition. A skill is not
   -- relational (no supersede columns) — replacement between skills is a link.
   state      TEXT NOT NULL,
+  -- PROVENANCE: the two acts that put a pattern in front of an agent. A skill's
+  -- body is served as instruction, so who proposed it and who adopted it is what
+  -- makes that serving visible; for a task or decision the consumer can already
+  -- read both from the events themselves.
+  --
+  -- The agent that proposed it (skill.created's 'which'), or NULL when a person
+  -- recorded it directly. NULL is a fact here, never an unknown.
+  proposed_by TEXT,
+  -- 'at' of the transition into 'adopted', or NULL while it never was adopted.
+  -- This column is the PRESENCE marker of the adoption: adopted_by alone could
+  -- not tell a pattern a person adopted from one nobody has adopted.
+  adopted_at  TEXT,
+  -- The agent that adopted it, or NULL when a person did (or when adopted_at is
+  -- NULL and there is no adoption to attribute).
+  adopted_by  TEXT,
   -- 'at' of skill.created, and of the last transition.
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL

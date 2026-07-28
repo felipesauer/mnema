@@ -18,8 +18,12 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   freshest first, each task carrying the moves the workflow allows on it, and the
   names of the adopted patterns to work by.
 - **`adoptedSkills` / `lookupAdoptedSkill`** — the adopted patterns with their
-  body, all of them or one by id. Only `adopted` is served: the other states are
-  stages of deciding about a pattern, not patterns to work by.
+  body, all of them or one by id, each carrying the agent that adopted it. Only
+  `adopted` is served: the other states are stages of deciding about a pattern,
+  not patterns to work by.
+- **`patternProvenance`** — every pattern the record holds, in every state, with
+  who proposed it and who adopted it. The reading for a person auditing where the
+  patterns came from, next to the one that serves them.
 - **`focus` / `resume`** — what an actor is touching now (their open runs) and
   where they left off (their most recent run, open or ended, with its goal).
 - **`nextActions`** — from a task's state, the moves the workflow allows next,
@@ -98,7 +102,13 @@ piece of work: a caller that can see several chains passes all of them, and
 
 - **`context/`** — the session context derivations: `bootstrap` (the opening
   read), `focus`/`resume` (an actor's current and last work), `next-action`
-  (the moves a state allows), and `skills` (the adopted patterns).
+  (the moves a state allows), `search` (finding what was recorded), and `skills`
+  (the adopted patterns).
+- **`intelligence/`** — the auditor's reads over every visible tree: `timeline`
+  (an entity's history), `references` (what it connects to), `accountability`
+  (who authorized what), `antipatterns` (recurring shapes), `exposure`
+  (records holding a credential format), and `provenance` (who proposed and who
+  adopted each pattern).
 - **`guard/`** — `guard`, the workflow gate exposed as a read-only consultation.
 
 To understand the boundary that justifies this being a package of its own, read
