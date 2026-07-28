@@ -12,16 +12,20 @@
  * create_task, task_transition, record_decision, decision_transition, create_skill,
  * skill_transition, bootstrap, focus, resume, next_actions, guard, skills,
  * search, read_record, and the
- * three `audit_*` intelligence reads — audit_timeline, audit_accountability,
- * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
+ * four `audit_*` intelligence reads — audit_timeline, audit_refs,
+ * audit_accountability, audit_antipatterns) delegates to a pure adapter in
+ * {@link ./tools.js}. The
  * reads (focus/resume/next_actions/guard/search/read_record, like bootstrap) are READ-ONLY — they
  * derive from the session's projection cache; they open no writer. `guard` is a
  * dry-run of the gate: it simulates a move and returns the verdict, having
  * written nothing. `skills` is the one read that also writes: it serves the
  * adopted patterns AND records the consultation, a fact nothing else could
  * recover afterwards.
- * The `audit_*` reads are read-only too but fold the UNION of the session's trees
- * (the auditor's view of the whole record), never touching a cache or a writer.
+ * The `audit_*` reads are read-only too, and they are the AUDITOR's view: every
+ * tree the session can see, merged. Three of them read the session's warm caches
+ * like the rest; `audit_antipatterns` alone still folds the raw event stream,
+ * because it asks which events have a given SHAPE rather than which touch a
+ * given entity.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -34,6 +38,7 @@
  * does both, and the transport's `onclose` is what calls it.
  */
 
+import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   type DiscoveryEnv,
   SEARCH_DEFAULT_LIMIT,
@@ -61,6 +66,7 @@ import {
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runReferencesTool,
   runResumeTool,
   runSearchTool,
   runSkills,
@@ -853,6 +859,55 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'audit_refs',
+    {
+      title: 'Audit — what an entity is connected to',
+      description:
+        'Show what one entity is connected to across ALL of this project’s trees: ' +
+        'the observations about it, the links into and out of it, the decision ' +
+        'that superseded it. Use it after `search` to pull on a thread — "what ' +
+        'else is tied to this?". By default it is the NEIGHBOURHOOD (one hop, ' +
+        'either direction); set `direction` to "out" (what it points at) or "in" ' +
+        '(what points at it) with a larger `depth` to follow a lineage, such as a ' +
+        'decision’s supersede chain. A far end no visible tree holds comes back ' +
+        'marked unresolved — that is legitimate, not an error — and the answer ' +
+        'says when the depth cut it. Read-only.',
+      inputSchema: {
+        id: z.string().min(1).describe('The entity id to walk from (from `search`).'),
+        direction: z
+          .enum(['both', 'out', 'in'])
+          .optional()
+          .describe('Which way to follow edges; omitted, both.'),
+        depth: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            `How many hops (default ${REFERENCE_DEFAULT_DEPTH}, max ${REFERENCE_MAX_DEPTH}).`,
+          ),
+      },
+    },
+    async ({ id, direction, depth }) => {
+      const active = await ensureSession();
+      const result = runReferencesTool(active, {
+        id,
+        ...(direction !== undefined ? { direction } : {}),
+        ...(depth !== undefined ? { depth } : {}),
+      });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // An entity nothing references is an ANSWER ("nothing is tied to this"),
+      // never an error — the same reason an empty history is one.
       return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
     },
   );

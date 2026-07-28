@@ -34,6 +34,7 @@ import {
   materializeObservations,
 } from './knowledge-store.js';
 import { orderedEvents } from './order.js';
+import { materializeReferences } from './reference-store.js';
 import { projectRuns } from './run.js';
 import { materializeRuns } from './run-store.js';
 import { materializeSearch } from './search-store.js';
@@ -82,6 +83,11 @@ export function rebuild(
       observations: observations.values(),
       skills: skills.values(),
     });
+    // The reference index is the one materialization fed by the STREAM rather
+    // than by a fold: it is one row per appearance, not one per entity, so the
+    // events themselves are its source. Same read, same order — an index built
+    // from a second pass could disagree with the tables about both.
+    materializeReferences(db, events);
   });
   replace();
 }
