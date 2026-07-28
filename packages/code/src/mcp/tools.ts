@@ -21,7 +21,9 @@
  * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
  * derivation over the projection cache), `guard` (the read mold applied to a
  * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
- * nothing), and the three intelligence reads `runTimelineTool`/
+ * nothing), `skills` (the one read that also WRITES: it serves the adopted
+ * patterns and records that they were served, because that fact is derivable
+ * from nothing else afterwards), and the three intelligence reads `runTimelineTool`/
  * `runAccountabilityTool`/`runAntipatternsTool` (the auditor's view — they fold
  * the UNION of the session's trees, opening no cache and no writer). The knowledge
  * FACTS (observation/handoff/link) share the
@@ -43,8 +45,10 @@ import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
   type Accountability,
   type AccountabilityFilter,
+  type AdoptedSkill,
   type Antipatterns,
   accountability,
+  adoptedSkills,
   antipatterns,
   type Bootstrap,
   bootstrap,
@@ -52,6 +56,7 @@ import {
   focus,
   type GuardWithFocus,
   guardWithFocus,
+  lookupAdoptedSkill,
   type NextAction,
   nextActionsForTask,
   type Resume,
@@ -64,6 +69,7 @@ import {
   DECISION_ACTIONS,
   deriveAlias,
   orderedEvents,
+  type ProjectionCache,
   projectDecisions,
   projectSkills,
   type Scope,
@@ -77,6 +83,7 @@ import {
   createTask,
   deprecateSkill,
   linkKnowledge,
+  recordConsultation,
   recordDecision,
   recordHandoff,
   recordObservation,
@@ -801,18 +808,150 @@ function skillProofToFields(input: {
  *
  * Takes the session's cache over its resolved tree and composes the copilot's
  * `bootstrap` derivation for the machine's anchor (`who`): where the actor left
- * off and the actionable work. Read-only — it opens no writer and emits no
- * event. The cache is over the ONE resolved tree (the session's), not the union
- * of all three; a session works on one tree, and that is the context it serves.
+ * off, the actionable work, and the NAMES of the adopted patterns. Read-only —
+ * it opens no writer and emits no event. The actor's cache is over the ONE
+ * resolved tree (the session's), not the union of all three; a session works on
+ * one tree, and that is the context it serves. The skills are the exception the
+ * copilot documents: they come from every tree this session can see, because a
+ * pattern applies to the work whatever tree it was adopted in.
  *
- * The cache comes from the session's registry rather than being opened here, so
+ * The caches come from the session's registry rather than being opened here, so
  * a second read in the same connection reuses the replay this one paid for. The
- * registry rebuilds it when a write has made it stale, so what this reads is
+ * registry rebuilds one when a write has made it stale, so what this reads is
  * always the chain as it stands — the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return bootstrap(session.caches.get(chainRoot), { actor: session.who });
+  return bootstrap(session.caches.get(chainRoot), { actor: session.who }, skillCaches(session));
+}
+
+/**
+ * The caches whose adopted skills this session can see: every tree it resolved,
+ * in a fixed order. Outside a project that is the global tree alone; inside one
+ * it is public, private and global — the team's patterns, this machine's, and
+ * the personal cross-project ones.
+ *
+ * Asking the registry means each is warm after the first read of that tree, and
+ * rebuilt when this session's own writes left it behind. The ORDER here does not
+ * reach the answer: the copilot sorts by name, precisely so that the reading
+ * order of the trees cannot reshuffle what the agent sees.
+ */
+function skillCaches(session: Session): ProjectionCache[] {
+  const roots: string[] = [];
+  for (const scope of ['public', 'private', 'global'] as const) {
+    const root = chainRootForScope(session.trees, scope);
+    if (root !== undefined) roots.push(root);
+  }
+  return roots.map((root) => session.caches.get(root));
+}
+
+/** The adopted patterns served, or a typed refusal when one was asked for by id. */
+export type SkillsResult =
+  | {
+      readonly ok: true;
+      /** The adopted patterns, each with its body. Empty when none are adopted. */
+      readonly skills: readonly AdoptedSkill[];
+    }
+  | {
+      readonly ok: false;
+      /**
+       * `UNKNOWN_SKILL` when no visible tree holds the id, `NOT_ADOPTED` when one
+       * does but the pattern is not live, or the core's own code when recording
+       * the consultation was refused.
+       */
+      readonly code: string;
+      /** The human-readable reason. */
+      readonly message: string;
+    };
+
+/**
+ * `skills` — serve the adopted patterns, and record that they were served.
+ *
+ * With no argument it returns every adopted pattern WITH its body; with an `id`
+ * it returns that one. This is the read the `bootstrap` names point at: the
+ * opening context lists patterns by name (one line each), and this is where the
+ * body comes from when a name turns out to match the task at hand.
+ *
+ * It is a read that WRITES, deliberately, and it is the only one. Whether work
+ * was informed by a pattern is not derivable after the fact — nothing else in
+ * the record would ever show it — so the moment of serving is the only moment
+ * the fact can be captured, and a session that passes without it is a session
+ * that can never be compared. What lands is `skill.consulted`, ONE per (run,
+ * skill): consulting the same pattern twice in a session is one session that
+ * used it. The deduplication is the session's own memory ({@link
+ * Session.consulted}), not a query.
+ *
+ * The fact says CONSULTED, never "followed". Reading a pattern and ignoring it
+ * is possible, and nothing observable here separates the two.
+ *
+ * Nothing is recorded for a call that serves nothing — an empty workspace, an
+ * unknown id, a skill that is not adopted. A refusal to record IS surfaced
+ * rather than swallowed: a silently unrecorded consultation is exactly the
+ * perishable fact this exists to capture, so it is reported like any other
+ * refused write.
+ */
+export function runSkills(session: Session, input: { id?: string } = {}): SkillsResult {
+  // READ before WRITE: the caches are consulted first, because building a write
+  // context marks the written tree stale — doing it the other way round would
+  // make every call rebuild the tree it is about to read.
+  const caches = skillCaches(session);
+  const served = input.id === undefined ? undefined : lookupAdoptedSkill(caches, input.id);
+  if (served?.outcome === 'unknown') {
+    return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
+  }
+  if (served?.outcome === 'not-adopted') {
+    return {
+      ok: false,
+      code: 'NOT_ADOPTED',
+      message: `skill "${input.id}" is ${served.state}, not an adopted pattern`,
+    };
+  }
+  const skills = served === undefined ? adoptedSkills(caches) : [served.skill];
+
+  const recorded = recordConsultations(session, skills);
+  if (!recorded.ok) return recorded;
+  return { ok: true, skills };
+}
+
+/**
+ * Records one `skill.consulted` for each pattern served that this run has not
+ * already recorded, in the session's default scope — the agent's own tree, like
+ * every other fact it produces. The subject may name a skill that lives in
+ * ANOTHER tree (a public pattern read by a private session); that is an honest
+ * cross-tree reference, resolved on read.
+ *
+ * A skill joins the session's set only once its fact is on the chain, so a
+ * refused write leaves it eligible for a later attempt rather than marking it
+ * recorded. All the facts share one write context and one checkpoint: they are
+ * one act of consultation, and signing once is cheaper than signing each.
+ */
+function recordConsultations(
+  session: Session,
+  skills: readonly AdoptedSkill[],
+): { readonly ok: true } | { readonly ok: false; readonly code: string; readonly message: string } {
+  const fresh = skills.filter((skill) => !session.consulted.has(skill.id));
+  if (fresh.length === 0) return { ok: true };
+
+  const ctx = writeContext(session.trees, session.scope, session.caches);
+  let appended = 0;
+  for (const skill of fresh) {
+    const done = recordConsultation(ctx, {
+      skill: skill.id,
+      which: session.which,
+      run: session.runId,
+    });
+    if (!done.ok) {
+      // Every fact here shares one authority decision, so this is unreachable
+      // for a real client — but a fact already appended must still be signed.
+      if (appended > 0) ctx.writer.checkpoint();
+      return { ok: false, code: done.code, message: done.message };
+    }
+    session.consulted.add(skill.id);
+    appended += 1;
+  }
+  // Checkpoint so the consultations are fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return { ok: true };
 }
 
 /**

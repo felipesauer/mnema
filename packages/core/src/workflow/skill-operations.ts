@@ -1,14 +1,23 @@
 /**
- * The gated write operations for skills: the only way the core records a skill
- * or moves one, and the seam every surface goes through.
+ * The write operations for skills: the only way the core records a skill, moves
+ * one, or notes that one was read, and the seam every surface goes through.
  *
- * They mirror the TASK operations — read current state from the chain (never the
- * cache), run the gate, append only if authorized — and are the simplest of the
- * three workflow entities: a skill is not relational, so there is no supersede,
- * no `by` existence check, and no frozen citation label. A skill is born with a
- * minted id and its `proposed` state; the four transitions (review, adopt,
- * reject, deprecate) each run through {@link skillGate} and append a
- * `skill.transitioned` only when the gate authorizes the move.
+ * The LIFECYCLE writes mirror the TASK operations — read current state from the
+ * chain (never the cache), run the gate, append only if authorized — and are the
+ * simplest of the three workflow entities: a skill is not relational, so there
+ * is no supersede, no `by` existence check, and no frozen citation label. A
+ * skill is born with a minted id and its `proposed` state; the four transitions
+ * (review, adopt, reject, deprecate) each run through {@link skillGate} and
+ * append a `skill.transitioned` only when the gate authorizes the move.
+ *
+ * {@link recordConsultation} is the one write here that is NOT a transition, and
+ * so runs no gate. It records that a skill's body was served to someone — a
+ * point-in-time fact about a skill, not a move of it. There is no prior state to
+ * judge and nothing to authorize about a fact that will never move, which is
+ * exactly the shape the knowledge facts have (`recordHandoff` is its twin: the
+ * subject IS the referenced entity, no id is minted, and the whole result is
+ * "it landed"). What still applies is the authority invariant, because that
+ * defends the proof and not the workflow.
  */
 
 import {
@@ -17,11 +26,12 @@ import {
   type ChainWriter,
   type Entry,
   skillBirth,
+  skillConsulted,
   skillTransitioned,
   type TransitionFields,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { resolveExecutingAgent } from '../identity/authority.js';
+import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { orderedEvents } from '../projections/order.js';
@@ -129,6 +139,69 @@ export function createSkill(
   );
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
   return { ok: true, id, entries: [e1, e2] };
+}
+
+/** A consultation was recorded: the fact was appended. */
+export interface ConsultationOk {
+  readonly ok: true;
+}
+
+/** What the caller asks to record as a consultation. */
+export interface ConsultationInput {
+  /** The skill whose body was served (the event subject). */
+  readonly skill: string;
+  /** The agent that read it, if any. `who` is derived from the writer's key. */
+  readonly which?: string;
+  /** The run this belongs to, if any — what ties the consultation to a session. */
+  readonly run?: string;
+}
+
+/**
+ * Records that a skill was consulted: appends one `skill.consulted` fact whose
+ * subject IS the skill. No id is minted (a consultation has no standalone
+ * identity; it is an entry in the skill's history) and no gate runs (nothing
+ * moved). The whole fact is the envelope — which skill, who authorized, which
+ * agent read it, in what run, when — so there is no payload to build.
+ *
+ * The skill is NOT verified to exist, for the same two reasons the knowledge
+ * facts forward their references unchecked. It is legitimately CROSS-TREE: a
+ * private consultation may name a skill the team adopted in the public tree, and
+ * this writer sees only its own tree, so a lookup here would refuse the common
+ * case. And the caller that emits this has just READ the skill it names — the
+ * body it served is the evidence the skill exists — so a re-projection of the
+ * chain would buy nothing but a full replay on a read path.
+ *
+ * What it does NOT record is whether the pattern was FOLLOWED. That is not
+ * observable from serving a body, and a field claiming it would be an assertion
+ * the record cannot back.
+ */
+export function recordConsultation(
+  ctx: SkillWriteContext,
+  input: ConsultationInput,
+): ConsultationOk | SelfAuthorizedErr {
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+  // A REFERENCE to an already-minted id: canonicalized (NFC, the chain's stored
+  // form) so a reader keys on the same string, but never minted here.
+  const skill = canonicalId(input.skill) ?? input.skill;
+
+  // Found this installation's anchor before the fact, so its signer is a key
+  // valid for its anchor at verify. A no-op once founded.
+  ensureFounded(ctx);
+  const at = (ctx.clock ?? systemClock)();
+  ctx.writer.append(
+    skillConsulted({
+      at,
+      who,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: skill,
+      ...(which !== undefined ? { which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
+    }),
+  );
+  return { ok: true };
 }
 
 /** Reviews a proposed skill (requires a note). */

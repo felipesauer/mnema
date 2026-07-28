@@ -11,6 +11,7 @@ import {
   observationRecorded,
   runEnded,
   runStarted,
+  skillConsulted,
   skillCreated,
   skillTransitioned,
   taskCreated,
@@ -224,6 +225,23 @@ describe('parseEvent — skill events (a workflow entity, no `by`)', () => {
     );
     const once = line(event);
     expect(canonicalStringify(toCanonical(parseEvent(once, reg)))).toBe(once);
+  });
+
+  it('parses a skill.consulted (an empty payload is the whole shape) and round-trips it', () => {
+    const event = skillConsulted({ ...envelope, subject: 'sk-1', which: 'claude', run: 'r-1' });
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('rejects ANY payload field on a skill.consulted (the empty shape is closed)', () => {
+    // A consultation is entirely envelope, so there is no key a forger may add —
+    // not even one borrowed from another skill event.
+    const good = skillConsulted({ ...envelope, subject: 'sk-1' });
+    for (const smuggled of ['"name":"Small PRs"', '"body":"the pattern"', '"guided":true']) {
+      const forged = line(good).replace('"payload":{}', `"payload":{${smuggled}}`);
+      expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field/);
+    }
   });
 
   it('rejects a `by` on a skill transition (a skill is not relational)', () => {

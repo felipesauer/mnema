@@ -94,7 +94,7 @@ describe('antipatterns — recurring shapes with their evidence', () => {
 
   it('detects a deprecated skill with its deprecate event', () => {
     bench = makeBench();
-    birthSkill(bench, 'skill-1', 'a pattern', 'ADOPTED');
+    birthSkill(bench, 'skill-1', 'a pattern', 'adopted');
     deprecateSkill(bench, 'skill-1');
     const { deprecatedSkills } = antipatterns(bench.events());
     expect(deprecatedSkills.map((f) => f.entityId)).toEqual(['skill-1']);

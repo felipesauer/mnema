@@ -10,13 +10,15 @@
  * operations, reached through the session and the adapters. Each registered tool
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * create_task, task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap, focus, resume, next_actions, guard, and the three
- * `audit_*` intelligence reads — audit_timeline, audit_accountability,
+ * skill_transition, bootstrap, focus, resume, next_actions, guard, skills, and the
+ * three `audit_*` intelligence reads — audit_timeline, audit_accountability,
  * audit_antipatterns) delegates to a pure adapter in {@link ./tools.js}. The
  * reads (focus/resume/next_actions/guard, like bootstrap) are READ-ONLY — they
  * derive from the session's projection cache; they open no writer. `guard` is a
  * dry-run of the gate: it simulates a move and returns the verdict, having
- * written nothing.
+ * written nothing. `skills` is the one read that also writes: it serves the
+ * adopted patterns AND records the consultation, a fact nothing else could
+ * recover afterwards.
  * The `audit_*` reads are read-only too but fold the UNION of the session's trees
  * (the auditor's view of the whole record), never touching a cache or a writer.
  *
@@ -53,6 +55,7 @@ import {
   runRecordHandoff,
   runRecordObservation,
   runResumeTool,
+  runSkills,
   runSkillTransition,
   runTaskTransition,
   runTimelineTool,
@@ -564,6 +567,44 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       const active = await ensureSession();
       const context = runBootstrap(active);
       return { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'skills',
+    {
+      title: 'Skills — the adopted patterns to work by',
+      description:
+        'Read the adopted patterns (skills) this project and machine work by — ' +
+        'the reusable recipe, checklist or convention itself, not just its name. ' +
+        'Call it with no `id` (an empty argument object) to get every adopted ' +
+        'pattern with its body, or with an `id` from the bootstrap list to get ' +
+        'just that one. Only adopted ' +
+        'patterns are served: a proposed, rejected or deprecated skill is not a way ' +
+        'of working and is refused. Consulting a pattern is RECORDED against this ' +
+        'session (once per skill), so the record shows which work was informed by ' +
+        'which pattern — it records that you read it, never that you followed it.',
+      inputSchema: {
+        id: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('A single skill id to read; omitted, every adopted pattern.'),
+      },
+    },
+    async ({ id }) => {
+      const active = await ensureSession();
+      const result = runSkills(active, { ...(id !== undefined ? { id } : {}) });
+      if (!result.ok) {
+        // No such skill, not an adopted pattern, or the consultation could not be
+        // recorded — surface it so the agent never mistakes a refusal for "there
+        // are no patterns here".
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(result.skills, null, 2) }] };
     },
   );
 

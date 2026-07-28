@@ -64,6 +64,9 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'knowledge.linked': ['target', 'rel'],
   'skill.created': ['name', 'body'],
   'skill.transitioned': ['from', 'to', 'action', 'fields'],
+  // No payload field at all: a consultation is entirely envelope. The empty
+  // list is what makes ANY payload key on this kind a rejected line.
+  'skill.consulted': [],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -280,6 +283,11 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       if (fields !== undefined) p.fields = fields;
       return p;
     }
+    case 'skill.consulted':
+      // Nothing to validate and nothing to copy: the fact is the envelope. The
+      // rebuild is a fresh empty object, so a forged key on the stored line is
+      // dropped here AND fails the "stored bytes equal recomputed bytes" check.
+      return {};
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.
       return assertNever(event);

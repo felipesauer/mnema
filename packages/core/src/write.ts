@@ -95,6 +95,8 @@ export {
 export {
   acceptDecision,
   adoptSkill,
+  type ConsultationInput,
+  type ConsultationOk,
   type CreateInput,
   type CreateOk,
   createSkill,
@@ -110,6 +112,7 @@ export {
   endRun,
   type RecordInput,
   type RecordOk,
+  recordConsultation,
   recordDecision,
   rejectDecision,
   rejectSkill,

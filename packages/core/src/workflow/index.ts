@@ -88,8 +88,11 @@ export {
 } from './skill-gate.js';
 export {
   adoptSkill,
+  type ConsultationInput,
+  type ConsultationOk,
   createSkill,
   deprecateSkill,
+  recordConsultation,
   rejectSkill,
   reviewSkill,
   type SkillCreateInput,
