@@ -31,6 +31,12 @@ import {
   type TransitionFields,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import {
+  type ContentTooLargeErr,
+  type ScreenedWrite,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
@@ -53,20 +59,28 @@ export interface SkillWriteContext {
 /** A write refused before touching the chain. */
 export type SkillWriteError =
   | SkillGateErr
+  /** A free-text field was over the size limit (see {@link screenContent}). */
+  | ContentTooLargeErr
   /** The skill acted on does not exist (no `skill.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string };
 
 /** A skill was created: both birth events were appended, in order. */
-export interface SkillCreateOk {
+export interface SkillCreateOk extends ScreenedWrite {
   readonly ok: true;
   /** The new skill's id (the event subject). */
   readonly id: string;
+  /**
+   * The name AS RECORDED — screened, so a surface that echoes it (a skill has no
+   * alias, so the name is how a human is told which one landed) shows what the
+   * chain holds rather than what was asked for.
+   */
+  readonly name: string;
   /** The `skill.created` then the birth `skill.transitioned`, as appended. */
   readonly entries: readonly [Entry, Entry];
 }
 
 /** A skill transition was authorized and appended. */
-export interface SkillTransitionOk {
+export interface SkillTransitionOk extends ScreenedWrite {
   readonly ok: true;
   /** The state the skill is now in. */
   readonly to: string;
@@ -110,6 +124,12 @@ export function createSkill(
   ctx: SkillWriteContext,
   input: SkillCreateInput,
 ): SkillCreateOk | SkillWriteError {
+  // The body is the largest text any write here carries — a whole recipe or
+  // checklist — so it is both the field most likely to hold a worked example with
+  // real values in it and the one the size limit is really about.
+  const text = screenContent({ name: input.name, body: input.body });
+  if (!text.ok) return text;
+
   // `who` is derived from local material and the record, always a real anchor;
   // the only authority check left is that the executing agent is not that identity.
   const who = authorizingAnchor(ctx);
@@ -135,10 +155,10 @@ export function createSkill(
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
-    { name: input.name, body: input.body, initial: INITIAL_SKILL_STATE },
+    { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
   );
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id, entries: [e1, e2] };
+  return { ok: true, id, name: text.fields.name, entries: [e1, e2], ...screened(text.replaced) };
 }
 
 /** A consultation was recorded: the fact was appended. */
@@ -174,18 +194,31 @@ export interface ConsultationInput {
  * What it does NOT record is whether the pattern was FOLLOWED. That is not
  * observable from serving a body, and a field claiming it would be an assertion
  * the record cannot back.
+ *
+ * It carries no prose, but it does go through the content door, because the id it
+ * names becomes the event's SUBJECT and is never validated — so it is a field
+ * through which an unbounded value could reach the chain, and a fat event is what
+ * the size limit exists to keep out. The refusal is unreachable from any surface
+ * (the caller has just READ the skill it names, so the id came from a projection),
+ * and the check is here for the reason the authority invariant is checked where it
+ * always holds: an invariant enforced only where someone remembered it is a habit,
+ * not a property.
  */
 export function recordConsultation(
   ctx: SkillWriteContext,
   input: ConsultationInput,
-): ConsultationOk | SelfAuthorizedErr {
+): ConsultationOk | SelfAuthorizedErr | ContentTooLargeErr {
+  const named = screenContent({ skill: input.skill });
+  if (!named.ok) return named;
+
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
   // A REFERENCE to an already-minted id: canonicalized (NFC, the chain's stored
-  // form) so a reader keys on the same string, but never minted here.
-  const skill = canonicalId(input.skill) ?? input.skill;
+  // form) so a reader keys on the same string, but never minted here. It runs after
+  // the screen so the canonicalization is bounded by the size limit.
+  const skill = canonicalId(named.fields.skill) ?? named.fields.skill;
 
   // Found this installation's anchor before the fact, so its signer is a key
   // valid for its anchor at verify. A no-op once founded.
@@ -240,12 +273,19 @@ export function deprecateSkill(
  * The shared transition path: read the current state from the chain, run the
  * gate, and append only if it authorized the move. `to` and `action` both come
  * from the gate's verdict, never from the caller's assertion.
+ *
+ * The proof is screened ahead of the gate for the reason the task's is: the gate
+ * forwards its verdict's `fields` into the appended event.
  */
 function transition(
   ctx: SkillWriteContext,
   action: 'review' | 'adopt' | 'reject' | 'deprecate',
   input: SkillTransitionInput,
 ): SkillTransitionOk | SkillWriteError {
+  const proof =
+    input.fields === undefined ? undefined : screenContent<TransitionFields>(input.fields);
+  if (proof !== undefined && !proof.ok) return proof;
+
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
@@ -260,7 +300,7 @@ function transition(
   const verdict = skillGate({
     from: current.state,
     action,
-    ...(input.fields !== undefined ? { fields: input.fields } : {}),
+    ...(proof !== undefined ? { fields: proof.fields } : {}),
     who,
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
@@ -289,7 +329,7 @@ function transition(
     },
   );
   const entry = ctx.writer.append(event);
-  return { ok: true, to: verdict.to, entry };
+  return { ok: true, to: verdict.to, entry, ...screened(proof?.replaced ?? []) };
 }
 
 /**

@@ -15,6 +15,7 @@
  */
 
 import {
+  type Exposure,
   REFERENCE_DEFAULT_DEPTH,
   REFERENCE_MAX_DEPTH,
   type RecordBody,
@@ -34,6 +35,7 @@ import { runAccountability } from './commands/accountability.js';
 import { runAntipatterns } from './commands/antipatterns.js';
 import { runDecision } from './commands/decision.js';
 import { runDecisionTransition } from './commands/decision-transition.js';
+import { runExposure } from './commands/exposure.js';
 import { runFocus } from './commands/focus.js';
 import { runGuard } from './commands/guard.js';
 import { runHandoff } from './commands/handoff.js';
@@ -61,6 +63,7 @@ import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
 import { buildMcpServer } from './mcp/server.js';
 import { resolvePinnedRun } from './pinned-run.js';
+import { RECORD_CONTRACT_HELP, type Replacement, replacementNotice } from './recorded-content.js';
 
 /** Where the CLI writes, and how it signals failure — injected for testing. */
 export interface CliIo {
@@ -199,6 +202,18 @@ function pinnedRunResolver(io: CliIo): () => string | undefined | typeof PIN_REF
 
 /** The scopes `--scope` accepts — the surface's view of the core's three trees. */
 const SCOPES = ['public', 'private', 'global'] as const;
+
+/**
+ * Says what the content door replaced, after the line that says the write landed.
+ *
+ * Called by every writing verb, on the SUCCESS path, because a scrub is not a
+ * refusal — the fact was recorded, with a placeholder in it. Printing nothing when
+ * nothing was replaced is what keeps the ordinary write quiet: the notice appears
+ * exactly when there is something to act on (see {@link replacementNotice}).
+ */
+function reportReplacement(result: Replacement, io: CliIo): void {
+  for (const line of replacementNotice(result.replaced)) io.out(line);
+}
 
 /**
  * What `focus` and `resume` add when an actor has no run to report.
@@ -390,6 +405,38 @@ function printReferences(graph: ReferenceGraph, io: CliIo): void {
 }
 
 /**
+ * Prints the exposure report: a header with the count and how much was read, then
+ * one line per record — where it is, when it was written, and WHICH CLASS was
+ * found.
+ *
+ * The line carries no value, because the report carries none. It leads with the
+ * tree, because that is what decides how far the exposure travelled: a `public`
+ * finding is committed and on every machine that cloned the repository, and a
+ * `global` one is on this disk. Then the instruction, once, at the bottom: the record
+ * is permanent, so rotating is the remedy — nothing here deletes a fact, and
+ * pretending otherwise would send someone looking for a command that does not
+ * exist. The empty answer says "nothing RECOGNIZABLE", never "nothing": the
+ * detector reads formats, and a password in prose has no format.
+ */
+function printExposure(report: Exposure, io: CliIo): void {
+  if (report.findings.length === 0) {
+    io.out(`Nothing recognizable in ${report.scanned} record(s).`);
+    io.out('  That is not the same as nothing: only known credential formats are recognized.');
+    return;
+  }
+  io.out(`${report.findings.length} of ${report.scanned} record(s) hold a credential format:`);
+  for (const finding of report.findings) {
+    io.out(
+      `  ${finding.scope}  ${finding.at.slice(0, 10)}  ${finding.kind}  ${finding.id}  ` +
+        finding.classes.join(', '),
+    );
+  }
+  io.out('');
+  io.out('  These records are permanent — nothing deletes a fact. Rotate the credentials.');
+  io.out('  A public record is committed and on every machine that cloned the repository.');
+}
+
+/**
  * Reports what establishing the identity did, on the one occasion it matters:
  * the run that created the tree.
  *
@@ -488,6 +535,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((title: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
@@ -510,6 +558,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       );
       if (result.ok) {
         io.out(`Created task ${result.alias} (${result.id})`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -543,7 +592,8 @@ export function buildProgram(io: CliIo = processIo): Command {
     .option('--reason <text>', 'why (required by cancel, block, reopen)')
     .option('--note <text>', 'what was done (required by complete, approve)')
     .option('--feedback <text>', 'what must change (required by request_changes)')
-    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
   move.action(
     (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
       // Both `--scope` and `--which` on a move are parsed into `task`'s options
@@ -579,6 +629,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       );
       if (result.ok) {
         io.out(`Task ${result.alias} → ${result.to}`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -610,6 +661,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((title: string, rationale: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
@@ -633,6 +685,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       );
       if (result.ok) {
         io.out(`Recorded decision ${result.adr} (${result.id})`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -655,7 +708,8 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<action>', 'the transition: accept or reject')
     .argument('<id>', 'the decision id (the value shown when it was recorded)')
     .option('--note <text>', 'why this verdict (required by accept and reject)')
-    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
   decisionMove.action((action: string, id: string, opts: { note?: string }) => {
     const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
@@ -694,7 +748,8 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<old-id>', 'the decision being superseded')
     .argument('<new-id>', 'the successor decision that replaces it')
     .option('--reason <text>', 'why it is being replaced (required)')
-    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
   supersede.action((oldId: string, newId: string, opts: { reason?: string }) => {
     const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
@@ -747,6 +802,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((name: string, opts: { body?: string; scope?: string; which?: string }) => {
       // The body is required for a propose, but declared as a plain option (so it
       // is not inherited as mandatory by `move`); enforce it here.
@@ -779,6 +835,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         // Print both the name (orients the human) and the id (the key a move
         // takes) — a skill has no alias.
         io.out(`Proposed skill "${result.name}" (${result.id})`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -801,7 +858,8 @@ export function buildProgram(io: CliIo = processIo): Command {
     .argument('<id>', 'the skill id (the value shown when it was proposed)')
     .option('--note <text>', 'why this verdict (required by review, adopt, reject)')
     .option('--reason <text>', 'why it fell out of use (required by deprecate)')
-    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP);
+    .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
   skillMove.action((action: string, id: string, opts: { note?: string; reason?: string }) => {
     const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
@@ -829,6 +887,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     );
     if (result.ok) {
       io.out(`Skill "${result.name}" → ${result.to}`);
+      reportReplacement(result, io);
       return;
     }
     if (result.reason === 'NO_PROJECT') {
@@ -863,6 +922,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((content: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
@@ -885,6 +945,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       );
       if (result.ok) {
         io.out(`Captured memory ${result.id}`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -912,6 +973,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
       (about: string, opts: { topic: string; text: string; scope?: string; which?: string }) => {
         const scope = parseScope(opts.scope, io);
@@ -937,6 +999,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         );
         if (result.ok) {
           io.out(`Recorded observation ${result.id} about ${about}`);
+          reportReplacement(result, io);
           return;
         }
         if (result.reason === 'NO_PROJECT') {
@@ -966,6 +1029,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     // The agent RECORDING the handoff, which is not necessarily either of the two
     // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((task: string, from: string, to: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
@@ -991,6 +1055,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       if (result.ok) {
         // No id to report — a handoff has no standalone identity. Echo the fact.
         io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
+        reportReplacement(result, io);
         return;
       }
       if (result.reason === 'NO_PROJECT') {
@@ -1023,6 +1088,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         'or global (personal, cross-project). Defaults to public.',
     )
     .option('--which <agent>', WHICH_HELP)
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
       (subject: string, target: string, opts: { rel: string; scope?: string; which?: string }) => {
         const scope = parseScope(opts.scope, io);
@@ -1049,6 +1115,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         if (result.ok) {
           // No id to report — a link is an edge, not an entity. Echo the fact.
           io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+          reportReplacement(result, io);
           return;
         }
         if (result.reason === 'NO_PROJECT') {
@@ -1074,7 +1141,8 @@ export function buildProgram(io: CliIo = processIo): Command {
   // and its close ARE the run (its subject), so they belong to no parent session.
   const runGroup = program
     .command('run')
-    .description('open and close the session an agent works inside');
+    .description('open and close the session an agent works inside')
+    .addHelpText('after', RECORD_CONTRACT_HELP);
 
   // `mnema run start --which <agent> [--goal <text>]`. The agent is REQUIRED, and
   // that is the model rather than strictness: a run with no agent proves no
@@ -1105,6 +1173,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
       io.out(`Started run ${result.id}`);
       io.out(`  for ${result.agent}${opts.goal !== undefined ? ` — ${opts.goal}` : ''}`);
+      reportReplacement(result, io);
       // The export line alone, so it can be selected, pasted or eval'd. A process
       // cannot set a variable in the shell that started it, so printing the line
       // is the whole of what this command can honestly do about it.
@@ -1149,6 +1218,7 @@ export function buildProgram(io: CliIo = processIo): Command {
         return;
       }
       io.out(`Ended run ${result.id}`);
+      reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write
       // refused (the run is no longer open), so say how to let go of it — but
       // only when the variable really names THIS run.
@@ -1581,6 +1651,33 @@ export function buildProgram(io: CliIo = processIo): Command {
       }
     });
 
+  // `mnema exposure [--json]` — which records hold something shaped like a
+  // credential. The fourth intelligence read, and the only one about the record's
+  // PAST: everything written before the content door existed was written with no
+  // defense, and in a committed tree that past is what decides the damage.
+  //
+  // It prints WHERE and never WHAT — id, kind, tree, instant, class — in the human
+  // summary and in `--json` alike. Printing the value would move the credential
+  // into a CI log or a scrollback, which is to say it would make the report the
+  // second disclosure. The read cannot do it: what it returns holds no value.
+  program
+    .command('exposure')
+    .description('show which records hold something shaped like a credential (never the value)')
+    .option('--json', 'emit the faithful report as JSON (still without any value)')
+    .action((opts: { json?: boolean }) => {
+      const result = runExposure({ cwd: process.cwd(), env: discoveryEnv() });
+      if (!result.ok) {
+        io.err('No mnema project here. Run `mnema init` first.');
+        io.fail();
+        return;
+      }
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.report, null, 2));
+        return;
+      }
+      printExposure(result.report, io);
+    });
+
   // `mnema refs <id> [--direction --depth] [--json]` — the graph reading of the
   // same index `timeline` reads: not the events that touch an entity but the
   // ENTITIES it connects to. One verb, two shapes: the default is the
@@ -1753,6 +1850,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     .description('retire a key from this identity, from this point forward')
     .argument('<fingerprint>', 'the full fingerprint of the key to retire')
     .requiredOption('--reason <text>', 'why it is being retired (recorded in the fact)')
+    .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((fingerprint: string, opts: { reason: string }) => {
       const result = runKeyRevoke(
         { cwd: process.cwd(), env: discoveryEnv() },
@@ -1760,6 +1858,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       );
       if (result.ok) {
         io.out(`Revoked key ${result.fingerprint}`);
+        reportReplacement(result, io);
         io.out(`  from ${result.anchor} — ${result.remaining} key(s) left`);
         if (result.self) {
           // The person just retired the key this machine signs with. Nothing stops
@@ -1828,6 +1927,7 @@ function reportDecisionMove(
 ): void {
   if (result.ok) {
     io.out(`Decision ${result.adr} → ${result.to}`);
+    reportReplacement(result, io);
     return;
   }
   if (result.reason === 'NO_PROJECT') {

@@ -39,6 +39,7 @@ import {
   resolveTrees,
 } from '@mnema/core';
 import { openTreeForWriting, transitionTask } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface TaskTransitionContext {
@@ -59,7 +60,7 @@ export interface TaskTransitionProof {
 }
 
 /** A task moved to a new state. */
-export interface TaskTransitioned {
+export interface TaskTransitioned extends Replacement {
   readonly ok: true;
   /** The task's id (the one that was moved). */
   readonly id: string;
@@ -135,7 +136,13 @@ export function runTaskTransition(
   // create leaves the tree in.
   writer.checkpoint();
 
-  return { ok: true, id: input.id, alias: deriveAlias('task', input.id), to: moved.to };
+  return {
+    ok: true,
+    id: input.id,
+    alias: deriveAlias('task', input.id),
+    to: moved.to,
+    ...forwardReplacement(moved),
+  };
 }
 
 /**

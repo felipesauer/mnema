@@ -37,6 +37,12 @@
  */
 
 import { runEnded, runStarted } from '@mnema/chain';
+import {
+  type ContentTooLargeErr,
+  type ScreenedWrite,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
@@ -46,27 +52,33 @@ import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
 /** A run was opened: the `run.started` fact was appended. */
-export interface StartRunOk {
+export interface StartRunOk extends ScreenedWrite {
   readonly ok: true;
   /** The new run's minted id (the event subject); the caller pins later work to it. */
   readonly id: string;
+  /** The agent label AS RECORDED — screened, so an echo shows what landed. */
+  readonly agent: string;
 }
 
 /** A run was closed: the `run.ended` fact was appended. */
-export interface EndRunOk {
+export interface EndRunOk extends ScreenedWrite {
   readonly ok: true;
 }
 
 /** Opening a run was refused before touching the chain. */
 export type StartRunError =
+  /** A free-text field was over the size limit (see {@link screenContent}). */
+  | ContentTooLargeErr
   /**
    * The executing agent IS the authorizing anchor — an agent cannot open the
    * session that authorizes its own work.
    */
-  { readonly ok: false; readonly code: 'WHO_IS_WHICH'; readonly message: string };
+  | { readonly ok: false; readonly code: 'WHO_IS_WHICH'; readonly message: string };
 
 /** Closing a run was refused before touching the chain. */
 export type EndRunError =
+  /** A free-text field was over the size limit (see {@link screenContent}). */
+  | ContentTooLargeErr
   /** No `run.started` for this id — there is no session to close. */
   | { readonly ok: false; readonly code: 'UNKNOWN_RUN'; readonly message: string }
   /** The run already has a `run.ended` — closing it again would be an orphan fact. */
@@ -99,12 +111,18 @@ export interface EndRunInput {
  * has no prior state to judge.
  */
 export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | StartRunError {
+  // The agent label and the goal are free text, so they are screened first. The
+  // SCREENED agent is what goes on, both in the payload and (canonicalized) on the
+  // envelope, so the two halves cannot end up carrying different strings.
+  const text = screenContent({ agent: input.agent, goal: input.goal });
+  if (!text.ok) return text;
+
   // `who` is derived from local material and the record, always a real anchor. The executing
   // agent — which the catalog carries in the payload — is also the envelope's
   // `which`, so it is checked against `who` in canonical form: an agent must not
   // be the anchor that authorizes its own session.
   const who = authorizingAnchor(ctx);
-  const agent = resolveExecutingAgent(who, input.agent);
+  const agent = resolveExecutingAgent(who, text.fields.agent);
   if (!agent.ok) return agent;
   const which = agent.which;
 
@@ -132,10 +150,13 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
         // is the run — so it belongs to no parent run.
         ...(which !== undefined ? { which } : {}),
       },
-      { agent: input.agent, ...(input.goal !== undefined ? { goal: input.goal } : {}) },
+      {
+        agent: text.fields.agent,
+        ...(text.fields.goal !== undefined ? { goal: text.fields.goal } : {}),
+      },
     ),
   );
-  return { ok: true, id };
+  return { ok: true, id, agent: text.fields.agent, ...screened(text.replaced) };
 }
 
 /**
@@ -149,6 +170,9 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
  * `who`, not the closer's.
  */
 export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRunError {
+  const text = screenContent({ outcome: input.outcome });
+  if (!text.ok) return text;
+
   // Key on the chain's canonical id form so the lookup matches the projection's
   // stored subject; a composition variant of the id cannot false-miss.
   const id = canonicalId(input.run);
@@ -176,8 +200,8 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
         subject: id,
         // No `run` on the envelope: the subject already IS the run being closed.
       },
-      { ...(input.outcome !== undefined ? { outcome: input.outcome } : {}) },
+      { ...(text.fields.outcome !== undefined ? { outcome: text.fields.outcome } : {}) },
     ),
   );
-  return { ok: true };
+  return { ok: true, ...screened(text.replaced) };
 }

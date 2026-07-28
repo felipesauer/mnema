@@ -12,9 +12,9 @@
  * create_task, task_transition, record_decision, decision_transition, create_skill,
  * skill_transition, bootstrap, focus, resume, next_actions, guard, skills,
  * search, read_record, and the
- * four `audit_*` intelligence reads — audit_timeline, audit_refs,
- * audit_accountability, audit_antipatterns) delegates to a pure adapter in
- * {@link ./tools.js}. The
+ * five `audit_*` intelligence reads — audit_timeline, audit_refs,
+ * audit_accountability, audit_antipatterns, audit_exposure) delegates to a pure
+ * adapter in {@link ./tools.js}. The
  * reads (focus/resume/next_actions/guard/search/read_record, like bootstrap) are READ-ONLY — they
  * derive from the session's projection cache; they open no writer. `guard` is a
  * dry-run of the gate: it simulates a move and returns the verdict, having
@@ -22,10 +22,11 @@
  * adopted patterns AND records the consultation, a fact nothing else could
  * recover afterwards.
  * The `audit_*` reads are read-only too, and they are the AUDITOR's view: every
- * tree the session can see, merged. Three of them read the session's warm caches
- * like the rest; `audit_antipatterns` alone still folds the raw event stream,
- * because it asks which events have a given SHAPE rather than which touch a
- * given entity.
+ * tree the session can see. Three of them read the session's warm caches like the
+ * rest; `audit_antipatterns` folds the raw event stream, because it asks which
+ * events have a given SHAPE rather than which touch a given entity; and
+ * `audit_exposure` folds the trees SEPARATELY, because its answer has to say which
+ * tree a finding is in — a merge is exactly what would lose that.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -49,6 +50,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
+import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
   runAccountabilityTool,
@@ -58,6 +60,7 @@ import {
   runCreateSkill,
   runCreateTask,
   runDecisionTransition,
+  runExposureTool,
   runFocusTool,
   runGuardTool,
   runLinkKnowledge,
@@ -188,7 +191,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'agent and pinned to the current session. Optionally pick the scope it ' +
         'lands in — public (team-visible), private (this machine, this project), ' +
         'or global (personal, cross-project); omitted, it follows the session ' +
-        'default (private in a project, global outside one).',
+        'default (private in a project, global outside one).' +
+        RECORD_CONTRACT,
       inputSchema: {
         content: z.string().min(1).describe('The memory to record.'),
         scope: z
@@ -211,7 +215,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: `Captured memory ${result.id}` }] };
+      return recorded(`Captured memory ${result.id}`, result);
     },
   );
 
@@ -226,7 +230,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'observation `text`. The `about` id is NOT checked to exist — a reference ' +
         'to an entity in another tree is honest and resolved on read. Optionally ' +
         'pick the scope it lands in; omitted, it follows the session default. ' +
-        'Returns the observation’s own minted id.',
+        'Returns the observation’s own minted id.' +
+        RECORD_CONTRACT,
       inputSchema: {
         about: z.string().min(1).describe('The id of the entity being observed.'),
         topic: z.string().min(1).describe('A short topic label.'),
@@ -251,9 +256,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Recorded observation ${result.id} about ${about}` }],
-      };
+      return recorded(`Recorded observation ${result.id} about ${about}`, result);
     },
   );
 
@@ -267,7 +270,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
         'to exist. Optionally pick the scope; omitted, it follows the session ' +
-        'default. A handoff has no id of its own — its subject is the task.',
+        'default. A handoff has no id of its own — its subject is the task.' +
+        RECORD_CONTRACT,
       inputSchema: {
         task: z.string().min(1).describe('The task the handoff is about.'),
         from: z.string().min(1).describe('The agent handing off.'),
@@ -292,9 +296,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Recorded handoff on ${task}: ${from} → ${to}` }],
-      };
+      // The labels the RECORD holds, not the ones the call asked for.
+      const [landedFrom, landedTo] = result.recorded;
+      return recorded(`Recorded handoff on ${task}: ${landedFrom} → ${landedTo}`, result);
     },
   );
 
@@ -309,7 +313,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'contradicts; any label is accepted). Neither endpoint is checked to ' +
         'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
         'pick the scope; omitted, it follows the session default. A link has no id ' +
-        'of its own — it is an edge.',
+        'of its own — it is an edge.' +
+        RECORD_CONTRACT,
       inputSchema: {
         subject: z.string().min(1).describe('The entity that originates the link.'),
         target: z.string().min(1).describe('The entity linked to.'),
@@ -334,9 +339,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Linked ${subject} —${rel}→ ${target}` }],
-      };
+      // The relation the RECORD holds, not the one the call asked for.
+      return recorded(`Linked ${subject} —${result.recorded[0]}→ ${target}`, result);
     },
   );
 
@@ -351,7 +355,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'pick the scope it lands in — public (team-visible), private (this ' +
         'machine, this project), or global (personal, cross-project); omitted, it ' +
         'follows the session default. Returns the minted id (the key to move it) ' +
-        'and the short alias a human reads.',
+        'and the short alias a human reads.' +
+        RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('What the task is.'),
         scope: z
@@ -369,9 +374,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Created task ${result.alias} (${result.id})` }],
-      };
+      return recorded(`Created task ${result.alias} (${result.id})`, result);
     },
   );
 
@@ -384,7 +387,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'submit_review, request_changes, approve, complete, cancel, reopen). The ' +
         'workflow gate decides whether the move is legal and carries the proof it ' +
         'requires — cancel/block/reopen need a reason, complete/approve a note, ' +
-        'request_changes a feedback; an illegal move or missing proof is refused.',
+        'request_changes a feedback; an illegal move or missing proof is refused.' +
+        RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The task id to move.'),
         action: z.string().min(1).describe('The transition to request.'),
@@ -411,7 +415,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: `Task ${result.alias} → ${result.to}` }] };
+      return recorded(`Task ${result.alias} → ${result.to}`, result);
     },
   );
 
@@ -425,7 +429,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'rationale (why it was made). Optionally pick the scope it lands in — ' +
         'public (team-visible), private (this machine, this project), or global ' +
         '(personal, cross-project); omitted, it follows the session default. ' +
-        'Returns the citable ADR-<n> label — a decision has no short alias.',
+        'Returns the citable ADR-<n> label — a decision has no short alias.' +
+        RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('The decision title.'),
         rationale: z.string().min(1).describe('Why the decision was made.'),
@@ -448,9 +453,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Recorded decision ${result.adr} (${result.id})` }],
-      };
+      return recorded(`Recorded decision ${result.adr} (${result.id})`, result);
     },
   );
 
@@ -463,7 +466,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'decision (each needs a note); supersede a proposed or accepted decision ' +
         'with a later one — supersede needs the successor decision id in `by` and ' +
         'a reason. `by` applies ONLY to supersede; accept and reject ignore it. ' +
-        'An illegal move or missing proof is refused with the gate’s reason.',
+        'An illegal move or missing proof is refused with the gate’s reason.' +
+        RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The decision id to move.'),
         action: z.string().min(1).describe('The transition: accept, reject, or supersede.'),
@@ -490,7 +494,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: `Decision ${result.adr} → ${result.to}` }] };
+      return recorded(`Decision ${result.adr} → ${result.to}`, result);
     },
   );
 
@@ -505,7 +509,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'the scope it lands in — public (team-visible), private (this machine, ' +
         'this project), or global (personal, cross-project); omitted, it follows ' +
         'the session default. Returns the minted id (the key to move it) and the ' +
-        'name — a skill has no short alias.',
+        'name — a skill has no short alias.' +
+        RECORD_CONTRACT,
       inputSchema: {
         name: z.string().min(1).describe('A short title for the pattern.'),
         body: z.string().min(1).describe('The reusable pattern itself.'),
@@ -528,9 +533,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return {
-        content: [{ type: 'text', text: `Proposed skill "${result.name}" (${result.id})` }],
-      };
+      return recorded(`Proposed skill "${result.name}" (${result.id})`, result);
     },
   );
 
@@ -543,7 +546,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'reviewed one as a live pattern, reject a proposed or reviewed one, or ' +
         'deprecate an adopted one that fell out of use. review/adopt/reject each ' +
         'need a note; deprecate needs a reason. An illegal move or missing proof ' +
-        'is refused with the gate’s reason.',
+        'is refused with the gate’s reason.' +
+        RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The skill id to move.'),
         action: z.string().min(1).describe('The transition: review, adopt, reject, or deprecate.'),
@@ -565,7 +569,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: `Skill "${result.name}" → ${result.to}` }] };
+      return recorded(`Skill "${result.name}" → ${result.to}`, result);
     },
   );
 
@@ -955,6 +959,39 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
   );
 
   server.registerTool(
+    'audit_exposure',
+    {
+      title: 'Audit — where a credential may already be recorded',
+      description:
+        'Show which records hold something shaped like a credential — a cloud key, ' +
+        'an API token, a private key, a password inside a URL — across ALL of this ' +
+        'project’s trees. Use it to answer "is a secret already in the record?", ' +
+        'which writing can no longer cause but the past can: values in a recognized ' +
+        'format are replaced before anything is written today, and everything ' +
+        'recorded before that was not. It reports WHERE and never WHAT: the id, the ' +
+        'kind, the tree, the instant and the CLASS — never the value, so reading it ' +
+        'cannot leak what it found. A record in the public tree is committed and ' +
+        'clones to every machine; one in the global tree is on this disk alone. ' +
+        'The remedy is to ROTATE the credential: mnema is append-only and nothing ' +
+        'deletes a fact. An empty report means nothing RECOGNIZABLE is there, which ' +
+        'is not the same as nothing. Read-only.',
+    },
+    async () => {
+      const active = await ensureSession();
+      const result = runExposureTool(active);
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // An empty report is an ANSWER ("nothing recognizable is recorded here"),
+      // never an error — the same reason an empty history is one.
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
     'audit_antipatterns',
     {
       title: 'Audit — recurring shapes in the record',
@@ -997,6 +1034,25 @@ async function listRootsSafely(
     log(`roots/list unavailable: ${messageOf(error)}`);
     return [];
   }
+}
+
+/**
+ * A write tool's successful reply: what landed, plus what the content door
+ * replaced on the way in.
+ *
+ * One helper for all ten, because a scrub the caller is not told about is the tool
+ * writing something other than what was asked for and saying nothing — and the
+ * caller is the only party that can still act on it (rotate the credential, warn
+ * the person, record the thing again without it). The notice is absent when nothing
+ * was replaced, so the ordinary write reads exactly as it did before.
+ */
+function recorded(
+  line: string,
+  result: Replacement,
+): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
+  return {
+    content: [{ type: 'text', text: [line, ...replacementNotice(result.replaced)].join('\n') }],
+  };
 }
 
 function messageOf(error: unknown): string {

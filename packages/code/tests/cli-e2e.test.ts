@@ -25,6 +25,7 @@ import {
   catalogUpcasters,
   enrollmentMessage,
   generateKeyPair,
+  memoryCaptured,
   publicKeyToPem,
   sign,
   verify,
@@ -41,6 +42,7 @@ import {
   projectSkills,
   resolveTrees,
 } from '@mnema/core';
+import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 
@@ -2002,5 +2004,174 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['run', 'start', '--which', 'claude-code'], s.io);
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('Run `mnema init`');
+  });
+});
+
+describe('mnema CLI — what enters the record', () => {
+  function treesOf() {
+    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+  }
+
+  /** Every string anywhere in every payload of a tree — the generic sweep. */
+  function recordedText(root: string | undefined): string[] {
+    if (root === undefined || !existsSync(root)) return [];
+    const found: string[] = [];
+    const collect = (value: unknown): void => {
+      if (typeof value === 'string') {
+        found.push(value);
+        return;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) collect(item);
+        return;
+      }
+      if (value !== null && typeof value === 'object') {
+        for (const item of Object.values(value)) collect(item);
+      }
+    };
+    for (const event of orderedEvents({ root }, catalogUpcasters())) collect(event.payload);
+    return found;
+  }
+
+  const SECRET = 'AKIAIOSFODNN7EXAMPLE';
+
+  it('an agent records a credential: the chain holds a placeholder, the agent is told, and it verifies', async () => {
+    await run(['init'], capture().io);
+
+    // 1. The write goes through, with the credential in it.
+    const m = capture();
+    await run(['memory', `the deploy key is ${SECRET}`], m.io);
+    expect(m.failed()).toBe(false);
+    const printed = m.out.join('\n');
+    expect(printed).toContain('Captured memory');
+
+    // 2. What is IN THE CHAIN does not contain the value — the assertion that
+    //    matters, over the record itself rather than over the report.
+    const trees = treesOf();
+    for (const value of recordedText(trees.projectPublic)) {
+      expect(value).not.toContain(SECRET);
+    }
+    // …and the placeholder is what landed instead, with the context intact.
+    expect(recordedText(trees.projectPublic)).toContain(
+      'the deploy key is <SECRET:aws-access-key>',
+    );
+
+    // 3. The AGENT was told, and told what to do — a silent scrub would leave a
+    //    live credential unrotated because nobody knew it had been typed.
+    expect(printed).toContain('1 value(s) replaced before recording');
+    expect(printed).toContain('<SECRET:aws-access-key>');
+    expect(printed).toContain('rotate them');
+
+    // 4. The chain still verifies: screening happens before the append, so the
+    //    entry it produced is an ordinary signed entry.
+    const v = capture();
+    await run(['verify'], v.io);
+    expect(v.failed()).toBe(false);
+  });
+
+  it('the notice stays away when nothing was replaced', async () => {
+    await run(['init'], capture().io);
+    const m = capture();
+    await run(['memory', 'an ordinary note about the merge order'], m.io);
+    const printed = m.out.join('\n');
+    expect(printed).toContain('Captured memory');
+    expect(printed).not.toContain('replaced before recording');
+  });
+
+  it('a field over the limit is REFUSED, and nothing is recorded', async () => {
+    await run(['init'], capture().io);
+    const before = recordedText(treesOf().projectPublic).length;
+
+    const m = capture();
+    await run(['memory', 'x'.repeat(65_537)], m.io);
+    expect(m.failed()).toBe(true);
+    expect(m.err.join('\n')).toContain('Refused (CONTENT_TOO_LARGE)');
+    // The refusal is actionable: which field, how big, and what to do instead.
+    expect(m.err.join('\n')).toContain('"content"');
+    expect(m.err.join('\n')).toContain('split it');
+
+    expect(recordedText(treesOf().projectPublic).length).toBe(before);
+  });
+
+  it('`exposure` finds the facts written before the door, and prints no value', async () => {
+    await run(['init'], capture().io);
+
+    // A record the door would have cleaned, appended the way a pre-door write
+    // left it: the tree's own writer, so the entry is signed and verifiable.
+    const trees = treesOf();
+    const writer = openTreeForWriting(trees, 'public');
+    writer.append(
+      memoryCaptured(
+        {
+          at: '2026-01-01T00:00:00.000Z',
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: '019fa8b7-0410-717b-9af2-cfeb013fc4ac',
+        },
+        { content: `the old note held ${SECRET}` },
+      ),
+    );
+    writer.checkpoint();
+
+    const e = capture();
+    await run(['exposure'], e.io);
+    expect(e.failed()).toBe(false);
+    const printed = e.out.join('\n');
+
+    // It found it, and named where it is and what class — the actionable half.
+    expect(printed).toContain('019fa8b7-0410-717b-9af2-cfeb013fc4ac');
+    expect(printed).toContain('public');
+    expect(printed).toContain('aws-access-key');
+    expect(printed).toContain('Rotate the credentials');
+    // And NOT the value — not whole, not as a prefix. A command that printed it
+    // would move the credential into the terminal scrollback and the CI log.
+    expect(printed).not.toContain(SECRET);
+    expect(printed).not.toContain('AKIA ');
+    expect(printed).not.toContain(`${SECRET.slice(0, 8)}`);
+
+    // The same holds for --json, which is the other path a value could take out.
+    const j = capture();
+    await run(['exposure', '--json'], j.io);
+    expect(j.out.join('\n')).not.toContain(SECRET);
+    expect(j.out.join('\n')).toContain('aws-access-key');
+  });
+
+  it('`exposure` says nothing RECOGNIZABLE rather than nothing, on a clean record', async () => {
+    await run(['init'], capture().io);
+    await run(['memory', 'the staging password is hunter2'], capture().io);
+
+    const e = capture();
+    await run(['exposure'], e.io);
+    const printed = e.out.join('\n');
+    expect(printed).toContain('Nothing recognizable');
+    // The limit, said where the person reads it: a password in prose has no
+    // format, so it is in the record and this report cannot see it.
+    expect(printed).toContain('only known credential formats are recognized');
+  });
+
+  it('every writing verb declares the contract in its own --help', async () => {
+    // The instruction is the layer that covers what the shape cannot reach, so it
+    // has to be present at the point of use — not only in a README.
+    for (const verb of [
+      ['task'],
+      ['decision'],
+      ['skill'],
+      ['memory'],
+      ['observe'],
+      ['handoff'],
+      ['link'],
+      ['run'],
+      ['task', 'move'],
+      ['decision', 'move'],
+      ['decision', 'supersede'],
+      ['skill', 'move'],
+    ]) {
+      const h = capture();
+      await run([...verb, '--help'], h.io);
+      const help = h.out.join('\n');
+      expect(help, `${verb.join(' ')} --help`).toContain('Permanent');
+      expect(help, `${verb.join(' ')} --help`).toContain('Do not record credentials');
+      expect(help, `${verb.join(' ')} --help`).toContain('written verbatim');
+    }
   });
 });

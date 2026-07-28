@@ -19,6 +19,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { openTreeForWriting, revokeMember } from '@mnema/core/write';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the revocation needs — injected so it is testable. */
 export interface KeyRevokeContext {
@@ -29,7 +30,7 @@ export interface KeyRevokeContext {
 }
 
 /** The key was retired from this machine's identity. */
-export interface KeyRevoked {
+export interface KeyRevoked extends Replacement {
   readonly ok: true;
   readonly fingerprint: string;
   /** The identity it was retired from. */
@@ -91,5 +92,6 @@ export function runKeyRevoke(
     self: revoked.self,
     remaining: revoked.remaining,
     root: trees.projectPublic,
+    ...forwardReplacement(revoked),
   };
 }

@@ -48,6 +48,7 @@ surfaces never upgrade that verdict into a stronger claim.
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
 | **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
+| **Credentials stay out of the record** | Only the ones mnema *recognizes*. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
 The honest summary: **local cryptography covers alteration; an external witness
 covers omission and ties the record to an identity.** No such witness is wired
@@ -214,6 +215,43 @@ Retirement is **forward-only**: what that key signed while it was a member stays
 valid, because a rotation should not make past work unattributable. The identity's
 last key cannot be retired — it would leave an identity unable to sign anything
 again, including its own repair — so bring the replacement in first.
+
+### What goes into the record
+
+Every field of text you record passes one door on the way in.
+
+```sh
+mnema memory "the deploy key is AKIAIOSFODNN7EXAMPLE and the db is postgres://svc:hunter2@db.internal/app"
+#> Captured memory 019fa920-9f32-7dcc-8632-252878a942d9
+#>   2 value(s) replaced before recording: <SECRET:aws-access-key>, <SECRET:url-password>
+#>   This record is permanent. If those were real credentials, rotate them.
+```
+
+What landed is the sentence with two placeholders in it — the scheme, the user,
+the host and the database all survive, because the useful part of the note was
+never the secret. Nothing is replaced in silence: the reply says what went and
+tells you to rotate, which is the only remedy an append-only record leaves.
+
+Two limits, both stated rather than hidden. **It catches only formats it
+recognizes** — a proprietary token or a password in prose goes in verbatim, so
+the placeholder is damage reduction and not a licence to paste secrets. And a
+single field holds at most 64 KiB: a longer one is **refused**, never truncated,
+so nothing is dropped without your knowing.
+
+For everything written before that door existed:
+
+```sh
+mnema exposure
+#> 1 of 4 record(s) hold a credential format:
+#>   public  2026-01-01  memory.captured  019fa8b7-0410-717b-9af2-cfeb013fc4ac  aws-access-key, url-password
+#>
+#>   These records are permanent — nothing deletes a fact. Rotate the credentials.
+#>   A public record is committed and on every machine that cloned the repository.
+```
+
+It reports **where**, never **what** — the id, the kind, the tree, the instant
+and the class. Printing the value would move the credential into your terminal
+scrollback and your CI log, so the report has no field that could hold one.
 
 ### As an MCP server
 

@@ -13,6 +13,12 @@
  * Each operation stamps `at` from one uniform clock so events across tails
  * interleave consistently.
  *
+ * Free text is SCREENED before any of that ({@link screenContent}): a field over
+ * the size limit refuses the whole write, and a recognized credential is replaced
+ * by a typed placeholder, with what was replaced reported back on the result. It
+ * runs first because it needs no context — not the task, not the identity — so an
+ * oversize refusal touches nothing at all.
+ *
  * Identity is DERIVED, never supplied. `who` (the authorizing anchor) and
  * `signerFp` (the signing key) both come from the writer's own key — the very
  * key that will sign the checkpoint — so a caller cannot forge who authorized a
@@ -31,6 +37,12 @@ import {
   taskTransitioned,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import {
+  type ContentTooLargeErr,
+  type ScreenedWrite,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
@@ -53,11 +65,13 @@ export interface WriteContext {
 /** A write refused before touching the chain. */
 export type WriteError =
   | GateErr
+  /** A free-text field was over the size limit (see {@link screenContent}). */
+  | ContentTooLargeErr
   /** The task does not exist (no `task.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_TASK'; readonly message: string };
 
 /** A transition was authorized and appended. */
-export interface TransitionOk {
+export interface TransitionOk extends ScreenedWrite {
   readonly ok: true;
   /** The state the task is now in. */
   readonly to: string;
@@ -66,7 +80,7 @@ export interface TransitionOk {
 }
 
 /** A task was born: both birth events were appended, in order. */
-export interface CreateOk {
+export interface CreateOk extends ScreenedWrite {
   readonly ok: true;
   /** The new task's id (the event subject). */
   readonly id: string;
@@ -102,11 +116,22 @@ export interface CreateInput {
  * chain, asks the gate whether the move is authorized, and appends the
  * transition ONLY if it is. On refusal nothing is written and the typed reason
  * is returned. `to` is the gate's resolved state, never the caller's assertion.
+ *
+ * The proof fields are screened BEFORE the gate, not after, and that order is
+ * load-bearing: the gate hands its verdict's `fields` straight to the event, so
+ * screening afterwards would leave the original text in the appended fact while
+ * the caller was told it had been cleaned. Screening first also means the gate
+ * judges the same text the chain will hold — a placeholder is never empty, so a
+ * required note that was scrubbed still satisfies the proof requirement.
  */
 export function transitionTask(
   ctx: WriteContext,
   input: TransitionInput,
 ): TransitionOk | WriteError {
+  const proof =
+    input.fields === undefined ? undefined : screenContent<TransitionFields>(input.fields);
+  if (proof !== undefined && !proof.ok) return proof;
+
   // Look the task up in the chain's canonical id form — the SAME form its
   // subject is stored and read back in — so the lookup key matches the
   // projection's, and a composition variant of the id cannot false-miss. (The
@@ -125,7 +150,7 @@ export function transitionTask(
   const verdict = gate({
     from: current,
     action: input.action,
-    ...(input.fields !== undefined ? { fields: input.fields } : {}),
+    ...(proof !== undefined ? { fields: proof.fields } : {}),
     who,
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
@@ -154,7 +179,7 @@ export function transitionTask(
     },
   );
   const entry = ctx.writer.append(event);
-  return { ok: true, to: verdict.to, entry };
+  return { ok: true, to: verdict.to, entry, ...screened(proof?.replaced ?? []) };
 }
 
 /**
@@ -167,6 +192,9 @@ export function transitionTask(
  * `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
+  const title = screenContent({ title: input.title });
+  if (!title.ok) return title;
+
   // `who` is derived from local material and the record, so it is always a real
   // anchor — the MISSING_WHO path a typed-in name could hit no longer exists. The one
   // authority check that remains is that the executing agent is not that same
@@ -195,13 +223,13 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
       ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
-    { title: input.title, initial: INITIAL_STATE },
+    { title: title.fields.title, initial: INITIAL_STATE },
   );
   // Append the pair atomically: a torn birth would leave a created task with no
   // state, permanently burning the id (the projection drops a stateless
   // subject, so every later transition on it fails as UNKNOWN_TASK).
   const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
-  return { ok: true, id, entries: [e1, e2] };
+  return { ok: true, id, entries: [e1, e2], ...screened(title.replaced) };
 }
 
 /**

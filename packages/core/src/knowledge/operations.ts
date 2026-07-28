@@ -10,6 +10,12 @@
  *
  * The disciplines the work operations rely on still hold, because they defend
  * the proof, not the workflow:
+ *   - every piece of free text is screened before anything else happens ({@link
+ *     screenContent}): a field over the size limit refuses the whole write, and a
+ *     recognized credential is replaced by a typed placeholder. A fact is the
+ *     shape most exposed to this — it is unstructured text with no field that
+ *     disciplines what goes in — and it is permanent, so the door is the only
+ *     place the question can still be answered.
  *   - `who` (the authorizing anchor) and `signerFp` (the signing key) come from
  *     the writer's own key, never supplied — a caller cannot forge who captured
  *     a memory by typing a name.
@@ -47,6 +53,12 @@ import {
   memoryCaptured,
   observationRecorded,
 } from '@mnema/chain';
+import {
+  type ContentTooLargeErr,
+  type ScreenedWrite,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { systemClock } from '../workflow/clock.js';
@@ -54,11 +66,17 @@ import { authorizingAnchor, ensureFounded } from '../workflow/identity-operation
 import type { WriteContext } from '../workflow/operations.js';
 
 /** A memory was captured: the fact was appended. */
-export interface CaptureOk {
+export interface CaptureOk extends ScreenedWrite {
   readonly ok: true;
   /** The new memory's id (the event subject). */
   readonly id: string;
 }
+
+/**
+ * The refusals a point-in-time fact can earn, both of them before any append: it
+ * authorized itself, or one of its fields was over the size limit.
+ */
+export type FactError = SelfAuthorizedErr | ContentTooLargeErr;
 
 /** What the caller asks to capture. */
 export interface CaptureInput {
@@ -78,11 +96,15 @@ export interface CaptureInput {
  * is the writer's anchor, derived from its key; `which` is the executing agent,
  * whose presence is exactly what the scope resolver reads to default an
  * automatic capture to the private tree.
+ *
+ * The content is screened FIRST, before the identity is even consulted: it is the
+ * one check that needs no context at all, and running it ahead of everything else
+ * is what makes an oversize refusal cost nothing and touch nothing.
  */
-export function captureMemory(
-  ctx: WriteContext,
-  input: CaptureInput,
-): CaptureOk | SelfAuthorizedErr {
+export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk | FactError {
+  const content = screenContent({ content: input.content });
+  if (!content.ok) return content;
+
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
@@ -107,14 +129,16 @@ export function captureMemory(
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
-      { content: input.content },
+      // The screened text, never `input.content` — the whole point of the door is
+      // that the original does not reach the chain.
+      { content: content.fields.content },
     ),
   );
-  return { ok: true, id };
+  return { ok: true, id, ...screened(content.replaced) };
 }
 
 /** An observation was recorded: the fact was appended. */
-export interface ObservationOk {
+export interface ObservationOk extends ScreenedWrite {
   readonly ok: true;
   /** The new observation's OWN minted id (the event subject). */
   readonly id: string;
@@ -148,15 +172,30 @@ export interface ObservationInput {
 export function recordObservation(
   ctx: WriteContext,
   input: ObservationInput,
-): ObservationOk | SelfAuthorizedErr {
+): ObservationOk | FactError {
+  // Every field in one screen, so a single refusal covers any of them and the
+  // report counts what was replaced across all three.
+  //
+  // `about` is in here WITH the text, and that is not decoration. It is an id by
+  // contract but it is NOT validated (a dangling cross-tree reference is honest),
+  // so in practice it holds whatever a caller sends — which means it is the one
+  // field of this operation that could carry an unbounded value into the chain, and
+  // a fat event is exactly what the size limit exists to keep out. No real id can
+  // match a credential shape, so screening it cannot corrupt a legitimate
+  // reference.
+  const text = screenContent({ about: input.about, topic: input.topic, text: input.text });
+  if (!text.ok) return text;
+
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
   // The observed entity is a REFERENCE to an already-minted id: canonicalized
   // (NFC, the chain's stored form) so a reader keys on the same string, but
-  // never minted here and never refused for absence.
-  const about = canonicalId(input.about) ?? input.about;
+  // never minted here and never refused for absence. It runs AFTER the screen so
+  // the canonicalization — which serializes the value to check the chain can hold
+  // it — is bounded by the size limit rather than paying for whatever arrived.
+  const about = canonicalId(text.fields.about) ?? text.fields.about;
 
   // Minted here, not chosen by the caller (see mintId): the observation's own
   // identity, canonical by construction.
@@ -174,15 +213,22 @@ export function recordObservation(
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
-      { about, topic: input.topic, text: input.text },
+      { about, topic: text.fields.topic, text: text.fields.text },
     ),
   );
-  return { ok: true, id };
+  return { ok: true, id, ...screened(text.replaced) };
 }
 
 /** A handoff was recorded: the fact was appended. */
-export interface HandoffOk {
+export interface HandoffOk extends ScreenedWrite {
   readonly ok: true;
+  /**
+   * The two labels AS RECORDED — screened, so a surface that echoes them shows
+   * what landed rather than what was asked for. A handoff mints no id, so this is
+   * the only thing a caller has to report the fact by.
+   */
+  readonly fromAgent: string;
+  readonly toAgent: string;
 }
 
 /** What the caller asks to record as a handoff. */
@@ -210,15 +256,24 @@ export interface HandoffInput {
  * The task subject is NOT verified to exist here — it is a reference resolved on
  * read, the same cross-tree-honest treatment the observation and link use.
  */
-export function recordHandoff(
-  ctx: WriteContext,
-  input: HandoffInput,
-): HandoffOk | SelfAuthorizedErr {
+export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk | FactError {
+  // The two agent labels are free text, so they are screened like any other: a
+  // label is where someone pastes a connection string to say which service the
+  // work moved to. `task` joins them because it becomes the event's SUBJECT and is
+  // never validated, so it is the field through which an unbounded value could
+  // reach the chain.
+  const agents = screenContent({
+    task: input.task,
+    fromAgent: input.fromAgent,
+    toAgent: input.toAgent,
+  });
+  if (!agents.ok) return agents;
+
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
-  const task = canonicalId(input.task) ?? input.task;
+  const task = canonicalId(agents.fields.task) ?? agents.fields.task;
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
@@ -232,15 +287,22 @@ export function recordHandoff(
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
-      { fromAgent: input.fromAgent, toAgent: input.toAgent },
+      { fromAgent: agents.fields.fromAgent, toAgent: agents.fields.toAgent },
     ),
   );
-  return { ok: true };
+  return {
+    ok: true,
+    fromAgent: agents.fields.fromAgent,
+    toAgent: agents.fields.toAgent,
+    ...screened(agents.replaced),
+  };
 }
 
 /** A knowledge link was recorded: the fact was appended. */
-export interface LinkOk {
+export interface LinkOk extends ScreenedWrite {
   readonly ok: true;
+  /** The relation AS RECORDED — screened, so an echo shows what landed. */
+  readonly rel: string;
 }
 
 /** What the caller asks to link. */
@@ -270,13 +332,24 @@ export interface LinkInput {
  * current view is honest dangling, resolved on read against the union. Refusing
  * it here would break the very cross-tree relations the link exists to record.
  */
-export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | SelfAuthorizedErr {
+export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | FactError {
+  // `rel` is an OPEN string, so it is free text by definition. Both endpoints join
+  // it: neither is validated (that is the whole point of a cross-tree link), so
+  // each is a field through which an unbounded value could reach the chain — one as
+  // the event's subject, one in its payload.
+  const relation = screenContent({
+    subject: input.subject,
+    target: input.target,
+    rel: input.rel,
+  });
+  if (!relation.ok) return relation;
+
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
-  const subject = canonicalId(input.subject) ?? input.subject;
-  const target = canonicalId(input.target) ?? input.target;
+  const subject = canonicalId(relation.fields.subject) ?? relation.fields.subject;
+  const target = canonicalId(relation.fields.target) ?? relation.fields.target;
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
@@ -290,8 +363,8 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Sel
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
-      { target, rel: input.rel },
+      { target, rel: relation.fields.rel },
     ),
   );
-  return { ok: true };
+  return { ok: true, rel: relation.fields.rel, ...screened(relation.replaced) };
 }

@@ -14,6 +14,7 @@
  */
 
 import { materializePublicKey } from '@mnema/chain';
+import type { ScreenedWrite } from '../content/screen.js';
 import { decideAnchor, enrollKey, revokeKey } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 import { decodeKeyRequest } from './handshake.js';
@@ -136,7 +137,7 @@ export interface RevokeMemberInput {
 }
 
 /** The key was retired from this machine's identity, from this point forward. */
-export interface RevokeMemberOk {
+export interface RevokeMemberOk extends ScreenedWrite {
   readonly ok: true;
   readonly fingerprint: string;
   /** The identity it was retired from. */
@@ -154,7 +155,9 @@ export type RevokeMemberErrorCode =
   /** It is the identity's last key: retiring it would leave nothing able to extend the record. */
   | 'LAST_KEY'
   /** This machine's own key is not currently valid for its identity, so it cannot revoke. */
-  | 'CANNOT_VOUCH';
+  | 'CANNOT_VOUCH'
+  /** The reason given was over the per-field size limit. */
+  | 'CONTENT_TOO_LARGE';
 
 /** The revocation was refused; nothing was written. */
 export interface RevokeMemberErr {
@@ -212,12 +215,18 @@ export function revokeMember(
     };
   }
 
-  revokeKey(ctx, { revokedFp: input.fingerprint, reason: input.reason });
+  // The reason is free text, so the mechanism screens it at the append. Forward
+  // its refusal rather than asserting success: this is the one refusal here that
+  // is about the CONTENT rather than the roster, and it is still free (nothing has
+  // been appended by the time it comes back).
+  const revoked = revokeKey(ctx, { revokedFp: input.fingerprint, reason: input.reason });
+  if (!revoked.ok) return revoked;
   return {
     ok: true,
     fingerprint: input.fingerprint,
     anchor,
     self: input.fingerprint === ctx.writer.signerFingerprint,
     remaining: roster.size - 1,
+    ...(revoked.replaced !== undefined ? { replaced: revoked.replaced } : {}),
   };
 }

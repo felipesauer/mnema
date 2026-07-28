@@ -15,8 +15,14 @@
  * scope maps to is a read; only OPENING it for writing is here).
  */
 
-// The one refusal a point-in-time fact can earn: the authority invariant. It
-// travels with the knowledge writes because it is in their result union.
+// The refusal an oversize field earns, and the report a scrubbed write carries
+// back. Both travel in every write's result union, so a surface needs to be able
+// to name them; the screening function itself is deliberately NOT exported — the
+// door is inside, and a caller that could screen separately could also skip it.
+export type { ContentTooLargeErr, ScreenedWrite } from './content/screen.js';
+// The one refusal a point-in-time fact can earn beyond its content: the authority
+// invariant. It travels with the knowledge writes because it is in their result
+// union.
 export type { SelfAuthorizedErr } from './identity/authority.js';
 // The handshake a machine joining an identity produces: its public key plus the
 // signature proving it consents. It can mint this machine's key on first use, so
@@ -61,6 +67,7 @@ export {
   type CaptureInput,
   type CaptureOk,
   captureMemory,
+  type FactError,
   type HandoffInput,
   type HandoffOk,
   type LinkInput,

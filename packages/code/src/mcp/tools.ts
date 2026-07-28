@@ -25,9 +25,11 @@
  * patterns and records that they were served, because that fact is derivable
  * from nothing else afterwards), `search`/`read_record` (the read mold widened to
  * every tree the session can see: an index of what matched, then one whole record
- * by the id that index gave), and the three intelligence reads `runTimelineTool`/
- * `runAccountabilityTool`/`runAntipatternsTool` (the auditor's view — they fold
- * the UNION of the session's trees, opening no cache and no writer). The knowledge
+ * by the id that index gave), and the intelligence reads `runTimelineTool`/
+ * `runReferencesTool`/`runAccountabilityTool`/`runAntipatternsTool`/
+ * `runExposureTool` (the auditor's view — they fold every tree the session can
+ * see, opening no cache and no writer; `runExposureTool` keeps them separate
+ * because its answer has to name the tree). The knowledge
  * FACTS (observation/handoff/link) share the
  * memory mold exactly — one append, no gate — and forward the ids they reference
  * without validating them (a dangling reference is honest cross-tree). The server
@@ -54,6 +56,8 @@ import {
   antipatterns,
   type Bootstrap,
   bootstrap,
+  type Exposure,
+  exposure,
   type Focus,
   focus,
   type GuardWithFocus,
@@ -106,17 +110,18 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { unionEvents } from '../intelligence-source.js';
+import { scopedEvents, unionEvents } from '../intelligence-source.js';
+import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { locateEntityInSession } from './locate.js';
 import { type Session, writeContext } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The minted memory id (the event subject). */
       readonly id: string;
-    }
+    })
   | {
       readonly ok: false;
       /**
@@ -131,13 +136,13 @@ export type CaptureResult =
 
 /** A task was created, or the write was refused (the scope guard, or the core). */
 export type CreateTaskResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The minted task id (the event subject) — the key a move takes. */
       readonly id: string;
       /** The short human-facing alias (`t-xxxx`), derived from the id. */
       readonly alias: string;
-    }
+    })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -148,7 +153,7 @@ export type CreateTaskResult =
 
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The task's id (the one that moved). */
       readonly id: string;
@@ -156,7 +161,7 @@ export type TransitionResult =
       readonly alias: string;
       /** The state the task is now in, resolved by the gate. */
       readonly to: string;
-    }
+    })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -167,13 +172,13 @@ export type TransitionResult =
 
 /** A decision was recorded, or the requested scope was not available here. */
 export type RecordDecisionResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The minted decision id (the event subject). */
       readonly id: string;
       /** The citable `ADR-<n>` label frozen into the record — a decision's name. */
       readonly adr: string;
-    }
+    })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -184,7 +189,7 @@ export type RecordDecisionResult =
 
 /** A decision moved (ok), or the gate refused (a typed reason in the envelope). */
 export type DecisionTransitionResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The decision's id (the one that moved). */
       readonly id: string;
@@ -192,7 +197,7 @@ export type DecisionTransitionResult =
       readonly adr: string;
       /** The state the decision is now in, resolved by the gate. */
       readonly to: string;
-    }
+    })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -203,13 +208,13 @@ export type DecisionTransitionResult =
 
 /** A skill was proposed, or the requested scope was not available here. */
 export type CreateSkillResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The minted skill id — the canonical identifier, the key a move takes. */
       readonly id: string;
       /** The skill's short name — DISPLAY only, not a key (not unique). */
       readonly name: string;
-    }
+    })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -220,7 +225,7 @@ export type CreateSkillResult =
 
 /** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
 export type SkillTransitionResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The skill's id (the one that moved). */
       readonly id: string;
@@ -228,7 +233,7 @@ export type SkillTransitionResult =
       readonly name: string;
       /** The state the skill is now in, resolved by the gate. */
       readonly to: string;
-    }
+    })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -284,16 +289,16 @@ export function runCaptureMemory(
   }
   // Checkpoint so the capture is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: captured.id };
+  return { ok: true, id: captured.id, ...forwardReplacement(captured) };
 }
 
 /** An observation was recorded, or the requested scope was not available here. */
 export type RecordObservationResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
       /** The observation's OWN minted id (the event subject). */
       readonly id: string;
-    }
+    })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -304,9 +309,15 @@ export type RecordObservationResult =
 
 /** A handoff or a link was recorded, or the requested scope was not available. */
 export type FactRecordedResult =
-  | {
+  | (Replacement & {
       readonly ok: true;
-    }
+      /**
+       * The label or relation AS RECORDED — screened, so an echo shows what
+       * landed. A handoff and a link mint no id, so this is what a caller has to
+       * report the fact by.
+       */
+      readonly recorded: readonly string[];
+    })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -354,7 +365,7 @@ export function runRecordObservation(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: recorded.id };
+  return { ok: true, id: recorded.id, ...forwardReplacement(recorded) };
 }
 
 /**
@@ -393,7 +404,13 @@ export function runRecordHandoff(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true };
+  // The labels AS RECORDED, not as asked for: a label that carried a credential
+  // reached the chain as a placeholder, and the echo has to say so.
+  return {
+    ok: true,
+    recorded: [recorded.fromAgent, recorded.toAgent],
+    ...forwardReplacement(recorded),
+  };
 }
 
 /**
@@ -432,7 +449,8 @@ export function runLinkKnowledge(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true };
+  // The relation AS RECORDED — screened, so the echo shows what landed.
+  return { ok: true, recorded: [recorded.rel], ...forwardReplacement(recorded) };
 }
 
 /**
@@ -476,7 +494,12 @@ export function runCreateTask(
   }
   // Checkpoint so the new task is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: created.id, alias: deriveAlias('task', created.id) };
+  return {
+    ok: true,
+    id: created.id,
+    alias: deriveAlias('task', created.id),
+    ...forwardReplacement(created),
+  };
 }
 
 /**
@@ -525,7 +548,13 @@ export function runTaskTransition(
   }
   // Checkpoint so the transition is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: input.id, alias: deriveAlias('task', input.id), to: moved.to };
+  return {
+    ok: true,
+    id: input.id,
+    alias: deriveAlias('task', input.id),
+    to: moved.to,
+    ...forwardReplacement(moved),
+  };
 }
 
 /**
@@ -586,7 +615,7 @@ export function runRecordDecision(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: recorded.id, adr: recorded.adr };
+  return { ok: true, id: recorded.id, adr: recorded.adr, ...forwardReplacement(recorded) };
 }
 
 /**
@@ -673,7 +702,7 @@ export function runDecisionTransition(
   // name is the frozen label. Read the ONE resolved tree after the append.
   const root = chainRootForScope(session.trees, scope) as string;
   const adr = projectDecisions(orderedEvents({ root }, upcasters)).get(input.id)?.adr ?? input.id;
-  return { ok: true, id: input.id, adr, to: moved.to };
+  return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
 }
 
 /**
@@ -731,7 +760,7 @@ export function runCreateSkill(
   }
   // Checkpoint so the propose is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: created.id, name: input.name };
+  return { ok: true, id: created.id, name: created.name, ...forwardReplacement(created) };
 }
 
 /**
@@ -798,7 +827,7 @@ export function runSkillTransition(
   // alias. Read the ONE resolved tree after the append; fall back to the id.
   const root = chainRootForScope(session.trees, scope) as string;
   const name = projectSkills(orderedEvents({ root }, upcasters)).get(input.id)?.name ?? input.id;
-  return { ok: true, id: input.id, name, to: moved.to };
+  return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
 }
 
 /**
@@ -1331,6 +1360,35 @@ export function runAccountabilityTool(
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
   return { ok: true, value: accountability(scopedCaches(session), input) };
+}
+
+/** The `audit_exposure` result — where a credential format sits, or a refusal. */
+export type ExposureToolResult = IntelligenceResult<Exposure>;
+
+/**
+ * `audit_exposure` — which records hold something shaped like a credential.
+ *
+ * The one intelligence read about the record's PAST rather than its shape. Writing
+ * screens what arrives, so an agent cannot put a recognized credential into the
+ * chain today; everything written before that could, and in a committed tree the
+ * past is what decides the damage. This is how an agent asked to check finds out.
+ *
+ * It answers WHERE and never WHAT — the id, the kind, the tree, the instant and the
+ * class. There is no value in the result to return, by construction, because the
+ * detector behind it reports classes only: a tool that handed a credential back
+ * would put it in a transcript, which is a second disclosure and a worse one (a
+ * transcript travels further than a chain).
+ *
+ * It takes the trees SEPARATELY rather than merged, unlike the other `audit_*`
+ * reads: a fact in the public tree is committed and clones to the team, and the
+ * same fact in the global tree is on one disk — the merge is exactly what would
+ * lose the difference. Read-only: it reads the tails and folds them, opening no
+ * writer and no cache. With no project it refuses `NO_PROJECT`.
+ */
+export function runExposureTool(session: Session): ExposureToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  return { ok: true, value: exposure(scopedEvents(session.trees, catalogUpcasters())) };
 }
 
 /**

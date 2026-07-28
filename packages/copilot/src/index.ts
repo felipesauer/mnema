@@ -83,6 +83,12 @@ export {
 } from './intelligence/antipatterns.js';
 export type { CatalogEvent, EventKind } from './intelligence/events.js';
 export {
+  type ExposedRecord,
+  type Exposure,
+  exposure,
+  type ScopedEvents,
+} from './intelligence/exposure.js';
+export {
   effectiveDepth,
   REFERENCE_DEFAULT_DEPTH,
   REFERENCE_MAX_DEPTH,

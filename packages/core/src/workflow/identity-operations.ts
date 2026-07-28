@@ -35,13 +35,19 @@ import {
   materializePublicKey,
   type RegistrationFault,
 } from '@mnema/chain';
+import {
+  type ContentTooLargeErr,
+  type ScreenedWrite,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { IdentityUnavailableError, type Membership, membershipIn } from '../identity/membership.js';
 import { orderedEvents } from '../projections/order.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
 
 /** An identity fact was appended. */
-export interface IdentityOk {
+export interface IdentityOk extends ScreenedWrite {
   readonly ok: true;
   /** The anchor the fact concerns. */
   readonly anchor: string;
@@ -309,21 +315,29 @@ export function enrollKey(
  * forgeable and is ignored), so a revocation that stayed in the residual window
  * would have no effect. Signing a checkpoint over it makes it effective at once,
  * with this machine's own key — the honest path.
+ *
+ * The `reason` is the only free text any identity fact carries (a founding and an
+ * enrollment carry fingerprints and a signature, nothing a person typed), so it
+ * goes through the same content door every other write does — screened before
+ * anything is founded, so an oversize reason costs nothing.
  */
 export function revokeKey(
   ctx: WriteContext,
   input: { revokedFp: string; reason: string },
-): IdentityOk {
+): IdentityOk | ContentTooLargeErr {
+  const text = screenContent({ reason: input.reason });
+  if (!text.ok) return text;
+
   const anchor = ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   ctx.writer.append(
     keyRevoked(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { revokedFp: input.revokedFp, reason: input.reason },
+      { revokedFp: input.revokedFp, reason: text.fields.reason },
     ),
   );
   ctx.writer.checkpoint();
-  return { ok: true, anchor };
+  return { ok: true, anchor, ...screened(text.replaced) };
 }
 
 /**
