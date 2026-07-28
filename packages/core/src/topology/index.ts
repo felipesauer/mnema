@@ -9,10 +9,11 @@
  * git hygiene ({@link openTreeForWriting}). Reading the union across trees is the
  * projection layer's `orderedEventsAcross`. Finding which single tree an entity
  * lives in — so a transition follows it and never splits its history — is
- * {@link locateEntityScope}.
+ * {@link locateEntityScope}, or {@link locateEntityScopeWith} for a caller that
+ * can answer "does this tree hold it?" faster than a replay can.
  */
 
-export { locateEntityScope } from './locate.js';
+export { type BirthProbe, locateEntityScope, locateEntityScopeWith } from './locate.js';
 export {
   listProjects,
   PROJECTS_FILE,
