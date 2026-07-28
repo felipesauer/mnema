@@ -23,6 +23,7 @@ import {
   type ReferenceGraph,
 } from '@mnema/copilot';
 import {
+  canonicalIdentity,
   IdentityUnavailableError,
   type Scope,
   SEARCH_DEFAULT_LIMIT,
@@ -30,7 +31,7 @@ import {
   SEARCH_MAX_LIMIT,
   type SearchKind,
 } from '@mnema/core';
-import { Command, CommanderError } from 'commander';
+import { Command, CommanderError, InvalidArgumentError } from 'commander';
 import { runAccountability } from './commands/accountability.js';
 import { runAntipatterns } from './commands/antipatterns.js';
 import { runDecision } from './commands/decision.js';
@@ -120,7 +121,61 @@ function exitQuietlyOnClosedPipe(): void {
 const WHICH_HELP =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
   'mnema — omit it when you are acting directly. Declared, never assumed; a ' +
-  "birth an agent makes defaults to this machine's private tree.";
+  "birth an agent makes defaults to this machine's private tree. A value that " +
+  'names no agent (an unset variable) is refused, never credited to you.';
+
+/**
+ * What a `--which` that names nobody is told.
+ *
+ * It gives both ways out, because both are legitimate: name the agent, or drop the
+ * flag. Dropping it is not a workaround — it is the truthful declaration when a
+ * person is the one acting. And it names the accident that actually produces this,
+ * because nobody types three spaces: a variable that expanded to nothing.
+ */
+const BLANK_WHICH_MESSAGE =
+  'it names no agent. Name the agent that executed this, or omit --which — omitted, ' +
+  'the record says a person acted directly. (A `--which "$AGENT"` with the variable ' +
+  "empty would otherwise credit you for an agent's work.)";
+
+/**
+ * Validates a DECLARED `--which` where the value ENTERS the program.
+ *
+ * A `--which` that names no agent is not a missing declaration — it is an invalid
+ * one: the caller said an agent executed this and then named none. Left alone the
+ * record credits the PERSON, in two places at once. The value drops out of the
+ * envelope (so every event asserts a human acted directly), and `resolveScope`
+ * reads "no agent" and sends a birth to the team's COMMITTED tree instead of this
+ * machine's private one. The way in is not malice: it is `--which "$AGENT_NAME"` in
+ * a CI step with the variable unset.
+ *
+ * The rule is NOT the absent flag's. On this surface an omitted `--which` means "a
+ * person acted directly" — legitimate, common, and what most people who type
+ * `mnema` are. Defaulting it to some agent name would invent an agent where there
+ * was a person: the same fiction, inverted, and worse. (The MCP surface DOES
+ * default, for the opposite reason — a stdio connection is a program talking to a
+ * program, so there "a person acted" cannot be true.)
+ *
+ * "Names an agent" is decided by {@link canonicalIdentity} and never by a trim of
+ * our own: that is the rule which decides what the chain records, so a value it
+ * reads as no identity is exactly a value that would vanish from the event. A
+ * second reading of "blank" could disagree with the first, and a `which` that
+ * passes in one place and disappears in another is the defect, not the detail.
+ *
+ * It runs as commander's own argument parser, which is what makes it ONE place for
+ * the thirteen verbs that read the flag rather than thirteen copies: the check
+ * happens at parse time, before any action, so no tree is resolved and nothing is
+ * written. It also covers `task move` and its siblings for free — they read the
+ * flag off the parent group where it is declared, and the parser belongs to the
+ * declaration, not to the reading.
+ *
+ * It returns the value UNTOUCHED. Canonicalizing here would put a second cleaner
+ * in front of the content door, which screens the value as GIVEN and then
+ * canonicalizes, in that order and for a reason (see `resolveExecutingAgent`).
+ */
+function declaredAgent(value: string): string {
+  if (canonicalIdentity(value) === undefined) throw new InvalidArgumentError(BLANK_WHICH_MESSAGE);
+  return value;
+}
 
 /**
  * The `--which` reminder for a group's SUBCOMMAND (`task move`, `decision move`,
@@ -534,7 +589,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the task is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((title: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
@@ -660,7 +715,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the decision is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((title: string, rationale: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
@@ -801,7 +856,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the skill is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((name: string, opts: { body?: string; scope?: string; which?: string }) => {
       // The body is required for a propose, but declared as a plain option (so it
@@ -921,7 +976,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the memory is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((content: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
@@ -972,7 +1027,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the observation is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
       (about: string, opts: { topic: string; text: string; scope?: string; which?: string }) => {
@@ -1028,7 +1083,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
     // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action((task: string, from: string, to: string, opts: { scope?: string; which?: string }) => {
       const scope = parseScope(opts.scope, io);
@@ -1087,7 +1142,7 @@ export function buildProgram(io: CliIo = processIo): Command {
       'where the link is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Defaults to public.',
     )
-    .option('--which <agent>', WHICH_HELP)
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
       (subject: string, target: string, opts: { rel: string; scope?: string; which?: string }) => {
@@ -1155,6 +1210,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     .requiredOption(
       '--which <agent>',
       'the agent this session is for — required: a run with no agent authorizes nothing',
+      declaredAgent,
     )
     .option('--goal <text>', 'what this session sets out to do')
     .action((opts: { which: string; goal?: string }) => {
@@ -1378,7 +1434,9 @@ export function buildProgram(io: CliIo = processIo): Command {
     .option('--reason <text>', 'simulate the reason (cancel, block, reopen)')
     .option('--note <text>', 'simulate the note (complete, approve)')
     .option('--feedback <text>', 'simulate the feedback (request_changes)')
-    .option('--which <id>', 'simulate an executing agent (must differ from --actor)')
+    // Validated exactly as the real move's `--which` is: a dry-run that accepted a
+    // declaration the move refuses would answer for a move nobody can make.
+    .option('--which <id>', 'simulate an executing agent (must differ from --actor)', declaredAgent)
     .option('--json', 'emit the faithful gate verdict as JSON')
     .action(
       (
@@ -1588,6 +1646,10 @@ export function buildProgram(io: CliIo = processIo): Command {
     .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
     .option('--to <iso>', 'include only facts at or before this ISO-8601 instant')
     .option('--who <id>', 'count only facts authorized by this anchor id')
+    // The one `--which` that is NOT a declaration of who acted but a FILTER over
+    // who already did, so it carries no {@link declaredAgent}: nothing is being
+    // attributed here, and a value that matches no recorded agent is an empty
+    // answer, which is what every other filter with no match gives too.
     .option('--which <agent>', 'count only facts executed by this agent')
     .option('--json', 'emit the faithful account object as JSON')
     .action(

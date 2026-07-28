@@ -134,6 +134,11 @@ Nothing verifies the name: `--which` is a declaration, exactly as the MCP server
 is the client's own announced name. What is *proven* is the signature — the
 identity that authorized the write, which is derived from the key and never typed.
 
+The one value refused is a `--which` that names *nobody* — `--which "$AGENT_NAME"`
+in a CI step where the variable never got set. Omitting the flag is how you say a
+person acted; passing it empty would say the same thing while looking like it said
+the opposite, and credit you for the agent's work.
+
 ### Framing that work in a session
 
 `--which` names the agent on each fact. A **run** frames the session those facts

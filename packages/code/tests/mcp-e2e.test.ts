@@ -29,6 +29,7 @@ import {
   projectKnowledge,
   projectLinks,
   projectObservations,
+  projectRuns,
   projectSkills,
   projectTasks,
   resolveTrees,
@@ -2598,6 +2599,106 @@ describe('MCP — what enters the record', () => {
     const refused = await client.callTool({ name: 'audit_exposure' });
     expect(refused.isError).toBe(true);
     expect(textOf(refused)).toContain('Refused (NO_PROJECT)');
+    await client.close();
+  });
+});
+
+/**
+ * WHO the record says acted, over a real client.
+ *
+ * On this transport an agent exists by construction — a stdio connection is a
+ * program talking to a program — so a name that canonicalizes to nothing is a name
+ * that is MISSING, not a person acting. It therefore takes the same default the
+ * absent name always took, and the three things the session derives from that ONE
+ * value agree again: the `which` on every event, the `agent` in the run's own
+ * payload, and the tree a write lands in.
+ *
+ * What the hole did instead: `which` vanished from every event (so the record
+ * asserted a human had acted directly) and `resolveScope` read "no agent" and sent
+ * the session's writes to the PUBLIC tree — the one that is committed and clones to
+ * every machine. The only trace was three spaces in a payload field.
+ */
+describe('MCP — who the record says acted', () => {
+  /**
+   * The forms a client can announce, and what the record then holds.
+   *
+   * One of them is NOT blank on purpose. `canonicalIdentity` is the rule, and it
+   * reads a zero-width non-joiner as an ordinary (if invisible) character — so that
+   * name is KEPT, not defaulted. What the rule does is the expected value here; a
+   * guess would have written the opposite test.
+   */
+  const ANNOUNCED: readonly (readonly [string, string, string])[] = [
+    ['a space', '   ', 'unknown-agent'],
+    ['a tab', '\t', 'unknown-agent'],
+    ['a non-breaking space (U+00A0)', ' ', 'unknown-agent'],
+    ['a zero-width non-joiner — a NAME, invisible but present', '‌', '‌'],
+    ['an ordinary name (the non-regression)', 'claude-code', 'claude-code'],
+  ];
+
+  for (const [label, announced, recorded] of ANNOUNCED) {
+    it(`a client announcing ${label} is recorded as "${recorded === announced ? 'itself' : recorded}" on every event`, async () => {
+      const project = makeProject('proj');
+      const { server } = buildMcpServer({ env, log: () => {} });
+      const client = await connectClient(server, [pathToFileURL(project).href], announced);
+
+      const captured = await client.callTool({
+        name: 'capture_memory',
+        arguments: { content: 'a note from a connection' },
+      });
+      expect(textOf(captured)).toMatch(/^Captured memory /);
+
+      // 1. EVERY event the session wrote names the same agent — none of them is
+      //    left asserting that a person acted directly, which is what a missing
+      //    `which` means. The tree's own founding is the one event with no agent,
+      //    by design (the machine declaring its identity, not work anyone did), so
+      //    it is named here rather than filtered away: a NEW agentless kind would
+      //    show up in this assertion instead of hiding behind it.
+      const privateRoot = join(project, PROJECT_DIR, 'private');
+      const events = orderedEvents({ root: privateRoot }, catalogUpcasters());
+      expect(events.some((e) => e.kind === 'memory.captured')).toBe(true);
+      expect(events.filter((e) => e.which === undefined).map((e) => e.kind)).toEqual([
+        'identity.founded',
+      ]);
+      expect([...new Set(events.filter((e) => e.which !== undefined).map((e) => e.which))]).toEqual(
+        [recorded],
+      );
+
+      // 2. The run's own PAYLOAD tells the same story as the envelope. This is the
+      //    half that used to disagree: `agent: '   '` in the payload beside a
+      //    `which` that was not there at all.
+      expect([...projectRuns(events).values()].map((r) => r.agent)).toEqual([recorded]);
+
+      await client.close();
+    });
+  }
+
+  it("a blank-named client writes PRIVATE again, not into the team's committed tree", async () => {
+    const project = makeProject('proj');
+    const logged: string[] = [];
+    const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+    const client = await connectClient(server, [pathToFileURL(project).href], '   ');
+
+    await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'this belongs to this machine, not to the repository' },
+    });
+
+    // The write is in the machine's private tree, and the PUBLIC tree — the one git
+    // carries to every clone — received nothing from this session.
+    const privateEvents = orderedEvents(
+      { root: join(project, PROJECT_DIR, 'private') },
+      catalogUpcasters(),
+    );
+    expect(privateEvents.some((e) => e.kind === 'memory.captured')).toBe(true);
+    const publicEvents = orderedEvents({ root: join(project, PROJECT_DIR) }, catalogUpcasters());
+    expect(publicEvents.some((e) => e.kind === 'memory.captured')).toBe(false);
+    expect(publicEvents.some((e) => e.kind === 'run.started')).toBe(false);
+
+    // The server said so at the door, too: one line, one story.
+    expect(
+      logged.some((line) => line.includes('which=unknown-agent') && line.includes('scope=private')),
+    ).toBe(true);
+
     await client.close();
   });
 });
