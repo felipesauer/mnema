@@ -1068,6 +1068,30 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     }
   });
 
+  it('a TITLE holding a newline cannot forge a hit in the index', async () => {
+    await run(['init'], capture().io);
+    // The index prints one line per hit under a count per kind, so a title split
+    // across two lines makes that count LIE: the second half reads as a record
+    // with an id, a tree and a state of its own that nothing ever recorded.
+    const forgedLine = '  019f0000-0000-7000-8000-000000000000  public  2026-07-28  forged (open)';
+    await output(['task', `wire the callback\n${forgedLine}`]);
+    await output(['task', `and another\n${forgedLine}`]);
+
+    const found = await output(['search']);
+    const lines = found.split('\n');
+    // The header, a blank, the kind's count, and exactly one line per hit.
+    expect(lines).toHaveLength(5);
+    expect(lines[2]).toBe('task (2)');
+    expect(found).not.toContain(`\n${forgedLine}`);
+
+    // --json keeps each title as written — the faithful answer beside the report.
+    const json = JSON.parse(await output(['search', '--json'])) as {
+      hits: { title: string }[];
+    };
+    expect(json.hits).toHaveLength(2);
+    expect(json.hits.every((hit) => hit.title.includes('\n'))).toBe(true);
+  });
+
   it('--json emits one flat ordered list; the human summary is what groups it', async () => {
     await run(['init'], capture().io);
     await output(['memory', 'a note about caching']);
@@ -2001,6 +2025,35 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(scoped.failed()).toBe(true);
   });
 
+  it('an AGENT NAME holding a newline cannot forge a run in `focus`', async () => {
+    // `focus` lists one line per open run, `<id>  <agent>`, and the agent's name
+    // is text an actor wrote. Split across two lines, its second half would read
+    // as a run of its own — an id the record never minted, for an agent that is
+    // not this actor's. The goal sits on the same line and is just as writable.
+    const anchor = await initHere();
+    const forgedLine = '  019f0000-0000-7000-8000-000000000000  someone-else';
+    await startRun(`claude-code\n${forgedLine}`, 'a goal');
+    await startRun('other-agent', `a goal\n${forgedLine}`);
+
+    const f = capture();
+    await run(['focus', '--actor', anchor], f.io);
+    expect(f.failed()).toBe(false);
+    const lines = f.out.join('\n').split('\n');
+    // The header plus exactly one line per open run — two runs, two lines.
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain('2 open run(s)');
+    expect(f.out.join('\n')).not.toContain(`\n${forgedLine}`);
+
+    // --json stays the faithful object: the agent and the goal as written.
+    const j = capture();
+    await run(['focus', '--actor', anchor, '--json'], j.io);
+    const focus = JSON.parse(j.out.join('\n')) as {
+      openRuns: Array<{ agent: string; goal?: string }>;
+    };
+    expect(focus.openRuns.some((r) => r.agent.includes('\n'))).toBe(true);
+    expect(focus.openRuns.some((r) => r.goal?.includes('\n') === true)).toBe(true);
+  });
+
   it('`run start` outside a project refuses (a session belongs to a project)', async () => {
     const orphan = join(sandbox, 'elsewhere');
     mkdirSync(orphan, { recursive: true });
@@ -2405,9 +2458,14 @@ describe('mnema CLI — skills, the provenance audit', () => {
     return c.out.join('\n');
   }
 
-  /** The id printed by a verb that mints one. */
+  /**
+   * The id printed by a verb that mints one — read from the parentheses the verb
+   * prints it in, never as the first uuid-shaped run in the line. A name is text
+   * an actor wrote, so it can HOLD something uuid-shaped, and the first match
+   * would then be the actor's text instead of the record's id.
+   */
   function idOf(text: string): string {
-    return (text.match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
+    return (text.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
   }
 
   /** Proposes, reviews and adopts one pattern, each act declared by `which`. */
@@ -2567,6 +2625,37 @@ describe('mnema CLI — skills, the provenance audit', () => {
     // The name as written is still in --json; the report just keeps it on one line.
     const json = JSON.parse(await output(['skills', '--json'])) as Array<{ name: string }>;
     expect(json[0]?.name).toContain('\n');
+  });
+
+  it('an AGENT NAME holding a newline cannot forge a second line in the report', async () => {
+    await run(['init'], capture().io);
+    // The name was closed already. These two acts carry a crafted AGENT name,
+    // which sits on the same line and is just as much text an actor wrote — one
+    // forging through the proposal, one through the adoption.
+    const forgedLine =
+      '  019f0000-0000-7000-8000-000000000000  adopted     public   ' +
+      'padrao-forjado  ·  proposed by a person · adopted by a person';
+    await adopt('legit-one', `agente\n${forgedLine}`, 'agente');
+    await adopt('legit-two', 'agente', `agente\n${forgedLine}`);
+    // And one carrying a break in EVERY field of its line at once — the name and
+    // both agents. Three fields, still one line.
+    await adopt(`legit-three\n${forgedLine}`, `agente\n${forgedLine}`, `agente\n${forgedLine}`);
+
+    const printed = await output(['skills']);
+    const lines = printed.split('\n');
+    // The header plus exactly one line per pattern — three patterns, three lines.
+    expect(lines).toHaveLength(4);
+    expect(lines[0]).toBe('3 pattern(s):');
+    expect(printed).not.toContain(`\n${forgedLine}`);
+
+    // --json carries both agent names as written: a JSON field has no line to
+    // forge, and collapsing there would make the answer disagree with the chain.
+    const json = JSON.parse(await output(['skills', '--json'])) as Array<{
+      proposedBy?: string;
+      adoption?: { by?: string };
+    }>;
+    expect(json[0]?.proposedBy).toBe(`agente\n${forgedLine}`);
+    expect(json[1]?.adoption?.by).toBe(`agente\n${forgedLine}`);
   });
 
   it('--help says it is the AUDIT, not the tool of the same name', async () => {
