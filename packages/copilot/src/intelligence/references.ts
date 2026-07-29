@@ -26,6 +26,11 @@
  *   and one asked in the other's place is a tree nothing ever walked. What such
  *   an answer loses it loses in silence — the edges that would have proved it
  *   short are the missing ones.
+ * - **Every edge says whose record asserts it.** The scope alone cannot: across
+ *   projects, two edges into one entity can both be `private` and be two different
+ *   codebases. It is the answer to the question the walk is most often asked — which
+ *   of my projects has already normalized this — so it travels on the edge rather
+ *   than being derivable from where the caller thinks the walk went.
  * - **It is cycle-safe.** `A → B → A` terminates. Each node is reported once,
  *   at the fewest hops it was reached in, and the edge that closes the cycle is
  *   still reported — a cycle is a fact about the record, not an error to hide.
@@ -100,6 +105,12 @@ export interface ReferenceNode {
   readonly kind?: SearchKind;
   /** The tree that holds it, when it resolves to a record. */
   readonly scope?: Scope;
+  /**
+   * The PROJECT whose record holds it, when it resolves to a record in one — the
+   * answer to "where would I go to read this". Absent both when nothing holds it and
+   * when the holder is the machine-global tree, which the `scope` beside it separates.
+   */
+  readonly project?: string;
 }
 
 /** One edge, as the event that asserts it wrote it. */
@@ -125,6 +136,16 @@ export interface ReferenceLink {
   readonly which?: string;
   /** The tree the ASSERTION lives in — which may not be either end's tree. */
   readonly scope: Scope;
+  /**
+   * The project whose record ASSERTS the edge, absent when the machine-global tree
+   * does.
+   *
+   * The most load-bearing label of the three, because it is the answer to the
+   * question the walk is usually asked: *"which of my projects has normalized
+   * this?"* is answered by the projects of the incoming edges, and without it two
+   * edges into one entity are two facts that cannot be told apart.
+   */
+  readonly project?: string;
 }
 
 /** What an entity reaches and what reaches it, within the depth asked for. */
@@ -207,7 +228,7 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
       if (seeds.length === 0) continue;
       seeded = true;
       for (const edge of source.cache.walk(seeds, direction, probe)) {
-        const link = toLink(edge, source.scope);
+        const link = toLink(edge, source);
         // Tree, position in that tree's stream, role — the three together name
         // one assertion and no other. An `ord` is a position in ONE tree's
         // stream, so it takes the tree to make it an identity, and the tree is
@@ -276,23 +297,30 @@ function shortestHops(
 
 /**
  * What the record knows about one reached entity. `resolved` asks the index
- * whether any tree AUTHORED it (a fact with it as subject); the kind and tree
- * come from the projections, which know only the kinds that have a record of
- * their own. So an entity can be resolved without a kind — a run, an anchor —
- * and that is reported as it is rather than rounded either way.
+ * whether any tree AUTHORED it (a fact with it as subject); the kind, the tree and
+ * the project come from the projections, which know only the kinds that have a
+ * record of their own. So an entity can be resolved without a kind — a run, an
+ * anchor — and that is reported as it is rather than rounded either way.
+ *
+ * The three travel together or not at all: they are one answer ("this id is that
+ * kind of record, held there"), and the early return is what keeps a node from
+ * carrying half of it.
  */
 function resolveNode(sources: readonly ScopedCache[], id: string, depth: number): ReferenceNode {
   const resolved = sources.some((source) => source.cache.knows(id));
   const record = readRecord(sources, id);
+  if (record === null) return { id, depth, resolved };
   return {
     id,
     depth,
     resolved,
-    ...(record !== null ? { kind: record.kind, scope: record.scope } : {}),
+    kind: record.kind,
+    scope: record.scope,
+    ...(record.project !== undefined ? { project: record.project } : {}),
   };
 }
 
-function toLink(edge: ReferenceEdgeRow, scope: Scope): ReferenceLink {
+function toLink(edge: ReferenceEdgeRow, asserted: ScopedCache): ReferenceLink {
   // The relation label is read off the asserting event, not off the role: only a
   // knowledge link has one, and it travels verbatim.
   const rel = edge.event.kind === 'knowledge.linked' ? edge.event.payload.rel : undefined;
@@ -305,7 +333,8 @@ function toLink(edge: ReferenceEdgeRow, scope: Scope): ReferenceLink {
     kind: edge.kind,
     who: edge.who,
     ...(edge.which !== undefined ? { which: edge.which } : {}),
-    scope,
+    scope: asserted.scope,
+    ...(asserted.project !== undefined ? { project: asserted.project } : {}),
   };
 }
 

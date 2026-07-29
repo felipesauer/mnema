@@ -28,6 +28,15 @@
  * `audit_exposure` folds the trees SEPARATELY, because its answer has to say which
  * tree a finding is in — a merge is exactly what would lose that.
  *
+ * HOW MANY PROJECTS a read covers is decided by the question, not by an argument. The
+ * three keyed by an ID — `read_record`, `audit_timeline`, `audit_refs` — read every
+ * project of the workspace, because an id is minted once and the entities pointing at
+ * one thing are regularly in the OTHER projects; `skills` reads every tree for the
+ * neighbouring reason (a capability is not scoped); and the rest read the session's own
+ * project, because "what is in this record" and "who authorized what here" are
+ * questions ABOUT a project. No tool takes a flag for it: the caller has no better
+ * information than the tool does about which of the two its own question is.
+ *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
  * ahead of the initialized callback still finds a session rather than failing.
@@ -979,9 +988,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Read ONE record in full — a memory’s content, a decision’s rationale, an ' +
         'observation’s text, a task — by the id `search` gave. This is the second ' +
         'half of a search: the index tells you what exists, this tells you what it ' +
-        'says. A skill id is refused here and pointed at the `skills` tool, which ' +
-        'serves the adopted patterns and records the consultation. An id no visible ' +
-        'tree holds is refused. Read-only.',
+        'says. It looks in EVERY project of this workspace, not only the one you are ' +
+        'working in — an id is minted once and lives in one place — and the answer ' +
+        'says which project and which tree hold it. A skill id is refused here and ' +
+        'pointed at the `skills` tool, which serves the adopted patterns and records ' +
+        'the consultation. An id no project holds is refused, in a reply that names ' +
+        'where it looked. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The record id (from `search`).'),
       },
@@ -999,12 +1011,18 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  // The three INTELLIGENCE tools, prefixed `audit_` — the AUDITOR's view over the
-  // UNION of the session's trees (distinct from the session reads focus/resume/
-  // guard, which serve the session's own tree and carry no prefix). Each folds
-  // every present tree into one view of the whole record and returns the faithful
-  // object. Read-only: they read the tails and fold them, opening no writer and
-  // no cache. With no project a session has no record to audit — refused.
+  // The three INTELLIGENCE tools, prefixed `audit_` — the AUDITOR's view over a UNION
+  // of trees (distinct from the session reads focus/resume/guard, which serve the
+  // session's own tree and carry no prefix). Each folds every tree it covers into one
+  // view and returns the faithful object. Read-only: they read the tails and fold
+  // them, opening no writer and no cache. With no project a session has no record to
+  // audit — refused.
+  //
+  // WHICH union differs, and by the question rather than by an option: the two keyed by
+  // an ID span every project of the workspace, because an id has one home and what
+  // points at it lives wherever the pointing happened; `audit_accountability` spans the
+  // session's own project, because summing several would answer "how much have I
+  // written" under the name of "how much is in this record".
 
   server.registerTool(
     'audit_timeline',
@@ -1012,11 +1030,13 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Audit — the full history of an entity',
       description:
         'Show the complete history of one entity (a task, decision, skill, …) ' +
-        'across ALL of this project’s trees: every event where it is the subject, ' +
-        'plus events that refer to it (an observation about it, a link whose target ' +
-        'is it) — which may live in another tree. Use it to answer "tell me the ' +
-        'whole story of this entity". An id no event touches returns an empty ' +
-        'history (a valid answer). Read-only.',
+        'across ALL trees of ALL projects in this workspace: every event where it is ' +
+        'the subject, plus events that refer to it (an observation about it, a link ' +
+        'whose target is it) — which may live in another tree, or in another project. ' +
+        'Use it to answer "tell me the whole story of this entity", including the part ' +
+        'that happened in a sibling codebase; each entry says which project it came ' +
+        'from. An id no event touches returns an empty history (a valid answer). ' +
+        'Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The entity id whose history to show.'),
       },
@@ -1039,15 +1059,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Audit — what an entity is connected to',
       description:
-        'Show what one entity is connected to across ALL of this project’s trees: ' +
-        'the observations about it, the links into and out of it, the decision ' +
-        'that superseded it. Use it after `search` to pull on a thread — "what ' +
-        'else is tied to this?". By default it is the NEIGHBOURHOOD (one hop, ' +
+        'Show what one entity is connected to across ALL trees of ALL projects in ' +
+        'this workspace: the observations about it, the links into and out of it, the ' +
+        'decision that superseded it. Use it after `search` to pull on a thread — ' +
+        '"what else is tied to this?". By default it is the NEIGHBOURHOOD (one hop, ' +
         'either direction); set `direction` to "out" (what it points at) or "in" ' +
         '(what points at it) with a larger `depth` to follow a lineage, such as a ' +
-        'decision’s supersede chain. A far end no visible tree holds comes back ' +
-        'marked unresolved — that is legitimate, not an error — and the answer ' +
-        'says when the depth cut it. Read-only.',
+        'decision’s supersede chain. `direction: "in"` is how you answer "have I ' +
+        'already applied this in my other projects?" — the things that point at it ' +
+        'are in THEIR records, and every edge says which project asserts it. A far ' +
+        'end no visible tree holds comes back marked unresolved — that is legitimate, ' +
+        'not an error — and the answer says when the depth cut it. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The entity id to walk from (from `search`).'),
         direction: z

@@ -12,14 +12,22 @@
  *
  * Two properties are what make it safe to retain:
  *
- *   1. **Keyed by chain root, never by scope.** A session sees up to three trees
- *      and a read does not always serve the session's own: `next_actions` and
- *      `guard` locate the ENTITY's home tree, which may be the public one while
- *      the session writes private. One shared cache would answer from whichever
- *      tree happened to be loaded first — the wrong projection, returned
- *      silently. A cache per root cannot make that mistake, and the roots are
- *      bounded by the session's resolved trees (at most three), so the map has
- *      a ceiling by construction rather than by eviction policy.
+ *   1. **Keyed by chain root, never by scope.** A read does not always serve the
+ *      session's own tree: `next_actions` and `guard` locate the ENTITY's home
+ *      tree, which may be the public one while the session writes private, and the
+ *      three reads keyed by an id span every project of the workspace. One shared
+ *      cache would answer from whichever tree happened to be loaded first — the
+ *      wrong projection, returned silently. A cache per root cannot make that
+ *      mistake, and the roots are bounded by what the workspace holds: two trees
+ *      per announced project plus the one global tree they share, all settled at
+ *      the handshake. So the map still has a ceiling by construction rather than by
+ *      eviction policy — it is just no longer three.
+ *
+ *      Entries are opened LAZILY, one per tree actually read, which is what keeps
+ *      the wider ceiling from being a cost anyone pays for nothing: a connection
+ *      that never asks a question keyed by an id never opens a sibling project's
+ *      tree, and a tree that has never been written replays as empty without being
+ *      brought into being.
  *
  *   2. **Invalidated by the write, not by a clock.** {@link invalidate} is
  *      called from the ONE place every MCP write passes through (the session's

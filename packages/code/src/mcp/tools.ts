@@ -96,6 +96,7 @@ import {
   projectDecisions,
   projectSkills,
   type ReferenceDirection,
+  type ResolvedTrees,
   type Scope,
   SEARCH_KINDS,
   type SecretClass,
@@ -121,8 +122,9 @@ import {
 } from '@mnema/core/write';
 import { scopedEvents, unionEvents } from '../intelligence-source.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { oneLine } from '../served-patterns.js';
 import { bornHereButUnreadable, locateEntityInSession, notFoundInVisibleTrees } from './locate.js';
-import { routeWrite } from './route.js';
+import { namedProjects, routeWrite } from './route.js';
 import { openWrite, type Session } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -863,10 +865,14 @@ export function runBootstrap(session: Session): Bootstrap {
 }
 
 /**
- * Every tree this session can see, each paired with the scope it stands for, in
- * a fixed order. Outside a project that is the global tree alone; inside one it
- * is public, private and global — the team's record, this machine's, and the
- * personal cross-project one.
+ * The trees of the session's OWN project, each paired with the scope it stands for
+ * and with the project itself, in a fixed order. Outside a project that is the global
+ * tree alone; inside one it is public, private and global — the team's record, this
+ * machine's, and the personal cross-project one.
+ *
+ * The sources of the reads whose question IS scoped to a project — `search` ("what is
+ * in this record"), `accountability` ("who authorized what here"). For a read keyed by
+ * an id, whose question is not, see {@link workspaceCaches}.
  *
  * Asking the registry means each is warm after the first read of that tree, and
  * rebuilt when this session's own writes left it behind. The order here does not
@@ -875,11 +881,80 @@ export function runBootstrap(session: Session): Bootstrap {
  * sees.
  */
 function scopedCaches(session: Session): ScopedCache[] {
+  return scopedCachesOf(session, session.trees, session.project);
+}
+
+/** The order the trees of one project are read in — a role at a time, fixed. */
+const SCOPE_ORDER = ['public', 'private', 'global'] as const;
+
+/**
+ * Every tree of every project this workspace holds — the sources of a read keyed by
+ * an ID.
+ *
+ * The boundary of a project is not a property of such a question. An id is minted
+ * once and lives in one tree, so "what does this record say" has one answer wherever
+ * it was written; the entities that point AT something are regularly the ones in the
+ * OTHER projects (that is what normalizing a fix across three codebases produces);
+ * and a history does not end where a repository does. Asking one project and
+ * answering about the world is the shape of claim this product exists not to make —
+ * and it is worse than a short answer, because the reply looks complete.
+ *
+ * It is not a flag and takes no argument, deliberately. The surface already reads
+ * every tree for `skills` (a capability is not scoped to a project) and one tree for
+ * `work` (work is): what decides is the NATURE of the question, which is fixed per
+ * tool, and an option to choose would put a decision on the caller that the caller
+ * has no better information to make.
+ *
+ * The session's OWN trees come first, and BY {@link scopedCaches} — so a workspace
+ * with one project produces that list and nothing else, which is the non-regression
+ * held by construction rather than by two loops agreeing. It also means a read cannot
+ * lose what the session could already see, whatever the announced list turns out to
+ * hold.
+ *
+ * Deduplicated by CHAIN ROOT, and the machine-global tree is why it has to be. Every
+ * project resolves the same global tree, so iterating projects hands that one tree
+ * over N times — and a reader given the same tree three times reports each of its
+ * facts three times. Two of the three readers here would have absorbed it silently
+ * (a merged history would not; see the test), which is exactly the reason to dedupe
+ * at the source rather than rely on each reader's own keying.
+ */
+function workspaceCaches(session: Session): ScopedCache[] {
+  const sources = scopedCaches(session);
+  const seen = new Set(sources.map((source) => source.chainRoot));
+  for (const project of session.workspaceProjects) {
+    for (const source of scopedCachesOf(session, project.trees, project.dir)) {
+      if (seen.has(source.chainRoot)) continue;
+      seen.add(source.chainRoot);
+      sources.push(source);
+    }
+  }
+  return sources;
+}
+
+/**
+ * One project's trees as read sources, each labelled with the project — except the
+ * global tree, which belongs to none.
+ *
+ * The label is dropped for `global` at this one place, so no caller can attach it: a
+ * personal cross-project note reported as coming from whichever project a read
+ * reached it through would be a false claim about where to find it, and the tree is
+ * shared, so every project would make that claim differently.
+ */
+function scopedCachesOf(
+  session: Session,
+  trees: ResolvedTrees,
+  project: string | undefined,
+): ScopedCache[] {
   const sources: ScopedCache[] = [];
-  for (const scope of ['public', 'private', 'global'] as const) {
-    const root = chainRootForScope(session.trees, scope);
-    if (root !== undefined)
-      sources.push({ scope, chainRoot: root, cache: session.caches.get(root) });
+  for (const scope of SCOPE_ORDER) {
+    const root = chainRootForScope(trees, scope);
+    if (root === undefined) continue;
+    sources.push({
+      scope,
+      chainRoot: root,
+      ...(scope !== 'global' && project !== undefined ? { project } : {}),
+      cache: session.caches.get(root),
+    });
   }
   return sources;
 }
@@ -1285,9 +1360,15 @@ export type ReadRecordResult =
  * `read_record` — the whole of one record, by the id the index gave.
  *
  * The second half of the search: the index says what exists and this says what
- * it says. It looks in every tree the session can see (an id lives in exactly
- * one) and returns the projection the chain proves, marked with that tree.
- * Read-only: no writer, no event.
+ * it says. It looks in every tree of every project this workspace holds (an id
+ * lives in exactly one) and returns the projection the chain proves, marked with
+ * that tree AND with the project that owns it. Read-only: no writer, no event.
+ *
+ * The union is not a widening of the question, it is the question. An id is minted
+ * once; which project it landed in is a fact about where the work happened, not a
+ * filter the caller meant to apply — so looking in one project and reporting "no
+ * record" is a false answer with a true-sounding shape, and it is the answer an agent
+ * got for any id from a sibling project of the same workspace.
  *
  * A SKILL is refused here, and pointed at the `skills` tool instead. Two reasons,
  * both of them the skills tool's own rules: serving a pattern's body is a
@@ -1299,13 +1380,9 @@ export type ReadRecordResult =
  * patterns has to be able to read the one they are about to reject.
  */
 export function runReadRecordTool(session: Session, input: { id: string }): ReadRecordResult {
-  const record = readRecord(scopedCaches(session), input.id);
+  const record = readRecord(workspaceCaches(session), input.id);
   if (record === null) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_RECORD',
-      message: `no record with id "${input.id}" in any tree this session can see`,
-    };
+    return { ok: false, code: 'UNKNOWN_RECORD', message: notInAnyProject(session, input.id) };
   }
   if (record.kind === 'skill') {
     return {
@@ -1317,6 +1394,42 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
     };
   }
   return { ok: true, value: record };
+}
+
+/**
+ * What `read_record` says about an id no tree of the workspace holds: WHERE IT
+ * LOOKED, and nothing more.
+ *
+ * The sentence had to grow because the search did. It used to say "in any tree this
+ * session can see", which was true of three trees and is now true of every tree of
+ * every project — a claim that got wider without a word of it changing, which is the
+ * kind of sentence a reader cannot check. So it names the projects, the same way the
+ * entity-keyed refusals name the one project they search
+ * ({@link notFoundInVisibleTrees}) and the same way a routed write names the projects
+ * it could have meant ({@link namedProjects}, shared with those).
+ *
+ * It still does not say the id does not exist, and now it has more reason not to: the
+ * read covered every project the client announced, and that is still not the world — a
+ * project nobody opened, and a partial clone of one that was, both hold records this
+ * cannot see. What is reported is the search.
+ *
+ * ⚠️ The id goes through {@link oneLine}, because unlike a project path it comes from
+ * the CALLER. A refusal is read as one line, so an id holding a newline lets the
+ * argument write a second, well-formed refusal about something nobody asked — the
+ * defect measured on a directory name, one step closer to whoever is calling.
+ */
+function notInAnyProject(session: Session, id: string): string {
+  if (session.workspaceProjects.length === 0) {
+    return (
+      `no record with id "${oneLine(id)}" in the machine-global tree, the only tree ` +
+      'this session sees — it resolved to no project'
+    );
+  }
+  return (
+    `no record with id "${oneLine(id)}" in any tree of this workspace's projects ` +
+    `(${namedProjects(session.workspaceProjects)}) or in the machine-global tree — ` +
+    'the only trees this session sees'
+  );
 }
 
 /** An intelligence read's result: the derivation, or a refusal when no project. */
@@ -1344,8 +1457,15 @@ export type AntipatternsToolResult = IntelligenceResult<Antipatterns>;
  * An intelligence read is the auditor's view of a PROJECT's record; a session on
  * the global tree alone has no project to audit, so it refuses `NO_PROJECT`
  * (returned as data so the server shapes it into a tool error), the same refusal
- * the CLI intelligence reads give. In a project the read folds the UNION of the
- * session's trees.
+ * the CLI intelligence reads give.
+ *
+ * In a project, WHICH trees the read then folds depends on the read: the two keyed by
+ * an id fold every project of the workspace ({@link workspaceCaches}), and
+ * `accountability` folds the session's own ({@link scopedCaches}) — "who authorized
+ * what" is a question about a record, and summing three projects would answer a
+ * different one under the same name. The guard is shared because the CONDITION is
+ * shared: without a project there is no record to audit, however wide the fold would
+ * have been.
  */
 function requireProject(
   session: Session,
@@ -1361,28 +1481,36 @@ function requireProject(
 }
 
 /**
- * `audit_timeline` — the whole history of one entity across the session's trees.
+ * `audit_timeline` — the whole history of one entity across every project of the
+ * workspace.
  *
  * The auditor's counterpart of `next_actions`: it takes an id and merges every
  * tree's reference index into the entity's story — every event where it is the
  * subject, plus the events that refer to it (an observation `about` it, a link
  * whose `target` is it, a supersede whose successor it is), which may live in a
- * different tree. Read-only: it asks the session's warm caches and composes the
- * copilot's pure `timeline`, opening no writer. An id no event touches yields an
- * empty history (a valid answer, not a refusal); with no project it refuses
- * `NO_PROJECT`.
+ * different tree AND in a different project. Read-only: it asks the session's warm
+ * caches and composes the copilot's pure `timeline`, opening no writer. An id no
+ * event touches yields an empty history (a valid answer, not a refusal); with no
+ * project it refuses `NO_PROJECT`.
+ *
+ * The union is the story, not more of it. A fix written in one codebase and
+ * normalized into two others has three quarters of its history outside the record it
+ * started in; a history that stopped at the project boundary reported the first
+ * quarter and read as the whole. Each entry says which project it came from, which is
+ * what makes the merged list a history rather than a pile.
  */
 export function runTimelineTool(session: Session, input: { id: string }): TimelineToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: timeline(scopedCaches(session), input.id) };
+  return { ok: true, value: timeline(workspaceCaches(session), input.id) };
 }
 
 /** The `audit_refs` result — the graph around an entity, or a refusal. */
 export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
 
 /**
- * `audit_refs` — what an entity is connected to, across the session's trees.
+ * `audit_refs` — what an entity is connected to, across every project of the
+ * workspace.
  *
  * The graph reading of the index `audit_timeline` reads: not the events that
  * touch an entity but the ENTITIES it connects to. One hop either way is its
@@ -1390,11 +1518,20 @@ export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
  * and more depth is a lineage (a decision's supersede chain, everything derived
  * from a memory).
  *
+ * `direction: 'in'` over the union is the question this whole surface was extended
+ * for: *"have I normalized this in all three?"* The entities that point AT something
+ * are the ones in the OTHER projects — that is what normalizing produces — so asking
+ * one project answers with the edges of the project least likely to have any, and the
+ * answer used to declare itself complete while doing it. Each edge now says which
+ * project's record asserts it, which is what turns a count into an account.
+ *
  * It walks across trees, because an edge lives in the tree its event was written
  * to while its far end may live in another. A far end no visible tree ever
  * authored comes back marked unresolved rather than dropped, and an answer the
- * depth cut says so. Read-only: the session's warm caches and the copilot's pure
- * `references`; with no project it refuses `NO_PROJECT`.
+ * depth cut says so — which is a promise the union makes harder to keep and not
+ * easier: a graph that fitted inside the cap over one project can be cut by it over
+ * three, and the cut has to keep declaring itself. Read-only: the session's warm
+ * caches and the copilot's pure `references`; with no project it refuses `NO_PROJECT`.
  */
 export function runReferencesTool(
   session: Session,
@@ -1402,7 +1539,7 @@ export function runReferencesTool(
 ): ReferencesToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: references(scopedCaches(session), input) };
+  return { ok: true, value: references(workspaceCaches(session), input) };
 }
 
 /**
