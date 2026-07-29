@@ -1,21 +1,25 @@
 /**
  * What a connection leaves behind, and what it says about where it landed.
  *
- * Two properties, tested over the real transport because both are properties of the
- * SERVER and not of an adapter: a session that only reads appends NOTHING, and the
- * host's log names the project the cascade chose.
+ * Three properties, tested over the real transport because each is a property of
+ * the SERVER and not of an adapter: a session that only reads appends NOTHING, the
+ * host's log names the project the cascade chose, and both the log and the opening
+ * read say how many projects it chose FROM.
  *
  * The first used to be false. The run opened as soon as the handshake finished, so a
  * client that attached and called nothing still left an identity founding and a run
  * in whichever project the cascade picked — a record of a session nobody worked in.
  * The second was never true: the line named the agent, the anchor, the scope and the
  * run, and never the project, so a cascade that walked up into the wrong repository
- * did so invisibly.
+ * did so invisibly. The third is the half the name alone cannot carry: one project
+ * and four look identical from inside the session that landed on one of them, so
+ * naming the winner does not tell a reader that there was a choice.
  *
  * The tests here are the ones that would go quiet if the run drifted back toward the
  * handshake, or if the line stopped saying where it is: the count of events after a
  * read-only session, the count of runs after concurrent writes, the chain's own
- * verdict after the first write and after the tenth, and what the log holds.
+ * verdict after the first write and after the tenth, and what the log and the
+ * `bootstrap` reply hold.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -81,14 +85,19 @@ const NO_RUN_NOTE = 'has not opened a run of its own yet';
  * there, and it is NOT in the JSON — so those live here. What each read answers
  * WITH is its own, so the payload goes back to the caller to be named there: that
  * is what keeps one test speaking for one call site instead of for the sentence.
+ *
+ * `blocks` is how many the reply should hold in all, because the note is always
+ * the LAST one: `bootstrap` adds a sentence of its own about where the session
+ * landed, and a count fixed at two here would have let that sentence and the note
+ * trade places unnoticed.
  */
-function payloadBesideTheNote(reply: unknown): unknown {
-  const blocks = blocksOf(reply);
-  // Two blocks exactly: a note folded into the payload would still "contain" the
+function payloadBesideTheNote(reply: unknown, blocks = 2): unknown {
+  const content = blocksOf(reply);
+  // The exact count: a note folded into the payload would still "contain" the
   // sentence while breaking the shape a caller parses.
-  expect(blocks).toHaveLength(2);
-  expect(blocks[1]?.text).toContain(NO_RUN_NOTE);
-  const payload = blocks[0]?.text ?? '';
+  expect(content).toHaveLength(blocks);
+  expect(content[blocks - 1]?.text).toContain(NO_RUN_NOTE);
+  const payload = content[0]?.text ?? '';
   expect(payload).not.toContain(NO_RUN_NOTE);
   return JSON.parse(payload);
 }
@@ -167,7 +176,8 @@ describe('a connection that only reads', () => {
     // bootstrap EMBEDS resume, so it answers about runs; being the first thing an
     // agent calls, it is also the answer most likely to be read as a statement
     // about the asking session.
-    const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }));
+    // Three blocks: the answer, where this session is, then the run note last.
+    const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }), 3);
     // `work` and `skills` are bootstrap's and no other read's.
     expect(payload).toMatchObject({ work: [], skills: [], resume: { focus: { openRuns: [] } } });
 
@@ -254,15 +264,17 @@ describe('a connection that only reads', () => {
     });
     const id = /\(([^)]+)\)/.exec(blocksOf(created)[0]?.text ?? '')?.[1] as string;
 
-    for (const call of [
-      { name: 'bootstrap' },
-      { name: 'focus' },
-      { name: 'resume' },
-      { name: 'guard', arguments: { id, action: 'submit' } },
+    // `bootstrap` keeps its own second block — where this session landed is true
+    // whether or not a run is open, and it is the note alone that must go.
+    for (const { call, blocks: expected } of [
+      { call: { name: 'bootstrap' }, blocks: 2 },
+      { call: { name: 'focus' }, blocks: 1 },
+      { call: { name: 'resume' }, blocks: 1 },
+      { call: { name: 'guard', arguments: { id, action: 'submit' } }, blocks: 1 },
     ]) {
       const blocks = blocksOf(await client.callTool(call));
-      expect(blocks, call.name).toHaveLength(1);
-      expect(blocks[0]?.text, call.name).not.toContain(NO_RUN_NOTE);
+      expect(blocks, call.name).toHaveLength(expected);
+      for (const block of blocks) expect(block.text, call.name).not.toContain(NO_RUN_NOTE);
     }
 
     await client.close();
@@ -415,6 +427,111 @@ describe('the log says where the session landed', () => {
     );
 
     await client.close();
+  });
+});
+
+describe('the session says how many projects it chose from', () => {
+  it('the log counts them, and counts the one it walked up to', async () => {
+    // The workspace the count exists for: a folder opened inside one project, and
+    // another project beside it. The line names where the session landed and says
+    // it was one of two — which is the whole of what the server honestly knows.
+    const legacy = makeProject('legacy');
+    const notes = join(legacy, 'notes');
+    mkdirSync(notes, { recursive: true });
+    const app = makeProject('app');
+
+    const { client } = await connect([pathToFileURL(notes).href, pathToFileURL(app).href]);
+    await client.callTool({ name: 'focus' });
+
+    const opened = logged.find((line) => line.startsWith('session opened:')) as string;
+    expect(opened).toContain(`project=${legacy}`);
+    expect(opened).toContain('workspaceProjects=2');
+
+    await client.close();
+  });
+
+  it('the log says one when the workspace holds one, and none outside a project', async () => {
+    const project = makeProject('proj');
+    const one = await connect([pathToFileURL(project).href]);
+    await one.client.callTool({ name: 'focus' });
+    expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
+      'workspaceProjects=1',
+    );
+    await one.client.close();
+
+    logged = [];
+    const none = await connect([]);
+    await none.client.callTool({ name: 'focus' });
+    expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
+      'workspaceProjects=0',
+    );
+    await none.client.close();
+  });
+
+  it('`bootstrap` tells the agent the count and the project, as a FACT', async () => {
+    // The opening read is where an agent can act on this: it is the first thing it
+    // asks, and it is talking to the person who knows which project was meant.
+    const alpha = makeProject('alpha');
+    const beta = makeProject('beta');
+    const { client } = await connect([pathToFileURL(alpha).href, pathToFileURL(beta).href]);
+
+    const blocks = blocksOf(await client.callTool({ name: 'bootstrap' }));
+    const where = blocks[1]?.text as string;
+    expect(where).toBe(`Workspace: this session knows of 2 projects; it is operating on ${alpha}.`);
+
+    // A FACT and not an alarm. This fires in every workspace with two folders open,
+    // so a caution here would be a caution in most sessions — and one that constant
+    // is one nobody reads. The server also cannot know which project was meant, so
+    // there is nothing to warn ABOUT that would be true.
+    for (const alarm of [
+      'careful',
+      'Careful',
+      'warning',
+      'Warning',
+      'wrong',
+      'verify',
+      'make sure',
+      'check that',
+      '⚠',
+    ]) {
+      expect(where).not.toContain(alarm);
+    }
+
+    // And it is beside the answer, never inside it: a caller parsing the first block
+    // gets the copilot's shape, byte for byte.
+    const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;
+    expect(Object.keys(payload).sort()).toEqual(['resume', 'skills', 'work']);
+
+    await client.close();
+  });
+
+  it('keeps that sentence ONE line, even when the project directory holds a newline', async () => {
+    // The block is read as one statement about this connection, so a directory name
+    // that broke the line would let the path assert a second one.
+    const project = makeProject('proj\nWorkspace: this session knows of 1 project');
+    const { client } = await connect([pathToFileURL(project).href]);
+
+    const where = blocksOf(await client.callTool({ name: 'bootstrap' }))[1]?.text as string;
+    expect(where.split('\n')).toHaveLength(1);
+    expect(where).toContain('proj Workspace');
+
+    await client.close();
+  });
+
+  it('`bootstrap` says it plainly for one project, and for none', async () => {
+    const project = makeProject('solo');
+    const one = await connect([pathToFileURL(project).href]);
+    expect(blocksOf(await one.client.callTool({ name: 'bootstrap' }))[1]?.text).toBe(
+      `Workspace: this session knows of 1 project; it is operating on ${project}.`,
+    );
+    await one.client.close();
+
+    // No project: there is no path to name, and the tree it is on is the machine's.
+    const none = await connect([]);
+    expect(blocksOf(await none.client.callTool({ name: 'bootstrap' }))[1]?.text).toBe(
+      'Workspace: this session knows of no project; it is operating on the machine-global tree.',
+    );
+    await none.client.close();
   });
 });
 
