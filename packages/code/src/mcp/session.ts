@@ -4,11 +4,22 @@
  * The protocol has no session of its own — it carries no session id and no
  * per-connection identity — so mnema mints one. When a client connects, the
  * server opens a session: it resolves which tree to work on (from the client's
- * roots, {@link resolveContext}), reads which agent connected (the client's name,
- * the `which`), and reads the anchor its work is authorized as. It does NOT open a
+ * roots, {@link resolveContext}), learns which OTHER projects the workspace holds
+ * (so a write can name one), reads which agent connected (the client's name, the
+ * `which`), and reads the anchor its work is authorized as. It does NOT open a
  * run. The first WRITE opens that, at {@link openWrite}; a connection that only
- * reads leaves nothing behind. When the connection ends, the run is closed if one
- * was ever opened.
+ * reads leaves nothing behind. When the connection ends, every run it opened is
+ * closed.
+ *
+ * Runs are PLURAL because a workspace is. One conversation is regularly work in
+ * two or three projects — a product being migrated into its successor, a fix made
+ * in one codebase and normalized into two others — and each of those projects has
+ * a record of its own. A write says which one it belongs to, and the run it pins
+ * to is that project's: a fact in one project citing a run in another leaves the
+ * first project's clone unable to resolve its own reference, and leaves the
+ * chain's verdict `ok` while it does, which is the one kind of defect the proof
+ * does not catch. So the run is per DESTINATION, opened at the first write that
+ * lands there ({@link openWrite}) and closed with the connection.
  *
  * Connecting used to write, and that is the defect this shape exists to remove.
  * The run opened as soon as the handshake finished, so a client that attached and
@@ -21,15 +32,16 @@
  * answers with the run the work actually happened in.
  *
  * This is the session ADAPTER, not domain logic: it composes the core's own
- * operations ({@link startRun}, {@link endRun}) over the resolved tree. The
- * decisions it makes are the two the surface owns — WHICH tree (the cascade)
- * and the DEFAULT scope a new write lands in (the core's origin rule: an agent
- * connection always carries a `which`, so a project write defaults PRIVATE;
- * outside a project it is the global tree). That scope is only the default: a
- * write tool may override it per call (the per-action scope model), so the
- * session fixes where a write goes WHEN THE CALLER DOES NOT SAY, not for every
- * write. It holds no gate and no workflow; those are the core's, reached through
- * the operations.
+ * operations ({@link startRun}, {@link endRun}) over the resolved trees. The
+ * decisions it makes are the two the surface owns — WHICH trees (the cascade, plus
+ * the other projects a write may name) and the DEFAULT scope a new write lands in
+ * (the core's origin rule: an agent connection always carries a `which`, so a
+ * project write defaults PRIVATE; outside a project it is the global tree). Both
+ * are only defaults: a write tool may override the scope per call (the per-action
+ * scope model) and may name the project per call (the same model, one dimension
+ * out), so the session fixes where a write goes WHEN THE CALLER DOES NOT SAY, not
+ * for every write. It holds no gate and no workflow; those are the core's, reached
+ * through the operations.
  *
  * `who` (the authorizing anchor) is the machine's key, decided from the record —
  * never the client. `which` is the client's name. who != which is trivially
@@ -61,7 +73,7 @@ import {
 } from '@mnema/core/write';
 import { oneLine } from '../served-patterns.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
-import { resolveContext } from './context.js';
+import { resolveContext, type WorkspaceProject } from './context.js';
 
 /** What the server hands the session opener from the handshake. */
 export interface OpenSessionInput {
@@ -82,37 +94,70 @@ export interface OpenSessionInput {
 }
 
 /**
- * Where a session keeps its run.
+ * A run this connection opened, and the tree it lives in.
  *
- * A CELL and not a value, because the run is the one thing on a session that comes
- * into being AFTER the session does: it opens at the first write and is shared by
- * every write after it. `undefined` is therefore a real state and not a gap — it
- * says this connection has not written yet — and it is the state a read-only
- * session stays in from the handshake to the close.
+ * It carries its own trees and scope rather than only its id, because the run has
+ * to be CLOSED and closing it means appending to the tree it was opened in. A
+ * connection that wrote to three projects holds three runs, and a close that had
+ * to re-derive where each of them lives — from a list of projects, from the
+ * session's own trees, from anything but the run itself — is a close that ends the
+ * runs it can still find. A run nothing can reach is a run nothing can end, and
+ * the record then says a session is still in flight forever.
  */
-export interface SessionRun {
+export interface OpenRun {
   /**
-   * The open run's id, or `undefined` while the session has only read.
+   * The run's id.
    *
    * For REPORTING — a log line, an honest answer about what is in flight. Never
    * hand it to a write: a write reaches its run through {@link openWrite}, which
-   * opens one when there is none, and its `string | undefined` is what stops it
-   * being passed to an operation that needs a run (see {@link openWrite}).
+   * opens one when the destination has none (see {@link openWrite}).
    */
-  id: string | undefined;
+  readonly id: string;
+  /** The trees the run lives in — the destination's, not necessarily the session's own. */
+  readonly trees: ResolvedTrees;
+  /** The scope the run was opened in, within those trees. */
+  readonly scope: Scope;
 }
 
 /**
- * A live session: the resolved tree, the agent that connected, the human the
- * work is authorized as, the run once a write has opened one, and the
- * connection's warm caches. The tools read this to reach the right writer/cache
- * and to attribute a capture. Everything on it but {@link Session.caches} and
- * {@link Session.run} is data; the caches are the one live resource a connection
- * holds and the run is the one field that fills in later, and both are held here
- * because their lifetime IS the connection's.
+ * A project a write can be routed to: where it lands, and the scope it lands in.
+ *
+ * The destination of a write is an ARGUMENT, never session state, and this is the
+ * shape that argument resolves to. Nothing here changes over a connection's life:
+ * the workspace is announced once, at the handshake, so a call that names a project
+ * is picking out of a fixed list rather than moving something. That is what makes
+ * two concurrent writes to two projects correct without a lock — there is no
+ * "current project" for one of them to move while the other reads it.
+ */
+export interface WriteTarget extends WorkspaceProject {
+  /**
+   * The DEFAULT scope for a write routed here, and the scope its run opens in.
+   *
+   * The same value for every project of one workspace, and derived once: the origin
+   * rule reads the connecting agent, and one connection is one agent. It is stored
+   * per target anyway, so that the rule is applied where the session is built
+   * instead of re-derived at each write — a second application of it is a second
+   * place for it to be applied differently.
+   */
+  readonly scope: Scope;
+}
+
+/**
+ * A live session: the resolved tree, the other projects a write may name, the agent
+ * that connected, the human the work is authorized as, the runs a write has opened,
+ * and the connection's warm caches. The tools read this to reach the right
+ * writer/cache and to attribute a capture. Everything on it but
+ * {@link Session.caches}, {@link Session.runs} and {@link Session.consulted} is
+ * data; the caches are the one live resource a connection holds and the other two
+ * are what fills in as it writes, and all three are held here because their
+ * lifetime IS the connection's.
  */
 export interface Session {
-  /** The trees this session operates on (project scopes absent when global). */
+  /**
+   * The trees this session's OWN writes go to — the cascade's answer (project
+   * scopes absent when it landed on none), and where a write that names no project
+   * still lands.
+   */
   readonly trees: ResolvedTrees;
   /** Whether the session landed in a project (vs the global tree). */
   readonly inProject: boolean;
@@ -123,16 +168,25 @@ export interface Session {
    */
   readonly project?: string;
   /**
-   * How many projects the workspace holds, this session's own among them — the
-   * other half of the answer above (see {@link ResolvedContext.projectCount}).
+   * Every project this session can write to, its own among them — the other half of
+   * the answer above (see {@link ResolvedContext.workspaceProjects}), each paired
+   * with the scope a write routed there lands in.
    *
    * Carried on the session because it is settled when the session opens and never
    * changes after: the roots are announced once, at the handshake. A reader that
    * wanted it later would have to re-probe the filesystem to learn something the
-   * connection already knew.
+   * connection already knew — and a caller naming a project must be matched against
+   * what the client announced, not against whatever is on disk by the time it asks.
+   *
+   * Empty for a session that landed on no project: there is nothing to name, and a
+   * write that names something is refused rather than routed at a guess.
    */
-  readonly projectCount: number;
-  /** The DEFAULT scope a new write routes to (private in-project, else global); a write tool may override it per call. */
+  readonly workspaceProjects: readonly WriteTarget[];
+  /**
+   * The DEFAULT scope a new write routes to in the session's OWN trees (private
+   * in-project, else global); a write tool may override it per call, and a write
+   * routed to another project takes that project's default instead.
+   */
   readonly scope: Scope;
   /**
    * The connecting agent as the client ANNOUNCED it (`clientInfo.name`) — the
@@ -152,11 +206,26 @@ export interface Session {
   /** The authorizing anchor (the machine's key) — the `who` and the bootstrap actor. */
   readonly who: string;
   /**
-   * This session's run — the root of authority its writes pin to, once one of them
-   * has opened it. See {@link SessionRun}: reading it asks "has this connection
-   * written yet?", and until it has, the answer is `undefined`.
+   * This session's runs — the roots of authority its writes pin to — one per tree a
+   * write has landed in, keyed by that tree's CHAIN ROOT.
+   *
+   * A MAP and not a value, because a run is the one thing on a session that comes
+   * into being after the session does, and there is now one per destination: it
+   * opens at the first write that lands in a tree and is shared by every write to
+   * that tree after it. An ABSENT key is therefore a real state and not a gap — it
+   * says this connection has not written there yet — and an empty map is the state a
+   * read-only session stays in from the handshake to the close.
+   *
+   * Keyed by the chain root rather than by the project, because the chain root is
+   * what identifies the tree a run lives in, and two spellings of one project (the
+   * cascade's own answer, and the same project named by a caller) resolve to one
+   * root. That is what makes naming the project the session is already in open no
+   * second run: the key is the same, so the run is the same.
+   *
+   * Reading it asks "has this connection written there yet?" — see {@link OpenRun}.
+   * A write does not read it: it reaches its run through {@link openWrite}.
    */
-  readonly run: SessionRun;
+  readonly runs: Map<string, OpenRun>;
   /** The discovery environment, carried for reads (e.g. rebuilding the cache). */
   readonly env: DiscoveryEnv;
   /**
@@ -173,17 +242,33 @@ export interface Session {
    */
   readonly caches: CacheRegistry;
   /**
-   * The skills already recorded as consulted in this run — the ids, not the
-   * facts. A consultation is recorded ONCE per (run, skill): reading a pattern
-   * three times in one session is one session that used it, and three identical
-   * facts would inflate the record without adding anything to it.
+   * The skills already recorded as consulted, per RUN — the ids, not the facts,
+   * grouped by the chain root of the run they were recorded against. A consultation
+   * is recorded ONCE per (run, skill): reading a pattern three times in one run is
+   * one run that used it, and three identical facts would inflate the record without
+   * adding anything to it.
    *
-   * It lives in memory, and that is sufficient rather than a shortcut: the scope
-   * of the deduplication is exactly the run, and the run dies with this session.
-   * Asking the chain "did I already record this?" would replay it to learn
-   * something process memory already knows.
+   * Grouped by run and not by session, because a connection no longer has one run.
+   * The invariant this enforces is per-run and always was — the sentence above says
+   * so — and one set for the whole session only agreed with it while a session had a
+   * single run to dedupe against. With one run per destination, a session-wide set
+   * says "already recorded" about a run that recorded nothing, and the caller is
+   * told `ok`: a fact this exists to capture, dropped where nothing would ever show
+   * it was missing. Enforcing the invariant with a structure shaped like it is what
+   * keeps that from depending on which destinations a consultation can reach today.
+   *
+   * Keyed by the run's chain root, the same key {@link Session.runs} uses, because
+   * that key exists BEFORE the run does: this decides whether to write at all, and a
+   * call that turns out to have nothing to record must not have opened a run to find
+   * that out. Within one connection a tree holds at most one of its runs, so the root
+   * names the run exactly.
+   *
+   * It lives in memory, and that is sufficient rather than a shortcut: the scope of
+   * the deduplication is exactly the run, and every run here dies with this session.
+   * Asking the chain "did I already record this?" would replay it to learn something
+   * process memory already knows.
    */
-  readonly consulted: Set<string>;
+  readonly consulted: Map<string, Set<string>>;
 }
 
 /**
@@ -195,19 +280,23 @@ export interface Session {
  * which is the one condition under which no honest session exists.
  */
 export function openSession(input: OpenSessionInput): Session {
-  const { trees, inProject, project, projectCount } = resolveContext({
+  const { trees, inProject, project, workspaceProjects } = resolveContext({
     env: input.env,
     ...(input.configProject !== undefined ? { configProject: input.configProject } : {}),
     ...(input.roots !== undefined ? { roots: input.roots } : {}),
   });
 
-  // The session's DEFAULT scope for new writes. In a project the connection is
-  // an agent (a `which` is always present), so the origin rule defaults its
-  // writes PRIVATE — the machine's auto-memory, not the team's git. Outside a
-  // project there is no public/private to distinguish; it is the global tree. A
-  // write tool may override this per call; this is only where a write goes when
-  // the caller does not say.
-  const scope: Scope = inProject ? resolveScope({ which: input.clientName }) : 'global';
+  // The DEFAULT scope for a new write, inside a project. The connection is an agent
+  // (a `which` is always present), so the origin rule defaults its writes PRIVATE —
+  // the machine's auto-memory, not the team's git. Applied ONCE and read twice, by
+  // the session's own default below and by every project a write can be routed to:
+  // the rule reads the agent, and one connection is one agent, so a second
+  // application of it could only differ by being wrong.
+  const projectScope = resolveScope({ which: input.clientName });
+  // Outside a project there is no public/private to distinguish; it is the global
+  // tree. A write tool may override this per call; this is only where a write goes
+  // when the caller does not say.
+  const scope: Scope = inProject ? projectScope : 'global';
 
   // The caches are created BEFORE the first write so that write invalidates
   // through the same door as every later one — there is no window in which a
@@ -227,18 +316,18 @@ export function openSession(input: OpenSessionInput): Session {
     trees,
     inProject,
     ...(project !== undefined ? { project } : {}),
-    projectCount,
+    workspaceProjects: workspaceProjects.map((known) => ({ ...known, scope: projectScope })),
     scope,
     which: input.clientName,
     who,
-    // Empty: the first write opens the run (see `openWrite`). A session that only
-    // reads carries this cell to its close still empty, and that is the honest
-    // state rather than a missing one.
-    run: { id: undefined },
+    // Empty: the first write to a tree opens that tree's run (see `openWrite`). A
+    // session that only reads carries this map to its close still empty, and that is
+    // the honest state rather than a missing one.
+    runs: new Map<string, OpenRun>(),
     env: input.env,
     log: input.log ?? (() => {}),
     caches,
-    consulted: new Set<string>(),
+    consulted: new Map<string, Set<string>>(),
   };
 }
 
@@ -246,14 +335,26 @@ export function openSession(input: OpenSessionInput): Session {
 export interface SessionWrite {
   /** The write context over the tree the write is going to. */
   readonly ctx: WriteContext;
-  /** The session's run id — always present, because reaching here opened one. */
+  /**
+   * The run to pin the append to — the one open in the DESTINATION, always present
+   * because reaching here opened it. It is the destination's own, so the fact and
+   * the run it cites are in the same project's record, and a clone of that project
+   * resolves the reference without the others.
+   */
   readonly run: string;
 }
 
 /**
  * The door every MCP write goes through: the context to append through, and the
- * run to pin the append to — opening that run first if this is the session's
- * first write.
+ * run to pin the append to — opening that run first if this is the first write to
+ * where it is going.
+ *
+ * The DESTINATION is the `target` argument: the project a caller named, or the
+ * session's own trees when it named none. It is an argument and never session
+ * state, and that is what makes routing correct by construction rather than by
+ * discipline — with nothing to move, two writes to two projects cannot see each
+ * other half-moved, and a write that arrives during another cannot be redirected by
+ * it. The scope is the argument beside it: which of the destination's trees.
  *
  * The run opens HERE and nowhere else, and the order inside this function is the
  * reason the door exists. A write's context is built BEFORE the run is needed at
@@ -266,84 +367,126 @@ export interface SessionWrite {
  * the two writers sequential, and returning the id from here — rather than letting
  * anything read it off the session — is what keeps every write on this path.
  *
- * The run opens in the SESSION's scope, not the write's. A run is the authority for
- * a connection's work, not for one fact, so a session whose first write overrides
- * the scope still opens its run where the session lives.
+ * The run opens in the DESTINATION's default scope, not the write's. A run is the
+ * authority for a connection's work in a project, not for one fact, so a write that
+ * overrides the scope still opens its run where that project's work lives.
  */
-export function openWrite(session: Session, scope: Scope): SessionWrite {
+export function openWrite(session: Session, scope: Scope, target?: WriteTarget): SessionWrite {
+  // The session's own trees when no project was named — which is the cascade's
+  // answer, unchanged, and the whole of the non-regression: a call that says nothing
+  // lands exactly where it landed before this parameter existed.
+  const trees = target?.trees ?? session.trees;
   // Two statements, in this order, on purpose. Folding them into one object literal
   // would leave a load-bearing ordering to the evaluation order of its properties —
   // which is exactly the kind of thing a tidy-up reorders without knowing it mattered.
-  const run = ensureRun(session);
-  return { run, ctx: writeContext(session.trees, scope, session.caches) };
+  const run = ensureRun(session, trees, target?.scope ?? session.scope);
+  return { run, ctx: writeContext(trees, scope, session.caches) };
 }
 
 /**
- * Opens the session's run if it has none, and returns its id.
+ * Opens the run for a destination if it has none, and returns its id.
  *
  * Synchronous from the check to the assignment, and that is a requirement rather
  * than a convenience: `startRun` needs no `await`, so nothing can interleave
- * between reading the empty cell and filling it, and concurrent writes cannot each
- * open a run of their own. An `await` anywhere in here would give every write in
- * flight the same empty cell to fill, and a connection would end up with one run
- * per write, each holding a fragment of one session's work. There is no lock to
- * add: the guarantee is that this function never yields.
+ * between reading the empty entry and filling it, and concurrent writes to one tree
+ * cannot each open a run of their own. An `await` anywhere in here would give every
+ * write in flight to that tree the same empty entry to fill, and a connection would
+ * end up with one run per write, each holding a fragment of one project's work.
+ * There is no lock to add: the guarantee is that this function never yields.
+ *
+ * Concurrent writes to DIFFERENT trees do each open a run, and that is the point
+ * rather than the same defect at a larger grain: they are different projects'
+ * records, and one run cannot be the authority in a tree it is not written in.
  */
-function ensureRun(session: Session): string {
-  const open = session.run.id;
-  if (open !== undefined) return open;
+function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string {
+  // The key exists before the run does, and identifies the tree the run will live
+  // in. An absent tree has no root to key by; `writeContext` below is what refuses
+  // it, so the honest error still comes from one place — and it throws before the
+  // map is ever asked to hold a key that is not a chain root.
+  const root = chainRootForScope(trees, scope) as string;
+  const open = session.runs.get(root);
+  if (open !== undefined) return open.id;
 
-  const ctx = writeContext(session.trees, session.scope, session.caches);
+  const ctx = writeContext(trees, scope, session.caches);
   const started = startRun(ctx, { agent: session.which });
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
-  session.run.id = started.id;
-  // The moment a reading connection became a writing one, named with the agent AS
-  // RECORDED — the value the operation reports it appended, never the announced one
-  // this session carries. This is the only line that may name the agent at all: the
-  // handshake has nothing screened to print, and printing the announced name would
-  // put a credential in the host's log in a product that replaces one before writing
-  // it, and leave the log and the chain naming two different agents for one session.
-  // Collapsed to one line, because the log is read one event per line and a name
+  session.runs.set(root, { id: started.id, trees, scope });
+  // The moment a reading connection became a writing one — in this tree, which the
+  // line names, because a connection now opens a run per project it writes to and a
+  // line that named only the run would leave a reader counting runs with no way to
+  // tell which project each belongs to. Named with the agent AS RECORDED — the value
+  // the operation reports it appended, never the announced one this session carries.
+  // This is the only line that may name the agent at all: the handshake has nothing
+  // screened to print, and printing the announced name would put a credential in the
+  // host's log in a product that replaces one before writing it, and leave the log
+  // and the chain naming two different agents for one session. Collapsed to one
+  // line, because the log is read one event per line and a name — or a chain root —
   // holding a newline would write a second event nothing happened in.
-  session.log(`session run ${started.id} opened for which=${oneLine(started.agent)}`);
+  session.log(oneLine(`session run ${started.id} opened in ${root} for which=${started.agent}`));
   return started.id;
 }
 
+/** What a close recorded, and what it could not: every run the connection opened. */
+export interface SessionClose {
+  /** The runs whose end was recorded, in the order they were opened. */
+  readonly closed: readonly string[];
+  /**
+   * The runs this close could not end — tolerated, and NAMED so the log can say
+   * which. A run reported neither closed nor left open would be a run nothing
+   * accounts for, which is the state the projection reads as work still in flight.
+   */
+  readonly leftOpen: readonly string[];
+}
+
 /**
- * Closes a session's run and releases what the connection held, best-effort. A
- * clean close records the outcome; a refusal (an already-orphaned run, say) is
- * swallowed — a session ending is not a place to fail, and an unclosed run is
- * tolerated (the projection reads it as still open). Returns whether the close
- * was recorded, for the caller to log.
+ * Closes EVERY run this session opened and releases what the connection held,
+ * best-effort. A clean close records the outcome; a refusal (an already-orphaned
+ * run, say) is swallowed — a session ending is not a place to fail, and an unclosed
+ * run is tolerated (the projection reads it as still open). Returns what it recorded
+ * and what it did not, for the caller to log.
+ *
+ * Every run, and each one on its own attempt: a connection that wrote to three
+ * projects opened three runs, and the two that CAN be ended must be ended even when
+ * the first refuses or throws. A close that stopped at the first failure would leave
+ * runs open in projects whose records are perfectly fine, and nothing afterwards
+ * would ever come back to them — this connection is the only party that knows those
+ * runs are its own.
  *
  * A session that never wrote has no run to close, and closing is where that
  * matters most: it is the last chance to write, and a session ending is exactly
  * when "record the end of something" would put a whole run — a founding, a start
- * and an end — into a project the connection only read from. So an empty run cell
+ * and an end — into a project the connection only read from. So an empty run map
  * ends the session by releasing the caches and nothing else, which is what makes
  * the read-only connection leave no trace at all rather than almost none.
  *
  * The caches close in a `finally`: a session that cannot record its own end is
  * exactly the session whose database handles must not be left behind, so the
- * release does not depend on the write succeeding.
+ * release does not depend on the writes succeeding.
  */
-export function closeSession(session: Session): boolean {
-  const open = session.run.id;
-  if (open === undefined) {
-    session.caches.closeAll();
-    return false;
-  }
+export function closeSession(session: Session): SessionClose {
+  const closed: string[] = [];
+  const leftOpen: string[] = [];
   try {
-    const ctx = writeContext(session.trees, session.scope, session.caches);
-    const ended = endRun(ctx, { run: open });
-    return ended.ok;
-  } catch {
-    return false;
+    // Each run reached through what it carries — its own trees and scope — never
+    // through the session's. The session's trees are one destination of the several
+    // a connection may have written to, and a close that assumed them would append
+    // every `run.ended` into that one tree: the run of another project ended in a
+    // record that never started it, and that project's own run still open.
+    for (const run of session.runs.values()) {
+      try {
+        const ctx = writeContext(run.trees, run.scope, session.caches);
+        const ended = endRun(ctx, { run: run.id });
+        (ended.ok ? closed : leftOpen).push(run.id);
+      } catch {
+        leftOpen.push(run.id);
+      }
+    }
   } finally {
     session.caches.closeAll();
   }
+  return { closed, leftOpen };
 }
 
 /**

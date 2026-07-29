@@ -55,6 +55,7 @@ import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
 import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import { namedProjects } from './route.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
   runAccountabilityTool,
@@ -85,6 +86,32 @@ import {
 /** The name the server announces itself as (its own identity, not the client's). */
 const SERVER_NAME = 'mnema';
 const SERVER_VERSION = '0.0.0';
+
+/**
+ * The `project` argument every WRITE carries: which of the workspace's projects the
+ * fact belongs to.
+ *
+ * One schema, shared by all seven, and that is not only economy. The agent reads
+ * these descriptions and nothing else; seven descriptions of one routing rule are
+ * seven chances for the rule the agent believes to drift from the rule the server
+ * applies, and the ones that drifted would be indistinguishable from the ones that
+ * did not. The rule itself lives in one function for the same reason.
+ *
+ * It names both accepted spellings and says what omitting it does, because the
+ * silent default is the thing an agent has to be able to predict: a call that says
+ * nothing lands where the session landed, which is right when the work is there and
+ * wrong when it is not — and only the caller knows which.
+ */
+const PROJECT_ARG = z
+  .string()
+  .min(1)
+  .optional()
+  .describe(
+    'Which project of this workspace the fact belongs to — its full path, or the ' +
+      'name of its directory. Omitted, it lands in the project this session ' +
+      'resolved to (the one `bootstrap` names). Pass it whenever the work being ' +
+      'recorded happened in a different project of this workspace.',
+  );
 
 /**
  * The agent a connection is recorded as when the client's own name is no name.
@@ -206,9 +233,9 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       log(
         oneLine(
           `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
-            `workspaceProjects=${opened.projectCount} ` +
+            `workspaceProjects=${opened.workspaceProjects.length} ` +
             `scope=${opened.scope} who=${opened.who} ` +
-            `run=${opened.run.id ?? '(none — the first write opens it)'}`,
+            'runs=(none — the first write to a project opens that project’s run)',
         ),
       );
       return opened;
@@ -231,8 +258,8 @@ export function buildMcpServer(options: McpServerOptions = {}): {
 
   const connect = async (): Promise<void> => {
     const transport = new StdioServerTransport();
-    // Best-effort close: when stdin closes (the client disconnects), end the
-    // session's run and release its caches. Only a session that actually opened
+    // Best-effort close: when stdin closes (the client disconnects), end EVERY run
+    // the session opened and release its caches. Only a session that actually opened
     // is closed; a run left open by a crash is tolerated (the projection reads
     // it as still open), so this never throws. A session that FAILED to open
     // holds nothing to release — it never reached the point of reading a tree.
@@ -240,18 +267,22 @@ export function buildMcpServer(options: McpServerOptions = {}): {
     // A session that only READ has no run, and the line says so instead of naming
     // one: closing is the last chance to write, and this is where a connection that
     // touched nothing would otherwise leave a whole run behind.
+    //
+    // The line names the runs rather than counting them, in both halves. A connection
+    // that wrote to three projects ends three runs in three records, and a count
+    // would leave a reader of the host's log unable to pair any of them with what
+    // they can read on disk — which is the whole use of this line.
     transport.onclose = () => {
       if (sessionPromise === undefined) return;
       void sessionPromise
         .then((active) => {
-          const closed = closeSession(active);
-          const run = active.run.id;
+          const { closed, leftOpen } = closeSession(active);
           log(
-            run === undefined
+            closed.length === 0 && leftOpen.length === 0
               ? 'session closed: no run was opened (nothing was written)'
-              : closed
-                ? `session run ${run} closed`
-                : `session run ${run} left open`,
+              : `session closed: ${runList('closed', closed)}${
+                  leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
+                }`,
           );
         })
         .catch(() => {
@@ -279,7 +310,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'agent and pinned to the current session. Optionally pick the scope it ' +
         'lands in — public (team-visible), private (this machine, this project), ' +
         'or global (personal, cross-project); omitted, it follows the session ' +
-        'default (private in a project, global outside one).' +
+        'default (private in a project, global outside one). Optionally pick the ' +
+        'project it lands in, when the workspace holds more than one.' +
         RECORD_CONTRACT,
       inputSchema: {
         content: z.string().min(1).describe('The memory to record.'),
@@ -287,13 +319,15 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the memory lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ content, scope }) => {
+    async ({ content, scope, project }) => {
       const active = await ensureSession();
       const result = runCaptureMemory(active, {
         content,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         // The override named a tree absent here — surface it as a tool error so
@@ -317,8 +351,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'It carries the observed entity id (`about`), a short `topic`, and the ' +
         'observation `text`. The `about` id is NOT checked to exist — a reference ' +
         'to an entity in another tree is honest and resolved on read. Optionally ' +
-        'pick the scope it lands in; omitted, it follows the session default. ' +
-        'Returns the observation’s own minted id.' +
+        'pick the scope and the project it lands in; omitted, both follow the ' +
+        'session default. Returns the observation’s own minted id.' +
         RECORD_CONTRACT,
       inputSchema: {
         about: z.string().min(1).describe('The id of the entity being observed.'),
@@ -328,15 +362,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the observation lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ about, topic, text, scope }) => {
+    async ({ about, topic, text, scope, project }) => {
       const active = await ensureSession();
       const result = runRecordObservation(active, {
         about,
         topic,
         text,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return {
@@ -357,8 +393,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'the mnema chain, attributed to this agent and pinned to the current ' +
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
-        'to exist. Optionally pick the scope; omitted, it follows the session ' +
-        'default. A handoff has no id of its own — its subject is the task.' +
+        'to exist. Optionally pick the scope and the project; omitted, both follow ' +
+        'the session default. A handoff has no id of its own — its subject is the task.' +
         RECORD_CONTRACT,
       inputSchema: {
         task: z.string().min(1).describe('The task the handoff is about.'),
@@ -368,15 +404,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the handoff lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ task, from, to, scope }) => {
+    async ({ task, from, to, scope, project }) => {
       const active = await ensureSession();
       const result = runRecordHandoff(active, {
         task,
         from,
         to,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return {
@@ -400,8 +438,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'an OPEN string (recommended: supersedes, relates-to, derived-from, ' +
         'contradicts; any label is accepted). Neither endpoint is checked to ' +
         'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
-        'pick the scope; omitted, it follows the session default. A link has no id ' +
-        'of its own — it is an edge.' +
+        'pick the scope and the project the EDGE is recorded in; omitted, both ' +
+        'follow the session default. A link has no id of its own — it is an edge.' +
         RECORD_CONTRACT,
       inputSchema: {
         subject: z.string().min(1).describe('The entity that originates the link.'),
@@ -411,15 +449,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the link lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ subject, target, rel, scope }) => {
+    async ({ subject, target, rel, scope, project }) => {
       const active = await ensureSession();
       const result = runLinkKnowledge(active, {
         subject,
         target,
         rel,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return {
@@ -442,8 +482,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'initial state and is moved from there with task_transition. Optionally ' +
         'pick the scope it lands in — public (team-visible), private (this ' +
         'machine, this project), or global (personal, cross-project); omitted, it ' +
-        'follows the session default. Returns the minted id (the key to move it) ' +
-        'and the short alias a human reads.' +
+        'follows the session default. Optionally pick the project it lands in, when ' +
+        'the workspace holds more than one. Returns the minted id (the key to move ' +
+        'it) and the short alias a human reads.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('What the task is.'),
@@ -451,11 +492,16 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the task lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ title, scope }) => {
+    async ({ title, scope, project }) => {
       const active = await ensureSession();
-      const result = runCreateTask(active, { title, ...(scope !== undefined ? { scope } : {}) });
+      const result = runCreateTask(active, {
+        title,
+        ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
+      });
       if (!result.ok) {
         return {
           isError: true,
@@ -517,7 +563,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'rationale (why it was made). Optionally pick the scope it lands in — ' +
         'public (team-visible), private (this machine, this project), or global ' +
         '(personal, cross-project); omitted, it follows the session default. ' +
-        'Returns the citable ADR-<n> label — a decision has no short alias.' +
+        'Optionally pick the project it lands in, when the workspace holds more ' +
+        'than one. Returns the citable ADR-<n> label — a decision has no short alias.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('The decision title.'),
@@ -526,14 +573,16 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the decision lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ title, rationale, scope }) => {
+    async ({ title, rationale, scope, project }) => {
       const active = await ensureSession();
       const result = runRecordDecision(active, {
         title,
         rationale,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return {
@@ -596,8 +645,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         '(a short title) and a body (the reusable pattern itself). Optionally pick ' +
         'the scope it lands in — public (team-visible), private (this machine, ' +
         'this project), or global (personal, cross-project); omitted, it follows ' +
-        'the session default. Returns the minted id (the key to move it) and the ' +
-        'name — a skill has no short alias.' +
+        'the session default. Optionally pick the project it lands in, when the ' +
+        'workspace holds more than one. Returns the minted id (the key to move it) ' +
+        'and the name — a skill has no short alias.' +
         RECORD_CONTRACT,
       inputSchema: {
         name: z.string().min(1).describe('A short title for the pattern.'),
@@ -606,14 +656,16 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .enum(['public', 'private', 'global'])
           .optional()
           .describe('Where the skill lands; overrides the session default.'),
+        project: PROJECT_ARG,
       },
     },
-    async ({ name, body, scope }) => {
+    async ({ name, body, scope, project }) => {
       const active = await ensureSession();
       const result = runCreateSkill(active, {
         name,
         body,
         ...(scope !== undefined ? { scope } : {}),
+        ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return {
@@ -1207,7 +1259,11 @@ function withRunState(
     { type: 'text' as const, text: JSON.stringify(result, null, 2) },
     ...also.map((text) => ({ type: 'text' as const, text })),
   ];
-  if (session.run.id !== undefined) return { content: blocks };
+  // ANY run: the question this sentence answers is whether the connection has
+  // written yet, and a connection that opened a run in the second project of the
+  // workspace has. Asking about the session's own tree instead would tell an agent
+  // that has been recording work for an hour that it has started nothing.
+  if (session.runs.size > 0) return { content: blocks };
   return {
     content: [
       ...blocks,
@@ -1223,37 +1279,64 @@ function withRunState(
 }
 
 /**
- * Where this session is reading and writing, and how many projects it chose from.
+ * Where this session is reading and writing, and which projects it chose from.
  *
- * A statement of FACT, and shaped as one deliberately. The count fires in every
- * workspace with two folders open, so a sentence that told the agent to be careful
- * would be telling it that in most sessions, and a caution that constant is one
- * nobody reads. Nor could it be more specific honestly: the server knows which
- * project the cascade picked and cannot know which one the person meant. So it
- * reports the two things it does know and stops — the agent is talking to someone
- * who can tell it, and the count is what makes asking possible.
+ * A statement of FACT, and shaped as one deliberately. It fires in every workspace
+ * with two folders open, so a sentence that told the agent to be careful would be
+ * telling it that in most sessions, and a caution that constant is one nobody reads.
+ * Nor could it be more specific honestly: the server knows which project the cascade
+ * picked and cannot know which one the person meant. So it reports what it does know
+ * and stops — the agent is talking to someone who can tell it, and this is what makes
+ * asking possible.
+ *
+ * The others are NAMED, not counted, and the reason is that a write can now name one.
+ * A count says a choice was made; the names are what let the agent record work in the
+ * project it is actually doing it in, and the agent has no other channel to learn them
+ * — it sees directories, not this server's cascade. A number would leave it able to
+ * tell that something is wrong and unable to fix it.
  *
  * It travels as its own content block for the same reason the run-state note does:
  * the payload is the copilot's shape, and where a session landed is a fact about
  * this connection rather than about the record it derives from.
  */
 function whereThisSessionIs(session: Session): string {
-  // "knows of", because that is exactly what the number is: the projects this
-  // session could name. It does not claim they are all the workspace holds — a
-  // project the host announced no folder for is one this session never saw — and it
-  // does not claim they came from the roots, since a configured path is not a folder
-  // anybody opened.
-  const known =
-    session.projectCount === 0
-      ? 'no project'
-      : session.projectCount === 1
-        ? '1 project'
-        : `${session.projectCount} projects`;
   // One line, like the log line and the refusals: a directory name may hold a
   // newline, and a sentence the agent reads as one statement must not become two.
   const where =
     session.project === undefined ? 'the machine-global tree' : oneLine(session.project);
-  return `Workspace: this session knows of ${known}; it is operating on ${where}.`;
+  const projects = session.workspaceProjects;
+  // "knows of", because that is exactly what this is: the projects this session
+  // could name. It does not claim they are all the workspace holds — a project the
+  // host announced no folder for is one this session never saw — and it does not
+  // claim they came from the roots, since a configured path is not a folder anybody
+  // opened.
+  //
+  // Below two, the count says everything and the names would repeat what the
+  // sentence already ends with. There is also nothing to route to: naming the one
+  // project a session is already in changes nothing about where a write lands, and
+  // offering the argument there would be offering it for no reason.
+  if (projects.length < 2) {
+    const known = projects.length === 0 ? 'no project' : '1 project';
+    return `Workspace: this session knows of ${known}; it is operating on ${where}.`;
+  }
+  return (
+    `Workspace: this session knows of ${projects.length} projects — ${namedProjects(projects)} ` +
+    `— and it is operating on ${where}. A write can name another of them with ` +
+    '`project`; one that names none lands here.'
+  );
+}
+
+/**
+ * One half of the close line: how many runs met a fate, and which ones.
+ *
+ * `no runs` rather than an empty list, because a line reading "closed: " with
+ * nothing after it is a line a reader has to guess at — and the two halves are
+ * printed independently, so the empty one has to say what it means. Run ids are
+ * minted, never text anybody supplied, so nothing here can break the line.
+ */
+function runList(fate: string, runs: readonly string[]): string {
+  if (runs.length === 0) return `no runs ${fate}`;
+  return `${runs.length} ${runs.length === 1 ? 'run' : 'runs'} ${fate} (${runs.join(', ')})`;
 }
 
 function messageOf(error: unknown): string {
