@@ -84,6 +84,18 @@ function makeProject(name: string): string {
   return dir;
 }
 
+/**
+ * The run this session opened — for the tests that drive ONE destination.
+ *
+ * A connection holds one run per tree it has written to, and every session here
+ * writes to a single one, so "the run" is well defined. A test that drives two
+ * projects asks the map by chain root instead, which is the general question.
+ */
+function theRun(session: Session): string | undefined {
+  const [only] = [...session.runs.values()];
+  return only?.id;
+}
+
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-mcp-e2e-'));
   const home = join(sandbox, 'home');
@@ -108,7 +120,7 @@ describe('MCP session + tools — unit', () => {
     expect(session.who).not.toBe('claude-code');
     expect(session.who.length).toBeGreaterThan(0);
     // The run is the first WRITE's, not the connection's.
-    expect(session.run.id).toBeUndefined();
+    expect(session.runs.size).toBe(0);
     // In a project, an agent connection routes writes PRIVATE (the origin rule).
     expect(session.inProject).toBe(true);
     expect(session.scope).toBe('private');
@@ -121,7 +133,7 @@ describe('MCP session + tools — unit', () => {
     expect(session.inProject).toBe(false);
     expect(session.scope).toBe('global');
     expect(session.project).toBeUndefined();
-    expect(session.run.id).toBeUndefined();
+    expect(session.runs.size).toBe(0);
   });
 
   it('the first write opens the run, and every write after it shares that one', () => {
@@ -134,12 +146,12 @@ describe('MCP session + tools — unit', () => {
 
     const first = runCaptureMemory(session, { content: 'the first thing' });
     if (!first.ok) throw new Error('setup: capture refused');
-    const opened = session.run.id;
+    const opened = theRun(session);
     expect(opened).toBeDefined();
 
     const second = runCaptureMemory(session, { content: 'the second thing' });
     if (!second.ok) throw new Error('setup: capture refused');
-    expect(session.run.id).toBe(opened);
+    expect(theRun(session)).toBe(opened);
 
     // One run for the connection, and both facts pinned to it.
     const chainRoot = chainRootForScope(session.trees, session.scope) as string;
@@ -177,7 +189,7 @@ describe('MCP session + tools — unit', () => {
     // bootstrap serves the actor's context — the run the capture opened is there.
     const context = runBootstrap(session);
     expect(context.resume.actor).toBe(session.who);
-    expect(context.resume.focus.openRuns.some((r) => r.id === session.run.id)).toBe(true);
+    expect(context.resume.focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
   });
 
   it('focus reports the session actor’s own open run, and writes nothing', () => {
@@ -198,7 +210,7 @@ describe('MCP session + tools — unit', () => {
     // The actor is the machine's anchor (the session's who), and the run its write
     // opened is reported — no other actor's runs.
     expect(focus.actor).toBe(session.who);
-    expect(focus.openRuns.some((r) => r.id === session.run.id)).toBe(true);
+    expect(focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
     expect(focus.openRuns.every((r) => r.who === session.who)).toBe(true);
 
     // The read appended nothing — the chain is the same length.
@@ -216,7 +228,7 @@ describe('MCP session + tools — unit', () => {
     if (!runCaptureMemory(session, { content: 'work that opens the run' }).ok) {
       throw new Error('setup: capture refused');
     }
-    const runId = session.run.id;
+    const runId = theRun(session);
     // End the session's run — resume must still report it as "where I left off".
     closeSession(session);
 
@@ -286,7 +298,7 @@ describe('MCP session + tools — unit', () => {
       if (allowed.result.verdict.ok) expect(allowed.result.verdict.to).toBe('READY');
       // Focus is the session actor's own — the run opened at session start.
       expect(allowed.result.focus.actor).toBe(session.who);
-      expect(allowed.result.focus.openRuns.some((r) => r.id === session.run.id)).toBe(true);
+      expect(allowed.result.focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
     }
 
     // approve is illegal from DRAFT → REFUSED, the gate's own typed reason.
@@ -636,7 +648,7 @@ describe('MCP session + tools — unit', () => {
     // pinned to the session's run — the same stamping the other nine writes do.
     expect(events[0]?.which).toBe('claude-code');
     expect(events[0]?.who).not.toBe('claude-code');
-    expect(events[0]?.run).toBe(session.run.id);
+    expect(events[0]?.run).toBe(theRun(session));
     // The task is born in the workflow's initial state, movable from there.
     const task = projectTasks(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
       created.id,
@@ -1190,7 +1202,7 @@ describe('MCP session + tools — unit', () => {
     });
     // The consultation landed in the session's own tree, tied to its run.
     const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([[id, session.run.id]]);
+    expect(consultations(privateRoot)).toEqual([[id, theRun(session)]]);
     // And it is attributed to the agent, authorized by the machine.
     const fact = orderedEvents({ root: privateRoot }, catalogUpcasters()).find(
       (e) => e.kind === 'skill.consulted',
@@ -1218,7 +1230,7 @@ describe('MCP session + tools — unit', () => {
     expect(runSkillsTool(session, { id }).ok).toBe(true);
 
     const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([[id, session.run.id]]);
+    expect(consultations(privateRoot)).toEqual([[id, theRun(session)]]);
   });
 
   it('skills records one fact per skill — which pattern, not just that one was read', () => {
@@ -1255,8 +1267,10 @@ describe('MCP session + tools — unit', () => {
     const recorded = consultations(privateRoot);
     // The same pattern, two facts — one per session, each carrying its own run.
     expect(recorded.map(([subject]) => subject)).toEqual([id, id]);
-    expect(new Set(recorded.map(([, run]) => run))).toEqual(new Set([first.run.id, second.run.id]));
-    expect(first.run.id).not.toBe(second.run.id);
+    expect(new Set(recorded.map(([, run]) => run))).toEqual(
+      new Set([theRun(first), theRun(second)]),
+    );
+    expect(theRun(first)).not.toBe(theRun(second));
   });
 
   it('skills refuses a deprecated pattern and records NOTHING (it served nothing)', () => {
@@ -1393,7 +1407,7 @@ describe('MCP session + tools — unit', () => {
     // bootstrap still names and nothing more: no body, and no provenance either.
     expect(runBootstrap(session).skills).toEqual([{ id, name: 'personal habit' }]);
     const globalRoot = chainRootForScope(session.trees, 'global') as string;
-    expect(consultations(globalRoot)).toEqual([[id, session.run.id]]);
+    expect(consultations(globalRoot)).toEqual([[id, theRun(session)]]);
   });
 
   it('bootstrap reads the patterns and writes nothing (only `skills` records)', () => {
@@ -1721,7 +1735,7 @@ describe('MCP session + tools — unit', () => {
     });
     // The session's own run is a real id in the record — and still not a record
     // to read: `focus`/`resume` serve a run.
-    expect(runReadRecordTool(session, { id: session.run.id })).toMatchObject({
+    expect(runReadRecordTool(session, { id: theRun(session) as string })).toMatchObject({
       ok: false,
       code: 'UNKNOWN_RECORD',
     });
@@ -1769,9 +1783,11 @@ describe('MCP session + tools — unit', () => {
     if (!runCaptureMemory(session, { content: 'a note' }).ok) {
       throw new Error('setup: capture refused');
     }
-    expect(closeSession(session)).toBe(true);
-    // Already ended — endRun refuses, closeSession swallows it (best-effort).
-    expect(closeSession(session)).toBe(false);
+    const run = theRun(session) as string;
+    expect(closeSession(session)).toEqual({ closed: [run], leftOpen: [] });
+    // Already ended — endRun refuses, closeSession swallows it and NAMES the run it
+    // could not close, so a run is never simply absent from the account.
+    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [run] });
   });
 
   it('closing a session that never wrote records nothing at all', () => {
@@ -1783,7 +1799,7 @@ describe('MCP session + tools — unit', () => {
     });
     // Closing is the LAST chance to write, so it is where a run would otherwise be
     // founded, started and ended in one go for a connection that only read.
-    expect(closeSession(session)).toBe(false);
+    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [] });
     for (const scope of ['public', 'private'] as const) {
       const root = chainRootForScope(session.trees, scope) as string;
       expect(orderedEvents({ root }, catalogUpcasters())).toEqual([]);

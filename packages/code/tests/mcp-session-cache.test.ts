@@ -250,7 +250,8 @@ describe('a write is visible to the next read in the same session', () => {
       throw new Error('setup: capture refused');
     }
     const focus = runFocusTool(session);
-    expect(focus.openRuns.some((r) => r.id === session.run.id)).toBe(true);
+    const [opened] = [...session.runs.values()];
+    expect(focus.openRuns.some((r) => r.id === opened?.id)).toBe(true);
     closeSession(session);
   });
 });
@@ -419,7 +420,7 @@ describe('the session releases what it held', () => {
       throw new Error('setup: capture refused');
     }
 
-    expect(closeSession(session)).toBe(true);
+    expect(closeSession(session).closed).toHaveLength(1);
 
     // The handle is really gone — querying the closed cache throws rather than
     // quietly answering from a database nobody owns any more.
@@ -431,11 +432,24 @@ describe('the session releases what it held', () => {
     // best-effort, so the release cannot be conditional on it succeeding.
     const session = openOn(makeProject('proj'));
     const cache = cacheOf(session, session.scope);
+    if (!runCaptureMemory(session, { content: 'a note' }).ok) {
+      throw new Error('setup: capture refused');
+    }
+    const [open] = [...session.runs.values()];
 
-    // A session whose scope names a tree that is not there: `writeContext` throws
-    // before `endRun` is ever reached.
-    const broken: Session = { ...session, trees: { ...session.trees, projectPrivate: undefined } };
-    expect(closeSession(broken)).toBe(false);
+    // A run whose tree is not there any more: `writeContext` throws before `endRun`
+    // is ever reached. The close still releases what it holds — and still NAMES the
+    // run, because a run missing from the account is a run nothing says is open.
+    const broken: Session = {
+      ...session,
+      runs: new Map(
+        [...session.runs].map(([root, run]) => [
+          root,
+          { ...run, trees: { ...run.trees, projectPrivate: undefined } },
+        ]),
+      ),
+    };
+    expect(closeSession(broken)).toEqual({ closed: [], leftOpen: [open?.id] });
     expect(() => cache.listTasks()).toThrow();
   });
 

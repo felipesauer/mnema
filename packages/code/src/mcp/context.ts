@@ -14,14 +14,17 @@
  *      a `.mnema/`). It operates on the global tree. This is not a limbo; the
  *      global tree is legitimate cross-project knowledge. It never refuses.
  *
- * It also answers a second question the cascade alone cannot: HOW MANY projects
+ * It also answers a second question the cascade alone cannot: WHICH OTHER projects
  * the workspace holds. The cascade returns at the first root that resolves, so it
  * learns of exactly one — and one project and five look identical from inside the
  * session that landed. So every root is probed, and the projects among them are
- * counted by a rule of their own (a root counts when it IS a project's root, never
- * when one lies above it — see {@link announcedProjects}). The count changes
- * nothing about WHERE the session lands; it is reported so a reader can tell that
- * where it landed was a choice.
+ * collected by a rule of their own (a root counts when it IS a project's root, never
+ * when one lies above it — see {@link announcedProjects}). The list changes nothing
+ * about WHERE the session lands: that stays the cascade's, and omitting it stays the
+ * cascade's answer. It is reported for two things a reader and a caller each need —
+ * a reader can tell that where it landed was a choice, and a caller can NAME one of
+ * the others, which is the only way work done in a second project can be recorded
+ * in that project instead of in whichever one the cascade happened to pick.
  *
  * This module is pure: it takes the already-listed roots (the server does the
  * protocol call) and returns which tree to work on. The scope of a write —
@@ -33,6 +36,29 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
+
+/**
+ * One project the session knows the workspace holds, with the trees it resolves to.
+ *
+ * The trees come with the directory rather than being re-resolved later, because
+ * they were already computed to answer whether the directory is a project at all:
+ * a probe that found a `.mnema/` has the whole tree set in hand, and discarding it
+ * would mean walking the filesystem again to learn what this already knows.
+ */
+export interface WorkspaceProject {
+  /**
+   * The project DIRECTORY — the parent of its `.mnema/`, absolute.
+   *
+   * Absolute because it is compared against what a caller passes, and a comparison
+   * between two spellings of one path is a comparison that fails on the same
+   * directory. A configured project path may be relative (the operator's shell had
+   * a working directory; this server's has nothing to do with it), so the spelling
+   * is settled here, once, rather than at each place that matches against it.
+   */
+  readonly dir: string;
+  /** The trees resolved FOR it: its two project scopes, and the global tree beside them. */
+  readonly trees: ResolvedTrees;
+}
 
 /** What the server hands the resolver — the raw discovery inputs. */
 export interface ContextInput {
@@ -74,21 +100,29 @@ export interface ResolvedContext {
    */
   readonly project?: string;
   /**
-   * How many DISTINCT projects this session knows the workspace holds — the one
-   * above among them, always.
+   * The DISTINCT projects this session knows the workspace holds — the one above
+   * among them, always.
    *
    * Naming the project a session landed on answers "where am I"; it does not
    * answer "was there anywhere else it could have been", and that is the question
    * behind every surprise the cascade produces. One project and three are the
-   * same session from the inside, so the number is carried alongside the name: a
-   * reader who knows there were three can tell that the one they got was a choice.
+   * same session from the inside, so the others are carried alongside the name: a
+   * reader who knows there were three can tell that the one they got was a choice,
+   * and a caller who knows their directories can name the one the work is actually
+   * happening in.
    *
-   * Counted by the ROOT rule — see {@link announcedProjects}. It is a FACT about
+   * Collected by the ROOT rule — see {@link announcedProjects}. It is a FACT about
    * the workspace and is reported as one: nothing here or downstream reads it as
    * a warning, because a signal that fires in every multi-folder workspace stops
    * being read, and which project is the right one is not this server's to say.
+   *
+   * In the order the client announced the roots, with the project the session
+   * landed on last when no root announced it (it is in the list either way — the
+   * session writes there). The order is the host's and is not improved on: this
+   * server has no ranking of its own to impose, and the list is read as a list —
+   * every reader of it either matches a name against the whole thing or prints it.
    */
-  readonly projectCount: number;
+  readonly workspaceProjects: readonly WorkspaceProject[];
 }
 
 /** One announced root, paired with what the topology rule resolves it to. */
@@ -142,29 +176,32 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   return {
     trees: { global, keyRoot },
     inProject: false,
-    projectCount: announcedProjects(probed).size,
+    workspaceProjects: announcedProjects(probed),
   };
 }
 
 /**
  * The context for a cascade that landed on a project: the trees, the project's
- * directory, and how many projects the workspace holds counting this one.
+ * directory, and the projects the workspace holds counting this one.
  *
  * The project is the parent of the `.mnema/` the walk-up FOUND, never the path
  * that was pointed at: a subdirectory of a project resolves to the project, and
  * reporting the input would name a directory that owns nothing.
  */
 function landedInProject(trees: ResolvedTrees, probed: readonly ProbedRoot[]): ResolvedContext {
-  const project = dirname(trees.projectPublic as string);
-  const projects = announcedProjects(probed);
-  // The project this session landed on counts even when no root announced it as
-  // its own — which is the common shape, not the corner: the walk-up regularly
-  // arrives at a project ABOVE every root (a folder opened inside a repository),
-  // and a configured path need not be among the roots at all. Counting it is what
-  // stops the number contradicting the name beside it, and it is not an exception
-  // to the root rule: this directory holds the `.mnema/` the session is writing to.
-  projects.add(project);
-  return { trees, inProject: true, project, projectCount: projects.size };
+  const project = projectDirOf(trees);
+  const workspaceProjects = announcedProjects(probed);
+  // The project this session landed on belongs in the list even when no root
+  // announced it as its own — which is the common shape, not the corner: the
+  // walk-up regularly arrives at a project ABOVE every root (a folder opened
+  // inside a repository), and a configured path need not be among the roots at
+  // all. Including it is what stops the list contradicting the name beside it,
+  // and it is not an exception to the root rule: this directory holds the
+  // `.mnema/` the session is writing to.
+  if (!workspaceProjects.some((known) => known.dir === project)) {
+    workspaceProjects.push({ dir: project, trees });
+  }
+  return { trees, inProject: true, project, workspaceProjects };
 }
 
 /**
@@ -172,28 +209,46 @@ function landedInProject(trees: ResolvedTrees, probed: readonly ProbedRoot[]): R
  * when it IS a project's root, and not when a project merely lies somewhere above
  * it.
  *
- * The rule is here and not in the cascade because counting and RESOLVING are
+ * The rule is here and not in the cascade because collecting and RESOLVING are
  * different questions. Resolution walks up, and must: a package of a monorepo is
  * a place to work, and refusing to walk would put that work in the machine-global
- * tree instead of the project. Counting must not, because the walk-up makes every
+ * tree instead of the project. Collecting must not, because the walk-up makes every
  * folder inside a project look like one: a notes directory checked out inside
- * another repository would count as a project of its own, and the number would say
- * two where the workspace has one. A count that inflates is worse than no count —
- * it is a fact the reader cannot check.
+ * another repository would appear as a project of its own, and the list would name
+ * two where the workspace has one. A list that inflates is worse than no list —
+ * it is a fact the reader cannot check, and a name a caller could route a write to
+ * that names no project anybody opened.
  *
- * Distinct by directory, so two roots that resolve to the same project count once
- * (two folders of one monorepo, or the same path announced twice).
+ * Distinct by directory, so two roots that resolve to the same project appear once
+ * (two folders of one monorepo, or the same path announced twice), keeping the
+ * order the client announced them in.
  */
-function announcedProjects(probed: readonly ProbedRoot[]): Set<string> {
-  const projects = new Set<string>();
+function announcedProjects(probed: readonly ProbedRoot[]): WorkspaceProject[] {
+  const projects: WorkspaceProject[] = [];
   for (const { dir, trees } of probed) {
     if (trees.projectPublic === undefined) continue;
-    const project = dirname(trees.projectPublic);
+    const project = projectDirOf(trees);
     // `resolve` so a root announced with a trailing slash still matches the
     // directory `dirname` reports — the same path, spelled two ways.
-    if (project === resolve(dir)) projects.add(project);
+    if (project !== resolve(dir)) continue;
+    if (projects.some((known) => known.dir === project)) continue;
+    projects.push({ dir: project, trees });
   }
   return projects;
+}
+
+/**
+ * The project directory a tree set belongs to: the parent of its public tree,
+ * absolute.
+ *
+ * One function because the directory is derived at three places and compared
+ * across them — the list, the cascade's answer, and a caller's argument — and two
+ * of those comparisons are for equality. A `dirname` that kept a relative
+ * configured path would make the same project unequal to itself depending on which
+ * rung produced it. Callers must have established that the public tree is present.
+ */
+function projectDirOf(trees: ResolvedTrees): string {
+  return resolve(dirname(trees.projectPublic as string));
 }
 
 /**
