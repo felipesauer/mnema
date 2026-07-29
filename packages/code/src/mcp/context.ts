@@ -21,6 +21,7 @@
  * `which` in hand. This decides only WHERE (which trees), never public/private.
  */
 
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
 
@@ -50,6 +51,19 @@ export interface ResolvedContext {
    * no project and everything works on the global tree.
    */
   readonly inProject: boolean;
+  /**
+   * The project DIRECTORY this landed on — the parent of its `.mnema/` — absent
+   * when it landed on the global tree.
+   *
+   * It is reported because a cascade nobody can see is a cascade nobody can
+   * debug. Three inputs can each point somewhere (a configured path, several
+   * workspace roots, neither), the rule walks UP from whichever it takes, and the
+   * project it arrives at is frequently not the directory the host named: a folder
+   * opened inside another repository resolves to that repository. Every step is
+   * defensible and the result can still be a surprise, so the session carries the
+   * answer and says it out loud rather than leaving the reader to re-derive it.
+   */
+  readonly project?: string;
 }
 
 /**
@@ -66,7 +80,12 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // 1. An explicit project path wins, if it actually resolves to a project.
   if (input.configProject !== undefined) {
     const trees = resolveTrees(input.configProject, input.env);
-    if (trees.projectPublic !== undefined) return { trees, inProject: true };
+    if (trees.projectPublic !== undefined) {
+      // The project is the parent of the `.mnema/` the walk-up FOUND, never the
+      // path that was pointed at: a subdirectory of a project resolves to the
+      // project, and reporting the input would name a directory that owns nothing.
+      return { trees, inProject: true, project: dirname(trees.projectPublic) };
+    }
   }
 
   // 2. The first workspace root that resolves to a project.
@@ -74,7 +93,9 @@ export function resolveContext(input: ContextInput): ResolvedContext {
     const dir = rootToPath(root);
     if (dir === undefined) continue;
     const trees = resolveTrees(dir, input.env);
-    if (trees.projectPublic !== undefined) return { trees, inProject: true };
+    if (trees.projectPublic !== undefined) {
+      return { trees, inProject: true, project: dirname(trees.projectPublic) };
+    }
   }
 
   // 3. Fallback: the GLOBAL tree, deliberately with NO project. `resolveTrees`

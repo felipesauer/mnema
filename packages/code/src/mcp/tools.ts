@@ -41,8 +41,13 @@
  * ENTITY's home tree for `next_actions` and `guard`. So a connection replays a
  * chain when a write has made that necessary, not once per call, and the answer
  * is the same either way (the registry rebuilds a stale cache before handing it
- * over). The write mold needs no counterpart discipline: every write builds its
- * context through `writeContext`, which is where the invalidation lives.
+ * over). The write mold needs no counterpart discipline: every write asks
+ * {@link openWrite} for its context, and that door is where the invalidation lives.
+ *
+ * That door is also where the session's RUN comes from — never off the session — and
+ * a write mold added later inherits both by asking for the same two things. A write
+ * cannot reach a run any other way: the session's own cell is `string | undefined`,
+ * so an operation that needs one will not take it.
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
@@ -114,7 +119,7 @@ import {
 import { scopedEvents, unionEvents } from '../intelligence-source.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { locateEntityInSession } from './locate.js';
-import { type Session, writeContext } from './session.js';
+import { openWrite, type Session } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -277,11 +282,11 @@ export function runCaptureMemory(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const captured = captureMemory(ctx, {
     content: input.content,
     which: session.which,
-    run: session.runId,
+    run,
   });
   // A capture runs no gate, but the authority invariant still applies — surface
   // the core's refusal rather than asserting ok, and checkpoint nothing.
@@ -353,13 +358,13 @@ export function runRecordObservation(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const recorded = recordObservation(ctx, {
     about: input.about,
     topic: input.topic,
     text: input.text,
     which: session.which,
-    run: session.runId,
+    run,
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
@@ -392,13 +397,13 @@ export function runRecordHandoff(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const recorded = recordHandoff(ctx, {
     task: input.task,
     fromAgent: input.from,
     toAgent: input.to,
     which: session.which,
-    run: session.runId,
+    run,
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
@@ -437,13 +442,13 @@ export function runLinkKnowledge(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const recorded = linkKnowledge(ctx, {
     subject: input.subject,
     target: input.target,
     rel: input.rel,
     which: session.which,
-    run: session.runId,
+    run,
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
@@ -481,11 +486,11 @@ export function runCreateTask(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const created = createTask(ctx, {
     title: input.title,
     which: session.which,
-    run: session.runId,
+    run,
   });
   // A birth is not a gated transition, but the operation's return is a union —
   // surface the refusal it can carry (the authority invariant) rather than
@@ -535,14 +540,14 @@ export function runTaskTransition(
     return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
   }
 
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const fields = proofToFields(input);
   const moved = transitionTask(ctx, {
     id: input.id,
     action: input.action,
     ...(fields !== undefined ? { fields } : {}),
     which: session.which,
-    run: session.runId,
+    run,
   });
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
@@ -601,12 +606,12 @@ export function runRecordDecision(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const recorded = recordDecision(ctx, {
     title: input.title,
     rationale: input.rationale,
     which: session.which,
-    run: session.runId,
+    run,
   });
   // A decision birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
@@ -665,13 +670,13 @@ export function runDecisionTransition(
     };
   }
 
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
   // tree — who (the machine) != which (the agent) is preserved on a decision move
   // exactly as it is on a task move.
-  const stamp = { which: session.which, run: session.runId };
+  const stamp = { which: session.which, run };
   const moved =
     input.action === 'supersede'
       ? supersedeDecision(ctx, {
@@ -746,12 +751,12 @@ export function runCreateSkill(
       message: `no ${scope} tree here — a session outside a project has only the global scope`,
     };
   }
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const created = createSkill(ctx, {
     name: input.name,
     body: input.body,
     which: session.which,
-    run: session.runId,
+    run,
   });
   // A skill birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
@@ -803,13 +808,13 @@ export function runSkillTransition(
     };
   }
 
-  const ctx = writeContext(session.trees, scope, session.caches);
+  const { ctx, run } = openWrite(session, scope);
   const fields = skillProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
   // tree — who (the machine) != which (the agent) is preserved on a skill move
   // exactly as it is on a task move.
-  const stamp = { which: session.which, run: session.runId };
+  const stamp = { which: session.which, run };
   const args = { id: input.id, ...(fields !== undefined ? { fields } : {}), ...stamp };
   const moved =
     input.action === 'review'
@@ -1003,7 +1008,7 @@ function recordConsultations(
   const fresh = skills.filter((skill) => !session.consulted.has(skill.id));
   if (fresh.length === 0) return { ok: true };
 
-  const ctx = writeContext(session.trees, session.scope, session.caches);
+  const { ctx, run } = openWrite(session, session.scope);
   let appended = 0;
   // The classes across every consultation this call appended, distinct: the agent
   // name is the same on all of them, so listing it once per skill would turn one
@@ -1013,7 +1018,7 @@ function recordConsultations(
     const done = recordConsultation(ctx, {
       skill: skill.id,
       which: session.which,
-      run: session.runId,
+      run,
     });
     if (!done.ok) {
       // Every fact here shares one authority decision, so this is unreachable
