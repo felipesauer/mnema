@@ -889,7 +889,8 @@ function scopedCaches(session: Session): ScopedCache[] {
   const sources: ScopedCache[] = [];
   for (const scope of ['public', 'private', 'global'] as const) {
     const root = chainRootForScope(session.trees, scope);
-    if (root !== undefined) sources.push({ scope, cache: session.caches.get(root) });
+    if (root !== undefined)
+      sources.push({ scope, chainRoot: root, cache: session.caches.get(root) });
   }
   return sources;
 }

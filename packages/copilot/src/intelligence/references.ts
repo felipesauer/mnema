@@ -21,6 +21,11 @@
  *   its own events, so the walk alternates: it asks every tree, learns nodes,
  *   and asks again with what the others found, until nothing new appears. A path
  *   that changes tree at every hop is found at its true depth.
+ * - **EVERY tree, one at a time.** A tree is named by its chain root, never by
+ *   its scope: a read that spans projects holds several trees in the same role,
+ *   and one asked in the other's place is a tree nothing ever walked. What such
+ *   an answer loses it loses in silence — the edges that would have proved it
+ *   short are the missing ones.
  * - **It is cycle-safe.** `A → B → A` terminates. Each node is reported once,
  *   at the fewest hops it was reached in, and the edge that closes the cycle is
  *   still reported — a cycle is a fact about the record, not an error to hide.
@@ -174,7 +179,12 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
   const links = new Map<string, ReferenceLink>();
   // Per tree, the shallowest depth each node has already been expanded from.
   // Re-expanding a node at the same depth can only find what it found before.
-  const expanded = new Map<Scope, Map<string, number>>();
+  //
+  // Keyed by the chain root, because that is what names ONE tree: two trees in
+  // the same scope are two projects, and a memo keyed by the scope would let the
+  // first of them mark the frontier as expanded and the rest leave the loop
+  // without ever being asked.
+  const expanded = new Map<string, Map<string, number>>();
   let depths = new Map<string, number>([[query.id, 0]]);
 
   // A path that changes tree at every hop needs one round per hop to be
@@ -184,8 +194,8 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
   for (let round = 0; round <= probe; round += 1) {
     let seeded = false;
     for (const source of sources) {
-      const already = expanded.get(source.scope) ?? new Map<string, number>();
-      expanded.set(source.scope, already);
+      const already = expanded.get(source.chainRoot) ?? new Map<string, number>();
+      expanded.set(source.chainRoot, already);
       const seeds: Array<{ entity: string; depth: number }> = [];
       for (const [entity, at] of depths) {
         if (at >= probe) continue;
@@ -198,7 +208,14 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
       seeded = true;
       for (const edge of source.cache.walk(seeds, direction, probe)) {
         const link = toLink(edge, source.scope);
-        links.set(`${source.scope} ${edge.ord} ${edge.role}`, link);
+        // Tree, position in that tree's stream, role — the three together name
+        // one assertion and no other. An `ord` is a position in ONE tree's
+        // stream, so it takes the tree to make it an identity, and the tree is
+        // the chain root: keyed by the scope, the first event of one project
+        // and the first of the next are the same key, and the later read wins.
+        // NUL separates because no path, scope or role can hold one — written
+        // as an escape and not as a raw byte, so that an editor shows it.
+        links.set(`${source.chainRoot}\0${edge.ord}\0${edge.role}`, link);
       }
     }
     if (!seeded) break;
