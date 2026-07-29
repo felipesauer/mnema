@@ -32,7 +32,7 @@ function bench(): Bench {
 function tree(b: Bench, scope: Scope = 'public'): ScopedCache {
   const cache = b.cache();
   caches.push(cache);
-  return { scope, cache };
+  return { scope, chainRoot: b.root, cache };
 }
 
 describe('accountability — who authorized what, which agent executed', () => {

@@ -38,7 +38,7 @@ export function withScopedCaches<T>(
       if (root === undefined) continue;
       const cache = ProjectionCache.open(root, { upcasters });
       cache.rebuild();
-      sources.push({ scope, cache });
+      sources.push({ scope, chainRoot: root, cache });
     }
     return read(sources);
   } finally {

@@ -73,7 +73,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
     const cache = ProjectionCache.open(root, { upcasters });
     try {
       cache.rebuild();
-      const source: ScopedCache = { scope, cache };
+      const source: ScopedCache = { scope, chainRoot: root, cache };
       const record = readRecord([source], input.id);
       if (record !== null) return { ok: true, record };
     } finally {

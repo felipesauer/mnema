@@ -23,7 +23,7 @@ describe('patternProvenance — where a pattern came from', () => {
 
   /** A scoped cache over `b`, closed on teardown. */
   function source(b: Bench, scope: ScopedCache['scope'] = 'public'): ScopedCache {
-    const s: ScopedCache = { scope, cache: b.cache() };
+    const s: ScopedCache = { scope, chainRoot: b.root, cache: b.cache() };
     open.push(s);
     return s;
   }

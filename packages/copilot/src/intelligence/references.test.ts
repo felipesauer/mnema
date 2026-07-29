@@ -33,7 +33,7 @@ function bench(): Bench {
 function tree(b: Bench, scope: Scope = 'public'): ScopedCache {
   const cache = b.cache();
   caches.push(cache);
-  return { scope, cache };
+  return { scope, chainRoot: b.root, cache };
 }
 
 /** The edges as `from role to`, sorted, so a test reads as a shape. */
@@ -236,5 +236,102 @@ describe('references — across the trees', () => {
     const cut = references(sources, { id: 'mem-1', direction: 'out', depth: 1 });
     expect(edges(cut)).toEqual(['mem-1 target dec-1']);
     expect(cut.truncated).toBe(true);
+  });
+});
+
+describe('references — every tree is walked', () => {
+  /**
+   * The counting tests. A walk over N trees that each assert one edge into the
+   * same hub must report N edges: any tree left unwalked shows up as a number
+   * that is short, which no assertion about the SHAPE of the answer would catch.
+   */
+  it('sums the edges of every tree, including several of the same scope', () => {
+    // Two trees per scope — the multi-project read, where a scope stops being a
+    // name for one tree.
+    const scopes: Scope[] = ['public', 'public', 'private', 'private', 'global', 'global'];
+    const sources = scopes.map((scope, index) => {
+      const b = bench();
+      if (index === 0) birthTask(b, 'hub', 'the work');
+      capture(b, `mem-${index}`, `note ${index}`);
+      link(b, `mem-${index}`, 'hub', 'relates-to');
+      return tree(b, scope);
+    });
+
+    const graph = references(sources, { id: 'hub' });
+    expect(graph.links).toHaveLength(scopes.length);
+    expect(edges(graph)).toEqual(scopes.map((_s, index) => `mem-${index} target hub`).sort());
+  });
+
+  it('keeps two assertions apart when both are the same event position', () => {
+    // The other half: an `ord` is a position in ONE tree's stream, so two trees
+    // written the same way assert their edge at the same one. Identical scope,
+    // identical ord, identical role — everything a key made of those three has.
+    const first = bench();
+    capture(first, 'mem-a', 'a note');
+    link(first, 'mem-a', 'hub', 'relates-to');
+    const second = bench();
+    capture(second, 'mem-b', 'another note');
+    link(second, 'mem-b', 'hub', 'relates-to');
+
+    const graph = references([tree(first), tree(second)], { id: 'hub' });
+    expect(graph.links).toHaveLength(2);
+    expect(edges(graph)).toEqual(['mem-a target hub', 'mem-b target hub']);
+  });
+
+  it('reports one edge when the same tree is opened twice', () => {
+    // A tree reached by two paths is still ONE tree, and its edge is one
+    // assertion. Reporting it twice would put two facts in the graph where the
+    // record holds one — a reader counts edges as evidence.
+    const b = bench();
+    capture(b, 'mem-1', 'a note');
+    link(b, 'mem-1', 'hub', 'relates-to');
+
+    const twoCaches = references([tree(b), tree(b)], { id: 'hub' });
+    expect(twoCaches.links).toHaveLength(1);
+    const sameCache = tree(b);
+    expect(references([sameCache, sameCache], { id: 'hub' }).links).toHaveLength(1);
+  });
+
+  it('says it was cut when the hop past the cap lives in a sibling tree', () => {
+    // a → b in one tree, b → c in another of the SAME scope. At one hop the
+    // answer IS cut, and the proof of the cut is an edge in the second tree.
+    const first = bench();
+    capture(first, 'a', 'a');
+    link(first, 'a', 'b', 'relates-to');
+    const second = bench();
+    capture(second, 'b', 'b');
+    link(second, 'b', 'c', 'relates-to');
+    const sources = [tree(first), tree(second)];
+
+    const cut = references(sources, { id: 'a', direction: 'out', depth: 1 });
+    expect(edges(cut)).toEqual(['a target b']);
+    expect(cut.truncated).toBe(true);
+
+    // …and stays quiet when nothing lies beyond: the same two trees, asked deep
+    // enough to reach the end of what is connected.
+    const whole = references(sources, { id: 'a', direction: 'out', depth: 2 });
+    expect(edges(whole)).toEqual(['a target b', 'b target c']);
+    expect(whole.truncated).toBe(false);
+  });
+
+  it('terminates on a cycle that closes through a sibling tree', () => {
+    const first = bench();
+    capture(first, 'a', 'a');
+    link(first, 'a', 'b', 'relates-to');
+    const second = bench();
+    capture(second, 'b', 'b');
+    link(second, 'b', 'a', 'contradicts');
+
+    const graph = references([tree(first), tree(second)], {
+      id: 'a',
+      direction: 'out',
+      depth: REFERENCE_MAX_DEPTH,
+    });
+    expect(edges(graph)).toEqual(['a target b', 'b target a']);
+    expect(graph.nodes.map((n) => [n.id, n.depth])).toEqual([
+      ['a', 0],
+      ['b', 1],
+    ]);
+    expect(graph.truncated).toBe(false);
   });
 });

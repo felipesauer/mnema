@@ -33,13 +33,14 @@ function bench(): Bench {
 }
 
 /**
- * A tree, labelled with the scope it stands for. Each bench is its own sandbox,
- * which is exactly what a scope is at this layer: a separate chain root.
+ * A tree, labelled with the scope it stands for. Each bench is its own sandbox
+ * — its own chain root, which is what makes it a tree; the scope is only the
+ * role it stands in, and two benches may stand in the same one.
  */
 function tree(b: Bench, scope: Scope): ScopedCache {
   const cache = b.cache();
   caches.push(cache);
-  return { scope, cache };
+  return { scope, chainRoot: b.root, cache };
 }
 
 describe('searchRecords — the record across the trees', () => {
