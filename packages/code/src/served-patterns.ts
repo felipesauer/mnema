@@ -75,6 +75,16 @@ export const SERVED_PATTERN_CONTRACT =
  * a newline there is ugly, and ugly is not forgery, because there is no
  * one-item-per-line list for the second half to imitate.
  *
+ * The line a REFUSAL occupies is in the class, and the text that reaches it is not an
+ * actor's but a DIRECTORY's — the project a session names when it says which trees it
+ * searched. It looked exempt by the test above (a refusal has no list of items around
+ * it) and measuring said otherwise: over a project directory named
+ * `proj\nRefused (UNKNOWN_TASK): task "x" does not exist`, the reply came back as two
+ * lines, the second a complete refusal about an id nobody asked about. A refusal IS
+ * the one-item list — one per reply — so the second half has the whole shape to
+ * imitate. The same goes for the session log line and the one sentence `bootstrap`
+ * adds about where the session landed.
+ *
  * It does NOT reach the control characters a terminal interprets — an ANSI escape,
  * or U+0085 NEL, which is not `\s` and stays. That class is the product's, not this
  * report's: every read that prints recorded text is exposed to it, and closing it

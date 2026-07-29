@@ -189,6 +189,12 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       // surprise. Until this line, nothing anywhere said which one won, and a choice
       // that leaves no trace is a choice nobody can correct.
       //
+      // And HOW MANY it chose from, because the name alone does not say a choice was
+      // made: one project and four look identical in a line that reports only the
+      // winner. It is a count, not a warning — the server has no way to know which
+      // project was meant, and a line that hedged would be hedging in every workspace
+      // with two folders open.
+      //
       // No agent name here. The name the chain records is the SCREENED one, and the
       // only party that screens is the write — so at the handshake there is no
       // screened value to print, and printing the announced one would put a
@@ -200,6 +206,7 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       log(
         oneLine(
           `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
+            `workspaceProjects=${opened.projectCount} ` +
             `scope=${opened.scope} who=${opened.who} ` +
             `run=${opened.run.id ?? '(none — the first write opens it)'}`,
         ),
@@ -666,8 +673,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       const active = await ensureSession();
       const context = runBootstrap(active);
       // The opening read carries the same note as `resume`, whose answer it embeds —
-      // and carries it most usefully, being the first thing an agent asks.
-      return withRunState(active, context);
+      // and carries it most usefully, being the first thing an agent asks. It carries
+      // WHERE it is reading from for the same reason: this is the first thing read,
+      // so it is the cheapest place to learn that the workspace holds more than one
+      // project — and the agent is the party that can pass that on to the person who
+      // knows which one was meant.
+      return withRunState(active, context, [whereThisSessionIs(active)]);
     },
   );
 
@@ -1182,16 +1193,24 @@ function recorded(
  * byte-identical to what a caller parsed before this sentence existed, and the
  * derivation stays the copilot's — a note about the connection has no business
  * inside a shape the domain defines.
+ *
+ * `also` carries any further sentences a particular read adds — they follow the
+ * payload, before this one. Same rule, same reason: a read with something else to
+ * say about the connection says it beside the answer, not inside it.
  */
 function withRunState(
   session: Session,
   result: unknown,
+  also: readonly string[] = [],
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  const payload = { type: 'text' as const, text: JSON.stringify(result, null, 2) };
-  if (session.run.id !== undefined) return { content: [payload] };
+  const blocks = [
+    { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+    ...also.map((text) => ({ type: 'text' as const, text })),
+  ];
+  if (session.run.id !== undefined) return { content: blocks };
   return {
     content: [
-      payload,
+      ...blocks,
       {
         type: 'text' as const,
         text:
@@ -1201,6 +1220,40 @@ function withRunState(
       },
     ],
   };
+}
+
+/**
+ * Where this session is reading and writing, and how many projects it chose from.
+ *
+ * A statement of FACT, and shaped as one deliberately. The count fires in every
+ * workspace with two folders open, so a sentence that told the agent to be careful
+ * would be telling it that in most sessions, and a caution that constant is one
+ * nobody reads. Nor could it be more specific honestly: the server knows which
+ * project the cascade picked and cannot know which one the person meant. So it
+ * reports the two things it does know and stops — the agent is talking to someone
+ * who can tell it, and the count is what makes asking possible.
+ *
+ * It travels as its own content block for the same reason the run-state note does:
+ * the payload is the copilot's shape, and where a session landed is a fact about
+ * this connection rather than about the record it derives from.
+ */
+function whereThisSessionIs(session: Session): string {
+  // "knows of", because that is exactly what the number is: the projects this
+  // session could name. It does not claim they are all the workspace holds — a
+  // project the host announced no folder for is one this session never saw — and it
+  // does not claim they came from the roots, since a configured path is not a folder
+  // anybody opened.
+  const known =
+    session.projectCount === 0
+      ? 'no project'
+      : session.projectCount === 1
+        ? '1 project'
+        : `${session.projectCount} projects`;
+  // One line, like the log line and the refusals: a directory name may hold a
+  // newline, and a sentence the agent reads as one statement must not become two.
+  const where =
+    session.project === undefined ? 'the machine-global tree' : oneLine(session.project);
+  return `Workspace: this session knows of ${known}; it is operating on ${where}.`;
 }
 
 function messageOf(error: unknown): string {

@@ -118,7 +118,7 @@ import {
 } from '@mnema/core/write';
 import { scopedEvents, unionEvents } from '../intelligence-source.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
-import { locateEntityInSession } from './locate.js';
+import { bornHereButUnreadable, locateEntityInSession, notFoundInVisibleTrees } from './locate.js';
 import { openWrite, type Session } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -537,7 +537,11 @@ export function runTaskTransition(
   // entity so its history stays whole in one tree.
   const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: notFoundInVisibleTrees(session, 'task', input.id),
+    };
   }
 
   const { ctx, run } = openWrite(session, scope);
@@ -654,7 +658,7 @@ export function runDecisionTransition(
     return {
       ok: false,
       code: 'UNKNOWN_DECISION',
-      message: `decision "${input.id}" does not exist`,
+      message: notFoundInVisibleTrees(session, 'decision', input.id),
     };
   }
 
@@ -794,7 +798,11 @@ export function runSkillTransition(
   // entity so its history stays whole in one tree.
   const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
-    return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_SKILL',
+      message: notFoundInVisibleTrees(session, 'skill', input.id),
+    };
   }
 
   // Dispatch on the action to pick the right named op. An action outside the
@@ -967,7 +975,12 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
   const caches = skillCaches(session);
   const served = input.id === undefined ? undefined : lookupAdoptedSkill(caches, input.id);
   if (served?.outcome === 'unknown') {
-    return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_SKILL',
+      // `input.id` is defined here — `served` is undefined without it.
+      message: notFoundInVisibleTrees(session, 'skill', input.id as string),
+    };
   }
   if (served?.outcome === 'not-adopted') {
     return {
@@ -1094,14 +1107,25 @@ export type NextActionsResult =
 export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
   const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: notFoundInVisibleTrees(session, 'task', input.id),
+    };
   }
   const chainRoot = chainRootForScope(session.trees, scope) as string;
   const actions = nextActionsForTask(session.caches.get(chainRoot), input.id);
-  // The birth was located, so a null here means the tail is truncated below it —
-  // report it as unknown rather than a false empty terminal list.
+  // The birth was located, so a null here is not a missing task: this session has
+  // no state for it in that tree — its history stops at the creation, or another
+  // process appended past what this session has read. Report that rather than a
+  // false empty terminal list, and name the tree, because repeating the sentence
+  // above would deny a birth this very call just found.
   if (actions === null) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: bornHereButUnreadable(session, 'task', input.id, scope),
+    };
   }
   return { ok: true, actions };
 }
@@ -1153,15 +1177,25 @@ export function runGuardTool(
 ): GuardResult {
   const scope = locateEntityInSession(session, input.id);
   if (scope === undefined) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: notFoundInVisibleTrees(session, 'task', input.id),
+    };
   }
   const chainRoot = chainRootForScope(session.trees, scope) as string;
   const cache = session.caches.get(chainRoot);
   const task = cache.getTask(input.id);
-  // The birth was located, so a null here means the tail is truncated below it —
-  // report it as unknown rather than simulating from a state we cannot read.
+  // The birth was located, so a null here is not a missing task: this session has
+  // no state for it in that tree (a history that stops at the creation, or a write
+  // by another process it has not read). Refuse rather than simulate from a state
+  // we cannot read, and name the tree instead of denying the birth just found.
   if (task === null) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: bornHereButUnreadable(session, 'task', input.id, scope),
+    };
   }
   const fields = proofToFields(input);
   const result = guardWithFocus(cache, {
