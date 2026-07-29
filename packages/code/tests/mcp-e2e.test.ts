@@ -1865,7 +1865,7 @@ describe('MCP server — end to end over a real client', () => {
     const verdict = verify(privateRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
 
-    // bootstrap serves the actor's context (the run opened at initialize).
+    // bootstrap serves the actor's context (the run the capture above opened).
     const boot = await client.callTool({ name: 'bootstrap' });
     const context = JSON.parse(textOf(boot)) as { resume: { focus: { openRuns: unknown[] } } };
     expect(context.resume.focus.openRuns.length).toBeGreaterThan(0);

@@ -66,6 +66,33 @@ function eventsIn(root: string): readonly { kind: string; subject: string }[] {
   return orderedEvents({ root }, catalogUpcasters());
 }
 
+/** The text blocks of a tool reply, in order. */
+function blocksOf(reply: unknown): readonly { type: string; text?: string }[] {
+  return (reply as { content: { type: string; text?: string }[] }).content;
+}
+
+/** The sentence a run-answering read carries when this connection has no run. */
+const NO_RUN_NOTE = 'has not opened a run of its own yet';
+
+/**
+ * Asserts the reply carries the note as its OWN block, and returns the payload.
+ *
+ * Every read that answers about runs makes the same two promises — the note is
+ * there, and it is NOT in the JSON — so those live here. What each read answers
+ * WITH is its own, so the payload goes back to the caller to be named there: that
+ * is what keeps one test speaking for one call site instead of for the sentence.
+ */
+function payloadBesideTheNote(reply: unknown): unknown {
+  const blocks = blocksOf(reply);
+  // Two blocks exactly: a note folded into the payload would still "contain" the
+  // sentence while breaking the shape a caller parses.
+  expect(blocks).toHaveLength(2);
+  expect(blocks[1]?.text).toContain(NO_RUN_NOTE);
+  const payload = blocks[0]?.text ?? '';
+  expect(payload).not.toContain(NO_RUN_NOTE);
+  return JSON.parse(payload);
+}
+
 /** The kinds in a project's three trees, flattened — what the session left behind. */
 function kindsLeftBy(project: string): string[] {
   const trees = resolveTrees(project, env);
@@ -122,15 +149,121 @@ describe('a connection that only reads', () => {
     expect(kindsLeftBy(project)).toEqual([]);
   });
 
+  // FOUR reads list the actor's runs, so four of them carry the note, and there is
+  // a test per read. They are the same sentence, so what tells them apart is the
+  // PAYLOAD each one answers with — `work`/`skills` for bootstrap, a bare
+  // `openRuns` for focus, a `lastRun` for resume, a `verdict` for guard. Naming the
+  // payload is what makes a missing note fall on the read that lost it: dropping
+  // the note from `bootstrap` cannot be absorbed by the `focus` test, and the
+  // failure says which.
+  //
+  // Not a loop over the four: a single parametrized test would report one failure
+  // for four broken call sites, and which one broke is the answer worth having.
+
+  it('is told by `bootstrap` — the opening read — that it has no run of its own', async () => {
+    const project = makeProject('proj');
+    const { client } = await connect([pathToFileURL(project).href]);
+
+    // bootstrap EMBEDS resume, so it answers about runs; being the first thing an
+    // agent calls, it is also the answer most likely to be read as a statement
+    // about the asking session.
+    const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }));
+    // `work` and `skills` are bootstrap's and no other read's.
+    expect(payload).toMatchObject({ work: [], skills: [], resume: { focus: { openRuns: [] } } });
+
+    await client.close();
+  });
+
   it('is told it has no run of its own, rather than shown an empty focus', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
 
-    const reply = await client.callTool({ name: 'focus' });
-    const blocks = (reply as { content: { type: string; text?: string }[] }).content;
     // The payload is the copilot's answer, unchanged; the note is its own block.
-    expect(JSON.parse(blocks[0]?.text ?? '')).toMatchObject({ openRuns: [] });
-    expect(blocks[1]?.text).toContain('has not opened a run of its own yet');
+    const payload = payloadBesideTheNote(await client.callTool({ name: 'focus' }));
+    // A bare `openRuns` with no `lastRun` beside it is focus's answer alone.
+    expect(payload).toMatchObject({ openRuns: [] });
+    expect(payload).not.toHaveProperty('lastRun');
+
+    await client.close();
+  });
+
+  it('is told by `resume` that the run it is pointed at is not this connection’s', async () => {
+    const project = makeProject('proj');
+    const roots = [pathToFileURL(project).href];
+
+    // A run that belongs to an EARLIER connection, so resume's answer here is not
+    // empty — it names a real run. That is when the note earns its place: the run
+    // is the actor's, from elsewhere, and without the sentence the reply reads as
+    // "you are in the middle of this".
+    const first = await connect(roots);
+    await first.client.callTool({ name: 'create_task', arguments: { title: 'the real work' } });
+    await first.client.close();
+
+    const second = await connect(roots);
+    const payload = payloadBesideTheNote(await second.client.callTool({ name: 'resume' })) as {
+      readonly lastRun: { readonly id: string } | null;
+    };
+    const runs = eventsIn(join(project, PROJECT_DIR, 'private')).filter(
+      (e) => e.kind === 'run.started',
+    );
+    // A `lastRun` naming a run, with no `work` beside it, is resume's answer alone.
+    expect(payload.lastRun?.id).toBe(runs[0]?.subject);
+    expect(payload).not.toHaveProperty('work');
+
+    await second.client.close();
+  });
+
+  it('is told by `guard` too — its verdict travels with the asker’s focus', async () => {
+    const project = makeProject('proj');
+    const roots = [pathToFileURL(project).href];
+
+    // A verdict needs a task to be about, and creating one is a WRITE — so it
+    // happens in an earlier connection. This one only asks, which is the whole
+    // point: `guard` is a dry-run, so it is a read that can be the ONLY thing a
+    // session does, and its reply says "here is what you are in the middle of".
+    const first = await connect(roots);
+    const created = await first.client.callTool({
+      name: 'create_task',
+      arguments: { title: 'a task to ask about' },
+    });
+    const id = /\(([^)]+)\)/.exec(blocksOf(created)[0]?.text ?? '')?.[1] as string;
+    await first.client.close();
+
+    const second = await connect(roots);
+    const payload = payloadBesideTheNote(
+      await second.client.callTool({ name: 'guard', arguments: { id, action: 'submit' } }),
+    ) as { readonly verdict: unknown };
+    // A `verdict` next to a focus is guard's answer and no other read's.
+    expect(payload.verdict).toMatchObject({ ok: true, to: 'READY' });
+    expect(payload).toHaveProperty('focus');
+
+    await second.client.close();
+  });
+
+  it('stops being told it once the write opens the run — in all four reads', async () => {
+    const project = makeProject('proj');
+    const { client } = await connect([pathToFileURL(project).href]);
+
+    // The other half of the same honesty, and the one a note appended
+    // unconditionally would break: a session that HAS a run must not be told it
+    // has none. One test for the condition, not four — a broken condition is a
+    // single fact about `withRunState`, not a fact about any one read.
+    const created = await client.callTool({
+      name: 'create_task',
+      arguments: { title: 'the write that opens it' },
+    });
+    const id = /\(([^)]+)\)/.exec(blocksOf(created)[0]?.text ?? '')?.[1] as string;
+
+    for (const call of [
+      { name: 'bootstrap' },
+      { name: 'focus' },
+      { name: 'resume' },
+      { name: 'guard', arguments: { id, action: 'submit' } },
+    ]) {
+      const blocks = blocksOf(await client.callTool(call));
+      expect(blocks, call.name).toHaveLength(1);
+      expect(blocks[0]?.text, call.name).not.toContain(NO_RUN_NOTE);
+    }
 
     await client.close();
   });

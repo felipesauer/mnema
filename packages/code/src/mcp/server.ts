@@ -836,7 +836,11 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // answer is "the move would be refused, here is why". Return the verdict
       // (and focus) as data so the agent reads the reason, exactly as it would
       // from the real move's refusal.
-      return { content: [{ type: 'text', text: JSON.stringify(result.result, null, 2) }] };
+      //
+      // The verdict travels WITH the asker's focus, so this reply lists runs like
+      // `focus` does — and carries the same note for the same reason: "here is
+      // what you are in the middle of" must not answer for the connection.
+      return withRunState(active, result.result);
     },
   );
 
@@ -1158,13 +1162,21 @@ function recorded(
 /**
  * An actor read's reply, plus one sentence when this session has not opened a run.
  *
- * `focus` and `resume` answer about the ACTOR, not the connection: they list the
- * runs this machine's anchor has open and the last one it worked in, wherever those
- * came from. That answer is complete on its own, and it is also the answer most
- * likely to be read as being about the asking session — an empty focus reads as "you
- * have nothing in flight" when what is true is "this connection has not started
- * anything, and a run opens when you first write". One is a fact about the record,
- * the other about this connection, and the reply now carries both.
+ * The reads that answer about RUNS answer about the ACTOR, not the connection: they
+ * list the runs this machine's anchor has open and the last one it worked in,
+ * wherever those came from. That answer is complete on its own, and it is also the
+ * answer most likely to be read as being about the asking session — an empty focus
+ * reads as "you have nothing in flight" when what is true is "this connection has
+ * not started anything, and a run opens when you first write". One is a fact about
+ * the record, the other about this connection, and the reply now carries both.
+ *
+ * FOUR reads reach this, and they are all of them: `focus` (the runs themselves),
+ * `resume` (the latest run plus that focus), `bootstrap` (which embeds the resume)
+ * and `guard` (whose verdict travels paired with the asker's focus). The rule is
+ * the payload, not the tool: a read that lists the actor's runs says whose they
+ * are. Nothing else on the surface lists a run — the index does not carry them,
+ * `read_record` refuses a run id, and the auditor reads answer about the record
+ * rather than about this connection.
  *
  * It travels as its OWN content block, never merged into the JSON: the payload stays
  * byte-identical to what a caller parsed before this sentence existed, and the
