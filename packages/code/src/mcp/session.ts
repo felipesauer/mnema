@@ -122,6 +122,16 @@ export interface Session {
    * (see {@link ResolvedContext.project}).
    */
   readonly project?: string;
+  /**
+   * How many projects the workspace holds, this session's own among them — the
+   * other half of the answer above (see {@link ResolvedContext.projectCount}).
+   *
+   * Carried on the session because it is settled when the session opens and never
+   * changes after: the roots are announced once, at the handshake. A reader that
+   * wanted it later would have to re-probe the filesystem to learn something the
+   * connection already knew.
+   */
+  readonly projectCount: number;
   /** The DEFAULT scope a new write routes to (private in-project, else global); a write tool may override it per call. */
   readonly scope: Scope;
   /**
@@ -185,7 +195,7 @@ export interface Session {
  * which is the one condition under which no honest session exists.
  */
 export function openSession(input: OpenSessionInput): Session {
-  const { trees, inProject, project } = resolveContext({
+  const { trees, inProject, project, projectCount } = resolveContext({
     env: input.env,
     ...(input.configProject !== undefined ? { configProject: input.configProject } : {}),
     ...(input.roots !== undefined ? { roots: input.roots } : {}),
@@ -217,6 +227,7 @@ export function openSession(input: OpenSessionInput): Session {
     trees,
     inProject,
     ...(project !== undefined ? { project } : {}),
+    projectCount,
     scope,
     which: input.clientName,
     who,

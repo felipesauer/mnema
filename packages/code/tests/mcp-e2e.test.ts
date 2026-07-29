@@ -248,12 +248,16 @@ describe('MCP session + tools — unit', () => {
       expect(actions).toEqual(['cancel', 'submit']);
     }
 
-    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown.
+    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown,
+    // and the refusal names the trees it searched instead of denying the id exists
+    // (which this session has no way to know — see mcp-refusal-scope.test.ts).
     const missing = runNextActionsTool(session, { id: 'no-such-id' });
     expect(missing).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: 'task "no-such-id" does not exist',
+      message:
+        `task "no-such-id" was not found in this project (${project}) or in the ` +
+        'machine-global tree — the only trees this session sees',
     });
   });
 
@@ -292,12 +296,15 @@ describe('MCP session + tools — unit', () => {
       expect(illegal.result.verdict.code).toBe('ILLEGAL_TRANSITION');
     }
 
-    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown.
+    // An id no visible tree holds is refused as data (UNKNOWN_TASK), never thrown,
+    // naming the trees it searched rather than denying the id exists.
     const missing = runGuardTool(session, { id: 'no-such-id', action: 'submit' });
     expect(missing).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: 'task "no-such-id" does not exist',
+      message:
+        `task "no-such-id" was not found in this project (${project}) or in the ` +
+        'machine-global tree — the only trees this session sees',
     });
 
     // The dry-run appended NOTHING — the chain is the same length as before.

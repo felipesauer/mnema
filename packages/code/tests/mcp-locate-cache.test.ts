@@ -407,12 +407,19 @@ describe('what the projections alone would have got wrong', () => {
     closeSession(session);
   });
 
-  it('a read of a task another process just created is refused as before', () => {
+  it('a read of a task another process just created is refused, and says what it sees', () => {
     // The other half of the same limit, unchanged: the READS answer from the
     // session's projection, so they still do not see it until something this
     // session does rebuilds the tree. The locate finds the tree; the projection
     // it then reads is the stale one. That was the behaviour before and it is
     // the behaviour now — the fallback restores the locate, not the read.
+    //
+    // What the refusal SAYS had to change with it. The task is right here, in this
+    // project's private tree, and the walk above just found it there: a refusal
+    // claiming it does not exist was false, and one claiming it is not in this
+    // project would be false in a second way. So the sentence stops at what this
+    // session can see — the creation, and nothing after it — which is true whether
+    // the history is short or this session's view of it is behind.
     const project = makeProject('proj');
     const session = openOn(project);
     expect(viaProjectionsOnly(session, unusedId())).toBeUndefined(); // warm
@@ -422,7 +429,9 @@ describe('what the projections alone would have got wrong', () => {
     if (!theirs.ok) throw new Error('setup: outside create refused');
     outside.writer.checkpoint();
 
-    const message = `task "${theirs.id}" does not exist`;
+    const message =
+      `task "${theirs.id}" is in the private tree of this project (${project}), but ` +
+      'has no readable state there — this session sees its creation and nothing after it';
     expect(runNextActionsTool(session, { id: theirs.id })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
