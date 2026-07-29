@@ -52,7 +52,13 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createCacheRegistry } from '../src/mcp/cache-registry.js';
 import { cachedBirthProbe, locateEntityInSession } from '../src/mcp/locate.js';
-import { closeSession, openSession, type Session, writeContext } from '../src/mcp/session.js';
+import {
+  closeSession,
+  openSession,
+  openWrite,
+  type Session,
+  writeContext,
+} from '../src/mcp/session.js';
 import {
   runCaptureMemory,
   runCreateSkill,
@@ -327,8 +333,8 @@ describe('what the projections alone would have got wrong', () => {
       // refusal the tool must be relaying, computed rather than written down.
       const scope = viaReplay(session, id);
       expect(scope).toBe('private');
-      const ctx = writeContext(session.trees, scope as Scope, session.caches);
-      const stamp = { which: session.which, run: session.runId };
+      const { ctx, run } = openWrite(session, scope as Scope);
+      const stamp = { which: session.which, run };
       const refused =
         kind === 'task'
           ? transitionTask(ctx, { id, action, ...stamp })

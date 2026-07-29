@@ -32,11 +32,13 @@
  * the client is known, and every tool call ensures it too, so a call that races
  * ahead of the initialized callback still finds a session rather than failing.
  * A failure to open the session is surfaced honestly as a tool error, never a
- * silent no-op.
+ * silent no-op. Opening it appends NOTHING: the run opens at the first write (see
+ * `openWrite`), so a connection that only reads leaves the project untouched, and
+ * the reads say so rather than reporting an absent run as an idle one.
  *
- * A session holds live resources — its open run and the warm projection caches
- * its reads share — so the connection ending has to release both. `closeSession`
- * does both, and the transport's `onclose` is what calls it.
+ * A session holds live resources — the warm projection caches its reads share, and
+ * a run once a write has opened one — so the connection ending has to release them.
+ * `closeSession` does that, and the transport's `onclose` is what calls it.
  */
 
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
@@ -52,7 +54,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
-import { SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
   runAccountabilityTool,
@@ -175,24 +177,43 @@ export function buildMcpServer(options: McpServerOptions = {}): {
         clientName,
         roots,
         env,
+        log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
       });
-      // The agent AS RECORDED, never as announced. This line goes to the host's
-      // log — a channel that leaves mnema and may be kept — and printing the
-      // announced name would put a credential there in a product that replaces one
-      // before writing it, AND would leave the log and the chain naming two
-      // different agents for the same session.
+      // WHERE this session landed, first. The project is chosen by a cascade over
+      // inputs the server never sees twice — a configured path, the roots the host
+      // announced, in the order it announced them — and the rule walks up, so the
+      // project it settles on is regularly not the directory anybody named: a folder
+      // opened inside another repository resolves to that repository, and a package
+      // of a monorepo resolves to the monorepo. Both are right, and either can be a
+      // surprise. Until this line, nothing anywhere said which one won, and a choice
+      // that leaves no trace is a choice nobody can correct.
+      //
+      // No agent name here. The name the chain records is the SCREENED one, and the
+      // only party that screens is the write — so at the handshake there is no
+      // screened value to print, and printing the announced one would put a
+      // credential in the host's log in a product that replaces one before writing
+      // it. The agent is named when the run opens, from what the write recorded.
+      //
+      // Collapsed to one line: the log is read one event per line, and a path
+      // holding a newline would otherwise write a second event nothing happened in.
       log(
-        `session opened: which=${opened.recordedWhich} who=${opened.who} ` +
-          `scope=${opened.scope} run=${opened.runId}`,
+        oneLine(
+          `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
+            `scope=${opened.scope} who=${opened.who} ` +
+            `run=${opened.run.id ?? '(none — the first write opens it)'}`,
+        ),
       );
       return opened;
     })();
     return sessionPromise;
   };
 
-  // Open the session as soon as the client is known — the thesis in action: the
-  // server establishes the run at connection time, not on first use.
+  // Resolve the session as soon as the client is known: the trees, the scope, the
+  // anchor. This APPENDS NOTHING — the run waits for the first write — so a client
+  // that attaches and calls nothing leaves the project as it found it. It is done
+  // here anyway, rather than on first use, so the line above declares where the
+  // session landed even for a connection that never asks anything.
   server.server.oninitialized = () => {
     void ensureSession().catch((error) => {
       log(`could not open session at initialize: ${messageOf(error)}`);
@@ -208,13 +229,22 @@ export function buildMcpServer(options: McpServerOptions = {}): {
     // is closed; a run left open by a crash is tolerated (the projection reads
     // it as still open), so this never throws. A session that FAILED to open
     // holds nothing to release — it never reached the point of reading a tree.
+    //
+    // A session that only READ has no run, and the line says so instead of naming
+    // one: closing is the last chance to write, and this is where a connection that
+    // touched nothing would otherwise leave a whole run behind.
     transport.onclose = () => {
       if (sessionPromise === undefined) return;
       void sessionPromise
         .then((active) => {
           const closed = closeSession(active);
+          const run = active.run.id;
           log(
-            closed ? `session run ${active.runId} closed` : `session run ${active.runId} left open`,
+            run === undefined
+              ? 'session closed: no run was opened (nothing was written)'
+              : closed
+                ? `session run ${run} closed`
+                : `session run ${run} left open`,
           );
         })
         .catch(() => {
@@ -635,7 +665,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     async () => {
       const active = await ensureSession();
       const context = runBootstrap(active);
-      return { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] };
+      // The opening read carries the same note as `resume`, whose answer it embeds —
+      // and carries it most usefully, being the first thing an agent asks.
+      return withRunState(active, context);
     },
   );
 
@@ -707,7 +739,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     async () => {
       const active = await ensureSession();
       const result = runFocusTool(active);
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      return withRunState(active, result);
     },
   );
 
@@ -724,7 +756,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     async () => {
       const active = await ensureSession();
       const result = runResumeTool(active);
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      return withRunState(active, result);
     },
   );
 
@@ -804,7 +836,11 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // answer is "the move would be refused, here is why". Return the verdict
       // (and focus) as data so the agent reads the reason, exactly as it would
       // from the real move's refusal.
-      return { content: [{ type: 'text', text: JSON.stringify(result.result, null, 2) }] };
+      //
+      // The verdict travels WITH the asker's focus, so this reply lists runs like
+      // `focus` does — and carries the same note for the same reason: "here is
+      // what you are in the middle of" must not answer for the connection.
+      return withRunState(active, result.result);
     },
   );
 
@@ -1120,6 +1156,50 @@ function recorded(
 ): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
   return {
     content: [{ type: 'text', text: [line, ...replacementNotice(result.replaced)].join('\n') }],
+  };
+}
+
+/**
+ * An actor read's reply, plus one sentence when this session has not opened a run.
+ *
+ * The reads that answer about RUNS answer about the ACTOR, not the connection: they
+ * list the runs this machine's anchor has open and the last one it worked in,
+ * wherever those came from. That answer is complete on its own, and it is also the
+ * answer most likely to be read as being about the asking session — an empty focus
+ * reads as "you have nothing in flight" when what is true is "this connection has
+ * not started anything, and a run opens when you first write". One is a fact about
+ * the record, the other about this connection, and the reply now carries both.
+ *
+ * FOUR reads reach this, and they are all of them: `focus` (the runs themselves),
+ * `resume` (the latest run plus that focus), `bootstrap` (which embeds the resume)
+ * and `guard` (whose verdict travels paired with the asker's focus). The rule is
+ * the payload, not the tool: a read that lists the actor's runs says whose they
+ * are. Nothing else on the surface lists a run — the index does not carry them,
+ * `read_record` refuses a run id, and the auditor reads answer about the record
+ * rather than about this connection.
+ *
+ * It travels as its OWN content block, never merged into the JSON: the payload stays
+ * byte-identical to what a caller parsed before this sentence existed, and the
+ * derivation stays the copilot's — a note about the connection has no business
+ * inside a shape the domain defines.
+ */
+function withRunState(
+  session: Session,
+  result: unknown,
+): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  const payload = { type: 'text' as const, text: JSON.stringify(result, null, 2) };
+  if (session.run.id !== undefined) return { content: [payload] };
+  return {
+    content: [
+      payload,
+      {
+        type: 'text' as const,
+        text:
+          'This session has not opened a run of its own yet — one opens when it ' +
+          'first records something. Any run listed above is work this actor has ' +
+          'open from elsewhere, not from this connection.',
+      },
+    ],
   };
 }
 

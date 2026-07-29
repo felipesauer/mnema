@@ -240,13 +240,17 @@ describe('a write is visible to the next read in the same session', () => {
     closeSession(session);
   });
 
-  it('the run opened at session start is already in the first read', () => {
-    // The session's own first write is `startRun`, which happens BEFORE any cache
-    // exists. It has to be visible anyway — a bootstrap that could not see the
-    // session's own run would be the reuse breaking on its very first read.
+  it('the run the first write opened is already in the next read', () => {
+    // The run is appended by the door, on the way to the write the agent asked for,
+    // and the cache is told through that same door. It has to be visible immediately
+    // anyway — a focus that could not see the run the previous call opened would be
+    // the reuse breaking on the connection's own work.
     const session = openOn(makeProject('proj'));
+    if (!runCaptureMemory(session, { content: 'the write that opens the run' }).ok) {
+      throw new Error('setup: capture refused');
+    }
     const focus = runFocusTool(session);
-    expect(focus.openRuns.some((r) => r.id === session.runId)).toBe(true);
+    expect(focus.openRuns.some((r) => r.id === session.run.id)).toBe(true);
     closeSession(session);
   });
 });
@@ -408,6 +412,12 @@ describe('the session releases what it held', () => {
     const session = openOn(makeProject('proj'));
     const cache = cacheOf(session, session.scope);
     expect(cache.listTasks()).toEqual([]);
+    // A run to end, so the close does its recording half as well as its releasing
+    // half — the release must not depend on the write, and this is the path where
+    // both happen.
+    if (!runCaptureMemory(session, { content: 'a note' }).ok) {
+      throw new Error('setup: capture refused');
+    }
 
     expect(closeSession(session)).toBe(true);
 
