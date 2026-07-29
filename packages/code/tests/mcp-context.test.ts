@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { resolveContext } from '../src/mcp/context.js';
+import { type ResolvedContext, resolveContext } from '../src/mcp/context.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -101,12 +101,22 @@ describe('resolveContext — the project cascade', () => {
 });
 
 /**
- * The second answer: HOW MANY projects, which the cascade cannot give because it
+ * The second answer: WHICH projects, which the cascade cannot give because it
  * returns at the first one. The rule is deliberately not the cascade's — it does
- * not walk up — and every test here is a case where walking up would inflate the
- * number or where two spellings of one project would double it.
+ * not walk up — and every test here is a case where walking up would put a project
+ * in the list that nobody opened, or where two spellings of one project would list
+ * it twice.
+ *
+ * The identities are asserted and not only the count, because a write can now name
+ * one of them: a list of the right LENGTH holding the wrong directory would route a
+ * fact into a project the caller did not ask for, and count the same either way.
  */
-describe('resolveContext — how many projects the workspace holds', () => {
+describe('resolveContext — which projects the workspace holds', () => {
+  /** The project directories the context names, in order. */
+  function dirsOf(ctx: ResolvedContext): string[] {
+    return ctx.workspaceProjects.map((project) => project.dir);
+  }
+
   /** Makes `<parent>/<name>` with no `.mnema/` of its own, returns its path. */
   function makeFolder(parent: string, name: string): string {
     const dir = join(parent, name);
@@ -114,7 +124,7 @@ describe('resolveContext — how many projects the workspace holds', () => {
     return dir;
   }
 
-  it('counts the projects among the roots, and lands on the first', () => {
+  it('names the projects among the roots, in order, and lands on the first', () => {
     const a = makeProject('a');
     const b = makeProject('b');
     const c = makeProject('c');
@@ -123,15 +133,16 @@ describe('resolveContext — how many projects the workspace holds', () => {
       env,
     });
     expect(ctx.project).toBe(a);
-    expect(ctx.projectCount).toBe(3);
+    expect(dirsOf(ctx)).toEqual([a, b, c]);
   });
 
   it('does NOT inflate for a folder that merely SITS INSIDE another project', () => {
     // The case the root rule exists for. A notes directory checked out inside
-    // another repository resolves — by walk-up — to that repository, so counting
-    // "roots that resolve" would report two projects for a workspace holding one
+    // another repository resolves — by walk-up — to that repository, so listing
+    // "roots that resolve" would name two projects for a workspace holding one
     // project and one folder. The session lands on `app`; `legacy` is not a project
-    // this workspace opened, it is a repository something else happens to sit in.
+    // this workspace opened, it is a repository something else happens to sit in —
+    // and listing it would offer a write a destination nobody opened.
     const app = makeProject('app');
     const legacy = makeProject('legacy');
     const notes = makeFolder(legacy, 'notes');
@@ -141,30 +152,30 @@ describe('resolveContext — how many projects the workspace holds', () => {
       env,
     });
     expect(ctx.project).toBe(app);
-    expect(ctx.projectCount).toBe(1);
+    expect(dirsOf(ctx)).toEqual([app]);
   });
 
-  it('counts a project the roots reach only by walking up — the one it landed on', () => {
+  it('names a project the roots reach only by walking up — the one it landed on', () => {
     // The same shape with nothing else beside it, and now the walk-up IS the
-    // session: it is writing into `legacy`, so a count that left it out would say
+    // session: it is writing into `legacy`, so a list that left it out would say
     // "no projects" about a connection that has one. Both cases obey the same rule
-    // — a root counts as its own project only when it is one — and the project the
-    // session resolved to counts because that is where its writes land.
+    // — a root is a project of its own only when it is one — and the project the
+    // session resolved to is in the list because that is where its writes land.
     const legacy = makeProject('legacy');
     const notes = makeFolder(legacy, 'notes');
 
     const ctx = resolveContext({ roots: [pathToFileURL(notes).href], env });
     expect(ctx.project).toBe(legacy);
-    expect(ctx.projectCount).toBe(1);
+    expect(dirsOf(ctx)).toEqual([legacy]);
   });
 
-  it('counts the project it landed on AND the one a root announced, when they differ', () => {
-    // The case that makes the number worth reporting. The host announced a folder
+  it('names the project it landed on AND the one a root announced, when they differ', () => {
+    // The case that makes the list worth reporting. The host announced a folder
     // inside `legacy` first, so the walk-up puts the session in `legacy` — and it
     // also announced `app`, a project of its own. The name alone would say "you are
     // in legacy" and leave the reader to guess whether anything else was on offer;
-    // with the count it says there were two, and the reader can tell that landing
-    // in `legacy` was a choice the cascade made rather than the only possibility.
+    // with the list, the reader can tell that landing in `legacy` was a choice the
+    // cascade made, and a write can say it belongs in `app` instead.
     const legacy = makeProject('legacy');
     const notes = makeFolder(legacy, 'notes');
     const app = makeProject('app');
@@ -174,10 +185,12 @@ describe('resolveContext — how many projects the workspace holds', () => {
       env,
     });
     expect(ctx.project).toBe(legacy);
-    expect(ctx.projectCount).toBe(2);
+    // `app` is the announced one, `legacy` the one the walk-up reached: the order is
+    // the host's, and the project the session landed on comes last when no root named it.
+    expect(dirsOf(ctx)).toEqual([app, legacy]);
   });
 
-  it('counts two roots of ONE project once', () => {
+  it('names two roots of ONE project once', () => {
     // The monorepo shape: a host with two packages open announces two roots, and
     // both resolve to the same `.mnema/`. One project, whatever the host opened.
     const mono = makeProject('mono');
@@ -189,28 +202,28 @@ describe('resolveContext — how many projects the workspace holds', () => {
       env,
     });
     expect(ctx.project).toBe(mono);
-    expect(ctx.projectCount).toBe(1);
+    expect(dirsOf(ctx)).toEqual([mono]);
   });
 
-  it('counts the same root announced twice, and with a trailing slash, once', () => {
+  it('names the same root announced twice, and with a trailing slash, once', () => {
     const project = makeProject('twice');
     const ctx = resolveContext({
       roots: [pathToFileURL(project).href, `${pathToFileURL(project).href}/`],
       env,
     });
-    expect(ctx.projectCount).toBe(1);
+    expect(dirsOf(ctx)).toEqual([project]);
   });
 
-  it('counts a configured project that no root announced', () => {
+  it('names a configured project that no root announced', () => {
     // The operator named a project directly. It is not among the roots — there are
     // none — and it is still the project this session works in.
     const project = makeProject('configured');
     const ctx = resolveContext({ configProject: project, roots: [], env });
     expect(ctx.project).toBe(project);
-    expect(ctx.projectCount).toBe(1);
+    expect(dirsOf(ctx)).toEqual([project]);
   });
 
-  it('counts the projects a configured path did not win over', () => {
+  it('names the projects a configured path did not win over', () => {
     // Both are real: the operator pointed at one, and the workspace holds another.
     // The session works in the configured one and knows of two.
     const configured = makeProject('configured');
@@ -221,17 +234,17 @@ describe('resolveContext — how many projects the workspace holds', () => {
       env,
     });
     expect(ctx.project).toBe(configured);
-    expect(ctx.projectCount).toBe(2);
+    expect(dirsOf(ctx)).toEqual([opened, configured]);
   });
 
-  it('is zero when the workspace holds no project at all', () => {
+  it('is empty when the workspace holds no project at all', () => {
     const plain = makeFolder(sandbox, 'plain');
     const ctx = resolveContext({ roots: [pathToFileURL(plain).href], env });
     expect(ctx.inProject).toBe(false);
-    expect(ctx.projectCount).toBe(0);
+    expect(dirsOf(ctx)).toEqual([]);
   });
 
-  it('is zero with no roots at all', () => {
-    expect(resolveContext({ env }).projectCount).toBe(0);
+  it('is empty with no roots at all', () => {
+    expect(resolveContext({ env }).workspaceProjects).toEqual([]);
   });
 });

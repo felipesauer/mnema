@@ -411,20 +411,26 @@ describe('the log says where the session landed', () => {
     await client.close();
   });
 
-  it('says the run has not opened, and then says when it does', async () => {
+  it('says no run has opened, and then names the tree the run opened in', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
     await client.callTool({ name: 'focus' });
 
     expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
-      'run=(none — the first write opens it)',
+      'runs=(none — the first write to a project opens that project’s run)',
     );
     expect(logged.some((line) => line.startsWith('session run '))).toBe(false);
 
     await client.callTool({ name: 'capture_memory', arguments: { content: 'something' } });
-    expect(logged.some((line) => /^session run \S+ opened for which=claude-code$/.test(line))).toBe(
-      true,
-    );
+    // The tree is named, not just the run: a connection opens one run per project it
+    // writes to, so a line that named only the run would leave a reader of the host's
+    // log counting runs with nothing to pair them with on disk.
+    const privateRoot = join(project, PROJECT_DIR, 'private');
+    expect(
+      logged.some((line) =>
+        new RegExp(`^session run \\S+ opened in ${privateRoot} for which=claude-code$`).test(line),
+      ),
+    ).toBe(true);
 
     await client.close();
   });
@@ -477,7 +483,14 @@ describe('the session says how many projects it chose from', () => {
 
     const blocks = blocksOf(await client.callTool({ name: 'bootstrap' }));
     const where = blocks[1]?.text as string;
-    expect(where).toBe(`Workspace: this session knows of 2 projects; it is operating on ${alpha}.`);
+    // The others are NAMED, not just counted: a write can name one, and the agent has
+    // no other channel to learn what the names are. A count would leave it able to
+    // tell that something is wrong and unable to say where the work belongs.
+    expect(where).toBe(
+      `Workspace: this session knows of 2 projects — "${alpha}", "${beta}" — and it is ` +
+        `operating on ${alpha}. A write can name another of them with \`project\`; one ` +
+        'that names none lands here.',
+    );
 
     // A FACT and not an alarm. This fires in every workspace with two folders open,
     // so a caution here would be a caution in most sessions — and one that constant
