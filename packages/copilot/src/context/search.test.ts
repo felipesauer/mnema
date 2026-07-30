@@ -37,10 +37,10 @@ function bench(): Bench {
  * — its own chain root, which is what makes it a tree; the scope is only the
  * role it stands in, and two benches may stand in the same one.
  */
-function tree(b: Bench, scope: Scope): ScopedCache {
+function tree(b: Bench, scope: Scope, project?: string): ScopedCache {
   const cache = b.cache();
   caches.push(cache);
-  return { scope, chainRoot: b.root, cache };
+  return { scope, chainRoot: b.root, ...(project !== undefined ? { project } : {}), cache };
 }
 
 describe('searchRecords — the record across the trees', () => {
@@ -164,6 +164,77 @@ describe('searchRecords — the record across the trees', () => {
 
   it('answers with nothing when there are no trees to search', () => {
     expect(searchRecords([], { term: 'anything' })).toEqual({ hits: [], total: 0 });
+  });
+
+  it('marks every hit with the PROJECT that holds it, and the global tree with none', () => {
+    // The other half of where: the scope says which of a project's trees, this says
+    // whose. A personal cross-project note carries no project, because the tree it
+    // lives in belongs to none — and labelling it with whichever project a read
+    // reached it through would say where to go and be wrong.
+    const team = bench();
+    const personal = bench();
+    capture(team, 'm-team', 'the migration runbook');
+    capture(personal, 'm-mine', 'the migration runbook, my own habit');
+
+    const found = searchRecords([tree(team, 'public', '/w/api'), tree(personal, 'global')], {
+      term: 'migration',
+    });
+
+    expect(new Map(found.hits.map((hit) => [hit.id, hit.project]))).toEqual(
+      new Map([
+        ['m-team', '/w/api'],
+        ['m-mine', undefined],
+      ]),
+    );
+  });
+
+  it('names the project the limit shut out entirely, and says nothing when it did not', () => {
+    // The debt a merged ranking carries: `total` says the list was cut, and cannot say
+    // the cut fell on a whole record. A reader who cannot tell one from the other reads
+    // a project they are not seeing as a project with nothing in it.
+    const first = bench();
+    const second = bench();
+    for (let i = 0; i < 3; i += 1) capture(first, `f-${i}`, 'a shared word');
+    for (let i = 0; i < 3; i += 1) capture(second, `s-${i}`, 'a shared word');
+    const sources = [tree(first, 'public', '/w/first'), tree(second, 'public', '/w/second')];
+
+    const cut = searchRecords(sources, { term: 'shared', limit: 1 });
+    expect(cut.total).toBe(6);
+    const shown = cut.hits[0]?.project;
+    const dropped = ['/w/first', '/w/second'].find((project) => project !== shown);
+    expect(cut.hidden).toEqual([{ project: dropped, matched: 3 }]);
+
+    // A limit that covers the answer hides nothing, and claims nothing.
+    expect(searchRecords(sources, { term: 'shared', limit: 10 }).hidden).toBeUndefined();
+  });
+
+  it('cannot hide a single record, however hard the limit cuts', () => {
+    // The answer's best hit belongs to some record, so that record is shown. It is why
+    // the command line — one project, one label — never carries the field, and why this
+    // is a refinement of `total` rather than a second way of saying it.
+    const only = bench();
+    for (let i = 0; i < 4; i += 1) capture(only, `m-${i}`, 'a shared word');
+    const sources = [tree(only, 'public', '/w/only')];
+
+    const cut = searchRecords(sources, { term: 'shared', limit: 1 });
+    expect(cut.total).toBe(4);
+    expect(cut.hits).toHaveLength(1);
+    expect(cut.hidden).toBeUndefined();
+  });
+
+  it('does not call a record hidden when it simply matched nothing', () => {
+    const words = bench();
+    const silent = bench();
+    capture(words, 'm-1', 'a shared word');
+    capture(silent, 'm-2', 'something else entirely');
+
+    const found = searchRecords(
+      [tree(words, 'public', '/w/words'), tree(silent, 'public', '/w/silent')],
+      { term: 'shared' },
+    );
+
+    expect(found.hits.map((hit) => hit.id)).toEqual(['m-1']);
+    expect(found.hidden).toBeUndefined();
   });
 });
 
