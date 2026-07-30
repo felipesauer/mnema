@@ -1,13 +1,18 @@
 /**
- * Locating an entity's home tree inside a session.
+ * Locating an entity's home tree inside a session — the FAST HALF of it.
  *
- * The rule — which trees are searched, in what order, what counts as the same id
- * — lives in the core and is shared with the CLI. What a session changes is only
- * how ONE tree is asked whether it holds a birth: from its warm projection,
- * where the id is a primary key, instead of by replaying its chain. So the
- * property under test is not "the fast path is fast" but "the fast path answers
- * the same", and almost everything here is a comparison against what a fresh
- * process would say.
+ * What a session changes about the locate is how ONE tree is asked whether it
+ * holds a birth: from its warm projection, where the id is a primary key, instead
+ * of by replaying its chain. So the property under test is not "the fast path is
+ * fast" but "the fast path answers the same", and almost everything here is a
+ * comparison against what a fresh process would say.
+ *
+ * Every case runs on a workspace of ONE project, which is what makes that
+ * comparison exact: the trees the session's locate covers are then the same three
+ * `locateEntityScope` covers, so a difference in the answer can only come from the
+ * probe. The walk over SEVERAL projects — what it finds, what it refuses, and that a
+ * one-project workspace still produces exactly this list — is
+ * `mcp-move-across-workspace.test.ts`.
  *
  * The comparison is computed, never written down as a literal: each case asks
  * both the session's locate and the core's replaying one, so a change to either
@@ -51,7 +56,7 @@ import {
 } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createCacheRegistry } from '../src/mcp/cache-registry.js';
-import { cachedBirthProbe, locateEntityInSession } from '../src/mcp/locate.js';
+import { cachedBirthProbe, locateEntityAcross } from '../src/mcp/locate.js';
 import {
   closeSession,
   openSession,
@@ -69,6 +74,7 @@ import {
   runRecordDecision,
   runSkillTransition,
   runTaskTransition,
+  workspaceTrees,
 } from '../src/mcp/tools.js';
 
 let sandbox: string;
@@ -93,6 +99,17 @@ function openOn(project: string): Session {
 /** Where a replay of each chain says the entity lives — what a fresh process answers. */
 function viaReplay(session: Session, id: string): Scope | undefined {
   return locateEntityScope(session.trees, id, upcasters);
+}
+
+/**
+ * Where the session's own locate says the entity lives, as a SCOPE — the shape these
+ * comparisons are in. Every case here runs on a workspace of one project, so the
+ * scope is the whole of the answer and the comparison against a fresh process is
+ * exact; what the wider walk adds is in `mcp-move-across-workspace.test.ts`.
+ */
+function viaSession(session: Session, id: string): Scope | undefined {
+  const located = locateEntityAcross(session, workspaceTrees(session), id);
+  return located.outcome === 'found' ? located.home.scope : undefined;
 }
 
 /** Where the session's PROJECTIONS alone say it lives — the fast half, on its own. */
@@ -167,10 +184,10 @@ describe('a session locates an entity exactly where a fresh process would', () =
     ids.push(unusedId(), '\ud800');
 
     for (const id of ids) {
-      expect(locateEntityInSession(session, id)).toBe(viaReplay(session, id));
+      expect(viaSession(session, id)).toBe(viaReplay(session, id));
     }
     // …and the agreement is not the vacuous one: the nine were really located.
-    expect(ids.slice(0, 9).map((id) => locateEntityInSession(session, id))).toEqual([
+    expect(ids.slice(0, 9).map((id) => viaSession(session, id))).toEqual([
       'public',
       'public',
       'public',
@@ -194,7 +211,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
     const memory = runCaptureMemory(session, { content: 'the auth flow uses PKCE' });
     if (!memory.ok) throw new Error('setup: capture refused');
 
-    expect(locateEntityInSession(session, memory.id)).toBeUndefined();
+    expect(viaSession(session, memory.id)).toBeUndefined();
     expect(viaReplay(session, memory.id)).toBeUndefined();
     closeSession(session);
   });
@@ -213,7 +230,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
     if (!created.ok) throw new Error('setup: create refused');
 
     expect(viaProjectionsOnly(session, created.id)).toBe('public');
-    expect(locateEntityInSession(session, created.id)).toBe('public');
+    expect(viaSession(session, created.id)).toBe('public');
     closeSession(session);
   });
 
@@ -227,8 +244,8 @@ describe('a session locates an entity exactly where a fresh process would', () =
     const inPrivate = runCreateTask(session, { title: 'same name' });
     if (!inPublic.ok || !inPrivate.ok) throw new Error('setup: create refused');
 
-    expect(locateEntityInSession(session, inPublic.id)).toBe('public');
-    expect(locateEntityInSession(session, inPrivate.id)).toBe('private');
+    expect(viaSession(session, inPublic.id)).toBe('public');
+    expect(viaSession(session, inPrivate.id)).toBe('private');
 
     // And the tools that route by it land in the right tree: a move on the
     // public task is legal from DRAFT, and the read that follows sees it.
@@ -258,7 +275,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
 
     const outside = openSession({ clientName: 'claude-code', env });
     expect(outside.inProject).toBe(false);
-    expect(locateEntityInSession(outside, created.id)).toBeUndefined();
+    expect(viaSession(outside, created.id)).toBeUndefined();
     expect(viaReplay(outside, created.id)).toBeUndefined();
     closeSession(outside);
   });
@@ -291,7 +308,7 @@ describe('the projections answer first — the chain is not replayed for an enti
       }
     })();
     expect(byReplay).not.toBe('public');
-    expect(locateEntityInSession(session, created.id)).toBe('public');
+    expect(viaSession(session, created.id)).toBe('public');
 
     closeSession(session);
   });
@@ -308,8 +325,8 @@ describe('what the projections alone would have got wrong', () => {
     const task = truncatedBirth(session, 'private', 'task', unusedId());
 
     expect(viaProjectionsOnly(session, task)).toBeUndefined(); // the gap…
-    expect(locateEntityInSession(session, task)).toBe('private'); // …closed
-    expect(locateEntityInSession(session, task)).toBe(viaReplay(session, task));
+    expect(viaSession(session, task)).toBe('private'); // …closed
+    expect(viaSession(session, task)).toBe(viaReplay(session, task));
     closeSession(session);
   });
 
@@ -392,7 +409,7 @@ describe('what the projections alone would have got wrong', () => {
     outside.writer.checkpoint();
 
     expect(viaProjectionsOnly(session, theirs.id)).toBeUndefined(); // the gap…
-    expect(locateEntityInSession(session, theirs.id)).toBe('private'); // …closed
+    expect(viaSession(session, theirs.id)).toBe('private'); // …closed
 
     expect(runTaskTransition(session, { id: theirs.id, action: 'submit' })).toMatchObject({
       ok: true,
@@ -430,8 +447,8 @@ describe('what the projections alone would have got wrong', () => {
     outside.writer.checkpoint();
 
     const message =
-      `task "${theirs.id}" is in the private tree of this project (${project}), but ` +
-      'has no readable state there — this session sees its creation and nothing after it';
+      `task "${theirs.id}" is in the private tree of "${project}", but has no readable ` +
+      'state there — this session sees its creation and nothing after it';
     expect(runNextActionsTool(session, { id: theirs.id })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
@@ -447,19 +464,61 @@ describe('what the projections alone would have got wrong', () => {
 });
 
 describe('no MCP tool locates an entity its own way', () => {
-  it('only the locate module names the core’s locate reads', () => {
-    // The structural guard behind the design, the counterpart of the one that
-    // pins every write to the invalidation door. The composition matters — the
-    // projections first, the chains only if they came up empty — and a tool that
-    // reached for either half directly would quietly get a different answer than
-    // the other four: a bare replay would pay a full scan per call, a
-    // bare projection walk would lose entities the chain still holds. So the ban
-    // is on the SYMBOLS, over the whole MCP surface: a tool added later composes
-    // through `locateEntityInSession` or fails here.
+  /** The two halves of the walk, and the rule about what an id IS — the locate's own. */
+  const PIECES = ['cachedBirthProbe', 'replayingBirthProbe', 'canonicalId'];
+
+  it('only the locate module names the pieces of the walk', () => {
+    // The structural guard behind the design, the counterpart of the one that pins
+    // every write to the invalidation door. The composition matters — the projections
+    // over every record first, the chains only if none of them claimed the entity —
+    // and a tool that reached for a piece directly would quietly get a different
+    // answer than the other four: a bare replay pays a full scan per call, a bare
+    // projection walk loses entities the chain still holds, and a walk of its own
+    // covers whatever trees its author remembered. So the ban is on the SYMBOLS, over
+    // the whole MCP surface: a tool added later composes through the locate or fails
+    // here.
     const mcpDir = fileURLToPath(new URL('../src/mcp/', import.meta.url));
     const offenders = readdirSync(mcpDir)
       .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts') && f !== 'locate.ts')
-      .filter((f) => /locateEntityScope/.test(readFileSync(join(mcpDir, f), 'utf-8')));
+      .filter((f) => {
+        const source = readFileSync(join(mcpDir, f), 'utf-8');
+        return PIECES.some((piece) => new RegExp(`\\b${piece}\\b`).test(source));
+      });
     expect(offenders).toEqual([]);
+  });
+
+  it('and the locate module names every one of them — the ban is not vacuous', () => {
+    // The half that keeps the guard above honest. A rename that emptied the walk of
+    // these symbols would leave that assertion passing over a ban on nothing, which
+    // is the failure mode of every structural test written as an absence.
+    const locate = String(
+      readFileSync(fileURLToPath(new URL('../src/mcp/locate.ts', import.meta.url))),
+    );
+    const missing = PIECES.filter((piece) => !new RegExp(`\\b${piece}\\b`).test(locate));
+    expect(missing).toEqual([]);
+  });
+
+  it('and NO file of the surface reaches for the core’s one-record locate', () => {
+    // `locateEntityScope` searches ONE `ResolvedTrees` and is the right read where a
+    // `cwd` resolves one project — which is the command line, not this surface. Here
+    // it would answer about the session's own project while the tool beside it
+    // answered about the workspace, and the two answers look identical until the id
+    // belongs to a sibling. So the ban covers the locate module too.
+    const mcpDir = fileURLToPath(new URL('../src/mcp/', import.meta.url));
+    const offenders = readdirSync(mcpDir)
+      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+      .filter((f) => /\blocateEntityScope\b/.test(readFileSync(join(mcpDir, f), 'utf-8')));
+    expect(offenders).toEqual([]);
+  });
+
+  it('and one function composes it — five tools, one call', () => {
+    // The locate takes the tree list, so composing it is picking the coverage. Five
+    // tools ask, and every one of them must ask through the same pairing: a second
+    // composition is a second answer to "which trees" the day one of them is edited.
+    const tools = String(
+      readFileSync(fileURLToPath(new URL('../src/mcp/tools.ts', import.meta.url))),
+    );
+    expect(tools.match(/locateEntityAcross\(/g)).toHaveLength(1);
+    expect(tools.match(/locateEntity\(session, input\.id\)/g)).toHaveLength(5);
   });
 });

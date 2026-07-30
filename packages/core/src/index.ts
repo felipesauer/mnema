@@ -128,6 +128,7 @@ export {
   type RegisteredProject,
   type ResolvedTrees,
   registerProject,
+  replayingBirthProbe,
   resolveScope,
   resolveTrees,
   type Scope,
