@@ -1,6 +1,7 @@
 /**
- * Reading a chain from disk: enumerate tails, read a tail's entries in order
- * across its segments, and read its checkpoints.
+ * Reading a chain from disk: enumerate tails, read a tail's entries in seq order
+ * across its segments — the whole history, or just the end of it — and read its
+ * checkpoints.
  *
  * Reading is pure I/O plus parsing; it does no verification. The verifier
  * layers the T1/T2/T4 checks on top of what this returns.
@@ -58,7 +59,7 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
 }
 
 /**
- * Reads all entries of a tail in seq order across its segments.
+ * Parses one segment file into its entries.
  *
  * A malformed line is corruption worth surfacing — EXCEPT one specific,
  * benign case: a crash mid-append can leave a torn final line at the physical
@@ -67,34 +68,98 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
  * fails to parse". That one trailing fragment is dropped so the intact prefix
  * still reads and the writer can resume; any malformed line elsewhere (or a
  * torn fragment that happens to parse) still throws.
+ *
+ * `isLast` says whether this is the tail's last segment, because that is the
+ * only file whose end is the physical end of the tail — a fragment anywhere
+ * else is corruption. This is the ONE place the rule lives: both readers below
+ * go through here, so the tolerance cannot drift between them.
+ */
+function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): Entry[] {
+  const raw = readFileSync(file, 'utf-8');
+  const endsWithNewline = raw.endsWith('\n');
+  const lines = raw.split('\n');
+  const entries: Entry[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] as string;
+    if (line.length === 0) continue;
+    const isTrailingFragment = isLast && !endsWithNewline && i === lines.length - 1;
+    try {
+      entries.push(parseEntry(line, upcasters));
+    } catch (error) {
+      if (isTrailingFragment) continue; // torn last write from a crash — drop it
+      throw error;
+    }
+  }
+  return entries;
+}
+
+/**
+ * Reads all entries of a tail in seq order across its segments.
+ *
+ * This is the whole history of one machine, which the verifier and the replay
+ * both genuinely need. A writer resuming the tail does not — see
+ * {@link readTailTip}.
  */
 export function readTailEntries(
   layout: ChainLayout,
   tailId: string,
   upcasters: UpcasterRegistry,
 ): Entry[] {
-  const entries: Entry[] = [];
   const segments = orderedSegments(layout, tailId);
+  const entries: Entry[] = [];
   for (let s = 0; s < segments.length; s += 1) {
     const file = segments[s] as string;
-    const raw = readFileSync(file, 'utf-8');
-    const isLastSegment = s === segments.length - 1;
-    // A trailing fragment (no final newline) only exists on the last segment.
-    const endsWithNewline = raw.endsWith('\n');
-    const lines = raw.split('\n');
-    for (let i = 0; i < lines.length; i += 1) {
-      const line = lines[i] as string;
-      if (line.length === 0) continue;
-      const isTrailingFragment = isLastSegment && !endsWithNewline && i === lines.length - 1;
-      try {
-        entries.push(parseEntry(line, upcasters));
-      } catch (error) {
-        if (isTrailingFragment) continue; // torn last write from a crash — drop it
-        throw error;
-      }
+    for (const entry of entriesOfSegment(file, upcasters, s === segments.length - 1)) {
+      entries.push(entry);
     }
   }
   return entries;
+}
+
+/**
+ * Reads the entries at the END of a tail: enough of it to hold every seq above
+ * `minSeq`, in seq order.
+ *
+ * A writer resuming a tail needs two things, and neither needs the history: the
+ * last entry (for the head hash and the next seq) and the events no checkpoint
+ * covers yet (for what the next checkpoint signs). Both live at the end. So this
+ * walks segments from last to first: the last segment that yields any entry
+ * already holds the tail's last entry, and because segments are in seq order the
+ * lowest seq in hand only ever drops as the walk goes back — once it is at or
+ * below `minSeq`, everything above `minSeq` is in hand and no earlier segment
+ * can hold more.
+ *
+ * The unit of reading is a whole segment, so the result MAY include entries at
+ * or below `minSeq`; a caller that wants strictly-above filters. What bounds the
+ * excess is the segment size cap: never more than one segment's worth below the
+ * boundary. Passing `minSeq = -1` (a tail with no checkpoint yet) reads the whole
+ * tail, which is the honest answer — the next checkpoint has to cover from seq 0.
+ *
+ * Torn-fragment tolerance is exactly {@link readTailEntries}'s: both compose
+ * `entriesOfSegment`.
+ */
+export function readTailTip(
+  layout: ChainLayout,
+  tailId: string,
+  upcasters: UpcasterRegistry,
+  minSeq: number,
+): Entry[] {
+  const segments = orderedSegments(layout, tailId);
+  const chunks: Entry[][] = [];
+  let lowestSeq: number | null = null;
+  for (let s = segments.length - 1; s >= 0; s -= 1) {
+    const file = segments[s] as string;
+    const chunk = entriesOfSegment(file, upcasters, s === segments.length - 1);
+    // An empty segment contributes nothing and moves no boundary — the last one
+    // can be empty because a recovering writer truncated a torn fragment out of
+    // it, and the walk simply continues into the segment before it.
+    if (chunk.length > 0) {
+      chunks.unshift(chunk);
+      lowestSeq = (chunk[0] as Entry).link.seq;
+    }
+    if (lowestSeq !== null && lowestSeq <= minSeq) break;
+  }
+  return chunks.flat();
 }
 
 /**
