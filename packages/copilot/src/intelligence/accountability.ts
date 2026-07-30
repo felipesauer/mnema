@@ -17,6 +17,15 @@
  * moment this said "excessive" or "concerning" it would stop being a derivation
  * of the proof and start inventing a fact the chain never recorded.
  *
+ * ## One account, or one per project
+ *
+ * A count is about a RECORD, so how far it reaches is part of what it says.
+ * {@link accountability} folds whatever it is given into one account, which is the
+ * answer when the trees are one record. {@link accountabilityByProject} keeps a
+ * workspace's projects apart — one account each, never a sum — because a total over
+ * several codebases answers a different question under the same name. The second is
+ * the derivation, not a variant: it calls the same fold, once per record.
+ *
  * ## Counted in SQL, not in a scan
  *
  * The counting happens in the REFERENCE INDEX, one grouped query per tree, and
@@ -92,11 +101,124 @@ export interface Accountability {
  * directly (ISO-8601 UTC stamps sort lexically, the same order the chain merges
  * on). An empty record — or filters that exclude everything — yields a zero
  * account (`total: 0`, empty `byWho`), never an error.
+ *
+ * ONE account over whatever it is given, which is the right answer when the sources
+ * are one record: a project's trees, or a single tree. Given the trees of several
+ * PROJECTS it would sum them into a number that answers a different question under
+ * this name — {@link accountabilityByProject} is that read.
  */
 export function accountability(
   sources: readonly ScopedCache[],
   filter: AccountabilityFilter = {},
 ): Accountability {
+  return {
+    ...(filter.from !== undefined ? { from: filter.from } : {}),
+    ...(filter.to !== undefined ? { to: filter.to } : {}),
+    ...fold(sources, filter),
+  };
+}
+
+/** One record's account of authorship, and which record it is. */
+export interface ProjectAccount {
+  /**
+   * The project whose trees this counts — absent for the machine-global tree, which
+   * belongs to no project and is the same tree for all of them.
+   */
+  readonly project?: string;
+  /** Total facts in this record, across all authors. */
+  readonly total: number;
+  /** One account per authorizing `who`, most facts first (then who-sorted). */
+  readonly byWho: readonly WhoAccount[];
+}
+
+/** The records of a workspace accounted for side by side, never added together. */
+export interface WorkspaceAccountability {
+  /** The `from` filter applied, echoed back for the reader (undefined if none). */
+  readonly from?: string;
+  /** The `to` filter applied, echoed back for the reader (undefined if none). */
+  readonly to?: string;
+  /**
+   * One account per record: each project of the workspace, and the machine-global
+   * tree. Projects in the order the caller listed their trees, the projectless entry
+   * last.
+   *
+   * A record that matched nothing is still HERE, at zero. An entry missing from this
+   * list would be indistinguishable from a project the read never opened, and the
+   * whole point of the list is that it says where it looked.
+   *
+   * There is deliberately NO total beside it. See {@link accountabilityByProject}.
+   */
+  readonly byProject: readonly ProjectAccount[];
+}
+
+/**
+ * The account of authorship of EACH record in `sources`, grouped by the project whose
+ * trees hold it, with the same filter applied to every one.
+ *
+ * This is where an aggregate parts from an index. Merging hits across projects widens
+ * a list and changes nothing in it; merging COUNTS produces a number that means
+ * something else. "Who authorized what here" summed over three codebases answers "who
+ * authorized what in this workspace" while still being called the first thing, and a
+ * reader takes the larger number for the smaller question with nothing in the answer
+ * to warn them. Every count here means exactly what it meant when the project was the
+ * only one open — which is the property that makes the answer usable at all.
+ *
+ * And NOT decomposing is not the safe alternative, which is what settles it: these
+ * reads take no project argument, by the same rule that keeps a flag off the id-keyed
+ * ones. An account locked to the session's own project leaves an agent with no way to
+ * ask about the others at all — the blindness that a routed write already fixed for
+ * writing, left in place for auditing.
+ *
+ * So: no total across the entries, not even beside them. A workspace figure offered
+ * next to the decomposition is the same misleading number with an excuse, and the one
+ * a hurried reader takes. Adding them up is the reader's act, on the reader's
+ * question.
+ *
+ * The machine-global tree gets ONE entry, whatever the project count, because every
+ * project resolves the same tree: folding it into each project's account would count
+ * one personal note three times, and giving it to one project arbitrarily would say a
+ * cross-project note belongs to a codebase.
+ *
+ * The entries are NOT ordered by count. `byWho` inside one is, for a stable shape and
+ * explicitly not as a verdict; ordering the records that way would rank the projects,
+ * which is the one thing this read must not do. Source order is already deterministic
+ * and it carries a fact instead — the session's own project comes first.
+ */
+export function accountabilityByProject(
+  sources: readonly ScopedCache[],
+  filter: AccountabilityFilter = {},
+): WorkspaceAccountability {
+  const grouped = new Map<string | undefined, ScopedCache[]>();
+  for (const source of sources) {
+    const group = grouped.get(source.project);
+    if (group === undefined) grouped.set(source.project, [source]);
+    else group.push(source);
+  }
+  const byProject = [...grouped.entries()]
+    .map(([project, group]) => ({
+      ...(project !== undefined ? { project } : {}),
+      ...fold(group, filter),
+    }))
+    .sort(projectlessLast);
+  return {
+    ...(filter.from !== undefined ? { from: filter.from } : {}),
+    ...(filter.to !== undefined ? { to: filter.to } : {}),
+    byProject,
+  };
+}
+
+/**
+ * The one fold: every tree's grouped counts summed into a total and a per-author
+ * breakdown.
+ *
+ * Both reads above call THIS, so a single account and one entry of a decomposition
+ * cannot come to disagree about what a count is — the same reason the two breakdowns
+ * inside an author come from one grouping.
+ */
+function fold(
+  sources: readonly ScopedCache[],
+  filter: AccountabilityFilter,
+): { total: number; byWho: readonly WhoAccount[] } {
   const perWho = new Map<string, WhoAccumulator>();
   let total = 0;
   for (const source of sources) {
@@ -105,13 +227,15 @@ export function accountability(
       accumulate(perWho, cell);
     }
   }
-  const byWho = [...perWho.values()].map(finishWho).sort(byTotalThenWho);
-  return {
-    ...(filter.from !== undefined ? { from: filter.from } : {}),
-    ...(filter.to !== undefined ? { to: filter.to } : {}),
-    total,
-    byWho,
-  };
+  return { total, byWho: [...perWho.values()].map(finishWho).sort(byTotalThenWho) };
+}
+
+/** Keeps the projectless record after the projects, leaving their order untouched. */
+function projectlessLast(a: ProjectAccount, b: ProjectAccount): number {
+  if (a.project === b.project) return 0;
+  if (a.project === undefined) return 1;
+  if (b.project === undefined) return -1;
+  return 0;
 }
 
 /** Mutable per-`who` tallies, finished into a `WhoAccount`. */

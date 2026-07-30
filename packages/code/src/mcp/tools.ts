@@ -55,11 +55,10 @@
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
-  type Accountability,
   type AccountabilityFilter,
   type AdoptedSkill,
   type Antipatterns,
-  accountability,
+  accountabilityByProject,
   adoptedSkills,
   antipatterns,
   type Bootstrap,
@@ -85,6 +84,7 @@ import {
   searchRecords,
   type TimelineEntry,
   timeline,
+  type WorkspaceAccountability,
 } from '@mnema/copilot';
 import {
   chainRootForScope,
@@ -870,9 +870,11 @@ export function runBootstrap(session: Session): Bootstrap {
  * tree alone; inside one it is public, private and global — the team's record, this
  * machine's, and the personal cross-project one.
  *
- * The sources of the reads whose question IS scoped to a project — `search` ("what is
- * in this record"), `accountability` ("who authorized what here"). For a read keyed by
- * an id, whose question is not, see {@link workspaceCaches}.
+ * The sources of the reads that serve THE SESSION rather than audit a record: the
+ * skills it can see, and — through {@link workspaceCaches}, which starts here — the
+ * first project of every read that spans the workspace. No read composes this list
+ * directly any more; a question about a record reaches every project the client
+ * announced, and this is the part of that answer the session already had.
  *
  * Asking the registry means each is warm after the first read of that tree, and
  * rebuilt when this session's own writes left it behind. The order here does not
@@ -888,16 +890,25 @@ function scopedCaches(session: Session): ScopedCache[] {
 const SCOPE_ORDER = ['public', 'private', 'global'] as const;
 
 /**
- * Every tree of every project this workspace holds — the sources of a read keyed by
- * an ID.
+ * Every tree of every project this workspace holds — the sources of every read about
+ * THE RECORD: the three keyed by an id, plus `search` and `accountability`.
  *
  * The boundary of a project is not a property of such a question. An id is minted
  * once and lives in one tree, so "what does this record say" has one answer wherever
  * it was written; the entities that point AT something are regularly the ones in the
  * OTHER projects (that is what normalizing a fix across three codebases produces);
- * and a history does not end where a repository does. Asking one project and
+ * a history does not end where a repository does; and words a person wrote are in the
+ * project they were written in, not the one a cascade picked. Asking one project and
  * answering about the world is the shape of claim this product exists not to make —
  * and it is worse than a short answer, because the reply looks complete.
+ *
+ * The list is the same for all five; what differs is what each may MERGE from it, and
+ * that follows from the shape of the answer rather than from an option. An index and a
+ * history are ITEMS: widening them adds without changing, so they merge, each item
+ * labelled with the project. An account of authorship is an AGGREGATE: widening it
+ * sums, and a sum answers a different question under the same name — so it comes back
+ * decomposed, one entry per project (`accountabilityByProject`), and no total across
+ * them.
  *
  * It is not a flag and takes no argument, deliberately. The surface already reads
  * every tree for `skills` (a capability is not scoped to a project) and one tree for
@@ -914,8 +925,9 @@ const SCOPE_ORDER = ['public', 'private', 'global'] as const;
  * Deduplicated by CHAIN ROOT, and the machine-global tree is why it has to be. Every
  * project resolves the same global tree, so iterating projects hands that one tree
  * over N times — and a reader given the same tree three times reports each of its
- * facts three times. Two of the three readers here would have absorbed it silently
- * (a merged history would not; see the test), which is exactly the reason to dedupe
+ * facts three times. Some of the readers here would have absorbed it silently and
+ * some would not (a merged history would not, and neither would a count — it would
+ * report every personal note three times over), which is exactly the reason to dedupe
  * at the source rather than rely on each reader's own keying.
  */
 function workspaceCaches(session: Session): ScopedCache[] {
@@ -1298,19 +1310,33 @@ export type SearchToolResult =
     };
 
 /**
- * `search` — find records across the trees this session can see, or list the
+ * `search` — find records across every project of the workspace, or list the
  * most recent ones.
  *
  * The read that makes the record readable. Everything an agent captures — a
  * memory, an observation, a decision, a task, a skill — was write-only until
  * now: recoverable by id if you still had the id, and otherwise gone. This
- * returns an INDEX of what matched (id, kind, tree, instant, one line each),
- * never the bodies; `read_record` serves one whole record when the index says
- * which one is worth reading.
+ * returns an INDEX of what matched (id, kind, tree, project, instant, one line
+ * each), never the bodies; `read_record` serves one whole record when the index
+ * says which one is worth reading.
  *
  * The term is OPTIONAL. Without one the answer is the most recent records —
  * "what has been going on here" — and with one it is the best matches. They are
  * the same read because an inverted index makes them the same query.
+ *
+ * The union is what "have we written about X" has always meant. The words are in the
+ * project they were written in, and the cascade's choice of one project is not a
+ * filter the caller applied — so a search of one codebase answering "nothing matches"
+ * about a workspace says the one thing this product must not: it reports the world
+ * from a search of a corner, in the same words it would use if the corner were the
+ * world. Every hit says which project holds it, which is what makes filtering the
+ * reader's option instead of ours.
+ *
+ * ⚠️ It carries a limit the answer now has to state: the merged ranking is an
+ * approximation across corpora, and `limit` can fill the list from one project and
+ * leave a sibling's matches out entirely. The constant half is in this description and
+ * in `searchRecords`; the per-answer half is the `hidden` field, present only when a
+ * whole record was shut out. No per-project quota — declared, not resolved.
  *
  * Read-only in the strict sense: it asks the session's warm caches and composes
  * the copilot's pure `searchRecords`. No writer, no event — including for a
@@ -1319,7 +1345,10 @@ export type SearchToolResult =
  */
 export function runSearchTool(session: Session, input: RecordQuery = {}): SearchToolResult {
   // A scope this context does not have would silently return nothing, which
-  // reads as "no matches" when the truth is "that tree is not here".
+  // reads as "no matches" when the truth is "that tree is not here". Checked on the
+  // session's own trees and still right over the union: a workspace with a project in
+  // it is a session IN a project, so the roles a sibling has are the roles this one
+  // has — what differs across projects is the tree behind a role, never the roles.
   if (input.scope !== undefined && chainRootForScope(session.trees, input.scope) === undefined) {
     return {
       ok: false,
@@ -1338,7 +1367,7 @@ export function runSearchTool(session: Session, input: RecordQuery = {}): Search
       message: `"${input.kind}" is not a kind of record — one of: ${SEARCH_KINDS.join(', ')}`,
     };
   }
-  return { ok: true, value: searchRecords(scopedCaches(session), input) };
+  return { ok: true, value: searchRecords(workspaceCaches(session), input) };
 }
 
 /** One whole record, or a typed refusal. */
@@ -1446,8 +1475,8 @@ type IntelligenceResult<T> =
 /** The `audit_timeline` result — the entity's history, or a refusal. */
 export type TimelineToolResult = IntelligenceResult<readonly TimelineEntry[]>;
 
-/** The `audit_accountability` result — the account, or a refusal. */
-export type AccountabilityToolResult = IntelligenceResult<Accountability>;
+/** The `audit_accountability` result — an account per project, or a refusal. */
+export type AccountabilityToolResult = IntelligenceResult<WorkspaceAccountability>;
 
 /** The `audit_antipatterns` result — the recurring shapes, or a refusal. */
 export type AntipatternsToolResult = IntelligenceResult<Antipatterns>;
@@ -1459,13 +1488,12 @@ export type AntipatternsToolResult = IntelligenceResult<Antipatterns>;
  * (returned as data so the server shapes it into a tool error), the same refusal
  * the CLI intelligence reads give.
  *
- * In a project, WHICH trees the read then folds depends on the read: the two keyed by
- * an id fold every project of the workspace ({@link workspaceCaches}), and
- * `accountability` folds the session's own ({@link scopedCaches}) — "who authorized
- * what" is a question about a record, and summing three projects would answer a
+ * All three read every project of the workspace ({@link workspaceCaches}); what
+ * differs is what each merges from it. The two keyed by an id merge items into one
+ * answer, and `accountability` keeps a count per project rather than summing — "who
+ * authorized what" is a question about a record, and three added together answer a
  * different one under the same name. The guard is shared because the CONDITION is
- * shared: without a project there is no record to audit, however wide the fold would
- * have been.
+ * shared: without a project there is no record to audit, however the fold then works.
  */
 function requireProject(
   session: Session,
@@ -1543,14 +1571,30 @@ export function runReferencesTool(
 }
 
 /**
- * `audit_accountability` — who authorized what across the session's trees.
+ * `audit_accountability` — who authorized what, accounted for one project at a time.
  *
- * Sums every present tree's grouped counts into a factual account of authorship.
- * With no filter it accounts for the whole record (git shortlog -sn);
- * `from`/`to`/`who`/`which` only narrow it — they are aggregation filters, never
- * the session actor's identity (the session's `who` is not imposed as a filter).
- * Read-only: the session's warm caches and the copilot's pure `accountability`.
- * With no project it refuses `NO_PROJECT`.
+ * Every project of the workspace, and the machine-global tree, each folded into its
+ * own factual account of authorship. With no filter it accounts for the whole record
+ * (git shortlog -sn); `from`/`to`/`who`/`which` only narrow it — they are aggregation
+ * filters, never the session actor's identity (the session's `who` is not imposed as
+ * a filter).
+ *
+ * DECOMPOSED and never summed, which is the whole difference between this read and the
+ * four others that span the workspace. They return items, and an item is the same fact
+ * wherever it was written. This returns counts, and a count is about a record: three
+ * codebases added up answer "how much have I written" while still being called "how
+ * much is in this record", and the reader takes the bigger number for the smaller
+ * question with nothing in the reply to catch it. Each entry here means exactly what
+ * the single answer meant when a session saw one project — the arithmetic is
+ * unchanged, the attribution is new.
+ *
+ * Not decomposing was the other way to be wrong. These reads take no project
+ * argument, deliberately, so an account locked to the session's own project leaves an
+ * agent unable to ask about the others at all — a write already says which project it
+ * belongs to ({@link routeWrite}), and the auditing of it would have stayed blind.
+ *
+ * Read-only: the session's warm caches and the copilot's pure
+ * `accountabilityByProject`. With no project it refuses `NO_PROJECT`.
  */
 export function runAccountabilityTool(
   session: Session,
@@ -1558,7 +1602,7 @@ export function runAccountabilityTool(
 ): AccountabilityToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: accountability(scopedCaches(session), input) };
+  return { ok: true, value: accountabilityByProject(workspaceCaches(session), input) };
 }
 
 /** The `audit_exposure` result — where a credential format sits, or a refusal. */
