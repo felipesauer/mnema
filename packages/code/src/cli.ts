@@ -64,7 +64,6 @@ import { runTaskTransition } from './commands/task-transition.js';
 import { runTimeline } from './commands/timeline.js';
 import { runVerify } from './commands/verify.js';
 import { discoveryEnv } from './env.js';
-import { buildMcpServer } from './mcp/server.js';
 import { resolvePinnedRun } from './pinned-run.js';
 import { RECORD_CONTRACT_HELP, type Replacement, replacementNotice } from './recorded-content.js';
 import { A_PERSON, oneLine } from './served-patterns.js';
@@ -2060,6 +2059,10 @@ export function buildProgram(io: CliIo = processIo): Command {
     .command('mcp')
     .description('run the mnema MCP server over stdio (for an agent host)')
     .action(async () => {
+      // Loaded HERE, not at module scope: the MCP SDK is the heaviest import in
+      // the product and only this one verb uses it, so importing it at the top
+      // made every other command pay for a server it never starts.
+      const { buildMcpServer } = await import('./mcp/server.js');
       // stdout carries the JSON-RPC protocol, so the server writes every
       // diagnostic to stderr. This action does not return until the transport
       // closes — the process serves for the life of the connection.
