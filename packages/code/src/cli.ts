@@ -480,10 +480,18 @@ function printReferences(graph: ReferenceGraph, io: CliIo): void {
  * pretending otherwise would send someone looking for a command that does not
  * exist. The empty answer says "nothing RECOGNIZABLE", never "nothing": the
  * detector reads formats, and a password in prose has no format.
+ *
+ * And it says WHERE IT LOOKED, which the count alone does not. A denominator beside an
+ * empty list reads as ground covered, and this command covers one project — the one
+ * `cwd` resolves to — plus the machine-global tree. Naming that is what keeps "nothing
+ * recognizable here" from being read as "nothing anywhere"; the MCP tool, which a
+ * client can open on several projects at once, answers with one count per project for
+ * the same reason.
  */
 function printExposure(report: Exposure, io: CliIo): void {
   if (report.findings.length === 0) {
     io.out(`Nothing recognizable in ${report.scanned} record(s).`);
+    io.out('  Read here: this project’s trees and the machine-global tree — no other project.');
     io.out('  That is not the same as nothing: only known credential formats are recognized.');
     return;
   }
