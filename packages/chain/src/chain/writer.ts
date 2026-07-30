@@ -17,8 +17,9 @@
  * `recordAnchor`) so that operation can found a fresh installation before its
  * first fact.
  *
- * State (head hash, next seq, current segment) is recovered from disk on
- * construction, so a fresh process continues an existing tail correctly.
+ * State (head hash, next seq, current segment, and the events no checkpoint
+ * covers yet) is recovered from the END of the tail on construction, so a fresh
+ * process continues an existing tail correctly without re-reading its history.
  */
 
 import {
@@ -49,7 +50,7 @@ import {
   tailDir,
   tailProofPath,
 } from './layout.js';
-import { orderedSegments, readTailCheckpoints, readTailEntries } from './store.js';
+import { orderedSegments, readTailCheckpoints, readTailTip } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** Seal a segment once it grows past this many bytes (segments rotate by size). */
@@ -72,6 +73,15 @@ export class ChainWriter {
   private lastCheckpointedSeq = -1;
   /** Hash of the last checkpoint, or null if none — the link the next one signs. */
   private lastCheckpointHash: string | null = null;
+  /**
+   * The events appended since the last checkpoint, in seq order — exactly what
+   * the next checkpoint signs. Held in memory so signing never round-trips
+   * through the store: the writer already knows what it appended, and a fresh
+   * process refills this from the END of the tail in `recover()`. Without it,
+   * signing a range of one or two events re-read and re-parsed the whole tail,
+   * making a run of N writes cost O(N²).
+   */
+  private pending: CatalogEvent[] = [];
 
   private readonly maxSegmentBytes: number;
   private readonly checkpointEvery: number;
@@ -132,31 +142,36 @@ export class ChainWriter {
   }
 
   /**
-   * Recovers writer state from disk: the last entry gives the head hash and the
-   * next seq; the highest segment file gives the current segment and its size;
-   * the last checkpoint gives the last checkpointed seq.
+   * Recovers writer state from disk: the highest segment file gives the current
+   * segment and its size; the last checkpoint gives the last checkpointed seq
+   * and hash; the END of the tail gives the head hash, the next seq, and the
+   * events still to be signed.
+   *
+   * The order is load-bearing:
+   *   1. HEAL FIRST. A crash mid-append can leave a partial line with no newline
+   *      at the end of the last segment. Truncating it before anything parses
+   *      means the reader below sees a file that ends in a newline, so a torn
+   *      fragment that happens to PARSE cannot become the head — a head that
+   *      the very next step would delete from disk, leaving the next append
+   *      chained to a hash no reader can find. (Readers that do not heal — the
+   *      verifier, the replay — still tolerate the fragment on read.)
+   *   2. CHECKPOINTS BEFORE THE TAIL. How far back the tail must be read is
+   *      decided by the coverage: everything above the last checkpointed seq.
+   *   3. THE TIP. One read of the END of the tail answers both remaining
+   *      questions — the last entry is the head, and the entries above the
+   *      coverage are the events the next checkpoint owes a signature.
    */
   private recover(): void {
-    const entries = readTailEntries(this.layout, this.tailId, this.upcasters);
-    const last = entries.at(-1);
-    if (last !== undefined) {
-      this.head = last.link.hash;
-      this.nextSeq = last.link.seq + 1;
-    }
     const segments = orderedSegments(this.layout, this.tailId);
     const lastSegment = segments.at(-1);
     if (lastSegment !== undefined) {
       const match = /(\d+)\.jsonl$/.exec(lastSegment);
       this.segment = match ? Number.parseInt(match[1] as string, 10) : 1;
-      // Truncate any torn trailing fragment before resuming. A crash mid-append
-      // leaves a partial line with no newline at the end of the segment.
-      // readTailEntries tolerates it ON READ (drops it), but if we resumed
-      // writing after it, the next complete `...\n` would land AFTER the
-      // fragment — turning the once-benign torn line into a mid-file malformed
-      // line that every later read throws on. So a recovering writer heals the
-      // file: it truncates back to the end of the last COMPLETE line, so the
-      // next append continues a clean tail. A complete append always ends in a
-      // newline, so this only ever removes a genuine crash fragment.
+      // Truncates back to the end of the last COMPLETE line, so the next append
+      // continues a clean tail instead of landing after the fragment — which
+      // would turn a once-benign torn line into a mid-file malformed line that
+      // every later read throws on. A complete append always ends in a newline,
+      // so this only ever removes a genuine crash fragment.
       this.segmentBytes = healTornTail(lastSegment);
     }
     const lastCp = readTailCheckpoints(this.layout, this.tailId).at(-1);
@@ -164,6 +179,17 @@ export class ChainWriter {
       this.lastCheckpointedSeq = lastCp.toSeq;
       this.lastCheckpointHash = checkpointHash(lastCp);
     }
+    const tip = readTailTip(this.layout, this.tailId, this.upcasters, this.lastCheckpointedSeq);
+    const last = tip.at(-1);
+    if (last !== undefined) {
+      this.head = last.link.hash;
+      this.nextSeq = last.link.seq + 1;
+    }
+    // The tip reads whole segments, so it can reach below the coverage; the
+    // buffer is only what the next checkpoint must cover.
+    this.pending = tip
+      .filter((entry) => entry.link.seq > this.lastCheckpointedSeq)
+      .map((entry) => entry.event);
   }
 
   /**
@@ -208,6 +234,10 @@ export class ChainWriter {
     this.head = entry.link.hash;
     this.nextSeq += 1;
     this.segmentBytes += Buffer.byteLength(line, 'utf-8');
+    // Buffered only after the line reached the file: an append that threw must
+    // not leave behind an event that a later checkpoint would sign and no reader
+    // could ever find.
+    this.pending.push(entry.event);
 
     this.maybeCheckpoint();
     return entry;
@@ -249,6 +279,8 @@ export class ChainWriter {
     this.head = prev;
     this.nextSeq = seq;
     this.segmentBytes += Buffer.byteLength(lines, 'utf-8');
+    // Same rule as the single append: buffered only after the write landed.
+    for (const entry of entries) this.pending.push(entry.event);
 
     this.maybeCheckpoint();
     return entries;
@@ -268,25 +300,41 @@ export class ChainWriter {
   /**
    * Signs a checkpoint over every uncheckpointed event now. Public so a caller
    * can force a checkpoint (e.g. at shutdown) to shrink the uncovered window.
+   *
+   * The events signed come from the writer's own buffer, never from a re-read of
+   * the tail. The buffer is asserted against the range first: a checkpoint claims
+   * `[fromSeq..toSeq]`, so signing a content root over a set that is not exactly
+   * that range would be a silent break of the proof — a verifier recomputing the
+   * root from the bytes would then read an honest tail as tampered. It refuses
+   * loudly instead. The mismatch is not reachable by any legitimate use: the
+   * buffer is appended to on every successful write and emptied only here.
    */
   checkpoint(): Checkpoint | null {
     const fromSeq = this.lastCheckpointedSeq + 1;
     const toSeq = this.nextSeq - 1;
     if (toSeq < fromSeq) return null;
-    const entries = readTailEntries(this.layout, this.tailId, this.upcasters);
-    const events = entries.filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq);
+    const covered = toSeq - fromSeq + 1;
+    if (this.pending.length !== covered) {
+      throw new Error(
+        `chain: refusing to sign a checkpoint over ${this.tailId} seq ${fromSeq}..${toSeq}: ` +
+          `the range covers ${covered} event(s) but ${this.pending.length} are buffered`,
+      );
+    }
     const checkpoint = signCheckpoint({
       tail: this.tailId,
       fromSeq,
-      events: events.map((e) => e.event),
+      events: this.pending,
       prev: this.lastCheckpointHash,
       keyPair: this.keyPair,
     });
     const path = checkpointsPath(this.layout, this.tailId);
     ensureDir(path);
     appendFileSync(path, `${serializeCheckpoint(checkpoint)}\n`, 'utf-8');
+    // Advanced only after the checkpoint reached the file, so a failed append
+    // leaves the buffer intact and a retry signs the same range again.
     this.lastCheckpointedSeq = toSeq;
     this.lastCheckpointHash = checkpointHash(checkpoint);
+    this.pending = [];
     return checkpoint;
   }
 }
