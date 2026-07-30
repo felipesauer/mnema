@@ -1023,17 +1023,19 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
   // them, opening no writer and no cache. With no project a session has no record to
   // audit — refused.
   //
-  // The three that read PROJECTIONS span every project of the workspace, and what
-  // differs between them is what each may MERGE from that one list — by the shape of
-  // the answer, never by an option. The two keyed by an id merge ITEMS: an id has one
-  // home, what points at it lives wherever the pointing happened, and a merged list of
-  // labelled items adds without changing. `audit_accountability` merges nothing: it
-  // returns one account per project, because summing several would answer "how much
+  // ALL FIVE span every project of the workspace, and what differs between them is what
+  // each may MERGE from that one list — by the shape of the answer, never by an option.
+  // The two keyed by an id merge ITEMS: an id has one home, what points at it lives
+  // wherever the pointing happened, and a merged list of labelled items adds without
+  // changing. `audit_accountability` and `audit_antipatterns` merge nothing: they
+  // return counts, one record at a time, because summing several would answer "how much
   // have I written" under the name of "how much is in this record".
   //
-  // `audit_exposure` and `audit_antipatterns` still read the session's own project:
-  // they fold the TAILS rather than the caches, so reaching every project is a
-  // different change from this one and not a line of it.
+  // `audit_exposure` is where both halves of that rule land in ONE answer: the findings
+  // merge (each naming the project to rotate in) and the denominator decomposes (one
+  // count per record). Two of these fold the TAILS rather than the caches, which is a
+  // different mechanism for reaching a project and a real cost — the trees are the same
+  // list either way, so the coverage of an answer never depends on how it is computed.
 
   server.registerTool(
     'audit_timeline',
@@ -1170,17 +1172,23 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Audit — where a credential may already be recorded',
       description:
         'Show which records hold something shaped like a credential — a cloud key, ' +
-        'an API token, a private key, a password inside a URL — across ALL of this ' +
-        'project’s trees. Use it to answer "is a secret already in the record?", ' +
-        'which writing can no longer cause but the past can: values in a recognized ' +
-        'format are replaced before anything is written today, and everything ' +
-        'recorded before that was not. It reports WHERE and never WHAT: the id, the ' +
-        'kind, the tree, the instant and the CLASS — never the value, so reading it ' +
-        'cannot leak what it found. A record in the public tree is committed and ' +
-        'clones to every machine; one in the global tree is on this disk alone. ' +
-        'The remedy is to ROTATE the credential: mnema is append-only and nothing ' +
-        'deletes a fact. An empty report means nothing RECOGNIZABLE is there, which ' +
-        'is not the same as nothing. Read-only.',
+        'an API token, a private key, a password inside a URL — across ALL trees of ' +
+        'ALL projects in this workspace. Use it to answer "is a secret already in the ' +
+        'record?", which writing can no longer cause but the past can: values in a ' +
+        'recognized format are replaced before anything is written today, and ' +
+        'everything recorded before that was not. It reports WHERE and never WHAT: ' +
+        'the id, the kind, the tree, the PROJECT and the instant, plus the CLASS — ' +
+        'never the value, so reading it cannot leak what it found. A record in a ' +
+        'public tree is committed and clones to every machine; one in the global tree ' +
+        'is on this disk alone; and the project says which repository to go and ' +
+        'change a key in. The remedy is to ROTATE the credential: mnema is ' +
+        'append-only and nothing deletes a fact. `scanned` is ONE COUNT PER RECORD — ' +
+        'each project and the machine-global tree — so an empty `findings` says which ' +
+        'records were read and how much of each. Two limits: it recognizes FORMATS, ' +
+        'so an empty report means nothing recognizable rather than nothing (a ' +
+        'password in prose has no format); and it reports what is recorded — it does ' +
+        'not prevent a value from being read back by `search` or `read_record`, which ' +
+        'serve the record as written. Read-only.',
     },
     async () => {
       const active = await ensureSession();
@@ -1202,12 +1210,18 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Audit — recurring shapes in the record',
       description:
-        'Show recurring shapes across ALL of this project’s trees — tasks reopened, ' +
-        'decisions superseded, skills deprecated — each with the exact events that ' +
-        'make up the count, plus the tasks reopened more than once as skill ' +
-        'CANDIDATES (a POINTER, not an action — this creates no skill). It reports ' +
-        'the shapes; it does NOT judge them good or bad. Use it to spot patterns a ' +
-        'human might act on. Read-only.',
+        'Show recurring shapes across ALL trees of ALL projects in this workspace — ' +
+        'tasks reopened, decisions superseded, skills deprecated — each with the exact ' +
+        'events that make up the count, plus the tasks reopened more than once as ' +
+        'skill CANDIDATES (a POINTER, not an action — this creates no skill). It ' +
+        'reports the shapes; it does NOT judge them good or bad. Use it to spot ' +
+        'patterns a human might act on. The answer is ONE SET OF SHAPES PER PROJECT ' +
+        '(plus the machine-global tree, which belongs to none): these are counts, and ' +
+        'adding several projects up would answer a question about a workspace under ' +
+        'the name of a question about a record — a skill candidate especially, since ' +
+        'the pattern is distilled by whoever is doing the work that kept reopening. A ' +
+        'project with nothing recurring is listed with empty lists rather than left ' +
+        'out. Read-only.',
     },
     async () => {
       const active = await ensureSession();

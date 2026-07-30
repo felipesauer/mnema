@@ -9,6 +9,12 @@
  * a POINTER for a human who might distill a pattern, never a skill this read
  * creates. The word "antipattern" names the shape it looks for, not a verdict.
  *
+ * ONE PROJECT's record, which is what a command run in a directory is about — `cwd`
+ * resolves one project and there is no workspace here to span. The MCP tool of the
+ * same name is opened over several projects at once, so it answers with one set of
+ * shapes per record and never adds two together; this answers about the record it was
+ * run in, which is the same fold over the same trees.
+ *
  * Read-only: it reads the present trees' tails and folds them with the copilot's
  * pure `antipatterns`. No cache, no writer, no key, and no actor (the shapes are
  * a property of the record). A shape-free record yields empty lists, not an
