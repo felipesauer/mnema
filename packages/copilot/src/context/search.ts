@@ -89,36 +89,47 @@ export interface RecordSearch {
  * discriminated by `kind`, so a caller that needs a decision's ADR label or an
  * observation's subject reaches it typed, and a caller that only wants to render
  * it can serialize the envelope as it stands.
+ *
+ * WHERE it lives is two answers, not one: the `scope` is which of a project's trees
+ * holds it, and the `project` is which project that is — absent when the holder is
+ * the machine-global tree, which belongs to none. Both are spelled out on every arm
+ * rather than factored into a shared shape, because the arms are what a caller reads
+ * to know what a `RecordBody` is.
  */
 export type RecordBody =
   | {
       readonly kind: 'memory';
       readonly id: string;
       readonly scope: Scope;
+      readonly project?: string;
       readonly record: MemoryProjection;
     }
   | {
       readonly kind: 'observation';
       readonly id: string;
       readonly scope: Scope;
+      readonly project?: string;
       readonly record: ObservationProjection;
     }
   | {
       readonly kind: 'decision';
       readonly id: string;
       readonly scope: Scope;
+      readonly project?: string;
       readonly record: DecisionProjection;
     }
   | {
       readonly kind: 'task';
       readonly id: string;
       readonly scope: Scope;
+      readonly project?: string;
       readonly record: TaskProjection;
     }
   | {
       readonly kind: 'skill';
       readonly id: string;
       readonly scope: Scope;
+      readonly project?: string;
       readonly record: SkillProjection;
     };
 
@@ -162,22 +173,29 @@ export function searchRecords(
  * or null when none does.
  *
  * The first holder answers because an id is minted once and lives in one tree —
- * there is no second holder to disagree. The five kinds are tried in turn; an id
- * that belongs to a handoff, a link or a run finds nothing here, exactly as it
- * finds nothing in the index (those have no record of their own to read).
+ * there is no second holder to disagree. That is what makes the list's length a
+ * matter of REACH and never of precedence: given every tree of every project a
+ * caller can see, the id picks out its own holder, and one more tree can only turn
+ * a null into an answer. The five kinds are tried in turn; an id that belongs to a
+ * handoff, a link or a run finds nothing here, exactly as it finds nothing in the
+ * index (those have no record of their own to read).
  */
 export function readRecord(sources: readonly ScopedCache[], id: string): RecordBody | null {
-  for (const { scope, cache } of sources) {
+  for (const { scope, project, cache } of sources) {
+    // The holder, named once for whichever kind answers: an id and the two halves
+    // of where it lives. Built per source rather than per kind so the five returns
+    // below cannot come to disagree about what "where" means.
+    const held = { id, scope, ...(project !== undefined ? { project } : {}) };
     const memory = cache.getMemory(id);
-    if (memory !== null) return { kind: 'memory', id, scope, record: memory };
+    if (memory !== null) return { kind: 'memory', ...held, record: memory };
     const observation = cache.getObservation(id);
-    if (observation !== null) return { kind: 'observation', id, scope, record: observation };
+    if (observation !== null) return { kind: 'observation', ...held, record: observation };
     const decision = cache.getDecision(id);
-    if (decision !== null) return { kind: 'decision', id, scope, record: decision };
+    if (decision !== null) return { kind: 'decision', ...held, record: decision };
     const task = cache.getTask(id);
-    if (task !== null) return { kind: 'task', id, scope, record: task };
+    if (task !== null) return { kind: 'task', ...held, record: task };
     const skill = cache.getSkill(id);
-    if (skill !== null) return { kind: 'skill', id, scope, record: skill };
+    if (skill !== null) return { kind: 'skill', ...held, record: skill };
   }
   return null;
 }

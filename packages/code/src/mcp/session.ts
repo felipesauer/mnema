@@ -168,9 +168,15 @@ export interface Session {
    */
   readonly project?: string;
   /**
-   * Every project this session can write to, its own among them — the other half of
-   * the answer above (see {@link ResolvedContext.workspaceProjects}), each paired
-   * with the scope a write routed there lands in.
+   * Every project this session can write to OR read from, its own among them — the
+   * other half of the answer above (see {@link ResolvedContext.workspaceProjects}),
+   * each paired with the scope a write routed there lands in.
+   *
+   * Read from as well as written to, and the two uses are not symmetric: a WRITE goes
+   * to one of these, named per call, because a fact belongs somewhere; a READ KEYED BY
+   * AN ID spans all of them at once, with nothing to name, because an id has one home
+   * and the question does not know which. So this list is a menu for one and the whole
+   * source for the other.
    *
    * Carried on the session because it is settled when the session opens and never
    * changes after: the roots are announced once, at the handshake. A reader that

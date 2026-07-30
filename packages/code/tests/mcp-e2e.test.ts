@@ -1734,8 +1734,16 @@ describe('MCP session + tools — unit', () => {
       code: 'UNKNOWN_RECORD',
     });
     // The session's own run is a real id in the record — and still not a record
-    // to read: `focus`/`resume` serve a run.
-    expect(runReadRecordTool(session, { id: theRun(session) as string })).toMatchObject({
+    // to read: `focus`/`resume` serve a run. It takes a WRITE to have one: the run
+    // opens at the first write, so a read-only session has none and this assertion
+    // was passing `undefined` — true of an absent id for a reason that has nothing
+    // to do with a run.
+    if (!runCaptureMemory(session, { content: 'so that a run exists' }).ok) {
+      throw new Error('setup: capture refused');
+    }
+    const run = theRun(session);
+    expect(run).toBeDefined();
+    expect(runReadRecordTool(session, { id: run as string })).toMatchObject({
       ok: false,
       code: 'UNKNOWN_RECORD',
     });
