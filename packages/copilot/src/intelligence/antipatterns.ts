@@ -28,6 +28,14 @@
  * The scope is the caller's: it folds exactly the stream handed to it. It reads
  * the transition payloads (`action`) to spot the shapes and the envelope
  * (`subject`, `at`) to attribute and order them.
+ *
+ * ## One record, or every project of a workspace
+ *
+ * {@link antipatterns} folds one stream, which is the answer when that stream is one
+ * record. {@link antipatternsByProject} keeps a workspace's records apart — one set
+ * of shapes each, never merged — because everything it returns is a COUNT, and counts
+ * of three codebases added together answer a question nobody asked under the name of
+ * one somebody did. It calls the same fold, once per record.
  */
 
 import type { CatalogEvent } from './events.js';
@@ -68,11 +76,51 @@ export interface Antipatterns {
   readonly skillCandidates: readonly RecurrenceFinding[];
 }
 
+/** One record's events, already merged across its trees, and which record it is. */
+export interface ProjectEvents {
+  /**
+   * The project whose trees these came from — absent for the machine-global tree,
+   * which belongs to no project and is the same tree for all of them.
+   */
+  readonly project?: string;
+  /**
+   * That record's events in one proven order. ONE ENTRY PER RECORD: the merge across
+   * a project's own trees belongs to whoever read them (it is a k-way merge over
+   * tails, which a pure fold cannot redo), so two entries for one project would come
+   * back as two entries here — visibly, rather than by silently concatenating two
+   * streams into an order neither one proves.
+   */
+  readonly events: readonly CatalogEvent[];
+}
+
+/** One record's recurring shapes, and which record they are in. */
+export interface ProjectAntipatterns extends Antipatterns {
+  /** The project whose record this is — absent for the machine-global tree. */
+  readonly project?: string;
+}
+
+/** The records of a workspace, each with its own shapes, never added together. */
+export interface WorkspaceAntipatterns {
+  /**
+   * One set of shapes per record: each project of the workspace, and the
+   * machine-global tree. Projects in the order the caller handed them over, the
+   * projectless entry last.
+   *
+   * A record with nothing recurring is still HERE, with four empty lists. An entry
+   * missing from the list would be indistinguishable from a record the read never
+   * opened.
+   */
+  readonly byProject: readonly ProjectAntipatterns[];
+}
+
 /**
  * The recurring shapes in `events`. An entity appears only if its shape occurred
  * (a task with no reopen is absent, not a zero row). Each finding carries the
  * evidence events in the stream's own order, so a reader can inspect exactly what
  * was counted. An empty or shape-free stream yields empty lists, never an error.
+ *
+ * ONE record's shapes. Handed the merged streams of several projects it would count
+ * across codebases — {@link antipatternsByProject} is that read.
  */
 export function antipatterns(events: readonly CatalogEvent[]): Antipatterns {
   const reopens = collect(events, (e) =>
@@ -90,6 +138,43 @@ export function antipatterns(events: readonly CatalogEvent[]): Antipatterns {
     deprecatedSkills: deprecates,
     skillCandidates: reopens.filter((f) => f.count >= 2),
   };
+}
+
+/**
+ * The recurring shapes of EACH record handed in, kept apart, with the project whose
+ * record it is on every entry.
+ *
+ * DECOMPOSED, never merged, and that follows from what this read returns: every field
+ * of it is a count with its evidence. "Three tasks reopened" across three codebases is
+ * not a fact about any of them, and the entity ids inside would come from records a
+ * reader cannot act on together — a skill candidate is distilled in the project whose
+ * work kept reopening, so a candidate list that mixed projects would point a person at
+ * work they are not doing.
+ *
+ * Not decomposing was the other way to be wrong: this read takes no project argument,
+ * deliberately, so shapes locked to the session's own project leave an agent unable to
+ * ask about the others at all.
+ *
+ * The entries are in source order with the projectless record last, and they are NOT
+ * ordered by count. Ordering records by how much recurred would rank the projects,
+ * which is the one thing a read that "points and does not conclude" must not do.
+ */
+export function antipatternsByProject(sources: readonly ProjectEvents[]): WorkspaceAntipatterns {
+  const byProject = sources
+    .map((source) => ({
+      ...(source.project !== undefined ? { project: source.project } : {}),
+      ...antipatterns(source.events),
+    }))
+    .sort(projectlessLast);
+  return { byProject };
+}
+
+/** Keeps the projectless record after the projects, leaving their order untouched. */
+function projectlessLast(a: ProjectAntipatterns, b: ProjectAntipatterns): number {
+  if (a.project === b.project) return 0;
+  if (a.project === undefined) return 1;
+  if (b.project === undefined) return -1;
+  return 0;
 }
 
 /**

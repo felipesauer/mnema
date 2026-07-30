@@ -10,7 +10,7 @@ import {
   moveTask,
   supersedeDecision,
 } from '../../tests/support/chain.js';
-import { antipatterns } from './antipatterns.js';
+import { antipatterns, antipatternsByProject } from './antipatterns.js';
 
 /** Drives a task through DONE→reopen→IN_PROGRESS a given number of times. */
 function reopenTimes(bench: Bench, id: string, times: number): void {
@@ -120,5 +120,61 @@ describe('antipatterns — recurring shapes with their evidence', () => {
       deprecatedSkills: [],
       skillCandidates: [],
     });
+  });
+});
+
+describe('antipatterns — one record at a time, never added together', () => {
+  let bench: Bench;
+  afterEach(() => {
+    if (bench) rmSync(bench.root, { recursive: true, force: true });
+  });
+
+  it('keeps each record’s shapes under its own project, and lists a quiet one empty', () => {
+    // Everything this read returns is a count with its evidence, so merging would answer
+    // "how much churn is in this workspace" under the name of "how much is in this
+    // record". The skill candidates are the sharpest case: a pattern is distilled by
+    // whoever is doing the work that kept reopening.
+    bench = makeBench();
+    reopenTimes(bench, 'task-here', 2);
+    const churn = bench.events();
+
+    const shapes = antipatternsByProject([
+      { project: '/w/alpha', events: churn },
+      { project: '/w/beta', events: [] },
+      { events: [] },
+    ]);
+
+    expect(shapes.byProject.map((entry) => entry.project)).toEqual([
+      '/w/alpha',
+      '/w/beta',
+      undefined,
+    ]);
+    const here = shapes.byProject[0];
+    expect(here?.reopenedTasks.map((f) => f.count)).toEqual([2]);
+    expect(here?.skillCandidates.map((f) => f.entityId)).toEqual(['task-here']);
+    // A record with nothing recurring is HERE with four empty lists — absent, it would
+    // be indistinguishable from a record the read never opened.
+    expect(shapes.byProject[1]?.reopenedTasks).toEqual([]);
+    expect(shapes.byProject[1]?.skillCandidates).toEqual([]);
+    // And no merged set of shapes beside the entries.
+    expect('reopenedTasks' in shapes).toBe(false);
+  });
+
+  it('counts each record on its own — the same churn twice is two entries, not one sum', () => {
+    bench = makeBench();
+    reopenTimes(bench, 'task-shared', 2);
+    const churn = bench.events();
+
+    const shapes = antipatternsByProject([
+      { project: '/w/alpha', events: churn },
+      { project: '/w/beta', events: churn },
+    ]);
+
+    // Two entries of 2, never one of 4 — the arithmetic each project's own session saw.
+    expect(shapes.byProject.map((entry) => entry.reopenedTasks[0]?.count)).toEqual([2, 2]);
+  });
+
+  it('reads an empty workspace without complaint', () => {
+    expect(antipatternsByProject([])).toEqual({ byProject: [] });
   });
 });

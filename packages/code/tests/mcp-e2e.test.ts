@@ -1530,9 +1530,12 @@ describe('MCP session + tools — unit', () => {
     const result = runAntipatternsTool(session);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const finding = result.value.reopenedTasks.find((f) => f.entityId === created.id);
+    // One set of shapes per record: this project's trees, and the machine-global tree
+    // that belongs to none. The churn is in the project's.
+    const here = result.value.byProject.find((entry) => entry.project === project);
+    const finding = here?.reopenedTasks.find((f) => f.entityId === created.id);
     expect(finding?.count).toBe(2);
-    expect(result.value.skillCandidates.map((f) => f.entityId)).toContain(created.id);
+    expect(here?.skillCandidates.map((f) => f.entityId)).toContain(created.id);
 
     // The read appended nothing.
     const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
@@ -2433,14 +2436,15 @@ describe('MCP server — end to end over a real client', () => {
     expect(written?.byWho.length).toBeGreaterThan(0);
     expect(account.total).toBeUndefined();
 
-    // audit_antipatterns — the four lists, all empty on a churn-free record.
+    // audit_antipatterns — one entry per record, its four lists empty on a churn-free
+    // one, and a record with nothing recurring listed rather than left out.
     const apRes = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
     const patterns = JSON.parse(textOf(apRes)) as {
-      reopenedTasks: unknown[];
-      skillCandidates: unknown[];
+      byProject: { project?: string; reopenedTasks: unknown[]; skillCandidates: unknown[] }[];
     };
-    expect(patterns.reopenedTasks).toEqual([]);
-    expect(patterns.skillCandidates).toEqual([]);
+    expect(patterns.byProject.length).toBeGreaterThan(0);
+    expect(patterns.byProject.every((entry) => entry.reopenedTasks.length === 0)).toBe(true);
+    expect(patterns.byProject.every((entry) => entry.skillCandidates.length === 0)).toBe(true);
 
     await client.close();
   });
@@ -2790,13 +2794,16 @@ describe('MCP — what enters the record', () => {
     expect(audited.isError).not.toBe(true);
     const body = textOf(audited);
     const report = JSON.parse(body) as {
-      findings: { id: string; scope: string; classes: string[] }[];
-      scanned: number;
+      findings: { id: string; scope: string; project?: string; classes: string[] }[];
+      scanned: { project?: string; scanned: number }[];
     };
     const finding = report.findings.find((f) => f.id === '019fa8b7-0410-717b-9af2-cfeb013fc4ac');
     expect(finding?.scope).toBe('private');
+    // WHERE to rotate, which the tree alone cannot say once several projects are read.
+    expect(finding?.project).toBe(project);
     expect(finding?.classes).toEqual(['aws-access-key']);
-    expect(report.scanned).toBeGreaterThan(0);
+    // The denominator is one count per record, and the project's held what was read.
+    expect(report.scanned.find((entry) => entry.project === project)?.scanned).toBeGreaterThan(0);
 
     // The whole reply — the text an agent puts in its transcript — holds no value.
     expect(body).not.toContain(SECRET);

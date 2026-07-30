@@ -19,6 +19,14 @@
  * one disk. Same finding, different situation, and the merge is exactly what would
  * lose the difference.
  *
+ * ONE PROJECT, and that is the shape of this surface rather than a limit left in
+ * place: a command runs in a directory, `cwd` resolves one project, and there is no
+ * workspace for it to span. The MCP tool of the same name is opened by a client that
+ * announces several projects at once, so it reads every one of them and its answer
+ * carries a project label and one denominator per record. Here the answer needs
+ * neither — but it does have to SAY so, which is what the empty report's second line
+ * does: a denominator beside an empty list otherwise reads as ground covered.
+ *
  * Read-only: it reads the present trees' tails and folds them with the copilot's
  * pure `exposure`. No cache, no writer, no key, no actor. With no project it
  * refuses `NO_PROJECT`, like the other intelligence reads.

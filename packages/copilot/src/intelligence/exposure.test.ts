@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogEvent } from './events.js';
-import { exposure, type ScopedEvents } from './exposure.js';
+import { exposure, type ScopedEvents, workspaceExposure } from './exposure.js';
 
 const SECRET = 'AKIAIOSFODNN7EXAMPLE';
 
@@ -213,5 +213,96 @@ describe('exposure — what it does NOT claim', () => {
 
   it('reads an empty set of trees without complaint', () => {
     expect(exposure([])).toEqual({ findings: [], scanned: 0 });
+  });
+});
+
+describe('exposure — one report, or one per record', () => {
+  /** A source of one tree of one project (or of the projectless global tree). */
+  function owned(
+    scope: ScopedEvents['scope'],
+    project: string | undefined,
+    events: readonly CatalogEvent[],
+  ): ScopedEvents {
+    return { scope, ...(project !== undefined ? { project } : {}), events };
+  }
+
+  const held = (subject: string, at: string): CatalogEvent =>
+    event('memory.captured', subject, at, { content: `use ${SECRET}` });
+
+  it('merges the findings and decomposes the denominator, which is the whole split', () => {
+    const report = workspaceExposure([
+      owned('public', '/w/alpha', [held('a-1', '2026-07-01T00:00:00.000Z')]),
+      owned('private', '/w/alpha', [event('task.created', 't-1', '2026-07-01T01:00:00.000Z', {})]),
+      owned('public', '/w/beta', [held('b-1', '2026-07-02T00:00:00.000Z')]),
+      owned('global', undefined, [held('g-1', '2026-07-03T00:00:00.000Z')]),
+    ]);
+
+    // ITEMS merge: one list, oldest first, each saying where to rotate.
+    expect(report.findings.map((f) => [f.id, f.project])).toEqual([
+      ['a-1', '/w/alpha'],
+      ['b-1', '/w/beta'],
+      ['g-1', undefined],
+    ]);
+    // The AGGREGATE decomposes: one count per record, the projectless one last, and no
+    // total beside them — a workspace figure under this name is what a reader divides by.
+    expect(report.scanned).toEqual([
+      { project: '/w/alpha', scanned: 2 },
+      { project: '/w/beta', scanned: 1 },
+      { scanned: 1 },
+    ]);
+    expect('total' in report).toBe(false);
+  });
+
+  it('lists a record that held nothing at zero rather than leaving it out', () => {
+    // An entry missing from the decomposition is indistinguishable from a record the
+    // read never opened, and this read exists to be trusted about where it looked.
+    const report = workspaceExposure([
+      owned('public', '/w/alpha', [held('a-1', '2026-07-01T00:00:00.000Z')]),
+      owned('public', '/w/silent', []),
+    ]);
+
+    expect(report.scanned).toEqual([
+      { project: '/w/alpha', scanned: 1 },
+      { project: '/w/silent', scanned: 0 },
+    ]);
+  });
+
+  it('answers the same whatever order the sources are handed in', () => {
+    // The ordering has to be TOTAL, not merely stable, and the tie is real: the `id` of
+    // a finding is the event's SUBJECT, so one entity written in two trees in the same
+    // instant ties on both keys. Left to a stable sort, the answer would then follow the
+    // order the trees happened to be read in — and this text goes into the prefix of an
+    // agent's prompt, where a list that reshuffles reads as a record that changed.
+    const sources = [
+      owned('public', '/w/alpha', [held('same', '2026-07-01T00:00:00.000Z')]),
+      owned('private', '/w/alpha', [held('same', '2026-07-01T00:00:00.000Z')]),
+      owned('global', undefined, [held('same', '2026-07-01T00:00:00.000Z')]),
+    ];
+
+    const forward = workspaceExposure(sources);
+    const backward = workspaceExposure([...sources].reverse());
+
+    expect(forward.findings).toEqual(backward.findings);
+    expect(forward.findings.map((f) => f.scope)).toEqual(['global', 'private', 'public']);
+  });
+
+  it('gives the one-record report and its entry the same count, from one fold', () => {
+    // Both reads call the same fold, so a single report and one entry of a decomposition
+    // cannot come to disagree about what was read.
+    const trees = [
+      owned('public', '/w/alpha', [held('a-1', '2026-07-01T00:00:00.000Z')]),
+      owned('private', '/w/alpha', [held('a-2', '2026-07-02T00:00:00.000Z')]),
+    ];
+
+    const one = exposure(trees);
+    const many = workspaceExposure(trees);
+
+    expect(one.scanned).toBe(2);
+    expect(many.scanned).toEqual([{ project: '/w/alpha', scanned: 2 }]);
+    expect(one.findings).toEqual(many.findings);
+  });
+
+  it('reads an empty workspace without complaint', () => {
+    expect(workspaceExposure([])).toEqual({ findings: [], scanned: [] });
   });
 });

@@ -87,14 +87,21 @@ export {
 export {
   type Antipatterns,
   antipatterns,
+  antipatternsByProject,
+  type ProjectAntipatterns,
+  type ProjectEvents,
   type RecurrenceFinding,
+  type WorkspaceAntipatterns,
 } from './intelligence/antipatterns.js';
 export type { CatalogEvent, EventKind } from './intelligence/events.js';
 export {
   type ExposedRecord,
   type Exposure,
   exposure,
+  type ProjectScan,
   type ScopedEvents,
+  type WorkspaceExposure,
+  workspaceExposure,
 } from './intelligence/exposure.js';
 export {
   type PatternProvenance,

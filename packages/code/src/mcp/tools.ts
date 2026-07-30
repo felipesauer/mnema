@@ -30,9 +30,9 @@
  * every tree the session can see: an index of what matched, then one whole record
  * by the id that index gave), and the intelligence reads `runTimelineTool`/
  * `runReferencesTool`/`runAccountabilityTool`/`runAntipatternsTool`/
- * `runExposureTool` (the auditor's view — they fold every tree the session can
- * see, opening no cache and no writer; `runExposureTool` keeps them separate
- * because its answer has to name the tree). The knowledge
+ * `runExposureTool` (the auditor's view — they fold every tree of every project the
+ * workspace holds, opening no cache and no writer; `runExposureTool` keeps them
+ * separate because its answer has to name the tree). The knowledge
  * FACTS (observation/handoff/link) share the
  * memory mold exactly — one append, no gate — and forward the ids they reference
  * without validating them (a dangling reference is honest cross-tree). The server
@@ -57,14 +57,11 @@ import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
   type AccountabilityFilter,
   type AdoptedSkill,
-  type Antipatterns,
   accountabilityByProject,
   adoptedSkills,
-  antipatterns,
+  antipatternsByProject,
   type Bootstrap,
   bootstrap,
-  type Exposure,
-  exposure,
   type Focus,
   focus,
   type GuardWithFocus,
@@ -85,6 +82,9 @@ import {
   type TimelineEntry,
   timeline,
   type WorkspaceAccountability,
+  type WorkspaceAntipatterns,
+  type WorkspaceExposure,
+  workspaceExposure,
 } from '@mnema/copilot';
 import {
   chainRootForScope,
@@ -96,7 +96,6 @@ import {
   projectDecisions,
   projectSkills,
   type ReferenceDirection,
-  type ResolvedTrees,
   type Scope,
   SEARCH_KINDS,
   type SecretClass,
@@ -120,7 +119,12 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { scopedEvents, unionEvents } from '../intelligence-source.js';
+import {
+  projectEventsOf,
+  recordTrees,
+  type ScopedTree,
+  scopedEventsOf,
+} from '../intelligence-source.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { oneLine } from '../served-patterns.js';
 import { bornHereButUnreadable, locateEntityInSession, notFoundInVisibleTrees } from './locate.js';
@@ -883,15 +887,13 @@ export function runBootstrap(session: Session): Bootstrap {
  * sees.
  */
 function scopedCaches(session: Session): ScopedCache[] {
-  return scopedCachesOf(session, session.trees, session.project);
+  return withCaches(session, recordTrees(session.trees, session.project));
 }
-
-/** The order the trees of one project are read in — a role at a time, fixed. */
-const SCOPE_ORDER = ['public', 'private', 'global'] as const;
 
 /**
  * Every tree of every project this workspace holds — the sources of every read about
- * THE RECORD: the three keyed by an id, plus `search` and `accountability`.
+ * THE RECORD: the three keyed by an id, `search` and `accountability`, and the two
+ * that fold TAILS rather than caches (`exposure`, `antipatterns`).
  *
  * The boundary of a project is not a property of such a question. An id is minted
  * once and lives in one tree, so "what does this record say" has one answer wherever
@@ -902,13 +904,18 @@ const SCOPE_ORDER = ['public', 'private', 'global'] as const;
  * answering about the world is the shape of claim this product exists not to make —
  * and it is worse than a short answer, because the reply looks complete.
  *
- * The list is the same for all five; what differs is what each may MERGE from it, and
- * that follows from the shape of the answer rather than from an option. An index and a
- * history are ITEMS: widening them adds without changing, so they merge, each item
- * labelled with the project. An account of authorship is an AGGREGATE: widening it
- * sums, and a sum answers a different question under the same name — so it comes back
- * decomposed, one entry per project (`accountabilityByProject`), and no total across
- * them.
+ * The list is the same for all seven; what differs is what each may MERGE from it, and
+ * that follows from the shape of the answer rather than from an option. An index, a
+ * history and a list of exposed records are ITEMS: widening them adds without
+ * changing, so they merge, each item labelled with the project. An account of
+ * authorship, a scan's denominator and a count of recurring shapes are AGGREGATES:
+ * widening them sums, and a sum answers a different question under the same name — so
+ * they come back decomposed, one entry per record, and no total across them.
+ *
+ * `exposure` is the read where BOTH halves of that rule land in ONE answer: its
+ * findings merge and its denominator decomposes, which is what stops an empty list
+ * from reading as "nothing is exposed" when it means "nothing was found in these
+ * records".
  *
  * It is not a flag and takes no argument, deliberately. The surface already reads
  * every tree for `skills` (a capability is not scoped to a project) and one tree for
@@ -916,11 +923,10 @@ const SCOPE_ORDER = ['public', 'private', 'global'] as const;
  * tool, and an option to choose would put a decision on the caller that the caller
  * has no better information to make.
  *
- * The session's OWN trees come first, and BY {@link scopedCaches} — so a workspace
- * with one project produces that list and nothing else, which is the non-regression
- * held by construction rather than by two loops agreeing. It also means a read cannot
- * lose what the session could already see, whatever the announced list turns out to
- * hold.
+ * The session's OWN trees come first — so a workspace with one project produces that
+ * list and nothing else, which is the non-regression held by construction rather than
+ * by two loops agreeing. It also means a read cannot lose what the session could
+ * already see, whatever the announced list turns out to hold.
  *
  * Deduplicated by CHAIN ROOT, and the machine-global tree is why it has to be. Every
  * project resolves the same global tree, so iterating projects hands that one tree
@@ -929,46 +935,41 @@ const SCOPE_ORDER = ['public', 'private', 'global'] as const;
  * some would not (a merged history would not, and neither would a count — it would
  * report every personal note three times over), which is exactly the reason to dedupe
  * at the source rather than rely on each reader's own keying.
+ *
+ * It is one list of TREES, not of caches, because the two reads that fold tails need
+ * the same list and must not be handed a cache: their question is about the text of
+ * every event, which no projection keeps. {@link withCaches} attaches a reader to it
+ * for the five that do read projections, so which trees a read covers cannot come to
+ * differ from how it reads them.
  */
-function workspaceCaches(session: Session): ScopedCache[] {
-  const sources = scopedCaches(session);
-  const seen = new Set(sources.map((source) => source.chainRoot));
+function workspaceTrees(session: Session): ScopedTree[] {
+  const trees = recordTrees(session.trees, session.project);
+  const seen = new Set(trees.map((tree) => tree.chainRoot));
   for (const project of session.workspaceProjects) {
-    for (const source of scopedCachesOf(session, project.trees, project.dir)) {
-      if (seen.has(source.chainRoot)) continue;
-      seen.add(source.chainRoot);
-      sources.push(source);
+    for (const tree of recordTrees(project.trees, project.dir)) {
+      if (seen.has(tree.chainRoot)) continue;
+      seen.add(tree.chainRoot);
+      trees.push(tree);
     }
   }
-  return sources;
+  return trees;
+}
+
+/** Every tree of the workspace with its warm projection cache attached. */
+function workspaceCaches(session: Session): ScopedCache[] {
+  return withCaches(session, workspaceTrees(session));
 }
 
 /**
- * One project's trees as read sources, each labelled with the project — except the
- * global tree, which belongs to none.
+ * The given trees as PROJECTION sources: each paired with the session's warm cache
+ * over it.
  *
- * The label is dropped for `global` at this one place, so no caller can attach it: a
- * personal cross-project note reported as coming from whichever project a read
- * reached it through would be a false claim about where to find it, and the tree is
- * shared, so every project would make that claim differently.
+ * Asking the registry means each is warm after the first read of that tree, and
+ * rebuilt when this session's own writes left it behind — so a read composes the
+ * caches without knowing whether a replay just happened.
  */
-function scopedCachesOf(
-  session: Session,
-  trees: ResolvedTrees,
-  project: string | undefined,
-): ScopedCache[] {
-  const sources: ScopedCache[] = [];
-  for (const scope of SCOPE_ORDER) {
-    const root = chainRootForScope(trees, scope);
-    if (root === undefined) continue;
-    sources.push({
-      scope,
-      chainRoot: root,
-      ...(scope !== 'global' && project !== undefined ? { project } : {}),
-      cache: session.caches.get(root),
-    });
-  }
-  return sources;
+function withCaches(session: Session, trees: readonly ScopedTree[]): ScopedCache[] {
+  return trees.map((tree) => ({ ...tree, cache: session.caches.get(tree.chainRoot) }));
 }
 
 /**
@@ -1478,22 +1479,24 @@ export type TimelineToolResult = IntelligenceResult<readonly TimelineEntry[]>;
 /** The `audit_accountability` result — an account per project, or a refusal. */
 export type AccountabilityToolResult = IntelligenceResult<WorkspaceAccountability>;
 
-/** The `audit_antipatterns` result — the recurring shapes, or a refusal. */
-export type AntipatternsToolResult = IntelligenceResult<Antipatterns>;
+/** The `audit_antipatterns` result — the shapes of each record, or a refusal. */
+export type AntipatternsToolResult = IntelligenceResult<WorkspaceAntipatterns>;
 
 /**
- * The refusal an intelligence read gives with no project, shared by the three.
+ * The refusal an intelligence read gives with no project, shared by the five.
  * An intelligence read is the auditor's view of a PROJECT's record; a session on
  * the global tree alone has no project to audit, so it refuses `NO_PROJECT`
  * (returned as data so the server shapes it into a tool error), the same refusal
  * the CLI intelligence reads give.
  *
- * All three read every project of the workspace ({@link workspaceCaches}); what
- * differs is what each merges from it. The two keyed by an id merge items into one
- * answer, and `accountability` keeps a count per project rather than summing — "who
- * authorized what" is a question about a record, and three added together answer a
- * different one under the same name. The guard is shared because the CONDITION is
- * shared: without a project there is no record to audit, however the fold then works.
+ * All five read every project of the workspace ({@link workspaceTrees}); what differs
+ * is what each merges from it. The two keyed by an id merge items into one answer;
+ * `accountability` and `antipatterns` keep their counts per record rather than summing
+ * — "who authorized what" and "what keeps recurring" are questions about a record, and
+ * three added together answer a different one under the same name; and `exposure` does
+ * both, merging its findings and decomposing its denominator. The guard is shared
+ * because the CONDITION is shared: without a project there is no record to audit,
+ * however the fold then works.
  */
 function requireProject(
   session: Session,
@@ -1606,21 +1609,31 @@ export function runAccountabilityTool(
 }
 
 /** The `audit_exposure` result — where a credential format sits, or a refusal. */
-export type ExposureToolResult = IntelligenceResult<Exposure>;
+export type ExposureToolResult = IntelligenceResult<WorkspaceExposure>;
 
 /**
- * `audit_exposure` — which records hold something shaped like a credential.
+ * `audit_exposure` — which records of which projects hold something shaped like a
+ * credential.
  *
  * The one intelligence read about the record's PAST rather than its shape. Writing
  * screens what arrives, so an agent cannot put a recognized credential into the
  * chain today; everything written before that could, and in a committed tree the
  * past is what decides the damage. This is how an agent asked to check finds out.
  *
- * It answers WHERE and never WHAT — the id, the kind, the tree, the instant and the
- * class. There is no value in the result to return, by construction, because the
- * detector behind it reports classes only: a tool that handed a credential back
- * would put it in a transcript, which is a second disclosure and a worse one (a
+ * It answers WHERE and never WHAT — the id, the kind, the tree, the project, the
+ * instant and the class. There is no value in the result to return, by construction,
+ * because the detector behind it reports classes only: a tool that handed a credential
+ * back would put it in a transcript, which is a second disclosure and a worse one (a
  * transcript travels further than a chain).
+ *
+ * EVERY PROJECT, because the defence is scoped to a project and the exposure is not.
+ * The content door screens the writes of the project a session adopted; the record of
+ * the neighbouring project is on the same disk, was written before that door existed
+ * or imported from elsewhere, and this read answered about neither while reporting a
+ * denominator that looked like coverage. It is worth saying plainly what widening it
+ * does and does not do: `search` and `read_record` still serve the raw text of a
+ * neighbour's record, because that is what a record is for, so this is not a leak being
+ * stopped. It is the WARNING reaching as far as the service already reached.
  *
  * It takes the trees SEPARATELY rather than merged, unlike the other `audit_*`
  * reads: a fact in the public tree is committed and clones to the team, and the
@@ -1631,21 +1644,32 @@ export type ExposureToolResult = IntelligenceResult<Exposure>;
 export function runExposureTool(session: Session): ExposureToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: exposure(scopedEvents(session.trees, catalogUpcasters())) };
+  return {
+    ok: true,
+    value: workspaceExposure(scopedEventsOf(workspaceTrees(session), catalogUpcasters())),
+  };
 }
 
 /**
- * `audit_antipatterns` — recurring shapes across the session's trees.
+ * `audit_antipatterns` — recurring shapes, one record of the workspace at a time.
  *
- * Folds the UNION of the session's present trees and surfaces the shapes that
- * recur (reopened tasks, superseded decisions, deprecated skills), each with its
- * evidence, plus the skill candidates POINTED at. It points, it does not conclude,
- * and it creates no skill. Read-only: it reads the tails and folds them with the
- * copilot's pure `antipatterns`. With no project it refuses `NO_PROJECT`.
+ * Folds the union of EACH record's trees — every project's, and the machine-global
+ * tree — and surfaces the shapes that recur in it (reopened tasks, superseded
+ * decisions, deprecated skills), each with its evidence, plus the skill candidates
+ * POINTED at. It points, it does not conclude, and it creates no skill.
+ *
+ * DECOMPOSED rather than merged, for the reason `accountability` is: everything here
+ * is a count, and counts of three codebases added up answer a question about a
+ * workspace under the name of a question about a record. The skill candidates make it
+ * concrete — a pattern is distilled by the person doing the work that kept reopening,
+ * so a candidate list that pooled three projects would point them at somebody else's.
+ *
+ * Read-only: it reads the tails and folds them with the copilot's pure
+ * `antipatternsByProject`. With no project it refuses `NO_PROJECT`.
  */
 export function runAntipatternsTool(session: Session): AntipatternsToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  const events = unionEvents(session.trees, catalogUpcasters());
-  return { ok: true, value: antipatterns(events) };
+  const records = projectEventsOf(workspaceTrees(session), catalogUpcasters());
+  return { ok: true, value: antipatternsByProject(records) };
 }

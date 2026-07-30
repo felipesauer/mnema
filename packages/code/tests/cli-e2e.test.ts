@@ -2417,6 +2417,10 @@ describe('mnema CLI — what enters the record', () => {
     await run(['exposure'], e.io);
     const printed = e.out.join('\n');
     expect(printed).toContain('Nothing recognizable');
+    // WHERE it looked, beside the count. A denominator next to an empty list reads as
+    // ground covered, and this command covers the project `cwd` resolves to — the MCP
+    // tool, opened over several at once, decomposes its denominator for the same reason.
+    expect(printed).toContain('this project’s trees and the machine-global tree');
     // The limit, said where the person reads it: a password in prose has no
     // format, so it is in the record and this report cannot see it.
     expect(printed).toContain('only known credential formats are recognized');
