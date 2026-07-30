@@ -24,10 +24,15 @@
  *     a warm session makes nearly free.
  *
  * It RELATES, it does not JUDGE. Each entry is the event as written — when, what
- * kind, who authorized it, which agent executed it, which tree it lives in, and
- * the role by which the entity appears. No entry says a history is "long",
- * "troubled", or "healthy": that reading is the caller's. The line the whole
+ * kind, who authorized it, which agent executed it, which tree AND WHICH PROJECT it
+ * lives in, and the role by which the entity appears. No entry says a history is
+ * "long", "troubled", or "healthy": that reading is the caller's. The line the whole
  * intelligence layer holds.
+ *
+ * The project is part of the story rather than decoration on it. An entity written in
+ * one codebase and normalized into two others has its normalizations recorded in
+ * THEIR records, and a merged history that only said `private` three times would put
+ * three codebases behind one word.
  *
  * ## The order
  *
@@ -68,6 +73,15 @@ export interface TimelineEntry {
   readonly role: ReferenceRole;
   /** The tree the fact lives in: the team's, this machine's, or the person's own. */
   readonly scope: Scope;
+  /**
+   * The project whose record holds the fact, absent for the machine-global tree.
+   *
+   * A history crosses projects — the entity was written in one and normalized into
+   * another — so the scope alone no longer places an entry: two entries marked
+   * `private` can be two different codebases. Absent means the machine-global tree,
+   * which belongs to no project.
+   */
+  readonly project?: string;
   /** The event as written, for a reader that needs the typed payload. */
   readonly event: CatalogEvent;
 }
@@ -87,7 +101,7 @@ export interface TimelineEntry {
 export function timeline(sources: readonly ScopedCache[], entityId: string): TimelineEntry[] {
   const streams = sources
     .map((source) => ({
-      scope: source.scope,
+      source,
       rows: source.cache.references(entityId),
       cursor: 0,
     }))
@@ -97,15 +111,22 @@ export function timeline(sources: readonly ScopedCache[], entityId: string): Tim
   for (;;) {
     const next = earliest(streams);
     if (next === undefined) break;
-    merged.push(toEntry(next.rows[next.cursor] as ReferenceRow, next.scope));
+    merged.push(toEntry(next.rows[next.cursor] as ReferenceRow, next.source));
     next.cursor += 1;
   }
   return merged;
 }
 
-/** One tree's entries for the queried entity, and how far they are drained. */
+/**
+ * One tree's entries for the queried entity, and how far they are drained.
+ *
+ * It keeps the SOURCE rather than copying the fields off it, because what an entry
+ * has to say about where it came from is now two things and will not stay two if a
+ * tree ever gains a third. A stream that copied them would be a second place for the
+ * list of them to be maintained.
+ */
 interface Stream {
-  readonly scope: Scope;
+  readonly source: ScopedCache;
   readonly rows: readonly ReferenceRow[];
   cursor: number;
 }
@@ -131,7 +152,7 @@ function earliest(streams: readonly Stream[]): Stream | undefined {
   return chosen;
 }
 
-function toEntry(row: ReferenceRow, scope: Scope): TimelineEntry {
+function toEntry(row: ReferenceRow, from: ScopedCache): TimelineEntry {
   return {
     at: row.at,
     kind: row.kind,
@@ -139,7 +160,8 @@ function toEntry(row: ReferenceRow, scope: Scope): TimelineEntry {
     ...(row.which !== undefined ? { which: row.which } : {}),
     subject: row.subject,
     role: row.role,
-    scope,
+    scope: from.scope,
+    ...(from.project !== undefined ? { project: from.project } : {}),
     event: row.event,
   };
 }
