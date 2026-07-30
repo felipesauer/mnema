@@ -443,9 +443,14 @@ describe('a routed write keeps the rest of the routing rules', () => {
 
   it('leaves a MOVE following the entity, which takes no project of its own', () => {
     // A move lands in the tree the entity lives in, and that tree is the answer — a
-    // `project` could only agree with it or contradict it. An entity in a project the
-    // session did not land on is refused BY NAME, which is an answer a caller can act
-    // on rather than a silent misfiling.
+    // `project` could only agree with it or contradict it. Which is why the move needs
+    // no argument to reach a project the session did not land on: the entity is found
+    // there, and the write is routed there.
+    //
+    // This test used to assert the opposite — `UNKNOWN_SKILL`, naming the session's
+    // project — and it was right about the code at the time: the birth took the
+    // argument and the locate did not span the workspace, so the same session could
+    // create a skill it could not review.
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -462,10 +467,16 @@ describe('a routed write keeps the rest of the routing rules', () => {
       action: 'review',
       note: 'read it',
     });
-    expect(moved.ok).toBe(false);
-    if (moved.ok) throw new Error('unreachable');
-    expect(moved.code).toBe('UNKNOWN_SKILL');
-    expect(moved.message).toContain(here);
+    expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
+
+    // And it landed in `there`, read off the disks: the birth and the review are in
+    // one tree, and the session's own project holds neither.
+    expect(factsIn(privateOf(there))).toEqual([
+      'skill.created',
+      'skill.transitioned',
+      'skill.transitioned',
+    ]);
+    expect(factsIn(privateOf(here))).toEqual([]);
     closeSession(session);
   });
 

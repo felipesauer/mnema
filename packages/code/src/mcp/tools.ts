@@ -127,8 +127,16 @@ import {
 } from '../intelligence-source.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { oneLine } from '../served-patterns.js';
-import { bornHereButUnreadable, locateEntityInSession, notFoundInVisibleTrees } from './locate.js';
-import { namedProjects, routeWrite } from './route.js';
+import {
+  type EntityLocation,
+  inEveryTreeThisSessionSees,
+  locatedButUnreadable,
+  locateEntityAcross,
+  notFoundInSessionTrees,
+  refuseUnlocated,
+  type WorkspaceTree,
+} from './locate.js';
+import { routeWrite } from './route.js';
 import { openWrite, type Session } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -508,17 +516,21 @@ export function runCreateTask(
  * one tree, and a move must land there — writing it to the session's tree
  * instead (the session opened private, but the task may be public) would split
  * the task's history and hide the move from whoever reads only one tree. So the
- * tool LOCATES the task's home tree ({@link locateEntityInSession}) and opens THAT
- * tree's writer; the session's scope governs where a session's NEW work is born,
- * not where an existing entity is moved. If no visible tree holds the task, it
- * refuses `UNKNOWN_TASK`.
+ * tool LOCATES the task's home tree ({@link locateEntity}) and opens THAT tree's
+ * writer; the session's scope governs where a session's NEW work is born, not where
+ * an existing entity is moved. If no tree of the workspace holds the task, it
+ * refuses `UNKNOWN_TASK`; if several records hold the id, `AMBIGUOUS_RECORD`.
+ *
+ * The home may be in ANOTHER project, and then the write is routed there — through
+ * the same door a named write goes through ({@link openWrite}), so the move lands in
+ * that project's tree and pins to that project's run. A birth routed to the second
+ * project of a workspace used to succeed while the move of that same task was
+ * refused: a task that could be created and not moved.
  *
  * That is also why a move takes no `project`, here or on the other two transitions,
  * while every BIRTH does: the entity's own tree is the answer, and a `project` could
- * only ever agree with it or contradict it. A move whose task lives in a project this
- * session did not land on is refused by name — the refusal says which trees were
- * searched — which is an honest answer a caller can act on, and the opposite of the
- * silence a birth produces when nobody says where it belongs.
+ * only ever agree with it or contradict it. A birth takes one because there is no id
+ * yet to ask.
  *
  * The agent supplies the action as a string and whichever proof field it has;
  * the tool forwards them and stamps the session's `which` (the executing agent)
@@ -532,17 +544,11 @@ export function runTaskTransition(
   input: { id: string; action: string; reason?: string; note?: string; feedback?: string },
 ): TransitionResult {
   // Route by the task's home tree, not the session's scope: the move follows the
-  // entity so its history stays whole in one tree.
-  const scope = locateEntityInSession(session, input.id);
-  if (scope === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_TASK',
-      message: notFoundInVisibleTrees(session, 'task', input.id),
-    };
-  }
+  // entity so its history stays whole in one tree — in whichever project that is.
+  const located = locateEntity(session, input.id);
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
 
-  const { ctx, run } = openWrite(session, scope);
+  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = proofToFields(input);
   const moved = transitionTask(ctx, {
     id: input.id,
@@ -630,8 +636,10 @@ export function runRecordDecision(
  * arg on the single tool.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
- * decision's home tree ({@link locateEntityInSession}) and opens THAT writer, so the
- * move never splits the history. If no visible tree holds it, `UNKNOWN_DECISION`.
+ * decision's home tree ({@link locateEntity}) and opens THAT writer, so the move
+ * never splits the history — including when that tree belongs to another project of
+ * the workspace, which the door routes to. If no tree of the workspace holds it,
+ * `UNKNOWN_DECISION`; if several records do, `AMBIGUOUS_RECORD`.
  *
  * The action string routes to the operation — `accept`/`reject` carry the `note`,
  * `supersede` carries the `by` (successor id) and the `reason`. `by` is forwarded
@@ -645,15 +653,9 @@ export function runDecisionTransition(
 ): DecisionTransitionResult {
   const upcasters = catalogUpcasters();
   // Route by the decision's home tree, not the session's scope: the move follows
-  // the entity so its history stays whole in one tree.
-  const scope = locateEntityInSession(session, input.id);
-  if (scope === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_DECISION',
-      message: notFoundInVisibleTrees(session, 'decision', input.id),
-    };
-  }
+  // the entity so its history stays whole in one tree — in whichever project it is.
+  const located = locateEntity(session, input.id);
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'decision', input.id, located);
 
   // Dispatch on the action to pick the right typed operation (accept/reject vs
   // supersede differ in the core's types). That needs the closed set of verbs;
@@ -667,7 +669,7 @@ export function runDecisionTransition(
     };
   }
 
-  const { ctx, run } = openWrite(session, scope);
+  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
@@ -702,9 +704,14 @@ export function runDecisionTransition(
   // Checkpoint so the transition is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   // Resolve the ADR from the projection — a decision has no alias, so its human
-  // name is the frozen label. Read the ONE resolved tree after the append.
-  const root = chainRootForScope(session.trees, scope) as string;
-  const adr = projectDecisions(orderedEvents({ root }, upcasters)).get(input.id)?.adr ?? input.id;
+  // name is the frozen label. Read the ONE tree the entity was located in, which is
+  // not necessarily one of the session's own: deriving the root from the session's
+  // trees and the located scope would read this project's `public` tree for a
+  // decision that lives in another project's, and answer with a stranger's ADR or
+  // with the raw id.
+  const adr =
+    projectDecisions(orderedEvents({ root: located.home.chainRoot }, upcasters)).get(input.id)
+      ?.adr ?? input.id;
   return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
 }
 
@@ -766,8 +773,10 @@ export function runCreateSkill(
  * and refuses identically; only the transport differs.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
- * skill's home tree ({@link locateEntityInSession}) and opens THAT writer, so the move
- * never splits the history. If no visible tree holds it, `UNKNOWN_SKILL`.
+ * skill's home tree ({@link locateEntity}) and opens THAT writer, so the move never
+ * splits the history — including when that tree belongs to another project of the
+ * workspace, which the door routes to. If no tree of the workspace holds it,
+ * `UNKNOWN_SKILL`; if several records do, `AMBIGUOUS_RECORD`.
  *
  * The action string routes to the named operation — review/adopt/reject carry a
  * `note`, deprecate a `reason`. Unlike a decision's supersede, NO action carries a
@@ -782,15 +791,9 @@ export function runSkillTransition(
 ): SkillTransitionResult {
   const upcasters = catalogUpcasters();
   // Route by the skill's home tree, not the session's scope: the move follows the
-  // entity so its history stays whole in one tree.
-  const scope = locateEntityInSession(session, input.id);
-  if (scope === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_SKILL',
-      message: notFoundInVisibleTrees(session, 'skill', input.id),
-    };
-  }
+  // entity so its history stays whole in one tree — in whichever project it is.
+  const located = locateEntity(session, input.id);
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'skill', input.id, located);
 
   // Dispatch on the action to pick the right named op. An action outside the
   // closed vocabulary is refused UNKNOWN_ACTION rather than falling through to a
@@ -803,7 +806,7 @@ export function runSkillTransition(
     };
   }
 
-  const { ctx, run } = openWrite(session, scope);
+  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = skillProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
@@ -825,9 +828,12 @@ export function runSkillTransition(
   // Checkpoint so the transition is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   // Resolve the name from the projection to orient the human — a skill has no
-  // alias. Read the ONE resolved tree after the append; fall back to the id.
-  const root = chainRootForScope(session.trees, scope) as string;
-  const name = projectSkills(orderedEvents({ root }, upcasters)).get(input.id)?.name ?? input.id;
+  // alias. Read the ONE tree the entity was located in (not the session's own tree
+  // of that scope, which is a different chain when the skill lives in another
+  // project); fall back to the id.
+  const name =
+    projectSkills(orderedEvents({ root: located.home.chainRoot }, upcasters)).get(input.id)?.name ??
+    input.id;
   return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
 }
 
@@ -892,8 +898,15 @@ function scopedCaches(session: Session): ScopedCache[] {
 
 /**
  * Every tree of every project this workspace holds — the sources of every read about
- * THE RECORD: the three keyed by an id, `search` and `accountability`, and the two
- * that fold TAILS rather than caches (`exposure`, `antipatterns`).
+ * THE RECORD (the three keyed by an id, `search` and `accountability`, and the two
+ * that fold TAILS rather than caches: `exposure`, `antipatterns`) AND the trees the
+ * entity-keyed tools locate a home in ({@link locateEntity}).
+ *
+ * Exported for that last reader alone, and exported rather than reached for: the
+ * locate takes the list, so which trees it covers is decided HERE, in the same
+ * function that decides it for the seven reads. A locate that walked the workspace
+ * itself would be the second place this rule lives, one week after it stopped being
+ * two.
  *
  * The boundary of a project is not a property of such a question. An id is minted
  * once and lives in one tree, so "what does this record say" has one answer wherever
@@ -941,18 +954,41 @@ function scopedCaches(session: Session): ScopedCache[] {
  * every event, which no projection keeps. {@link withCaches} attaches a reader to it
  * for the five that do read projections, so which trees a read covers cannot come to
  * differ from how it reads them.
+ *
+ * Each tree of ANOTHER project also carries that project's write door
+ * ({@link WorkspaceTree.target}), attached here because this is the one loop that
+ * holds both the tree and the project object at once. A locate ends in a write, and
+ * pairing them at the source is what stops a transition from reaching for the door by
+ * name later and landing in the session's own trees when the lookup misses — a move
+ * into the wrong repository, reported as success. The session's own trees and the
+ * machine-global tree carry none: they are reached through the session, which is what
+ * {@link openWrite} does when it is given no target.
  */
-function workspaceTrees(session: Session): ScopedTree[] {
-  const trees = recordTrees(session.trees, session.project);
+export function workspaceTrees(session: Session): WorkspaceTree[] {
+  const trees: WorkspaceTree[] = recordTrees(session.trees, session.project);
   const seen = new Set(trees.map((tree) => tree.chainRoot));
   for (const project of session.workspaceProjects) {
     for (const tree of recordTrees(project.trees, project.dir)) {
       if (seen.has(tree.chainRoot)) continue;
       seen.add(tree.chainRoot);
-      trees.push(tree);
+      trees.push({ ...tree, target: project });
     }
   }
   return trees;
+}
+
+/**
+ * Where an entity lives, across every tree of the workspace — the ONE locate every
+ * entity-keyed tool asks, and the only place the coverage and the walk are put
+ * together.
+ *
+ * Five tools call it, and each of them then refuses through {@link refuseUnlocated}
+ * or writes through the home's own door. A tool that composed its own pair would get
+ * a different answer than the other four: a narrower list is the defect this closed,
+ * and a walk of its own is a second rule to keep in step.
+ */
+function locateEntity(session: Session, id: string): EntityLocation {
+  return locateEntityAcross(session, workspaceTrees(session), id);
 }
 
 /** Every tree of the workspace with its warm projection cache attached. */
@@ -1054,8 +1090,11 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
     return {
       ok: false,
       code: 'UNKNOWN_SKILL',
-      // `input.id` is defined here — `served` is undefined without it.
-      message: notFoundInVisibleTrees(session, 'skill', input.id as string),
+      // The SESSION's sentence, not the workspace's: this read serves the patterns of
+      // the trees the session can see, and a refusal claiming a search of every
+      // project would claim more than it did. `input.id` is defined here — `served`
+      // is undefined without it.
+      message: notFoundInSessionTrees(session, 'skill', input.id as string),
     };
   }
   if (served?.outcome === 'not-adopted') {
@@ -1161,7 +1200,7 @@ export function runResumeTool(session: Session): Resume {
   return resume(session.caches.get(chainRoot), { actor: session.who });
 }
 
-/** The task's legal moves, or a typed refusal when no visible tree holds it. */
+/** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
 export type NextActionsResult =
   | {
       readonly ok: true;
@@ -1170,8 +1209,8 @@ export type NextActionsResult =
     }
   | {
       readonly ok: false;
-      /** No visible tree holds a task with this id. */
-      readonly code: 'UNKNOWN_TASK';
+      /** No tree of the workspace holds a task with this id, or several records do. */
+      readonly code: 'UNKNOWN_TASK' | 'AMBIGUOUS_RECORD';
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -1180,28 +1219,26 @@ export type NextActionsResult =
  * `next_actions` — the moves the workflow allows a task next.
  *
  * Keyed by an ENTITY, not the actor: it locates the task's home tree
- * ({@link locateEntityInSession}) — a task lives in exactly one of the session's
- * trees — takes THAT tree's cache, and returns the copilot's `nextActionsForTask`.
- * Read-only. An id no visible tree holds is refused `UNKNOWN_TASK` (returned as
- * data so the server shapes it into a tool error, never thrown); an existing
- * terminal task yields an empty list — "no legal moves", not "no such task".
+ * ({@link locateEntity}) — a task lives in exactly one tree of the workspace — takes
+ * THAT tree's cache, and returns the copilot's `nextActionsForTask`. Read-only. An id
+ * no tree of the workspace holds is refused `UNKNOWN_TASK` (returned as data so the
+ * server shapes it into a tool error, never thrown); an existing terminal task yields
+ * an empty list — "no legal moves", not "no such task".
+ *
+ * The union is the same rule the reads keyed by an id follow: a task in a sibling
+ * project is a task with one home, and asking one project answered "no such task"
+ * about a task the workspace holds — the answer that made a move impossible on a task
+ * the same session had just created.
  *
  * This is the read that makes the session's caches per-TREE rather than one: the
- * tree it serves is the entity's, which need not be the session's own. Asking
- * the registry by chain root keeps those apart — a task read out of the public
- * tree can never be answered from the private tree's projection.
+ * tree it serves is the entity's, which need not be the session's own — nor even
+ * this project's. Asking the registry by chain root keeps those apart — a task read
+ * out of the public tree can never be answered from the private tree's projection.
  */
 export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
-  const scope = locateEntityInSession(session, input.id);
-  if (scope === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_TASK',
-      message: notFoundInVisibleTrees(session, 'task', input.id),
-    };
-  }
-  const chainRoot = chainRootForScope(session.trees, scope) as string;
-  const actions = nextActionsForTask(session.caches.get(chainRoot), input.id);
+  const located = locateEntity(session, input.id);
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
+  const actions = nextActionsForTask(session.caches.get(located.home.chainRoot), input.id);
   // The birth was located, so a null here is not a missing task: this session has
   // no state for it in that tree — its history stops at the creation, or another
   // process appended past what this session has read. Report that rather than a
@@ -1211,7 +1248,7 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
     return {
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: bornHereButUnreadable(session, 'task', input.id, scope),
+      message: locatedButUnreadable('task', input.id, located.home),
     };
   }
   return { ok: true, actions };
@@ -1226,8 +1263,8 @@ export type GuardResult =
     }
   | {
       readonly ok: false;
-      /** No visible tree holds a task with this id. */
-      readonly code: 'UNKNOWN_TASK';
+      /** No tree of the workspace holds a task with this id, or several records do. */
+      readonly code: 'UNKNOWN_TASK' | 'AMBIGUOUS_RECORD';
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -1235,11 +1272,13 @@ export type GuardResult =
 /**
  * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
  * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
- * locates the task's home tree ({@link locateEntityInSession}), takes THAT tree's
- * cache, reads the task's current state as the `from`, and calls the copilot's
- * pure {@link guardWithFocus} — no writer, no event. The verdict is the gate's
- * own, the SAME function `task_transition` consults, so a guard that says ALLOWED
- * and a move that succeeds can never drift.
+ * locates the task's home tree ({@link locateEntity}), takes THAT tree's cache, reads
+ * the task's current state as the `from`, and calls the copilot's pure
+ * {@link guardWithFocus} — no writer, no event. The verdict is the gate's own, the
+ * SAME function `task_transition` consults, over the SAME locate, so a guard that
+ * says ALLOWED and a move that succeeds can never drift — including for a task in
+ * another project, where a guard that refused what the move then did would be worse
+ * than either answer alone.
  *
  * The actor is the session's `who` (never a client-supplied value), so the
  * simulated authority is the machine's own — and it is paired with the actor's
@@ -1262,16 +1301,9 @@ export function runGuardTool(
     which?: string;
   },
 ): GuardResult {
-  const scope = locateEntityInSession(session, input.id);
-  if (scope === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_TASK',
-      message: notFoundInVisibleTrees(session, 'task', input.id),
-    };
-  }
-  const chainRoot = chainRootForScope(session.trees, scope) as string;
-  const cache = session.caches.get(chainRoot);
+  const located = locateEntity(session, input.id);
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
+  const cache = session.caches.get(located.home.chainRoot);
   const task = cache.getTask(input.id);
   // The birth was located, so a null here is not a missing task: this session has
   // no state for it in that tree (a history that stops at the creation, or a write
@@ -1281,7 +1313,7 @@ export function runGuardTool(
     return {
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: bornHereButUnreadable(session, 'task', input.id, scope),
+      message: locatedButUnreadable('task', input.id, located.home),
     };
   }
   const fields = proofToFields(input);
@@ -1433,12 +1465,17 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
  * The sentence had to grow because the search did. It used to say "in any tree this
  * session can see", which was true of three trees and is now true of every tree of
  * every project — a claim that got wider without a word of it changing, which is the
- * kind of sentence a reader cannot check. So it names the projects, the same way the
- * entity-keyed refusals name the one project they search
- * ({@link notFoundInVisibleTrees}) and the same way a routed write names the projects
- * it could have meant ({@link namedProjects}, shared with those).
+ * kind of sentence a reader cannot check. So it names the projects, the same way a
+ * routed write names the projects it could have meant (`namedProjects`, shared with
+ * it).
  *
- * It still does not say the id does not exist, and now it has more reason not to: the
+ * The clause that names them is now the entity-keyed refusals' too
+ * ({@link inEveryTreeThisSessionSees}): those tools search exactly the trees this read
+ * searches, so the account of where they looked is one function rather than two
+ * wordings of one walk. What varies is only the subject in front of it — a record by
+ * id here, a task or a decision or a skill there.
+ *
+ * It still does not say the id does not exist, and it has every reason not to: the
  * read covered every project the client announced, and that is still not the world — a
  * project nobody opened, and a partial clone of one that was, both hold records this
  * cannot see. What is reported is the search.
@@ -1449,17 +1486,7 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
  * defect measured on a directory name, one step closer to whoever is calling.
  */
 function notInAnyProject(session: Session, id: string): string {
-  if (session.workspaceProjects.length === 0) {
-    return (
-      `no record with id "${oneLine(id)}" in the machine-global tree, the only tree ` +
-      'this session sees — it resolved to no project'
-    );
-  }
-  return (
-    `no record with id "${oneLine(id)}" in any tree of this workspace's projects ` +
-    `(${namedProjects(session.workspaceProjects)}) or in the machine-global tree — ` +
-    'the only trees this session sees'
-  );
+  return `no record with id "${oneLine(id)}" ${inEveryTreeThisSessionSees(session)}`;
 }
 
 /** An intelligence read's result: the derivation, or a refusal when no project. */

@@ -123,8 +123,14 @@ export function locateEntityScopeWith(
  * The probe that reads the chain itself: replays the tree and looks for a birth
  * event with this subject. It sees every birth on the chain, complete or not,
  * because it reads the facts rather than a view derived from them.
+ *
+ * Exported because {@link BIRTH_KINDS} — what counts as a birth at all — is a
+ * domain rule, and a caller searching a set of trees this module cannot name (a
+ * surface spanning several records) would otherwise have to restate the set to
+ * fall back on the chain. Restating it is how the two halves of one search come to
+ * disagree about which events are births.
  */
-function replayHoldsBirth(upcasters: UpcasterRegistry): BirthProbe {
+export function replayingBirthProbe(upcasters: UpcasterRegistry): BirthProbe {
   return (chainRoot, id) => {
     const events = orderedEvents({ root: chainRoot }, upcasters);
     return events.some((event) => BIRTH_KINDS.has(event.kind) && event.subject === id);
@@ -146,5 +152,5 @@ export function locateEntityScope(
   id: string,
   upcasters: UpcasterRegistry,
 ): Scope | undefined {
-  return locateEntityScopeWith(trees, id, replayHoldsBirth(upcasters));
+  return locateEntityScopeWith(trees, id, replayingBirthProbe(upcasters));
 }
