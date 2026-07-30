@@ -22,14 +22,7 @@
  * process continues an existing tail correctly without re-reading its history.
  */
 
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  truncateSync,
-  writeFileSync,
-} from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, truncateSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -50,7 +43,8 @@ import {
   tailDir,
   tailProofPath,
 } from './layout.js';
-import { orderedSegments, readTailCheckpoints, readTailTip } from './store.js';
+import { linesFromEnd } from './lines.js';
+import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** Seal a segment once it grows past this many bytes (segments rotate by size). */
@@ -160,6 +154,12 @@ export class ChainWriter {
    *   3. THE TIP. One read of the END of the tail answers both remaining
    *      questions — the last entry is the head, and the entries above the
    *      coverage are the events the next checkpoint owes a signature.
+   *
+   * Every one of those reads enters its file from the END and stops at what it
+   * came for, so none of them grows with the tail. That matters because the
+   * product opens a writer per write: a read here that scaled with the history
+   * would make a run of N writes cost O(N²), which is the shape this recovery
+   * was rebuilt to remove.
    */
   private recover(): void {
     const segments = orderedSegments(this.layout, this.tailId);
@@ -174,7 +174,7 @@ export class ChainWriter {
       // so this only ever removes a genuine crash fragment.
       this.segmentBytes = healTornTail(lastSegment);
     }
-    const lastCp = readTailCheckpoints(this.layout, this.tailId).at(-1);
+    const lastCp = lastTailCheckpoint(this.layout, this.tailId);
     if (lastCp !== undefined) {
       this.lastCheckpointedSeq = lastCp.toSeq;
       this.lastCheckpointHash = checkpointHash(lastCp);
@@ -351,16 +351,22 @@ function ensureDir(filePath: string): void {
  * truncated back to just after the last newline (or to empty if there is none),
  * and that length is returned, so the next append continues a clean tail.
  *
- * Works in bytes, not characters: the truncation offset is the byte after the
- * last `\n`, so a multi-byte UTF-8 character split across the crash boundary is
- * removed whole with the rest of the fragment.
+ * It asks the backward walk for the file's LAST line and needs nothing else: an
+ * intact file answers with the empty line that a trailing newline leaves, whose
+ * offset IS the file's size, and a torn one answers with the fragment, whose
+ * offset is where to cut. One chunk, whatever the segment weighs — reading it
+ * whole would put the segment's full size back on every single write, right
+ * beside the parse this recovery no longer does.
+ *
+ * Works in bytes, not characters: the offset is the byte after the last `\n`, so
+ * a multi-byte UTF-8 character split across the crash boundary is removed whole
+ * with the rest of the fragment.
  */
 function healTornTail(segmentPath: string): number {
-  const bytes = readFileSync(segmentPath);
-  if (bytes.length === 0) return 0;
-  if (bytes[bytes.length - 1] === 0x0a) return bytes.length; // ends in newline: intact
-  const lastNewline = bytes.lastIndexOf(0x0a);
-  const keep = lastNewline + 1; // 0 when there is no newline at all
-  truncateSync(segmentPath, keep);
-  return keep;
+  for (const line of linesFromEnd(segmentPath)) {
+    if (line.text.length === 0) return line.start; // ends in a newline: intact
+    truncateSync(segmentPath, line.start);
+    return line.start;
+  }
+  return 0; // an empty file: nothing to heal, nothing written
 }

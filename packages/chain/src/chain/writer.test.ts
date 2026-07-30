@@ -2,19 +2,23 @@
  * How a writer resumes an existing tail — and what it refuses to sign.
  *
  * Every operation in the product opens a NEW writer (one process, one write, one
- * forced checkpoint), so this resume path runs on every single write. It reads
- * only the END of the tail: the last entry gives the head and the next seq, and
- * the entries above the last checkpoint are the events the next checkpoint owes a
- * signature. The events appended in this process are kept in memory, so signing
- * never round-trips through the store.
+ * forced checkpoint), so this resume path runs on every single write. Each of its
+ * reads enters its file from the END and stops at what it came for: the last
+ * checkpoint says how far the coverage reaches, the last entry gives the head and
+ * the next seq, and the entries above the coverage are what the next checkpoint
+ * owes a signature. The events appended in this process are kept in memory, so
+ * signing never round-trips through the store.
  *
- * The whole value of that shape lives in the recovery edges — a crash, a torn
- * line, a range that spans segments, a tail with no checkpoint at all — so each
- * one gets a case here. The last describe pins what must NOT have changed: the
- * bytes that get signed.
+ * A partial read is only worth having if it answers what the whole read
+ * answered, so the two describes below hold each one against the complete reader
+ * it replaced. The rest of the value lives in the recovery edges — a crash, a
+ * torn line, a line heavier than a read chunk, a range that spans segments, a
+ * tail with no checkpoint at all — so each gets a case here. The last describe
+ * pins what must NOT have changed: the bytes that get signed.
  */
 
 import {
+  appendFileSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -35,9 +39,16 @@ import {
   serializeCheckpoint,
   signCheckpoint,
 } from './checkpoint.js';
+import type { Entry } from './entry.js';
 import { loadOrCreateKeyPair } from './keystore.js';
-import { type ChainLayout, segmentPath } from './layout.js';
-import { orderedSegments, readTailEntries, readTailTip } from './store.js';
+import { type ChainLayout, checkpointsPath, segmentPath } from './layout.js';
+import {
+  lastTailCheckpoint,
+  orderedSegments,
+  readTailCheckpoints,
+  readTailEntries,
+  readTailTip,
+} from './store.js';
 import type { ChainWriter } from './writer.js';
 
 let root: string;
@@ -115,6 +126,21 @@ function linesInLastSegment(): number {
     .filter((line) => line.length > 0).length;
 }
 
+/**
+ * The whole truth about a tail, from the reader that holds all of it. Every tip
+ * has to agree with it: the same entries above the coverage, and the same last
+ * entry. It cannot be list equality — the tip returns LESS on purpose, stopping
+ * at the boundary instead of handing back whole segments — so the agreement is
+ * stated over exactly what the tip promises.
+ */
+function tipAgreesWithTheWholeTail(minSeq: number): Entry[] {
+  const all = readTailEntries(layout(), tailIdOf(), upcasters);
+  const tip = readTailTip(layout(), tailIdOf(), upcasters, minSeq);
+  expect(tip.filter((e) => e.link.seq > minSeq)).toEqual(all.filter((e) => e.link.seq > minSeq));
+  expect(tip.at(-1)).toEqual(all.at(-1));
+  return tip;
+}
+
 describe('reading the tip of a tail', () => {
   it('reads nothing from a tail that has no segment yet', () => {
     openChain(); // creates the tail directory and its proof, but no entry
@@ -166,6 +192,132 @@ describe('reading the tip of a tail', () => {
 
     const tip = readTailTip(layout(), tailIdOf(), upcasters, 2);
     expect(tip.map((e) => e.link.seq)).toEqual([2]);
+  });
+
+  it('reads the lines above the coverage, not the segment holding them', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    appendTasks(w, 200);
+    expect(forceCheckpoint(w).toSeq).toBe(200);
+    appendTasks(w, 2, 200); // seq 201, 202, into the same segment
+
+    // 203 entries sit in that one segment; the walk stops after three lines.
+    expect(linesInLastSegment()).toBe(203);
+    expect(tipAgreesWithTheWholeTail(200).map((e) => e.link.seq)).toEqual([200, 201, 202]);
+  });
+
+  it('agrees with the whole tail on every shape of coverage', () => {
+    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    appendTasks(w, 3); // seq 0..3, one per segment
+    tipAgreesWithTheWholeTail(-1); // nothing covered: the tip owes the whole tail
+    expect(forceCheckpoint(w).toSeq).toBe(3);
+    tipAgreesWithTheWholeTail(3); // fully covered: only the head is owed
+    appendTasks(w, 2, 3); // seq 4, 5
+    tipAgreesWithTheWholeTail(3); // a boundary two segments back
+  });
+
+  it('agrees with the whole tail when a crash tore the last line', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    appendTasks(w, 2);
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    writeFileSync(segment, `${readFileSync(segment, 'utf-8')}{"event":{"kin`, 'utf-8');
+
+    // Both readers drop the fragment, so both see the same tail — the tolerance
+    // is one rule, reached from either direction.
+    expect(tipAgreesWithTheWholeTail(-1).map((e) => e.link.seq)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('reading the last checkpoint of a tail', () => {
+  /**
+   * The backward read has to answer exactly what taking the last of the whole
+   * file answered — that is the behaviour it replaces, and the writer's coverage
+   * and its checkpoint chain both hang off it.
+   */
+  function agreesWithTheWholeFile(): Checkpoint | undefined {
+    const last = lastTailCheckpoint(layout(), tailIdOf());
+    expect(last).toEqual(readTailCheckpoints(layout(), tailIdOf()).at(-1));
+    return last;
+  }
+
+  it('finds nothing when the tail has never checkpointed', () => {
+    openChain(); // the tail directory and its proof exist; the file does not
+    expect(agreesWithTheWholeFile()).toBeUndefined();
+  });
+
+  it('finds nothing in an empty checkpoints file', () => {
+    openFounded({ checkpointEvery: NEVER });
+    writeFileSync(checkpointsPath(layout(), tailIdOf()), '', 'utf-8');
+    expect(agreesWithTheWholeFile()).toBeUndefined();
+  });
+
+  it('finds the only checkpoint of a tail that has one', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    const only = forceCheckpoint(w);
+    expect(agreesWithTheWholeFile()).toEqual(only);
+  });
+
+  it('finds the last of many', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    forceCheckpoint(w);
+    appendTasks(w, 2);
+    forceCheckpoint(w);
+    appendTasks(w, 2, 2);
+    const third = forceCheckpoint(w);
+    expect(agreesWithTheWholeFile()).toEqual(third);
+  });
+
+  it('drops a torn last line that fails to parse and takes the one before it', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    const intact = forceCheckpoint(w);
+    appendFileSync(checkpointsPath(layout(), tailIdOf()), '{"tail":"m-', 'utf-8');
+
+    expect(agreesWithTheWholeFile()).toEqual(intact);
+  });
+
+  it('takes a torn last line that happens to parse, as the whole-file read does', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    appendTasks(w, 1);
+    const last = forceCheckpoint(w);
+    const file = checkpointsPath(layout(), tailIdOf());
+    truncateSync(file, readFileSync(file).length - 1); // every byte but the newline
+
+    expect(agreesWithTheWholeFile()).toEqual(last);
+  });
+
+  it('takes the last line STORED, not the highest seq it holds', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    const first = forceCheckpoint(w);
+    appendTasks(w, 2);
+    const second = forceCheckpoint(w);
+    const file = checkpointsPath(layout(), tailIdOf());
+    const lines = readFileSync(file, 'utf-8')
+      .split('\n')
+      .filter((line) => line.length > 0);
+    writeFileSync(file, `${[lines[1], lines[0]].join('\n')}\n`, 'utf-8');
+
+    // A tail has one writer, so stored order IS seq order and the two readings
+    // coincide; reading the highest instead would be a change of behaviour
+    // dressed as an optimization. Out of order, the last one stored wins.
+    expect(second.toSeq).toBeGreaterThan(first.toSeq); // else this proves nothing
+    expect(agreesWithTheWholeFile()).toEqual(first);
+  });
+
+  it('is indifferent to corruption further up, which the whole-file read is not', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    forceCheckpoint(w);
+    appendTasks(w, 2);
+    const last = forceCheckpoint(w);
+    const file = checkpointsPath(layout(), tailIdOf());
+    const lines = readFileSync(file, 'utf-8')
+      .split('\n')
+      .filter((line) => line.length > 0);
+    writeFileSync(file, `{"tail":"broken"\n${lines[1]}\n`, 'utf-8');
+
+    // The declared cost of not reading the file: a malformed line the writer no
+    // longer trips over. It costs the proof nothing — the verifier reads every
+    // checkpoint, and it is what reports the file.
+    expect(() => readTailCheckpoints(layout(), tailIdOf())).toThrow();
+    expect(lastTailCheckpoint(layout(), tailIdOf())).toEqual(last);
   });
 });
 
@@ -257,6 +409,38 @@ describe('the writer resumes from the end of the tail', () => {
     const resumed = openChain({ checkpointEvery: NEVER });
     const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
     expect(next.link.seq).toBe(3);
+    expect(next.link.prev).toBe(head?.link.hash);
+    resumed.checkpoint();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('resumes a tail whose last entry outweighs a read chunk', () => {
+    // A free-text field is capped at 64 KiB, so one entry can be heavier than
+    // the chunk the backward walk reads in. Nothing may assume a line fits.
+    const w = openFounded({ checkpointEvery: NEVER });
+    w.append(memoryCaptured(env(w, 'm-big'), { content: 'z'.repeat(80 * 1024) }));
+    const head = forceCheckpoint(w);
+
+    const resumed = openChain({ checkpointEvery: NEVER });
+    const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
+    expect(next.link.seq).toBe(2);
+    expect(lastTailCheckpoint(layout(), tailIdOf())).toEqual(head);
+    resumed.checkpoint();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('heals a torn fragment heavier than a read chunk', () => {
+    const w = openFounded({ checkpointEvery: NEVER });
+    appendTasks(w, 1);
+    const head = readTailEntries(layout(), tailIdOf(), upcasters).at(-1);
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    // A crash mid-append of a big entry: the fragment spans several chunks, and
+    // the heal has to cut back to the newline above all of them.
+    appendFileSync(segment, `{"event":{"kind":"${'k'.repeat(80 * 1024)}`, 'utf-8');
+
+    const resumed = openChain({ checkpointEvery: NEVER });
+    const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
+    expect(next.link.seq).toBe(2);
     expect(next.link.prev).toBe(head?.link.hash);
     resumed.checkpoint();
     expect(verify(root).ok).toBe(true);
