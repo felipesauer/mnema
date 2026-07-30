@@ -11,7 +11,7 @@ import {
   startRun,
 } from '../../tests/support/chain.js';
 import type { ScopedCache } from '../sources.js';
-import { accountability } from './accountability.js';
+import { accountability, accountabilityByProject } from './accountability.js';
 
 let benches: Bench[] = [];
 let caches: ProjectionCache[] = [];
@@ -29,10 +29,10 @@ function bench(): Bench {
   return b;
 }
 
-function tree(b: Bench, scope: Scope = 'public'): ScopedCache {
+function tree(b: Bench, scope: Scope = 'public', project?: string): ScopedCache {
   const cache = b.cache();
   caches.push(cache);
-  return { scope, chainRoot: b.root, cache };
+  return { scope, chainRoot: b.root, ...(project !== undefined ? { project } : {}), cache };
 }
 
 describe('accountability — who authorized what, which agent executed', () => {
@@ -143,3 +143,89 @@ describe('accountability — who authorized what, which agent executed', () => {
     expect(accountability([])).toEqual({ total: 0, byWho: [] });
   });
 });
+
+describe('accountabilityByProject — one account per record, never a sum', () => {
+  it('keeps the same author’s work apart, project by project', () => {
+    // One human, two codebases. Summed, the answer says 2 for a record holding 1.
+    const first = bench();
+    const second = bench();
+    startRun(first, 'r-1', { agent: 'claude', who: 'alice' });
+    startRun(second, 'r-2', { agent: 'claude', who: 'alice' });
+
+    const account = accountabilityByProject([
+      tree(first, 'public', '/w/first'),
+      tree(second, 'public', '/w/second'),
+    ]);
+
+    expect(account.byProject).toEqual([
+      { project: '/w/first', total: 1, byWho: [aliceRan(1)] },
+      { project: '/w/second', total: 1, byWho: [aliceRan(1)] },
+    ]);
+    // Nothing adds them up — not instead of the entries, and not beside them.
+    expect('total' in account).toBe(false);
+    expect(JSON.stringify(account)).not.toContain('"total":2');
+  });
+
+  it('folds one project’s several trees into that project’s one account', () => {
+    // A project is a RECORD, not a tree: its public and private trees are one
+    // account, which is what makes each number mean what it meant before.
+    const team = bench();
+    const local = bench();
+    startRun(team, 'r-1', { agent: 'claude', who: 'alice' });
+    startRun(local, 'r-2', { agent: 'claude', who: 'alice' });
+    const sources = [tree(team, 'public', '/w/only'), tree(local, 'private', '/w/only')];
+
+    const account = accountabilityByProject(sources);
+
+    expect(account.byProject).toEqual([{ project: '/w/only', total: 2, byWho: [aliceRan(2)] }]);
+    // And the fold is the SAME fold: one record decomposed is one record counted.
+    const { total, byWho } = accountability(sources);
+    expect(account.byProject[0]).toMatchObject({ total, byWho });
+  });
+
+  it('puts the record that belongs to no project last, and lists a silent one at zero', () => {
+    const personal = bench();
+    const quiet = bench();
+    const busy = bench();
+    startRun(personal, 'r-1', { agent: 'claude', who: 'alice' });
+    startRun(busy, 'r-2', { agent: 'claude', who: 'alice' });
+
+    // The machine-global tree arrives in the MIDDLE of the source list, as it does
+    // from a real workspace: the session's own project seeds it before the siblings.
+    const account = accountabilityByProject([
+      tree(quiet, 'public', '/w/quiet'),
+      tree(personal, 'global'),
+      tree(busy, 'public', '/w/busy'),
+    ]);
+
+    expect(account.byProject.map((entry) => entry.project)).toEqual([
+      '/w/quiet',
+      '/w/busy',
+      undefined,
+    ]);
+    // A record with nothing to report is HERE at zero: absent, it would be
+    // indistinguishable from a project the read never opened.
+    expect(account.byProject[0]).toEqual({ project: '/w/quiet', total: 0, byWho: [] });
+  });
+
+  it('echoes the window it applied once, not once per record', () => {
+    const b = bench();
+    const account = accountabilityByProject([tree(b, 'public', '/w/only')], {
+      from: '2020-01-01T00:00:00.000Z',
+      to: '2030-01-01T00:00:00.000Z',
+    });
+    expect(account.from).toBe('2020-01-01T00:00:00.000Z');
+    expect(account.to).toBe('2030-01-01T00:00:00.000Z');
+    expect(account.byProject).toEqual([{ project: '/w/only', total: 0, byWho: [] }]);
+  });
+});
+
+/** Alice, having started `count` runs through claude — the shape the fold produces. */
+function aliceRan(count: number) {
+  return {
+    who: 'alice',
+    total: count,
+    byKind: [{ kind: 'run.started', count }],
+    byWhich: [{ which: 'claude', count }],
+  };
+}

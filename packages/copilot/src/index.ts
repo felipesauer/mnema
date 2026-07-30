@@ -53,6 +53,7 @@ export {
   nextActionsForTask,
 } from './context/next-action.js';
 export {
+  type HiddenMatches,
   type RecordBody,
   type RecordHit,
   type RecordQuery,
@@ -76,9 +77,12 @@ export {
   type Accountability,
   type AccountabilityFilter,
   accountability,
+  accountabilityByProject,
   type KindCount,
+  type ProjectAccount,
   type WhichCount,
   type WhoAccount,
+  type WorkspaceAccountability,
 } from './intelligence/accountability.js';
 export {
   type Antipatterns,

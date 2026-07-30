@@ -921,17 +921,22 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Search — find what has been recorded',
       description:
-        'Search everything recorded in this project and on this machine — ' +
-        'memories, observations, decisions, tasks and skills — by the words a ' +
-        'person wrote in them. Use it to answer "have we written about X?" or ' +
+        'Search everything recorded in EVERY project of this workspace and on this ' +
+        'machine — memories, observations, decisions, tasks and skills — by the words ' +
+        'a person wrote in them. Use it to answer "have we written about X?" or ' +
         '"what did we decide about Y?" BEFORE assuming nothing is recorded. ' +
         'With NO term it lists the most recent records instead ("what has been ' +
         'going on here" — call it with an empty argument object). Narrow with ' +
         'kind, scope, state or a time window. ' +
-        'Returns an INDEX — id, kind, tree, when, and one line each — not the ' +
-        'bodies; take an id to `read_record` for the whole thing. Searches every ' +
-        'tree you can see (the team’s, this machine’s, your own) and says which ' +
-        'each hit came from. Read-only.',
+        'Returns an INDEX — id, kind, tree, project, when, and one line each — not ' +
+        'the bodies; take an id to `read_record` for the whole thing. It searches ' +
+        'every tree it can see (the team’s, this machine’s, your own) in every ' +
+        'project you have open, and each hit says which project and which tree hold ' +
+        'it. Two limits worth knowing: each tree ranks its own matches against its ' +
+        'own words, so the merged order is a good approximation and not one global ' +
+        'ranking; and `limit` can fill the answer from one project — when it leaves ' +
+        'another project’s matches out entirely, the reply names that project under ' +
+        '`hidden`, and asking again with a larger limit reaches them. Read-only.',
       inputSchema: {
         term: z
           .string()
@@ -1018,11 +1023,17 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
   // them, opening no writer and no cache. With no project a session has no record to
   // audit — refused.
   //
-  // WHICH union differs, and by the question rather than by an option: the two keyed by
-  // an ID span every project of the workspace, because an id has one home and what
-  // points at it lives wherever the pointing happened; `audit_accountability` spans the
-  // session's own project, because summing several would answer "how much have I
-  // written" under the name of "how much is in this record".
+  // The three that read PROJECTIONS span every project of the workspace, and what
+  // differs between them is what each may MERGE from that one list — by the shape of
+  // the answer, never by an option. The two keyed by an id merge ITEMS: an id has one
+  // home, what points at it lives wherever the pointing happened, and a merged list of
+  // labelled items adds without changing. `audit_accountability` merges nothing: it
+  // returns one account per project, because summing several would answer "how much
+  // have I written" under the name of "how much is in this record".
+  //
+  // `audit_exposure` and `audit_antipatterns` still read the session's own project:
+  // they fold the TAILS rather than the caches, so reaching every project is a
+  // different change from this one and not a line of it.
 
   server.registerTool(
     'audit_timeline',
@@ -1110,12 +1121,18 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Audit — who authorized what',
       description:
-        'Show who authorized what and which agent executed it, across ALL of this ' +
-        'project’s trees. Use it to answer "who did what" over the whole record — ' +
-        'with no filter it accounts for everything (like git shortlog). Optionally ' +
-        'narrow by a time window (from/to), a single author (who), or a single ' +
-        'executing agent (which). Returns the total and a per-author breakdown ' +
-        '(counts by kind and by executing agent). Read-only.',
+        'Show who authorized what and which agent executed it, across ALL trees of ' +
+        'ALL projects in this workspace. Use it to answer "who did what" over the ' +
+        'whole record — with no filter it accounts for everything (like git ' +
+        'shortlog). Optionally narrow by a time window (from/to), a single author ' +
+        '(who), or a single executing agent (which). The answer is ONE ACCOUNT PER ' +
+        'PROJECT (plus the machine-global tree, which belongs to none) — each with ' +
+        'its own total and per-author breakdown (counts by kind and by executing ' +
+        'agent). There is deliberately no combined total: a count belongs to a ' +
+        'record, and adding several projects up answers "how much have I written ' +
+        'anywhere" under the name of "how much is in this record". Add them yourself ' +
+        'if that is your question. A project with nothing to report is listed at ' +
+        'zero rather than left out. Read-only.',
       inputSchema: {
         from: z
           .string()

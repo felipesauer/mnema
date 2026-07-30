@@ -1470,7 +1470,7 @@ describe('MCP session + tools — unit', () => {
     expect(after).toEqual(before);
   });
 
-  it('audit_accountability with no filter accounts for the whole union; --who narrows', () => {
+  it('audit_accountability with no filter accounts for each record; --who narrows', () => {
     const project = makeProject('proj');
     const session = openSession({
       clientName: 'claude-code',
@@ -1484,17 +1484,20 @@ describe('MCP session + tools — unit', () => {
     const all = runAccountabilityTool(session, {});
     expect(all.ok).toBe(true);
     if (!all.ok) return;
-    expect(all.value.total).toBeGreaterThanOrEqual(2);
-    // The session's own who authored them.
-    const mine = all.value.byWho.find((w) => w.who === session.who);
-    expect(mine).toBeDefined();
+    // An account per record: this project's trees, and the machine-global tree. Both
+    // facts are in the project's, under the session's own authority.
+    const here = all.value.byProject.find((entry) => entry.project === project);
+    expect(here?.total).toBeGreaterThanOrEqual(2);
+    expect(here?.byWho.find((w) => w.who === session.who)).toBeDefined();
 
-    // A filter on a stranger counts zero — never an error.
+    // A filter on a stranger counts zero — never an error, and every record is still
+    // listed at zero rather than dropped from the answer.
     const none = runAccountabilityTool(session, { who: 'nobody' });
     expect(none.ok).toBe(true);
     if (none.ok) {
-      expect(none.value.total).toBe(0);
-      expect(none.value.byWho).toEqual([]);
+      expect(none.value.byProject.map((entry) => entry.project)).toEqual([project, undefined]);
+      expect(none.value.byProject.every((entry) => entry.total === 0)).toBe(true);
+      expect(none.value.byProject.every((entry) => entry.byWho.length === 0)).toBe(true);
     }
   });
 
@@ -2419,11 +2422,16 @@ describe('MCP server — end to end over a real client', () => {
     const entries = JSON.parse(textOf(timelineRes)) as Array<{ kind: string; role: string }>;
     expect(entries.some((e) => e.kind === 'memory.captured' && e.role === 'subject')).toBe(true);
 
-    // audit_accountability with no filter — a faithful account with a nonzero total.
+    // audit_accountability with no filter — one faithful account per record, the
+    // project's holding what was just written, and no total added across them.
     const accRes = await client.callTool({ name: 'audit_accountability', arguments: {} });
-    const account = JSON.parse(textOf(accRes)) as { total: number; byWho: unknown[] };
-    expect(account.total).toBeGreaterThan(0);
-    expect(account.byWho.length).toBeGreaterThan(0);
+    const account = JSON.parse(textOf(accRes)) as {
+      byProject: { project?: string; total: number; byWho: unknown[] }[];
+      total?: number;
+    };
+    const written = account.byProject.find((entry) => entry.total > 0);
+    expect(written?.byWho.length).toBeGreaterThan(0);
+    expect(account.total).toBeUndefined();
 
     // audit_antipatterns — the four lists, all empty on a churn-free record.
     const apRes = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
