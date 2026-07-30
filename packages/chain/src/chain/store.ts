@@ -21,6 +21,7 @@ import {
   tailDir,
   tailsDir,
 } from './layout.js';
+import { parsedFromEnd, parseStoredLine } from './lines.js';
 
 /** Lists the tail ids present in a chain (each is one machine's directory). */
 export function listTails(layout: ChainLayout): string[] {
@@ -59,20 +60,11 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
 }
 
 /**
- * Parses one segment file into its entries.
- *
- * A malformed line is corruption worth surfacing — EXCEPT one specific,
- * benign case: a crash mid-append can leave a torn final line at the physical
- * end of the last segment. A complete append always ends in a newline, so a
- * torn write is exactly "the file does not end in a newline and its last line
- * fails to parse". That one trailing fragment is dropped so the intact prefix
- * still reads and the writer can resume; any malformed line elsewhere (or a
- * torn fragment that happens to parse) still throws.
+ * Parses one segment file into its entries, whole and in seq order.
  *
  * `isLast` says whether this is the tail's last segment, because that is the
- * only file whose end is the physical end of the tail — a fragment anywhere
- * else is corruption. This is the ONE place the rule lives: both readers below
- * go through here, so the tolerance cannot drift between them.
+ * only file whose end is the physical end of the tail — see
+ * {@link parseStoredLine}, which owns the torn-fragment rule this passes it.
  */
 function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): Entry[] {
   const raw = readFileSync(file, 'utf-8');
@@ -82,13 +74,9 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] as string;
     if (line.length === 0) continue;
-    const isTrailingFragment = isLast && !endsWithNewline && i === lines.length - 1;
-    try {
-      entries.push(parseEntry(line, upcasters));
-    } catch (error) {
-      if (isTrailingFragment) continue; // torn last write from a crash — drop it
-      throw error;
-    }
+    const couldBeTorn = isLast && !endsWithNewline && i === lines.length - 1;
+    const entry = parseStoredLine(line, couldBeTorn, (stored) => parseEntry(stored, upcasters));
+    if (entry !== null) entries.push(entry);
   }
   return entries;
 }
@@ -123,20 +111,23 @@ export function readTailEntries(
  * A writer resuming a tail needs two things, and neither needs the history: the
  * last entry (for the head hash and the next seq) and the events no checkpoint
  * covers yet (for what the next checkpoint signs). Both live at the end. So this
- * walks segments from last to first: the last segment that yields any entry
- * already holds the tail's last entry, and because segments are in seq order the
- * lowest seq in hand only ever drops as the walk goes back — once it is at or
- * below `minSeq`, everything above `minSeq` is in hand and no earlier segment
- * can hold more.
+ * walks segments from last to first and, INSIDE each one, lines from last to
+ * first — stopping at the first entry it meets at or below `minSeq`, because
+ * seqs only rise along the tail, so everything above the boundary is by then in
+ * hand and nothing earlier can hold more.
  *
- * The unit of reading is a whole segment, so the result MAY include entries at
- * or below `minSeq`; a caller that wants strictly-above filters. What bounds the
- * excess is the segment size cap: never more than one segment's worth below the
- * boundary. Passing `minSeq = -1` (a tail with no checkpoint yet) reads the whole
- * tail, which is the honest answer — the next checkpoint has to cover from seq 0.
+ * That boundary entry is kept rather than dropped, and it is the only one at or
+ * below `minSeq` the result can contain. It is what gives a FULLY covered tail
+ * its head: with nothing left to sign, the last entry is still the link the next
+ * append chains to. A caller that wants strictly-above therefore filters.
  *
- * Torn-fragment tolerance is exactly {@link readTailEntries}'s: both compose
- * `entriesOfSegment`.
+ * The cost is the entries actually returned, not the file they sit in: a covered
+ * tail costs one line however many megabytes the segment weighs. Passing
+ * `minSeq = -1` (a tail with no checkpoint yet) reads the whole tail, which is
+ * the honest answer — the next checkpoint has to cover from seq 0.
+ *
+ * Torn-fragment tolerance is exactly {@link readTailEntries}'s: both reach
+ * {@link parseStoredLine}.
  */
 export function readTailTip(
   layout: ChainLayout,
@@ -145,35 +136,38 @@ export function readTailTip(
   minSeq: number,
 ): Entry[] {
   const segments = orderedSegments(layout, tailId);
-  const chunks: Entry[][] = [];
-  let lowestSeq: number | null = null;
+  const tip: Entry[] = [];
   for (let s = segments.length - 1; s >= 0; s -= 1) {
     const file = segments[s] as string;
-    const chunk = entriesOfSegment(file, upcasters, s === segments.length - 1);
-    // An empty segment contributes nothing and moves no boundary — the last one
-    // can be empty because a recovering writer truncated a torn fragment out of
-    // it, and the walk simply continues into the segment before it.
-    if (chunk.length > 0) {
-      chunks.unshift(chunk);
-      lowestSeq = (chunk[0] as Entry).link.seq;
+    const parse = (line: string): Entry => parseEntry(line, upcasters);
+    let reachedCoverage = false;
+    // An empty segment yields nothing and moves no boundary — the last one can
+    // be empty because a recovering writer truncated a torn fragment out of it,
+    // and the walk simply continues into the segment before it.
+    for (const entry of parsedFromEnd(file, s === segments.length - 1, parse)) {
+      tip.push(entry);
+      if (entry.link.seq <= minSeq) {
+        reachedCoverage = true;
+        break;
+      }
     }
-    if (lowestSeq !== null && lowestSeq <= minSeq) break;
+    if (reachedCoverage) break;
   }
-  return chunks.flat();
+  return tip.reverse();
 }
 
 /**
  * Reads a tail's checkpoints in stored order.
  *
- * Like {@link readTailEntries}, this tolerates ONE benign case: a crash while
- * signing a checkpoint can leave a torn final line (no trailing newline) at the
- * end of the append-only checkpoints file. A complete checkpoint append always
- * ends in a newline, so a torn write is exactly "the file does not end in a
- * newline and its last line fails to parse". That one trailing fragment is
- * dropped so the intact checkpoints still read; any malformed line elsewhere
- * still throws. Without this, a torn checkpoint would make BOTH the verifier and
- * the writer's own recovery throw — the machine could neither verify nor resume
- * its own tail after a crash mid-checkpoint.
+ * The verifier needs every one of them — it walks the checkpoint chain and
+ * checks that the coverage is contiguous — so this reads the whole file. A
+ * writer resuming the tail needs only the last, and takes it from
+ * {@link lastTailCheckpoint} instead.
+ *
+ * Torn-fragment tolerance is {@link parseStoredLine}'s: a crash while signing a
+ * checkpoint can leave a partial final line, and without the tolerance BOTH the
+ * verifier and the writer's own recovery would throw — the machine could neither
+ * verify nor resume its own tail after a crash mid-checkpoint.
  */
 export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkpoint[] {
   const file = checkpointsPath(layout, tailId);
@@ -185,13 +179,38 @@ export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkp
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] as string;
     if (line.length === 0) continue;
-    const isTrailingFragment = !endsWithNewline && i === lines.length - 1;
-    try {
-      checkpoints.push(parseCheckpoint(line));
-    } catch (error) {
-      if (isTrailingFragment) continue; // torn last checkpoint from a crash — drop it
-      throw error;
-    }
+    const couldBeTorn = !endsWithNewline && i === lines.length - 1;
+    const checkpoint = parseStoredLine(line, couldBeTorn, parseCheckpoint);
+    if (checkpoint !== null) checkpoints.push(checkpoint);
   }
   return checkpoints;
+}
+
+/**
+ * Reads the LAST checkpoint stored for a tail, or `undefined` if it has none.
+ *
+ * This is what a resuming writer asks for: how far the coverage reaches and
+ * which hash the next checkpoint links to. It answers by walking the file
+ * backwards and stopping at the first line that parses — one line, whatever the
+ * file weighs. Because a checkpoint is signed after every write in this product,
+ * that file grows one line per event, and reading it whole to take its last line
+ * put an unbounded cost on every single write.
+ *
+ * The answer is the last line STORED, which is what taking the last of
+ * {@link readTailCheckpoints} means, not the highest `toSeq`. For a tail with one
+ * writer the two coincide — the verifier sorts by defence, not because the file
+ * is out of order — and picking the highest instead would be a change of
+ * behaviour wearing an optimization's clothes.
+ *
+ * The one thing it cannot see is corruption further up: a malformed line in the
+ * MIDDLE of the file makes {@link readTailCheckpoints} throw and leaves this
+ * indifferent, because it never reads that far. That is the same trade the tip
+ * already makes for segments, and it costs no proof — the verifier reads every
+ * checkpoint and is what reports the file.
+ */
+export function lastTailCheckpoint(layout: ChainLayout, tailId: string): Checkpoint | undefined {
+  const file = checkpointsPath(layout, tailId);
+  if (!existsSync(file)) return undefined;
+  for (const checkpoint of parsedFromEnd(file, true, parseCheckpoint)) return checkpoint;
+  return undefined;
 }
