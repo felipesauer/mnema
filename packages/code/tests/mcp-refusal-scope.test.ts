@@ -5,8 +5,7 @@
  * trees did not hold — and a workspace holds several projects, of which a session
  * sees one. So the reply denied the existence of records that exist, are intact,
  * and are answerable by a `mnema` command two directories away. The fix is a
- * sentence that reports the SEARCH (this project, and the machine-global tree)
- * and never the world.
+ * sentence that reports the SEARCH and never the world.
  *
  * EIGHT call sites relay that refusal, and there is a test per site. Not one test
  * for the sentence: a sentence with one test is a sentence that gets restored in
@@ -14,11 +13,21 @@
  * lost it. They are not one parametrized loop for the same reason — a loop reports
  * one failure for eight broken sites.
  *
- * The eight split into two groups, and the split is the finding: six fire when NO
- * visible tree holds the birth, and two fire when a tree DOES hold it and the
- * state still cannot be read. The second pair must not say "not in this project" —
- * the walk just found it there — so they carry their own sentence, and the two
- * groups are asserted apart.
+ * The eight split into THREE groups now, and the split is the finding:
+ *
+ *   - FIVE fire when no tree of the WORKSPACE holds the birth — the three transitions,
+ *     `next_actions` and `guard`, whose walk covers every project the client
+ *     announced. Their sentence names those projects, because a sentence that named
+ *     one while the walk read five understates itself exactly as "does not exist"
+ *     overstated itself, and a reader can check neither.
+ *   - ONE fires over a search of the session's OWN record: `skills` serves the
+ *     patterns of the trees this session can see, which is a narrower search. It keeps
+ *     the narrower sentence, and that is the point — a sentence follows the search
+ *     that produced it, not the module it lives in.
+ *   - TWO fire when a tree DOES hold the entity and the state still cannot be read.
+ *     They must not say "was not found" — the walk just found it — so they carry their
+ *     own sentence, and it names the project the entity was found IN, which need not
+ *     be the session's.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -59,19 +68,31 @@ function openOn(project: string): Session {
   return openSession({ clientName: 'claude-code', roots: [pathToFileURL(project).href], env });
 }
 
-/** The sentence every site in the first group must produce, for this project. */
-function notFoundIn(project: string, kind: string, id: string): string {
+/**
+ * The sentence the five workspace-wide sites must produce, over the projects it
+ * searched — quoted and comma-separated, the one spelling of that list.
+ */
+function notFoundAcross(projects: readonly string[], kind: string, id: string): string {
+  return (
+    `${kind} "${id}" was not found in any tree of this workspace's projects ` +
+    `(${projects.map((project) => `"${project}"`).join(', ')}) or in the ` +
+    'machine-global tree — the only trees this session sees'
+  );
+}
+
+/** The sentence the `skills` read must produce, over the session's own record. */
+function notFoundInSession(project: string, kind: string, id: string): string {
   return (
     `${kind} "${id}" was not found in this project (${project}) or in the ` +
     'machine-global tree — the only trees this session sees'
   );
 }
 
-/** The sentence the second group must produce, for a birth found in a tree. */
+/** The sentence the last group must produce, for a birth found in a project's tree. */
 function noStateIn(project: string, scope: Scope, kind: string, id: string): string {
   return (
-    `${kind} "${id}" is in the ${scope} tree of this project (${project}), but has ` +
-    'no readable state there — this session sees its creation and nothing after it'
+    `${kind} "${id}" is in the ${scope} tree of "${project}", but has no readable ` +
+    'state there — this session sees its creation and nothing after it'
   );
 }
 
@@ -106,14 +127,14 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('no visible tree holds it — the six sites say where they looked', () => {
+describe('no tree of the workspace holds it — the five sites say where they looked', () => {
   it('task_transition', () => {
     const project = makeProject('proj');
     const session = openOn(project);
     expect(runTaskTransition(session, { id: NOWHERE, action: 'submit' })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: notFoundIn(project, 'task', NOWHERE),
+      message: notFoundAcross([project], 'task', NOWHERE),
     });
     closeSession(session);
   });
@@ -125,7 +146,7 @@ describe('no visible tree holds it — the six sites say where they looked', () 
     expect(runDecisionTransition(session, { id: NOWHERE, action: 'accept', note: 'ok' })).toEqual({
       ok: false,
       code: 'UNKNOWN_DECISION',
-      message: notFoundIn(project, 'decision', NOWHERE),
+      message: notFoundAcross([project], 'decision', NOWHERE),
     });
     closeSession(session);
   });
@@ -136,18 +157,7 @@ describe('no visible tree holds it — the six sites say where they looked', () 
     expect(runSkillTransition(session, { id: NOWHERE, action: 'adopt', note: 'ok' })).toEqual({
       ok: false,
       code: 'UNKNOWN_SKILL',
-      message: notFoundIn(project, 'skill', NOWHERE),
-    });
-    closeSession(session);
-  });
-
-  it('skills — the read that serves one pattern by id', () => {
-    const project = makeProject('proj');
-    const session = openOn(project);
-    expect(runSkillsTool(session, { id: NOWHERE })).toEqual({
-      ok: false,
-      code: 'UNKNOWN_SKILL',
-      message: notFoundIn(project, 'skill', NOWHERE),
+      message: notFoundAcross([project], 'skill', NOWHERE),
     });
     closeSession(session);
   });
@@ -158,7 +168,7 @@ describe('no visible tree holds it — the six sites say where they looked', () 
     expect(runNextActionsTool(session, { id: NOWHERE })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: notFoundIn(project, 'task', NOWHERE),
+      message: notFoundAcross([project], 'task', NOWHERE),
     });
     closeSession(session);
   });
@@ -169,8 +179,42 @@ describe('no visible tree holds it — the six sites say where they looked', () 
     expect(runGuardTool(session, { id: NOWHERE, action: 'submit' })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
-      message: notFoundIn(project, 'task', NOWHERE),
+      message: notFoundAcross([project], 'task', NOWHERE),
     });
+    closeSession(session);
+  });
+});
+
+describe('the search of one RECORD keeps its own sentence', () => {
+  it('skills — the read that serves one pattern by id', () => {
+    // The one site whose walk is narrower than the locate's: `skills` reads the
+    // adopted patterns of the trees the session can see. Giving it the workspace
+    // sentence would be the same defect as the one this file exists for, pointing the
+    // other way — a refusal claiming to have read five projects when it read one.
+    const project = makeProject('proj');
+    const session = openOn(project);
+    expect(runSkillsTool(session, { id: NOWHERE })).toEqual({
+      ok: false,
+      code: 'UNKNOWN_SKILL',
+      message: notFoundInSession(project, 'skill', NOWHERE),
+    });
+    closeSession(session);
+  });
+
+  it('and it is a DIFFERENT sentence from the five — not a copy that drifted', () => {
+    // Asserting the two texts apart, because the risk is that one of them is quietly
+    // made to produce the other: they differ in what they claim to have searched, and
+    // that difference is the only thing keeping both of them true.
+    const project = makeProject('proj');
+    const session = openOn(project);
+    const narrow = runSkillsTool(session, { id: NOWHERE });
+    const wide = runSkillTransition(session, { id: NOWHERE, action: 'adopt', note: 'ok' });
+    if (narrow.ok || wide.ok) throw new Error('expected two refusals');
+
+    expect(narrow.message).toContain('in this project');
+    expect(narrow.message).not.toContain("this workspace's projects");
+    expect(wide.message).toContain("this workspace's projects");
+    expect(wide.message).not.toContain('in this project');
     closeSession(session);
   });
 });
@@ -212,19 +256,21 @@ describe('a tree DOES hold it — the two sites name that tree instead', () => {
 
     const refused = runNextActionsTool(session, { id });
     if (refused.ok) throw new Error('expected a refusal');
-    expect(refused.message).toContain('is in the private tree of this project');
+    expect(refused.message).toContain(`is in the private tree of "${project}"`);
     expect(refused.message).not.toContain('was not found');
     closeSession(session);
   });
 });
 
 describe('what the sentence is careful not to say', () => {
-  it('the id another project holds is not denied — the reply names where it looked', () => {
-    // The measured case. Two projects in one workspace; the cascade lands the
-    // session on the first; the task is in the second, whole and readable there.
-    // "does not exist" was simply false, and this is the reply that was false.
+  it('the id a project it never opened holds is not denied — it says where it looked', () => {
+    // The measured case, in the only shape it still has: a project the client never
+    // ANNOUNCED. The walk covers the projects the host said were open, so a repository
+    // sitting beside them on disk is exactly as invisible as it always was — and
+    // "does not exist" was as false about it then as it would be now.
     const here = makeProject('here');
     const elsewhere = makeProject('elsewhere');
+    // Announcing `here` alone: `elsewhere` is on the disk and in no root.
     const session = openOn(here);
 
     // Create the task in the OTHER project, the way any session over there would.
@@ -242,7 +288,7 @@ describe('what the sentence is careful not to say', () => {
     const refused = runTaskTransition(session, { id: theirs.id, action: 'submit' });
     if (refused.ok) throw new Error('expected a refusal');
     // It says where it looked…
-    expect(refused.message).toBe(notFoundIn(here, 'task', theirs.id));
+    expect(refused.message).toBe(notFoundAcross([here], 'task', theirs.id));
     // …and it does not say the record is not there, because it is.
     expect(refused.message).not.toContain('does not exist');
     // …nor does it say where the task IS: this session never looked in `elsewhere`,
@@ -263,7 +309,7 @@ describe('what the sentence is careful not to say', () => {
 
     const refused = runTaskTransition(session, { id: NOWHERE, action: 'submit' });
     if (refused.ok) throw new Error('expected a refusal');
-    expect(refused.message).toBe(notFoundIn(project, 'task', NOWHERE));
+    expect(refused.message).toBe(notFoundAcross([project], 'task', NOWHERE));
     for (const suggestion of ['another project', 'elsewhere', 'try ', 'may exist']) {
       expect(refused.message).not.toContain(suggestion);
     }

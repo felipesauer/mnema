@@ -28,14 +28,21 @@
  * `audit_exposure` folds the trees SEPARATELY, because its answer has to say which
  * tree a finding is in — a merge is exactly what would lose that.
  *
- * HOW MANY PROJECTS a read covers is decided by the question, not by an argument. The
- * three keyed by an ID — `read_record`, `audit_timeline`, `audit_refs` — read every
- * project of the workspace, because an id is minted once and the entities pointing at
- * one thing are regularly in the OTHER projects; `skills` reads every tree for the
- * neighbouring reason (a capability is not scoped); and the rest read the session's own
- * project, because "what is in this record" and "who authorized what here" are
- * questions ABOUT a project. No tool takes a flag for it: the caller has no better
- * information than the tool does about which of the two its own question is.
+ * HOW MANY PROJECTS a call covers is decided by the question, not by an argument.
+ * Everything keyed by an ID reaches every project of the workspace — `read_record`,
+ * the five `audit_*` reads, and the five keyed by an ENTITY (the three transitions,
+ * `next_actions`, `guard`) — because an id is minted once, so which project holds it
+ * is a fact to be found rather than a filter the caller meant to apply; `search` and
+ * `skills` reach every tree for the neighbouring reason (words and capabilities are
+ * not scoped to a project); and what stays with the session's own project is where
+ * NEW work is born, which is the one thing that has no id to be found by. No tool
+ * takes a flag for it: the caller has no better information than the tool does about
+ * which kind its own question is.
+ *
+ * That is why the five entity-keyed tools take no `project` while every write verb
+ * does. A birth is told where it belongs because there is no id yet to ask; a move
+ * asks the id, and lands where the answer is — including in a sibling project, which
+ * a birth routed there could produce and a move could not follow.
  *
  * The session is resolved lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
@@ -530,7 +537,10 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'submit_review, request_changes, approve, complete, cancel, reopen). The ' +
         'workflow gate decides whether the move is legal and carries the proof it ' +
         'requires — cancel/block/reopen need a reason, complete/approve a note, ' +
-        'request_changes a feedback; an illegal move or missing proof is refused.' +
+        'request_changes a feedback; an illegal move or missing proof is refused. ' +
+        'The task is looked for in EVERY project of this workspace and the move lands ' +
+        'in the project that holds it, so no `project` is taken here: the id decides ' +
+        'where the move goes.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The task id to move.'),
@@ -612,7 +622,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'decision (each needs a note); supersede a proposed or accepted decision ' +
         'with a later one — supersede needs the successor decision id in `by` and ' +
         'a reason. `by` applies ONLY to supersede; accept and reject ignore it. ' +
-        'An illegal move or missing proof is refused with the gate’s reason.' +
+        'An illegal move or missing proof is refused with the gate’s reason. The ' +
+        'decision is looked for in EVERY project of this workspace and the move lands ' +
+        'in the project that holds it — the id decides, so no `project` is taken.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The decision id to move.'),
@@ -695,7 +707,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'reviewed one as a live pattern, reject a proposed or reviewed one, or ' +
         'deprecate an adopted one that fell out of use. review/adopt/reject each ' +
         'need a note; deprecate needs a reason. An illegal move or missing proof ' +
-        'is refused with the gate’s reason.' +
+        'is refused with the gate’s reason. The skill is looked for in EVERY project ' +
+        'of this workspace and the move lands in the project that holds it — the id ' +
+        'decides, so no `project` is taken.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The skill id to move.'),
@@ -840,7 +854,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Show the transitions the workflow allows a task next, from its current ' +
         'state. Use it to answer "what can I do to this task" — each suggestion is a ' +
         'real move the gate would authorize. A terminal task returns an empty list ' +
-        '(no legal moves); an id no visible tree holds is refused. Read-only.',
+        '(no legal moves). The task is looked for in EVERY project of this workspace; ' +
+        'an id no tree of it holds is refused, naming the projects searched. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The task id to inspect.'),
       },
@@ -849,8 +864,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       const active = await ensureSession();
       const result = runNextActionsTool(active, { id });
       if (!result.ok) {
-        // No visible tree holds the task — surface it as a tool error so the agent
-        // sees there is no such task, not an empty (misleadable) list.
+        // No tree of the workspace holds the task, or two records do — surface it as
+        // a tool error so the agent sees there is no ONE such task, not an empty
+        // (misleadable) list.
         return {
           isError: true,
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
@@ -872,8 +888,10 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'ALLOWED (with the state the move would reach) or REFUSED (with the gate’s ' +
         'reason — an illegal move, missing proof, or who == which). Pass the same ' +
         'proof you would carry (note/reason/feedback) to see if that proof suffices. ' +
-        'The verdict is paired with your current focus. An id no visible tree holds ' +
-        'is refused. Read-only.',
+        'The verdict is paired with your current focus. The task is looked for in ' +
+        'EVERY project of this workspace — the same search `task_transition` makes, so ' +
+        'a verdict here and the move agree; an id no tree of it holds is refused, ' +
+        'naming the projects searched. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The task id to test.'),
         action: z.string().min(1).describe('The transition to simulate.'),
@@ -897,7 +915,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         ...(which !== undefined ? { which } : {}),
       });
       if (!result.ok) {
-        // No visible tree holds the task — surface it as a tool error so the agent
+        // No tree of the workspace holds the task, or two records do — surface it as
+        // a tool error so the agent
         // sees there is no such task, not a misleadable empty verdict.
         return {
           isError: true,
