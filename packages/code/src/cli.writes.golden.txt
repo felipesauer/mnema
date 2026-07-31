@@ -1,0 +1,174 @@
+### init
+$ mnema init
+| Initialized mnema project at <sandbox>/project/.mnema
+|   identity: <anchor>
+|   backup key: created and enrolled — private half at <backup-key-path>
+|   Move that file off this machine: a backup left on this disk is lost with it.
+|   registered in the project index
+$ mnema init
+| Already a mnema project at <sandbox>/project/.mnema — nothing to found.
+|   identity: <anchor>
+|   index entry re-asserted
+
+### run start
+$ mnema run start --which agent-alpha --goal 'set the record up'
+| Started run <run-first>
+|   for agent-alpha — set the record up
+|
+| export MNEMA_RUN=<run-first>
+|
+|   Run that in this shell: every fact written after it is pinned to this
+|   session. `mnema run end` closes it.
+
+### the births
+$ mnema task 'Write the deploy runbook'
+| Created task <task-runbook-alias> (<task-runbook>)
+$ mnema task 'Rotate the local credentials' --scope private --which agent-alpha
+| Created task <task-chore-alias> (<task-chore>)
+$ mnema task 'Read the release notes' --scope global
+| Created task <task-errand-alias> (<task-errand>)
+$ mnema decision 'Keep the runbook in the record' 'a wiki page nobody owns goes stale'
+| Recorded decision ADR-1 (<decision-runbook>)
+$ mnema decision 'Keep the runbook in the wiki' 'it is where we look'
+| Recorded decision ADR-2 (<decision-wiki>)
+$ mnema skill 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
+| Proposed skill "One slice per PR" (<skill-slices>)
+$ mnema skill 'Ship on Fridays' --body 'Cut the release at the end of the week.' --scope private
+| Proposed skill "Ship on Fridays" (<skill-fridays>)
+$ mnema memory 'the deploy runbook lives in the record now'
+| Captured memory <memory-runbook>
+$ mnema memory 'my own note about the runbook' --scope global
+| Captured memory <memory-personal>
+$ mnema observe <task-runbook> --topic review --text 'the runbook needs a rollback section'
+| Recorded observation <observation-rollback> about <task-runbook>
+$ mnema handoff <task-runbook> agent-alpha agent-beta
+| Recorded handoff on <task-runbook>: agent-alpha → agent-beta
+$ mnema link <decision-runbook> <task-runbook> --rel relates-to
+| Linked <decision-runbook> —relates-to→ <task-runbook>
+$ mnema link <task-runbook> <task-chore> --rel derived-from
+| Linked <task-runbook> —derived-from→ <task-chore>
+
+### the moves
+$ mnema task move submit <task-runbook>
+| Task <task-runbook-alias> → READY
+$ mnema task move start <task-runbook>
+| Task <task-runbook-alias> → IN_PROGRESS
+$ mnema task move complete <task-runbook> --note 'the first draft is in'
+| Task <task-runbook-alias> → DONE
+$ mnema task move reopen <task-runbook> --reason 'it has no rollback section'
+| Task <task-runbook-alias> → IN_PROGRESS
+$ mnema task move submit_review <task-runbook>
+| Task <task-runbook-alias> → IN_REVIEW
+$ mnema task move approve <task-runbook> --note 'the rollback section reads well'
+| Task <task-runbook-alias> → DONE
+$ mnema task move reopen <task-runbook> --reason 'the rollback step is wrong'
+| Task <task-runbook-alias> → IN_PROGRESS
+$ mnema decision move accept <decision-runbook> --note 'we agreed in review'
+| Decision ADR-1 → accepted
+$ mnema decision supersede <decision-wiki> <decision-runbook> --reason 'the record replaces it'
+| Decision ADR-2 → superseded
+$ mnema skill move review <skill-slices> --note 'it reads well'
+| Skill "One slice per PR" → reviewed
+$ mnema skill move adopt <skill-slices> --note 'we work this way already'
+| Skill "One slice per PR" → adopted
+$ mnema skill move review <skill-fridays> --note 'worth a look'
+| Skill "Ship on Fridays" → reviewed
+$ mnema skill move adopt <skill-fridays> --note 'we tried it'
+| Skill "Ship on Fridays" → adopted
+$ mnema skill move deprecate <skill-fridays> --reason 'nobody ships on a Friday'
+| Skill "Ship on Fridays" → deprecated
+
+### a record written before the content door
+$ mnema memory 'a note with a token in it: ghp_abcdefghijklmnopqrstuvwxyz0123456789'
+| Captured memory <memory-scrubbed>
+|   1 value(s) replaced before recording: <SECRET:github-token>
+|   This record is permanent. If those were real credentials, rotate them.
+
+### run end
+$ mnema run end --outcome 'the record is set up'
+| Ended run <run-first>
+|
+| unset MNEMA_RUN
+|
+|   Run that too: a shell pinned to a closed session cannot write.
+$ mnema run start --which agent-beta --goal 'read the record back'
+| Started run <run-second>
+|   for agent-beta — read the record back
+|
+| export MNEMA_RUN=<run-second>
+|
+|   Run that in this shell: every fact written after it is pinned to this
+|   session. `mnema run end` closes it.
+
+### refusals
+$ mnema task 'A task with a bad scope' --scope elsewhere
+! Invalid --scope "elsewhere". Use one of: public, private, global.
+[exit 1]
+$ mnema task 'A task an unnamed agent asked for' --which '   '
+! error: option '--which <agent>' argument '   ' is invalid. it names no agent. Name the agent that executed this, or omit --which — omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
+[exit 1]
+$ mnema task move submit <task-runbook> --scope public
+! `task move` takes no --scope: a move follows the task to the tree it was born in.
+[exit 1]
+$ mnema task move approve <task-runbook> --note 'not from here'
+! Refused (ILLEGAL_TRANSITION): cannot "approve" a task in IN_PROGRESS
+[exit 1]
+$ mnema task move submit no-such-id
+! No task no-such-id here.
+[exit 1]
+$ mnema decision move accept no-such-id --note 'nothing to accept'
+! No decision no-such-id here.
+[exit 1]
+$ mnema skill move adopt no-such-id --note 'nothing to adopt'
+! No skill no-such-id here.
+[exit 1]
+$ mnema skill 'A skill with no body'
+! `mnema skill` requires --body: the reusable pattern itself.
+[exit 1]
+$ mnema run end
+! `mnema run end` needs a run: pass its id, or set MNEMA_RUN to the one `mnema run start` printed.
+[exit 1]
+$ mnema search --limit 0
+! Invalid --limit "0". Use a whole number of 1 or more.
+[exit 1]
+$ mnema search --kind memories
+! Invalid --kind "memories". Use one of: memory, observation, decision, task, skill.
+[exit 1]
+$ mnema search --scope elsewhere
+! Invalid --scope "elsewhere". Use one of: public, private, global.
+[exit 1]
+$ mnema refs <task-runbook> --depth deep
+! Not a number of hops: deep
+[exit 1]
+$ mnema refs <task-runbook> --direction sideways
+! Not a direction: sideways. One of: both, out, in.
+[exit 1]
+$ mnema show no-such-id
+! No record no-such-id here.
+[exit 1]
+$ mnema timeline no-such-id
+| No history recorded for no-such-id.
+$ mnema next-actions no-such-id
+! No task no-such-id here.
+[exit 1]
+$ mnema key enroll not-a-request
+! Refused (MALFORMED_REQUEST): that is not a key request — hand over the whole line the joining machine printed, unedited, with nothing added or trimmed
+[exit 1]
+
+### the key roster
+$ mnema key request --anchor <anchor>
+| Requesting for key <fingerprint:01>
+|   to join <anchor>
+|
+| <enrollment-request>
+|
+|   Hand that line to a machine already in that identity, which runs:
+|     mnema key enroll <the line>
+|   It proves consent to join that ONE identity and is not a secret.
+
+### a second project on this machine
+$ mnema init
+| Initialized mnema project at <sandbox>/other-project/.mnema
+|   identity: <anchor>
+|   backup key: enrolled in this project
+|   registered in the project index
