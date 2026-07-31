@@ -1,0 +1,679 @@
+### the program
+$ mnema --help
+| Usage: mnema [options] [command]
+|
+| A tamper-evident, local-first audit chain for AI-agent work.
+|
+| Options:
+|   -V, --version                           output the version number
+|   -h, --help                              display help for command
+|
+| Commands:
+|   init                                    establish a mnema project in the current directory
+|   task [options] <title>                  create a task in the current project
+|   decision [options] <title> <rationale>  record a decision in the current project
+|   skill [options] <name>                  propose a reusable skill in the current project
+|   memory [options] <content>              capture a memory in the current project
+|   observe [options] <about>               record an observation about an entity in the current project
+|   handoff [options] <task> <from> <to>    record a handoff on a task in the current project
+|   link [options] <subject> <target>       link one piece of knowledge to another in the current project
+|   run                                     open and close the session an agent works inside
+|   focus [options]                         show an actor's open runs (what they are touching now)
+|   resume [options]                        show where an actor left off (their latest run, open or ended)
+|   next-actions [options] <task-id>        show the moves the workflow allows a task next
+|   guard [options] <action> <id>           dry-run the gate: would a move be allowed on a task, and if not, why?
+|   search [options] [term]                 find what has been recorded, or list the most recent (no term)
+|   show [options] <id>                     show one whole record by id (the body a search only pointed at)
+|   timeline [options] <id>                 show an entity's history across the trees (subject, about, target)
+|   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
+|   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
+|   exposure [options]                      show which records hold something shaped like a credential (never the value)
+|   refs [options] <id>                     show what an entity is connected to across the trees
+|   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
+|   key                                     manage this machine's signing keys
+|   verify                                  verify the current project's chain
+|   mcp                                     run the mnema MCP server over stdio (for an agent host)
+|   help [command]                          display help for command
+$ mnema --version
+| 0.0.0
+
+### mnema init --help
+$ mnema init --help
+| Usage: mnema init [options]
+|
+| establish a mnema project in the current directory
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema task --help
+$ mnema task --help
+| Usage: mnema task [options] [command] <title>
+|
+| create a task in the current project
+|
+| Arguments:
+|   title                         the task title
+|
+| Options:
+|   --scope <scope>               where the task is born: public (team-visible),
+|                                 private (this machine), or global (personal,
+|                                 cross-project). Defaults to public.
+|   --which <agent>               the agent that executed this, when an agent (a
+|                                 script, a CI step) is driving mnema — omit it
+|                                 when you are acting directly. Declared, never
+|                                 assumed; a birth an agent makes defaults to this
+|                                 machine's private tree. A value that names no
+|                                 agent (an unset variable) is refused, never
+|                                 credited to you.
+|   -h, --help                    display help for command
+|
+| Commands:
+|   move [options] <action> <id>  move a task through the workflow (follows the
+|                                 task; takes no --scope)
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema decision --help
+$ mnema decision --help
+| Usage: mnema decision [options] [command] <title> <rationale>
+|
+| record a decision in the current project
+|
+| Arguments:
+|   title                                  the decision title
+|   rationale                              why the decision was made
+|
+| Options:
+|   --scope <scope>                        where the decision is born: public (team-visible), private (this machine), or global (personal, cross-project). Defaults to public.
+|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; a birth an agent makes defaults to this machine's private tree. A value that names no agent (an unset variable) is refused, never credited to you.
+|   -h, --help                             display help for command
+|
+| Commands:
+|   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
+|   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema skill --help
+$ mnema skill --help
+| Usage: mnema skill [options] [command] <name>
+|
+| propose a reusable skill in the current project
+|
+| Arguments:
+|   name                          a short title for the pattern
+|
+| Options:
+|   --body <text>                 the reusable pattern itself (required)
+|   --scope <scope>               where the skill is born: public (team-visible),
+|                                 private (this machine), or global (personal,
+|                                 cross-project). Defaults to public.
+|   --which <agent>               the agent that executed this, when an agent (a
+|                                 script, a CI step) is driving mnema — omit it
+|                                 when you are acting directly. Declared, never
+|                                 assumed; a birth an agent makes defaults to this
+|                                 machine's private tree. A value that names no
+|                                 agent (an unset variable) is refused, never
+|                                 credited to you.
+|   -h, --help                    display help for command
+|
+| Commands:
+|   move [options] <action> <id>  move a skill through the workflow (follows the
+|                                 skill; takes no --scope)
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema memory --help
+$ mnema memory --help
+| Usage: mnema memory [options] <content>
+|
+| capture a memory in the current project
+|
+| Arguments:
+|   content          the memory to record
+|
+| Options:
+|   --scope <scope>  where the memory is born: public (team-visible), private
+|                    (this machine), or global (personal, cross-project). Defaults
+|                    to public.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; a birth an agent makes
+|                    defaults to this machine's private tree. A value that names
+|                    no agent (an unset variable) is refused, never credited to
+|                    you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema observe --help
+$ mnema observe --help
+| Usage: mnema observe [options] <about>
+|
+| record an observation about an entity in the current project
+|
+| Arguments:
+|   about            the id of the entity being observed (a task, decision, …)
+|
+| Options:
+|   --topic <label>  a short topic label
+|   --text <text>    the observation itself
+|   --scope <scope>  where the observation is born: public (team-visible), private
+|                    (this machine), or global (personal, cross-project). Defaults
+|                    to public.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; a birth an agent makes
+|                    defaults to this machine's private tree. A value that names
+|                    no agent (an unset variable) is refused, never credited to
+|                    you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema handoff --help
+$ mnema handoff --help
+| Usage: mnema handoff [options] <task> <from> <to>
+|
+| record a handoff on a task in the current project
+|
+| Arguments:
+|   task             the task the handoff is about
+|   from             the agent handing off
+|   to               the agent taking over (may equal <from>: a chat restart)
+|
+| Options:
+|   --scope <scope>  where the handoff is born: public (team-visible), private
+|                    (this machine), or global (personal, cross-project). Defaults
+|                    to public.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; a birth an agent makes
+|                    defaults to this machine's private tree. A value that names
+|                    no agent (an unset variable) is refused, never credited to
+|                    you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema link --help
+$ mnema link --help
+| Usage: mnema link [options] <subject> <target>
+|
+| link one piece of knowledge to another in the current project
+|
+| Arguments:
+|   subject          the entity that originates the link
+|   target           the entity linked to
+|
+| Options:
+|   --rel <label>    the relation (recommended: supersedes, relates-to,
+|                    derived-from, contradicts; any label is accepted)
+|   --scope <scope>  where the link is born: public (team-visible), private (this
+|                    machine), or global (personal, cross-project). Defaults to
+|                    public.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; a birth an agent makes
+|                    defaults to this machine's private tree. A value that names
+|                    no agent (an unset variable) is refused, never credited to
+|                    you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema run --help
+$ mnema run --help
+| Usage: mnema run [options] [command]
+|
+| open and close the session an agent works inside
+|
+| Options:
+|   -h, --help          display help for command
+|
+| Commands:
+|   start [options]     open a session for an agent (facts written in it are
+|                       pinned to it)
+|   end [options] [id]  close a session (by default the one MNEMA_RUN names)
+|   help [command]      display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema focus --help
+$ mnema focus --help
+| Usage: mnema focus [options]
+|
+| show an actor's open runs (what they are touching now)
+|
+| Options:
+|   --actor <id>  the anchor id whose focus to show (from `mnema verify`)
+|   --json        emit the faithful focus object as JSON
+|   -h, --help    display help for command
+
+### mnema resume --help
+$ mnema resume --help
+| Usage: mnema resume [options]
+|
+| show where an actor left off (their latest run, open or ended)
+|
+| Options:
+|   --actor <id>  the anchor id whose last run to show (from `mnema verify`)
+|   --json        emit the faithful resume object as JSON
+|   -h, --help    display help for command
+
+### mnema next-actions --help
+$ mnema next-actions --help
+| Usage: mnema next-actions [options] <task-id>
+|
+| show the moves the workflow allows a task next
+|
+| Arguments:
+|   task-id     the task id (the value shown when it was created)
+|
+| Options:
+|   --json      emit the faithful list of next actions as JSON
+|   -h, --help  display help for command
+
+### mnema guard --help
+$ mnema guard --help
+| Usage: mnema guard [options] <action> <id>
+|
+| dry-run the gate: would a move be allowed on a task, and if not, why?
+|
+| Arguments:
+|   action             the transition to test (submit, start, block, unblock,
+|                      submit_review, request_changes, approve, complete, cancel,
+|                      reopen)
+|   id                 the task id (the value shown when it was created)
+|
+| Options:
+|   --actor <id>       the anchor id asking (the `who`; from `mnema verify`)
+|   --reason <text>    simulate the reason (cancel, block, reopen)
+|   --note <text>      simulate the note (complete, approve)
+|   --feedback <text>  simulate the feedback (request_changes)
+|   --which <id>       simulate an executing agent (must differ from --actor)
+|   --json             emit the faithful gate verdict as JSON
+|   -h, --help         display help for command
+
+### mnema search --help
+$ mnema search --help
+| Usage: mnema search [options] [term]
+|
+| find what has been recorded, or list the most recent (no term)
+|
+| Arguments:
+|   term             words to look for; omit to list the most recent records
+|
+| Options:
+|   --kind <kind>    only this kind of record: memory, observation, decision,
+|                    task, skill
+|   --scope <scope>  only this tree: public, private, global
+|   --state <state>  only records in this state (excludes kinds that have none)
+|   --from <iso>     only records at or after this ISO-8601 instant
+|   --to <iso>       only records at or before this ISO-8601 instant
+|   --limit <n>      how many to return (default 20, max 200)
+|   --json           emit the faithful index as JSON (one ordered list)
+|   -h, --help       display help for command
+
+### mnema show --help
+$ mnema show --help
+| Usage: mnema show [options] <id>
+|
+| show one whole record by id (the body a search only pointed at)
+|
+| Arguments:
+|   id          the record id (from `mnema search`)
+|
+| Options:
+|   --json      emit the faithful record as JSON
+|   -h, --help  display help for command
+
+### mnema timeline --help
+$ mnema timeline --help
+| Usage: mnema timeline [options] <id>
+|
+| show an entity's history across the trees (subject, about, target)
+|
+| Arguments:
+|   id          the entity id (a task, decision, skill, memory, …)
+|
+| Options:
+|   --json      emit the faithful timeline entries as JSON
+|   -h, --help  display help for command
+
+### mnema accountability --help
+$ mnema accountability --help
+| Usage: mnema accountability [options]
+|
+| show who authorized what across the record (optionally windowed/filtered)
+|
+| Options:
+|   --from <iso>     include only facts at or after this ISO-8601 instant
+|   --to <iso>       include only facts at or before this ISO-8601 instant
+|   --who <id>       count only facts authorized by this anchor id
+|   --which <agent>  count only facts executed by this agent
+|   --json           emit the faithful account object as JSON
+|   -h, --help       display help for command
+
+### mnema antipatterns --help
+$ mnema antipatterns --help
+| Usage: mnema antipatterns [options]
+|
+| show recurring shapes in the record (reopens, supersessions, deprecations)
+|
+| Options:
+|   --json      emit the faithful shapes with their evidence as JSON
+|   -h, --help  display help for command
+
+### mnema exposure --help
+$ mnema exposure --help
+| Usage: mnema exposure [options]
+|
+| show which records hold something shaped like a credential (never the value)
+|
+| Options:
+|   --json      emit the faithful report as JSON (still without any value)
+|   -h, --help  display help for command
+
+### mnema refs --help
+$ mnema refs --help
+| Usage: mnema refs [options] <id>
+|
+| show what an entity is connected to across the trees
+|
+| Arguments:
+|   id                 the entity id (a task, decision, memory, skill, …)
+|
+| Options:
+|   --direction <way>  which way to follow edges: both, out, in (default: "both")
+|   --depth <n>        how many hops (max 10) (default: "1")
+|   --json             emit the faithful graph as JSON
+|   -h, --help         display help for command
+
+### mnema skills --help
+$ mnema skills --help
+| Usage: mnema skills [options]
+|
+| show where each pattern came from (who proposed it, who adopted it)
+|
+| Options:
+|   --json      emit the faithful provenance as JSON
+|   -h, --help  display help for command
+|
+| This is the AUDIT of the patterns, not the patterns themselves:
+|   The `skills` tool on the MCP surface serves a pattern’s body to an agent.
+|   This verb reads who put each one there. `mnema show <id>` reads a body.
+|   Only an adopted pattern is served to an agent; the other states are not.
+|   An act with no agent behind it was a person acting directly.
+
+### mnema key --help
+$ mnema key --help
+| Usage: mnema key [options] [command]
+|
+| manage this machine's signing keys
+|
+| Options:
+|   -h, --help                      display help for command
+|
+| Commands:
+|   restore <file>                  restore this machine's identity from a copy of
+|                                   a key's private half
+|   request [options]               ask to bring this machine into an identity
+|                                   (run this on the joining machine)
+|   enroll <request>                vouch for a requesting key so it joins this
+|                                   identity (run this on a member)
+|   revoke [options] <fingerprint>  retire a key from this identity, from this
+|                                   point forward
+|   help [command]                  display help for command
+
+### mnema verify --help
+$ mnema verify --help
+| Usage: mnema verify [options]
+|
+| verify the current project's chain
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema mcp --help
+$ mnema mcp --help
+| Usage: mnema mcp [options]
+|
+| run the mnema MCP server over stdio (for an agent host)
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema task move --help
+$ mnema task move --help
+| Usage: mnema task move [options] <action> <id>
+|
+| move a task through the workflow (follows the task; takes no --scope)
+|
+| Arguments:
+|   action             the transition (submit, start, block, unblock,
+|                      submit_review, request_changes, approve, complete, cancel,
+|                      reopen)
+|   id                 the task id (the value shown when it was created)
+|
+| Options:
+|   --reason <text>    why (required by cancel, block, reopen)
+|   --note <text>      what was done (required by complete, approve)
+|   --feedback <text>  what must change (required by request_changes)
+|   -h, --help         display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  the agent that executed this move, when an agent (a script,
+|                    a CI step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a move always follows
+|                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema decision move --help
+$ mnema decision move --help
+| Usage: mnema decision move [options] <action> <id>
+|
+| accept or reject a decision (follows the decision; takes no --scope)
+|
+| Arguments:
+|   action         the transition: accept or reject
+|   id             the decision id (the value shown when it was recorded)
+|
+| Options:
+|   --note <text>  why this verdict (required by accept and reject)
+|   -h, --help     display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  the agent that executed this move, when an agent (a script,
+|                    a CI step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a move always follows
+|                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema decision supersede --help
+$ mnema decision supersede --help
+| Usage: mnema decision supersede [options] <old-id> <new-id>
+|
+| supersede a decision with a later one (follows the decision; takes no --scope)
+|
+| Arguments:
+|   old-id           the decision being superseded
+|   new-id           the successor decision that replaces it
+|
+| Options:
+|   --reason <text>  why it is being replaced (required)
+|   -h, --help       display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  the agent that executed this move, when an agent (a script,
+|                    a CI step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a move always follows
+|                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema skill move --help
+$ mnema skill move --help
+| Usage: mnema skill move [options] <action> <id>
+|
+| move a skill through the workflow (follows the skill; takes no --scope)
+|
+| Arguments:
+|   action           the transition: review, adopt, reject, or deprecate
+|   id               the skill id (the value shown when it was proposed)
+|
+| Options:
+|   --note <text>    why this verdict (required by review, adopt, reject)
+|   --reason <text>  why it fell out of use (required by deprecate)
+|   -h, --help       display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  the agent that executed this move, when an agent (a script,
+|                    a CI step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a move always follows
+|                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema run start --help
+$ mnema run start --help
+| Usage: mnema run start [options]
+|
+| open a session for an agent (facts written in it are pinned to it)
+|
+| Options:
+|   --which <agent>  the agent this session is for — required: a run with no agent
+|                    authorizes nothing
+|   --goal <text>    what this session sets out to do
+|   -h, --help       display help for command
+
+### mnema run end --help
+$ mnema run end --help
+| Usage: mnema run end [options] [id]
+|
+| close a session (by default the one MNEMA_RUN names)
+|
+| Arguments:
+|   id                the run to close; omitted, the one MNEMA_RUN names
+|
+| Options:
+|   --outcome <text>  a short note on how the session went
+|   -h, --help        display help for command
+
+### mnema key restore --help
+$ mnema key restore --help
+| Usage: mnema key restore [options] <file>
+|
+| restore this machine's identity from a copy of a key's private half
+|
+| Arguments:
+|   file        the PEM file holding the private half (your backup copy)
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key request --help
+$ mnema key request --help
+| Usage: mnema key request [options]
+|
+| ask to bring this machine into an identity (run this on the joining machine)
+|
+| Options:
+|   --anchor <id>  the identity to join (the `mnid:…` its machine prints)
+|   --key <file>   a private key to speak for instead of this machine's own
+|   -h, --help     display help for command
+
+### mnema key enroll --help
+$ mnema key enroll --help
+| Usage: mnema key enroll [options] <request>
+|
+| vouch for a requesting key so it joins this identity (run this on a member)
+|
+| Arguments:
+|   request     the line `mnema key request` printed on the joining machine
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key revoke --help
+$ mnema key revoke --help
+| Usage: mnema key revoke [options] <fingerprint>
+|
+| retire a key from this identity, from this point forward
+|
+| Arguments:
+|   fingerprint      the full fingerprint of the key to retire
+|
+| Options:
+|   --reason <text>  why it is being retired (recorded in the fact)
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
