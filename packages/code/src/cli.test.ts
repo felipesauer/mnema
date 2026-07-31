@@ -2,7 +2,7 @@
  * What the CLI must not make every command pay for.
  *
  * The two surfaces share one binary: `mnema mcp` serves an agent host over
- * stdio, and 25 other verbs do a short piece of work and exit. The MCP SDK is by
+ * stdio, and 23 other verbs do a short piece of work and exit. The MCP SDK is by
  * far the heaviest module in the product — loading it costs more than every other
  * import of the CLI put together — and only the one verb uses it. So it is
  * reached through a dynamic import inside that verb's action, and this suite
@@ -41,11 +41,18 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
   });
 
   it('reaches the server module only through a dynamic import', () => {
-    const source = readFileSync(`${srcDir}cli.ts`, 'utf-8');
+    // Located rather than named: whichever file wires that verb is the one that may
+    // reach the server, and there must be exactly ONE of them — a second would be a
+    // second path to the SDK, which is what this guard exists to prevent.
+    const naming = sourceFiles(srcDir)
+      .filter((file) => !file.slice(srcDir.length).startsWith('mcp/'))
+      .filter((file) => /mcp\/server\.js/.test(readFileSync(file, 'utf-8')));
+    expect(naming.map((file) => file.slice(srcDir.length))).toEqual(['wiring/mcp.ts']);
     // A static import is `from '<spec>'`; making it dynamic is the whole point,
     // so the static form must be absent and the dynamic one present.
-    expect(source).not.toMatch(/from '\.\/mcp\/server\.js'/);
-    expect(source).toMatch(/await import\('\.\/mcp\/server\.js'\)/);
+    const source = readFileSync(naming[0] as string, 'utf-8');
+    expect(source).not.toMatch(/from '\.\.\/mcp\/server\.js'/);
+    expect(source).toMatch(/await import\('\.\.\/mcp\/server\.js'\)/);
   });
 
   it('still builds a server from the module that verb loads', async () => {

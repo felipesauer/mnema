@@ -1,0 +1,1069 @@
+### outside a project
+$ mnema search
+| Nothing recorded here yet.
+$ mnema exposure
+! No mnema project here. Run `mnema init` first.
+[exit 1]
+$ mnema verify
+! No mnema project here. Run `mnema init` first.
+[exit 1]
+
+### an empty project
+$ mnema search
+| Nothing recorded here yet.
+$ mnema search runbook
+| Nothing recorded matching "runbook".
+$ mnema search runbook --json
+| {
+|   "hits": [],
+|   "total": 0
+| }
+$ mnema search --kind task --scope public
+| Nothing recorded here yet.
+$ mnema show no-such-id
+! No record no-such-id here.
+[exit 1]
+$ mnema show no-such-id --json
+! No record no-such-id here.
+[exit 1]
+$ mnema refs no-such-id
+| no-such-id  ·  unresolved
+|   nothing references it, and it references nothing.
+$ mnema refs no-such-id --json
+| {
+|   "id": "no-such-id",
+|   "direction": "both",
+|   "depth": 1,
+|   "nodes": [
+|     {
+|       "id": "no-such-id",
+|       "depth": 0,
+|       "resolved": false
+|     }
+|   ],
+|   "links": [],
+|   "truncated": false
+| }
+$ mnema refs no-such-id --depth 2
+| no-such-id  ·  unresolved
+|   nothing references it, and it references nothing.
+$ mnema refs no-such-id --direction out --depth 1
+| no-such-id  ·  unresolved
+|   nothing references it, and it references nothing.
+$ mnema exposure
+| Nothing recognizable in 2 record(s).
+|   Read here: this project’s trees and the machine-global tree — no other project.
+|   That is not the same as nothing: only known credential formats are recognized.
+$ mnema exposure --json
+| {
+|   "findings": [],
+|   "scanned": 2
+| }
+$ mnema timeline no-such-id
+| No history recorded for no-such-id.
+$ mnema timeline no-such-id --json
+| []
+$ mnema accountability
+| 2 fact(s) · 1 author(s)
+|   <anchor>  2
+$ mnema accountability --json
+| {
+|   "total": 2,
+|   "byWho": [
+|     {
+|       "who": "<anchor>",
+|       "total": 2,
+|       "byKind": [
+|         {
+|           "kind": "identity.founded",
+|           "count": 1
+|         },
+|         {
+|           "kind": "key.enrolled",
+|           "count": 1
+|         }
+|       ],
+|       "byWhich": [
+|         {
+|           "which": null,
+|           "count": 2
+|         }
+|       ]
+|     }
+|   ]
+| }
+$ mnema antipatterns
+| reopened tasks: 0
+| superseded decisions: 0
+| deprecated skills: 0
+$ mnema antipatterns --json
+| {
+|   "reopenedTasks": [],
+|   "supersededDecisions": [],
+|   "deprecatedSkills": [],
+|   "skillCandidates": []
+| }
+$ mnema focus --actor <anchor>
+| <anchor> has no open runs.
+|   A run is an agent's working session. An MCP client opens one per connection;
+|   on the command line, `mnema run start --which <agent>` opens one.
+|   Work you do yourself is recorded without one.
+$ mnema focus --actor <anchor> --json
+| {
+|   "actor": "<anchor>",
+|   "openRuns": []
+| }
+$ mnema resume --actor <anchor>
+| <anchor> has no runs.
+|   A run is an agent's working session. An MCP client opens one per connection;
+|   on the command line, `mnema run start --which <agent>` opens one.
+|   Work you do yourself is recorded without one.
+$ mnema resume --actor <anchor> --json
+| {
+|   "actor": "<anchor>",
+|   "lastRun": null,
+|   "focus": {
+|     "actor": "<anchor>",
+|     "openRuns": []
+|   }
+| }
+$ mnema next-actions no-such-id
+! No task no-such-id here.
+[exit 1]
+$ mnema next-actions no-such-id --json
+! No task no-such-id here.
+[exit 1]
+$ mnema guard start no-such-id --actor <anchor>
+! No task no-such-id here.
+[exit 1]
+$ mnema guard complete no-such-id --actor <anchor>
+! No task no-such-id here.
+[exit 1]
+$ mnema guard complete no-such-id --actor <anchor> --note 'it is done'
+! No task no-such-id here.
+[exit 1]
+$ mnema guard complete no-such-id --actor <anchor> --note 'it is done' --json
+! No task no-such-id here.
+[exit 1]
+$ mnema skills
+| No patterns recorded in the trees visible from here.
+$ mnema skills --json
+| []
+$ mnema verify
+| local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+
+### a populated project
+$ mnema search
+| 12 record(s):
+|
+| memory (4)
+|   <memory-scrubbed>  public  <date:01>  a note with a token in it: <SECRET:github-token>
+|   <memory-unscreened>  public  <date:01>  the token the door never saw: ghp_0123456789abcdefghijklmnopqrstuvwxyzA
+|   <memory-personal>  global  <date:01>  my own note about the runbook
+|   <memory-runbook>  public  <date:01>  the deploy runbook lives in the record now
+|
+| observation (1)
+|   <observation-rollback>  public  <date:01>  review
+|
+| decision (2)
+|   <decision-wiki>  public  <date:01>  Keep the runbook in the wiki (superseded)
+|   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
+|
+| task (3)
+|   <task-errand>  global  <date:01>  Read the release notes (DRAFT)
+|   <task-chore>  private  <date:01>  Rotate the local credentials (DRAFT)
+|   <task-runbook>  public  <date:01>  Write the deploy runbook (IN_PROGRESS)
+|
+| skill (2)
+|   <skill-fridays>  private  <date:01>  Ship on Fridays (deprecated)
+|   <skill-slices>  public  <date:01>  One slice per PR (adopted)
+$ mnema search runbook
+| 6 record(s) matching "runbook":
+|
+| memory (2)
+|   <memory-runbook>  public  <date:01>  the deploy runbook lives in the record now
+|   <memory-personal>  global  <date:01>  my own note about the runbook
+|
+| observation (1)
+|   <observation-rollback>  public  <date:01>  review
+|
+| decision (2)
+|   <decision-wiki>  public  <date:01>  Keep the runbook in the wiki (superseded)
+|   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
+|
+| task (1)
+|   <task-runbook>  public  <date:01>  Write the deploy runbook (IN_PROGRESS)
+$ mnema search runbook --json
+| {
+|   "hits": [
+|     {
+|       "id": "<task-runbook>",
+|       "kind": "task",
+|       "scope": "public",
+|       "at": "<at:01>",
+|       "title": "Write the deploy runbook",
+|       "derived": false,
+|       "state": "IN_PROGRESS"
+|     },
+|     {
+|       "id": "<decision-wiki>",
+|       "kind": "decision",
+|       "scope": "public",
+|       "at": "<at:03>",
+|       "title": "Keep the runbook in the wiki",
+|       "derived": false,
+|       "state": "superseded"
+|     },
+|     {
+|       "id": "<decision-runbook>",
+|       "kind": "decision",
+|       "scope": "public",
+|       "at": "<at:02>",
+|       "title": "Keep the runbook in the record",
+|       "derived": false,
+|       "state": "accepted"
+|     },
+|     {
+|       "id": "<observation-rollback>",
+|       "kind": "observation",
+|       "scope": "public",
+|       "at": "<at:06>",
+|       "title": "review",
+|       "derived": false
+|     },
+|     {
+|       "id": "<memory-runbook>",
+|       "kind": "memory",
+|       "scope": "public",
+|       "at": "<at:04>",
+|       "title": "the deploy runbook lives in the record now",
+|       "derived": true
+|     },
+|     {
+|       "id": "<memory-personal>",
+|       "kind": "memory",
+|       "scope": "global",
+|       "at": "<at:05>",
+|       "title": "my own note about the runbook",
+|       "derived": true
+|     }
+|   ],
+|   "total": 6
+| }
+$ mnema search --kind task --scope public
+| 1 record(s):
+|
+| task (1)
+|   <task-runbook>  public  <date:01>  Write the deploy runbook (IN_PROGRESS)
+$ mnema show <task-runbook>
+| task <task-runbook>  ·  public
+|   Write the deploy runbook (IN_PROGRESS)
+|   created <at:01> · updated <at:16>
+$ mnema show <task-runbook> --json
+| {
+|   "kind": "task",
+|   "id": "<task-runbook>",
+|   "scope": "public",
+|   "record": {
+|     "id": "<task-runbook>",
+|     "title": "Write the deploy runbook",
+|     "state": "IN_PROGRESS",
+|     "createdAt": "<at:01>",
+|     "updatedAt": "<at:16>"
+|   }
+| }
+$ mnema refs <decision-runbook>
+| <decision-runbook>  ·  decision
+|   → target:relates-to  <task-runbook> (task)  [public]
+|   ← by  <decision-wiki> (decision)  [public]
+|
+|   cut at 1 hop(s) — more lies beyond. Raise --depth to see it.
+$ mnema refs <decision-runbook> --json
+| {
+|   "id": "<decision-runbook>",
+|   "direction": "both",
+|   "depth": 1,
+|   "nodes": [
+|     {
+|       "id": "<decision-runbook>",
+|       "depth": 0,
+|       "resolved": true,
+|       "kind": "decision",
+|       "scope": "public"
+|     },
+|     {
+|       "id": "<task-runbook>",
+|       "depth": 1,
+|       "resolved": true,
+|       "kind": "task",
+|       "scope": "public"
+|     },
+|     {
+|       "id": "<decision-wiki>",
+|       "depth": 1,
+|       "resolved": true,
+|       "kind": "decision",
+|       "scope": "public"
+|     }
+|   ],
+|   "links": [
+|     {
+|       "from": "<decision-runbook>",
+|       "to": "<task-runbook>",
+|       "role": "target",
+|       "rel": "relates-to",
+|       "at": "<at:08>",
+|       "kind": "knowledge.linked",
+|       "who": "<anchor>",
+|       "scope": "public"
+|     },
+|     {
+|       "from": "<decision-wiki>",
+|       "to": "<decision-runbook>",
+|       "role": "by",
+|       "at": "<at:17>",
+|       "kind": "decision.transitioned",
+|       "who": "<anchor>",
+|       "scope": "public"
+|     }
+|   ],
+|   "truncated": true
+| }
+$ mnema refs <task-runbook> --depth 2
+| <task-runbook>  ·  task
+|   ← about  <observation-rollback> (observation)  [public]
+|   ← target:relates-to  <decision-runbook> (decision)  [public]
+|   → target:derived-from  <task-chore> (task)  [public]
+|     <decision-wiki> (decision) → by → <decision-runbook> (decision)  [public]
+|
+|   1 hop(s)  <task-chore> (task)
+|   1 hop(s)  <decision-runbook> (decision)
+|   1 hop(s)  <observation-rollback> (observation)
+|   2 hop(s)  <decision-wiki> (decision)
+$ mnema refs <task-runbook> --direction out --depth 1
+| <task-runbook>  ·  task
+|   → target:derived-from  <task-chore> (task)  [public]
+$ mnema exposure
+| 1 of 43 record(s) hold a credential format:
+|   public  <date:01>  memory.captured  <memory-unscreened>  github-token
+|
+|   These records are permanent — nothing deletes a fact. Rotate the credentials.
+|   A public record is committed and on every machine that cloned the repository.
+$ mnema exposure --json
+| {
+|   "findings": [
+|     {
+|       "id": "<memory-unscreened>",
+|       "kind": "memory.captured",
+|       "scope": "public",
+|       "at": "<at:21>",
+|       "classes": [
+|         "github-token"
+|       ]
+|     }
+|   ],
+|   "scanned": 43
+| }
+$ mnema timeline <task-runbook>
+| <task-runbook> — 13 event(s):
+|   <at:01>  task.created  [subject]  <anchor>
+|   <at:01>  task.transitioned  [subject]  <anchor>
+|   <at:06>  observation.recorded  [about]  <anchor>
+|   <at:07>  handoff.recorded  [subject]  <anchor>
+|   <at:08>  knowledge.linked  [target]  <anchor>
+|   <at:09>  knowledge.linked  [subject]  <anchor>
+|   <at:10>  task.transitioned  [subject]  <anchor>
+|   <at:11>  task.transitioned  [subject]  <anchor>
+|   <at:12>  task.transitioned  [subject]  <anchor>
+|   <at:13>  task.transitioned  [subject]  <anchor>
+|   <at:14>  task.transitioned  [subject]  <anchor>
+|   <at:15>  task.transitioned  [subject]  <anchor>
+|   <at:16>  task.transitioned  [subject]  <anchor>
+$ mnema timeline <task-runbook> --json
+| [
+|   {
+|     "at": "<at:01>",
+|     "kind": "task.created",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.created",
+|       "at": "<at:01>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "title": "Write the deploy runbook"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:01>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:01>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": null,
+|         "to": "DRAFT",
+|         "action": "create"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:06>",
+|     "kind": "observation.recorded",
+|     "who": "<anchor>",
+|     "subject": "<observation-rollback>",
+|     "role": "about",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "observation.recorded",
+|       "at": "<at:06>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<observation-rollback>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "about": "<task-runbook>",
+|         "topic": "review",
+|         "text": "the runbook needs a rollback section"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:07>",
+|     "kind": "handoff.recorded",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "handoff.recorded",
+|       "at": "<at:07>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "fromAgent": "agent-alpha",
+|         "toAgent": "agent-beta"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:08>",
+|     "kind": "knowledge.linked",
+|     "who": "<anchor>",
+|     "subject": "<decision-runbook>",
+|     "role": "target",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "knowledge.linked",
+|       "at": "<at:08>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<decision-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "target": "<task-runbook>",
+|         "rel": "relates-to"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:09>",
+|     "kind": "knowledge.linked",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "knowledge.linked",
+|       "at": "<at:09>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "target": "<task-chore>",
+|         "rel": "derived-from"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:10>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:10>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "DRAFT",
+|         "to": "READY",
+|         "action": "submit"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:11>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:11>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "READY",
+|         "to": "IN_PROGRESS",
+|         "action": "start"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:12>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:12>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "IN_PROGRESS",
+|         "to": "DONE",
+|         "action": "complete",
+|         "fields": {
+|           "note": "the first draft is in"
+|         }
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:13>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:13>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "DONE",
+|         "to": "IN_PROGRESS",
+|         "action": "reopen",
+|         "fields": {
+|           "reason": "it has no rollback section"
+|         }
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:14>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:14>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "IN_PROGRESS",
+|         "to": "IN_REVIEW",
+|         "action": "submit_review"
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:15>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:15>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "IN_REVIEW",
+|         "to": "DONE",
+|         "action": "approve",
+|         "fields": {
+|           "note": "the rollback section reads well"
+|         }
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:16>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:16>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
+|         "from": "DONE",
+|         "to": "IN_PROGRESS",
+|         "action": "reopen",
+|         "fields": {
+|           "reason": "the rollback step is wrong"
+|         }
+|       }
+|     }
+|   }
+| ]
+$ mnema accountability
+| 43 fact(s) · 1 author(s)
+|   <anchor>  43
+$ mnema accountability --json
+| {
+|   "total": 43,
+|   "byWho": [
+|     {
+|       "who": "<anchor>",
+|       "total": 43,
+|       "byKind": [
+|         {
+|           "kind": "decision.recorded",
+|           "count": 2
+|         },
+|         {
+|           "kind": "decision.transitioned",
+|           "count": 4
+|         },
+|         {
+|           "kind": "handoff.recorded",
+|           "count": 1
+|         },
+|         {
+|           "kind": "identity.founded",
+|           "count": 3
+|         },
+|         {
+|           "kind": "key.enrolled",
+|           "count": 1
+|         },
+|         {
+|           "kind": "knowledge.linked",
+|           "count": 2
+|         },
+|         {
+|           "kind": "memory.captured",
+|           "count": 4
+|         },
+|         {
+|           "kind": "observation.recorded",
+|           "count": 1
+|         },
+|         {
+|           "kind": "run.ended",
+|           "count": 1
+|         },
+|         {
+|           "kind": "run.started",
+|           "count": 2
+|         },
+|         {
+|           "kind": "skill.created",
+|           "count": 2
+|         },
+|         {
+|           "kind": "skill.transitioned",
+|           "count": 7
+|         },
+|         {
+|           "kind": "task.created",
+|           "count": 3
+|         },
+|         {
+|           "kind": "task.transitioned",
+|           "count": 10
+|         }
+|       ],
+|       "byWhich": [
+|         {
+|           "which": null,
+|           "count": 39
+|         },
+|         {
+|           "which": "agent-alpha",
+|           "count": 3
+|         },
+|         {
+|           "which": "agent-beta",
+|           "count": 1
+|         }
+|       ]
+|     }
+|   ]
+| }
+$ mnema antipatterns
+| reopened tasks: 1
+| superseded decisions: 1
+| deprecated skills: 1
+| skill candidates (reopened >1×): <task-runbook>
+$ mnema antipatterns --json
+| {
+|   "reopenedTasks": [
+|     {
+|       "entityId": "<task-runbook>",
+|       "count": 2,
+|       "evidence": [
+|         {
+|           "v": 1,
+|           "kind": "task.transitioned",
+|           "at": "<at:13>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<task-runbook>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "DONE",
+|             "to": "IN_PROGRESS",
+|             "action": "reopen",
+|             "fields": {
+|               "reason": "it has no rollback section"
+|             }
+|           }
+|         },
+|         {
+|           "v": 1,
+|           "kind": "task.transitioned",
+|           "at": "<at:16>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<task-runbook>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "DONE",
+|             "to": "IN_PROGRESS",
+|             "action": "reopen",
+|             "fields": {
+|               "reason": "the rollback step is wrong"
+|             }
+|           }
+|         }
+|       ]
+|     }
+|   ],
+|   "supersededDecisions": [
+|     {
+|       "entityId": "<decision-wiki>",
+|       "count": 1,
+|       "evidence": [
+|         {
+|           "v": 1,
+|           "kind": "decision.transitioned",
+|           "at": "<at:17>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<decision-wiki>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "proposed",
+|             "to": "superseded",
+|             "action": "supersede",
+|             "by": "<decision-runbook>",
+|             "fields": {
+|               "reason": "the record replaces it"
+|             }
+|           }
+|         }
+|       ]
+|     }
+|   ],
+|   "deprecatedSkills": [
+|     {
+|       "entityId": "<skill-fridays>",
+|       "count": 1,
+|       "evidence": [
+|         {
+|           "v": 1,
+|           "kind": "skill.transitioned",
+|           "at": "<at:20>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<skill-fridays>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "adopted",
+|             "to": "deprecated",
+|             "action": "deprecate",
+|             "fields": {
+|               "reason": "nobody ships on a Friday"
+|             }
+|           }
+|         }
+|       ]
+|     }
+|   ],
+|   "skillCandidates": [
+|     {
+|       "entityId": "<task-runbook>",
+|       "count": 2,
+|       "evidence": [
+|         {
+|           "v": 1,
+|           "kind": "task.transitioned",
+|           "at": "<at:13>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<task-runbook>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "DONE",
+|             "to": "IN_PROGRESS",
+|             "action": "reopen",
+|             "fields": {
+|               "reason": "it has no rollback section"
+|             }
+|           }
+|         },
+|         {
+|           "v": 1,
+|           "kind": "task.transitioned",
+|           "at": "<at:16>",
+|           "who": "<anchor>",
+|           "signerFp": "<fingerprint:01>",
+|           "subject": "<task-runbook>",
+|           "run": "<run-first>",
+|           "payload": {
+|             "from": "DONE",
+|             "to": "IN_PROGRESS",
+|             "action": "reopen",
+|             "fields": {
+|               "reason": "the rollback step is wrong"
+|             }
+|           }
+|         }
+|       ]
+|     }
+|   ]
+| }
+$ mnema focus --actor <anchor>
+| <anchor> — 1 open run(s):
+|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it
+$ mnema focus --actor <anchor> --json
+| {
+|   "actor": "<anchor>",
+|   "openRuns": [
+|     {
+|       "id": "<run-second>",
+|       "agent": "agent-beta",
+|       "who": "<anchor>",
+|       "open": true,
+|       "startedAt": "<at:22>",
+|       "goal": "read the record back",
+|       "thisSession": false,
+|       "ageSeconds": 0
+|     }
+|   ]
+| }
+$ mnema resume --actor <anchor>
+| <anchor> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
+|   1 run(s) still open
+$ mnema resume --actor <anchor> --json
+| {
+|   "actor": "<anchor>",
+|   "lastRun": {
+|     "id": "<run-second>",
+|     "agent": "agent-beta",
+|     "who": "<anchor>",
+|     "open": true,
+|     "startedAt": "<at:22>",
+|     "goal": "read the record back",
+|     "thisSession": false,
+|     "ageSeconds": 0
+|   },
+|   "focus": {
+|     "actor": "<anchor>",
+|     "openRuns": [
+|       {
+|         "id": "<run-second>",
+|         "agent": "agent-beta",
+|         "who": "<anchor>",
+|         "open": true,
+|         "startedAt": "<at:22>",
+|         "goal": "read the record back",
+|         "thisSession": false,
+|         "ageSeconds": 0
+|       }
+|     ]
+|   }
+| }
+$ mnema next-actions <task-runbook>
+| Task <task-runbook> — 4 legal move(s):
+|   block → BLOCKED (needs reason)
+|   submit_review → IN_REVIEW
+|   complete → DONE (needs note)
+|   cancel → CANCELED (needs reason)
+$ mnema next-actions <task-runbook> --json
+| [
+|   {
+|     "action": "block",
+|     "to": "BLOCKED",
+|     "requires": [
+|       "reason"
+|     ]
+|   },
+|   {
+|     "action": "submit_review",
+|     "to": "IN_REVIEW",
+|     "requires": []
+|   },
+|   {
+|     "action": "complete",
+|     "to": "DONE",
+|     "requires": [
+|       "note"
+|     ]
+|   },
+|   {
+|     "action": "cancel",
+|     "to": "CANCELED",
+|     "requires": [
+|       "reason"
+|     ]
+|   }
+| ]
+$ mnema guard start <task-runbook> --actor <anchor>
+| REFUSED (ILLEGAL_TRANSITION): cannot "start" a task in IN_PROGRESS
+$ mnema guard complete <task-runbook> --actor <anchor>
+| REFUSED (MISSING_PROOF): "complete" requires a non-empty "note"
+$ mnema guard complete <task-runbook> --actor <anchor> --note 'it is done'
+| ALLOWED: complete <task-runbook> → DONE
+$ mnema guard complete <task-runbook> --actor <anchor> --note 'it is done' --json
+| {
+|   "ok": true,
+|   "to": "DONE",
+|   "action": "complete",
+|   "fields": {
+|     "note": "it is done"
+|   }
+| }
+$ mnema skills
+| 2 pattern(s):
+|   <skill-slices>  adopted     public   One slice per PR  ·  proposed by a person · adopted by a person
+|   <skill-fridays>  deprecated  private  Ship on Fridays  ·  proposed by a person · adopted by a person
+$ mnema skills --json
+| [
+|   {
+|     "id": "<skill-slices>",
+|     "name": "One slice per PR",
+|     "state": "adopted",
+|     "scope": "public",
+|     "adoption": {
+|       "at": "<at:18>"
+|     },
+|     "selfAdopted": false
+|   },
+|   {
+|     "id": "<skill-fridays>",
+|     "name": "Ship on Fridays",
+|     "state": "deprecated",
+|     "scope": "private",
+|     "adoption": {
+|       "at": "<at:19>"
+|     },
+|     "selfAdopted": false
+|   }
+| ]
+$ mnema verify
+| local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+
+### one whole record of each kind
+$ mnema show <task-runbook>
+| task <task-runbook>  ·  public
+|   Write the deploy runbook (IN_PROGRESS)
+|   created <at:01> · updated <at:16>
+$ mnema show <decision-runbook>
+| decision <decision-runbook>  ·  public
+|   ADR-1 — Keep the runbook in the record (accepted)
+|   supersedes <decision-wiki>
+|
+| a wiki page nobody owns goes stale
+$ mnema show <decision-wiki>
+| decision <decision-wiki>  ·  public
+|   ADR-2 — Keep the runbook in the wiki (superseded)
+|   superseded by <decision-runbook>
+|
+| it is where we look
+$ mnema show <skill-slices>
+| skill <skill-slices>  ·  public
+|   One slice per PR (adopted)
+|
+| A slice is one reviewable change with its tests.
+$ mnema show <memory-runbook>
+| memory <memory-runbook>  ·  public
+|   captured <at:04> by <anchor>
+|
+| the deploy runbook lives in the record now
+$ mnema show <observation-rollback>
+| observation <observation-rollback>  ·  public
+|   about <task-runbook> · recorded <at:06>
+|   topic: review
+|
+| the runbook needs a rollback section
