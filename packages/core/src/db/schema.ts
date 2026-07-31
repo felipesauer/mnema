@@ -65,7 +65,9 @@ CREATE TABLE IF NOT EXISTS runs (
   open       INTEGER NOT NULL,
   -- 'at' of run.started, and of run.ended when it has ended.
   started_at TEXT NOT NULL,
-  ended_at   TEXT
+  ended_at   TEXT,
+  -- 'at' of the most recent event PINNED to this run; NULL when it has none.
+  last_fact_at TEXT
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_runs_open ON runs (open);

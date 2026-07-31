@@ -25,7 +25,9 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   who proposed it and who adopted it. The reading for a person auditing where the
   patterns came from, next to the one that serves them.
 - **`focus` / `resume`** — what an actor is touching now (their open runs) and
-  where they left off (their most recent run, open or ended, with its goal).
+  where they left off (their most recent run, open or ended, with its goal). Each
+  run comes back with what only the ASKER can know: whether the asker opened it,
+  how long it has been open, and how long since anything was recorded in it.
 - **`nextActions`** — from a task's state, the moves the workflow allows next,
   read straight from the transition table (a terminal state yields none).
 - **`guard`** — the workflow gate asked as a question: "may I do this move, and
@@ -52,6 +54,17 @@ layer makes no proof of its own; being clear about that is the point.
   to them. `focus` therefore scopes to the actor's runs, and `bootstrap`'s work
   list is workspace-wide, not the actor's own. When a later version ties a task
   to the actor, those views narrow with no change to their shape.
+- **An open run is not a live session, and nothing here claims otherwise.** The
+  record holds no fact about a process, so a run left behind by a session that was
+  killed is indistinguishable from one an agent is idle inside. `focus` and
+  `resume` report an age and an idleness and stop there: nothing closes, hides or
+  ranks a run by them. Both are measured against the `asOf` the caller passes, so
+  a run written by another machine reports whatever those two clocks differ by.
+- **"Whose run is this" comes from the caller, not the record.** Every session on
+  a machine shares one authorizing identity, and an agent's name is declared rather
+  than detected — so neither can tell two sessions apart. The caller passes the ids
+  of the runs IT opened (`sessionRuns`), which is a fact it cannot be wrong about,
+  and that is what `thisSession` reports.
 
 ## Install
 
@@ -70,8 +83,15 @@ opening context for an actor and ask whether a move is allowed:
 import { adoptedSkills, bootstrap, guard } from '@mnema/copilot';
 
 // Where did I leave off, what can I do next, and by what patterns?
-const opening = bootstrap(cache, { actor: 'alice' }, [cache]);
+// `asOf` is the clock the ages are measured against; `sessionRuns` are the runs
+// this caller opened itself (none, for a caller that has only read).
+const opening = bootstrap(
+  cache,
+  { actor: 'alice', asOf: new Date().toISOString(), sessionRuns: [] },
+  [cache],
+);
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
+const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
 const firstJob = opening.work[0]; // the freshest actionable task
 const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", "complete", ...]
 const patterns = opening.skills.map((s) => s.name); // names only — one line each
@@ -90,8 +110,9 @@ const verdict = guard({
 ```
 
 Every function here takes the actor (or the move) as a parameter and reads the
-cache — none of them resolve "who am I" or touch a writer. That is the surface's
-job, not a derivation's.
+cache — none of them resolve "who am I", read a clock, or touch a writer. That is
+the surface's job, not a derivation's, and it is why the instant and the caller's
+own runs arrive as arguments beside the actor.
 
 `bootstrap`'s third argument is the list of caches whose adopted patterns count.
 The actor's work lives in one cache, but a pattern is a capability rather than a

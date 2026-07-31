@@ -2063,6 +2063,68 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('Run `mnema init`');
   });
+
+  it('`focus` says how long each open run has been open and how long since it recorded', async () => {
+    // What makes a list of leftover runs readable. Two runs, one with a fact pinned to
+    // it and one with none, and the difference is stated rather than left to a blank:
+    // an absent idleness MEANS the run recorded nothing, and a line that only omitted
+    // it would read as "idle: unknown".
+    const anchor = await initHere();
+    const worked = await startRun('claude-code', 'with a fact in it');
+    process.env.MNEMA_RUN = worked.id;
+    await run(['memory', 'a fact pinned to that session', '--which', 'claude-code'], capture().io);
+    delete process.env.MNEMA_RUN;
+    const empty = await startRun('other-agent', 'with nothing in it');
+
+    const f = capture();
+    await run(['focus', '--actor', anchor], f.io);
+    expect(f.failed()).toBe(false);
+    // Still one line per run — the age rides the run's own line, because a reader
+    // counts runs by lines.
+    const lines = f.out.join('\n').split('\n');
+    expect(lines).toHaveLength(3);
+    const forWorked = lines.find((l) => l.includes(worked.id)) ?? '';
+    const forEmpty = lines.find((l) => l.includes(empty.id)) ?? '';
+    expect(forWorked).toMatch(/· open \d+[dhms]/);
+    expect(forWorked).toMatch(/· last recorded \d+[dhms].* ago/);
+    expect(forEmpty).toContain('· nothing recorded in it');
+
+    // `--json` carries the numbers themselves, and whose run it is: a command-line
+    // read opens none, so every one of them is another session's.
+    const j = capture();
+    await run(['focus', '--actor', anchor, '--json'], j.io);
+    const focus = JSON.parse(j.out.join('\n')) as {
+      openRuns: Array<{
+        id: string;
+        thisSession: boolean;
+        ageSeconds?: number;
+        idleSeconds?: number;
+      }>;
+    };
+    expect(focus.openRuns.every((r) => r.thisSession === false)).toBe(true);
+    expect(focus.openRuns.find((r) => r.id === worked.id)?.idleSeconds).toBeTypeOf('number');
+    expect(focus.openRuns.find((r) => r.id === empty.id)).not.toHaveProperty('idleSeconds');
+  });
+
+  it('`resume` ages an OPEN last run and says nothing of the sort about an ended one', async () => {
+    const anchor = await initHere();
+    const started = await startRun('claude-code', 'still going');
+
+    const open = capture();
+    await run(['resume', '--actor', anchor], open.io);
+    expect(open.out.join('\n')).toMatch(/· open \d+[dhms]/);
+
+    process.env.MNEMA_RUN = started.id;
+    await run(['run', 'end', '--outcome', 'shipped'], capture().io);
+    delete process.env.MNEMA_RUN;
+
+    const ended = capture();
+    await run(['resume', '--actor', anchor], ended.io);
+    expect(ended.out.join('\n')).toContain(`last run ${started.id} (ended)`);
+    // No age on an ended run: it reports its own end, and an age there reads as time
+    // still passing in it.
+    expect(ended.out.join('\n')).not.toContain('· open ');
+  });
 });
 
 /**

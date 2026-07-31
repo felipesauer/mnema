@@ -169,6 +169,14 @@ delegation), and the id in `MNEMA_RUN` is checked against the record before
 anything is written — a run this project has no record of, or one already ended,
 refuses the write instead of stamping a session nothing can vouch for.
 
+An MCP session ends its run when the connection ends — the client hanging up, or the
+host asking the process to stop. A process killed outright records nothing on the way
+out, so its run stays open, and nothing here closes a run it did not open: no rule can
+tell an abandoned session from a live one that is idle, and two sessions running at
+once make every such rule wrong. So `focus` reports what can be known — how long each
+open run has been open, and how long since anything was recorded in it — and
+`mnema run end <id>` is how you close one yourself.
+
 Working the CLI yourself needs no run: the identity that signs each fact already
 carries the authority a run exists to delegate.
 

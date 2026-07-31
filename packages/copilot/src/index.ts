@@ -42,8 +42,10 @@ export {
 } from './context/bootstrap.js';
 export {
   type ActorScope,
+  type AskerContext,
   type Focus,
   focus,
+  type ReportedRun,
   type Resume,
   resume,
 } from './context/focus.js';
