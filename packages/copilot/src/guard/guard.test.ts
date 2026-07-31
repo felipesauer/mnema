@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Bench, makeBench, startRun } from '../../tests/support/chain.js';
+import { ASKED_AT, type Bench, makeBench, startRun } from '../../tests/support/chain.js';
 import { guard, guardWithFocus } from './guard.js';
 
 describe('guard — the gate asked as a read-only question', () => {
@@ -56,12 +56,11 @@ describe('guardWithFocus — the verdict plus the asker’s focus', () => {
     const cache = bench.cache();
     try {
       const before = cache.listOpenRuns().length;
-      const result = guardWithFocus(cache, {
-        from: 'READY',
-        action: 'start',
-        who: 'alice',
-        which: 'claude',
-      });
+      const result = guardWithFocus(
+        cache,
+        { from: 'READY', action: 'start', who: 'alice', which: 'claude' },
+        { asOf: ASKED_AT, sessionRuns: [] },
+      );
       expect(result.verdict.ok).toBe(true);
       expect(result.focus.actor).toBe('alice');
       expect(result.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
@@ -77,12 +76,11 @@ describe('guardWithFocus — the verdict plus the asker’s focus', () => {
     startRun(bench, 'run-1', { agent: 'claude', who: 'alice' });
     const cache = bench.cache();
     try {
-      const result = guardWithFocus(cache, {
-        from: 'DONE',
-        action: 'start',
-        who: 'alice',
-        which: 'claude',
-      });
+      const result = guardWithFocus(
+        cache,
+        { from: 'DONE', action: 'start', who: 'alice', which: 'claude' },
+        { asOf: ASKED_AT, sessionRuns: [] },
+      );
       expect(result.verdict.ok).toBe(false);
       expect(result.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
     } finally {

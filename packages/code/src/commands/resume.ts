@@ -17,7 +17,14 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import { type Resume, resume } from '@mnema/copilot';
-import { chainRootForScope, type DiscoveryEnv, ProjectionCache, resolveTrees } from '@mnema/core';
+import {
+  type Clock,
+  chainRootForScope,
+  type DiscoveryEnv,
+  ProjectionCache,
+  resolveTrees,
+  systemClock,
+} from '@mnema/core';
 
 /** What the resume command needs — injected so it is testable. */
 export interface ResumeContext {
@@ -25,6 +32,8 @@ export interface ResumeContext {
   readonly cwd: string;
   /** The discovery environment (XDG/home). */
   readonly env: DiscoveryEnv;
+  /** The clock the ages are measured against; defaults to the wall clock. */
+  readonly clock?: Clock;
 }
 
 /** Where the actor left off, over the tree that was read. */
@@ -54,5 +63,16 @@ export function runResume(
   }
   const cache = ProjectionCache.open(root, { upcasters: catalogUpcasters() });
   cache.rebuild();
-  return { ok: true, resume: resume(cache, { actor: input.actor }) };
+  return {
+    ok: true,
+    // Empty, like `focus`: a read opens no run, so nothing here is this command's
+    // own and the "prefer my own run" rule has nothing to prefer. The answer stays
+    // what it was — the actor's latest run — which is the right one for a person
+    // asking from the command line about work an agent did.
+    resume: resume(cache, {
+      actor: input.actor,
+      asOf: (ctx.clock ?? systemClock)(),
+      sessionRuns: [],
+    }),
+  };
 }

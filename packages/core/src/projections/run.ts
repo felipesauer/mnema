@@ -19,6 +19,16 @@
  * a second `run.started` for an id already ended is not a legal flow, and the
  * projection — which replays rather than polices — leaves the run closed.
  *
+ * It also folds WHEN THE RUN LAST DID SOMETHING ({@link RunProjection.lastFactAt}),
+ * and that is the one field here read off events the run is not the subject of: any
+ * event whose envelope pins it to this run. The reads that report an open run need
+ * it — a run's own `startedAt` says how long it has existed and nothing about
+ * whether anything is still happening in it — and every other way of getting it
+ * would replay the stream a second time to learn something this pass already sees.
+ * Absent when the run has recorded nothing, which is a real state: a session opens
+ * its run on the first write, so a run with no fact pinned to it is one whose first
+ * write did not land.
+ *
  * SIGNATURE CAVEAT (shared by every projection). A projection reflects the facts
  * as written; it does not itself attest that they are signature-covered. The
  * fields it reads — `who` above all — carry only the assurance of the chain
@@ -49,6 +59,20 @@ export interface RunProjection {
   readonly startedAt: string;
   /** `at` of `run.ended`, if it has ended. */
   readonly endedAt?: string;
+  /**
+   * `at` of the most recent fact PINNED to this run — the latest event whose
+   * envelope carries `run: <this id>`.
+   *
+   * Absent when nothing has been pinned to it. That is not a gap: neither
+   * `run.started` nor `run.ended` carries a `run` (their subject IS the run), so
+   * this field speaks only of the WORK done inside the session, and a run holding
+   * none has done none.
+   *
+   * The `at` is the writer's own clock, like every other instant in the record.
+   * Comparing it against a reader's clock compares two clocks, which is what a
+   * reader has and what it must be told (see the surfaces that report idleness).
+   */
+  readonly lastFactAt?: string;
 }
 
 /** Mutable accumulator; existence comes from `started`, closure from `ended`. */
@@ -59,6 +83,7 @@ interface RunAccumulator {
   startedAt?: string;
   outcome?: string;
   endedAt?: string;
+  lastFactAt?: string;
 }
 
 /**
@@ -80,6 +105,20 @@ export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunPro
       entry.endedAt = event.at;
       if (event.payload.outcome !== undefined) entry.outcome = event.payload.outcome;
     }
+    // Every event, whatever its kind, may be pinned to a run — including one whose
+    // `run.started` this stream does not hold (a fact written in a project whose run
+    // lives in another tree). Such a run gets an accumulator and is dropped below
+    // for having no birth, which is the same rule an ended-only subject meets: this
+    // projection reports the runs this tree opened, not the runs it was told about.
+    if (event.run !== undefined) {
+      const entry = getOrInit(acc, event.run);
+      // MOST RECENT by `at`, not last-seen: the stream is ordered by the interleave
+      // across tails, and a run's facts can arrive from more than one of them. Taking
+      // whatever came last would let a tail read later hand back an earlier instant.
+      if (entry.lastFactAt === undefined || entry.lastFactAt < event.at) {
+        entry.lastFactAt = event.at;
+      }
+    }
   }
 
   const result = new Map<string, RunProjection>();
@@ -98,6 +137,7 @@ export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunPro
     if (entry.goal !== undefined) projection.goal = entry.goal;
     if (entry.outcome !== undefined) projection.outcome = entry.outcome;
     if (entry.endedAt !== undefined) projection.endedAt = entry.endedAt;
+    if (entry.lastFactAt !== undefined) projection.lastFactAt = entry.lastFactAt;
     result.set(id, projection);
   }
   return result;

@@ -54,7 +54,10 @@
  *
  * A session holds live resources — the warm projection caches its reads share, and
  * a run once a write has opened one — so the connection ending has to release them.
- * `closeSession` does that, and the transport's `onclose` is what calls it.
+ * `closeSession` does that, and what CALLS it is the process learning its connection
+ * ended: stdin reaching its end, or a catchable signal (see {@link ./lifecycle.js}).
+ * The transport's own `onclose` stays wired and is not the mechanism — the SDK's
+ * server side never fires it.
  */
 
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
@@ -71,6 +74,7 @@ import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
 import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
 import { closeSession, openSession, type Session } from './session.js';
 import {
@@ -130,6 +134,39 @@ const PROJECT_ARG = z
   );
 
 /**
+ * What the fields on a reported run MEAN — appended to the description of every read
+ * that lists one.
+ *
+ * One text, four uses, and for the same reason `PROJECT_ARG` is one schema: the agent
+ * reads these descriptions and nothing else, so four spellings of one rule are four
+ * chances for the rule it believes to drift from the rule the server applies. This
+ * one has to be said somewhere an agent can read it, because the fields answer a
+ * question the record cannot — whether an open run is still being worked in — and the
+ * answer is a comparison, not a verdict.
+ *
+ * The absence of `idleSeconds` is stated explicitly. It is the one field whose being
+ * missing MEANS something (a run that recorded nothing at all), and a reader left to
+ * infer that from silence would infer whatever it already believed.
+ *
+ * And it says what none of this proves. An open run is not evidence of a live
+ * session: nothing in the record says a process is running, so a run left behind by
+ * a session that was killed is indistinguishable from one an agent is idle inside.
+ * The reads report; the person or the agent decides, and `mnema run end <id>` is how
+ * a decision gets recorded.
+ */
+const OPEN_RUN_CONTRACT =
+  ' Each run reported carries `thisSession` — true when THIS connection opened it, ' +
+  'false when it came from elsewhere (another session on this machine, live or ' +
+  'abandoned): every session on a machine shares one authorizing identity, so the ' +
+  'record alone cannot tell them apart. An OPEN run also carries `ageSeconds` (since ' +
+  'it started) and, when anything has been recorded in it, `idleSeconds` (since its ' +
+  'last recorded fact); NO `idleSeconds` means the run has recorded nothing at all. ' +
+  "Both compare this machine's clock with the writer's, so a run written on another " +
+  'machine reports whatever those two clocks differ by. None of this says a ' +
+  'run is dead — nothing in the record speaks about a process — so an old idle run ' +
+  'may be abandoned or may be a session waiting; closing one is `mnema run end <id>`.';
+
+/**
  * The agent a connection is recorded as when the client's own name is no name.
  *
  * On this transport an agent exists BY CONSTRUCTION: a stdio connection is a
@@ -184,12 +221,20 @@ export interface McpServerOptions {
 
 /**
  * Builds the configured MCP server and returns it alongside `connect`, which
- * attaches a stdio transport and starts serving. Splitting the two lets a test
- * build the server and drive its tools without spawning a transport.
+ * attaches a stdio transport and starts serving, and `armClose`, which wires the
+ * ways this process can learn the connection ended.
+ *
+ * The three are split for one reason each. `connect` is separate so a test can build
+ * the server and drive its tools without spawning a transport. `armClose` is separate
+ * because it is the half of the close that CANNOT be exercised through a transport: it
+ * attaches to the process, and a test that signalled the real process would signal the
+ * test runner. `connect` calls it, so production wires itself; a test calls it with a
+ * fake process and gets the whole path — trigger, close, the `run.ended` on disk.
  */
 export function buildMcpServer(options: McpServerOptions = {}): {
   readonly server: McpServer;
   readonly connect: () => Promise<void>;
+  readonly armClose: (lifecycle?: Lifecycle) => () => void;
 } {
   const env = options.env ?? discoveryEnv();
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
@@ -203,6 +248,13 @@ export function buildMcpServer(options: McpServerOptions = {}): {
   // the resolved value would let a call that arrives during the `await` below
   // see no session yet and open a second run.
   let sessionPromise: Promise<Session> | undefined;
+  // The SAME session, readable without awaiting — which the close needs and the
+  // promise cannot give it. A process being asked to stop does not come back from
+  // an `await`: the continuation that would record the end dies with the process,
+  // which is how a close hung on `.then()` writes nothing however early it fires.
+  // Assigned the instant `openSession` returns, so anything that can reach a run
+  // (every write goes through the session) can also reach this.
+  let openedSession: Session | undefined;
 
   /**
    * Opens the session if it is not open yet, from what the handshake exposed:
@@ -223,6 +275,10 @@ export function buildMcpServer(options: McpServerOptions = {}): {
         log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
       });
+      // Before the log line and before this promise resolves: from here on the close
+      // can reach the session synchronously, and there is no window in which a write
+      // could open a run the close cannot see.
+      openedSession = opened;
       // WHERE this session landed, first. The project is chosen by a cascade over
       // inputs the server never sees twice — a configured path, the roots the host
       // announced, in the order it announced them — and the rule walks up, so the
@@ -272,43 +328,61 @@ export function buildMcpServer(options: McpServerOptions = {}): {
 
   registerTools(server, ensureSession);
 
+  /**
+   * Ends the connection's session: every run it opened, then its caches.
+   *
+   * SYNCHRONOUS from the check to the log line, and that is the requirement rather
+   * than a style — see {@link armSessionClose}. It reads the session off
+   * `openedSession` and not off the promise for exactly that reason.
+   *
+   * Only a session that actually opened is closed; a run left open by a refusal is
+   * tolerated (the projection reads it as still open), so this never throws. A
+   * session still OPENING holds nothing to release — no write can have reached a run
+   * before the session it needs exists — and a session that FAILED to open never
+   * read a tree at all.
+   *
+   * A session that only READ has no run, and the line says so instead of naming
+   * one: closing is the last chance to write, and this is where a connection that
+   * touched nothing would otherwise leave a whole run behind.
+   *
+   * The line names the runs rather than counting them, in both halves. A connection
+   * that wrote to three projects ends three runs in three records, and a count
+   * would leave a reader of the host's log unable to pair any of them with what
+   * they can read on disk — which is the whole use of this line.
+   */
+  const closeNow = (): void => {
+    if (openedSession === undefined) return;
+    const { closed, leftOpen } = closeSession(openedSession);
+    log(
+      closed.length === 0 && leftOpen.length === 0
+        ? 'session closed: no run was opened (nothing was written)'
+        : `session closed: ${runList('closed', closed)}${
+            leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
+          }`,
+    );
+  };
+
+  /**
+   * Arms every way this process can learn its connection ended, and returns the
+   * guarded closer they share.
+   *
+   * The connection ending is a fact about the PROCESS, not about the transport: the
+   * SDK's server side never calls its own `close()`, so its `onclose` had no caller
+   * and every session that wrote anything leaked its runs, in all six exit modes.
+   */
+  const armClose = (lifecycle?: Lifecycle): (() => void) =>
+    armSessionClose({ close: closeNow, ...(lifecycle !== undefined ? { lifecycle } : {}) });
+
   const connect = async (): Promise<void> => {
     const transport = new StdioServerTransport();
-    // Best-effort close: when stdin closes (the client disconnects), end EVERY run
-    // the session opened and release its caches. Only a session that actually opened
-    // is closed; a run left open by a crash is tolerated (the projection reads
-    // it as still open), so this never throws. A session that FAILED to open
-    // holds nothing to release — it never reached the point of reading a tree.
-    //
-    // A session that only READ has no run, and the line says so instead of naming
-    // one: closing is the last chance to write, and this is where a connection that
-    // touched nothing would otherwise leave a whole run behind.
-    //
-    // The line names the runs rather than counting them, in both halves. A connection
-    // that wrote to three projects ends three runs in three records, and a count
-    // would leave a reader of the host's log unable to pair any of them with what
-    // they can read on disk — which is the whole use of this line.
-    transport.onclose = () => {
-      if (sessionPromise === undefined) return;
-      void sessionPromise
-        .then((active) => {
-          const { closed, leftOpen } = closeSession(active);
-          log(
-            closed.length === 0 && leftOpen.length === 0
-              ? 'session closed: no run was opened (nothing was written)'
-              : `session closed: ${runList('closed', closed)}${
-                  leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
-                }`,
-          );
-        })
-        .catch(() => {
-          /* the session never opened; nothing to close */
-        });
-    };
+    const closeOnce = armClose();
+    // Still wired, and now harmless to double-fire: if a future SDK does call its own
+    // close, the session ends once either way.
+    transport.onclose = closeOnce;
     await server.connect(transport);
   };
 
-  return { server, connect };
+  return { server, connect, armClose };
 }
 
 /**
@@ -742,7 +816,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Bootstrap the session',
       description:
         "The opening context for this session's actor: where they left off and " +
-        'the actionable work, derived from the chain.',
+        'the actionable work, derived from the chain.' +
+        OPEN_RUN_CONTRACT,
     },
     async () => {
       const active = await ensureSession();
@@ -820,7 +895,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Show the open runs of THIS session’s actor — the work in flight right ' +
         'now. Use it to answer "what am I in the middle of". Read-only: it derives ' +
         'from the chain and writes nothing. Reports only this machine’s own open ' +
-        'runs (the actor is the session, never a supplied value).',
+        'runs (the actor is the session, never a supplied value).' +
+        OPEN_RUN_CONTRACT,
     },
     async () => {
       const active = await ensureSession();
@@ -837,7 +913,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Show where THIS session’s actor left off: their most recent run (open OR ' +
         'already ended) plus their current focus. Use it at the start of a session ' +
         'to answer "where was I" — even a run that ended carries the goal that ' +
-        'reminds you. Read-only: it derives from the chain and writes nothing.',
+        'reminds you. When this session has a run of its own here, that is the one ' +
+        'reported. Read-only: it derives from the chain and writes nothing.' +
+        OPEN_RUN_CONTRACT,
     },
     async () => {
       const active = await ensureSession();
@@ -891,7 +969,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'The verdict is paired with your current focus. The task is looked for in ' +
         'EVERY project of this workspace — the same search `task_transition` makes, so ' +
         'a verdict here and the move agree; an id no tree of it holds is refused, ' +
-        'naming the projects searched. Read-only.',
+        'naming the projects searched. Read-only.' +
+        OPEN_RUN_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The task id to test.'),
         action: z.string().min(1).describe('The transition to simulate.'),
@@ -1313,6 +1392,17 @@ function recorded(
  * `read_record` refuses a run id, and the auditor reads answer about the record
  * rather than about this connection.
  *
+ * WHOSE EACH RUN IS is no longer said here, and that is the correction. This sentence
+ * used to carry both halves — "this session has opened none" AND "so anything listed
+ * is from elsewhere" — which meant the qualifier switched OFF for exactly the session
+ * that needed it most: one that had written, and therefore had its own run mixed in
+ * with the ones it did not open. It is a property of each run, so it travels on each
+ * run (`thisSession`, see {@link OPEN_RUN_CONTRACT}) and cannot switch off.
+ *
+ * What stays is the half that really is about the connection and really does vary:
+ * whether this one has opened a run at all. It is absent from the record by design
+ * (the run waits for the first write), so nothing in the payload could say it.
+ *
  * It travels as its OWN content block, never merged into the JSON: the payload stays
  * byte-identical to what a caller parsed before this sentence existed, and the
  * derivation stays the copilot's — a note about the connection has no business
@@ -1343,8 +1433,7 @@ function withRunState(
         type: 'text' as const,
         text:
           'This session has not opened a run of its own yet — one opens when it ' +
-          'first records something. Any run listed above is work this actor has ' +
-          'open from elsewhere, not from this connection.',
+          'first records something.',
       },
     ],
   };
