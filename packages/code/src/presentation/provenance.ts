@@ -1,0 +1,61 @@
+/**
+ * The provenance of every pattern: one line each, with the state and the tree
+ * first and the two acts after it.
+ *
+ * The id leads, as it does in `search`, because it is what the next command takes.
+ * Then the state and the tree, which together say how far the pattern reaches —
+ * only an `adopted` one is served to an agent, and the tree decides whether that
+ * is this machine, every project on it, or every machine that clones the
+ * repository. Then the two acts, in the order they happened.
+ *
+ * An act with no agent reads as "a person", never as blank: an absent `which` is a
+ * fact (someone acted directly), and a gap there would read as data the record
+ * failed to keep. The same-agent case is stated as what it is — one name on both
+ * ends — and nothing here calls that good or bad; a reader with the context
+ * decides, which is exactly why this report exists on the surface a person uses.
+ *
+ * ONE LINE PER PATTERN, always — and that holds for EVERY field on the line, not
+ * just the name. The name and the two agent names are all text an actor wrote, and
+ * any one of them holding a newline would split the entry in two, the second half
+ * reading as a provenance line of its own and asserting an adoption that never
+ * happened. `--json` carries each value as written; this report carries them on one
+ * line (see {@link oneLine}).
+ */
+
+import type { PatternProvenance } from '@mnema/copilot';
+import { A_PERSON, oneLine } from '../served-patterns.js';
+import { column, itemLine } from './items.js';
+
+/** The width the state column is padded to, so the trees below it line up. */
+const STATE_WIDTH = 10;
+
+/** The width the tree column is padded to, so the names below it line up. */
+const SCOPE_WIDTH = 7;
+
+/** The lines a provenance report prints for a person. */
+export function provenanceReport(patterns: readonly PatternProvenance[]): string[] {
+  if (patterns.length === 0) {
+    return ['No patterns recorded in the trees visible from here.'];
+  }
+  const lines = [`${patterns.length} pattern(s):`];
+  for (const pattern of patterns) {
+    const acts = [`proposed by ${oneLine(pattern.proposedBy ?? A_PERSON)}`];
+    if (pattern.adoption !== undefined) {
+      acts.push(
+        `adopted by ${oneLine(pattern.adoption.by ?? A_PERSON)}` +
+          (pattern.selfAdopted ? ' (the same agent)' : ''),
+      );
+    }
+    lines.push(
+      itemLine([
+        pattern.id,
+        column(pattern.state, STATE_WIDTH),
+        column(pattern.scope, SCOPE_WIDTH),
+        oneLine(pattern.name),
+        '·',
+        acts.join(' · '),
+      ]),
+    );
+  }
+  return lines;
+}
