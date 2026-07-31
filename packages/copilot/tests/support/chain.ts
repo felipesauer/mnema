@@ -75,6 +75,34 @@ export function makeBench(): Bench {
   };
 }
 
+/**
+ * The instant the asking derivations measure against, in these tests.
+ *
+ * One hour after the bench's own epoch (`makeBench`'s clock starts at
+ * 2026-01-01T00:00:00Z and ticks a second per event), so an age is a round number
+ * a test can assert rather than a wall-clock value it can only sniff at.
+ */
+export const ASKED_AT = '2026-01-01T01:00:00.000Z';
+
+/**
+ * An {@link ActorScope} for a test: whose context, measured when, and which runs the
+ * asker opened itself.
+ *
+ * The two extra fields are what only an asker knows, and defaulting them here keeps
+ * the tests that are about something ELSE from having to say so. A test that IS about
+ * them passes them.
+ */
+export function asking(
+  actor: string,
+  opts: { readonly asOf?: string; readonly sessionRuns?: readonly string[] } = {},
+): { readonly actor: string; readonly asOf: string; readonly sessionRuns: readonly string[] } {
+  return {
+    actor,
+    asOf: opts.asOf ?? ASKED_AT,
+    sessionRuns: opts.sessionRuns ?? [],
+  };
+}
+
 /** How a run is started: its agent, an optional goal, and an optional `who`. */
 export interface RunSpec {
   readonly agent: string;
@@ -225,11 +253,21 @@ export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
   );
 }
 
-/** Appends a `memory.captured`, returning its id. */
-export function capture(b: Bench, id: string, content: string): string {
+/**
+ * Appends a `memory.captured`, returning its id. `run` pins it to a run — the
+ * envelope slot every fact of a session carries, and the only way a run comes to have
+ * anything recorded IN it.
+ */
+export function capture(b: Bench, id: string, content: string, run?: string): string {
   b.writer.append(
     memoryCaptured(
-      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      {
+        at: b.now(),
+        who: b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: id,
+        ...(run !== undefined ? { run } : {}),
+      },
       { content },
     ),
   );

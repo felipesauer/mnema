@@ -232,6 +232,22 @@ export interface Session {
    * A write does not read it: it reaches its run through {@link openWrite}.
    */
   readonly runs: Map<string, OpenRun>;
+  /**
+   * Whether this connection has ENDED — the one field on a session that flips.
+   *
+   * It exists because closing and serving a call can interleave. A host that
+   * disconnects regularly closes the pipe while a request is still in flight, and the
+   * close is synchronous: it runs to completion, and the tool's continuation resumes
+   * after it. Without this, that continuation appended a fact pinned to the run the
+   * close had just ended — measured, in a record that verified `ok`: `run.ended`
+   * followed by a fact citing that run, which says work happened inside a session the
+   * record says was over.
+   *
+   * So the close sets it and {@link openWrite} refuses on it. It is not a lock and
+   * guards no data race (there is one thread); it is the session's LIFETIME, and a
+   * write outside that lifetime has no run it could honestly pin to.
+   */
+  ended: boolean;
   /** The discovery environment, carried for reads (e.g. rebuilding the cache). */
   readonly env: DiscoveryEnv;
   /**
@@ -330,6 +346,7 @@ export function openSession(input: OpenSessionInput): Session {
     // session that only reads carries this map to its close still empty, and that is
     // the honest state rather than a missing one.
     runs: new Map<string, OpenRun>(),
+    ended: false,
     env: input.env,
     log: input.log ?? (() => {}),
     caches,
@@ -376,8 +393,22 @@ export interface SessionWrite {
  * The run opens in the DESTINATION's default scope, not the write's. A run is the
  * authority for a connection's work in a project, not for one fact, so a write that
  * overrides the scope still opens its run where that project's work lives.
+ *
+ * A write that arrives after the connection ENDED is refused here, before anything is
+ * touched — see {@link Session.ended}. This is the first thing the door checks,
+ * because building the context is itself a write (it ensures the project's
+ * `.gitignore` and marks the cache stale) and the run it would pin to has just been
+ * closed.
  */
 export function openWrite(session: Session, scope: Scope, target?: WriteTarget): SessionWrite {
+  // Before anything: a fact cites the run that authorizes it, and this connection's
+  // runs are ended. Landing anyway would put work inside a session the record says
+  // was already over — the shape a close and an in-flight call produce together.
+  if (session.ended) {
+    throw new Error(
+      'this connection has ended; its session runs are closed and nothing more can be pinned to them',
+    );
+  }
   // The session's own trees when no project was named — which is the cascade's
   // answer, unchanged, and the whole of the non-regression: a call that says nothing
   // lands exactly where it landed before this parameter existed.
@@ -474,6 +505,11 @@ export interface SessionClose {
 export function closeSession(session: Session): SessionClose {
   const closed: string[] = [];
   const leftOpen: string[] = [];
+  // FIRST, before a single `run.ended` is appended: from here on this session has no
+  // run a write could honestly pin to, and a call already in flight resumes after this
+  // function returns (see {@link Session.ended}). Set even if the closes below fail —
+  // a run this could not end is still not a run this connection may keep writing to.
+  session.ended = true;
   try {
     // Each run reached through what it carries — its own trees and scope — never
     // through the session's. The session's trees are one destination of the several

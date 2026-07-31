@@ -149,10 +149,9 @@ describe('a connection that only reads', () => {
     // The run used to be appended by a callback nobody awaited, so the count right
     // after a call was not the count a moment later. Give the old shape time to show.
     //
-    // The server's own close hook is NOT reached here: it is attached to the stdio
-    // transport `connect()` creates, and this pair is in-process. Closing is the last
-    // chance to write, so it is covered where it is reachable — over `closeSession`
-    // itself, in the session tests.
+    // The connection's close is not reached here — this pair has no stdin to end and
+    // no process to signal — and what a close leaves behind is the subject of
+    // `mcp-session-close.test.ts`, which drives that seam directly.
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     expect(kindsLeftBy(project)).toEqual([]);

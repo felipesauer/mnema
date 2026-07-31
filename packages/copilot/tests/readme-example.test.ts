@@ -29,8 +29,15 @@ describe('README example', () => {
     try {
       // ---- README example begins ----
       // Where did I leave off, what can I do next, and by what patterns?
-      const opening = bootstrap(cache, { actor: 'alice' }, [cache]);
+      // `asOf` is the clock the ages are measured against; `sessionRuns` are the
+      // runs this caller opened itself (none, for a caller that has only read).
+      const opening = bootstrap(
+        cache,
+        { actor: 'alice', asOf: new Date().toISOString(), sessionRuns: [] },
+        [cache],
+      );
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
+      const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
       const firstJob = opening.work[0]; // the freshest actionable task
       const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", ...]
       const patterns = opening.skills.map((s) => s.name); // names only
@@ -49,6 +56,7 @@ describe('README example', () => {
       // ---- README example ends ----
 
       expect(lastGoal).toBe('ship the parser');
+      expect(openFor).toBeTypeOf('number');
       expect(firstJob?.id).toBe('task-7');
       expect(moves).toContain('complete');
       expect(patterns).toEqual(['Small PRs']);

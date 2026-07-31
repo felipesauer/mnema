@@ -24,7 +24,14 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import { type Focus, focus } from '@mnema/copilot';
-import { chainRootForScope, type DiscoveryEnv, ProjectionCache, resolveTrees } from '@mnema/core';
+import {
+  type Clock,
+  chainRootForScope,
+  type DiscoveryEnv,
+  ProjectionCache,
+  resolveTrees,
+  systemClock,
+} from '@mnema/core';
 
 /** What the focus command needs — injected so it is testable. */
 export interface FocusContext {
@@ -32,6 +39,12 @@ export interface FocusContext {
   readonly cwd: string;
   /** The discovery environment (XDG/home). */
   readonly env: DiscoveryEnv;
+  /**
+   * The clock the ages are measured against; defaults to the wall clock. Injected
+   * for the same reason the core injects one: an age is only assertable against a
+   * pinned instant.
+   */
+  readonly clock?: Clock;
 }
 
 /** The actor's focus, over the tree that was read. */
@@ -60,5 +73,17 @@ export function runFocus(ctx: FocusContext, input: { actor: string }): FocusDone
   }
   const cache = ProjectionCache.open(root, { upcasters: catalogUpcasters() });
   cache.rebuild();
-  return { ok: true, focus: focus(cache, { actor: input.actor }) };
+  return {
+    ok: true,
+    // No run is this command's own, and that is a fact rather than a shortcut: a
+    // read opens no run, and this process is gone by the time the next one asks. So
+    // every run reported comes back `thisSession: false` — which is why the human
+    // output does not print it (a value that is the same in every answer is noise,
+    // not honesty) and `--json` carries it anyway, being the faithful object.
+    focus: focus(cache, {
+      actor: input.actor,
+      asOf: (ctx.clock ?? systemClock)(),
+      sessionRuns: [],
+    }),
+  };
 }

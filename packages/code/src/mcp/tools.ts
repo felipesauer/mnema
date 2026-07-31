@@ -57,6 +57,7 @@ import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
   type AccountabilityFilter,
   type AdoptedSkill,
+  type AskerContext,
   accountabilityByProject,
   adoptedSkills,
   antipatternsByProject,
@@ -100,6 +101,7 @@ import {
   SEARCH_KINDS,
   type SecretClass,
   SKILL_ACTIONS,
+  systemClock,
 } from '@mnema/core';
 import {
   acceptDecision,
@@ -871,7 +873,41 @@ function skillProofToFields(input: {
  */
 export function runBootstrap(session: Session): Bootstrap {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return bootstrap(session.caches.get(chainRoot), { actor: session.who }, skillCaches(session));
+  return bootstrap(
+    session.caches.get(chainRoot),
+    { actor: session.who, ...askerContext(session) },
+    skillCaches(session),
+  );
+}
+
+/**
+ * What THIS CONNECTION knows about itself that the record cannot hold: the runs it
+ * opened, and the instant it is answering at.
+ *
+ * The runs come from `session.runs`, which is a STRUCTURAL fact rather than a claim
+ * — the session opened them, so it knows their ids. That is the whole reason this
+ * exists: the record cannot tell two sessions of one machine apart, because they
+ * share the authorizing anchor, and the other candidate (compare the agent NAME) is
+ * a declared value that two homonymous agents defeat. So the distinction has to come
+ * from the party that cannot be wrong about it.
+ *
+ * EVERY run of the map, not the session's own tree's. A connection that wrote to a
+ * second project holds a run there too, and a read served from one tree that omitted
+ * it would report that run — if it ever saw it — as somebody else's.
+ *
+ * The clock is the CORE's, in the core's own uniform shape, because the answer
+ * compares this instant against instants the core minted. A second format would still
+ * parse and would still be honest; taking the same one means it cannot come to differ.
+ *
+ * Derived per call, never cached on the session: a session lives for hours, and an
+ * `asOf` frozen at the handshake would report every run as being the age it was when
+ * the connection opened.
+ */
+function askerContext(session: Session): AskerContext {
+  return {
+    asOf: systemClock(),
+    sessionRuns: [...session.runs.values()].map((run) => run.id),
+  };
 }
 
 /**
@@ -1185,7 +1221,7 @@ function recordConsultations(
  */
 export function runFocusTool(session: Session): Focus {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return focus(session.caches.get(chainRoot), { actor: session.who });
+  return focus(session.caches.get(chainRoot), { actor: session.who, ...askerContext(session) });
 }
 
 /**
@@ -1197,7 +1233,7 @@ export function runFocusTool(session: Session): Focus {
  */
 export function runResumeTool(session: Session): Resume {
   const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return resume(session.caches.get(chainRoot), { actor: session.who });
+  return resume(session.caches.get(chainRoot), { actor: session.who, ...askerContext(session) });
 }
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
@@ -1317,13 +1353,17 @@ export function runGuardTool(
     };
   }
   const fields = proofToFields(input);
-  const result = guardWithFocus(cache, {
-    from: task.state,
-    action: input.action,
-    who: session.who,
-    ...(fields !== undefined ? { fields } : {}),
-    ...(input.which !== undefined ? { which: input.which } : {}),
-  });
+  const result = guardWithFocus(
+    cache,
+    {
+      from: task.state,
+      action: input.action,
+      who: session.who,
+      ...(fields !== undefined ? { fields } : {}),
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    },
+    askerContext(session),
+  );
   return { ok: true, result };
 }
 

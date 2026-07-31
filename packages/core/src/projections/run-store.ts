@@ -3,9 +3,9 @@
  *
  * The pure fold ({@link projectRuns}) produces run state; this module writes it
  * to the `runs` table and reads it back. Two shape mismatches are handled at
- * this boundary: the projection's optional fields (goal, outcome, endedAt) are
- * bound as SQL NULL when absent, and the `open` boolean is stored as 0/1
- * because a STRICT table has no boolean type.
+ * this boundary: the projection's optional fields (goal, outcome, endedAt,
+ * lastFactAt) are bound as SQL NULL when absent, and the `open` boolean is stored
+ * as 0/1 because a STRICT table has no boolean type.
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -21,6 +21,7 @@ interface RunRow {
   readonly open: number;
   readonly started_at: string;
   readonly ended_at: string | null;
+  readonly last_fact_at: string | null;
 }
 
 /** The bound-parameter shape: every column present, optionals as null. */
@@ -33,6 +34,7 @@ interface RunParams {
   readonly open: number;
   readonly startedAt: string;
   readonly endedAt: string | null;
+  readonly lastFactAt: string | null;
 }
 
 /**
@@ -42,8 +44,8 @@ interface RunParams {
  */
 export function materializeRuns(db: SqliteDatabase, runs: Iterable<RunProjection>): void {
   const insert = db.prepare(
-    `INSERT INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at)
-     VALUES (@id, @agent, @who, @goal, @outcome, @open, @startedAt, @endedAt)`,
+    `INSERT INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at, last_fact_at)
+     VALUES (@id, @agent, @who, @goal, @outcome, @open, @startedAt, @endedAt, @lastFactAt)`,
   );
   for (const run of runs) {
     insert.run(toParams(run));
@@ -79,6 +81,7 @@ function toParams(run: RunProjection): RunParams {
     open: run.open ? 1 : 0,
     startedAt: run.startedAt,
     endedAt: run.endedAt ?? null,
+    lastFactAt: run.lastFactAt ?? null,
   };
 }
 
@@ -93,6 +96,7 @@ function toProjection(row: RunRow): RunProjection {
   if (row.goal !== null) projection.goal = row.goal;
   if (row.outcome !== null) projection.outcome = row.outcome;
   if (row.ended_at !== null) projection.endedAt = row.ended_at;
+  if (row.last_fact_at !== null) projection.lastFactAt = row.last_fact_at;
   return projection;
 }
 

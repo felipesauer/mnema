@@ -20,7 +20,7 @@
  */
 
 import { type GateRequest, type GateResult, gate, type ProjectionCache } from '@mnema/core';
-import { type Focus, focus } from '../context/focus.js';
+import { type AskerContext, type Focus, focus } from '../context/focus.js';
 
 /**
  * Asks the gate whether a move would be authorized, and returns its verdict
@@ -47,7 +47,18 @@ export interface GuardWithFocus {
  * {@link focus} so a caller gets the decision and the context in one read. Still
  * read-only: two pure reads, no write. The `who` of the request is taken as the
  * actor whose focus to attach.
+ *
+ * The ACTOR comes from the request and the rest of the asker's position comes from
+ * `asker`, separately, because only one of the two is in the request: a gate request
+ * says who is asking, and nothing in it says which runs the asking session opened or
+ * what time it is where the question was asked. Composing the scope here — rather
+ * than taking a whole {@link ActorScope} — is what keeps the focus attached to the
+ * `who` the verdict was decided for, with no second spelling of it to disagree.
  */
-export function guardWithFocus(cache: ProjectionCache, request: GateRequest): GuardWithFocus {
-  return { verdict: guard(request), focus: focus(cache, { actor: request.who }) };
+export function guardWithFocus(
+  cache: ProjectionCache,
+  request: GateRequest,
+  asker: AskerContext,
+): GuardWithFocus {
+  return { verdict: guard(request), focus: focus(cache, { actor: request.who, ...asker }) };
 }

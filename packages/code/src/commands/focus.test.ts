@@ -103,4 +103,34 @@ describe('mnema focus', () => {
     const result = runFocus({ cwd: repo, env }, { actor: 'anyone' });
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
+
+  it('ages every open run, against the clock it is given', () => {
+    // A command-line read has no session of its own, so what makes a list of leftover
+    // runs readable here is the age. The clock is injected for the same reason the
+    // core injects one: an age is only assertable against a pinned instant.
+    const { repo, env, who, ctx } = projectWithRuns();
+    // Both instants pinned: the run's own `at` through the core's injectable clock,
+    // and the asker's through the command's.
+    const startedAt = '2026-07-21T00:00:00.000Z';
+    const opened = startRun({ ...ctx, clock: () => startedAt }, { agent: 'test-agent' });
+    if (!opened.ok) throw new Error('setup: startRun refused');
+    ctx.writer.checkpoint();
+
+    const later = '2026-07-21T02:00:00.000Z';
+    const result = runFocus({ cwd: repo, env, clock: () => later }, { actor: who });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.focus.openRuns[0]?.ageSeconds).toBe(7200);
+  });
+
+  it('reports every run as NOT this command’s own, because a read opens none', () => {
+    // True by construction rather than by policy: `runFocus` opens no writer. It is
+    // also why the human output stays silent about it — a value that is the same in
+    // every line is noise — while `--json` carries it.
+    const { repo, env, who, ctx } = projectWithRuns();
+    startRun(ctx, { agent: 'test-agent' });
+    ctx.writer.checkpoint();
+
+    const result = runFocus({ cwd: repo, env }, { actor: who });
+    if (result.ok) expect(result.focus.openRuns.map((r) => r.thisSession)).toEqual([false]);
+  });
 });
