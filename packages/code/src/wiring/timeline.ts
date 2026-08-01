@@ -8,6 +8,7 @@
  */
 
 import type { Command } from 'commander';
+import { anchorText } from '../anchors.js';
 import { runTimeline } from '../commands/timeline.js';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
@@ -40,7 +41,14 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
       }
       io.out(`${id} — ${result.entries.length} event(s):`);
       for (const entry of result.entries) {
-        io.out(itemLine([entry.at, entry.kind, `[${entry.role}]`, entry.who]));
+        io.out(
+          itemLine([
+            entry.at,
+            entry.kind,
+            `[${entry.role}]`,
+            anchorText(result.anchors, entry.who),
+          ]),
+        );
       }
     });
 }

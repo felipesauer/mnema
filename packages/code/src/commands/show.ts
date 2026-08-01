@@ -19,10 +19,18 @@
  *
  * Read-only: it opens a cache per tree, rebuilds it in memory, and reads. No
  * writer, no key, no event — so no `--actor`.
+ *
+ * IT STOPS AT THE HOLDER, unless the record it found is about more than itself.
+ * An id is minted once, so the first tree that answers has THE answer and the
+ * rest cost a full replay for nothing. Two kinds break that: a memory names the
+ * identity that captured it, and how short that identity can be written depends on
+ * the identities the WHOLE record knows; a skill's consultations are written by the
+ * sessions that read it, into their own trees, not into the pattern's. So those two
+ * open the trees that are left, and the other three still stop.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type RecordBody, readRecord, type ScopedCache } from '@mnema/copilot';
+import { consultationsByRun, type RecordBody, readRecord, type ScopedCache } from '@mnema/copilot';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -30,6 +38,7 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
+import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
 
 /** The trees a lookup reads, in a fixed order. An id lives in exactly one. */
 const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
@@ -47,6 +56,10 @@ export interface ShowDone {
   readonly ok: true;
   /** The record and its faithful projection. */
   readonly record: RecordBody;
+  /** How each identity this record knows is written for a person. */
+  readonly anchors: AnchorForms;
+  /** How many runs consulted this pattern — present only for a skill. */
+  readonly consultations?: number;
 }
 
 /** No visible tree holds a record with this id. */
@@ -64,21 +77,38 @@ export interface ShowRefused {
 export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | ShowRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const upcasters = catalogUpcasters();
-  // One tree at a time, stopping at the first that holds the id. On the command
-  // line each tree costs a full replay, and the answer cannot change by reading
-  // further: an id is minted once, so a second holder does not exist.
-  for (const scope of SCOPES) {
+  const opened: ScopedCache[] = [];
+  const open = (scope: Scope): ScopedCache | undefined => {
     const root = chainRootForScope(trees, scope);
-    if (root === undefined) continue;
+    if (root === undefined) return undefined;
     const cache = ProjectionCache.open(root, { upcasters });
-    try {
-      cache.rebuild();
-      const source: ScopedCache = { scope, chainRoot: root, cache };
-      const record = readRecord([source], input.id);
-      if (record !== null) return { ok: true, record };
-    } finally {
-      cache.close();
+    cache.rebuild();
+    const source: ScopedCache = { scope, chainRoot: root, cache };
+    opened.push(source);
+    return source;
+  };
+  try {
+    let found: RecordBody | null = null;
+    let next = 0;
+    for (; next < SCOPES.length && found === null; next++) {
+      const source = open(SCOPES[next] as Scope);
+      if (source !== undefined) found = readRecord([source], input.id);
     }
+    if (found === null) return { ok: false, reason: 'UNKNOWN_RECORD' };
+    if (found.kind !== 'memory' && found.kind !== 'skill') {
+      return { ok: true, record: found, anchors: NO_ANCHORS };
+    }
+    // The two kinds whose answer is about the whole record and not about one tree.
+    for (; next < SCOPES.length; next++) open(SCOPES[next] as Scope);
+    return {
+      ok: true,
+      record: found,
+      anchors: anchorForms(opened),
+      ...(found.kind === 'skill'
+        ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
+        : {}),
+    };
+  } finally {
+    for (const source of opened) source.cache.close();
   }
-  return { ok: false, reason: 'UNKNOWN_RECORD' };
 }

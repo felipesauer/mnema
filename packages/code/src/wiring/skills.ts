@@ -35,6 +35,8 @@ export function registerSkills(program: Command, wiring: Wiring): void {
         '  This verb reads who put each one there. `mnema show <id>` reads a body.',
         '  Only an adopted pattern is served to an agent; the other states are not.',
         '  An act with no agent behind it was a person acting directly.',
+        '  A consultation is one run served the body — not that the work followed it,',
+        '  and counted in this project’s trees and the machine-global one, no other.',
       ].join('\n'),
     )
     .action((opts: { json?: boolean }) => {
@@ -43,6 +45,6 @@ export function registerSkills(program: Command, wiring: Wiring): void {
         io.out(JSON.stringify(result.patterns, null, 2));
         return;
       }
-      writeLines(io, provenanceReport(result.patterns));
+      writeLines(io, provenanceReport(result.patterns, result.consultations));
     });
 }

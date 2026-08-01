@@ -12,6 +12,12 @@
  * about whose record this is. They already see the value they need: it is what
  * founding a project prints, and what `mnema accountability` lists.
  *
+ * It may be named whole or by a prefix of an identity the record here knows, and
+ * the request is always SIGNED over the whole value — a consent to join half an
+ * identity is not a thing. A prefix is resolvable only where there is a record to
+ * resolve it against, which on a joining machine there may not be; that is exactly
+ * why the whole value goes on working with no record at all.
+ *
  * It needs no project. Nothing about a request is per-tree — it is a key and a
  * signature over fixed values — so it works from a fresh clone, an empty
  * directory, or a machine that has never run `mnema init`. What it may touch is
@@ -24,6 +30,7 @@
 import { resolve } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type RequestSource, requestEnrollment } from '@mnema/core/write';
+import { resolveAnchorInRecord } from '../anchors.js';
 
 /** What the request needs — injected so it is testable. */
 export interface KeyRequestContext {
@@ -67,8 +74,14 @@ export function runKeyRequest(
   input: { anchor: string; privateKeyPath?: string },
 ): KeyRequestMade | KeyRequestRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
+  // Resolved BEFORE the key root is touched: a value that names no identity must
+  // not mint this machine's key on the way to being refused.
+  const anchor = resolveAnchorInRecord(trees, input.anchor);
+  if (!anchor.ok) {
+    return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
+  }
   const made = requestEnrollment({
-    anchor: input.anchor,
+    anchor: anchor.anchor,
     keyRoot: trees.keyRoot,
     ...(input.privateKeyPath !== undefined
       ? { privateKeyPath: resolve(ctx.cwd, input.privateKeyPath) }

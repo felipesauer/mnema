@@ -5,7 +5,9 @@ import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import {
   isKnownEntity,
+  listAuthors,
   listReferences,
+  listSubjectRuns,
   materializeReferences,
   type ReferenceDirection,
   type ReferenceSeed,
@@ -35,6 +37,22 @@ function envelope(subject: string, minute: number, which?: string) {
     signerFp: 'fp',
     subject,
     ...(which !== undefined ? { which } : {}),
+  };
+}
+
+/** A `skill.consulted` — the one kind whose RUN the reading derivation needs. */
+function skillConsulted(
+  id: string,
+  minute: number,
+  run?: string,
+  who = 'mnid:author',
+): CatalogEvent {
+  return {
+    ...envelope(id, minute),
+    who,
+    kind: 'skill.consulted',
+    payload: {},
+    ...(run !== undefined ? { run } : {}),
   };
 }
 
@@ -197,6 +215,44 @@ describe('tallyAuthorship — one count per event', () => {
     expect(tallyAuthorship(db, { which: 'claude' })).toEqual([
       { who: 'mnid:author', kind: 'task.created', which: 'claude', count: 1 },
     ]);
+  });
+});
+
+describe('listAuthors — who this tree knows', () => {
+  it('names each author once, however much they wrote', () => {
+    materializeReferences(db, [
+      taskCreated('t1', 1),
+      taskCreated('t2', 2),
+      skillConsulted('s1', 3, 'run-a', 'mnid:other'),
+    ]);
+    expect(listAuthors(db)).toEqual(['mnid:author', 'mnid:other']);
+  });
+
+  it('is empty over a tree with no events', () => {
+    expect(listAuthors(db)).toEqual([]);
+  });
+});
+
+describe('listSubjectRuns — one row per event of a kind, with its run', () => {
+  it('reads the run off the stored envelope, and null when there is none', () => {
+    materializeReferences(db, [
+      skillConsulted('s1', 1, 'run-a'),
+      skillConsulted('s1', 2, 'run-a'),
+      skillConsulted('s2', 3),
+      taskCreated('t1', 4),
+    ]);
+    // One row per EVENT — the caller decides what counts as one occurrence, which
+    // is why this does not collapse the two rows of `run-a` itself.
+    expect(listSubjectRuns(db, 'skill.consulted')).toEqual([
+      { entity: 's1', run: 'run-a' },
+      { entity: 's1', run: 'run-a' },
+      { entity: 's2', run: null },
+    ]);
+  });
+
+  it('sees only the kind it was asked for', () => {
+    materializeReferences(db, [taskCreated('t1', 1), skillConsulted('s1', 2, 'run-a')]);
+    expect(listSubjectRuns(db, 'task.created')).toEqual([{ entity: 't1', run: null }]);
   });
 });
 

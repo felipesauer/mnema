@@ -113,6 +113,24 @@ export const WHICH_ON_SUBCOMMAND_HELP = [
   '                   the entity to the tree it was born in.',
 ].join('\n');
 
+/**
+ * The tail of the help for every flag that takes an ANCHOR: where a person gets one
+ * and what shape it may be written in.
+ *
+ * One wording on all four, because they take one value and the reader learns it
+ * once. It names `mnema accountability` — the read that LISTS the identities of a
+ * record — and not `mnema verify`, which these flags used to point at and which
+ * prints no identity at all: a help line naming a command that does not produce the
+ * value it asks for is the same broken hand-off this flag now closes on the other
+ * side, and it was there first.
+ *
+ * It also says the short form is accepted, because that is the promise: the reads
+ * print an identity shortened, and every flag that takes one takes it back.
+ */
+export const ACTOR_HELP =
+  'the `mnid:…` from `mnema accountability`, or the short form the reads print ' +
+  '(any prefix that names one identity here)';
+
 /** The scopes `--scope` accepts — the surface's view of the core's three trees. */
 export const SCOPES = ['public', 'private', 'global'] as const;
 

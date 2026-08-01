@@ -287,7 +287,9 @@ $ mnema focus --help
 | show an actor's open runs (what they are touching now)
 |
 | Options:
-|   --actor <id>  the anchor id whose focus to show (from `mnema verify`)
+|   --actor <id>  the identity whose focus to show — the `mnid:…` from `mnema
+|                 accountability`, or the short form the reads print (any prefix
+|                 that names one identity here)
 |   --json        emit the faithful focus object as JSON
 |   -h, --help    display help for command
 
@@ -298,7 +300,9 @@ $ mnema resume --help
 | show where an actor left off (their latest run, open or ended)
 |
 | Options:
-|   --actor <id>  the anchor id whose last run to show (from `mnema verify`)
+|   --actor <id>  the identity whose last run to show — the `mnid:…` from `mnema
+|                 accountability`, or the short form the reads print (any prefix
+|                 that names one identity here)
 |   --json        emit the faithful resume object as JSON
 |   -h, --help    display help for command
 
@@ -328,7 +332,9 @@ $ mnema guard --help
 |   id                 the task id (the value shown when it was created)
 |
 | Options:
-|   --actor <id>       the anchor id asking (the `who`; from `mnema verify`)
+|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
+|                      accountability`, or the short form the reads print (any
+|                      prefix that names one identity here)
 |   --reason <text>    simulate the reason (cancel, block, reopen)
 |   --note <text>      simulate the note (complete, approve)
 |   --feedback <text>  simulate the feedback (request_changes)
@@ -391,7 +397,9 @@ $ mnema accountability --help
 | Options:
 |   --from <iso>     include only facts at or after this ISO-8601 instant
 |   --to <iso>       include only facts at or before this ISO-8601 instant
-|   --who <id>       count only facts authorized by this anchor id
+|   --who <id>       count only facts authorized by this identity — the `mnid:…`
+|                    from `mnema accountability`, or the short form the reads
+|                    print (any prefix that names one identity here)
 |   --which <agent>  count only facts executed by this agent
 |   --json           emit the faithful account object as JSON
 |   -h, --help       display help for command
@@ -446,6 +454,8 @@ $ mnema skills --help
 |   This verb reads who put each one there. `mnema show <id>` reads a body.
 |   Only an adopted pattern is served to an agent; the other states are not.
 |   An act with no agent behind it was a person acting directly.
+|   A consultation is one run served the body — not that the work followed it,
+|   and counted in this project’s trees and the machine-global one, no other.
 
 ### mnema key --help
 $ mnema key --help
@@ -642,7 +652,9 @@ $ mnema key request --help
 | ask to bring this machine into an identity (run this on the joining machine)
 |
 | Options:
-|   --anchor <id>  the identity to join (the `mnid:…` its machine prints)
+|   --anchor <id>  the identity to join (the `mnid:…` its machine prints) — a
+|                  prefix of one this record knows also names it; the request is
+|                  signed over the whole value either way
 |   --key <file>   a private key to speak for instead of this machine's own
 |   -h, --help     display help for command
 

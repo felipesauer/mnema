@@ -218,6 +218,39 @@ describe('MCP session + tools — unit', () => {
     expect(after).toBe(before);
   });
 
+  /** Every `who` an accountability reply carries, across the workspace's records. */
+  function accounted(result: ReturnType<typeof runAccountabilityTool>): string[] {
+    if (!result.ok) throw new Error('accountability refused');
+    return result.value.byProject.flatMap((project) => project.byWho.map((entry) => entry.who));
+  }
+
+  it('answers with the WHOLE anchor — this surface serves data, not lines to read', () => {
+    // The command line shortens an identity because a person reads it there. Here
+    // the value is DATA: an agent may feed it straight back, and it rides into the
+    // host's prompt, so the surface that shortens must not be this one. The guard
+    // is on every tool that carries a `who`.
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    if (!runCaptureMemory(session, { content: 'something to work on' }).ok) {
+      throw new Error('setup: capture refused');
+    }
+    expect(session.who).toMatch(/^mnid:[0-9a-f]{64}$/);
+
+    const carried = [
+      runFocusTool(session).actor,
+      runResumeTool(session).actor,
+      runBootstrap(session).resume.actor,
+      ...runFocusTool(session).openRuns.map((run) => run.who),
+      ...accounted(runAccountabilityTool(session)),
+    ];
+    expect(carried.length).toBeGreaterThan(0);
+    for (const who of carried) expect(who).toBe(session.who);
+  });
+
   it('resume reports the session actor’s latest run even after it ends', () => {
     const project = makeProject('proj');
     const session = openSession({

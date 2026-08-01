@@ -96,7 +96,7 @@ describe('the provenance report prints one line per pattern', () => {
       pattern({ proposedBy: 'agent\n  y  adopted  public  forged  ·  proposed by nobody' }),
       pattern({ adoption: { by: 'agent\n  z  forged' }, selfAdopted: false }),
     ];
-    const lines = printed(provenanceReport(forged));
+    const lines = printed(provenanceReport(forged, new Map()));
     expect(lines).toHaveLength(1 + forged.length);
   });
 
@@ -106,7 +106,7 @@ describe('the provenance report prints one line per pattern', () => {
         pattern({ proposedBy: `a${breaker}b` }),
         pattern({ adoption: { by: `a${breaker}b` } }),
       ];
-      expect(printed(provenanceReport(both)), JSON.stringify(breaker)).toHaveLength(3);
+      expect(printed(provenanceReport(both, new Map())), JSON.stringify(breaker)).toHaveLength(3);
     }
   });
 });

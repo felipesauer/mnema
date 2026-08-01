@@ -14,14 +14,28 @@
  */
 
 import type { RecordBody } from '@mnema/copilot';
+import { type AnchorForms, anchorText } from '../anchors.js';
+import { consultedLine } from './consultation.js';
 import { fact, subjectLine } from './detail.js';
 
+/** What the record itself does not carry, and two of the five kinds report. */
+export interface RecordContext {
+  /** How each identity the record knows is written — a memory names one. */
+  readonly anchors: AnchorForms;
+  /** How many runs consulted this pattern; absent for anything but a skill. */
+  readonly consultations?: number;
+}
+
 /** The lines one whole record prints for a person. */
-export function recordReport(body: RecordBody): string[] {
+export function recordReport(body: RecordBody, context: RecordContext): string[] {
   const lines = [subjectLine(`${body.kind} ${body.id}`, body.scope)];
   switch (body.kind) {
     case 'memory':
-      lines.push(fact(`captured ${body.record.capturedAt} by ${body.record.who}`));
+      lines.push(
+        fact(
+          `captured ${body.record.capturedAt} by ${anchorText(context.anchors, body.record.who)}`,
+        ),
+      );
       lines.push('');
       lines.push(body.record.content);
       break;
@@ -48,6 +62,7 @@ export function recordReport(body: RecordBody): string[] {
       break;
     case 'skill':
       lines.push(fact(`${body.record.name} (${body.record.state})`));
+      lines.push(fact(consultedLine(context.consultations ?? 0)));
       lines.push('');
       lines.push(body.record.body);
       break;

@@ -14,6 +14,11 @@
  * ends — and nothing here calls that good or bad; a reader with the context
  * decides, which is exactly why this report exists on the surface a person uses.
  *
+ * Then how often it was READ, which closes the line at the far end of the same
+ * story: two acts put a pattern in front of every session, and the count says how
+ * many of them opened it. It is stated for every pattern, none of them judged (see
+ * {@link consultedLine}).
+ *
  * ONE LINE PER PATTERN, always — and that holds for EVERY field on the line, not
  * just the name. The name and the two agent names are all text an actor wrote, and
  * any one of them holding a newline would split the entry in two, the second half
@@ -24,6 +29,7 @@
 
 import type { PatternProvenance } from '@mnema/copilot';
 import { A_PERSON, oneLine } from '../served-patterns.js';
+import { consultedLine } from './consultation.js';
 import { column, itemLine } from './items.js';
 
 /** The width the state column is padded to, so the trees below it line up. */
@@ -33,7 +39,10 @@ const STATE_WIDTH = 10;
 const SCOPE_WIDTH = 7;
 
 /** The lines a provenance report prints for a person. */
-export function provenanceReport(patterns: readonly PatternProvenance[]): string[] {
+export function provenanceReport(
+  patterns: readonly PatternProvenance[],
+  consultations: ReadonlyMap<string, number>,
+): string[] {
   if (patterns.length === 0) {
     return ['No patterns recorded in the trees visible from here.'];
   }
@@ -46,6 +55,9 @@ export function provenanceReport(patterns: readonly PatternProvenance[]): string
           (pattern.selfAdopted ? ' (the same agent)' : ''),
       );
     }
+    // Last, because it is what happened LAST — the two acts put the pattern there,
+    // and the consultations are every session since that read it.
+    acts.push(consultedLine(consultations.get(pattern.id) ?? 0));
     lines.push(
       itemLine([
         pattern.id,

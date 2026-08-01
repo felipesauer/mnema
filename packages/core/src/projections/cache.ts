@@ -10,7 +10,12 @@
  * of it that can be discarded and rebuilt at any time.
  */
 
-import { type ChainLayout, catalogUpcasters, type UpcasterRegistry } from '@mnema/chain';
+import {
+  type ChainLayout,
+  catalogUpcasters,
+  type EventKind,
+  type UpcasterRegistry,
+} from '@mnema/chain';
 import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
@@ -35,11 +40,14 @@ import {
   type AuthorshipFilter,
   type AuthorshipTally,
   isKnownEntity,
+  listAuthors,
   listReferences,
+  listSubjectRuns,
   type ReferenceDirection,
   type ReferenceEdgeRow,
   type ReferenceRow,
   type ReferenceSeed,
+  type SubjectRun,
   tallyAuthorship,
   walkReferences,
 } from './reference-store.js';
@@ -227,6 +235,22 @@ export class ProjectionCache {
    */
   authorship(filter: AuthorshipFilter = {}): AuthorshipTally[] {
     return tallyAuthorship(this.db, filter);
+  }
+
+  /**
+   * Every identity that authorized a fact in this tree, once each — who this tree
+   * knows, without how much any of them wrote.
+   */
+  authors(): string[] {
+    return listAuthors(this.db);
+  }
+
+  /**
+   * Every event of `kind` in this tree, as its subject and the run it happened in
+   * — one row per event, for a caller counting occurrences across trees.
+   */
+  subjectRuns(kind: EventKind): SubjectRun[] {
+    return listSubjectRuns(this.db, kind);
   }
 
   /**

@@ -24,6 +24,7 @@
 
 import { type TimelineEntry, timeline } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type AnchorForms, anchorForms } from '../anchors.js';
 import { withScopedCaches } from '../tree-sources.js';
 
 /** What the timeline command needs — injected so it is testable. */
@@ -41,6 +42,8 @@ export interface TimelineDone {
   readonly id: string;
   /** Every event that touches the entity, across the trees, in stream order. */
   readonly entries: readonly TimelineEntry[];
+  /** How each identity this record knows is written for a person. */
+  readonly anchors: AnchorForms;
 }
 
 /** The read was refused — there is no project to read a history from. */
@@ -71,5 +74,6 @@ export function runTimeline(
     ok: true,
     id: input.id,
     entries: timeline(sources, input.id),
+    anchors: anchorForms(sources),
   }));
 }

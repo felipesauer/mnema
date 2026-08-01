@@ -90,12 +90,19 @@ describe('key request — the joining machine, and no project needed', () => {
     expect(listPrivateKeyFingerprints({ root: b.keyRoot })).toEqual([]);
   });
 
-  it("forwards the core's refusal verbatim", () => {
+  it('refuses a value that names no identity, and says what one looks like', () => {
+    // From a machine with no record, a prefix has nothing to resolve against — so
+    // the sentence teaches the SHAPE rather than listing an empty set, and nothing
+    // is signed. The core keeps the same check at the write boundary (see
+    // `requestEnrollment`), which is what guarantees no signature is ever made over
+    // half an identity; this is the surface saying it where the person can act.
     const b = machine('b');
     const refused = runKeyRequest({ cwd: sandbox, env: b.env }, { anchor: 'not-an-anchor' });
 
-    expect(refused).toMatchObject({ ok: false, reason: 'REFUSED', code: 'INVALID_ANCHOR' });
-    expect((refused as { message: string }).message).toContain('not-an-anchor');
+    expect(refused).toMatchObject({ ok: false, reason: 'REFUSED', code: 'UNKNOWN_ANCHOR' });
+    const message = (refused as { message: string }).message;
+    expect(message).toContain('not-an-anchor');
+    expect(message).toContain('64 hex');
   });
 });
 

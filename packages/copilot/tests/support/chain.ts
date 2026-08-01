@@ -24,6 +24,7 @@ import {
   runEnded,
   runStarted,
   skillBirth,
+  skillConsulted,
   skillTransitioned,
   type TransitionFields,
   taskBirth,
@@ -169,6 +170,30 @@ export function moveTask(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
       { from, to, action, ...(fields !== undefined ? { fields } : {}) },
     ),
+  );
+}
+
+/**
+ * Appends one `skill.consulted` — a session was served that pattern's body.
+ *
+ * The `run` and the `who` are arguments because the counting derivation is ABOUT
+ * them: one run consulting twice is one session, and the same run may record the
+ * fact in two trees. A test that could not vary them could not tell those apart.
+ */
+export function consultSkill(
+  b: Bench,
+  id: string,
+  opts: { readonly run?: string; readonly who?: string; readonly which?: string } = {},
+): void {
+  b.writer.append(
+    skillConsulted({
+      at: b.now(),
+      who: opts.who ?? b.who,
+      signerFp: b.writer.signerFingerprint,
+      subject: id,
+      ...(opts.run !== undefined ? { run: opts.run } : {}),
+      ...(opts.which !== undefined ? { which: opts.which } : {}),
+    }),
   );
 }
 
