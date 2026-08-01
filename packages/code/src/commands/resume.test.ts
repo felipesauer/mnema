@@ -52,6 +52,13 @@ function projectWithRuns(now: () => string = () => '2026-01-01T00:00:00.000Z'): 
   return { repo, env, who: ctx.writer.anchor, ctx };
 }
 
+/**
+ * A whole identity no record here knows: accepted as written (the shape is the
+ * shape), and matching nothing. It is what a stranger looks like now that a value
+ * naming no identity at all is refused rather than answered about.
+ */
+const STRANGER = `mnid:${'0'.repeat(64)}`;
+
 describe('mnema resume', () => {
   it('reports the latest run EVEN IF it has ended, plus the open focus', () => {
     // Two distinct timestamps so "latest" is decided by startedAt, not id order.
@@ -78,7 +85,7 @@ describe('mnema resume', () => {
 
   it('reports a null lastRun for an actor with no runs', () => {
     const { repo, env } = projectWithRuns();
-    const result = runResume({ cwd: repo, env }, { actor: 'nobody-here' });
+    const result = runResume({ cwd: repo, env }, { actor: STRANGER });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.resume.lastRun).toBeNull();

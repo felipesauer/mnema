@@ -95,6 +95,7 @@ export {
   type RecurrenceFinding,
   type WorkspaceAntipatterns,
 } from './intelligence/antipatterns.js';
+export { consultationsByRun } from './intelligence/consultation.js';
 export type { CatalogEvent, EventKind } from './intelligence/events.js';
 export {
   type ExposedRecord,
@@ -105,6 +106,7 @@ export {
   type WorkspaceExposure,
   workspaceExposure,
 } from './intelligence/exposure.js';
+export { knownAnchors } from './intelligence/identities.js';
 export {
   type PatternProvenance,
   patternProvenance,

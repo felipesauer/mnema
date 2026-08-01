@@ -95,7 +95,7 @@ describe('mnema accountability (who authorized what)', () => {
     const mine = runAccountability({ cwd: repo, env }, { who: realWho });
     expect(mine.ok && mine.account.byWho.length).toBe(1);
 
-    const stranger = runAccountability({ cwd: repo, env }, { who: 'nobody-anchor' });
+    const stranger = runAccountability({ cwd: repo, env }, { who: `mnid:${'0'.repeat(64)}` });
     expect(stranger.ok).toBe(true);
     if (stranger.ok) {
       expect(stranger.account.total).toBe(0);

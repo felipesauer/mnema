@@ -77,6 +77,21 @@ function capture(): { io: CliIo; out: string[]; err: string[]; failed: () => boo
 }
 
 /**
+ * Founds a project and returns the identity it printed — the value the reads take.
+ *
+ * `mnema init` is where a person first sees their own anchor, and every verb that
+ * asks for one says so. A test that invented a name instead would be passing a
+ * value the product cannot produce: a `who` is derived from a key, never typed.
+ */
+async function foundIdentity(): Promise<string> {
+  const c = capture();
+  await run(['init'], c.io);
+  const line = c.out.find((out) => out.trim().startsWith('identity:'));
+  if (line === undefined) throw new Error(`setup: init printed no identity: ${c.out.join(' / ')}`);
+  return line.trim().slice('identity:'.length).trim();
+}
+
+/**
  * A content digest of every file under `dir` — what a read that must write
  * NOTHING is proven against: not an event, not a checkpoint, not a byte.
  */
@@ -959,24 +974,32 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
   });
 
-  it('focus requires --actor and reports an empty focus for an unknown actor (--json faithful)', async () => {
-    await run(['init'], capture().io);
+  it('focus requires --actor and reports an empty focus for the founder (--json faithful)', async () => {
+    const who = await foundIdentity();
 
     // A fresh project has no runs (runs are opened by a session, not the CLI), so
-    // any actor's focus is empty — reported honestly, not as silent output.
+    // the actor's focus is empty — reported honestly, not as silent output.
     const human = capture();
-    await run(['focus', '--actor', 'whoever'], human.io);
+    await run(['focus', '--actor', who], human.io);
     expect(human.failed()).toBe(false);
     expect(human.out.join('\n')).toContain('has no open runs');
     // And it says what a run IS, so an empty answer does not read as a fault.
     expect(human.out.join('\n')).toContain("A run is an agent's working session");
 
-    // --json emits the faithful object (the actor and an empty run list).
+    // --json emits the faithful object — the WHOLE anchor, never the short form:
+    // that channel is data an agent may feed back, not a line a person reads.
     const json = capture();
-    await run(['focus', '--actor', 'whoever', '--json'], json.io);
+    await run(['focus', '--actor', who, '--json'], json.io);
     const focus = JSON.parse(json.out.join('\n')) as { actor: string; openRuns: unknown[] };
-    expect(focus.actor).toBe('whoever');
+    expect(focus.actor).toBe(who);
     expect(focus.openRuns).toEqual([]);
+
+    // An actor naming no identity here is refused, not answered about: an empty
+    // focus for a stranger reads exactly like an empty focus for a real person.
+    const stranger = capture();
+    await run(['focus', '--actor', 'whoever'], stranger.io);
+    expect(stranger.failed()).toBe(true);
+    expect(stranger.err.join('\n')).toContain('UNKNOWN_ANCHOR');
 
     // Omitting --actor is a usage error the parser reports (nothing read).
     const missing = capture();
@@ -985,9 +1008,9 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   });
 
   it('resume reports no runs for a fresh project, and refuses outside a project', async () => {
-    await run(['init'], capture().io);
+    const who = await foundIdentity();
     const r = capture();
-    await run(['resume', '--actor', 'whoever'], r.io);
+    await run(['resume', '--actor', who], r.io);
     expect(r.failed()).toBe(false);
     // Not "no runs YET": for someone working the CLI directly that state never
     // changes, so the read says what a run IS instead of implying one is coming.
@@ -1003,7 +1026,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
     const out = capture();
-    await run(['resume', '--actor', 'whoever'], out.io);
+    await run(['resume', '--actor', who], out.io);
     expect(out.failed()).toBe(true);
     expect(out.err.join('\n')).toContain('No mnema project here');
   });
@@ -1222,29 +1245,31 @@ describe('mnema CLI — search and show (the record made readable), end to end',
 });
 
 describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
-  /** Creates a task and returns its id — the value shown when it was created. */
-  async function taskId(): Promise<string> {
-    await run(['init'], capture().io);
+  /**
+   * Founds a project with one task, and returns the task's id and the identity
+   * that made it — which every guard here asks AS. A real move's `who` comes from
+   * a key, so a dry-run for a value naming no identity is refused.
+   */
+  async function taskAndIdentity(): Promise<{ id: string; who: string }> {
+    const who = await foundIdentity();
     const c = capture();
     await run(['task', 'ship it'], c.io);
-    return (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+    const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+    return { id, who };
   }
 
   it('ALLOWS a legal move with its proof, and --json emits the faithful verdict', async () => {
-    const id = await taskId();
+    const { id, who } = await taskAndIdentity();
 
     // cancel is legal from DRAFT with a reason → ALLOWED, reaching CANCELED.
     const human = capture();
-    await run(['guard', 'cancel', id, '--actor', 'human', '--reason', 'dropped'], human.io);
+    await run(['guard', 'cancel', id, '--actor', who, '--reason', 'dropped'], human.io);
     expect(human.failed()).toBe(false);
     expect(human.out.join('\n')).toContain(`ALLOWED: cancel ${id} → CANCELED`);
 
     // --json emits the gate's own verdict, faithful.
     const json = capture();
-    await run(
-      ['guard', 'cancel', id, '--actor', 'human', '--reason', 'dropped', '--json'],
-      json.io,
-    );
+    await run(['guard', 'cancel', id, '--actor', who, '--reason', 'dropped', '--json'], json.io);
     const verdict = JSON.parse(json.out.join('\n')) as {
       ok: boolean;
       to?: string;
@@ -1254,34 +1279,34 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
   });
 
   it('REFUSES MISSING_PROOF when the required proof is absent (a useful answer, not a failure)', async () => {
-    const id = await taskId();
+    const { id, who } = await taskAndIdentity();
     const c = capture();
     // cancel is legal but needs a reason; without it → REFUSED (MISSING_PROOF).
-    await run(['guard', 'cancel', id, '--actor', 'human'], c.io);
+    await run(['guard', 'cancel', id, '--actor', who], c.io);
     // A refused verdict is a successful dry-run — it does not signal CLI failure.
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (MISSING_PROOF)');
   });
 
   it('REFUSES ILLEGAL_TRANSITION for a move the current state does not allow', async () => {
-    const id = await taskId();
+    const { id, who } = await taskAndIdentity();
     const c = capture();
     // approve is not legal from DRAFT → REFUSED (ILLEGAL_TRANSITION).
-    await run(['guard', 'approve', id, '--actor', 'human', '--note', 'lgtm'], c.io);
+    await run(['guard', 'approve', id, '--actor', who, '--note', 'lgtm'], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (ILLEGAL_TRANSITION)');
   });
 
   it('REFUSES WHO_IS_WHICH when --which equals --actor', async () => {
-    const id = await taskId();
+    const { id, who } = await taskAndIdentity();
     const c = capture();
-    await run(['guard', 'submit', id, '--actor', 'same', '--which', 'same'], c.io);
+    await run(['guard', 'submit', id, '--actor', who, '--which', who], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (WHO_IS_WHICH)');
   });
 
   it('requires --actor, and refuses an unknown id / no project honestly', async () => {
-    const id = await taskId();
+    const { id, who } = await taskAndIdentity();
 
     // Omitting --actor is a usage error the parser reports (nothing read).
     const missing = capture();
@@ -1290,7 +1315,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
 
     // Unknown id → an honest refusal.
     const unknown = capture();
-    await run(['guard', 'submit', 'not-a-real-id', '--actor', 'human'], unknown.io);
+    await run(['guard', 'submit', 'not-a-real-id', '--actor', who], unknown.io);
     expect(unknown.failed()).toBe(true);
     expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
 
@@ -1300,9 +1325,126 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
     const out = capture();
-    await run(['guard', 'submit', 'anything', '--actor', 'human'], out.io);
+    await run(['guard', 'submit', 'anything', '--actor', `mnid:${'0'.repeat(64)}`], out.io);
     expect(out.failed()).toBe(true);
     expect(out.err.join('\n')).toContain('No mnema project here');
+  });
+});
+
+/**
+ * The promise this shortening is only honest under: WHAT THE READS PRINT, THE FLAGS
+ * TAKE BACK.
+ *
+ * Nothing here types a value of its own. Every case runs a reading, pulls the
+ * identity OUT of the text it produced, and feeds exactly that back through the real
+ * CLI — because a test that asserted "the flag accepts eight hex" would pass while
+ * the reads printed twelve, and the person copying from their terminal would be the
+ * one to find out. The value under test is the one that came out.
+ */
+describe('mnema CLI — the identity a read prints is the identity a flag takes', () => {
+  /** The identity as it appears in `text` — the short form, from the output itself. */
+  function printedIdentity(text: string): string {
+    const found = /mnid:[0-9a-f]+/.exec(text);
+    if (found === null) throw new Error(`no identity in the output: ${text}`);
+    return found[0];
+  }
+
+  it('prints one short form in every read, and it is a PREFIX of the whole anchor', async () => {
+    const whole = await foundIdentity();
+    await run(['task', 'ship it'], capture().io);
+    await run(['memory', 'the runbook is in the record'], capture().io);
+
+    // Every reading that names an identity, and the form each one printed.
+    const reads: Record<string, string[]> = {};
+    for (const argv of [
+      ['accountability'],
+      ['focus', '--actor', whole],
+      ['resume', '--actor', whole],
+    ]) {
+      const c = capture();
+      await run(argv, c.io);
+      expect(c.failed(), argv.join(' ')).toBe(false);
+      reads[argv[0] as string] = c.out;
+    }
+    // `show` of the memory, and `timeline` of it, both name the identity too.
+    const search = capture();
+    await run(['search', 'runbook'], search.io);
+    const memoryId = (/[0-9a-f-]{36}/.exec(search.out.join('\n')) as RegExpMatchArray)[0];
+    for (const argv of [
+      ['show', memoryId],
+      ['timeline', memoryId],
+    ]) {
+      const c = capture();
+      await run(argv, c.io);
+      expect(c.failed(), argv.join(' ')).toBe(false);
+      reads[argv[0] as string] = c.out;
+    }
+
+    const forms = new Set(Object.values(reads).map((out) => printedIdentity(out.join('\n'))));
+    // ONE form across all five: a reader who learns it in one read recognizes it in
+    // the next, and the flags below only have to take one thing.
+    expect(forms.size, JSON.stringify(reads, null, 2)).toBe(1);
+    const short = [...forms][0] as string;
+
+    // It is the anchor's own leading characters — checkable against the whole value
+    // by eye, which a hashed label would not be.
+    expect(whole.startsWith(short)).toBe(true);
+    expect(short.length).toBeLessThan(whole.length);
+    // And no read leaked the whole thing beside it.
+    for (const [read, out] of Object.entries(reads)) {
+      expect(out.join('\n'), read).not.toContain(whole);
+    }
+  });
+
+  it('takes that same text back at every door that receives an identity', async () => {
+    const whole = await foundIdentity();
+    const created = capture();
+    await run(['task', 'ship it'], created.io);
+    const id = (
+      created.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray
+    )[1] as string;
+
+    const account = capture();
+    await run(['accountability'], account.io);
+    const short = printedIdentity(account.out.join('\n'));
+
+    // The three reads that take an actor, and the filter over the very read it came
+    // from — each given the text the terminal showed, not a value computed here.
+    for (const argv of [
+      ['focus', '--actor', short],
+      ['resume', '--actor', short],
+      ['guard', 'submit', id, '--actor', short],
+      ['accountability', '--who', short],
+    ]) {
+      const c = capture();
+      await run(argv, c.io);
+      expect(c.failed(), argv.join(' ')).toBe(false);
+    }
+    // …and the WRITE that consents to join an identity, whose echo names the whole
+    // value it resolved to: the confirmation that the prefix meant who it meant.
+    const requested = capture();
+    await run(['key', 'request', '--anchor', short], requested.io);
+    expect(requested.failed()).toBe(false);
+    expect(requested.out.join('\n')).toContain(`to join ${whole}`);
+
+    // The filtered account is the same account: the prefix narrowed to the one
+    // identity there is, rather than to nobody.
+    const filtered = capture();
+    await run(['accountability', '--who', short], filtered.io);
+    expect(filtered.out).toEqual(account.out);
+  });
+
+  it('keeps the WHOLE anchor in --json, which is data and not a line to read', async () => {
+    const whole = await foundIdentity();
+    for (const argv of [
+      ['focus', '--actor', whole, '--json'],
+      ['resume', '--actor', whole, '--json'],
+      ['accountability', '--json'],
+    ]) {
+      const c = capture();
+      await run(argv, c.io);
+      expect(c.out.join('\n'), argv.join(' ')).toContain(whole);
+    }
   });
 });
 
@@ -1619,6 +1761,30 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
       (event) => event.kind === 'key.enrolled',
     );
     expect(enrollments).toHaveLength(1);
+  });
+
+  it('still wants the WHOLE fingerprint to retire a key — a prefix is not a key', async () => {
+    // An anchor may now be named by a prefix, and a fingerprint may not. The two are
+    // different values: an anchor is an identity the record lists, so a prefix
+    // resolves against something and an ambiguous one is refused by name — a
+    // fingerprint names a physical key, and guessing which one a short value means
+    // is not a guess to make about key material. Nothing is retired.
+    useMachine('a');
+    await initHere();
+    const own = privateKeysOf('a')[0]?.replace('.key', '') as string;
+
+    const short = capture();
+    await run(['key', 'revoke', own.slice(0, 8), '--reason', 'a prefix should not do'], short.io);
+    expect(short.failed()).toBe(true);
+    expect(
+      orderedEvents({ root: publicTree() }, catalogUpcasters()).filter(
+        (event) => event.kind === 'key.revoked',
+      ),
+    ).toHaveLength(0);
+    // The help says the full one, and the full one works.
+    const whole = capture();
+    await run(['key', 'revoke', own, '--reason', 'the machine is being retired'], whole.io);
+    expect(whole.failed()).toBe(false);
   });
 
   it('refuses to retire the last key, and retires one once a second is in', async () => {
@@ -2226,13 +2392,13 @@ describe('mnema CLI — a --which that names nobody', () => {
   });
 
   it('`guard --which "   "` refuses — the dry-run answers for the move it mirrors', async () => {
-    await run(['init'], capture().io);
+    const who = await foundIdentity();
     const c = capture();
     await run(['task', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const g = capture();
-    await run(['guard', 'submit', id, '--actor', 'human', '--which', '   '], g.io);
+    await run(['guard', 'submit', id, '--actor', who, '--which', '   '], g.io);
     expect(g.failed()).toBe(true);
     expect(g.err.join('\n')).toContain('names no agent');
   });
@@ -2805,6 +2971,43 @@ describe('where a pattern came from — across the two surfaces', () => {
         ?.state,
     ).toBe('adopted');
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+  });
+
+  it('counts how many sessions were served each pattern, and says so when none were', async () => {
+    // The fact this reads back is the one the agent surface writes and NOTHING read
+    // until now: a pattern every session leans on and a pattern nobody has opened
+    // looked identical on both surfaces. The writer is the real one — the tool that
+    // serves the body — so the two halves are proven against each other.
+    await run(['init'], capture().io);
+    const a = sessionFor('agent-A');
+    const live = runCreateSkill(a, { name: 'Build hygiene', body: 'Always squash first.' });
+    const shelved = runCreateSkill(a, { name: 'Ship on Fridays', body: 'Cut it late.' });
+    if (!live.ok || !shelved.ok) throw new Error('setup: propose refused');
+    for (const action of ['review', 'adopt'] as const) {
+      const moved = runSkillTransition(a, { id: live.id, action, note: 'yes' });
+      if (!moved.ok) throw new Error(`setup: ${action} refused (${moved.code})`);
+    }
+
+    // Two connections read it; one of them reads it twice. That is TWO sessions
+    // that used the pattern — the second call in a session is the same session.
+    const b = sessionFor('agent-B');
+    expect(runSkillsTool(b).ok).toBe(true);
+    expect(runSkillsTool(b).ok).toBe(true);
+    const c = sessionFor('agent-C');
+    expect(runSkillsTool(c).ok).toBe(true);
+
+    const audit = capture();
+    await run(['skills'], audit.io);
+    expect(audit.failed()).toBe(false);
+    const lines = audit.out.filter((line) => line.startsWith('  '));
+    expect(lines.find((line) => line.includes(live.id))).toContain('consulted in 2 run(s)');
+    // Never adopted, so never served, so never consulted — stated, not left blank.
+    expect(lines.find((line) => line.includes(shelved.id))).toContain('never consulted');
+
+    // And the same number when the pattern is opened on its own.
+    const opened = capture();
+    await run(['show', live.id], opened.io);
+    expect(opened.out.join('\n')).toContain('consulted in 2 run(s)');
   });
 
   it('proposed by one agent and adopted by ANOTHER is a different report', async () => {

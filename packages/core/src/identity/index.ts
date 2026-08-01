@@ -11,5 +11,12 @@ export {
   disambiguate,
   SHORT_ALIAS_HEX,
 } from './alias.js';
+export {
+  type AnchorResolution,
+  isAnchorId,
+  resolveAnchorPrefix,
+  SHORT_ANCHOR_HEX,
+  shortenAnchors,
+} from './anchor.js';
 export { canonicalId } from './id.js';
 export { canonicalIdentity } from './who.js';

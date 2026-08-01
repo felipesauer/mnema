@@ -261,8 +261,13 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id', '--json');
   await mnema('reads', 'accountability');
   await mnema('reads', 'accountability', '--json');
+  // The other half of the promise: the value the line above PRINTS, typed back into
+  // the flag that filters by it. A short form the reads emit and the flags refuse
+  // would be the defect this shortening exists not to create.
+  await mnema('reads', 'accountability', '--who', ids.short as string);
   await mnema('reads', 'antipatterns');
   await mnema('reads', 'antipatterns', '--json');
+  await mnema('reads', 'focus', '--actor', ids.short as string);
   await mnema('reads', 'focus', '--actor', ids.anchor as string);
   await mnema('reads', 'focus', '--actor', ids.anchor as string, '--json');
   await mnema('reads', 'resume', '--actor', ids.anchor as string);
@@ -326,6 +331,12 @@ beforeAll(async () => {
   section('writes', 'init');
   const initiated = await mnema('writes', 'init');
   const anchor = name(after(initiated, '  identity:'), 'anchor');
+  // The form the READS print, named by computing it here rather than by reading it
+  // out of the output — which makes the name a CHECK. The short form is defined as
+  // the anchor's own leading hex, so if a read ever printed something that is not a
+  // prefix of the value (a hashed label, say) this substitution would miss it and
+  // `assertNothingVolatile` would refuse the transcript rather than pin the lie.
+  const short = name(anchor.slice(0, 'mnid:'.length + 8), 'anchor-short');
   name(
     after(initiated, '  backup key: created and enrolled — private half at '),
     'backup-key-path',
@@ -333,7 +344,7 @@ beforeAll(async () => {
   await mnema('writes', 'init');
 
   // ── Every read again, now over a project that holds nothing.
-  await readEverything('an empty project', { anchor });
+  await readEverything('an empty project', { anchor, short });
 
   // ── The session an agent works inside, and the writes pinned to it.
   section('writes', 'run start');
@@ -504,6 +515,7 @@ beforeAll(async () => {
   // ── Every read again, over the populated record.
   await readEverything('a populated project', {
     anchor,
+    short,
     task: taskId,
     decision: decisionId,
   });
@@ -528,6 +540,10 @@ beforeAll(async () => {
   await mnema('writes', 'timeline', 'no-such-id');
   await mnema('writes', 'next-actions', 'no-such-id');
   await mnema('writes', 'key', 'enroll', 'not-a-request');
+  // What a value naming no identity earns, on a read and on a write: the refusal
+  // names the identities there are, in the form that can be pasted straight back.
+  await mnema('writes', 'focus', '--actor', 'whoever');
+  await mnema('writes', 'key', 'request', '--anchor', 'whoever');
 
   // ── Every whole record `show` serves, one per kind it knows.
   // A record of every kind `show` knows, and both ends of a supersession: the

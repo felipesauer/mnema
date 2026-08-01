@@ -45,6 +45,7 @@ import {
   publicKeyToPem,
   sign,
 } from '@mnema/chain';
+import { isAnchorId } from './anchor.js';
 
 /**
  * The text form's prefix and version. Versioned because the request is data a
@@ -224,12 +225,6 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
     source,
     minted,
   };
-}
-
-/** Whether a value has the shape of an identity id (`mnid:` + a full fingerprint hash). */
-function isAnchorId(value: string): boolean {
-  if (!value.startsWith(ANCHOR_PREFIX)) return false;
-  return /^[0-9a-f]{64}$/.test(value.slice(ANCHOR_PREFIX.length));
 }
 
 /** The key pair a PEM file holds, or null when it is not a readable private key. */
