@@ -8,9 +8,11 @@
  */
 
 import type { Command } from 'commander';
+import { anchorText } from '../anchors.js';
 import { runAccountability } from '../commands/accountability.js';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
+import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
 
@@ -22,7 +24,7 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
     .description('show who authorized what across the record (optionally windowed/filtered)')
     .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
     .option('--to <iso>', 'include only facts at or before this ISO-8601 instant')
-    .option('--who <id>', 'count only facts authorized by this anchor id')
+    .option('--who <id>', `count only facts authorized by this identity — ${ACTOR_HELP}`)
     // The one `--which` that is NOT a declaration of who acted but a FILTER over
     // who already did, so it carries no {@link declaredAgent}: nothing is being
     // attributed here, and a value that matches no recorded agent is an empty
@@ -50,7 +52,7 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
         const { total, byWho } = result.account;
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {
-          io.out(itemLine([account.who, String(account.total)]));
+          io.out(itemLine([anchorText(result.anchors, account.who), String(account.total)]));
         }
       },
     );

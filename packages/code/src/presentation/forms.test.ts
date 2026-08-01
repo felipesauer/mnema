@@ -18,8 +18,12 @@ describe('form A — the item line', () => {
     expect(itemLine(['an-id', 'public', 'a title'])).toBe('  an-id  public  a title');
   });
 
-  it('nests a sub-item one level further, and no more', () => {
-    expect(itemLine(['a → b'], 2)).toBe('    a → b');
+  it('puts every item at the same depth, whatever it holds', () => {
+    // There is no second level to ask for any more — the one reading that used
+    // indentation to mean "this belongs to the group above" names its groups.
+    for (const fields of [['a'], ['a', 'b'], ['a → b'], ['']]) {
+      expect(itemLine(fields)).toMatch(/^ {2}(?! )/);
+    }
   });
 
   it('is one line even when a caller passes one field', () => {

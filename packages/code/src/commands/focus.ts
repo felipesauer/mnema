@@ -15,23 +15,32 @@
  * material — which mints a key on a fresh machine and is domain logic the surface
  * must not own. So the actor is a required flag (`--actor`): the derivation
  * already takes it as a parameter, and passing it in keeps the read truly
- * read-only. A caller reads their anchor from `mnema verify` or the bootstrap.
+ * read-only. A caller reads their identity from `mnema init`, `mnema
+ * accountability` or the bootstrap — never from `mnema verify`, which the flag's
+ * help used to name and which prints no identity at all.
  *
- * The tree read is the PRIVATE project tree — where a machine's runs are born (a
+ * The runs come from the PRIVATE project tree — where a machine's runs are born (a
  * session defaults its writes private). With no project here, there is nothing to
  * read, so it refuses `NO_PROJECT` rather than reporting a hollow empty focus.
+ *
+ * EVERY tree is opened, though, and only the private one is asked for runs. The
+ * others answer a different question: which identities this record knows, which is
+ * what decides how short the actor can be written and what a typed prefix may mean.
+ * That set has to be the record's — an identity is not less real for having written
+ * only in the team's tree — so the read pays for the two extra trees rather than
+ * printing a form that another verb would then refuse.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
 import { type Focus, focus } from '@mnema/copilot';
 import {
   type Clock,
-  chainRootForScope,
   type DiscoveryEnv,
-  ProjectionCache,
+  type ProjectionCache,
   resolveTrees,
   systemClock,
 } from '@mnema/core';
+import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
+import { withScopedCaches } from '../tree-sources.js';
 
 /** What the focus command needs — injected so it is testable. */
 export interface FocusContext {
@@ -52,38 +61,59 @@ export interface FocusDone {
   readonly ok: true;
   /** The derivation's result — the actor and their open runs. */
   readonly focus: Focus;
+  /** How each identity this record knows is written for a person. */
+  readonly anchors: AnchorForms;
 }
 
-/** There was no project here — a context read needs one. */
-export type FocusRefused = { readonly ok: false; readonly reason: 'NO_PROJECT' };
+/** There was no project here, or the actor named no identity in it. */
+export type FocusRefused =
+  | { readonly ok: false; readonly reason: 'NO_PROJECT' }
+  | {
+      readonly ok: false;
+      readonly reason: 'REFUSED';
+      readonly code: string;
+      readonly message: string;
+    };
 
 /**
- * Derives the actor's focus over the current project's private tree. Opens the
- * cache, rebuilds it from the chain, and returns the copilot's `focus` for the
- * given actor — the runs they have open. Read-only: no writer, no event. With no
- * project found from the cwd it refuses `NO_PROJECT`.
+ * Derives the actor's focus over the current project's private tree. Opens a cache
+ * per visible tree, rebuilds them from the chain, and returns the copilot's `focus`
+ * for the given actor — the runs they have open. Read-only: no writer, no event.
+ * With no project found from the cwd it refuses `NO_PROJECT`.
+ *
+ * The actor may be written whole or as any prefix that names one identity the
+ * record knows; a prefix that names several, or none, is refused rather than used
+ * as a filter that matches nothing (see {@link resolveTypedAnchor}).
  */
 export function runFocus(ctx: FocusContext, input: { actor: string }): FocusDone | FocusRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  // Read the PRIVATE project tree: a session's runs are born private, so that is
-  // where an actor's open runs live. No project → nothing to read.
-  const root = chainRootForScope(trees, 'private');
-  if (root === undefined) {
+  // A context read needs a project: the private tree is where a session's runs are
+  // born, so with none there is nothing to read.
+  if (trees.projectPrivate === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  const cache = ProjectionCache.open(root, { upcasters: catalogUpcasters() });
-  cache.rebuild();
-  return {
-    ok: true,
-    // No run is this command's own, and that is a fact rather than a shortcut: a
-    // read opens no run, and this process is gone by the time the next one asks. So
-    // every run reported comes back `thisSession: false` — which is why the human
-    // output does not print it (a value that is the same in every answer is noise,
-    // not honesty) and `--json` carries it anyway, being the faithful object.
-    focus: focus(cache, {
-      actor: input.actor,
-      asOf: (ctx.clock ?? systemClock)(),
-      sessionRuns: [],
-    }),
-  };
+  return withScopedCaches(trees, (sources) => {
+    const anchors = anchorForms(sources);
+    const actor = resolveTypedAnchor(input.actor, anchors);
+    if (!actor.ok) {
+      return { ok: false, reason: 'REFUSED', code: actor.code, message: actor.message };
+    }
+    // Present because the project's private tree was checked above, and
+    // `withScopedCaches` only leaves out a tree the context does not have.
+    const cache = sources.find((source) => source.scope === 'private')?.cache as ProjectionCache;
+    return {
+      ok: true,
+      anchors,
+      // No run is this command's own, and that is a fact rather than a shortcut: a
+      // read opens no run, and this process is gone by the time the next one asks. So
+      // every run reported comes back `thisSession: false` — which is why the human
+      // output does not print it (a value that is the same in every answer is noise,
+      // not honesty) and `--json` carries it anyway, being the faithful object.
+      focus: focus(cache, {
+        actor: actor.anchor,
+        asOf: (ctx.clock ?? systemClock)(),
+        sessionRuns: [],
+      }),
+    };
+  });
 }

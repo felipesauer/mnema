@@ -154,6 +154,12 @@ $ mnema next-actions no-such-id
 $ mnema key enroll not-a-request
 ! Refused (MALFORMED_REQUEST): that is not a key request — hand over the whole line the joining machine printed, unedited, with nothing added or trimmed
 [exit 1]
+$ mnema focus --actor whoever
+! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
+[exit 1]
+$ mnema key request --anchor whoever
+! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
+[exit 1]
 
 ### the key roster
 $ mnema key request --anchor <anchor>

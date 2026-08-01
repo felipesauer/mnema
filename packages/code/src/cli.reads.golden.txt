@@ -65,7 +65,7 @@ $ mnema timeline no-such-id --json
 | []
 $ mnema accountability
 | 2 fact(s) · 1 author(s)
-|   <anchor>  2
+|   <anchor-short>  2
 $ mnema accountability --json
 | {
 |   "total": 2,
@@ -92,6 +92,9 @@ $ mnema accountability --json
 |     }
 |   ]
 | }
+$ mnema accountability --who <anchor-short>
+| 2 fact(s) · 1 author(s)
+|   <anchor-short>  2
 $ mnema antipatterns
 | reopened tasks: 0
 | superseded decisions: 0
@@ -103,8 +106,13 @@ $ mnema antipatterns --json
 |   "deprecatedSkills": [],
 |   "skillCandidates": []
 | }
+$ mnema focus --actor <anchor-short>
+| <anchor-short> has no open runs.
+|   A run is an agent's working session. An MCP client opens one per connection;
+|   on the command line, `mnema run start --which <agent>` opens one.
+|   Work you do yourself is recorded without one.
 $ mnema focus --actor <anchor>
-| <anchor> has no open runs.
+| <anchor-short> has no open runs.
 |   A run is an agent's working session. An MCP client opens one per connection;
 |   on the command line, `mnema run start --which <agent>` opens one.
 |   Work you do yourself is recorded without one.
@@ -114,7 +122,7 @@ $ mnema focus --actor <anchor> --json
 |   "openRuns": []
 | }
 $ mnema resume --actor <anchor>
-| <anchor> has no runs.
+| <anchor-short> has no runs.
 |   A run is an agent's working session. An MCP client opens one per connection;
 |   on the command line, `mnema run start --which <agent>` opens one.
 |   Work you do yourself is recorded without one.
@@ -274,6 +282,8 @@ $ mnema show <task-runbook> --json
 | }
 $ mnema refs <decision-runbook>
 | <decision-runbook>  ·  decision
+|
+| its own edges (2)
 |   → target:relates-to  <task-runbook> (task)  [public]
 |   ← by  <decision-wiki> (decision)  [public]
 |
@@ -331,17 +341,24 @@ $ mnema refs <decision-runbook> --json
 | }
 $ mnema refs <task-runbook> --depth 2
 | <task-runbook>  ·  task
+|
+| its own edges (3)
 |   ← about  <observation-rollback> (observation)  [public]
 |   ← target:relates-to  <decision-runbook> (decision)  [public]
 |   → target:derived-from  <task-chore> (task)  [public]
-|     <decision-wiki> (decision) → by → <decision-runbook> (decision)  [public]
 |
+| edges further out (1)
+|   <decision-wiki> (decision) → by → <decision-runbook> (decision)  [public]
+|
+| reached, by distance (4)
 |   1 hop(s)  <task-chore> (task)
 |   1 hop(s)  <decision-runbook> (decision)
 |   1 hop(s)  <observation-rollback> (observation)
 |   2 hop(s)  <decision-wiki> (decision)
 $ mnema refs <task-runbook> --direction out --depth 1
 | <task-runbook>  ·  task
+|
+| its own edges (1)
 |   → target:derived-from  <task-chore> (task)  [public]
 $ mnema exposure
 | 1 of 43 record(s) hold a credential format:
@@ -366,19 +383,19 @@ $ mnema exposure --json
 | }
 $ mnema timeline <task-runbook>
 | <task-runbook> — 13 event(s):
-|   <at:01>  task.created  [subject]  <anchor>
-|   <at:01>  task.transitioned  [subject]  <anchor>
-|   <at:06>  observation.recorded  [about]  <anchor>
-|   <at:07>  handoff.recorded  [subject]  <anchor>
-|   <at:08>  knowledge.linked  [target]  <anchor>
-|   <at:09>  knowledge.linked  [subject]  <anchor>
-|   <at:10>  task.transitioned  [subject]  <anchor>
-|   <at:11>  task.transitioned  [subject]  <anchor>
-|   <at:12>  task.transitioned  [subject]  <anchor>
-|   <at:13>  task.transitioned  [subject]  <anchor>
-|   <at:14>  task.transitioned  [subject]  <anchor>
-|   <at:15>  task.transitioned  [subject]  <anchor>
-|   <at:16>  task.transitioned  [subject]  <anchor>
+|   <at:01>  task.created  [subject]  <anchor-short>
+|   <at:01>  task.transitioned  [subject]  <anchor-short>
+|   <at:06>  observation.recorded  [about]  <anchor-short>
+|   <at:07>  handoff.recorded  [subject]  <anchor-short>
+|   <at:08>  knowledge.linked  [target]  <anchor-short>
+|   <at:09>  knowledge.linked  [subject]  <anchor-short>
+|   <at:10>  task.transitioned  [subject]  <anchor-short>
+|   <at:11>  task.transitioned  [subject]  <anchor-short>
+|   <at:12>  task.transitioned  [subject]  <anchor-short>
+|   <at:13>  task.transitioned  [subject]  <anchor-short>
+|   <at:14>  task.transitioned  [subject]  <anchor-short>
+|   <at:15>  task.transitioned  [subject]  <anchor-short>
+|   <at:16>  task.transitioned  [subject]  <anchor-short>
 $ mnema timeline <task-runbook> --json
 | [
 |   {
@@ -677,7 +694,7 @@ $ mnema timeline <task-runbook> --json
 | ]
 $ mnema accountability
 | 43 fact(s) · 1 author(s)
-|   <anchor>  43
+|   <anchor-short>  43
 $ mnema accountability --json
 | {
 |   "total": 43,
@@ -760,6 +777,9 @@ $ mnema accountability --json
 |     }
 |   ]
 | }
+$ mnema accountability --who <anchor-short>
+| 43 fact(s) · 1 author(s)
+|   <anchor-short>  43
 $ mnema antipatterns
 | reopened tasks: 1
 | superseded decisions: 1
@@ -903,8 +923,11 @@ $ mnema antipatterns --json
 |     }
 |   ]
 | }
+$ mnema focus --actor <anchor-short>
+| <anchor-short> — 1 open run(s):
+|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it
 $ mnema focus --actor <anchor>
-| <anchor> — 1 open run(s):
+| <anchor-short> — 1 open run(s):
 |   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it
 $ mnema focus --actor <anchor> --json
 | {
@@ -923,7 +946,7 @@ $ mnema focus --actor <anchor> --json
 |   ]
 | }
 $ mnema resume --actor <anchor>
-| <anchor> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
+| <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
 |   1 run(s) still open
 $ mnema resume --actor <anchor> --json
 | {
@@ -1006,8 +1029,8 @@ $ mnema guard complete <task-runbook> --actor <anchor> --note 'it is done' --jso
 | }
 $ mnema skills
 | 2 pattern(s):
-|   <skill-slices>  adopted     public   One slice per PR  ·  proposed by a person · adopted by a person
-|   <skill-fridays>  deprecated  private  Ship on Fridays  ·  proposed by a person · adopted by a person
+|   <skill-slices>  adopted     public   One slice per PR  ·  proposed by a person · adopted by a person · never consulted
+|   <skill-fridays>  deprecated  private  Ship on Fridays  ·  proposed by a person · adopted by a person · never consulted
 $ mnema skills --json
 | [
 |   {
@@ -1054,11 +1077,12 @@ $ mnema show <decision-wiki>
 $ mnema show <skill-slices>
 | skill <skill-slices>  ·  public
 |   One slice per PR (adopted)
+|   never consulted
 |
 | A slice is one reviewable change with its tests.
 $ mnema show <memory-runbook>
 | memory <memory-runbook>  ·  public
-|   captured <at:04> by <anchor>
+|   captured <at:04> by <anchor-short>
 |
 | the deploy runbook lives in the record now
 $ mnema show <observation-rollback>

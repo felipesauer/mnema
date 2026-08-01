@@ -44,10 +44,18 @@ export function subjectLine(...parts: readonly string[]): string {
  * under a subject, and calling it two things would be inventing a distinction the
  * output does not make.
  *
- * `depth` is 2 in exactly one place: the command `key request` tells the person to
- * run on the OTHER machine, which sits under the sentence that tells them to hand
- * the line over. It is the same nesting {@link itemLine} takes, for the same
- * reason — something that belongs to the line above it, not to the subject.
+ * `depth` is 2 in exactly one place, and it earns it: the command `key request`
+ * tells the person to run on the OTHER machine. Set off from the sentence that
+ * introduces it, it is visibly a line to be TYPED rather than read — which is what
+ * a person scanning for the thing to copy is looking for. Flattened it becomes the
+ * third line of a paragraph, and the one piece of that output the reader has to
+ * act on stops looking different from the prose around it.
+ *
+ * That is not the nesting a list uses. {@link itemLine} has no depth at all: an
+ * item is an item, and the one reading that used a second level to mean "this
+ * belongs to the group above" says it in words now. Here the second level marks a
+ * LITERAL, not a rank, and one use is the honest count of how often output has
+ * something to be typed verbatim.
  */
 export function fact(text: string, depth = 1): string {
   return `${INDENT.repeat(depth)}${text}`;

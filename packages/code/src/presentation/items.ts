@@ -29,20 +29,23 @@
 /** The two spaces between one column and the next. */
 const COLUMN_GAP = '  ';
 
-/** The two spaces one level of nesting indents by. */
+/** The two spaces an item is indented under its header by. */
 const INDENT = '  ';
 
 /**
- * One item, as a line: indented by `depth`, its fields separated by two spaces.
+ * One item, as a line: indented under its header, its fields separated by two
+ * spaces.
  *
- * `depth` is 2 in exactly one place — the edge `refs` prints that touches neither
- * end of the entity asked about, which is a sub-item of the entity's own edges.
- * That it is needed once is worth noticing rather than hiding: it says that
- * reading is really two lists, an entity's edges and the graph beyond them, and
- * the second one is nested inside the first.
+ * Every item of every list in the product sits at the SAME depth, and that is now
+ * true structurally rather than by agreement. One caller used to ask for a second
+ * level — the edge `refs` prints that touches neither end of the entity asked
+ * about — which made indentation carry a meaning ("this belongs to the group
+ * above") that nothing else here gives it, and left a reader to infer what the two
+ * extra spaces said. That reading names its groups instead, so the meaning is in
+ * words and the depth is a constant again.
  */
-export function itemLine(fields: readonly string[], depth = 1): string {
-  return `${INDENT.repeat(depth)}${fields.join(COLUMN_GAP)}`;
+export function itemLine(fields: readonly string[]): string {
+  return `${INDENT}${fields.join(COLUMN_GAP)}`;
 }
 
 /**

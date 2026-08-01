@@ -21,7 +21,7 @@ import type { Command } from 'commander';
 import { runGuard } from '../commands/guard.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
-import { declaredAgent } from './options.js';
+import { ACTOR_HELP, declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
 
@@ -37,7 +37,7 @@ export function registerGuard(program: Command, wiring: Wiring): void {
         'request_changes, approve, complete, cancel, reopen)',
     )
     .argument('<id>', 'the task id (the value shown when it was created)')
-    .requiredOption('--actor <id>', 'the anchor id asking (the `who`; from `mnema verify`)')
+    .requiredOption('--actor <id>', `the identity asking (the \`who\`) — ${ACTOR_HELP}`)
     .option('--reason <text>', 'simulate the reason (cancel, block, reopen)')
     .option('--note <text>', 'simulate the note (complete, approve)')
     .option('--feedback <text>', 'simulate the feedback (request_changes)')

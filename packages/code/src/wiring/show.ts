@@ -34,6 +34,12 @@ export function registerShow(program: Command, wiring: Wiring): void {
         io.out(JSON.stringify(result.record, null, 2));
         return;
       }
-      writeLines(io, recordReport(result.record));
+      writeLines(
+        io,
+        recordReport(result.record, {
+          anchors: result.anchors,
+          ...(result.consultations !== undefined ? { consultations: result.consultations } : {}),
+        }),
+      );
     });
 }

@@ -724,6 +724,30 @@ describe('ProjectionCache — the reference index', () => {
     expect(cache.knows('never-authored')).toBe(false);
   });
 
+  it('names who this tree knows, and reads a kind’s events with their runs', () => {
+    // The two questions the readable-identity work asks of a tree: who authorized
+    // anything here, and how many sessions were served each pattern. Both are one
+    // query over the same index — no second table, no rebuild of their own.
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeEverything(w);
+    w.append({
+      v: 1,
+      kind: 'skill.consulted',
+      at: at(9),
+      who: 'someone-else',
+      signerFp: 'fp-1',
+      subject: 's-1',
+      run: 'run-a',
+      payload: {},
+    });
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.authors()).toEqual(['felipe', 'someone-else']);
+    expect(cache.subjectRuns('skill.consulted')).toEqual([{ entity: 's-1', run: 'run-a' }]);
+  });
+
   it('walks from one entity to what it references', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);

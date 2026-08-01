@@ -25,7 +25,9 @@
  * which is a write and domain logic the surface must not own. So `--actor` is a
  * required flag: passing it keeps the read truly read-only, and it doubles as
  * the `who` the gate checks against `--which` (an agent asking on a human's
- * behalf simulates the who != which invariant).
+ * behalf simulates the who != which invariant). It may be written whole or as a
+ * prefix of an identity the record knows — and a whole one costs nothing, because
+ * only a prefix makes this open the other trees to find out what it names.
  *
  * WHY IT SIMULATES THE PROOF. The dry-run must be FAITHFUL to what a move would
  * decide, so it accepts the same optional proof flags a move does (`--note`,
@@ -43,6 +45,7 @@ import {
   ProjectionCache,
   resolveTrees,
 } from '@mnema/core';
+import { resolveAnchorInRecord } from '../anchors.js';
 
 /** What the guard command needs — injected so it is testable. */
 export interface GuardContext {
@@ -69,12 +72,19 @@ export interface GuardVerdict {
   readonly verdict: GateResult;
 }
 
-/** The dry-run could not be attempted — the task or project was not found. */
+/** The dry-run could not be attempted — the task, project or actor was not found. */
 export type GuardRefused =
   /** There is no project here — a task read needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** No visible tree holds a task with this id. */
-  | { readonly ok: false; readonly reason: 'UNKNOWN_TASK' };
+  | { readonly ok: false; readonly reason: 'UNKNOWN_TASK' }
+  /** The actor named no one identity this record knows. */
+  | {
+      readonly ok: false;
+      readonly reason: 'REFUSED';
+      readonly code: string;
+      readonly message: string;
+    };
 
 /**
  * Simulates the gate for a move on the task with `id` and returns its verdict
@@ -97,6 +107,12 @@ export function runGuard(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+  // Before the task is located, because the answer is about a `who`: a dry-run for
+  // an actor nobody here is would be a verdict about a move nobody can make.
+  const actor = resolveAnchorInRecord(trees, input.actor);
+  if (!actor.ok) {
+    return { ok: false, reason: 'REFUSED', code: actor.code, message: actor.message };
+  }
   const upcasters = catalogUpcasters();
   // Find the task's home tree the same way a move does — a task lives in exactly
   // one tree, and its state must be read from there.
@@ -118,7 +134,7 @@ export function runGuard(
   const verdict = guard({
     from: task.state,
     action: input.action,
-    who: input.actor,
+    who: actor.anchor,
     ...(fields !== undefined ? { fields } : {}),
     ...(input.which !== undefined ? { which: input.which } : {}),
   });

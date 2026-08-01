@@ -3,22 +3,30 @@
  * (`←`) and what it points AT (`→`), each with the relation as written and the
  * tree the assertion lives in.
  *
- * The entity's OWN edges come first, whatever their instant, and the edges further
- * out follow. `--json` emits the read's single instant-ordered list; this grouping
- * is the terminal's judgement that a reader looking at one thing wants that
- * thing's own connections at the top. Beyond one hop the nodes are then listed by
- * distance, because at that point the edge list stops reading as a shape and the
- * distances are what the reader came for.
+ * IT IS THREE LISTS, AND IT SAYS SO. The entity's own edges, then the edges
+ * further out that the walk passed through, then the nodes it reached and how far
+ * away they are. They used to be told apart by indentation — an edge touching
+ * neither end of the entity was printed one level deeper — which put the meaning
+ * in whitespace and made this the only reading in the product that nested. A
+ * heading with a count is the shape every other list here already has, it says
+ * what the group IS rather than leaving a reader to work out what the extra two
+ * spaces meant, and it puts a number on each part where before there was none.
+ *
+ * The entity's OWN edges come first, whatever their instant. `--json` emits the
+ * read's single instant-ordered list; this grouping is the terminal's judgement
+ * that a reader looking at one thing wants that thing's own connections at the
+ * top. Beyond one hop the nodes are then listed by distance, because at that point
+ * the edge list stops reading as a shape and the distances are what the reader
+ * came for.
+ *
+ * An empty group is not printed. A heading reading `(0)` states an absence nobody
+ * asked about, and the groups that ARE there already say what was found — the same
+ * rule `search` follows for a kind it has no hit for.
  *
  * An unresolved far end is marked, never dropped: the reference is a fact even
  * when the thing it names is not visible from here. And when the depth cut the
  * answer the last line says so — a bounded answer that does not say it was
  * bounded reads as everything there is.
- *
- * It is the one reading that nests: an edge between two OTHER entities is a
- * sub-item of the entity's own edges, and it is indented one level further to say
- * so. That is what makes this reading two lists rather than one, and it is the
- * only caller that asks {@link itemLine} for a second level.
  */
 
 import type { ReferenceGraph } from '@mnema/copilot';
@@ -41,24 +49,31 @@ export function referenceReport(graph: ReferenceGraph): string[] {
     if (!node.resolved) return `${id} (unresolved)`;
     return node.kind !== undefined ? `${id} (${node.kind})` : id;
   };
+  /** A heading naming the group and how much is in it, then its items. */
+  const group = (heading: string, items: readonly string[]) => {
+    if (items.length === 0) return;
+    lines.push('');
+    lines.push(`${heading} (${items.length})`);
+    lines.push(...items);
+  };
   const touchesOrigin = (link: ReferenceGraph['links'][number]) =>
     link.from === graph.id || link.to === graph.id;
-  for (const link of [
-    ...graph.links.filter(touchesOrigin),
-    ...graph.links.filter((l) => !touchesOrigin(l)),
-  ]) {
+  const written = (link: ReferenceGraph['links'][number]) => {
     const rel = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
     const tree = `[${link.scope}]`;
-    if (link.from === graph.id) lines.push(itemLine([`→ ${rel}`, label(link.to), tree]));
-    else if (link.to === graph.id) lines.push(itemLine([`← ${rel}`, label(link.from), tree]));
-    else lines.push(itemLine([`${label(link.from)} → ${rel} → ${label(link.to)}`, tree], 2));
-  }
+    if (link.from === graph.id) return itemLine([`→ ${rel}`, label(link.to), tree]);
+    if (link.to === graph.id) return itemLine([`← ${rel}`, label(link.from), tree]);
+    return itemLine([`${label(link.from)} → ${rel} → ${label(link.to)}`, tree]);
+  };
+  group('its own edges', graph.links.filter(touchesOrigin).map(written));
+  group('edges further out', graph.links.filter((l) => !touchesOrigin(l)).map(written));
   if (graph.depth > 1) {
-    lines.push('');
-    for (const node of graph.nodes) {
-      if (node.depth === 0) continue;
-      lines.push(itemLine([`${node.depth} hop(s)`, label(node.id)]));
-    }
+    group(
+      'reached, by distance',
+      graph.nodes
+        .filter((node) => node.depth > 0)
+        .map((node) => itemLine([`${node.depth} hop(s)`, label(node.id)])),
+    );
   }
   if (graph.truncated) {
     lines.push('');

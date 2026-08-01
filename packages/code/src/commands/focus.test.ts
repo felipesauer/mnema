@@ -48,6 +48,13 @@ function projectWithRuns(): {
   return { repo, env, who, ctx };
 }
 
+/**
+ * A whole identity no record here knows: accepted as written (the shape is the
+ * shape), and matching nothing. It is what a stranger looks like now that a value
+ * naming no identity at all is refused rather than answered about.
+ */
+const STRANGER = `mnid:${'0'.repeat(64)}`;
+
 describe('mnema focus', () => {
   it('reports the actor’s open runs and NOTHING is written', () => {
     const { repo, env, who, ctx } = projectWithRuns();
@@ -77,13 +84,22 @@ describe('mnema focus', () => {
     ctx.writer.checkpoint();
 
     // An actor that is not the machine's anchor sees no runs.
-    const other = runFocus({ cwd: repo, env }, { actor: 'somebody-else' });
+    const other = runFocus({ cwd: repo, env }, { actor: STRANGER });
     expect(other.ok).toBe(true);
     if (other.ok) expect(other.focus.openRuns).toEqual([]);
 
     // The machine's own anchor sees its run.
     const mine = runFocus({ cwd: repo, env }, { actor: who });
     if (mine.ok) expect(mine.focus.openRuns).toHaveLength(1);
+  });
+
+  it('refuses an actor that names no identity, and names the ones it knows', () => {
+    // Not an empty focus: an answer about somebody the record has never heard of
+    // reads exactly like an answer about somebody real with nothing open.
+    const { repo, env, who } = projectWithRuns();
+    const refused = runFocus({ cwd: repo, env }, { actor: 'somebody-else' });
+    expect(refused).toMatchObject({ ok: false, reason: 'REFUSED', code: 'UNKNOWN_ANCHOR' });
+    expect((refused as { message: string }).message).toContain(who.slice(0, 13));
   });
 
   it('excludes runs the actor has already ended', () => {

@@ -68,7 +68,11 @@ export function registerKey(program: Command, wiring: Wiring): void {
   key
     .command('request')
     .description('ask to bring this machine into an identity (run this on the joining machine)')
-    .requiredOption('--anchor <id>', 'the identity to join (the `mnid:…` its machine prints)')
+    .requiredOption(
+      '--anchor <id>',
+      'the identity to join (the `mnid:…` its machine prints) — a prefix of one this ' +
+        'record knows also names it; the request is signed over the whole value either way',
+    )
     .option('--key <file>', "a private key to speak for instead of this machine's own")
     .action((opts: { anchor: string; key?: string }) => {
       const result = runKeyRequest(here(), {
@@ -126,8 +130,11 @@ export function registerKey(program: Command, wiring: Wiring): void {
   // `mnema key revoke <fingerprint> --reason <text>` — retire a key. The
   // fingerprint is a positional (the subject); the reason is a required flag, as
   // every other verb that demands its evidence does. It is the full fingerprint,
-  // not a prefix: there is no id-prefix resolution anywhere yet, and guessing
-  // which key a short value means is not a guess to make about key material.
+  // and it stays whole even though an ANCHOR may now be named by a prefix: an
+  // anchor is an identity the record lists, so a prefix resolves against something
+  // and an ambiguous one is refused by name — a fingerprint names a physical key,
+  // and guessing which key a short value means is not a guess to make about key
+  // material.
   key
     .command('revoke')
     .description('retire a key from this identity, from this point forward')

@@ -20,6 +20,7 @@
 
 import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import { withScopedCaches } from '../tree-sources.js';
 
 /** What the accountability command needs — injected so it is testable. */
@@ -35,13 +36,19 @@ export interface AccountabilityDone {
   readonly ok: true;
   /** The account itself — total facts and one entry per authorizing `who`. */
   readonly account: Accountability;
+  /** How each identity this record knows is written for a person. */
+  readonly anchors: AnchorForms;
 }
 
-/** The read was refused — there is no project to account for. */
-export interface AccountabilityRefused {
-  readonly ok: false;
-  readonly reason: 'NO_PROJECT';
-}
+/** The read was refused — no project to account for, or a `--who` that names none. */
+export type AccountabilityRefused =
+  | { readonly ok: false; readonly reason: 'NO_PROJECT' }
+  | {
+      readonly ok: false;
+      readonly reason: 'REFUSED';
+      readonly code: string;
+      readonly message: string;
+    };
 
 /**
  * Reports the account of authorship over every present tree, narrowed by the
@@ -57,8 +64,19 @@ export function runAccountability(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  return withScopedCaches(trees, (sources) => ({
-    ok: true,
-    account: accountability(sources, input),
-  }));
+  return withScopedCaches(trees, (sources) => {
+    const anchors = anchorForms(sources);
+    // `--who` takes the same value this read PRINTS, so it accepts the same short
+    // form. Left unresolved, a prefix would filter on a `who` that matches nothing
+    // and come back as an account of zero facts — the one answer that looks like an
+    // answer and is not.
+    if (input.who !== undefined) {
+      const who = resolveTypedAnchor(input.who, anchors);
+      if (!who.ok) {
+        return { ok: false, reason: 'REFUSED', code: who.code, message: who.message };
+      }
+      return { ok: true, anchors, account: accountability(sources, { ...input, who: who.anchor }) };
+    }
+    return { ok: true, anchors, account: accountability(sources, input) };
+  });
 }

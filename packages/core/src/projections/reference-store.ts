@@ -349,6 +349,52 @@ export function tallyAuthorship(
 }
 
 /**
+ * Every identity that authorized a fact in this tree, once each, sorted.
+ *
+ * The cheapest honest answer to "who does this record know". It reads the same
+ * subject rows {@link tallyAuthorship} counts — one per event — so an author with
+ * a single fact is in the list exactly as one with a thousand: this is a question
+ * about presence, not about volume.
+ */
+export function listAuthors(db: SqliteDatabase): string[] {
+  const rows = db
+    .prepare(`SELECT DISTINCT who FROM refs WHERE role = 'subject' ORDER BY who`)
+    .all() as Array<{ who: string }>;
+  return rows.map((row) => row.who);
+}
+
+/** One event of a kind, reduced to what it is about and the run it happened in. */
+export interface SubjectRun {
+  /** The event's subject — what the fact is about. */
+  readonly entity: string;
+  /** The run it belongs to, or null when it belongs to none. */
+  readonly run: string | null;
+}
+
+/**
+ * Every event of `kind` in this tree, as its subject and the run it happened in.
+ *
+ * One row per EVENT, not per run: what counts as one occurrence is the caller's
+ * question, and a caller merging several trees has to see the run ids to answer it
+ * (the same run may record the same fact in two trees, and summing per-tree counts
+ * would report one session as two).
+ *
+ * The run comes out of the stored event through SQLite's own JSON reader rather
+ * than by parsing every row in JavaScript — the envelope is already in the column,
+ * and pulling one field out of it is what `json_extract` is for.
+ */
+export function listSubjectRuns(db: SqliteDatabase, kind: EventKind): SubjectRun[] {
+  const rows = db
+    .prepare(
+      `SELECT entity, json_extract(event, '$.run') AS run
+         FROM refs
+        WHERE role = 'subject' AND kind = @kind`,
+    )
+    .all({ kind }) as Array<{ entity: string; run: string | null }>;
+  return rows.map((row) => ({ entity: row.entity, run: row.run }));
+}
+
+/**
  * Walks the reference graph of THIS tree from `seeds`, following edges in
  * `direction`, and returns every edge it traversed — not the nodes, because the
  * caller merges several trees and recomputes depth over the union anyway.
