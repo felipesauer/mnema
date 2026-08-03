@@ -1,6 +1,7 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   type ChainLayout,
   type ChainWriter,
@@ -159,7 +160,7 @@ describe('endRun — closing a session', () => {
     expect(runsOf(root).get(id)?.open).toBe(true);
     tick();
 
-    const ended = endRun(ctx, { run: id, outcome: 'shipped' });
+    const ended = endRun(ctx, { run: id, which: AGENT, outcome: 'shipped' });
     expect(ended).toMatchObject({ ok: true });
     const run = runsOf(root).get(id);
     expect(run?.open).toBe(false);
@@ -172,7 +173,7 @@ describe('endRun — closing a session', () => {
     const ctx = contextFor(w, root, clock);
     const id = mustStart(ctx, { agent: AGENT });
     tick();
-    endRun(ctx, { run: id });
+    endRun(ctx, { run: id, which: AGENT });
     // Exactly one run exists (the ended one), keyed on the started id.
     const runs = runsOf(root);
     expect(runs.size).toBe(1);
@@ -182,7 +183,7 @@ describe('endRun — closing a session', () => {
   it('refuses to close a run that does not exist (UNKNOWN_RUN)', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
-    const result = endRun(contextFor(w, root, clock), { run: 'r-ghost' });
+    const result = endRun(contextFor(w, root, clock), { run: 'r-ghost', which: AGENT });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_RUN' });
     // No run.ended was written for a run that never started.
     expect(runsOf(root).size).toBe(0);
@@ -194,12 +195,131 @@ describe('endRun — closing a session', () => {
     const ctx = contextFor(w, root, clock);
     const id = mustStart(ctx, { agent: AGENT });
     tick();
-    endRun(ctx, { run: id, outcome: 'first' });
+    endRun(ctx, { run: id, which: AGENT, outcome: 'first' });
     tick();
-    const again = endRun(ctx, { run: id, outcome: 'second' });
+    const again = endRun(ctx, { run: id, which: AGENT, outcome: 'second' });
     expect(again).toMatchObject({ ok: false, code: 'ALREADY_ENDED' });
     // The first outcome stands — the refused close wrote nothing.
     expect(runsOf(root).get(id)?.outcome).toBe('first');
+  });
+
+  it('carries the closing agent on the envelope `which`, canonicalized', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustStart(ctx, { agent: AGENT });
+    tick();
+
+    // A non-canonical spelling (stray whitespace) is normalized on the envelope, the
+    // same reading the birth gives it — a close is a fact like any other.
+    const ended = endRun(ctx, { run: id, which: '  claude  ' });
+    expect(ended).toMatchObject({ ok: true, agent: 'claude' });
+    const closed = orderedEvents({ root }, upcasters).find((e) => e.kind === 'run.ended');
+    expect(closed?.which).toBe('claude');
+    // And the close has no payload for it: the agent lives on the envelope alone,
+    // because the payload's question ("who is this session for") is the birth's.
+    expect(closed?.kind === 'run.ended' && Object.keys(closed.payload)).toEqual([]);
+  });
+
+  it('a complete pair names ONE agent — the close says what the birth said', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustStart(ctx, { agent: AGENT });
+    tick();
+    endRun(ctx, { run: id, which: AGENT });
+
+    // The two events that DEFINE the session, read back off the chain: both credited
+    // to the agent, which is what a run opened `for claude` and closed by claude has
+    // to look like. Before this the close carried no `which` at all, so the pair read
+    // as an agent's session sealed by the person.
+    const session = orderedEvents({ root }, upcasters).filter((e) => e.kind.startsWith('run.'));
+    expect(session.map((e) => e.kind)).toEqual(['run.started', 'run.ended']);
+    expect(session.map((e) => e.which)).toEqual([AGENT, AGENT]);
+    // And the `who` is the SAME anchor on both — the closer did not become the
+    // authorizer by closing.
+    expect(new Set(session.map((e) => e.who))).toEqual(new Set([w.anchor]));
+  });
+
+  it('refuses a close the agent authorized for itself (who == which), and nothing is written', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustStart(ctx, { agent: AGENT });
+    tick();
+
+    const result = endRun(ctx, { run: id, which: w.anchor });
+    expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+    // The run is STILL OPEN: the refusal happened before the append, so the close
+    // did not half-land. On an append-only log that is the difference between a
+    // refusable input and a permanent invalid entry.
+    expect(runsOf(root).get(id)?.open).toBe(true);
+  });
+
+  it('refuses it in the form the chain would STORE — trailing space is the same identity', () => {
+    // The discriminating case, and the reason the birth and the close must share ONE
+    // function rather than two that agree. A check written as a plain comparison of
+    // the given strings passes this: `"mnid:… "` !== `"mnid:…"`. The envelope would
+    // then store the canonical form, which IS `who` — a self-authorized close that
+    // "differed" at the check and is byte-identical in the signed event.
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustStart(ctx, { agent: AGENT });
+    tick();
+
+    expect(endRun(ctx, { run: id, which: `${w.anchor} ` })).toMatchObject({
+      ok: false,
+      code: 'WHO_IS_WHICH',
+    });
+    // The BIRTH refuses the same spelling — one rule, both ends of the pair. A
+    // version of this that held at only one end is the defect this closes.
+    const other = openChainForWriting(root, { keyRoot: root });
+    expect(startRun(contextFor(other, root, clock), { agent: `${w.anchor} ` })).toMatchObject({
+      ok: false,
+      code: 'WHO_IS_WHICH',
+    });
+    expect(runsOf(root).get(id)?.open).toBe(true);
+  });
+
+  it('a blank agent is read as NO agent — the SAME residual the birth has, not a new one', () => {
+    // The honest limit of a required field, pinned rather than claimed. The type stops
+    // a caller LEAVING IT OUT; it cannot stop one filling it with nothing, and what
+    // happens then is what the birth has always done — `canonicalIdentity` reads the
+    // value as no identity and the envelope carries no `which`. So there is ONE
+    // residual across the pair, reachable only by a direct programmatic caller: both
+    // surfaces close it, the CLI by refusing `NO_AGENT` and the MCP by defaulting the
+    // announced name before the session opens.
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const id = mustStart(ctx, { agent: '   ' });
+    tick();
+    const ended = endRun(ctx, { run: id, which: '   ' });
+    expect(ended).toMatchObject({ ok: true });
+    // The close reports no agent either, so a surface echoing it cannot print one the
+    // record does not hold — the reason the report exists rather than the input.
+    expect(ended).not.toHaveProperty('agent');
+
+    const session = orderedEvents({ root }, upcasters).filter((e) => e.kind.startsWith('run.'));
+    expect(session.map((e) => e.which)).toEqual([undefined, undefined]);
+  });
+
+  it('and BOTH ends resolve the agent through the shared function — never a comparison here', () => {
+    // The structural half of the claim above. The rule is `resolveExecutingAgent`'s,
+    // and it holds because this module has no reading of its own to drift from it: a
+    // copy of the comparison added later would be a second answer to "is this the
+    // same identity", which is how the check came to be missing from a whole family
+    // of facts once before.
+    const source = readFileSync(
+      fileURLToPath(new URL('./session-operations.ts', import.meta.url)),
+      'utf-8',
+    );
+    // Both call it — the ban below is not over an empty file.
+    expect(source.match(/resolveExecutingAgent\(who, /g)).toHaveLength(2);
+    // And nothing here compares `who` to anything itself.
+    expect(source).not.toMatch(/\bwho\s*[!=]==/);
+    expect(source).not.toMatch(/[!=]==\s*who\b/);
   });
 });
 

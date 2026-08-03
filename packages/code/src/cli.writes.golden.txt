@@ -85,8 +85,9 @@ $ mnema memory 'a note with a token in it: ghp_abcdefghijklmnopqrstuvwxyz0123456
 |   This record is permanent. If those were real credentials, rotate them.
 
 ### run end
-$ mnema run end --outcome 'the record is set up'
+$ mnema run end --which agent-alpha --outcome 'the record is set up'
 | Ended run <run-first>
+|   by agent-alpha
 |
 | unset MNEMA_RUN
 |
@@ -125,8 +126,11 @@ $ mnema skill move adopt no-such-id --note 'nothing to adopt'
 $ mnema skill 'A skill with no body'
 ! `mnema skill` requires --body: the reusable pattern itself.
 [exit 1]
-$ mnema run end
+$ mnema run end --which agent-beta
 ! `mnema run end` needs a run: pass its id, or set MNEMA_RUN to the one `mnema run start` printed.
+[exit 1]
+$ mnema run end no-such-run
+! error: required option '--which <agent>' not specified
 [exit 1]
 $ mnema search --limit 0
 ! Invalid --limit "0". Use a whole number of 1 or more.
