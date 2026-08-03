@@ -32,7 +32,7 @@ $ mnema --help
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   key                                     manage this machine's signing keys
 |   verify                                  verify the current project's chain
-|   mcp                                     run the mnema MCP server over stdio (for an agent host)
+|   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
 |   help [command]                          display help for command
 $ mnema --version
 | 0.0.0
@@ -493,7 +493,9 @@ $ mnema mcp --help
 | run the mnema MCP server over stdio (for an agent host)
 |
 | Options:
-|   -h, --help  display help for command
+|   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
+|                    comes from the host workspace roots
+|   -h, --help       display help for command
 
 ### mnema task move --help
 $ mnema task move --help
