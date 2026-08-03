@@ -41,6 +41,7 @@ import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/autho
 import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
+import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
@@ -60,6 +61,8 @@ export type SkillWriteError =
   | SkillGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /** A read would not have accepted the event (see {@link appendEvent}). */
+  | UnreadableEventErr
   /** The skill acted on does not exist (no `skill.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string };
 
@@ -156,7 +159,9 @@ export function createSkill(
     },
     { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
   );
-  const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
+  const appended = appendEvents(ctx.writer, birth);
+  if (!appended.ok) return appended;
+  const [e1, e2] = appended.entries as [Entry, Entry];
   return {
     ok: true,
     id,
@@ -212,7 +217,7 @@ export interface ConsultationInput {
 export function recordConsultation(
   ctx: SkillWriteContext,
   input: ConsultationInput,
-): ConsultationOk | SelfAuthorizedErr | ContentTooLargeErr {
+): ConsultationOk | SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr {
   const named = screenContent({ skill: input.skill });
   if (!named.ok) return named;
 
@@ -229,7 +234,8 @@ export function recordConsultation(
   // valid for its anchor at verify. A no-op once founded.
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     skillConsulted({
       at,
       who,
@@ -239,6 +245,7 @@ export function recordConsultation(
       ...(input.run !== undefined ? { run: input.run } : {}),
     }),
   );
+  if (!appended.ok) return appended;
   // It reports what was replaced like every other write, even though its own two
   // fields cannot realistically hold anything: the agent name CAN, it is stamped on
   // this fact as much as on any other, and a write that scrubbed in silence is the
@@ -344,11 +351,12 @@ function transition(
       ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
     },
   );
-  const entry = ctx.writer.append(event);
+  const appended = appendEvent(ctx.writer, event);
+  if (!appended.ok) return appended;
   return {
     ok: true,
     to: verdict.to,
-    entry,
+    entry: appended.entry,
     ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
   };
 }

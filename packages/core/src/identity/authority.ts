@@ -40,6 +40,7 @@
  * Screening afterwards would compare one string and store another.
  */
 
+import { ANCHOR_PREFIX } from '@mnema/chain';
 import { type ContentTooLargeErr, screenContent } from '../content/screen.js';
 import type { SecretClass } from '../content/secrets.js';
 import { canonicalIdentity } from './who.js';
@@ -108,7 +109,7 @@ export function resolveExecutingAgent(who: string, which: unknown): ExecutingAge
 
   const canonical = canonicalIdentity(screen === undefined ? which : screen.fields.which);
   if (canonical === undefined) return { ok: true, replaced };
-  if (canonical === who) {
+  if (canonical === who || namesTheAnchor(canonical, who)) {
     return {
       ok: false,
       code: 'WHO_IS_WHICH',
@@ -116,4 +117,27 @@ export function resolveExecutingAgent(who: string, which: unknown): ExecutingAge
     };
   }
   return { ok: true, which: canonical, replaced };
+}
+
+/**
+ * Whether an agent name is the authorizing anchor written SHORT — the same
+ * identity, spelled the way the reads print it.
+ *
+ * An anchor's short form is a PREFIX of the anchor, not a hash of it, precisely so
+ * a person can check it against the full value and paste it back where the full
+ * value goes. That makes it a second spelling of one identity, and a check that
+ * compared exact strings only saw the long one: `--which mnid:b6f3ce0d` passed as
+ * an ordinary agent name and stamped the authorizer's own identity into the slot
+ * that exists to say somebody ELSE executed. The refusal has to hold for every
+ * spelling the surfaces produce, or the invariant is only as strong as the longest
+ * one.
+ *
+ * The scheme prefix is required, and that is what keeps the rule deterministic. A
+ * bare `m` is a prefix of every anchor there is, so refusing on prefix alone would
+ * refuse a one-letter agent name — and refuse it on some machines and not others,
+ * depending on the local anchor's hex. Carrying `mnid:` means the value is claiming
+ * to be an anchor, and no agent is legitimately named that.
+ */
+function namesTheAnchor(which: string, who: string): boolean {
+  return which.startsWith(ANCHOR_PREFIX) && who.startsWith(which);
 }

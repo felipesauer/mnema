@@ -90,6 +90,40 @@ export function parseEvent(line: string, upcasters: UpcasterRegistry): CatalogEv
   return validateAndRebuild(upcast);
 }
 
+/**
+ * Why reading would refuse this event, or undefined when it would accept it —
+ * the question a WRITER has to ask before it seals anything.
+ *
+ * It runs {@link validateAndRebuild}, the very function {@link parseEvent} runs,
+ * and that identity is the whole point rather than an implementation detail. The
+ * rule "a title is a non-empty string" existed here and nowhere on the writing
+ * side, so a write accepted what every later read refused — and on an append-only
+ * log that is not a bad record, it is a record that can never be opened again: one
+ * unreadable entry fails the replay for the WHOLE tree, and nothing can take it
+ * back out. A second copy of the rule on the writing side would have closed the
+ * case of the day and re-opened it the first time the two copies drifted, which is
+ * a defect this codebase has caught more than once. So the writing side asks the
+ * reading side, and the two cannot disagree because there is only one of them.
+ *
+ * It answers with DATA — the reader's own message, naming the field — because the
+ * two callers need it in two shapes: the writer turns it into a throw (a producer
+ * bug, loud), and a surface turns it into a typed refusal a person or an agent can
+ * read and act on.
+ *
+ * The rebuilt event is discarded: the writer's builders already produce exactly
+ * the declared fields, so there is nothing to strip, and the question here is only
+ * whether the reader would accept these bytes.
+ */
+export function unreadableReason(event: CatalogEvent): string | undefined {
+  try {
+    validateAndRebuild(event);
+    return undefined;
+  } catch (error) {
+    if (error instanceof EventParseError) return error.message;
+    throw error;
+  }
+}
+
 function asVersioned(raw: unknown): VersionedEvent {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new EventParseError('event must be a JSON object');

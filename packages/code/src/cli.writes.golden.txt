@@ -165,6 +165,38 @@ $ mnema key request --anchor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
 [exit 1]
 
+### refusals — what no read could accept
+$ mnema task ''
+! Refused (UNREADABLE_EVENT): event "task.created" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema decision '' 'a rationale with no title'
+! Refused (UNREADABLE_EVENT): event "decision.recorded" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema skill '' --body 'a body with no name'
+! Refused (UNREADABLE_EVENT): event "skill.created" needs a non-empty string at payload.name. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema memory ''
+! Refused (UNREADABLE_EVENT): event "memory.captured" needs a non-empty string at payload.content. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema observe <task-runbook> --topic '' --text 'a note with no topic'
+! Refused (UNREADABLE_EVENT): event "observation.recorded" needs a non-empty string at payload.topic. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema handoff '' agent-alpha agent-beta
+! Refused (UNREADABLE_EVENT): event "handoff.recorded" needs a non-empty string at subject. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema link <task-runbook> <decision-runbook> --rel ''
+! Refused (UNREADABLE_EVENT): event "knowledge.linked" needs a non-empty string at payload.rel. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema run start --which agent-gamma --goal ''
+! Refused (UNREADABLE_EVENT): event "run.started" needs a non-empty string at payload.goal. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema run end <run-second> --which agent-beta --outcome ''
+! Refused (UNREADABLE_EVENT): event "run.ended" needs a non-empty string at payload.outcome. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+[exit 1]
+$ mnema task 'A task the anchor claims to have executed' --which <anchor-short>
+! Refused (WHO_IS_WHICH): the authorizing human and the executing agent must be different identities
+[exit 1]
+
 ### the key roster
 $ mnema key request --anchor <anchor>
 | Requesting for key <fingerprint:01>

@@ -32,6 +32,10 @@
  *     unrelated memories cannot false-merge when their chains are unioned.
  *   - the installation founds its anchor before its first fact, so the captured
  *     memory's signer is a key valid for its anchor at verify.
+ *   - the finished event passes the READER's own rule before it is appended
+ *     ({@link appendEvent}). A fact is where this mattered most: `link "" tgt` and
+ *     `handoff "" a b` put an empty value in the event's SUBJECT, and once such an
+ *     entry was on the tail no read of that project ever opened again.
  *
  * WHICH tree a capture lands in is not decided here: a caller opens the tree
  * for the resolved scope (`openTreeForWriting`) and hands the resulting writer
@@ -64,6 +68,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { appendEvent, type UnreadableEventErr } from '../workflow/append.js';
 import { systemClock } from '../workflow/clock.js';
 import { authorizingAnchor, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -76,10 +81,11 @@ export interface CaptureOk extends ScreenedWrite {
 }
 
 /**
- * The refusals a point-in-time fact can earn, both of them before any append: it
- * authorized itself, or one of its fields was over the size limit.
+ * The refusals a point-in-time fact can earn, all of them before any append: it
+ * authorized itself, one of its fields was over the size limit, or a field the
+ * catalog needs came in empty and no read would have accepted the fact.
  */
-export type FactError = SelfAuthorizedErr | ContentTooLargeErr;
+export type FactError = SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr;
 
 /** What the caller asks to capture. */
 export interface CaptureInput {
@@ -122,7 +128,8 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
   // valid for its anchor at verify. A no-op once founded.
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     memoryCaptured(
       {
         at,
@@ -137,6 +144,7 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
       { content: content.fields.content },
     ),
   );
+  if (!appended.ok) return appended;
   return { ok: true, id, ...screened([...content.replaced, ...agent.replaced]) };
 }
 
@@ -206,7 +214,8 @@ export function recordObservation(
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     observationRecorded(
       {
         at,
@@ -219,6 +228,7 @@ export function recordObservation(
       { about, topic: text.fields.topic, text: text.fields.text },
     ),
   );
+  if (!appended.ok) return appended;
   return { ok: true, id, ...screened([...text.replaced, ...agent.replaced]) };
 }
 
@@ -280,7 +290,8 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     handoffRecorded(
       {
         at,
@@ -293,6 +304,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
       { fromAgent: agents.fields.fromAgent, toAgent: agents.fields.toAgent },
     ),
   );
+  if (!appended.ok) return appended;
   return {
     ok: true,
     fromAgent: agents.fields.fromAgent,
@@ -356,7 +368,8 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     knowledgeLinked(
       {
         at,
@@ -369,6 +382,7 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
       { target, rel: relation.fields.rel },
     ),
   );
+  if (!appended.ok) return appended;
   return {
     ok: true,
     rel: relation.fields.rel,

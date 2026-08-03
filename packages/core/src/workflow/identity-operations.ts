@@ -43,6 +43,7 @@ import {
 } from '../content/screen.js';
 import { IdentityUnavailableError, type Membership, membershipIn } from '../identity/membership.js';
 import { orderedEvents } from '../projections/order.js';
+import { appendEvent, type UnreadableEventErr } from './append.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
 
@@ -160,6 +161,14 @@ export function ensureFounded(ctx: WriteContext): string {
   if (decided.source === 'adopted') return decided.anchor;
 
   const at = (ctx.clock ?? systemClock)();
+  // Appended straight, with no typed refusal to report, and that is the one place
+  // in the core where it is the honest shape: every field of a founding is DERIVED
+  // — the anchor from a key, the fingerprint from that same key, `at` from the
+  // clock — so no input a caller could get wrong reaches it, and there is nobody to
+  // report a refusal to (this returns the anchor, and it is called on the way to
+  // every other write). The writer's own check still stands under it: if a founding
+  // ever came out unreadable that is a bug in this function, and it fails loudly
+  // instead of entering the record.
   ctx.writer.append(
     identityFounded(
       { at, who: decided.anchor, signerFp: ctx.writer.signerFingerprint, subject: decided.anchor },
@@ -264,7 +273,20 @@ export function establishIdentity(
     }
     if (decided.has(registration.fingerprint)) continue;
     materializePublicKey(ctx.layout, registration);
-    enrollKey(ctx, { newFp: registration.fingerprint, reverseSig: registration.reverseSig });
+    const joined = enrollKey(ctx, {
+      newFp: registration.fingerprint,
+      reverseSig: registration.reverseSig,
+    });
+    // A registration the catalog itself would not accept is a key this tree did
+    // not take, reported like every other one rather than thrown. It is not
+    // reachable through `listRegistrations` (a usable registration carries a
+    // fingerprint computed from the key and a non-empty signature), which is
+    // exactly why it belongs in `declined`: the loop keeps going and the person
+    // hears about the one key instead of losing the whole establishment.
+    if (!joined.ok) {
+      declined.push({ fingerprint: registration.fingerprint, reason: joined.message });
+      continue;
+    }
     enrolled.push(registration.fingerprint);
   }
 
@@ -291,15 +313,22 @@ export function establishIdentity(
 export function enrollKey(
   ctx: WriteContext,
   input: { newFp: string; reverseSig: string },
-): IdentityOk {
+): IdentityOk | UnreadableEventErr {
   const anchor = ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  // Through the door like every other write, even though both fields are derived
+  // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
+  // already rejected as absent). This is an EXPORT of the writing surface, so a
+  // caller outside the two surfaces can hand it a value the real callers never
+  // produce, and it owes that caller a refusal it can read rather than a throw.
+  const appended = appendEvent(
+    ctx.writer,
     keyEnrolled(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
       { newFp: input.newFp, reverseSig: input.reverseSig },
     ),
   );
+  if (!appended.ok) return appended;
   ctx.writer.checkpoint();
   return { ok: true, anchor };
 }
@@ -324,18 +353,20 @@ export function enrollKey(
 export function revokeKey(
   ctx: WriteContext,
   input: { revokedFp: string; reason: string },
-): IdentityOk | ContentTooLargeErr {
+): IdentityOk | ContentTooLargeErr | UnreadableEventErr {
   const text = screenContent({ reason: input.reason });
   if (!text.ok) return text;
 
   const anchor = ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     keyRevoked(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
       { revokedFp: input.revokedFp, reason: text.fields.reason },
     ),
   );
+  if (!appended.ok) return appended;
   ctx.writer.checkpoint();
   return { ok: true, anchor, ...screened(text.replaced) };
 }

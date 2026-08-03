@@ -495,6 +495,121 @@ describe('mnema CLI — init → task → verify, end to end', () => {
   });
 });
 
+/**
+ * What the CLI does with an argument that would have made a record no read could
+ * open — and, the half that matters most, what the project can still do afterwards.
+ *
+ * Eighteen commands of the shipped CLI accepted an empty argument, wrote a SIGNED
+ * event the parser refuses, and reported success. From that moment every read of the
+ * project failed — search, show, timeline, focus, resume, verify, all of them, on the
+ * whole tree rather than the one record — and a tail is append-only, so nothing could
+ * take the line back out.
+ *
+ * So a refusal here is not a usability nicety, and the test asserts the pair: the
+ * command says `Refused (UNREADABLE_EVENT)` naming the field, AND the reads that
+ * would have died still answer. The second half is what the golden cannot say,
+ * because its reads run before its refusals.
+ */
+describe('mnema CLI — a record no read could open, end to end', () => {
+  beforeEach(async () => {
+    await run(['init'], capture().io);
+  });
+
+  /** Runs `mnema <argv>` and returns what it said on stderr, and whether it failed. */
+  async function refused(argv: readonly string[]): Promise<string> {
+    const c = capture();
+    await run([...argv], c.io);
+    expect(c.failed(), argv.join(' ')).toBe(true);
+    return c.err.join('\n');
+  }
+
+  it('refuses every empty argument that reaches a required field, naming it', async () => {
+    // One row per (command, argument) the shipped CLI could corrupt a project with.
+    // The list IS the finding: the report this closes named six paths; driving the
+    // built binary found eighteen, and these are the ones a single command reaches.
+    const paths: readonly [readonly string[], string][] = [
+      [['task', ''], 'payload.title'],
+      [['decision', '', 'why'], 'payload.title'],
+      [['decision', 'a title', ''], 'payload.rationale'],
+      [['skill', '', '--body', 'b'], 'payload.name'],
+      [['skill', 'a name', '--body', ''], 'payload.body'],
+      [['memory', ''], 'payload.content'],
+      [['observe', '', '--topic', 'k', '--text', 't'], 'payload.about'],
+      [['observe', 'x', '--topic', '', '--text', 't'], 'payload.topic'],
+      [['observe', 'x', '--topic', 'k', '--text', ''], 'payload.text'],
+      // The two whose empty argument becomes the envelope's SUBJECT, not a payload
+      // field — the pair a payload-shaped check would have missed.
+      [['handoff', '', 'a', 'b'], 'at subject'],
+      [['handoff', 't', '', 'b'], 'payload.fromAgent'],
+      [['handoff', 't', 'a', ''], 'payload.toAgent'],
+      [['link', '', 'y', '--rel', 'r'], 'at subject'],
+      [['link', 'x', '', '--rel', 'r'], 'payload.target'],
+      [['link', 'x', 'y', '--rel', ''], 'payload.rel'],
+      // And the optional-if-present one, which is the class an "is it required?"
+      // reading of the catalog would have skipped.
+      [['run', 'start', '--which', 'agent-alpha', '--goal', ''], 'payload.goal'],
+    ];
+    for (const [argv, field] of paths) {
+      const said = await refused(argv);
+      expect(said, argv.join(' ')).toContain('Refused (UNREADABLE_EVENT)');
+      expect(said, argv.join(' ')).toContain(field);
+    }
+  });
+
+  it('leaves every read answering, and the project writable, after all of them', async () => {
+    // Drive one refusal of each shape, then ask the reads. Before this door, ONE of
+    // these would have made all of them fail — so this is the assertion the whole
+    // slice exists for.
+    for (const argv of [
+      ['task', ''],
+      ['memory', ''],
+      ['handoff', '', 'a', 'b'],
+      ['link', 'x', 'y', '--rel', ''],
+      ['run', 'start', '--which', 'agent-alpha', '--goal', ''],
+    ]) {
+      await refused(argv);
+    }
+
+    const task = capture();
+    await run(['task', 'a task the record can hold'], task.io);
+    expect(task.failed()).toBe(false);
+    const id = /\(([^)]+)\)/.exec(task.out.join('\n'))?.[1] as string;
+
+    for (const argv of [['search'], ['show', id], ['verify'], ['timeline', id]]) {
+      const read = capture();
+      await run(argv, read.io);
+      expect(read.failed(), argv.join(' ')).toBe(false);
+      expect(read.out.join('\n'), argv.join(' ')).not.toBe('');
+    }
+    // And the proof still closes over the tree, fully signed.
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    expect(verify(root).ok).toBe(true);
+    expect(verify(root).fullySigned).toBe(true);
+  });
+
+  it('refuses the authorizing identity offered as the agent, in its short form too', async () => {
+    // The same family: a value one surface PRINTS and another accepts where it must
+    // not. The short form of an anchor is a prefix of it, so it is the same identity
+    // — and it only became typeable when the reads started printing it.
+    const accountability = capture();
+    await run(['accountability'], accountability.io);
+    const short = /mnid:[0-9a-f]+/.exec(accountability.out.join('\n'))?.[0] as string;
+    expect(short.length).toBeLessThan('mnid:'.length + 64);
+
+    const said = await refused(['task', 'a task the anchor claims to have run', '--which', short]);
+    expect(said).toContain('Refused (WHO_IS_WHICH)');
+
+    // And an honest agent name still passes, so the refusal is about the identity
+    // and not about the flag.
+    const ok = capture();
+    await run(['task', 'a task an agent really ran', '--which', 'agent-alpha'], ok.io);
+    expect(ok.failed()).toBe(false);
+  });
+});
+
 describe('mnema CLI — decision, end to end', () => {
   /** Reads the id out of a `Recorded decision ADR-n (<id>)` line. */
   function idOf(out: string): string {

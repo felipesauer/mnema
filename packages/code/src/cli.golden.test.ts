@@ -518,7 +518,7 @@ beforeAll(async () => {
     '--goal',
     'read the record back',
   );
-  name(after(second, 'Started run '), 'run-second');
+  const run2 = name(after(second, 'Started run '), 'run-second');
 
   // ── Every read again, over the populated record.
   await readEverything('a populated project', {
@@ -556,6 +556,29 @@ beforeAll(async () => {
   // names the identities there are, in the form that can be pasted straight back.
   await mnema('writes', 'focus', '--actor', 'whoever');
   await mnema('writes', 'key', 'request', '--anchor', 'whoever');
+
+  // ── What a read could not have accepted: an empty argument in a field the catalog
+  //    requires. Each of these WROTE a signed event before this door existed, and
+  //    from then on every read of the project failed — so the refusal is the whole
+  //    point, and the message names the field so the caller knows what to fix. One
+  //    per kind the CLI can reach, plus both halves of an event (a payload field and
+  //    the ENVELOPE's subject) and both classes (required, and optional-if-present).
+  section('writes', 'refusals — what no read could accept');
+  await mnema('writes', 'task', '');
+  await mnema('writes', 'decision', '', 'a rationale with no title');
+  await mnema('writes', 'skill', '', '--body', 'a body with no name');
+  await mnema('writes', 'memory', '');
+  await mnema('writes', 'observe', taskId, '--topic', '', '--text', 'a note with no topic');
+  await mnema('writes', 'handoff', '', 'agent-alpha', 'agent-beta');
+  await mnema('writes', 'link', taskId, decisionId, '--rel', '');
+  await mnema('writes', 'run', 'start', '--which', 'agent-gamma', '--goal', '');
+  await mnema('writes', 'run', 'end', run2, '--which', 'agent-beta', '--outcome', '');
+
+  // ── The authorizing identity offered as the executing agent, in the SHORT form the
+  //    reads print. The long form was always refused; the short one is a second
+  //    spelling of the same identity and only became typeable when the reads began
+  //    printing it.
+  await mnema('writes', 'task', 'A task the anchor claims to have executed', '--which', short);
 
   // ── Every whole record `show` serves, one per kind it knows.
   // A record of every kind `show` knows, and both ends of a supersession: the

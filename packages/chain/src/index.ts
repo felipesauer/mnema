@@ -147,7 +147,7 @@ export {
   type TransitionFields,
 } from './events/catalog.js';
 export type { Envelope, Which, Who } from './events/envelope.js';
-export { EventParseError, parseEvent, toCanonical } from './events/parse.js';
+export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
 export { catalogUpcasters } from './events/registry.js';
 export {
   type LatestVersions,

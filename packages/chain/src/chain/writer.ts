@@ -26,6 +26,7 @@ import { appendFileSync, existsSync, mkdirSync, truncateSync, writeFileSync } fr
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
+import { EventParseError, unreadableReason } from '../events/parse.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import {
   type Checkpoint,
@@ -215,8 +216,11 @@ export class ChainWriter {
    * Appends an event to the tail. Seals the current segment first if it has
    * passed the size cap, so a single entry never straddles two segments. Signs
    * a checkpoint when enough uncheckpointed events have accumulated.
+   *
+   * Refuses first what no reader could accept ({@link refuseUnreadable}).
    */
   append(event: CatalogEvent): Entry {
+    refuseUnreadable(event);
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;
@@ -254,9 +258,14 @@ export class ChainWriter {
    *
    * The whole batch goes into one segment (rotating first if the current one is
    * full), so no entry in the batch straddles a segment boundary.
+   *
+   * EVERY event is checked against the reader's rule before ANY is sealed
+   * ({@link refuseUnreadable}), so a batch whose second event is unreadable does
+   * not leave the first one on the tail — the atom holds for the refusal too.
    */
   appendAll(events: readonly CatalogEvent[]): Entry[] {
     if (events.length === 0) return [];
+    for (const event of events) refuseUnreadable(event);
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;
@@ -337,6 +346,37 @@ export class ChainWriter {
     this.pending = [];
     return checkpoint;
   }
+}
+
+/**
+ * Refuses an event that no reader could accept, BEFORE it is sealed.
+ *
+ * This is the narrowest point there is. An entry reaches a tail through exactly
+ * two doors — {@link ChainWriter.append} and {@link ChainWriter.appendAll} — so a
+ * check here holds for every writing path that exists and every one that will be
+ * added, including one written by a caller outside this workspace. The rule it
+ * applies is not a rule of its own: {@link unreadableReason} IS the reader's
+ * validator, so "the writer refuses exactly what the reader refuses" is a property
+ * of the code and not a discipline anybody has to keep.
+ *
+ * It matters because the failure it closes is unrecoverable. An unreadable entry
+ * on an append-only log cannot be taken back, and the replay refuses the whole
+ * tail rather than the one line, so a single empty title left every later read of
+ * that project — every search, every show, every timeline — failing forever while
+ * the write reported success.
+ *
+ * It THROWS, and that is deliberate: reaching it means a producer built an event
+ * its own catalog forbids, which is a bug in this codebase, not an input a person
+ * got wrong. The surfaces ask {@link unreadableReason} themselves and turn the
+ * same answer into a typed refusal, so an ordinary bad input is reported and
+ * costs nothing; this is the floor under that, for the caller that forgot to ask.
+ */
+function refuseUnreadable(event: CatalogEvent): void {
+  const reason = unreadableReason(event);
+  if (reason === undefined) return;
+  throw new EventParseError(
+    `refusing to seal an event no reader could accept: ${reason}. Nothing was appended.`,
+  );
 }
 
 function ensureDir(filePath: string): void {

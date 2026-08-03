@@ -71,6 +71,7 @@ import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/autho
 import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
+import { appendEvent, type UnreadableEventErr } from './append.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -106,6 +107,8 @@ export interface EndRunOk extends ScreenedWrite {
 export type StartRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /** A read would not have accepted the event (see {@link appendEvent}). */
+  | UnreadableEventErr
   /**
    * The executing agent IS the authorizing anchor — an agent cannot open the
    * session that authorizes its own work.
@@ -116,6 +119,8 @@ export type StartRunError =
 export type EndRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /** A read would not have accepted the event (see {@link appendEvent}). */
+  | UnreadableEventErr
   /**
    * The closing agent IS the authorizing anchor — the same refusal the birth
    * earns, from the same function, because it is a rule of the record and not of
@@ -198,7 +203,8 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
   // a key valid for its anchor at verify. A no-op once founded.
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     runStarted(
       {
         at,
@@ -219,6 +225,7 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
       },
     ),
   );
+  if (!appended.ok) return appended;
   // Both reports, merged like every other operation's — and the count is right
   // rather than doubled because the screen is idempotent: this agent name went
   // through it above, so the resolution found nothing left to take out. Merging
@@ -281,7 +288,8 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   // a key valid for its anchor at verify. A no-op once founded.
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
-  ctx.writer.append(
+  const appended = appendEvent(
+    ctx.writer,
     runEnded(
       {
         at,
@@ -297,6 +305,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
       { ...(text.fields.outcome !== undefined ? { outcome: text.fields.outcome } : {}) },
     ),
   );
+  if (!appended.ok) return appended;
   // The agent AS RECORDED, and both reports merged — the screen above saw the
   // outcome, the resolution saw the agent, and a caller echoing either has to be
   // told what came out of it.
