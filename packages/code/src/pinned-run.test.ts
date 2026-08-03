@@ -105,7 +105,7 @@ describe('the pinned run (MNEMA_RUN)', () => {
 
   it('refuses RUN_ENDED once the session it names has been closed', () => {
     const { repo, env, id } = openedRun();
-    expect(runRunEnd({ cwd: repo, env }, { run: id }).ok).toBe(true);
+    expect(runRunEnd({ cwd: repo, env }, { run: id, which: 'claude-code' }).ok).toBe(true);
 
     const result = resolvePinnedRun({ cwd: repo, env }, id);
     expect(result).toMatchObject({ ok: false, code: 'RUN_ENDED' });

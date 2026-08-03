@@ -186,7 +186,9 @@ describe('the content door runs at every write point', () => {
     const run = startRun(ctx, { agent: `agent ${SECRET}`, goal: `goal ${PASSWORD_URL}` });
     expect(run.ok).toBe(true);
     if (!run.ok) return;
-    expect(endRun(ctx, { run: run.id, outcome: `outcome ${SECRET}` }).ok).toBe(true);
+    expect(
+      endRun(ctx, { run: run.id, which: `agent ${SECRET}`, outcome: `outcome ${SECRET}` }).ok,
+    ).toBe(true);
 
     // The identity family's one free-text field.
     expect(revokeKey(ctx, { revokedFp: 'f'.repeat(64), reason: `retired: ${SECRET}` }).ok).toBe(
@@ -498,7 +500,7 @@ describe('the size limit refuses without appending anything', () => {
         fields: { reason: 'ok', links: ['x'.repeat(FIELD_BYTE_LIMIT + 1)] },
       }).ok,
     ).toBe(false);
-    expect(endRun(ctx, { run: run.id, outcome: oversize }).ok).toBe(false);
+    expect(endRun(ctx, { run: run.id, which: 'agent', outcome: oversize }).ok).toBe(false);
 
     expect(eventCount()).toBe(before);
 

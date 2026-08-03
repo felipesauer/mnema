@@ -130,6 +130,17 @@ function runTally(project: string): { started: number; ended: number } {
   };
 }
 
+/**
+ * The `run.ended` facts a project's record holds — read off the DISK, not off a
+ * reply, because what is under test is what the close appended.
+ */
+function endsIn(project: string) {
+  const trees = resolveTrees(project, env);
+  return [trees.projectPublic as string, trees.projectPrivate as string, trees.global].flatMap(
+    (root) => orderedEvents({ root }, catalogUpcasters()).filter((e) => e.kind === 'run.ended'),
+  );
+}
+
 /** The JSON payload of a tool reply — always its first content block. */
 function payloadOf(reply: unknown): Record<string, unknown> {
   const content = (reply as { content: { text?: string }[] }).content;
@@ -210,6 +221,58 @@ describe('a connection that ends', () => {
     // can find it in.
     const closeLine = logged.find((line) => line.startsWith('session closed:')) ?? '';
     expect(closeLine).toContain('3 runs closed');
+    await client.close();
+  });
+
+  it('credits the close to the AGENT that connected, read back off the disk', async () => {
+    // The defect this closes, on the surface where it was measured: a session opened
+    // `for claude` was closed, in the record, by nobody — `run.ended` carried no
+    // `which` at all, so every read credited the seal to the person whose anchor
+    // authorized the session. The agent is not asked for: the connection announced
+    // its name at the handshake and the session has held it since, so a close that
+    // took it from the wire could name an agent other than the one that worked.
+    const project = makeProject('proj');
+    const { client, end } = await connect([pathToFileURL(project).href], 'cursor');
+    await writeSomething(client);
+
+    // Through the same seam the rest of this file uses, for the reason its module doc
+    // gives: the in-memory pair has no stdin to end and signalling the real process
+    // would take the runner down. What `client.close()` over REAL stdio records is
+    // proven by the probe beside this delivery, against the built binary.
+    end('stdin');
+
+    const ended = endsIn(project);
+    expect(ended).toHaveLength(1);
+    expect(ended[0]?.which).toBe('cursor');
+    // The `who` is still the anchor that AUTHORIZED the session: the closer did not
+    // become the authorizer, and the two roles stay distinct on the sealing fact the
+    // way they are on every fact inside it.
+    expect(ended[0]?.who).not.toBe('cursor');
+    expect(ended[0]?.who?.startsWith('mnid:')).toBe(true);
+    await client.close();
+  });
+
+  it('credits EVERY project’s close to that same agent — one connection, one executor', async () => {
+    // A connection opens a run per project it writes to, so the close writes one
+    // sealing fact per record. All of them were executed by the one agent that
+    // connected — there is no second executor to attribute anything to — and a read
+    // in any of those projects has to be able to say so on its own.
+    const a = makeProject('alpha');
+    const b = makeProject('beta');
+    const { client, end } = await connect(
+      [a, b].map((p) => pathToFileURL(p).href),
+      'agent-two-projects',
+    );
+    await writeSomething(client);
+    await writeSomething(client, { project: 'beta' });
+
+    end();
+
+    for (const project of [a, b]) {
+      const ended = endsIn(project);
+      expect(ended).toHaveLength(1);
+      expect(ended[0]?.which).toBe('agent-two-projects');
+    }
     await client.close();
   });
 

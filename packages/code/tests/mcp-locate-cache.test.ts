@@ -511,6 +511,32 @@ describe('no MCP tool locates an entity its own way', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('and the two BRANCH sentences are not on the module surface — the picker is', async () => {
+    // What a tool needs from this module is the CHOICE between the two negative
+    // answers, never one of the branches: reaching for a branch directly can only
+    // ever use it where the picker would have chosen the other, and the mistake reads
+    // as a working refusal — a "nothing holds this id" printed about an id two records
+    // hold. Exported with no consumer outside this file, they were surface someone
+    // takes for the thing to call.
+    const locate = await import('../src/mcp/locate.js');
+    const exported = Object.keys(locate);
+    expect(exported).not.toContain('notFoundInWorkspaceTrees');
+    expect(exported).not.toContain('severalRecordsHold');
+    // Not vacuous, and this is the half that keeps it honest: the module DOES export
+    // the picker and the three sentences whose callers are elsewhere, so the two
+    // absences above are a decision about those two and not a module gone empty.
+    expect(exported).toEqual(
+      expect.arrayContaining([
+        'refuseUnlocated',
+        'inEveryTreeThisSessionSees',
+        'notFoundInSessionTrees',
+        'locatedButUnreadable',
+        'locateEntityAcross',
+        'cachedBirthProbe',
+      ]),
+    );
+  });
+
   it('and one function composes it — five tools, one call', () => {
     // The locate takes the tree list, so composing it is picking the coverage. Five
     // tools ask, and every one of them must ask through the same pairing: a second

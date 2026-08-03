@@ -630,6 +630,8 @@ $ mnema run end --help
 |   id                the run to close; omitted, the one MNEMA_RUN names
 |
 | Options:
+|   --which <agent>   the agent closing this session — required: a close with no
+|                     agent is credited to you
 |   --outcome <text>  a short note on how the session went
 |   -h, --help        display help for command
 

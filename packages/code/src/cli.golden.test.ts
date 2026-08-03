@@ -499,7 +499,15 @@ beforeAll(async () => {
 
   // ── Closing the session, and opening a second one that stays open.
   section('writes', 'run end');
-  await mnema('writes', 'run', 'end', '--outcome', 'the record is set up');
+  await mnema(
+    'writes',
+    'run',
+    'end',
+    '--which',
+    'agent-alpha',
+    '--outcome',
+    'the record is set up',
+  );
   delete process.env.MNEMA_RUN;
   const second = await mnema(
     'writes',
@@ -530,7 +538,11 @@ beforeAll(async () => {
   await mnema('writes', 'decision', 'move', 'accept', 'no-such-id', '--note', 'nothing to accept');
   await mnema('writes', 'skill', 'move', 'adopt', 'no-such-id', '--note', 'nothing to adopt');
   await mnema('writes', 'skill', 'A skill with no body');
-  await mnema('writes', 'run', 'end');
+  // Two ways `run end` refuses: with an agent but no run to close, and with a run but
+  // no agent to credit the close to. The second is commander's own, and it is the one
+  // that keeps the pair reading like the pair — `run start` refuses the same way.
+  await mnema('writes', 'run', 'end', '--which', 'agent-beta');
+  await mnema('writes', 'run', 'end', 'no-such-run');
   await mnema('writes', 'search', '--limit', '0');
   await mnema('writes', 'search', '--kind', 'memories');
   await mnema('writes', 'search', '--scope', 'elsewhere');

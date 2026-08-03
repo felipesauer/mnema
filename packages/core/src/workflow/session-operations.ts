@@ -34,6 +34,30 @@
  * from the other and validates who != which against it: an agent must not open
  * the session that authorizes its own work, or the whole session would inherit a
  * `who` the agent chose for itself.
+ *
+ * THE CLOSE CARRIES ITS EXECUTOR TOO, and through the SAME check. It used to
+ * carry none: `run.ended` was the one fact of a session with no `which` at all,
+ * so a session opened for an agent was closed, in the record, by the person —
+ * measured, on a run opened `for claude` and read back as the human's. That is
+ * not a smaller version of the same field, it is the attribution being wrong: the
+ * envelope's `which` is what every read credits a fact to, and a close is a fact.
+ *
+ * The close's agent lives on the ENVELOPE ONLY, and that is the difference from
+ * the birth rather than an omission. `run.ended` has no payload field for it,
+ * because the payload of a birth answers "who is this session FOR" — a property
+ * of the run, true for its whole life — while the envelope answers "who did this"
+ * about one event. A close is executed by whoever executed it, which need not be
+ * the agent the session was opened for (a person closing a session a killed
+ * process left open), so the two questions have two different answers and only
+ * one of them is the close's to record.
+ *
+ * The check is {@link resolveExecutingAgent} at BOTH ends, not two checks that
+ * agree. `who != which` is a rule of the record — nothing outside the agent
+ * stands behind a fact it authorized for itself — so it cannot hold at the birth
+ * and lapse at the close, and a second copy of it here is how the two forms come
+ * to disagree about what counts as the same identity (the comparison runs on the
+ * form that is STORED, which is the whole reason that function bundles screening,
+ * canonicalizing and comparing).
  */
 
 import { runEnded, runStarted } from '@mnema/chain';
@@ -43,7 +67,7 @@ import {
   screenContent,
   screened,
 } from '../content/screen.js';
-import { resolveExecutingAgent } from '../identity/authority.js';
+import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
@@ -69,6 +93,13 @@ export interface StartRunOk extends ScreenedWrite {
 /** A run was closed: the `run.ended` fact was appended. */
 export interface EndRunOk extends ScreenedWrite {
   readonly ok: true;
+  /**
+   * The agent AS RECORDED on the envelope — screened and canonical, absent when
+   * the caller named nobody. Reported for the reason {@link StartRunOk.agent} is:
+   * a caller that echoed the value it passed IN would print a credential on the
+   * line above the one saying it had been replaced.
+   */
+  readonly agent?: string;
 }
 
 /** Opening a run was refused before touching the chain. */
@@ -85,6 +116,12 @@ export type StartRunError =
 export type EndRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /**
+   * The closing agent IS the authorizing anchor — the same refusal the birth
+   * earns, from the same function, because it is a rule of the record and not of
+   * either verb.
+   */
+  | SelfAuthorizedErr
   /** No `run.started` for this id — there is no session to close. */
   | { readonly ok: false; readonly code: 'UNKNOWN_RUN'; readonly message: string }
   /** The run already has a `run.ended` — closing it again would be an orphan fact. */
@@ -102,6 +139,26 @@ export interface StartRunInput {
 export interface EndRunInput {
   /** The id of the run to close (the run.started's minted subject). */
   readonly run: string;
+  /**
+   * The agent CLOSING the session — the envelope's `which`, and the only place a
+   * close records one (see the module doc: the birth's payload answers a different
+   * question, and only the birth has one to answer).
+   *
+   * Named `which` and not `agent`, unlike {@link StartRunInput.agent}, because it
+   * is the envelope slot the other eleven write operations take under that name
+   * rather than a payload field, and the two names are what keep "who this session
+   * is for" and "who did this one thing" from reading as one value.
+   *
+   * REQUIRED, which the other eleven `which` are not: there an omitted agent means
+   * a person acted directly — legitimate, and most of what runs `mnema`. A run is
+   * a delegation at both ends, and the surface that opens one already refuses to do
+   * it unnamed, so a close that could be silent about its executor would be the one
+   * half of the pair that reads differently. A value naming nobody still resolves
+   * to no agent (the birth reads a blank the same way); requiring the field is what
+   * makes the compiler ask every caller, present and future, rather than leaving
+   * the question to whoever writes the next one.
+   */
+  readonly which: string;
   /** A short outcome note, if any. */
   readonly outcome?: string;
 }
@@ -184,6 +241,14 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
  * duplicate on an append-only log. `who` is the writer's anchor, but the run's
  * authorizer stays the one recorded at start — the projection keeps the opener's
  * `who`, not the closer's.
+ *
+ * The CLOSING agent is recorded as the envelope's `which`, resolved by the same
+ * {@link resolveExecutingAgent} the birth uses and refused identically when it is
+ * the authorizing anchor: a close an agent authorized for itself would put the
+ * session's seal behind nothing but the agent's own word. It is resolved AFTER the
+ * run is looked up, which is where every gated operation puts it — the existence
+ * of the subject is not a question about authority, and an id that names no run
+ * should hear so whoever is asking.
  */
 export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRunError {
   const text = screenContent({ outcome: input.outcome });
@@ -203,6 +268,15 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
 
   const who = authorizingAnchor(ctx);
 
+  // The agent that is CLOSING, through the door the birth and the other eleven
+  // writes go through — screened, canonicalized and compared in one call, so the
+  // string checked against `who` is the string the envelope stores. Not screened
+  // by the block above: unlike the birth's agent, this value reaches no payload,
+  // so passing it through a second cleaner would be two doors on one field.
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
   // Found this installation's anchor before the fact, so the close is signed by
   // a key valid for its anchor at verify. A no-op once founded.
   ensureFounded(ctx);
@@ -214,10 +288,21 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
         who,
         signerFp: ctx.writer.signerFingerprint,
         subject: id,
+        // The agent that closed the session, in the uniform slot every other event
+        // uses — so a read credits the close to whoever did it, the way it credits
+        // every other fact. Omitted only if it does not canonicalize to an identity.
+        ...(which !== undefined ? { which } : {}),
         // No `run` on the envelope: the subject already IS the run being closed.
       },
       { ...(text.fields.outcome !== undefined ? { outcome: text.fields.outcome } : {}) },
     ),
   );
-  return { ok: true, ...screened(text.replaced) };
+  // The agent AS RECORDED, and both reports merged — the screen above saw the
+  // outcome, the resolution saw the agent, and a caller echoing either has to be
+  // told what came out of it.
+  return {
+    ok: true,
+    ...(which !== undefined ? { agent: which } : {}),
+    ...screened([...text.replaced, ...agent.replaced]),
+  };
 }

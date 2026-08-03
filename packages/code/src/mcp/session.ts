@@ -519,7 +519,12 @@ export function closeSession(session: Session): SessionClose {
     for (const run of session.runs.values()) {
       try {
         const ctx = writeContext(run.trees, run.scope, session.caches);
-        const ended = endRun(ctx, { run: run.id });
+        // Closed BY the agent that connected — the same `which` every fact of this
+        // session carries, and the same one the run was opened for, because on this
+        // surface the connection is both. Taken from the session rather than asked
+        // of the client: it is already in hand, and a close whose executor came from
+        // the wire could name an agent other than the one that did the work.
+        const ended = endRun(ctx, { run: run.id, which: session.which });
         (ended.ok ? closed : leftOpen).push(run.id);
       } catch {
         leftOpen.push(run.id);

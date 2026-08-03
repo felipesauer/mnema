@@ -107,7 +107,7 @@ describe('mnema focus', () => {
     const open = startRun(ctx, { agent: 'test-agent' });
     const done = startRun(ctx, { agent: 'test-agent' });
     if (!open.ok || !done.ok) throw new Error('setup');
-    endRun(ctx, { run: done.id });
+    endRun(ctx, { run: done.id, which: 'test-agent' });
     ctx.writer.checkpoint();
 
     const result = runFocus({ cwd: repo, env }, { actor: who });
