@@ -19,6 +19,14 @@
  * runs first because it needs no context — not the task, not the identity — so an
  * oversize refusal touches nothing at all.
  *
+ * And the event itself goes through one more door on its way out ({@link
+ * appendEvent}): would a READ accept it? The catalog's shape rules used to live
+ * only in the parser, which runs on the way in from disk, so a write that built an
+ * event the parser forbids was appended, signed, and reported as a success — and
+ * every later read of that project failed, on the whole tree rather than the one
+ * record. The door asks the parser's own validator, so there is one rule and both
+ * sides ask it.
+ *
  * Identity is DERIVED, never supplied. `who` (the authorizing anchor) and
  * `signerFp` (the signing key) both come from the writer's own key — the very
  * key that will sign the checkpoint — so a caller cannot forge who authorized a
@@ -48,6 +56,7 @@ import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
+import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
@@ -67,6 +76,8 @@ export type WriteError =
   | GateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /** A read would not have accepted the event (see {@link appendEvent}). */
+  | UnreadableEventErr
   /** The task does not exist (no `task.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_TASK'; readonly message: string };
 
@@ -191,11 +202,12 @@ export function transitionTask(
       ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
     },
   );
-  const entry = ctx.writer.append(event);
+  const appended = appendEvent(ctx.writer, event);
+  if (!appended.ok) return appended;
   return {
     ok: true,
     to: verdict.to,
-    entry,
+    entry: appended.entry,
     ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
   };
 }
@@ -246,7 +258,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // Append the pair atomically: a torn birth would leave a created task with no
   // state, permanently burning the id (the projection drops a stateless
   // subject, so every later transition on it fails as UNKNOWN_TASK).
-  const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
+  const appended = appendEvents(ctx.writer, birth);
+  if (!appended.ok) return appended;
+  const [e1, e2] = appended.entries as [Entry, Entry];
   return { ok: true, id, entries: [e1, e2], ...screened([...title.replaced, ...agent.replaced]) };
 }
 

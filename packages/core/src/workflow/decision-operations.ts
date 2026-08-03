@@ -43,6 +43,7 @@ import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
+import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
@@ -62,6 +63,8 @@ export type DecisionWriteError =
   | DecisionGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ContentTooLargeErr
+  /** A read would not have accepted the event (see {@link appendEvent}). */
+  | UnreadableEventErr
   /**
    * The decision acted on does not exist (no `decision.recorded` for this id).
    * This is the subject-existence check for every transition, supersede
@@ -181,7 +184,9 @@ export function recordDecision(
       initial: INITIAL_DECISION_STATE,
     },
   );
-  const [e1, e2] = ctx.writer.appendAll(birth) as [Entry, Entry];
+  const appended = appendEvents(ctx.writer, birth);
+  if (!appended.ok) return appended;
+  const [e1, e2] = appended.entries as [Entry, Entry];
   return {
     ok: true,
     id,
@@ -312,11 +317,12 @@ function transition(
       ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
     },
   );
-  const entry = ctx.writer.append(event);
+  const appended = appendEvent(ctx.writer, event);
+  if (!appended.ok) return appended;
   return {
     ok: true,
     to: verdict.to,
-    entry,
+    entry: appended.entry,
     ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
   };
 }
