@@ -6,13 +6,25 @@
  * way `mnema init` reads it. The project is discovered from the client instead,
  * in a fixed cascade from most explicit to fallback:
  *
- *   1. an explicit project path (a server arg/env), if the host configured one;
+ *   1. an explicit project path (`mnema mcp --project`), if the operator named one.
+ *      It is the one rung that can REFUSE rather than fall through to the next —
+ *      see {@link configuredProject};
  *   2. the client's workspace `roots` — the first root that resolves to a
  *      project (has a `.mnema/`), walked up from that root's directory;
  *   3. GLOBAL — with no configured path and no project among the roots, the
  *      server does NOT guess a project at some cwd (only `mnema init` may create
  *      a `.mnema/`). It operates on the global tree. This is not a limbo; the
  *      global tree is legitimate cross-project knowledge. It never refuses.
+ *
+ * Rungs 2 and 3 never refuse and rung 1 does, and the asymmetry is the whole of
+ * what an operator can rely on here. An unmatched CASCADE is a legitimate global
+ * session: nobody said which project, so landing outside one is an answer. An
+ * operator NAMING a project that does not exist is not — it is a statement about
+ * the world that is false, and the two possible behaviours are to say so or to serve
+ * some other project in silence. The second is the defect this rung exists to close:
+ * a session that answered about a project nobody asked for, in a reply indistinguishable
+ * from an answer about the right one, and the emptiness of that record read as
+ * "nothing was decided here".
  *
  * It also answers a second question the cascade alone cannot: WHICH OTHER projects
  * the workspace holds. The cascade returns at the first root that resolves, so it
@@ -33,9 +45,10 @@
  * `which` in hand. This decides only WHERE (which trees), never public/private.
  */
 
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
+import { oneLine } from '../served-patterns.js';
 
 /**
  * One project the session knows the workspace holds, with the trees it resolves to.
@@ -51,9 +64,9 @@ export interface WorkspaceProject {
    *
    * Absolute because it is compared against what a caller passes, and a comparison
    * between two spellings of one path is a comparison that fails on the same
-   * directory. A configured project path may be relative (the operator's shell had
-   * a working directory; this server's has nothing to do with it), so the spelling
-   * is settled here, once, rather than at each place that matches against it.
+   * directory. A root arrives as the client spelled it and a configured path as the
+   * operator wrote it, so the spelling is settled here, once, rather than at each
+   * place that matches against it.
    */
   readonly dir: string;
   /** The trees resolved FOR it: its two project scopes, and the global tree beside them. */
@@ -63,8 +76,13 @@ export interface WorkspaceProject {
 /** What the server hands the resolver — the raw discovery inputs. */
 export interface ContextInput {
   /**
-   * An explicit project directory the server was configured with (arg/env), if
-   * any. The strongest signal: the operator named the exact project.
+   * An explicit project directory the server was configured with, if any — what
+   * `mnema mcp --project` carries. The strongest signal: the operator named the
+   * exact project.
+   *
+   * It must be ABSOLUTE and it must resolve to a project; neither is a preference.
+   * See {@link configuredProject} for both, and for why a value that fails either
+   * is refused rather than passed over.
    */
   readonly configProject?: string | undefined;
   /**
@@ -140,8 +158,10 @@ interface ProbedRoot {
  * resolved from the environment (the same `ResolvedTrees` shape, with the
  * project scopes simply absent).
  *
- * It never creates a `.mnema/` and never refuses: an unmatched cascade is a
- * legitimate global session, not an error.
+ * It never creates a `.mnema/`, and it refuses in exactly one case: an explicitly
+ * configured project that is relative or is no project ({@link configuredProject},
+ * which throws). An unmatched CASCADE is not that case and never refuses — nobody
+ * named a project, so a global session is a legitimate answer.
  */
 export function resolveContext(input: ContextInput): ResolvedContext {
   // EVERY root is probed, before the cascade picks one. The cascade returns at the
@@ -156,10 +176,9 @@ export function resolveContext(input: ContextInput): ResolvedContext {
     probed.push({ dir, trees: resolveTrees(dir, input.env) });
   }
 
-  // 1. An explicit project path wins, if it actually resolves to a project.
+  // 1. An explicit project path wins — or refuses. It never falls through.
   if (input.configProject !== undefined) {
-    const trees = resolveTrees(input.configProject, input.env);
-    if (trees.projectPublic !== undefined) return landedInProject(trees, probed);
+    return landedInProject(configuredProject(input.configProject, input.env), probed);
   }
 
   // 2. The first workspace root that resolves to a project.
@@ -178,6 +197,79 @@ export function resolveContext(input: ContextInput): ResolvedContext {
     inProject: false,
     workspaceProjects: announcedProjects(probed),
   };
+}
+
+/**
+ * The trees an explicitly configured project resolves to — or a refusal, which is
+ * the whole point of this function existing beside {@link resolveTrees}.
+ *
+ * ## It must be ABSOLUTE
+ *
+ * A relative path is refused before it is resolved, rather than taken against this
+ * process's working directory. That directory is whatever the host spawned the
+ * server with; it is not the operator's shell, and it is not visible from where the
+ * value is written. A configured path is written ONCE, into a file, and read by a
+ * process nobody watches start — so `./repo` would resolve against a directory the
+ * person who wrote it never saw, and would land somewhere different the day the host
+ * changed how it spawns. This whole module exists because a server has no cwd worth
+ * trusting, and honouring a relative path here would bring that back.
+ *
+ * Refusing is also the only honest option: a relative path CAN resolve to a real
+ * project by accident, and the accident is silent. `resolve` is then applied to what
+ * survives, so the walk-up is given ONE spelling of the directory whatever the
+ * operator typed — a trailing slash, a `.`, a `..`. It is belt and braces rather
+ * than what makes those spellings work: the walk-up joins each candidate and `join`
+ * normalizes as well. It is here so the value handed on is settled at the door,
+ * rather than by whichever step below happens to normalize it today.
+ *
+ * ## It must BE a project
+ *
+ * A path that resolves to no project is refused, and NOT passed over to the roots.
+ * Falling through is what produced this rung's requirement: the operator said which
+ * project, the value did not resolve, and the session opened somewhere else — an
+ * answer about a record nobody asked about, which reads exactly like an answer about
+ * the right one. "I named the project and you served another in silence" is the
+ * defect; continuing the cascade IS that defect.
+ *
+ * Both refusals are shaped for the one person who can act on them: they name the
+ * value as it was configured (the string to go and find), say which of the two rules
+ * it broke, and say what to do — because the operator is reading this in a host's log
+ * with no other account of what happened. The value is collapsed to one line: a
+ * directory may hold a newline, and a refusal is a one-item list whose second half
+ * would look like a refusal of its own.
+ *
+ * It THROWS rather than returning a refusal, because there is no honest session to
+ * return: the server's caller ({@link openSession}) already fails this way when the
+ * anchor is unanswerable, the session never opens, and every tool call on the
+ * connection reports the same sentence instead of answering out of the wrong record.
+ * Nothing has been written when it fires — the trees are resolved before the anchor
+ * is read, which is the first thing that touches disk.
+ */
+function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees {
+  if (!isAbsolute(configured)) {
+    throw new Error(
+      oneLine(
+        `the configured project "${configured}" is not an absolute path. This server's ` +
+          'working directory is whatever the host spawned it with, so a relative path ' +
+          'would resolve against a directory nobody chose — pass the full path of the ' +
+          'project to serve to `mnema mcp --project`, or drop the flag to take the ' +
+          "project from the host's workspace roots.",
+      ),
+    );
+  }
+  const trees = resolveTrees(resolve(configured), env);
+  if (trees.projectPublic === undefined) {
+    throw new Error(
+      oneLine(
+        `the configured project "${configured}" is not a project: no \`.mnema/\` is ` +
+          'there or in any directory above it. This server was told which project to ' +
+          'serve and will not serve another instead — point `mnema mcp --project` at a ' +
+          'directory `mnema init` has been run in, or drop the flag to take the project ' +
+          "from the host's workspace roots.",
+      ),
+    );
+  }
+  return trees;
 }
 
 /**

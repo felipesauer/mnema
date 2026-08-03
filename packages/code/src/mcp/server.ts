@@ -213,7 +213,14 @@ function connectingAgent(announced: string | undefined): string {
 export interface McpServerOptions {
   /** The discovery environment; defaults to the real process environment. */
   readonly env?: DiscoveryEnv;
-  /** An explicit project directory to operate on, overriding the client's roots. */
+  /**
+   * An explicit project directory to operate on, overriding the client's roots —
+   * what `mnema mcp --project` carries.
+   *
+   * It must be an ABSOLUTE path to a directory that IS a project; a value that is
+   * neither refuses the whole session rather than falling back to the roots (see
+   * {@link resolveContext}). Absent, the project comes from the cascade.
+   */
   readonly configProject?: string | undefined;
   /** Where to write diagnostics (never stdout — that carries the protocol). */
   readonly log?: (line: string) => void;
