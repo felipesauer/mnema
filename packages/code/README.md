@@ -282,10 +282,19 @@ Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio.
 ```
 
 The server does **not** read the project off its working directory — a host
-spawns it with an arbitrary cwd. It discovers the project in a fixed cascade: an
-explicit path the host configured, then the client's workspace roots, and
-finally the global tree when neither names a project. It never guesses a project
-at some cwd and never creates one; only `mnema init` does that.
+spawns it with an arbitrary cwd. It discovers the project in a fixed cascade:
+`--project`, then the client's workspace roots, and finally the global tree when
+neither names a project. It never guesses a project at some cwd and never creates
+one; only `mnema init` does that.
+
+`--project` is how you make certain which record a session serves:
+`"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is
+whichever workspace folder the host happens to announce first that has a
+`.mnema/` — which can be a repository you were not thinking about, answering
+about a record you never meant to ask. The path must be **absolute** (this
+server's cwd is the host's, not your shell's) and it must be a project; a value
+that is neither is refused rather than passed over, because a server told which
+project to serve must not serve another instead.
 
 The write tools mirror the CLI verbs — same gate, same refusals — so a move an
 agent cannot make is one you cannot make either. A few names do not pair up:

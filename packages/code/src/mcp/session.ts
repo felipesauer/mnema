@@ -297,9 +297,14 @@ export interface Session {
  * Opens a session for a connection: resolves the trees, settles the default scope,
  * and reads the anchor this machine authorizes as. It appends NOTHING — no run, no
  * identity founding — so a client that connects and never calls a write leaves the
- * project exactly as it found it. Throws only if the anchor is unanswerable (the
- * record proves this key belongs to two identities, or to one that retired it),
- * which is the one condition under which no honest session exists.
+ * project exactly as it found it.
+ *
+ * Throws in the two conditions under which no honest session exists, and in no
+ * other. The operator configured a project that is relative or is no project
+ * ({@link configuredProject}) — the server was told what to serve and will not serve
+ * something else. Or the anchor is unanswerable (the record proves this key belongs
+ * to two identities, or to one that retired it). The first fires BEFORE anything is
+ * touched: the trees resolve first, and reading the anchor is what opens a writer.
  */
 export function openSession(input: OpenSessionInput): Session {
   const { trees, inProject, project, workspaceProjects } = resolveContext({
