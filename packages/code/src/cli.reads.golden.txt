@@ -763,11 +763,11 @@ $ mnema accountability --json
 |       "byWhich": [
 |         {
 |           "which": null,
-|           "count": 39
+|           "count": 38
 |         },
 |         {
 |           "which": "agent-alpha",
-|           "count": 3
+|           "count": 4
 |         },
 |         {
 |           "which": "agent-beta",

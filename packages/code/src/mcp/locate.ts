@@ -87,6 +87,14 @@
  * site: a refusal that reworded itself per tool would let one of them go back to
  * claiming more than the walk supports.
  *
+ * The first two are NOT exported, and that is the same rule stated once more. What a
+ * tool needs is the picker, never one of the two branches: the choice between "nothing
+ * holds this id" and "two records do" is the part that must not be re-made per caller,
+ * so a tool holding one of those sentences directly could only ever use it where the
+ * picker would have chosen the other. Exported, they were surface with no consumer —
+ * which is surface someone reaches for by mistake, and the mistake here reads as a
+ * working refusal. Their prose stays public through the one function that composes it.
+ *
  * Widening the walk is exactly what makes that dangerous, in two directions at once,
  * so the coverage clause ({@link inEveryTreeThisSessionSees}) is ONE function shared
  * with `read_record`'s refusal — the read whose walk is the same one — while the
@@ -365,11 +373,7 @@ export function inEveryTreeThisSessionSees(session: Session): string {
  * directory name, one step closer to whoever is calling. Nothing upstream stops it:
  * an id is canonicalized (NFC, chain-representable) and a newline survives that.
  */
-export function notFoundInWorkspaceTrees(
-  session: Session,
-  kind: LocatableKind,
-  id: string,
-): string {
+function notFoundInWorkspaceTrees(session: Session, kind: LocatableKind, id: string): string {
   return `${kind} "${oneLine(id)}" was not found ${inEveryTreeThisSessionSees(session)}`;
 }
 
@@ -413,7 +417,7 @@ export function notFoundInSessionTrees(session: Session, kind: LocatableKind, id
  * the record that holds it — which happens, and naming it after a project would claim
  * a chain that is not there.
  */
-export function severalRecordsHold(
+function severalRecordsHold(
   kind: LocatableKind,
   id: string,
   holders: readonly WorkspaceTree[],

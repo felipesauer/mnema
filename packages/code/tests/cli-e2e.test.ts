@@ -47,7 +47,7 @@ import { openTreeForWriting } from '@mnema/core/write';
 import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
-import { openSession } from '../src/mcp/session.js';
+import { closeSession, openSession } from '../src/mcp/session.js';
 import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
 import { servedPatternsFraming } from '../src/served-patterns.js';
 
@@ -2058,10 +2058,15 @@ describe('mnema CLI — run (the session), end to end', () => {
     // 5. The session closes — by MNEMA_RUN, with no id retyped — and says how to
     //    let go of a variable that would otherwise refuse every later write.
     const e = capture();
-    await run(['run', 'end', '--outcome', 'shipped'], e.io);
+    await run(['run', 'end', '--which', 'claude-code', '--outcome', 'shipped'], e.io);
     expect(e.failed()).toBe(false);
     expect(e.out.join('\n')).toContain(`Ended run ${started.id}`);
     expect(e.out.join('\n')).toContain('unset MNEMA_RUN');
+    // The close names the agent that executed it, the way the birth named the one the
+    // session was for — and it is on the ENVELOPE of the fact, not only on the line.
+    expect(e.out.join('\n')).toContain('by claude-code');
+    const closed = eventsOf(treesOf().projectPrivate).find((x) => x.kind === 'run.ended');
+    expect(closed?.which).toBe('claude-code');
 
     // 6. resume shows the session that ended, with the goal that says what it was.
     const r = capture();
@@ -2102,7 +2107,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     await initHere();
     const started = await startRun('ci-runner');
     process.env.MNEMA_RUN = started.id;
-    await run(['run', 'end'], capture().io);
+    await run(['run', 'end', '--which', 'ci-runner'], capture().io);
 
     const m = capture();
     await run(['memory', 'written after the session ended'], m.io);
@@ -2156,21 +2161,45 @@ describe('mnema CLI — run (the session), end to end', () => {
     await initHere();
     await startRun('claude-code');
     const e = capture();
-    await run(['run', 'end'], e.io);
+    await run(['run', 'end', '--which', 'claude-code'], e.io);
     expect(e.failed()).toBe(true);
     expect(e.err.join('\n')).toContain('needs a run');
     expect(e.err.join('\n')).toContain('MNEMA_RUN');
+  });
+
+  it('`run end` without --which is a usage error at PARSE time, and the run stays open', async () => {
+    // The other half of the pair reading the same. `run start` has no way to open a
+    // session unnamed; a close that could omit its executor would record an agent's
+    // session as sealed by the person — which is what it did, and what no read could
+    // tell apart from a person who really did close it.
+    await initHere();
+    const started = await startRun('claude-code');
+    const e = capture();
+    await run(['run', 'end', started.id], e.io);
+    expect(e.failed()).toBe(true);
+
+    // The refusal is COMMANDER's, and asserting which one it is, is what makes this
+    // test discriminate: with the flag merely optional the invocation reaches the
+    // command and earns `NO_AGENT` instead — also a refusal, also non-zero, so a test
+    // that only checked "it failed" passed on the declaration this one is about. (The
+    // matrix found exactly that, in the first version of this test.)
+    const said = e.err.join('\n');
+    expect(said).toContain("required option '--which <agent>' not specified");
+    expect(said).not.toContain('name the one closing this session');
+
+    expect(eventsOf(treesOf().projectPrivate).some((x) => x.kind === 'run.ended')).toBe(false);
+    expect(projectRuns(eventsOf(treesOf().projectPrivate)).get(started.id)?.open).toBe(true);
   });
 
   it('closing the same run twice is refused, never silent', async () => {
     await initHere();
     const started = await startRun('claude-code');
     const first = capture();
-    await run(['run', 'end', started.id], first.io);
+    await run(['run', 'end', started.id, '--which', 'claude-code'], first.io);
     expect(first.failed()).toBe(false);
 
     const again = capture();
-    await run(['run', 'end', started.id], again.io);
+    await run(['run', 'end', started.id, '--which', 'claude-code'], again.io);
     expect(again.failed()).toBe(true);
     expect(again.err.join('\n')).toContain('Refused (ALREADY_ENDED)');
     // Exactly one close is on the log.
@@ -2281,7 +2310,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(open.out.join('\n')).toMatch(/· open \d+[dhms]/);
 
     process.env.MNEMA_RUN = started.id;
-    await run(['run', 'end', '--outcome', 'shipped'], capture().io);
+    await run(['run', 'end', '--which', 'claude-code', '--outcome', 'shipped'], capture().io);
     delete process.env.MNEMA_RUN;
 
     const ended = capture();
@@ -2290,6 +2319,40 @@ describe('mnema CLI — run (the session), end to end', () => {
     // No age on an ended run: it reports its own end, and an age there reads as time
     // still passing in it.
     expect(ended.out.join('\n')).not.toContain('· open ');
+  });
+
+  it('and the MCP surface seals a session with the SAME fact — one shape, each its own agent', async () => {
+    // The agreement, over the one record both surfaces write to. What a `run.ended`
+    // carries cannot depend on which surface closed it: a reader replays one chain and
+    // has no idea which door a fact came through, so a close attributed on one surface
+    // and anonymous on the other would make the attribution a property of the caller.
+    // It WAS one — the MCP close and the CLI close were the same operation, and the
+    // operation took no agent, so both were the person's.
+    await initHere();
+    const started = await startRun('cli-agent');
+    await run(['run', 'end', started.id, '--which', 'cli-agent'], capture().io);
+
+    // The other surface, as the transport opens it: a connection announces its name,
+    // writes, and goes away. It is never asked who is closing.
+    const session = openSession({
+      clientName: 'mcp-agent',
+      roots: [pathToFileURL(repo).href],
+      env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') },
+    });
+    const made = runCreateSkill(session, { name: 'Seal it', body: 'Close what you opened.' });
+    if (!made.ok) throw new Error(`setup: the MCP write refused (${made.code})`);
+    expect(closeSession(session).closed).toHaveLength(1);
+
+    const sealed = eventsOf(treesOf().projectPrivate).filter((e) => e.kind === 'run.ended');
+    expect(sealed).toHaveLength(2);
+    // The SAME envelope shape from both: one surface cannot carry a field the other
+    // leaves off. Compared as key sets, because the values are an id and an instant.
+    const shapes = sealed.map((e) => Object.keys(e).sort());
+    expect(shapes[0]).toEqual(shapes[1]);
+    expect(shapes[0]).toContain('which');
+    // And each names the agent of ITS session — the surfaces agree on the field, not
+    // on the value, which is the whole point of recording it.
+    expect(new Set(sealed.map((e) => e.which))).toEqual(new Set(['cli-agent', 'mcp-agent']));
   });
 });
 
@@ -2484,6 +2547,7 @@ describe('mnema CLI — a --which that names nobody', () => {
         'handoff',
         'link',
         'run start',
+        'run end',
         'skill',
         'task',
       ].sort(),

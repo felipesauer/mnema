@@ -37,8 +37,13 @@ export function registerRun(program: Command, wiring: Wiring): void {
   // `mnema run start --which <agent> [--goal <text>]`. The agent is REQUIRED, and
   // that is the model rather than strictness: a run with no agent proves no
   // delegation — it degrades into a correlation id, which is what makes a run
-  // worth writing in the first place. Declaring it on this SUBCOMMAND (not on the
-  // group) keeps it off `run end`, which needs no agent.
+  // worth writing in the first place.
+  //
+  // Declared on each SUBCOMMAND rather than on the group, though both now take it:
+  // the two flags mean different things (the agent a session is FOR, the agent
+  // CLOSING one) and so carry different help, and a group's declaration SHADOWS a
+  // subcommand's — one declaration up there would give both verbs one wording and
+  // leave the second one to be discovered as wrong.
   runGroup
     .command('start')
     .description('open a session for an agent (facts written in it are pinned to it)')
@@ -72,16 +77,26 @@ export function registerRun(program: Command, wiring: Wiring): void {
       io.out(fact('session. `mnema run end` closes it.'));
     });
 
-  // `mnema run end [<id>] [--outcome <text>]`. The id is OPTIONAL and falls back
-  // to the open session in the environment — closing the session you are in is
-  // the common case, and making it retype an id would be ceremony. With neither,
-  // it says how to close one instead of guessing which.
+  // `mnema run end [<id>] --which <agent> [--outcome <text>]`. The id is OPTIONAL
+  // and falls back to the open session in the environment — closing the session you
+  // are in is the common case, and making it retype an id would be ceremony. With
+  // neither, it says how to close one instead of guessing which.
+  //
+  // The agent is REQUIRED, as it is on `start`: this pair is how an agent driving
+  // the command line gets a session, and a close that could omit its executor would
+  // record the session an agent worked in as sealed by the person — which it did,
+  // and which no read could tell apart from a person who really did close it.
   runGroup
     .command('end')
     .description('close a session (by default the one MNEMA_RUN names)')
     .argument('[id]', `the run to close; omitted, the one ${RUN_ENV} names`)
+    .requiredOption(
+      '--which <agent>',
+      'the agent closing this session — required: a close with no agent is credited to you',
+      declaredAgent,
+    )
     .option('--outcome <text>', 'a short note on how the session went')
-    .action((id: string | undefined, opts: { outcome?: string }) => {
+    .action((id: string | undefined, opts: { which: string; outcome?: string }) => {
       const fromEnv = process.env[RUN_ENV]?.trim();
       const target = id ?? fromEnv;
       if (target === undefined || target.length === 0) {
@@ -94,6 +109,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
       }
       const result = runRunEnd(here(), {
         run: target,
+        which: opts.which,
         ...(opts.outcome !== undefined ? { outcome: opts.outcome } : {}),
       });
       if (!result.ok) {
@@ -101,6 +117,11 @@ export function registerRun(program: Command, wiring: Wiring): void {
         return;
       }
       io.out(`Ended run ${result.id}`);
+      // The agent AS RECORDED, on its own line, the way the birth names the one the
+      // session is for: `by` and not `for`, because this half says who did the
+      // closing and the other says who the session was opened for — the same two
+      // questions the envelope and the payload keep apart.
+      if (result.agent !== undefined) io.out(fact(`by ${result.agent}`));
       reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write
       // refused (the run is no longer open), so say how to let go of it — but

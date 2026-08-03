@@ -69,7 +69,7 @@ describe('mnema resume', () => {
     const last = startRun(ctx, { agent: 'test-agent', goal: 'last' });
     if (!first.ok || !last.ok) throw new Error('setup');
     // End the latest run — resume must still report it as the "where was I" anchor.
-    endRun(ctx, { run: last.id });
+    endRun(ctx, { run: last.id, which: 'test-agent' });
     ctx.writer.checkpoint();
 
     const result = runResume({ cwd: repo, env }, { actor: who });
