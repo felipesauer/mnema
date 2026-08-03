@@ -31,6 +31,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { identityFounded, memoryCaptured, taskBirth, taskCreated } from '../events/build.js';
+import { EventParseError } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import {
@@ -528,6 +529,95 @@ describe('the bytes a checkpoint signs did not change', () => {
     const signed = forceCheckpoint(w);
     expect(signed.contentRoot).toBe(reRead.contentRoot);
     expect(serializeCheckpoint(signed)).toBe(serializeCheckpoint(reRead));
+    expect(verify(root).ok).toBe(true);
+  });
+});
+
+/**
+ * The floor under every writing path: what no reader could accept is never sealed.
+ *
+ * This is the guard that makes the property structural rather than adopted. The
+ * core asks the same question at each of its write operations and reports a typed
+ * refusal, which is what a person or an agent reads — but an operation added
+ * tomorrow that forgot to ask, or a caller of `@mnema/chain` outside this
+ * workspace, would otherwise put an unreadable entry on the tail and leave every
+ * later read of that tree failing, forever. These two doors are the only way onto
+ * a tail, so a check in them holds for all of them.
+ *
+ * The assertion is always the pair: it THREW, and the tail is byte-for-byte what
+ * it was. A refusal that still moved the head, rotated a segment or buffered an
+ * event for the next checkpoint would be worse than the corruption it prevents.
+ */
+describe('the writer refuses what no reader could accept', () => {
+  /** Every byte of every segment of the tail, so "nothing changed" is checkable. */
+  function tailBytes(): string {
+    return orderedSegments(layout(), tailIdOf())
+      .map((segment) => readFileSync(segment, 'utf-8'))
+      .join('');
+  }
+
+  it('throws on append and leaves the tail exactly as it was', () => {
+    const w = found(openChain({ checkpointEvery: NEVER }));
+    w.append(memoryCaptured(env(w, 'm-1'), { content: 'a real memory' }));
+    const before = tailBytes();
+
+    expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(EventParseError);
+    expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(
+      /needs a non-empty string at payload\.title/,
+    );
+    expect(() => w.append(memoryCaptured(env(w, ''), { content: 'c' }))).toThrow(
+      /needs a non-empty string at subject/,
+    );
+
+    expect(tailBytes()).toBe(before);
+    // And the writer is still usable: a refusal is not a poisoned writer.
+    const entry = w.append(memoryCaptured(env(w, 'm-2'), { content: 'after' }));
+    expect(entry.link.seq).toBe(2);
+  });
+
+  it('throws on appendAll before sealing ANY of the batch', () => {
+    // The atom has to hold for the refusal too. A birth pair whose SECOND event is
+    // unreadable must not leave the first on the tail: a `task.created` with no
+    // state burns the id permanently, because the projection drops a stateless
+    // subject and every later move on it answers UNKNOWN_TASK.
+    const w = found(openChain({ checkpointEvery: NEVER }));
+    const before = tailBytes();
+
+    const birth = taskBirth(env(w, 't-1'), { title: 'a real title', initial: 'DRAFT' });
+    const torn = [birth[0], { ...birth[1], payload: { ...birth[1].payload, to: '' } }];
+    expect(() => w.appendAll(torn as typeof birth)).toThrow(
+      /needs a non-empty string at payload\.to/,
+    );
+    expect(tailBytes()).toBe(before);
+
+    // The good pair still lands, whole.
+    expect(w.appendAll(birth).length).toBe(2);
+    expect(tailBytes()).not.toBe(before);
+  });
+
+  it('refuses BEFORE rotating a segment, so a bad event does not cost a file', () => {
+    // Ordering, stated as behaviour: the check runs ahead of the size decision, so
+    // a refused event never leaves a fresh empty segment behind for the next write
+    // to land in.
+    const w = found(openChain({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT }));
+    const segmentsBefore = orderedSegments(layout(), tailIdOf()).length;
+    expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(EventParseError);
+    expect(orderedSegments(layout(), tailIdOf()).length).toBe(segmentsBefore);
+  });
+
+  it('never signs a checkpoint over an event it refused', () => {
+    // The buffer is what the next checkpoint signs. A refused event that reached it
+    // would make the coverage claim a range the bytes do not contain — an honest
+    // tail then reads as tampered.
+    const w = found(openChain({ checkpointEvery: NEVER }));
+    expect(() => w.append(memoryCaptured(env(w, ''), { content: 'c' }))).toThrow(EventParseError);
+    w.append(memoryCaptured(env(w, 'm-1'), { content: 'one' }));
+    // The founding plus this one event is the whole range the checkpoint claims.
+    // Had the refusal been buffered, the buffer would hold three where the range
+    // covers two and signing would throw on the mismatch — which is the loud
+    // version of the silent break this asserts against.
+    const cp = forceCheckpoint(w);
+    expect([cp.fromSeq, cp.toSeq]).toEqual([0, 1]);
     expect(verify(root).ok).toBe(true);
   });
 });

@@ -19,7 +19,7 @@ import {
 } from './build.js';
 import { canonicalStringify } from './canonical.js';
 import type { CatalogEvent } from './catalog.js';
-import { EventParseError, parseEvent, toCanonical } from './parse.js';
+import { EventParseError, parseEvent, toCanonical, unreadableReason } from './parse.js';
 import { UpcasterRegistry } from './upcaster.js';
 
 const reg = new UpcasterRegistry();
@@ -664,5 +664,135 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
     expect(Object.keys(parsed)).not.toContain('which');
     expect(Object.keys(parsed)).not.toContain('run');
     expect(Object.keys(parsed.payload)).not.toContain('goal');
+  });
+});
+
+/**
+ * The same rule, asked by the WRITING side.
+ *
+ * `unreadableReason` is not a second validator: it runs the one `parseEvent` runs,
+ * which is what makes "the writer refuses exactly what the reader refuses" true by
+ * construction rather than by two lists agreeing. The pairing below is the proof of
+ * that identity — for each event, the answer here and the answer from a round trip
+ * through `parseEvent` are the SAME verdict and the same words.
+ *
+ * It exists because the asymmetry it closes was not theoretical: an empty title
+ * reached the tail, signed, and every later read of that project failed forever.
+ */
+describe("unreadableReason — the reader's verdict, before anything is sealed", () => {
+  /** What `parseEvent` says about the same event, so the two can be compared. */
+  function readerVerdict(event: CatalogEvent): string | undefined {
+    try {
+      parseEvent(line(event), reg);
+      return undefined;
+    } catch (error) {
+      return (error as Error).message;
+    }
+  }
+
+  it('accepts every kind a builder produces', () => {
+    const events: CatalogEvent[] = [
+      runStarted({ ...envelope, subject: 'r-1' }, { agent: 'a', goal: 'g' }),
+      runEnded({ ...envelope, subject: 'r-1' }, { outcome: 'done' }),
+      taskCreated(envelope, { title: 't' }),
+      taskTransitioned(envelope, { from: null, to: 'DRAFT', action: 'create' }),
+      decisionRecorded(envelope, { title: 't', rationale: 'why', adr: 'ADR-1' }),
+      decisionTransitioned(envelope, { from: 'PROPOSED', to: 'ACCEPTED', action: 'accept' }),
+      identityFounded(envelope, { foundingFp: 'fp-1' }),
+      keyEnrolled(envelope, { newFp: 'fp-2', reverseSig: 'sig' }),
+      keyRevoked(envelope, { revokedFp: 'fp-2', reason: 'retired' }),
+      memoryCaptured(envelope, { content: 'c' }),
+      observationRecorded(envelope, { about: 'x', topic: 'k', text: 't' }),
+      handoffRecorded(envelope, { fromAgent: 'a', toAgent: 'b' }),
+      knowledgeLinked(envelope, { target: 'y', rel: 'relates-to' }),
+      skillCreated(envelope, { name: 'n', body: 'b' }),
+      skillTransitioned(envelope, { from: null, to: 'PROPOSED', action: 'create' }),
+      skillConsulted(envelope),
+    ];
+    // Non-vacuity: every kind the catalog declares is exercised, so an added kind
+    // with no arm here fails the count rather than passing unseen.
+    expect(new Set(events.map((event) => event.kind)).size).toBe(16);
+    for (const event of events) {
+      expect(unreadableReason(event)).toBeUndefined();
+      expect(readerVerdict(event)).toBeUndefined();
+    }
+  });
+
+  it("gives the READER's own words for every field a caller could empty", () => {
+    // One case per field a write path can carry an empty value into — the fields
+    // the corruption actually travelled through. Each asserts the same thing twice:
+    // the writing side refuses it, and the reading side refuses it with the SAME
+    // message. A field where the two differed would be the defect back.
+    const cases: readonly [CatalogEvent, string][] = [
+      [taskCreated(envelope, { title: '' }), 'payload.title'],
+      [decisionRecorded(envelope, { title: '', rationale: 'w', adr: 'ADR-1' }), 'payload.title'],
+      [
+        decisionRecorded(envelope, { title: 't', rationale: '', adr: 'ADR-1' }),
+        'payload.rationale',
+      ],
+      [skillCreated(envelope, { name: '', body: 'b' }), 'payload.name'],
+      [skillCreated(envelope, { name: 'n', body: '' }), 'payload.body'],
+      [memoryCaptured(envelope, { content: '' }), 'payload.content'],
+      [observationRecorded(envelope, { about: '', topic: 'k', text: 't' }), 'payload.about'],
+      [observationRecorded(envelope, { about: 'x', topic: '', text: 't' }), 'payload.topic'],
+      [observationRecorded(envelope, { about: 'x', topic: 'k', text: '' }), 'payload.text'],
+      [handoffRecorded(envelope, { fromAgent: '', toAgent: 'b' }), 'payload.fromAgent'],
+      [handoffRecorded(envelope, { fromAgent: 'a', toAgent: '' }), 'payload.toAgent'],
+      [knowledgeLinked(envelope, { target: '', rel: 'r' }), 'payload.target'],
+      [knowledgeLinked(envelope, { target: 'y', rel: '' }), 'payload.rel'],
+      [runStarted({ ...envelope, subject: 'r' }, { agent: '' }), 'payload.agent'],
+      [runStarted({ ...envelope, subject: 'r' }, { agent: 'a', goal: '' }), 'payload.goal'],
+      [runEnded({ ...envelope, subject: 'r' }, { outcome: '' }), 'payload.outcome'],
+      [keyRevoked(envelope, { revokedFp: 'fp', reason: '' }), 'payload.reason'],
+      [keyEnrolled(envelope, { newFp: '', reverseSig: 's' }), 'payload.newFp'],
+      [keyEnrolled(envelope, { newFp: 'fp', reverseSig: '' }), 'payload.reverseSig'],
+      [identityFounded(envelope, { foundingFp: '' }), 'payload.foundingFp'],
+      // The ENVELOPE too: `subject` is the field the handoff and the link carried an
+      // empty value into, and it is not part of any payload.
+      [taskCreated({ ...envelope, subject: '' }, { title: 't' }), 'at subject'],
+      [memoryCaptured({ ...envelope, subject: '' }, { content: 'c' }), 'at subject'],
+      [skillConsulted({ ...envelope, subject: '' }), 'at subject'],
+      // And the optional envelope fields, which are non-empty-if-present.
+      [memoryCaptured({ ...envelope, run: '' }, { content: 'c' }), 'at run'],
+      [memoryCaptured({ ...envelope, which: '' }, { content: 'c' }), 'at which'],
+    ];
+    for (const [event, field] of cases) {
+      const reason = unreadableReason(event);
+      expect(reason, `${event.kind} / ${field}`).toContain(field);
+      expect(reason).toContain('non-empty string');
+      // THE point of the pairing: one rule, so one verdict and one wording.
+      expect(readerVerdict(event)).toBe(reason);
+    }
+  });
+
+  it('answers for what the reader refuses beyond an empty string', () => {
+    // The rule is the reader's WHOLE rule, not an emptiness check bolted onto the
+    // writing side — so the other things a read refuses come back too.
+    const badClock = { ...taskCreated(envelope, { title: 't' }), at: '2026-07-21T00:00:00Z' };
+    expect(unreadableReason(badClock as CatalogEvent)).toContain('ISO-8601');
+
+    const forged = { ...memoryCaptured(envelope, { content: 'c' }), extra: 'x' };
+    expect(unreadableReason(forged as unknown as CatalogEvent)).toContain('unknown event field');
+
+    const emptyLinks = taskTransitioned(envelope, {
+      from: 'DRAFT',
+      to: 'READY',
+      action: 'submit',
+      fields: { links: [''] },
+    });
+    expect(unreadableReason(emptyLinks)).toContain('payload.fields.links[0]');
+  });
+
+  it("does not swallow an error that is not the reader's refusal", () => {
+    // A guard on the catch: only EventParseError becomes an answer. Anything else
+    // is a bug somewhere else and must keep travelling, not be reported as "this
+    // event is fine" or as a field name.
+    const hostile = {
+      ...memoryCaptured(envelope, { content: 'c' }),
+      get payload(): never {
+        throw new RangeError('not the reader speaking');
+      },
+    };
+    expect(() => unreadableReason(hostile as unknown as CatalogEvent)).toThrow(RangeError);
   });
 });

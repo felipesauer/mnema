@@ -81,6 +81,10 @@ export {
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the
 // read surface; only opening a writer is a write).
 export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';
+// The refusal an event the READER would not accept earns. Like the screen, only
+// the refusal type crosses the line: the check lives inside every write, and a
+// caller able to run it separately would be a caller able to skip it.
+export type { UnreadableEventErr } from './workflow/append.js';
 // Identity write operations — founding an anchor, establishing it WHOLE into a
 // tree (the ≥2-keys policy), and enrolling or revoking keys.
 export {

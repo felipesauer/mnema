@@ -48,7 +48,9 @@ export type EnrollRequestErrorCode =
   /** The request does not prove the key consented to join THIS identity. */
   | 'UNPROVEN_REQUEST'
   /** This machine's own key is not currently valid for its identity, so it cannot vouch. */
-  | 'CANNOT_VOUCH';
+  | 'CANNOT_VOUCH'
+  /** The material would have made a fact no read could accept; nothing was written. */
+  | 'UNREADABLE_EVENT';
 
 /** The enrollment was refused; nothing was written. */
 export interface EnrollRequestErr {
@@ -124,7 +126,11 @@ export function enrollFromRequest(
   }
 
   materializePublicKey(ctx.layout, request.key);
-  enrollKey(ctx, { newFp: fingerprint, reverseSig: request.reverseSig });
+  // The vouch's own refusal is forwarded rather than asserted away: it is the one
+  // refusal here that is about the MATERIAL rather than the roster, and it comes
+  // back with nothing appended, so the caller can hear it and act.
+  const joined = enrollKey(ctx, { newFp: fingerprint, reverseSig: request.reverseSig });
+  if (!joined.ok) return joined;
   return { ok: true, fingerprint, anchor, alreadyMember: false };
 }
 
@@ -157,7 +163,9 @@ export type RevokeMemberErrorCode =
   /** This machine's own key is not currently valid for its identity, so it cannot revoke. */
   | 'CANNOT_VOUCH'
   /** The reason given was over the per-field size limit. */
-  | 'CONTENT_TOO_LARGE';
+  | 'CONTENT_TOO_LARGE'
+  /** The reason came in empty, and no read would have accepted the fact. */
+  | 'UNREADABLE_EVENT';
 
 /** The revocation was refused; nothing was written. */
 export interface RevokeMemberErr {
