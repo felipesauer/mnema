@@ -62,9 +62,15 @@ describe('mnema mcp --project — the flag reaches the server', () => {
   });
 
   it('sets NO configured project when the flag is absent', async () => {
-    // Absent, not present-and-undefined: the cascade branches on `!== undefined`, so
-    // an option object carrying the key at all would take the refusing rung with
-    // nothing to refuse.
+    // Absent, not present-and-undefined — and the reason is the compiler, not the
+    // cascade. The cascade branches on `!== undefined`, so a key present and holding
+    // `undefined` would SKIP the rung and behave identically; the earlier note here
+    // claimed such an object would take the refusing rung with nothing to refuse,
+    // and that was wrong. What forbids the shape is `exactOptionalPropertyTypes`
+    // (tsconfig.base.json): with it, `configProject?: string` does not accept
+    // `undefined` as a value, so the option can only be built by spreading the key
+    // in or leaving it out. This assertion is stricter than the behaviour needs,
+    // deliberately: it pins the one shape that compiles.
     expect(await mnema('mcp')).not.toHaveProperty('configProject');
   });
 });

@@ -3,14 +3,7 @@
  * here derives a human-facing form from it without ever becoming identity.
  */
 
-export {
-  ALIAS_PREFIXES,
-  type AliasKind,
-  type AliasSubject,
-  deriveAlias,
-  disambiguate,
-  SHORT_ALIAS_HEX,
-} from './alias.js';
+export { ALIAS_PREFIXES, type AliasKind, deriveAlias, SHORT_ALIAS_HEX } from './alias.js';
 export {
   type AnchorResolution,
   isAnchorId,

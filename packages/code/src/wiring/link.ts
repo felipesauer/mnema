@@ -3,15 +3,16 @@
  *
  * `mnema link <subject> <target> --rel <label>` — link one entity to another.
  * subject and target are positionals (short ids); the relation is a flag. The
- * relation is an OPEN string — the recommended set (supersedes, relates-to,
- * derived-from, contradicts) is documentation, not enforcement, so no enum. It
- * mints no id (a link is an edge), so the report echoes the fact. Neither
- * reference is validated — a link is legitimately cross-tree.
+ * relation is an OPEN string — the catalog's recommended set is documentation, not
+ * enforcement, so no enum, and the help says the set by reading it
+ * ({@link RECOMMENDED_RELATIONS}). It mints no id (a link is an edge), so the
+ * report echoes the fact. Neither reference is validated — a link is legitimately
+ * cross-tree.
  */
 
 import type { Command } from 'commander';
 import { runLink } from '../commands/link.js';
-import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
@@ -26,11 +27,7 @@ export function registerLink(program: Command, wiring: Wiring): void {
     .description('link one piece of knowledge to another in the current project')
     .argument('<subject>', 'the entity that originates the link')
     .argument('<target>', 'the entity linked to')
-    .requiredOption(
-      '--rel <label>',
-      'the relation (recommended: supersedes, relates-to, derived-from, contradicts; ' +
-        'any label is accepted)',
-    )
+    .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
     .option(
       '--scope <scope>',
       'where the link is born: public (team-visible), private (this machine), ' +

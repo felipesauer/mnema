@@ -139,9 +139,11 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
  * sentence each, because "this one does not ask the rule" is a claim that has to
  * be answerable.
  *
- * Exported for the surfaces' own proof: the classification is total over the
- * catalog, and a test walks the catalog against these two tables rather than
- * against a list somebody keeps in step by hand.
+ * Exported for the totality proof next door: `routing.test.ts` walks the catalog
+ * against these two tables rather than against a list somebody keeps in step by
+ * hand. It is deliberately NOT on the package's public surface — nothing outside
+ * asks why a kind is unrouted, and the type of this table is what forces a new
+ * kind to be classified, so hiding it costs the proof nothing.
  */
 export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: string } = {
   'task.transitioned': 'a move follows the entity it moves, to the tree it was born in',

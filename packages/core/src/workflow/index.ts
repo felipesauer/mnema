@@ -54,7 +54,6 @@ export {
   enrollKey,
   ensureFounded,
   establishIdentity,
-  foundIdentity,
   type IdentityOk,
   revokeKey,
 } from './identity-operations.js';

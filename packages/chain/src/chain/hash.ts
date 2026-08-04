@@ -31,11 +31,6 @@ import { toCanonical } from '../events/parse.js';
 const ENTRY_DOMAIN = 'mnema.entry.v1';
 const ROOT_DOMAIN = 'mnema.root.v1';
 
-/** Hex SHA-256 of the given bytes. */
-export function sha256Hex(bytes: Uint8Array): string {
-  return createHash('sha256').update(bytes).digest('hex');
-}
-
 /** The canonical bytes of an event — the content the proof is over. */
 export function eventBytes(event: CatalogEvent): Uint8Array {
   return canonicalBytes(toCanonical(event));

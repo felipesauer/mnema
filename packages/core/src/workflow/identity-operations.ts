@@ -179,8 +179,14 @@ export function ensureFounded(ctx: WriteContext): string {
 }
 
 /**
- * Founds this installation's anchor explicitly. Idempotent: if already founded
- * (or enrolled), it appends nothing and reports the anchor it already serves.
+ * Founds this installation's anchor explicitly, as a result union. Idempotent: if
+ * already founded (or enrolled), it appends nothing and reports the anchor it
+ * already serves.
+ *
+ * NOT on the writing surface. No surface ever founded on its own — `init`
+ * establishes an identity whole, and every other write founds on its way in
+ * through {@link ensureFounded} — so the wrapper is reached only by the
+ * enrollment integration test, which uses it as the "machine A exists" step.
  */
 export function foundIdentity(ctx: WriteContext): IdentityOk {
   return { ok: true, anchor: ensureFounded(ctx) };

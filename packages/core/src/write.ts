@@ -86,7 +86,10 @@ export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';
 // caller able to run it separately would be a caller able to skip it.
 export type { UnreadableEventErr } from './workflow/append.js';
 // Identity write operations — founding an anchor, establishing it WHOLE into a
-// tree (the ≥2-keys policy), and enrolling or revoking keys.
+// tree (the ≥2-keys policy), and enrolling or revoking keys. `ensureFounded` is
+// the founding every write goes through; the `foundIdentity` wrapper around it is
+// not here, because no surface ever founded on its own — `init` establishes, and
+// every other write founds on its way in.
 export {
   type AnchorDecision,
   authorizingAnchor,
@@ -96,7 +99,6 @@ export {
   enrollKey,
   ensureFounded,
   establishIdentity,
-  foundIdentity,
   type IdentityOk,
   revokeKey,
 } from './workflow/identity-operations.js';
