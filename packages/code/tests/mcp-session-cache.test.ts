@@ -12,6 +12,10 @@
  * another), the handles released when the session ends even if ending it fails,
  * and — structurally — that no write in the MCP surface reaches a chain without
  * passing the door where the invalidation lives.
+ *
+ * The OTHER writer — a `mnema` command, a second agent, a headless run — is the
+ * subject of `the-record-may-have-moved.test.ts`. Only the case at the door is
+ * here.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -23,12 +27,12 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   PROJECT_DIR,
-  type ProjectionCache,
+  ProjectionCache,
   resolveTrees,
   type Scope,
 } from '@mnema/core';
 import { createTask } from '@mnema/core/write';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCacheRegistry } from '../src/mcp/cache-registry.js';
 import { closeSession, openSession, type Session, writeContext } from '../src/mcp/session.js';
 import {
@@ -327,35 +331,38 @@ describe('one cache per tree — the trees do not mix', () => {
 
   it('a write to one tree does not invalidate another tree’s cache', () => {
     // The other half of "they do not mix": invalidation is per root, so a private
-    // write must leave the public cache exactly as it was. Observed by appending
-    // to the public chain BEHIND the session's back — if the private write had
-    // wrongly invalidated public, the next public read would rebuild and pick the
-    // stray event up. It does not, which is what over-invalidation would look like.
-    const project = makeProject('proj');
-    const session = openOn(project);
+    // write must leave the public cache exactly as it was.
+    //
+    // Observed by COUNTING replays rather than by appending to public behind the
+    // session's back. That used to be the device — a stray event the public read
+    // must not pick up — and it stopped telling the two apart the moment a read
+    // checked the tree it was serving: a public read picking the stray up is now
+    // the correct answer, whether or not the private write wrongly invalidated
+    // anything. What still separates over-invalidation from freshness is the
+    // COST, and it is exact: a tree nothing touched is served without a replay.
+    const session = openOn(makeProject('proj'));
 
     const seen = runCreateTask(session, { title: 'known', scope: 'public' });
     if (!seen.ok) throw new Error('setup: create refused');
+    // Both warm, so what follows measures reuse and not first opens.
     expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
-
-    // Behind the session's back, into the PUBLIC tree.
-    const outside = writeContext(resolveTrees(project, env), 'public', createCacheRegistry());
-    const stray = createTask(outside, { title: 'appended from outside' });
-    if (!stray.ok) throw new Error('setup: outside create refused');
-    outside.writer.checkpoint();
+    expect(cacheOf(session, 'private').listMemories()).toHaveLength(0);
 
     // A PRIVATE write through the session: it invalidates private, not public.
     const captured = runCaptureMemory(session, { content: 'private note' });
     if (!captured.ok) throw new Error('setup: capture refused');
 
-    expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
-    expect(cacheOf(session, 'public').getTask(stray.id)).toBeNull();
-    // …while a PUBLIC write through the session does rebuild it, and the stray
-    // event comes along — the cache is a replay of the chain, not a log of what
-    // this session did.
-    const later = runCreateTask(session, { title: 'later', scope: 'public' });
-    if (!later.ok) throw new Error('setup: create refused');
-    expect(cacheOf(session, 'public').getTask(stray.id)).not.toBeNull();
+    const replays = vi.spyOn(ProjectionCache.prototype, 'rebuild');
+    try {
+      expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
+      expect(replays).not.toHaveBeenCalled();
+      // …and the private read does pay, which is what keeps the assertion above
+      // from passing over a session that had simply stopped replaying anything.
+      expect(cacheOf(session, 'private').listMemories()).toHaveLength(1);
+      expect(replays).toHaveBeenCalledTimes(1);
+    } finally {
+      replays.mockRestore();
+    }
 
     closeSession(session);
   });
@@ -381,24 +388,23 @@ describe('one cache per tree — the trees do not mix', () => {
   });
 });
 
-describe('a KNOWN LIMIT: a write from outside the session is not seen', () => {
-  it('a warm cache does not notice another process appending to the same tree', () => {
-    // Declared, not accidental. Invalidation is driven by THIS process's writes,
-    // which is what makes it exact and free — and it is the whole of what it can
-    // see. A `mnema` command in a terminal, or a second agent on the same
-    // project, appends to a tree this session has already read, and the session
-    // keeps answering from the projection it has until something it does itself
-    // rebuilds that tree.
+describe('a write from outside the session IS seen', () => {
+  it('a warm cache notices another writer appending to the same tree', () => {
+    // This was the declared limit, and it is closed. Invalidation by this
+    // process's own writes was exact and free, and it was never the whole of what
+    // a retained projection can miss: a `mnema` command in a terminal, or a
+    // second agent on the same project, appends to a tree this session has
+    // already read, and the session used to keep answering from the projection it
+    // had until something it did itself rebuilt that tree.
     //
-    // The alternative was rejected on purpose: polling mtimes or expiring on a
-    // timer trades an exact rule for a guess, and would still be a race. The real
-    // fix belongs to a cache shared BETWEEN processes, where the coordination has
-    // an owner. Until then a fresh process (every CLI command is one) always
-    // reads the chain, so the record itself is never what goes wrong — only one
-    // connection's view of it, for as long as that connection stays read-only.
+    // What closed it is not what was rejected here. No mtime, no timer, no cache
+    // shared between processes: a read compares the tree's EXTENT — its tails,
+    // and the size of the one segment each is still growing — against what its
+    // projection was replayed from, and replays again when they differ.
     //
-    // This test exists to make the limit visible and to make removing it
-    // deliberate: whoever closes the gap has to come here and say so.
+    // The whole of the behaviour, including what each of the two writers sees at
+    // each step and what a rotation and a brand-new tail do, is
+    // `the-record-may-have-moved.test.ts`; this is the case at the door.
     const project = makeProject('proj');
     const session = openOn(project);
 
@@ -406,21 +412,16 @@ describe('a KNOWN LIMIT: a write from outside the session is not seen', () => {
     if (!mine.ok) throw new Error('setup: create refused');
     expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
 
-    // The other process appends to the SAME tree this session just wrote to.
+    // The other writer appends to the SAME tree this session just wrote to.
     const outside = writeContext(resolveTrees(project, env), 'public', createCacheRegistry());
     const theirs = createTask(outside, { title: 'theirs', which: 'another-agent' });
     if (!theirs.ok) throw new Error('setup: outside create refused');
     outside.writer.checkpoint();
 
-    // The chain HAS both. The session's warm cache has one.
-    expect(cacheOf(session, 'public').getTask(theirs.id)).toBeNull();
-
-    // The moment this session writes to that tree again, the replay catches up —
-    // so the divergence closes on its own the first time the agent does anything.
-    // A task, because the write has to land in THAT tree to invalidate its cache.
-    const anything = runCreateTask(session, { title: 'any write at all' });
-    if (!anything.ok) throw new Error('setup: create refused');
+    // The chain has both, and so does the next read — with nothing done in
+    // between, which is the whole of the change.
     expect(cacheOf(session, 'public').getTask(theirs.id)).not.toBeNull();
+    expect(cacheOf(session, 'public').listTasks()).toHaveLength(2);
 
     closeSession(session);
   });
