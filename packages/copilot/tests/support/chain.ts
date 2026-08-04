@@ -165,9 +165,29 @@ export function moveTask(
   action: string,
   fields?: TransitionFields,
 ): void {
+  moveTaskAt(b, id, b.now(), from, to, action, fields);
+}
+
+/**
+ * The same move, at an instant the caller chooses — the only way to make two tasks
+ * share an `updatedAt`, because `b.now()` is monotonic by design.
+ *
+ * A derivation that orders by an instant has a tie-break, and a tie-break is only
+ * testable if a tie can be built. Nothing about this is unrealistic: two moves in the
+ * same millisecond is one batch script.
+ */
+export function moveTaskAt(
+  b: Bench,
+  id: string,
+  at: string,
+  from: string,
+  to: string,
+  action: string,
+  fields?: TransitionFields,
+): void {
   b.writer.append(
     taskTransitioned(
-      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      { at, who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
       { from, to, action, ...(fields !== undefined ? { fields } : {}) },
     ),
   );

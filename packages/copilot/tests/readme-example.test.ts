@@ -4,7 +4,7 @@
  */
 import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { adoptedSkills, bootstrap, guard } from '../src/index.js';
+import { adoptedSkills, bootstrap, guard, nextActionsForTask } from '../src/index.js';
 import {
   type Bench,
   birthSkill,
@@ -38,9 +38,12 @@ describe('README example', () => {
       });
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
       const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
-      const firstJob = opening.work[0]; // the freshest actionable task
-      const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", ...]
+      const firstJob = opening.work[0]; // the freshest actionable task — a NAME
+      const more = opening.workTotal > opening.work.length; // was the list cut?
       const patterns = opening.skills.map((s) => s.name); // names only
+
+      // A name that turned out to matter: ask what that ONE task allows.
+      const moves = firstJob && nextActionsForTask(cache, firstJob.id)?.map((a) => a.action);
 
       // A name that matches the task at hand: ask for the pattern itself.
       const [pattern] = adoptedSkills([cache]); // each carries its `body`
@@ -58,6 +61,8 @@ describe('README example', () => {
       expect(lastGoal).toBe('ship the parser');
       expect(openFor).toBeTypeOf('number');
       expect(firstJob?.id).toBe('task-7');
+      // One task in the record, so nothing was cut — the example's own claim.
+      expect(more).toBe(false);
       expect(moves).toContain('complete');
       expect(patterns).toEqual(['Small PRs']);
       expect(pattern?.body).toBe('body of Small PRs');
