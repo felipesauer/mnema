@@ -16,9 +16,14 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 - **`bootstrap`** — the opening context for a session, focused on one actor:
   where they left off (their latest run and open focus), the actionable work by
   NAME (id, title, state — freshest first, cut to a limit, with `workTotal` saying
-  how many there were), and the names of the adopted patterns to work by. Both
-  lists are an index: the moves a task allows come from `nextActions`, the pattern
-  itself from `adoptedSkills`, asked for the one item that turned out to matter.
+  how many there were), the names of the adopted patterns to work by, and the
+  decisions IN FORCE by name (title, the citable `ADR-<n>` label, id — freshest
+  first, cut to the same limit, with `decisionsTotal` saying how many there were).
+  Every list is an index: the moves a task allows come from `nextActions`, the
+  pattern itself from `adoptedSkills`, a decision's `rationale` from `readRecord` —
+  asked for the one item that turned out to matter. Only `accepted` decisions are
+  served: proposed is still on the table, rejected was refused, and superseded was
+  replaced, so none of the three governs anything.
 - **`adoptedSkills` / `lookupAdoptedSkill`** — the adopted patterns with their
   body, all of them or one by id, each carrying the agent that adopted it. Only
   `adopted` is served: the other states are stages of deciding about a pattern,
@@ -79,13 +84,14 @@ Requires Node ≥ 20. The package is ESM-only.
 
 ## Usage
 
-Given a rebuilt `ProjectionCache` over your chain (see `@mnema/core`), read the
-opening context for an actor and ask whether a move is allowed:
+Given a rebuilt `ProjectionCache` over your chain, and the `chainRoot` it was
+opened on (see `@mnema/core`), read the opening context for an actor and ask
+whether a move is allowed:
 
 ```ts
-import { adoptedSkills, bootstrap, guard, nextActionsForTask } from '@mnema/copilot';
+import { adoptedSkills, bootstrap, guard, nextActionsForTask, readRecord } from '@mnema/copilot';
 
-// Where did I leave off, what can I do next, and by what patterns?
+// Where did I leave off, what can I do next, by what patterns, and what is settled?
 // `asOf` is the clock the ages are measured against; `sessionRuns` are the runs
 // this caller opened itself (none, for a caller that has only read).
 const opening = bootstrap([cache], {
@@ -98,12 +104,20 @@ const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
 const firstJob = opening.work[0]; // the freshest actionable task — a NAME
 const more = opening.workTotal > opening.work.length; // was the list cut?
 const patterns = opening.skills.map((s) => s.name); // names only — one line each
+const governing = opening.decisions.map((d) => `${d.adr} ${d.title}`); // names only
 
 // A name that turned out to matter: ask what that ONE task allows.
 const moves = firstJob && nextActionsForTask(cache, firstJob.id)?.map((a) => a.action);
 
 // A name that matches the task at hand: ask for the pattern itself.
 const [pattern] = adoptedSkills([cache]); // each carries its `body`
+
+// A decision that bears on the task at hand: ask for the argument behind it.
+// `readRecord` spans trees, so it takes each cache paired with the tree it stands
+// for — `chainRoot` is that tree's chain directory (see `@mnema/core`).
+const settled = opening.decisions[0];
+const sources = [{ scope: 'public' as const, chainRoot, cache }];
+const argued = settled && readRecord(sources, settled.id); // { kind: 'decision', record: … }
 
 // Before asking to move a task, is the move even allowed?
 const verdict = guard({

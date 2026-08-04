@@ -885,13 +885,22 @@ function skillProofToFields(input: {
  *
  * Takes the session's caches over EVERY tree of its project and composes the
  * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the actor
- * left off, the NAMES of the actionable work, and the NAMES of the adopted patterns.
- * Read-only — it opens no writer and emits no event.
+ * left off, the NAMES of the actionable work, the NAMES of the adopted patterns, and
+ * the NAMES of the decisions in force. Read-only — it opens no writer and emits no
+ * event.
  *
- * Names on both halves, and the second read named in the tool's own description: the
- * moves a task allows come from `next_actions` and a pattern's body from `skills`.
- * That an agent knows it may ask is the whole of what makes an index an index, so it
- * is stated where the agent reads before calling, not only in the payload.
+ * Names on every half, and each second read named in the tool's own description: the
+ * moves a task allows come from `next_actions`, a pattern's body from `skills`, and a
+ * decision's rationale from `read_record`. That an agent knows it may ask is the whole
+ * of what makes an index an index, so it is stated where the agent reads before
+ * calling, not only in the payload.
+ *
+ * THE SESSION'S PROJECT, not the workspace, and that is a choice rather than an
+ * oversight. `sessionCaches` is the three trees of the project this connection landed
+ * in; the decisions that govern THIS work are that project's. Widening it would drag
+ * in the union question AND the cut that can silence a whole project without saying so
+ * (`search` answers that one with `hidden`) — so if a later slice makes this read
+ * workspace-wide, it owes the `hidden` half in the same change.
  *
  * Every tree, and no longer the one the session's writes defaulted to. A task lands
  * in the tree that travels and a memory in this machine's own, whoever wrote either,
@@ -1514,12 +1523,18 @@ export type ReadRecordResult =
     };
 
 /**
- * `read_record` — the whole of one record, by the id the index gave.
+ * `read_record` — the whole of one record, by the id an index gave.
  *
  * The second half of the search: the index says what exists and this says what
  * it says. It looks in every tree of every project this workspace holds (an id
  * lives in exactly one) and returns the projection the chain proves, marked with
  * that tree AND with the project that owns it. Read-only: no writer, no event.
+ *
+ * TWO INDEXES POINT HERE NOW, and the description says so. `search` was the first;
+ * the opening read is the second, since it serves the decisions in force by title and
+ * `adr` and never their `rationale`. The door an index sends a reader to has to name
+ * the index, or an agent holding a decision id from `bootstrap` has been told the
+ * argument exists somewhere and not where.
  *
  * The union is not a widening of the question, it is the question. An id is minted
  * once; which project it landed in is a fact about where the work happened, not a

@@ -2071,6 +2071,86 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
+  it('answers `read_record` for EVERY decision the opening read served', async () => {
+    // The pairing for the third list, and the same argument as the work list's: what
+    // the opening read serves by name has to be reachable, whole, for every id it
+    // names. Over the wire, per id, with the rationale intact — and with the states
+    // that must NOT be listed present in the record, so this also proves the filter
+    // through the transport rather than only in the derivation.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    /** Records a decision through the server, returning its id. */
+    const record = async (title: string, rationale: string): Promise<string> => {
+      const made = await client.callTool({
+        name: 'record_decision',
+        arguments: { title, rationale },
+      });
+      return /\(([^)]+)\)/.exec(textOf(made))?.[1] ?? '';
+    };
+    const move = async (id: string, args: Record<string, string>): Promise<void> => {
+      const reply = await client.callTool({
+        name: 'decision_transition',
+        arguments: { id, ...args },
+      });
+      expect(textOf(reply)).not.toContain('Refused');
+    };
+
+    const inForce = await record('Hand-rolled arithmetic', 'the platform rounds halves down');
+    await move(inForce, { action: 'accept', note: 'the team agreed' });
+    const replaced = await record('The earlier call', 'what we used to do');
+    await move(replaced, { action: 'accept', note: 'agreed at the time' });
+    const successor = await record('The call that replaced it', 'what we do now');
+    await move(successor, { action: 'accept', note: 'agreed' });
+    await move(replaced, { action: 'supersede', by: successor, reason: 'the successor covers it' });
+    const refused = await record('The rejected call', 'why it was floated');
+    await move(refused, { action: 'reject', note: 'not this way' });
+    const onTheTable = await record('Still proposed', 'why it is worth considering');
+
+    const boot = await client.callTool({ name: 'bootstrap' });
+    const context = JSON.parse(textOf(boot)) as {
+      decisions: { id: string; adr: string; title: string }[];
+      decisionsTotal: number;
+    };
+    // Only what governs: the accepted two, and nothing was cut, so the list is the
+    // whole of what is in force.
+    expect({
+      served: new Set(context.decisions.map((d) => d.id)),
+      decisionsTotal: context.decisionsTotal,
+    }).toEqual({ served: new Set([inForce, successor]), decisionsTotal: 2 });
+    // The three that must not govern, named one by one rather than merely missing
+    // from a set: proposed is still on the table, rejected was refused, superseded
+    // was replaced — and each is in the record, so absence here is the filter.
+    expect(context.decisions.map((d) => d.id)).toEqual(
+      expect.not.arrayContaining([onTheTable, refused, replaced]),
+    );
+    // And the ARGUMENT never travelled in the opening payload — not one of the five.
+    for (const prose of [
+      'the platform rounds halves down',
+      'what we used to do',
+      'what we do now',
+      'why it was floated',
+      'why it is worth considering',
+    ]) {
+      expect(textOf(boot)).not.toContain(prose);
+    }
+
+    // Every name, answered through the door the description names — and the answer
+    // carries the rationale the list left out.
+    for (const named of context.decisions) {
+      const reply = await client.callTool({ name: 'read_record', arguments: { id: named.id } });
+      const text = textOf(reply);
+      expect(text, `read_record for ${named.adr}`).not.toContain('Refused');
+      const body = JSON.parse(text) as { kind: string; record: { adr: string; rationale: string } };
+      expect(body.kind).toBe('decision');
+      expect(body.record.adr).toBe(named.adr);
+      expect(body.record.rationale.length).toBeGreaterThan(0);
+    }
+
+    await client.close();
+  });
+
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });
@@ -2870,14 +2950,20 @@ describe('MCP — what enters the record', () => {
     const tools = await client.listTools();
     const description = tools.tools.find((t) => t.name === 'bootstrap')?.description ?? '';
     // An index is only an index if its reader knows a second read exists — an agent
-    // does not ask for what it has not been told about. Both doors, by tool name.
+    // does not ask for what it has not been told about. Every door, by tool name.
     expect(description).toContain('next_actions');
     expect(description).toContain('skills');
-    // And the cut is declared where the agent decides whether to look further.
+    expect(description).toContain('read_record');
+    // And each cut is declared where the agent decides whether to look further.
     expect(description).toContain('workTotal');
+    expect(description).toContain('decisionsTotal');
     // The tools it points at exist under exactly those names.
     const named = new Set(tools.tools.map((t) => t.name));
-    expect(named.has('next_actions') && named.has('skills')).toBe(true);
+    expect(named.has('next_actions') && named.has('skills') && named.has('read_record')).toBe(true);
+    // And the door names the index back: an id from the opening read is one of the
+    // two things `read_record` takes, which is what the reader arrives holding.
+    const door = tools.tools.find((t) => t.name === 'read_record')?.description ?? '';
+    expect(door).toContain('bootstrap');
 
     await client.close();
   });

@@ -82,8 +82,8 @@ describe('antipatterns — recurring shapes with their evidence', () => {
 
   it('detects a superseded decision with its supersede event', () => {
     bench = makeBench();
-    birthDecision(bench, 'dec-old', 'old', 'ACCEPTED');
-    birthDecision(bench, 'dec-new', 'new', 'ACCEPTED');
+    birthDecision(bench, 'dec-old', 'old', 'accepted');
+    birthDecision(bench, 'dec-new', 'new', 'accepted');
     supersedeDecision(bench, 'dec-old', 'dec-new');
     const { supersededDecisions } = antipatterns(bench.events());
     expect(supersededDecisions).toHaveLength(1);

@@ -42,6 +42,11 @@ export {
   bootstrap,
   type WorkItem,
 } from './context/bootstrap.js';
+// The TYPE only. `decisionsInForce` is called by `bootstrap` and by nothing outside
+// this package, so plumbing it to the surface would be an export with no consumer —
+// the shape `every-public-value-has-a-caller.test.ts` exists to catch. The brief that
+// will call it can carry it out here, with its caller, in the same change.
+export type { DecisionRef } from './context/decisions.js';
 export {
   type ActorScope,
   type AskerContext,

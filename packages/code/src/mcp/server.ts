@@ -845,15 +845,21 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Bootstrap the session',
       description:
-        "The opening context for this session's actor: where they left off and " +
-        'the actionable work, derived from the chain. Both lists are NAMES: a task ' +
-        'arrives as id, title and state, and a pattern as id and name — call ' +
-        '`next_actions` with a task id for the moves it allows, and `skills` with a ' +
-        'skill id for the pattern itself. The work list is CUT to the freshest ' +
-        'items; `workTotal` says how many actionable tasks there are in all, so a ' +
-        'number larger than the list means there is older work it does not show. ' +
-        '`search` (kind `task`, with a `limit`) lists tasks past it, ordered by when ' +
-        'each was recorded rather than by when it last moved.' +
+        "The opening context for this session's actor: where they left off, the " +
+        'actionable work, the patterns to work by, and the DECISIONS IN FORCE — what ' +
+        'this project has already settled and has not replaced. Derived from the ' +
+        'chain. Every list is NAMES: a task arrives as id, title and state, a pattern ' +
+        'as id and name, a decision as id, title and the citable ADR-<n> label it is ' +
+        'cited by — call `next_actions` with a task id for the moves it allows, ' +
+        '`skills` with a skill id for the pattern itself, and `read_record` with a ' +
+        'decision id for its rationale, the argument behind it. Only a decision in ' +
+        'force is listed: one still proposed, rejected, or superseded by a later ' +
+        'decision does not govern and is left out. The lists are CUT to the freshest ' +
+        'items; `workTotal` and `decisionsTotal` say how many there are in all, so a ' +
+        'number larger than its own list means there is more it does not show. ' +
+        '`search` reaches past both cuts (kind `task`, or kind `decision` with state ' +
+        '`accepted`, with a `limit`), ordered by when each was recorded rather than ' +
+        'by when it last moved.' +
         OPEN_RUN_CONTRACT,
     },
     async () => {
@@ -1126,7 +1132,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Read record — one whole record by id',
       description:
         'Read ONE record in full — a memory’s content, a decision’s rationale, an ' +
-        'observation’s text, a task — by the id `search` gave. This is the second ' +
+        'observation’s text, a task — by the id an index gave you: `search`, or the ' +
+        'decisions `bootstrap` lists (which carry the title and not the argument). ' +
+        'This is the second ' +
         'half of a search: the index tells you what exists, this tells you what it ' +
         'says. It looks in EVERY project of this workspace, not only the one you are ' +
         'working in — an id is minted once and lives in one place — and the answer ' +
@@ -1135,7 +1143,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'the consultation. An id no project holds is refused, in a reply that names ' +
         'where it looked. Read-only.',
       inputSchema: {
-        id: z.string().min(1).describe('The record id (from `search`).'),
+        id: z.string().min(1).describe('The record id (from `search`, or from `bootstrap`).'),
       },
     },
     async ({ id }) => {
