@@ -1,20 +1,35 @@
 /**
  * bootstrap: the opening read of a session, focused on the actor.
  *
- * When an agent starts, it needs three things: where the actor left off, what
- * can be done next, and what patterns it is expected to work by. bootstrap
- * composes exactly those — {@link resume} for the "where was I" (the actor's
- * latest run and open focus), the live pieces of work for the "what now", and the
- * NAMES of the adopted skills ({@link adoptedSkills}) for the "how we do things
- * here". It is the "serve lean" of the design: a filtered opening context, not a
- * dump of the whole record.
+ * When an agent starts, it needs four things: where the actor left off, what can
+ * be done next, what patterns it is expected to work by, and what has already been
+ * decided. bootstrap composes exactly those — {@link resume} for the "where was I"
+ * (the actor's latest run and open focus), the live pieces of work for the "what
+ * now", the NAMES of the adopted skills ({@link adoptedSkills}) for the "how we do
+ * things here", and the NAMES of the decisions in force ({@link decisionsInForce})
+ * for the "what governs here". It is the "serve lean" of the design: a filtered
+ * opening context, not a dump of the whole record.
  *
- * NAMES, NEVER BODIES. The skills appear as name + id and nothing else. A body
- * is the pattern in full — paragraphs of it — and putting twenty of those in
- * every session's opening context would bury what matters and charge for what
- * rarely applies. A name is one line: it is both the index and the trigger, and
- * an agent cannot ask for what it does not know exists. The body comes from a
- * separate read, when a name turns out to match the task at hand.
+ * THE FOURTH HALF IS THE ONE THAT WAS MISSING, and the measurement is what said so.
+ * The product has three state machines (task, decision, skill) with two sides each
+ * — what already holds, and what waits for a move — and this read served two of
+ * those six cells: the waiting side of tasks and the holding side of skills.
+ * Decision appeared on neither. Over a real record that held two ADRs, and nothing
+ * else worth reading, the answer was `work: []`, `skills: []` — an empty answer
+ * about a full record, in the exact shape this module already names as the worst
+ * one an opening read can have. The cell filled here is the holding side of
+ * decision; the waiting side of decision and of skill is a separate question with
+ * a criterion of its own ("waits for a judgement somebody has to make"), and it is
+ * NOT this list's criterion.
+ *
+ * NAMES, NEVER BODIES. The skills appear as name + id and nothing else, and the
+ * decisions as title + `adr` + id. A body is the pattern, or the argument, in full
+ * — paragraphs of it — and putting twenty of those in every session's opening
+ * context would bury what matters and charge for what rarely applies. A name is one
+ * line: it is both the index and the trigger, and an agent cannot ask for what it
+ * does not know exists. The body comes from a separate read, when a name turns out
+ * to match the task at hand: a pattern's from {@link adoptedSkills} (the `skills`
+ * tool), a decision's `rationale` from {@link readRecord} (the `read_record` tool).
  *
  * A TASK HAS A BODY TOO, AND IT IS THE MOVES. The same rule now governs the work
  * list, because it is the same distinction: a work item carries id, title, state
@@ -44,23 +59,34 @@
  * memory. A hundred actionable tasks would have been ~2,500 lines.
  *
  * So the limit is STATED now, in two halves, and neither of them is a tokenizer:
- *   - each item is a NAME, which is what fixes the per-item cost at four fields
- *     instead of a transition table;
- *   - the list is CUT (see {@link cappedWork}) and the answer says how many there
- *     were ({@link Bootstrap.workTotal}) — a cut that does not declare itself is
- *     the same failure as an empty answer that reads like an answer.
+ *   - each item is a NAME, which is what fixes the per-item cost at a handful of
+ *     fields instead of a transition table or an argument;
+ *   - a list is CUT (see {@link capped}) and the answer says how many there were
+ *     ({@link Bootstrap.workTotal}, {@link Bootstrap.decisionsTotal}) — a cut that
+ *     does not declare itself is the same failure as an empty answer that reads
+ *     like an answer.
  * What has NOT changed is the part that was right: nothing here estimates tokens
  * or measures bytes. A count of items is a property this layer can be correct
  * about; a token budget is not. Asserted in `bootstrap.test.ts` — "cuts the work
- * list at the convention's limit and says how many there were" and "serves every
- * item, and no new field, below the limit".
+ * list at the convention's limit and says how many there were", "serves every
+ * item, and no new field, below the limit", and "cuts the decisions at the same
+ * limit and says how many there were".
+ *
+ * ONE number and ONE cut, for both lists. The limit is the search's own default
+ * taken by reference (see {@link SERVED_LIMIT}), because a second number for "how
+ * many items does a read hand back when nobody said" is a second convention that
+ * drifts from the first; and the cut is one function ({@link capped}) rather than
+ * one per list, because a slice written twice is a rule written twice.
  *
  * What still makes the rest lean is the filtering:
  *   - the actor's focus comes from `resume`, already scoped to the actor;
  *   - the work list carries ONLY actionable tasks — those with at least one legal
  *     next move (a terminal task has none and is left out) — most recently
  *     touched first, so the freshest work leads and the cut falls on the stalest;
- *   - the skill list carries ONLY adopted patterns, by name.
+ *   - the skill list carries ONLY adopted patterns, by name;
+ *   - the decision list carries ONLY decisions in force (`accepted`), by name,
+ *     most recently settled first — see {@link decisionsInForce} for why one state
+ *     is the whole filter.
  *
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
  * projection carries no `who`, so the tasks cannot be attributed to the actor
@@ -69,7 +95,7 @@
  * read model supports today. When a future slice ties a task to the actor, the
  * work list can narrow to the actor with no change to this shape.
  *
- * ONE WORLD NOW, AND THAT IS THE CORRECTION. The three halves read the SAME caches:
+ * ONE WORLD NOW, AND THAT IS THE CORRECTION. The four halves read the SAME caches:
  * every tree the caller can see. The split used to be deliberate — skills from every
  * tree (a pattern is a capability), work and runs from the actor's single tree
  * (because "work is scoped to a tree") — and the second half of that sentence stopped
@@ -87,19 +113,22 @@
  */
 
 import { type ProjectionCache, SEARCH_DEFAULT_LIMIT, type TaskProjection } from '@mnema/core';
+import { type DecisionRef, decisionsInForce } from './decisions.js';
 import { type ActorScope, type Resume, resume } from './focus.js';
 import { nextActions } from './next-action.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
 
 /**
- * How many pieces of work an opening context serves.
+ * How many items of ONE list an opening context serves.
  *
  * It is the search's own default, taken BY REFERENCE and not restated: that
  * constant is already this product's published answer to "how many items does a
  * read hand back when nobody said", and a second number for the same question is
- * a second convention that drifts from the first.
+ * a second convention that drifts from the first. The same reasoning makes it one
+ * constant for every list here rather than one per list — the question a second
+ * number would answer differently is the same question.
  */
-const WORK_LIMIT: number = SEARCH_DEFAULT_LIMIT;
+const SERVED_LIMIT: number = SEARCH_DEFAULT_LIMIT;
 
 /** One live piece of work, NAMED — a unit of "what can be done". */
 export interface WorkItem {
@@ -112,7 +141,10 @@ export interface WorkItem {
   readonly updatedAt: string;
 }
 
-/** The opening context: where the actor is, the actionable work, the patterns. */
+/**
+ * The opening context: where the actor is, the actionable work, the patterns to
+ * work by, and the decisions that govern.
+ */
 export interface Bootstrap {
   /** Where the actor left off and what they have open. */
   readonly resume: Resume;
@@ -131,7 +163,7 @@ export interface Bootstrap {
    *
    * Named for the list it counts rather than called `total`, which is what the
    * one-list read this borrows the shape from ({@link searchRecords}) can afford:
-   * three lists arrive here, and a bare total beside them would leave a reader to
+   * several lists arrive here, and a bare total beside them would leave a reader to
    * guess which one it was about.
    */
   readonly workTotal: number;
@@ -140,14 +172,33 @@ export interface Bootstrap {
    * Ordered by name, so the list is stable whatever order the trees are read in.
    */
   readonly skills: readonly SkillRef[];
+  /**
+   * The decisions in force — `accepted`, and nothing else — by title, `adr` label
+   * and id, never the `rationale` (see the module doc; it comes from
+   * {@link readRecord}). Most recently settled first, so the freshest calls lead
+   * and the cut falls on the oldest, and everything past
+   * {@link Bootstrap.decisionsTotal}'s cut is omitted.
+   */
+  readonly decisions: readonly DecisionRef[];
+  /**
+   * How many decisions are in force in all. Greater than `decisions.length` means
+   * the list was cut, and what is missing is the OLDEST of them.
+   *
+   * Which is worth one warning to whoever reads this number: an old decision is not
+   * a weak one. A call settled two years ago and never superseded governs exactly as
+   * much as one settled today, and this cut keeps the recent end because recency is
+   * the only ordering the record proves — not because age ranks authority. `search`
+   * (kind `decision`, state `accepted`) reaches past it.
+   */
+  readonly decisionsTotal: number;
 }
 
 /**
  * Builds the opening context for `actor` over every tree the caller can see:
- * their resume, the freshest actionable tasks by name, and the names of the
- * adopted patterns. Reads caches only; composes pure derivations. The three halves
- * are independent — an actor with no runs still gets the work list, and a workspace
- * with no skills still gets both of the others.
+ * their resume, the freshest actionable tasks by name, the names of the adopted
+ * patterns, and the names of the decisions in force. Reads caches only; composes
+ * pure derivations. The four halves are independent — an actor with no runs still
+ * gets the work list, and a record with no patterns still gets the other three.
  */
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
   const actionable = caches
@@ -158,22 +209,41 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
-  return { resume: resume(caches, scope), ...cappedWork(actionable), skills };
+  const work = capped(actionable);
+  // The rule for which decisions govern is NOT here: it is `decisionsInForce`, so
+  // the brief that will serve the same list cannot come to answer it differently.
+  const decisions = capped(decisionsInForce(caches));
+  return {
+    resume: resume(caches, scope),
+    work: work.served,
+    workTotal: work.total,
+    skills,
+    decisions: decisions.served,
+    decisionsTotal: decisions.total,
+  };
 }
 
 /**
- * The work an opening context serves, and how many there were — the CUT and the
- * report of it, made in one place so they cannot come to disagree.
+ * What one list of an opening context serves, and how many there were — the CUT and
+ * the report of it, made in one place so they cannot come to disagree.
  *
  * A cut computed here and a total computed at the call site is how a list starts
  * declaring the wrong number: the total has to be of the list BEFORE the cut, which
  * is a fact only the caller of the cut still holds.
+ *
+ * ONE function for every list, not one per list. Two lists are cut here and a third
+ * will be; a `slice` and a `length` written per list is the same rule written that
+ * many times, and the failure mode of a rule written twice is that one copy is
+ * amended. What the caller still owns is naming the pair (`work`/`workTotal`,
+ * `decisions`/`decisionsTotal`), and a total attached to the wrong list is caught by
+ * a fixture where the two lists have DIFFERENT totals — "counts each list, and the
+ * two totals are not each other's" in `bootstrap.test.ts`.
  */
-function cappedWork(actionable: readonly WorkItem[]): {
-  readonly work: readonly WorkItem[];
-  readonly workTotal: number;
+function capped<T>(items: readonly T[]): {
+  readonly served: readonly T[];
+  readonly total: number;
 } {
-  return { work: actionable.slice(0, WORK_LIMIT), workTotal: actionable.length };
+  return { served: items.slice(0, SERVED_LIMIT), total: items.length };
 }
 
 /**

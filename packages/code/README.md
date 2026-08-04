@@ -309,6 +309,15 @@ agent cannot make is one you cannot make either. A few names do not pair up:
 — is the agent's only, and `skills` exists on both sides doing **different
 things**.
 
+`bootstrap` is an INDEX, and every list in it names the read that serves the rest:
+the actionable work by name (`next_actions` for the moves one allows), the adopted
+patterns by name (`skills` for the pattern itself), and the decisions **in force**
+by title and `ADR-<n>` label (`read_record` for the rationale). Only an accepted
+decision is listed — one still proposed, rejected, or superseded by a later
+decision does not govern. Both lists that can grow are cut to the freshest items,
+and `workTotal`/`decisionsTotal` say how many there were, so a cut never reads as
+"this is everything".
+
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
 adopted skills by name, and the tool hands over the pattern itself, all of them
 or one by id. It is the one read that also writes — consulting a pattern is

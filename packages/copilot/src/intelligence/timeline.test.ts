@@ -113,7 +113,7 @@ describe('timeline — the supersede is visible from BOTH sides', () => {
     const b = bench();
     birthDecision(b, 'dec-old', 'the first call');
     birthDecision(b, 'dec-new', 'the second call');
-    supersedeDecision(b, 'dec-old', 'dec-new', 'PROPOSED');
+    supersedeDecision(b, 'dec-old', 'dec-new', 'proposed');
     const sources = [tree(b)];
 
     const successor = timeline(sources, 'dec-new').filter(
@@ -132,7 +132,7 @@ describe('timeline — the supersede is visible from BOTH sides', () => {
   it('carries the successor id in the payload the entry hands back', () => {
     const b = bench();
     birthDecision(b, 'd1', 'first');
-    supersedeDecision(b, 'd1', 'd2', 'PROPOSED');
+    supersedeDecision(b, 'd1', 'd2', 'proposed');
     const entry = timeline([tree(b)], 'd2')[0];
     expect(entry?.event.kind === 'decision.transitioned' && entry.event.payload.by).toBe('d2');
   });

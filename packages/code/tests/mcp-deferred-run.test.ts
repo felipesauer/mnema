@@ -159,7 +159,7 @@ describe('a connection that only reads', () => {
 
   // FOUR reads list the actor's runs, so four of them carry the note, and there is
   // a test per read. They are the same sentence, so what tells them apart is the
-  // PAYLOAD each one answers with — `work`/`skills` for bootstrap, a bare
+  // PAYLOAD each one answers with — `work`/`skills`/`decisions` for bootstrap, a bare
   // `openRuns` for focus, a `lastRun` for resume, a `verdict` for guard. Naming the
   // payload is what makes a missing note fall on the read that lost it: dropping
   // the note from `bootstrap` cannot be absorbed by the `focus` test, and the
@@ -177,8 +177,13 @@ describe('a connection that only reads', () => {
     // about the asking session.
     // Three blocks: the answer, where this session is, then the run note last.
     const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }), 3);
-    // `work` and `skills` are bootstrap's and no other read's.
-    expect(payload).toMatchObject({ work: [], skills: [], resume: { focus: { openRuns: [] } } });
+    // `work`, `skills` and `decisions` are bootstrap's and no other read's.
+    expect(payload).toMatchObject({
+      work: [],
+      skills: [],
+      decisions: [],
+      resume: { focus: { openRuns: [] } },
+    });
 
     await client.close();
   });
@@ -511,11 +516,18 @@ describe('the session says how many projects it chose from', () => {
     }
 
     // And it is beside the answer, never inside it: a caller parsing the first block
-    // gets the copilot's shape, byte for byte. `workTotal` is part of that shape —
-    // the work list is cut to a limit and this is the count that says so — and it
+    // gets the copilot's shape, byte for byte. The two totals are part of that shape
+    // — each cut list carries the count that says it was cut — and every key here
     // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;
-    expect(Object.keys(payload).sort()).toEqual(['resume', 'skills', 'work', 'workTotal']);
+    expect(Object.keys(payload).sort()).toEqual([
+      'decisions',
+      'decisionsTotal',
+      'resume',
+      'skills',
+      'work',
+      'workTotal',
+    ]);
 
     await client.close();
   });

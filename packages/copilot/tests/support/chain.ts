@@ -217,8 +217,18 @@ export function consultSkill(
   );
 }
 
-/** Appends a decision's birth pair, returning its id. */
-export function birthDecision(b: Bench, id: string, title: string, initial = 'PROPOSED'): string {
+/**
+ * Appends a decision's birth pair, returning its id.
+ *
+ * THE STATES ARE THE WORKFLOW'S OWN, in the workflow's own case. These helpers used
+ * to write `PROPOSED`/`ACCEPTED`/`SUPERSEDED`, which no write path of the product can
+ * produce: `DECISION_STATES` is lower-case, `isDecisionState('PROPOSED')` is false by
+ * its own test, and the projection's `state` column is compared with SQLite's binary
+ * collation — so a fixture in the wrong case is a decision no state-keyed read can
+ * ever match. It cost nothing while every test keyed on ids and roles; it would have
+ * made a state FILTER untestable, which is what {@link decisionsInForce} is.
+ */
+export function birthDecision(b: Bench, id: string, title: string, initial = 'proposed'): string {
   for (const e of decisionBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
     { title, rationale: `why ${title}`, adr: `ADR-${id}`, initial },
@@ -228,12 +238,57 @@ export function birthDecision(b: Bench, id: string, title: string, initial = 'PR
   return id;
 }
 
-/** Appends a `decision.transitioned {action: 'supersede'}` naming the successor. */
-export function supersedeDecision(b: Bench, id: string, by: string, from = 'ACCEPTED'): void {
+/**
+ * Appends one `decision.transitioned` — a decision moving as the workflow moves it,
+ * with the proof field that action requires (`accept` and `reject` take a note).
+ *
+ * A decision is ALWAYS born `proposed` in production (`INITIAL_DECISION_STATE`), so
+ * this is how a test reaches any other state by the path the product takes, rather
+ * than by asking the birth for a state no birth writes.
+ */
+export function moveDecision(
+  b: Bench,
+  id: string,
+  from: string,
+  to: string,
+  action: string,
+  fields: TransitionFields = { note: `${action}ed` },
+): void {
+  moveDecisionAt(b, id, b.now(), from, to, action, fields);
+}
+
+/**
+ * The same move, at an instant the caller chooses — the only way to make two
+ * decisions share an `updatedAt`, because `b.now()` is monotonic by design. The
+ * reason is the task helper's: a derivation that orders by an instant has a
+ * tie-break, and a tie-break is only testable if a tie can be built.
+ */
+export function moveDecisionAt(
+  b: Bench,
+  id: string,
+  at: string,
+  from: string,
+  to: string,
+  action: string,
+  fields: TransitionFields = { note: `${action}ed` },
+): void {
+  b.writer.append(
+    decisionTransitioned(
+      { at, who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      { from, to, action, fields },
+    ),
+  );
+}
+
+/**
+ * Appends a `decision.transitioned {action: 'supersede'}` naming the successor, with
+ * the `reason` the gate requires of that move.
+ */
+export function supersedeDecision(b: Bench, id: string, by: string, from = 'accepted'): void {
   b.writer.append(
     decisionTransitioned(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-      { from, to: 'SUPERSEDED', action: 'supersede', by },
+      { from, to: 'superseded', action: 'supersede', by, fields: { reason: 'replaced' } },
     ),
   );
 }

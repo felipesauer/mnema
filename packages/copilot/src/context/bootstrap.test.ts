@@ -4,12 +4,15 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   asking,
   type Bench,
+  birthDecision,
   birthSkill,
   birthTask,
   makeBench,
+  moveDecision,
   moveTask,
   moveTaskAt,
   startRun,
+  supersedeDecision,
 } from '../../tests/support/chain.js';
 import { bootstrap } from './bootstrap.js';
 import { nextActionsForTask } from './next-action.js';
@@ -164,7 +167,14 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       expect(b.workTotal).toBe(wanted);
       expect(b.work.every((w) => Object.keys(w).length === 4)).toBe(true);
       // The whole answer's shape, so a field added to any half fails here.
-      expect(Object.keys(b).sort()).toEqual(['resume', 'skills', 'work', 'workTotal']);
+      expect(Object.keys(b).sort()).toEqual([
+        'decisions',
+        'decisionsTotal',
+        'resume',
+        'skills',
+        'work',
+        'workTotal',
+      ]);
     } finally {
       cache.close();
     }
@@ -308,6 +318,147 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       }
     } finally {
       rmSync(team.root, { recursive: true, force: true });
+    }
+  });
+
+  it('announces the decisions in force by TITLE, ADR and id — never the rationale', () => {
+    bench = makeBench();
+    birthDecision(bench, 'dec-1', 'Hand-rolled arithmetic');
+    moveDecision(bench, 'dec-1', 'proposed', 'accepted', 'accept');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect(b.decisions).toEqual([
+        { id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled arithmetic' },
+      ]);
+      // The argument itself never enters the opening context. The fixture writes
+      // `why <title>` as the rationale, so this is that record's actual prose.
+      expect(JSON.stringify(b)).not.toContain('why Hand-rolled arithmetic');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('announces only the decisions IN FORCE (a proposal does not govern)', () => {
+    bench = makeBench();
+    birthDecision(bench, 'dec-live', 'In force');
+    moveDecision(bench, 'dec-live', 'proposed', 'accepted', 'accept');
+    birthDecision(bench, 'dec-idea', 'Still on the table');
+    birthDecision(bench, 'dec-old', 'Replaced');
+    moveDecision(bench, 'dec-old', 'proposed', 'accepted', 'accept');
+    supersedeDecision(bench, 'dec-old', 'dec-live');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect(b.decisions.map((d) => d.id)).toEqual(['dec-live']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('answers about a record whose ONLY content is decisions', () => {
+    // The defect that started this: over a real record holding two ADRs and nothing
+    // else, the opening read answered `work: []`, `skills: []` — an empty answer
+    // about a full record, which an agent reads as "nothing has been decided here".
+    bench = makeBench();
+    for (const [id, title] of [
+      ['dec-1', 'Hand-rolled arithmetic'],
+      ['dec-2', 'Why the rounding is explicit'],
+    ] as const) {
+      birthDecision(bench, id, title);
+      moveDecision(bench, id, 'proposed', 'accepted', 'accept');
+    }
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // The two halves that were the whole answer are still honestly empty…
+      expect({ work: b.work, skills: b.skills }).toEqual({ work: [], skills: [] });
+      // …and the read no longer reports an empty record as if it were one.
+      expect(b.decisions.map((d) => d.adr)).toEqual(['ADR-dec-2', 'ADR-dec-1']);
+      expect(b.decisionsTotal).toBe(2);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('cuts the decisions at the same limit and says how many there were', () => {
+    bench = makeBench();
+    // One more than the limit, so the cut is what separates the two numbers.
+    const wanted = SEARCH_DEFAULT_LIMIT + 3;
+    for (let i = 0; i < wanted; i += 1) {
+      // Zero-padded, so the ids sort the way the loop wrote them.
+      const id = `dec-${String(i).padStart(3, '0')}`;
+      birthDecision(bench, id, `D${i}`);
+      moveDecision(bench, id, 'proposed', 'accepted', 'accept');
+    }
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // The number is the search's, not a second convention invented for this list.
+      expect(SEARCH_DEFAULT_LIMIT).toBe(20);
+      // Both halves of the criterion in one assertion: the list is cut AND the answer
+      // says how many there were.
+      expect({ served: b.decisions.length, decisionsTotal: b.decisionsTotal }).toEqual({
+        served: SEARCH_DEFAULT_LIMIT,
+        decisionsTotal: wanted,
+      });
+      // The cut falls on the OLDEST: freshest-first decides what is kept.
+      expect(b.decisions[0]?.id).toBe(`dec-${String(wanted - 1).padStart(3, '0')}`);
+      expect(b.decisions.map((d) => d.id)).not.toContain('dec-000');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('counts each list, and the two totals are not each other’s', () => {
+    // One cut function serves both lists, so what the call site still owns is which
+    // total it hands to which list. Different counts on purpose: with equal ones, a
+    // crossed pair would pass. Both below the limit, so nothing is cut and the
+    // totals are the lists themselves — the non-regression proved BY THE LIST.
+    bench = makeBench();
+    for (const id of ['task-a', 'task-b']) {
+      moveTask(bench, birthTask(bench, id, id), 'DRAFT', 'READY', 'submit');
+    }
+    for (const id of ['dec-a', 'dec-b', 'dec-c']) {
+      birthDecision(bench, id, id);
+      moveDecision(bench, id, 'proposed', 'accepted', 'accept');
+    }
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect({
+        work: b.work.length,
+        workTotal: b.workTotal,
+        decisions: b.decisions.length,
+        decisionsTotal: b.decisionsTotal,
+      }).toEqual({ work: 2, workTotal: 2, decisions: 3, decisionsTotal: 3 });
+      // And the lists did not swap either: each carries its own kind's fields.
+      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
+      expect(Object.keys(b.decisions[0] ?? {}).sort()).toEqual(['adr', 'id', 'title']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('leaves the other three halves exactly as they were', () => {
+    // Non-regression by the LIST of fields, not by intention: the half added here
+    // must not have changed the shape of the three that were already served.
+    bench = makeBench();
+    startRun(bench, 'run-1', { agent: 'claude', goal: 'in flight' });
+    moveTask(bench, birthTask(bench, 'task-1', 'Parse tokens'), 'DRAFT', 'READY', 'submit');
+    birthSkill(bench, 'sk-1', 'Small PRs', 'adopted');
+    birthDecision(bench, 'dec-1', 'In force');
+    moveDecision(bench, 'dec-1', 'proposed', 'accepted', 'accept');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
+      expect(Object.keys(b.skills[0] ?? {}).sort()).toEqual(['id', 'name']);
+      expect(Object.keys(b.resume).sort()).toEqual(['actor', 'focus', 'lastRun']);
+      expect(b.resume.lastRun?.id).toBe('run-1');
+      expect(b.workTotal).toBe(1);
+    } finally {
+      cache.close();
     }
   });
 
