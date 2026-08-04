@@ -4,11 +4,9 @@ $ mnema init
 |   identity: <anchor>
 |   backup key: created and enrolled — private half at <backup-key-path>
 |   Move that file off this machine: a backup left on this disk is lost with it.
-|   registered in the project index
 $ mnema init
 | Already a mnema project at <sandbox>/project/.mnema — nothing to found.
 |   identity: <anchor>
-|   index entry re-asserted
 
 ### run start
 $ mnema run start --which agent-alpha --goal 'set the record up'
@@ -227,4 +225,3 @@ $ mnema init
 | Initialized mnema project at <sandbox>/other-project/.mnema
 |   identity: <anchor>
 |   backup key: enrolled in this project
-|   registered in the project index

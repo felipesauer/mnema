@@ -4,6 +4,13 @@
  * `mnema init` — establish a project in the current directory, or say that one is
  * already there. It is the only verb that can CREATE this machine's identity, so it
  * is also the only one with something to report about keys.
+ *
+ * It used to print two more lines — `registered in the project index` on a founding
+ * and `index entry re-asserted` on a second run — about a machine-local index that
+ * nothing in the product ever read. Reporting an effect nobody consumes is worse
+ * than the dead write itself, because the person acts on what they are told; both
+ * the write and the two lines are gone. `cli.writes.golden.txt` is what holds every
+ * line this verb prints, so their absence is pinned there byte for byte.
  */
 
 import type { Command } from 'commander';
@@ -25,11 +32,9 @@ export function registerInit(program: Command, wiring: Wiring): void {
         io.out(`Initialized mnema project at ${result.root}`);
         io.out(fact(`identity: ${result.anchor}`));
         reportIdentity(result.identity, io);
-        io.out(fact('registered in the project index'));
       } else {
         io.out(`Already a mnema project at ${result.root} — nothing to found.`);
         io.out(fact(`identity: ${result.anchor}`));
-        io.out(fact('index entry re-asserted'));
       }
     });
 }

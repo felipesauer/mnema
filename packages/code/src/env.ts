@@ -1,11 +1,11 @@
 /**
  * Reading the discovery environment off the running process.
  *
- * The core's resolution (`resolveTrees`, the project index) takes an injected
- * {@link DiscoveryEnv} so it stays pure and testable. This is the one place the
- * surface reads the REAL process environment to build that value — a transport
- * concern, not domain logic. A command never touches `process.env` itself; it
- * receives the resolved env, so a test drives it with a sandbox env instead.
+ * The core's resolution (`resolveTrees`) takes an injected {@link DiscoveryEnv} so
+ * it stays pure and testable. This is the one place the surface reads the REAL
+ * process environment to build that value — a transport concern, not domain logic.
+ * A command never touches `process.env` itself; it receives the resolved env, so a
+ * test drives it with a sandbox env instead.
  */
 
 import { homedir } from 'node:os';
