@@ -418,15 +418,50 @@ function unwired(): string[] {
  * It is checked in both directions, which is what keeps it from becoming the
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
+ *
+ * IT IS EMPTY, and that is the strongest state this table has: every value the
+ * workspace exports publicly has a production caller. Its last entry was
+ * `@mnema/core listProjects` — the reader of a machine-local project index that
+ * `init` wrote on every founding and nothing ever read, while telling the person it
+ * had happened. It was removed rather than wired, because what a read covers comes
+ * from the trees the client announces.
+ *
+ * An empty table also ERASES the proof that declaring an exception works, which is
+ * the vacuity this file warns about elsewhere — a guard whose escape hatch is
+ * untested is a guard whose next legitimate residue discovers it broken. So
+ * {@link reconcile} is the mechanism as one function, and it is exercised on
+ * SYNTHETIC input in both directions. The synthetic entries live in that test, never
+ * here: this table stays auto-pruning over the real surface.
  */
-const UNWIRED: Readonly<Record<string, string>> = {
-  '@mnema/core listProjects':
-    'The project index has no production READER. What a read covers comes from the ' +
-    'trees the client announced (`workspaceTrees`), never from the index `init` ' +
-    'writes — so the index is written and read by nobody. It cannot go ' +
-    'module-private either: `code`’s init tests reach it across the package edge as ' +
-    'the proof that registering happened. Wiring it changes what a read covers.',
-};
+const UNWIRED: Readonly<Record<string, string>> = {};
+
+/** What an exception table tolerates, and what it does not. */
+interface Reconciliation {
+  /** Accused and NOT declared — the guard's teeth. */
+  readonly accused: readonly string[];
+  /** Declared and no longer accused — a declaration that outlived its reason. */
+  readonly stale: readonly string[];
+}
+
+/**
+ * Reconciles the accusations against the declarations, in both directions at once.
+ *
+ * The second direction is the auto-pruning: a declared value that GAINED a caller,
+ * or stopped being exported, is no longer accused and must leave the table — so a
+ * declaration cannot quietly outlive the reason written next to it. It is a
+ * function, not an inline comparison, so the mechanism can be driven by a test
+ * with input of its own on the day the real table is empty.
+ */
+function reconcile(
+  accused: readonly string[],
+  declared: Readonly<Record<string, string>>,
+): Reconciliation {
+  const names = Object.keys(declared);
+  return {
+    accused: accused.filter((value) => !names.includes(value)).sort(),
+    stale: names.filter((name) => !accused.includes(name)).sort(),
+  };
+}
 
 /**
  * The fewest values each entry point may export, and the one that exports NONE.
@@ -454,10 +489,43 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
 
 describe('every public value has a caller', () => {
   it('accuses nothing but what is declared unwired', () => {
-    // One assertion, both directions: an export that loses its last caller appears
-    // here, and a declared one that gained a caller — or stopped being exported —
-    // disappears from the left side while staying on the right.
-    expect(unwired()).toEqual(Object.keys(UNWIRED).sort());
+    // One assertion, both directions: an export that loses its last caller lands in
+    // `accused`, and a declared one that gained a caller — or stopped being exported
+    // — lands in `stale` until its entry leaves the table.
+    expect(reconcile(unwired(), UNWIRED)).toEqual({ accused: [], stale: [] });
+  });
+
+  it('tolerates a declared value and still accuses an undeclared one', () => {
+    // The mechanism's own non-vacuity, on input this test owns. With the real table
+    // empty the assertion above says only "nothing is accused" — it exercises neither
+    // half of the exception, so the day a legitimate residue needs one, nothing has
+    // ever proved it works. These names are not real exports and never enter the
+    // product's table.
+    const accused = ['@mnema/core notCalledOne', '@mnema/core notCalledTwo'];
+
+    // Declared ⇒ tolerated. Undeclared ⇒ still accused, and NAMED.
+    expect(reconcile(accused, { '@mnema/core notCalledOne': 'the reason' })).toEqual({
+      accused: ['@mnema/core notCalledTwo'],
+      stale: [],
+    });
+    // Declaring both leaves nothing to report — which is what "the table works" means.
+    expect(
+      reconcile(accused, {
+        '@mnema/core notCalledOne': 'the reason',
+        '@mnema/core notCalledTwo': 'the other reason',
+      }),
+    ).toEqual({ accused: [], stale: [] });
+    // The other direction, and the one that keeps this from becoming an allowlist: a
+    // declaration for a value that is no longer accused is reported as stale, so the
+    // guard FAILS until the entry is deleted. Without it, a table entry would survive
+    // its own reason forever.
+    expect(reconcile([], { '@mnema/core notCalledOne': 'the reason' })).toEqual({
+      accused: [],
+      stale: ['@mnema/core notCalledOne'],
+    });
+    // And the empty case is not accidentally the same as the tolerant one: with no
+    // declarations at all, every accusation comes through.
+    expect(reconcile(accused, {})).toEqual({ accused, stale: [] });
   });
 
   it('reads the whole surface the manifests declare', () => {

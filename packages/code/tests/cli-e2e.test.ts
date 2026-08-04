@@ -32,7 +32,6 @@ import {
   verify,
 } from '@mnema/chain';
 import {
-  listProjects,
   orderedEvents,
   projectDecisions,
   projectHandoffs,
@@ -149,10 +148,10 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(i.failed()).toBe(false);
     expect(i.out.join('\n')).toContain('Initialized mnema project');
     expect(existsSync(join(repo, '.mnema'))).toBe(true);
-    // The project is in the machine index.
-    expect(
-      listProjects({ xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') }).length,
-    ).toBe(1);
+    // It used to end with "the project is in the machine index" here. The index had
+    // no production reader and is gone; what the loop needs from init is the tree,
+    // asserted on the line above, and the events the next steps read from it.
+    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
 
     // 2. task adds an event through the gate.
     const t = capture();

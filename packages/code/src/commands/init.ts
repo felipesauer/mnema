@@ -3,27 +3,28 @@
  *
  * This is the command that CREATES a project's root: it makes the `.mnema/` tree
  * at the EXACT working directory (not by walking up — that is discovery, and
- * this is establishment), establishes this installation's identity into it so the
- * chain is verifiable from its first event, and records it in the machine's
- * project index so a surface can find it later.
+ * this is establishment) and establishes this installation's identity into it, so
+ * the chain is verifiable from its first event.
  *
- * It is a thin adapter: it observes whether a project already exists here,
- * routes to the core's own mechanisms (`ensureTree`, `establishIdentity`,
- * `registerProject`), and reports. It holds no domain logic — establishing an
- * identity (its anchor, its cold backup key, its whole key roster) and the index
- * are the core's; init only decides WHERE (this cwd) and refuses a double-init.
+ * It USED TO also record the project in a machine-local index (`registerProject`,
+ * writing `<app data>/projects.json`) so a surface could find it later. Nothing
+ * ever read it: what a read covers comes from the trees the client announces, and
+ * a project is discovered by walking up from a working directory — so the index
+ * was written on every founding, read by nobody, and reported to the person as if
+ * it mattered. It is gone, and this file is the record of why; `init.test.ts` holds
+ * the absence, at the literal path the file used to take.
+ *
+ * It is a thin adapter: it observes whether a project already exists here, routes
+ * to the core's own mechanisms (`ensureTree`, `establishIdentity`), and reports.
+ * It holds no domain logic — establishing an identity (its anchor, its cold backup
+ * key, its whole key roster) is the core's; init only decides WHERE (this cwd) and
+ * refuses a double-init.
  */
 
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
 import { catalogUpcasters, ensureTree } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  PROJECT_DIR,
-  registerProject,
-  resolveTrees,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, PROJECT_DIR, resolveTrees } from '@mnema/core';
 import {
   authorizingAnchor,
   type EstablishedIdentity,
@@ -35,7 +36,7 @@ import {
 export interface InitContext {
   /** The directory to establish the project in (the CLI passes `process.cwd()`). */
   readonly cwd: string;
-  /** The discovery environment (XDG/home), for the tree paths and the index. */
+  /** The discovery environment (XDG/home), for the global tree and the key root. */
   readonly env: DiscoveryEnv;
 }
 
@@ -58,11 +59,15 @@ export interface InitResult {
 /**
  * Establishes a project at `cwd`. If a `.mnema/` already exists at this exact
  * directory, init does NOT re-found — running it twice is a mistake, not a fresh
- * start — but it still registers the project in the index (the index is a cache
- * that may have been lost, and re-asserting is idempotent). Otherwise it creates
- * the tree, establishes the identity into it (anchor, cold backup key, and every
- * key of the identity enrolled), checkpoints so all of that is signature-covered
- * at once, and registers.
+ * start — and answers with the anchor this machine writes as here. Otherwise it
+ * creates the tree, establishes the identity into it (anchor, cold backup key, and
+ * every key of the identity enrolled), and checkpoints so all of that is
+ * signature-covered at once.
+ *
+ * A second init therefore WRITES NOTHING, anywhere: it reads an anchor and returns.
+ * That is not a claim about calls — `init.test.ts` digests every file of the project
+ * tree and of the app data directory before and after, and requires both maps to be
+ * unchanged.
  */
 export function runInit(ctx: InitContext): InitResult {
   const root = join(ctx.cwd, PROJECT_DIR);
@@ -77,10 +82,6 @@ export function runInit(ctx: InitContext): InitResult {
   const writer = openTreeForWriting(trees, 'public');
 
   if (alreadyHere) {
-    // Re-assert the index entry: the tree is real, the cache may have lost it,
-    // and registering is idempotent. Done BEFORE the anchor is settled, so a tree
-    // whose identity cannot be answered still gets its index entry back.
-    registerProject(root, ctx.env);
     // The anchor this machine WILL write as here — not the one its key derives.
     // On a machine another has enrolled, those differ until its first write in
     // this tree: reading the derived one would report an identity that the very
@@ -110,7 +111,6 @@ export function runInit(ctx: InitContext): InitResult {
   // (An enrollment checkpoints itself, so this covers the founding when the
   // roster added nothing.)
   writer.checkpoint();
-  registerProject(root, ctx.env);
 
   return { created: true, root, anchor: identity.anchor, identity };
 }

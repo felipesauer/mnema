@@ -118,21 +118,15 @@ export { getSkill, listSkills, listSkillsByState } from './projections/skill-sto
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
 export {
-  appDataDir,
   type BirthProbe,
   chainRootForScope,
   type DiscoveryEnv,
-  listProjects,
   locateEntityScope,
   locateEntityScopeWith,
   type Origin,
   PROJECT_DIR,
-  PROJECTS_FILE,
-  projectsIndexPath,
-  type RegisteredProject,
   type ResolvedTrees,
   type RoutedKind,
-  registerProject,
   replayingBirthProbe,
   resolveScope,
   resolveTrees,

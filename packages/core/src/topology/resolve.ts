@@ -95,12 +95,20 @@ export function resolveTrees(cwd: string, env: DiscoveryEnv): ResolvedTrees {
  * is treated as unset — the XDG spec requires an absolute path, and honoring a
  * relative one would anchor a machine-global tree to a working directory.
  *
- * Exported so anything else that must live in the same app data directory — the
- * project index (a discovery cache) among them — resolves it by the ONE rule,
- * never a second copy that could drift from where the global tree and key root
- * actually land.
+ * It is the ONE place that rule lives, and it has exactly one caller:
+ * {@link resolveTrees}, which derives the global tree and the key root from it.
+ * That is why it is module-private. It USED TO be exported, on the premise that
+ * *"anything else that must live in the same app data directory — the project
+ * index (a discovery cache) among them"* would resolve by the same rule instead of
+ * a second copy. The project index was the only such thing, it was removed for
+ * having no reader, and no second consumer ever appeared — so the export was a
+ * public name with nothing outside this file behind it.
+ *
+ * The rule stays a named function rather than being inlined into
+ * {@link resolveTrees}: the two paths that must agree (`global` and `keyRoot`) are
+ * derived from one call, so there is still only one place to change.
  */
-export function appDataDir(env: DiscoveryEnv): string {
+function appDataDir(env: DiscoveryEnv): string {
   const xdg = env.xdgDataHome;
   if (xdg !== undefined && xdg.length > 0 && isAbsolute(xdg)) {
     return join(xdg, APP_DIR);

@@ -80,7 +80,6 @@ This installs the `mnema` binary. Requires Node ≥ 20; the package is ESM-only.
 mnema init
 #> Initialized mnema project at /path/to/repo/.mnema
 #>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…   (64 hex, abbreviated here)
-#>   registered in the project index
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
