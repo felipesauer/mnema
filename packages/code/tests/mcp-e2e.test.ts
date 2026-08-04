@@ -2003,6 +2003,74 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
+  it('answers `next_actions` for EVERY name the opening read served', async () => {
+    // The pairing, and the whole reason the moves may leave the work list: what the
+    // opening read stopped carrying has to be reachable for every item it names. Not
+    // "the tool works" — that is next door — but that the two lists agree, over the
+    // wire, for each id, with the proof fields intact.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // A spread of states, so the answers differ per item and a single hard-coded
+    // reply could not stand in for all of them.
+    const ids: string[] = [];
+    for (const [title, moves] of [
+      ['left in draft', []],
+      ['submitted', ['submit']],
+      ['under way', ['submit', 'start']],
+      ['finished', ['submit', 'start', 'complete']],
+    ] as const) {
+      const made = await client.callTool({ name: 'create_task', arguments: { title } });
+      const id = /\(([^)]+)\)/.exec(textOf(made))?.[1] ?? '';
+      for (const action of moves) {
+        await client.callTool({
+          name: 'task_transition',
+          arguments: { id, action, ...(action === 'complete' ? { note: 'shipped' } : {}) },
+        });
+      }
+      ids.push(id);
+    }
+
+    const boot = await client.callTool({ name: 'bootstrap' });
+    const context = JSON.parse(textOf(boot)) as {
+      work: { id: string; state: string }[];
+      workTotal: number;
+    };
+    // Nothing was cut here, so the list is the whole of the actionable work.
+    expect(context.work).toHaveLength(4);
+    expect(context.workTotal).toBe(4);
+    expect(new Set(context.work.map((w) => w.id))).toEqual(new Set(ids));
+
+    // Every name, answered — and the answer is a list of real moves, with the proof
+    // each demands. A `Refused` for any one of them would mean the information did
+    // not move doors, it fell between them.
+    const answered: Record<string, string[]> = {};
+    for (const item of context.work) {
+      const reply = await client.callTool({ name: 'next_actions', arguments: { id: item.id } });
+      const text = textOf(reply);
+      expect(text, `next_actions for ${item.state}`).not.toContain('Refused');
+      const moves = JSON.parse(text) as { action: string; to: string; requires: string[] }[];
+      expect(moves.length, `${item.state} is in the work list, so it has a move`).toBeGreaterThan(
+        0,
+      );
+      answered[item.state] = moves.map((m) => m.action).sort();
+      // The proof fields travel with the move, which is what the item never carried
+      // and what a caller needs before it tries the write.
+      const complete = moves.find((m) => m.action === 'complete');
+      if (complete !== undefined) expect(complete.requires).toEqual(['note']);
+    }
+    // Per state, so the answers are the workflow's and not one list repeated.
+    expect(answered).toEqual({
+      DRAFT: ['cancel', 'submit'],
+      READY: ['cancel', 'start'],
+      IN_PROGRESS: ['block', 'cancel', 'complete', 'submit_review'],
+      DONE: ['reopen'],
+    });
+
+    await client.close();
+  });
+
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });
@@ -2790,6 +2858,26 @@ describe('MCP — what enters the record', () => {
     // It is the read that declares it; nothing else serves a body.
     const other = tools.tools.find((t) => t.name === 'read_record')?.description ?? '';
     expect(other).not.toContain('WHAT A PATTERN IS');
+
+    await client.close();
+  });
+
+  it('the bootstrap tool NAMES the read that serves what its lists leave out', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const tools = await client.listTools();
+    const description = tools.tools.find((t) => t.name === 'bootstrap')?.description ?? '';
+    // An index is only an index if its reader knows a second read exists — an agent
+    // does not ask for what it has not been told about. Both doors, by tool name.
+    expect(description).toContain('next_actions');
+    expect(description).toContain('skills');
+    // And the cut is declared where the agent decides whether to look further.
+    expect(description).toContain('workTotal');
+    // The tools it points at exist under exactly those names.
+    const named = new Set(tools.tools.map((t) => t.name));
+    expect(named.has('next_actions') && named.has('skills')).toBe(true);
 
     await client.close();
   });

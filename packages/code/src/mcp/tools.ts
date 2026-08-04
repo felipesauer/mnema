@@ -885,8 +885,13 @@ function skillProofToFields(input: {
  *
  * Takes the session's caches over EVERY tree of its project and composes the
  * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the actor
- * left off, the actionable work, and the NAMES of the adopted patterns. Read-only —
- * it opens no writer and emits no event.
+ * left off, the NAMES of the actionable work, and the NAMES of the adopted patterns.
+ * Read-only — it opens no writer and emits no event.
+ *
+ * Names on both halves, and the second read named in the tool's own description: the
+ * moves a task allows come from `next_actions` and a pattern's body from `skills`.
+ * That an agent knows it may ask is the whole of what makes an index an index, so it
+ * is stated where the agent reads before calling, not only in the payload.
  *
  * Every tree, and no longer the one the session's writes defaulted to. A task lands
  * in the tree that travels and a memory in this machine's own, whoever wrote either,

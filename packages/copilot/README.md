@@ -14,9 +14,11 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 ## What it gives you
 
 - **`bootstrap`** — the opening context for a session, focused on one actor:
-  where they left off (their latest run and open focus), the actionable work,
-  freshest first, each task carrying the moves the workflow allows on it, and the
-  names of the adopted patterns to work by.
+  where they left off (their latest run and open focus), the actionable work by
+  NAME (id, title, state — freshest first, cut to a limit, with `workTotal` saying
+  how many there were), and the names of the adopted patterns to work by. Both
+  lists are an index: the moves a task allows come from `nextActions`, the pattern
+  itself from `adoptedSkills`, asked for the one item that turned out to matter.
 - **`adoptedSkills` / `lookupAdoptedSkill`** — the adopted patterns with their
   body, all of them or one by id, each carrying the agent that adopted it. Only
   `adopted` is served: the other states are stages of deciding about a pattern,
@@ -81,7 +83,7 @@ Given a rebuilt `ProjectionCache` over your chain (see `@mnema/core`), read the
 opening context for an actor and ask whether a move is allowed:
 
 ```ts
-import { adoptedSkills, bootstrap, guard } from '@mnema/copilot';
+import { adoptedSkills, bootstrap, guard, nextActionsForTask } from '@mnema/copilot';
 
 // Where did I leave off, what can I do next, and by what patterns?
 // `asOf` is the clock the ages are measured against; `sessionRuns` are the runs
@@ -93,9 +95,12 @@ const opening = bootstrap([cache], {
 });
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
 const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
-const firstJob = opening.work[0]; // the freshest actionable task
-const moves = firstJob?.actions.map((a) => a.action); // e.g. ["block", "complete", ...]
+const firstJob = opening.work[0]; // the freshest actionable task — a NAME
+const more = opening.workTotal > opening.work.length; // was the list cut?
 const patterns = opening.skills.map((s) => s.name); // names only — one line each
+
+// A name that turned out to matter: ask what that ONE task allows.
+const moves = firstJob && nextActionsForTask(cache, firstJob.id)?.map((a) => a.action);
 
 // A name that matches the task at hand: ask for the pattern itself.
 const [pattern] = adoptedSkills([cache]); // each carries its `body`

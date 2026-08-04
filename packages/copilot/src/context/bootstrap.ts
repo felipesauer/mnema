@@ -4,11 +4,10 @@
  * When an agent starts, it needs three things: where the actor left off, what
  * can be done next, and what patterns it is expected to work by. bootstrap
  * composes exactly those — {@link resume} for the "where was I" (the actor's
- * latest run and open focus), {@link nextActions} for the "what now" (the moves
- * each live piece of work allows), and the NAMES of the adopted skills
- * ({@link adoptedSkills}) for the "how we do things here". It is the "serve
- * lean" of the design: a filtered opening context, not a dump of the whole
- * record.
+ * latest run and open focus), the live pieces of work for the "what now", and the
+ * NAMES of the adopted skills ({@link adoptedSkills}) for the "how we do things
+ * here". It is the "serve lean" of the design: a filtered opening context, not a
+ * dump of the whole record.
  *
  * NAMES, NEVER BODIES. The skills appear as name + id and nothing else. A body
  * is the pattern in full — paragraphs of it — and putting twenty of those in
@@ -17,15 +16,50 @@
  * an agent cannot ask for what it does not know exists. The body comes from a
  * separate read, when a name turns out to match the task at hand.
  *
- * LEAN, NOT MEASURED. bootstrap narrows — it does not count. There is no token
- * estimate, no size signal, no tokenizer: the economy is a CONSEQUENCE of
- * serving only what matters (the actor's focus, the actionable work, the names
- * of the patterns), never a budget this layer manages. What makes it lean is the
- * filtering:
+ * A TASK HAS A BODY TOO, AND IT IS THE MOVES. The same rule now governs the work
+ * list, because it is the same distinction: a work item carries id, title, state
+ * and when it last moved — the NAME of a piece of work — and not the moves the
+ * workflow allows from it. Those moves are its body: the whole row set out of its
+ * state, each action with the proof it demands, ten lines for one task. They come
+ * from {@link nextActions} (or {@link nextActionsForTask}), asked about the ONE
+ * task the agent decided to act on — the same second read a skill's body comes
+ * through. The trade is deliberate and it is not symmetric: one extra call on the
+ * path where an agent ACTS, against the whole table for every task on the path
+ * where it only LOOKS.
+ *
+ * No count of the moves takes their place, either. Being in this list already
+ * means having a legal move — the filter below drops a terminal task by
+ * construction — so a number beside each item would restate the definition of the
+ * list it is in.
+ *
+ * FILTERING WAS NOT A LIMIT, AND MEASUREMENT IS WHAT SAID SO. This doc used to
+ * claim, under the heading LEAN, NOT MEASURED, that "the economy is a CONSEQUENCE
+ * of serving only what matters, never a budget this layer manages". The premise
+ * beneath that was that "actionable" bounds the work list. It does not: a healthy
+ * backlog is mostly actionable, and excluding terminal tasks excludes almost
+ * nothing. The number that falsified it was 854 — the lines of ONE payload over a
+ * modest record (30 actionable tasks, 15 decisions, 25 adopted patterns, 20
+ * memories, 10 observations), of which the work list alone was 742, some 25 lines
+ * per task, against the ~200 lines the market publishes for a whole project
+ * memory. A hundred actionable tasks would have been ~2,500 lines.
+ *
+ * So the limit is STATED now, in two halves, and neither of them is a tokenizer:
+ *   - each item is a NAME, which is what fixes the per-item cost at four fields
+ *     instead of a transition table;
+ *   - the list is CUT (see {@link cappedWork}) and the answer says how many there
+ *     were ({@link Bootstrap.workTotal}) — a cut that does not declare itself is
+ *     the same failure as an empty answer that reads like an answer.
+ * What has NOT changed is the part that was right: nothing here estimates tokens
+ * or measures bytes. A count of items is a property this layer can be correct
+ * about; a token budget is not. Asserted in `bootstrap.test.ts` — "cuts the work
+ * list at the convention's limit and says how many there were" and "serves every
+ * item, and no new field, below the limit".
+ *
+ * What still makes the rest lean is the filtering:
  *   - the actor's focus comes from `resume`, already scoped to the actor;
  *   - the work list carries ONLY actionable tasks — those with at least one legal
  *     next move (a terminal task has none and is left out) — most recently
- *     touched first, so the freshest work leads;
+ *     touched first, so the freshest work leads and the cut falls on the stalest;
  *   - the skill list carries ONLY adopted patterns, by name.
  *
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
@@ -52,22 +86,30 @@
  * reshuffle the list.
  */
 
-import type { ProjectionCache, TaskProjection } from '@mnema/core';
+import { type ProjectionCache, SEARCH_DEFAULT_LIMIT, type TaskProjection } from '@mnema/core';
 import { type ActorScope, type Resume, resume } from './focus.js';
-import { type NextAction, nextActions } from './next-action.js';
+import { nextActions } from './next-action.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
 
-/** One live task and the moves it allows — a unit of "what can be done". */
+/**
+ * How many pieces of work an opening context serves.
+ *
+ * It is the search's own default, taken BY REFERENCE and not restated: that
+ * constant is already this product's published answer to "how many items does a
+ * read hand back when nobody said", and a second number for the same question is
+ * a second convention that drifts from the first.
+ */
+const WORK_LIMIT: number = SEARCH_DEFAULT_LIMIT;
+
+/** One live piece of work, NAMED — a unit of "what can be done". */
 export interface WorkItem {
-  /** The task's id. */
+  /** The task's id — the key {@link nextActionsForTask} takes. */
   readonly id: string;
   readonly title: string;
   /** The task's current state. */
   readonly state: string;
   /** `at` of its last transition — what "most recently touched" orders on. */
   readonly updatedAt: string;
-  /** The moves the workflow allows from this state (always non-empty here). */
-  readonly actions: readonly NextAction[];
 }
 
 /** The opening context: where the actor is, the actionable work, the patterns. */
@@ -76,10 +118,23 @@ export interface Bootstrap {
   readonly resume: Resume;
   /**
    * The workspace's actionable tasks — those with a legal next move — most
-   * recently touched first, each carrying its available moves. Terminal tasks
-   * (no move out) are omitted. NOT attributed to the actor (see the module doc).
+   * recently touched first, NAMED and not spelled out: the moves each one allows
+   * come from {@link nextActions}, asked per task (see the module doc). Terminal
+   * tasks (no move out) are omitted, and so is everything past
+   * {@link Bootstrap.workTotal}'s cut. NOT attributed to the actor (see below).
    */
   readonly work: readonly WorkItem[];
+  /**
+   * How many actionable tasks there are in all. Greater than `work.length` means
+   * the list was cut, and the items missing are the STALEST — the order is
+   * freshest-first, so a cut answer is always the top of it.
+   *
+   * Named for the list it counts rather than called `total`, which is what the
+   * one-list read this borrows the shape from ({@link searchRecords}) can afford:
+   * three lists arrive here, and a bare total beside them would leave a reader to
+   * guess which one it was about.
+   */
+  readonly workTotal: number;
   /**
    * The adopted patterns, by NAME and id — never the body (see the module doc).
    * Ordered by name, so the list is stable whatever order the trees are read in.
@@ -89,13 +144,13 @@ export interface Bootstrap {
 
 /**
  * Builds the opening context for `actor` over every tree the caller can see:
- * their resume, every actionable task with the moves it allows (freshest first),
- * and the names of the adopted patterns. Reads caches only; composes pure
- * derivations. The three halves are independent — an actor with no runs still gets
- * the work list, and a workspace with no skills still gets both of the others.
+ * their resume, the freshest actionable tasks by name, and the names of the
+ * adopted patterns. Reads caches only; composes pure derivations. The three halves
+ * are independent — an actor with no runs still gets the work list, and a workspace
+ * with no skills still gets both of the others.
  */
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
-  const work = caches
+  const actionable = caches
     .flatMap((cache) => cache.listTasks())
     .map((t) => toWorkItem(t))
     .filter((w): w is WorkItem => w !== null)
@@ -103,19 +158,37 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
-  return { resume: resume(caches, scope), work, skills };
+  return { resume: resume(caches, scope), ...cappedWork(actionable), skills };
 }
 
-/** A task becomes a WorkItem only if it has at least one legal next move. */
+/**
+ * The work an opening context serves, and how many there were — the CUT and the
+ * report of it, made in one place so they cannot come to disagree.
+ *
+ * A cut computed here and a total computed at the call site is how a list starts
+ * declaring the wrong number: the total has to be of the list BEFORE the cut, which
+ * is a fact only the caller of the cut still holds.
+ */
+function cappedWork(actionable: readonly WorkItem[]): {
+  readonly work: readonly WorkItem[];
+  readonly workTotal: number;
+} {
+  return { work: actionable.slice(0, WORK_LIMIT), workTotal: actionable.length };
+}
+
+/**
+ * A task becomes a WorkItem only if it has at least one legal next move. The moves
+ * decide MEMBERSHIP and are then dropped: what a state allows is the task's body,
+ * served by {@link nextActions} per task, so being in the list is the whole of what
+ * this answer says about them.
+ */
 function toWorkItem(task: TaskProjection): WorkItem | null {
-  const actions = nextActions(task.state);
-  if (actions.length === 0) return null;
+  if (nextActions(task.state).length === 0) return null;
   return {
     id: task.id,
     title: task.title,
     state: task.state,
     updatedAt: task.updatedAt,
-    actions,
   };
 }
 
