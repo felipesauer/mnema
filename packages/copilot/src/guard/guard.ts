@@ -54,11 +54,17 @@ export interface GuardWithFocus {
  * what time it is where the question was asked. Composing the scope here — rather
  * than taking a whole {@link ActorScope} — is what keeps the focus attached to the
  * `who` the verdict was decided for, with no second spelling of it to disagree.
+ *
+ * The caches are the FOCUS's, and the verdict needs none: {@link guard} is pure, and
+ * the state it decides from arrives in the request. So what belongs here is every
+ * tree whose runs the asker may have — not the tree the entity happens to live in,
+ * which is a different question and answers about somebody else's record as readily
+ * as the asker's own.
  */
 export function guardWithFocus(
-  cache: ProjectionCache,
+  caches: readonly ProjectionCache[],
   request: GateRequest,
   asker: AskerContext,
 ): GuardWithFocus {
-  return { verdict: guard(request), focus: focus(cache, { actor: request.who, ...asker }) };
+  return { verdict: guard(request), focus: focus(caches, { actor: request.who, ...asker }) };
 }

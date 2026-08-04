@@ -35,13 +35,21 @@
  * read model supports today. When a future slice ties a task to the actor, the
  * work list can narrow to the actor with no change to this shape.
  *
- * TWO WORLDS, DELIBERATELY. The resume and the work come from ONE cache — the
- * actor's tree, because work is scoped to a tree and always was. The skills come
- * from every tree the caller can see, because a pattern is a capability, not a
- * piece of work: the team adopts patterns in the public tree and an agent's own
- * land in the private one, and both apply to whatever is being done. The caller
- * says which caches those are; passing `[cache]` alone is the honest answer when
- * the actor's tree is the whole world.
+ * ONE WORLD NOW, AND THAT IS THE CORRECTION. The three halves read the SAME caches:
+ * every tree the caller can see. The split used to be deliberate — skills from every
+ * tree (a pattern is a capability), work and runs from the actor's single tree
+ * (because "work is scoped to a tree") — and the second half of that sentence stopped
+ * being true when routing became a function of the KIND. A task lands in the tree
+ * that travels and a memory in the machine's own, whoever wrote either; so "the
+ * actor's tree" names no tree in particular, and a work list read from one of them
+ * came back EMPTY while looking like an answer. That is the worst shape an opening
+ * read can have: an agent told there is nothing to do proceeds as if that were true.
+ *
+ * Concatenating per-tree projections is not an approximation of the union: a task's
+ * whole history lands in one tree (a move follows the entity), so the per-tree fold
+ * and the union fold see the same events for it. Ordering is by CONTENT
+ * (`updatedAt`, then id), so which trees are passed, and in what order, cannot
+ * reshuffle the list.
  */
 
 import type { ProjectionCache, TaskProjection } from '@mnema/core';
@@ -80,26 +88,22 @@ export interface Bootstrap {
 }
 
 /**
- * Builds the opening context for `actor`: their resume, every actionable task
- * with the moves it allows (freshest first), and the names of the adopted
- * patterns found in `skillCaches`. Reads caches only; composes pure derivations.
- * The three halves are independent — an actor with no runs still gets the work
- * list, and a workspace with no skills still gets both of the others.
+ * Builds the opening context for `actor` over every tree the caller can see:
+ * their resume, every actionable task with the moves it allows (freshest first),
+ * and the names of the adopted patterns. Reads caches only; composes pure
+ * derivations. The three halves are independent — an actor with no runs still gets
+ * the work list, and a workspace with no skills still gets both of the others.
  */
-export function bootstrap(
-  cache: ProjectionCache,
-  scope: ActorScope,
-  skillCaches: readonly ProjectionCache[],
-): Bootstrap {
-  const work = cache
-    .listTasks()
+export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
+  const work = caches
+    .flatMap((cache) => cache.listTasks())
     .map((t) => toWorkItem(t))
     .filter((w): w is WorkItem => w !== null)
     .sort(byUpdatedDesc);
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
-  const skills = adoptedSkills(skillCaches).map(({ id, name }) => ({ id, name }));
-  return { resume: resume(cache, scope), work, skills };
+  const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
+  return { resume: resume(caches, scope), work, skills };
 }
 
 /** A task becomes a WorkItem only if it has at least one legal next move. */

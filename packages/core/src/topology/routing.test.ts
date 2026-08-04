@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type ChainLayout, catalogUpcasters } from '@mnema/chain';
+import { type ChainLayout, catalogUpcasters, type EventKind, LATEST_VERSION } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { createTask, type WriteContext } from '../workflow/operations.js';
@@ -10,44 +11,125 @@ import { type ResolvedTrees, resolveTrees } from './resolve.js';
 import {
   chainRootForScope,
   openTreeForWriting,
+  type RoutedKind,
   resolveScope,
   type Scope,
   TreeUnavailableError,
+  UNROUTED_KINDS,
 } from './routing.js';
 
 const upcasters = catalogUpcasters();
 
-describe('resolveScope — the L4 default-by-origin cascade', () => {
-  it('defaults a deliberate human capture (no `which`) to public', () => {
-    expect(resolveScope({})).toBe('public');
-    expect(resolveScope({ which: undefined })).toBe('public');
+/** The table as decided, spelled out here so the rule is asserted, not echoed. */
+const EXPECTED: { readonly [K in RoutedKind]: Scope | 'by-origin' } = {
+  'task.created': 'public',
+  'decision.recorded': 'public',
+  'skill.created': 'public',
+  'skill.consulted': 'public',
+  'handoff.recorded': 'public',
+  'knowledge.linked': 'public',
+  // The two kinds the KIND cannot answer for: the same kind holds a fact the team
+  // needs and a note that is nobody's business but the writer's. They keep the
+  // author rule until that question is settled.
+  'memory.captured': 'by-origin',
+  'observation.recorded': 'by-origin',
+};
+
+const ROUTED = Object.keys(EXPECTED) as RoutedKind[];
+
+/** The kinds the table answers from the kind alone. */
+const BY_KIND = ROUTED.filter((kind) => EXPECTED[kind] !== 'by-origin');
+
+/** The kinds the table still answers from the author. */
+const BY_ORIGIN = ROUTED.filter((kind) => EXPECTED[kind] === 'by-origin');
+
+/** A capture with no executing agent — a person acting directly. */
+const PERSON = {};
+/** A capture an agent made. */
+const AGENT = { which: 'agent-x' };
+
+describe('resolveScope — the L4 cascade, now by KIND', () => {
+  it('routes each kind by the kind, whoever wrote it', () => {
+    for (const kind of BY_KIND) {
+      expect(resolveScope(kind, PERSON)).toBe(EXPECTED[kind]);
+      expect(resolveScope(kind, AGENT)).toBe(EXPECTED[kind]);
+    }
   });
 
-  it('defaults an automatic agent capture (a `which` is present) to private', () => {
-    expect(resolveScope({ which: 'agent-x' })).toBe('private');
+  it('sends a declaration about the project to the tree that TRAVELS', () => {
+    // The defect this closes: an ADR recorded by an agent landed in the tree that
+    // never leaves the machine, so a colleague cloning the repository inherited a
+    // founding and nothing else.
+    expect(resolveScope('decision.recorded', AGENT)).toBe('public');
+    expect(resolveScope('task.created', AGENT)).toBe('public');
+    expect(resolveScope('skill.created', AGENT)).toBe('public');
+    expect(resolveScope('skill.consulted', AGENT)).toBe('public');
+    expect(resolveScope('handoff.recorded', AGENT)).toBe('public');
+    expect(resolveScope('knowledge.linked', AGENT)).toBe('public');
   });
 
-  it('lets an explicit override win over the origin default, both ways', () => {
-    expect(resolveScope({ which: 'agent-x' }, 'public')).toBe('public');
-    expect(resolveScope({}, 'private')).toBe('private');
-    expect(resolveScope({}, 'global')).toBe('global');
+  it('leaves the two knowledge kinds on the AUTHOR rule, deliberately', () => {
+    // Unchanged, and the change would not be a tidy-up: the kind does not determine
+    // the audience for these two, so the answer is still the imperfect one until that
+    // question is settled.
+    for (const kind of BY_ORIGIN) {
+      expect(resolveScope(kind, PERSON)).toBe('public');
+      expect(resolveScope(kind, AGENT)).toBe('private');
+    }
   });
 
-  it('reads a blank `which` as NO agent — the same reading the event records', () => {
-    // A caller that typed `--which ""` (or a client announcing an empty name)
-    // named no agent: the operations drop it from the envelope, so routing must
-    // not send the capture private on the strength of a value that will not be
-    // recorded. Otherwise the tree it lands in and the fact it produces disagree
-    // about whether an agent acted.
-    expect(resolveScope({ which: '' })).toBe('public');
-    expect(resolveScope({ which: '   ' })).toBe('public');
-    expect(resolveScope({ which: '\t\n' })).toBe('public');
+  it('reads a blank `which` as NO agent, for the kinds that read it at all', () => {
+    // A caller that typed `--which ""` (or a client announcing an empty name) named no
+    // agent: the operations drop it from the envelope, so routing must not send the
+    // capture private on the strength of a value that will not be recorded.
+    for (const kind of BY_ORIGIN) {
+      expect(resolveScope(kind, { which: '' })).toBe('public');
+      expect(resolveScope(kind, { which: '   ' })).toBe('public');
+      expect(resolveScope(kind, { which: '\t\n' })).toBe('public');
+      // And the padding is an accident, not a way out of the agent default.
+      expect(resolveScope(kind, { which: '  codex  ' })).toBe('private');
+    }
   });
 
-  it('reads a whitespace-padded agent as that agent (trimmed, not discarded)', () => {
-    // The canonical form of "  codex  " IS an identity, so it routes private —
-    // the padding is an accident, not a way to opt out of the agent default.
-    expect(resolveScope({ which: '  codex  ' })).toBe('private');
+  it('lets an explicit override win, for EVERY kind, every author, every tree', () => {
+    for (const kind of ROUTED) {
+      for (const origin of [PERSON, AGENT]) {
+        expect(resolveScope(kind, origin, 'public')).toBe('public');
+        expect(resolveScope(kind, origin, 'private')).toBe('private');
+        expect(resolveScope(kind, origin, 'global')).toBe('global');
+      }
+    }
+  });
+});
+
+describe('resolveScope — the classification is TOTAL over the catalog', () => {
+  const catalog = Object.keys(LATEST_VERSION) as EventKind[];
+
+  it('classifies every kind the chain may hold exactly once', () => {
+    // The question "is there a kind that writes and skips the rule?" answered
+    // against the catalog itself, not against a list kept in step by hand. A kind
+    // added to `LATEST_VERSION` shows up here with no home.
+    const routed = new Set<string>(ROUTED);
+    const unrouted = new Set(Object.keys(UNROUTED_KINDS));
+    for (const kind of catalog) {
+      expect(routed.has(kind) !== unrouted.has(kind), `${kind} is classified once`).toBe(true);
+    }
+    expect(routed.size + unrouted.size).toBe(catalog.length);
+  });
+
+  it('is not vacuous — every half holds kinds, and the catalog is not empty', () => {
+    expect(catalog.length).toBeGreaterThan(10);
+    expect(BY_KIND.length).toBe(6);
+    expect(BY_ORIGIN.length).toBe(2);
+    expect(Object.keys(UNROUTED_KINDS).length).toBe(catalog.length - ROUTED.length);
+  });
+
+  it('says WHY each unrouted kind does not ask the rule', () => {
+    // A blank reason would make the exemption unanswerable, which is the whole
+    // point of listing them rather than defaulting them.
+    for (const [kind, reason] of Object.entries(UNROUTED_KINDS)) {
+      expect(reason.trim().length, `${kind} states a reason`).toBeGreaterThan(20);
+    }
   });
 });
 
@@ -111,16 +193,30 @@ describe('openTreeForWriting — routing a write to the right tree', () => {
     expect(existsSync(join(trees.global, 'tails'))).toBe(false);
   });
 
-  it('routes an automatic agent capture (private default) into the private tree', () => {
-    const scope = resolveScope({ which: 'agent-x' }); // → 'private'
+  it('routes an agent’s memory (still the author rule) into the private tree', () => {
+    const scope = resolveScope('memory.captured', { which: 'agent-x' }); // → 'private'
+    const { ctx, root } = contextFor(scope);
+    const captured = captureMemory(ctx, { content: 'for me only', which: 'agent-x' });
+    if (!captured.ok) throw new Error('capture failed');
+
+    expect(root).toBe(trees.projectPrivate);
+    expect(orderedEvents({ root }, upcasters).some((e) => e.kind === 'memory.captured')).toBe(true);
+    // The team's public tree holds no tail of its own — only the `.gitignore`
+    // hygiene the private write ensures.
+    expect(existsSync(join(trees.projectPublic as string, 'tails'))).toBe(false);
+  });
+
+  it('routes an AGENT’s task to the tree that travels — the author no longer decides', () => {
+    const scope = resolveScope('task.created', { which: 'agent-x' }); // → 'public' either way
     const { ctx, root } = contextFor(scope);
     const created = createTask(ctx, { title: 'auto', which: 'agent-x' });
     if (!created.ok) throw new Error('create failed');
 
-    expect(root).toBe(trees.projectPrivate);
+    expect(root).toBe(trees.projectPublic);
     expect(projectTasks(orderedEvents({ root }, upcasters)).has(created.id)).toBe(true);
-    // The team's public tree stays clean.
-    expect(existsSync(join(trees.projectPublic as string, 'tails'))).toBe(false);
+    // And the event it produced does name the agent: the tree and the envelope
+    // answer two different questions now, so neither can misreport the other.
+    expect(existsSync(join(trees.projectPrivate as string, 'tails'))).toBe(false);
   });
 
   it('signs every tree with the ONE key root (referenced, never copied)', () => {

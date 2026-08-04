@@ -238,10 +238,11 @@ describe('a session locates an entity exactly where a fresh process would', () =
     // Two tasks with the same title, one per tree: an answer from the wrong
     // cache would still look plausible, so only the ids tell them apart.
     const session = openOn(makeProject('proj'));
-    expect(session.scope).toBe('private');
 
-    const inPublic = runCreateTask(session, { title: 'same name', scope: 'public' });
-    const inPrivate = runCreateTask(session, { title: 'same name' });
+    // A task's kind sends it to the tree that travels, so the OVERRIDE is what puts
+    // the second one in the private tree.
+    const inPublic = runCreateTask(session, { title: 'same name' });
+    const inPrivate = runCreateTask(session, { title: 'same name', scope: 'private' });
     if (!inPublic.ok || !inPrivate.ok) throw new Error('setup: create refused');
 
     expect(viaSession(session, inPublic.id)).toBe('public');

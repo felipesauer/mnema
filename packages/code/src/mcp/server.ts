@@ -72,7 +72,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
-import { RECORD_CONTRACT, type Replacement, replacementNotice } from '../recorded-content.js';
+import {
+  type Landed,
+  landedNotice,
+  RECORD_CONTRACT,
+  type Replacement,
+  replacementNotice,
+} from '../recorded-content.js';
 import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
@@ -307,14 +313,19 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       // credential in the host's log in a product that replaces one before writing
       // it. The agent is named when the run opens, from what the write recorded.
       //
+      // And no scope, because a session no longer has one. Where a write lands is
+      // decided per call, from what the write IS, so a line printed at the handshake
+      // could only state a default that does not exist — and the run line that follows
+      // each first write already names the tree it opened in.
+      //
       // Collapsed to one line: the log is read one event per line, and a path
       // holding a newline would otherwise write a second event nothing happened in.
       log(
         oneLine(
           `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
             `workspaceProjects=${opened.workspaceProjects.length} ` +
-            `scope=${opened.scope} who=${opened.who} ` +
-            'runs=(none — the first write to a project opens that project’s run)',
+            `who=${opened.who} ` +
+            'runs=(none — the first write to a tree opens that tree’s run)',
         ),
       );
       return opened;
@@ -407,8 +418,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'agent and pinned to the current session. Optionally pick the scope it ' +
         'lands in — public (team-visible), private (this machine, this project), ' +
         'or global (personal, cross-project); omitted, it follows the session ' +
-        'default (private in a project, global outside one). Optionally pick the ' +
-        'project it lands in, when the workspace holds more than one.' +
+        'default (private for an agent in a project, global outside one). Optionally ' +
+        'pick the project it lands in, when the workspace holds more than one. The ' +
+        'reply says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         content: z.string().min(1).describe('The memory to record.'),
@@ -449,7 +461,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'observation `text`. The `about` id is NOT checked to exist — a reference ' +
         'to an entity in another tree is honest and resolved on read. Optionally ' +
         'pick the scope and the project it lands in; omitted, both follow the ' +
-        'session default. Returns the observation’s own minted id.' +
+        'session default (private for an agent in a project, global outside one). ' +
+        'Returns the observation’s own minted id, and says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         about: z.string().min(1).describe('The id of the entity being observed.'),
@@ -490,8 +503,10 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'the mnema chain, attributed to this agent and pinned to the current ' +
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
-        'to exist. Optionally pick the scope and the project; omitted, both follow ' +
-        'the session default. A handoff has no id of its own — its subject is the task.' +
+        'to exist. Optionally pick the scope and the project; omitted, a handoff is ' +
+        'coordination between actors and lands PUBLIC — committed, so both of them ' +
+        'reach it (global outside a project). A handoff has no id of its own — its ' +
+        'subject is the task. The reply says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         task: z.string().min(1).describe('The task the handoff is about.'),
@@ -500,7 +515,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
-          .describe('Where the handoff lands; overrides the session default.'),
+          .describe('Where the handoff lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -535,8 +550,10 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'an OPEN string (recommended: supersedes, relates-to, derived-from, ' +
         'contradicts; any label is accepted). Neither endpoint is checked to ' +
         'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
-        'pick the scope and the project the EDGE is recorded in; omitted, both ' +
-        'follow the session default. A link has no id of its own — it is an edge.' +
+        'pick the scope and the project the EDGE is recorded in; omitted, a link ' +
+        'asserts a relation between the project’s records and lands PUBLIC (global ' +
+        'outside a project). A link has no id of its own — it is an edge. The reply ' +
+        'says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         subject: z.string().min(1).describe('The entity that originates the link.'),
@@ -545,7 +562,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
-          .describe('Where the link lands; overrides the session default.'),
+          .describe('Where the link lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -578,17 +595,18 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'the current session. A task needs a title; it starts in the workflow’s ' +
         'initial state and is moved from there with task_transition. Optionally ' +
         'pick the scope it lands in — public (team-visible), private (this ' +
-        'machine, this project), or global (personal, cross-project); omitted, it ' +
-        'follows the session default. Optionally pick the project it lands in, when ' +
-        'the workspace holds more than one. Returns the minted id (the key to move ' +
-        'it) and the short alias a human reads.' +
+        'machine, this project), or global (personal, cross-project); omitted, a ' +
+        'task is the team’s work board and lands PUBLIC — committed, so a clone has ' +
+        'the board (global outside a project). Optionally pick the project it lands ' +
+        'in, when the workspace holds more than one. Returns the minted id (the key ' +
+        'to move it), the short alias a human reads, and which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('What the task is.'),
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
-          .describe('Where the task lands; overrides the session default.'),
+          .describe('Where the task lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -649,7 +667,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Task ${result.alias} → ${result.to}`, result);
+      return moved(`Task ${result.alias} → ${result.to}`, result);
     },
   );
 
@@ -662,9 +680,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'pinned to the current session. A decision needs both a title and a ' +
         'rationale (why it was made). Optionally pick the scope it lands in — ' +
         'public (team-visible), private (this machine, this project), or global ' +
-        '(personal, cross-project); omitted, it follows the session default. ' +
-        'Optionally pick the project it lands in, when the workspace holds more ' +
-        'than one. Returns the citable ADR-<n> label — a decision has no short alias.' +
+        '(personal, cross-project); omitted, a decision is a declaration about the ' +
+        'project and lands PUBLIC — committed, so the team gets it on clone (global ' +
+        'outside a project); it is born `proposed`, so recording one proposes it ' +
+        'rather than settling it. Optionally pick the project it lands in, when the ' +
+        'workspace holds more than one. Returns the citable ADR-<n> label — a ' +
+        'decision has no short alias — and which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('The decision title.'),
@@ -672,7 +693,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
-          .describe('Where the decision lands; overrides the session default.'),
+          .describe('Where the decision lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -733,7 +754,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Decision ${result.adr} → ${result.to}`, result);
+      return moved(`Decision ${result.adr} → ${result.to}`, result);
     },
   );
 
@@ -746,10 +767,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'this agent and pinned to the current session. A skill needs both a name ' +
         '(a short title) and a body (the reusable pattern itself). Optionally pick ' +
         'the scope it lands in — public (team-visible), private (this machine, ' +
-        'this project), or global (personal, cross-project); omitted, it follows ' +
-        'the session default. Optionally pick the project it lands in, when the ' +
-        'workspace holds more than one. Returns the minted id (the key to move it) ' +
-        'and the name — a skill has no short alias.' +
+        'this project), or global (personal, cross-project); omitted, a pattern ' +
+        'states how the work is done here and lands PUBLIC — committed, so the team ' +
+        'gets it on clone (global outside a project); it is born `proposed`, so ' +
+        'creating one proposes it rather than adopting it. Optionally pick the ' +
+        'project it lands in, when the workspace holds more than one. Returns the ' +
+        'minted id (the key to move it), the name, and which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         name: z.string().min(1).describe('A short title for the pattern.'),
@@ -757,7 +780,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
-          .describe('Where the skill lands; overrides the session default.'),
+          .describe('Where the skill lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -813,7 +836,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Skill "${result.name}" → ${result.to}`, result);
+      return moved(`Skill "${result.name}" → ${result.to}`, result);
     },
   );
 
@@ -1362,16 +1385,46 @@ async function listRootsSafely(
 }
 
 /**
- * A write tool's successful reply: what landed, plus what the content door
- * replaced on the way in.
+ * A BIRTH tool's successful reply: what landed, WHERE it landed, and what the
+ * content door replaced on the way in.
  *
- * One helper for all ten, because a scrub the caller is not told about is the tool
- * writing something other than what was asked for and saying nothing — and the
- * caller is the only party that can still act on it (rotate the credential, warn
- * the person, record the thing again without it). The notice is absent when nothing
- * was replaced, so the ordinary write reads exactly as it did before.
+ * One helper for all of them, because either omission is the tool doing something
+ * other than what was asked for and saying nothing. A scrub the caller is not told
+ * about leaves a credential unrotated. A tree the caller is not told about leaves the
+ * fact somewhere the caller believes it is not: a session of real use recorded a
+ * decision, read the record afterwards to find out where it had gone, and passed that
+ * on to the person as a caveat — which is the proof that this reply had not spoken.
+ * The caller is the only party that can still act on either.
+ *
+ * The scope is the RESOLVED one, taken off the result rather than off the call: the
+ * call regularly says nothing, and what the reply must state is where the fact
+ * actually is.
  */
 function recorded(
+  line: string,
+  result: Landed & Replacement,
+): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
+  return {
+    content: [
+      {
+        type: 'text',
+        text: [line, landedNotice(result.scope), ...replacementNotice(result.replaced)].join('\n'),
+      },
+    ],
+  };
+}
+
+/**
+ * A MOVE's successful reply: what changed, plus the replacement notice.
+ *
+ * It says no tree, and the asymmetry with {@link recorded} is the point. A birth is
+ * ROUTED — the surface picks a tree from the kind, the caller said nothing, so the
+ * reply is the only place that choice surfaces. A move follows the entity to wherever
+ * it was born; nothing was decided here, and there is nothing the caller could do
+ * with the answer. Naming a tree where no choice was made would make the sentence
+ * furniture, and a sentence that appears everywhere stops being read where it matters.
+ */
+function moved(
   line: string,
   result: Replacement,
 ): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {

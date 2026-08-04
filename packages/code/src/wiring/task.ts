@@ -4,9 +4,10 @@
  * `task` is a group: its default action creates (`mnema task "<title>"`),
  * and its one subcommand moves an existing task through the workflow
  * (`mnema task move <action> <id>`). Create takes an optional `--scope` — the
- * per-action override for where the task is born; omitted, it defaults to
- * public (the provisional default). `move` takes NO scope: a move follows the
- * entity to the tree it was born in, never a scope the caller picks.
+ * per-action override for where the task is born; omitted, the KIND decides, and a
+ * task is the team's board, so it lands in the tree that travels. `move` takes NO
+ * scope: a move follows the entity to the tree it was born in, never a scope the
+ * caller picks.
  *
  * `--which` is declared HERE, on the group, and serves both the create and the
  * move: commander hands a group's option to the group wherever it appears on the
@@ -28,7 +29,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -42,7 +43,8 @@ export function registerTask(program: Command, wiring: Wiring): void {
     .option(
       '--scope <scope>',
       'where the task is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public.',
+        'or global (personal, cross-project). Omitted, a task lands in the ' +
+        'public tree (the team’s work board).',
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -65,7 +67,7 @@ export function registerTask(program: Command, wiring: Wiring): void {
       });
       if (result.ok) {
         io.out(`Created task ${result.alias} (${result.id})`);
-        reportReplacement(result, io);
+        reportRecorded(result, io);
         return;
       }
       reportRefusal(io, result);

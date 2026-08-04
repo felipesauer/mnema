@@ -17,10 +17,10 @@
  * dangling, never a refusal here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands — private when
- * an agent operating the CLI declares itself (`which`), which is also recorded on
- * the fact. That `which` is the agent that RECORDED the handoff, distinct from the
- * `from`/`to` agents the handoff is about: the recorder may be neither of them.
+ * `scope` wins; when omitted, the KIND decides — a handoff coordinates two actors,
+ * so it belongs to the tree both of them can read. The `which` is the agent that
+ * RECORDED the handoff, distinct from the `from`/`to` agents it is about (the
+ * recorder may be neither), and it names the agent without moving the tree.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -32,7 +32,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordHandoff } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the handoff command needs — injected so it is testable. */
 export interface HandoffContext {
@@ -43,7 +43,7 @@ export interface HandoffContext {
 }
 
 /** A handoff was recorded — the fact, with its references (there is no id). */
-export interface HandoffRecorded extends Replacement {
+export interface HandoffRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The task the handoff is about (the event subject). */
   readonly task: string;
@@ -67,10 +67,11 @@ export type HandoffRefused =
 
 /**
  * Records a handoff, routing its birth to the resolved scope. The scope rule is
- * identical to a memory's. The `task` reference is forwarded to the core as-is
- * and never validated. On success it echoes the fact back (task, from, to) —
- * there is no minted id to return. A declared `which` shifts the omitted default
- * to private and is recorded on the event; an explicit `scope` still wins over it.
+ * the one every birth follows: an explicit `scope` wins, else the tree the KIND
+ * names (public). The `task` reference is forwarded to the core as-is and never
+ * validated. On success it echoes the fact back (task, from, to) — there is no
+ * minted id to return — plus the tree it landed in. A declared `which` is recorded
+ * on the event and does not move the tree.
  */
 export function runHandoff(
   ctx: HandoffContext,
@@ -84,7 +85,7 @@ export function runHandoff(
   },
 ): HandoffRecorded | HandoffRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('handoff.recorded', { which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -118,6 +119,7 @@ export function runHandoff(
     // record holds a placeholder, and the echo has to show what landed.
     fromAgent: recorded.fromAgent,
     toAgent: recorded.toAgent,
+    scope,
     ...forwardReplacement(recorded),
   };
 }

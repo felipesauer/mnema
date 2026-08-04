@@ -98,6 +98,16 @@ function privateOf(project: string): string {
   return join(project, PROJECT_DIR, 'private');
 }
 
+/**
+ * The tree a task, a decision or a skill lives in inside a project — the one that
+ * TRAVELS, because their kind decides and every one of them is a declaration about the
+ * project. This file is about which PROJECT a write reaches; the tree has to be right
+ * for that question to be asked at all.
+ */
+function publicOf(project: string): string {
+  return join(project, PROJECT_DIR);
+}
+
 /** Every event in a chain, replayed off DISK — never the tool's own answer. */
 function eventsIn(root: string): readonly ChainEvent[] {
   return orderedEvents({ root }, upcasters);
@@ -203,13 +213,13 @@ describe('a birth routed to another project can now be MOVED', () => {
 
     // Read off the disks: the birth pair and the move are in one tree, and the
     // session's own project holds neither of them.
-    expect(factsIn(privateOf(there))).toEqual([
+    expect(factsIn(publicOf(there))).toEqual([
       'task.created',
       'task.transitioned',
       'task.transitioned',
     ]);
-    expect(factsIn(privateOf(here))).toEqual([]);
-    expect(verify(privateOf(there), upcasters).ok).toBe(true);
+    expect(factsIn(publicOf(here))).toEqual([]);
+    expect(verify(publicOf(there), upcasters).ok).toBe(true);
     closeSession(session);
   });
 
@@ -237,12 +247,12 @@ describe('a birth routed to another project can now be MOVED', () => {
     expect(moved).toMatchObject({ ok: true, to: 'accepted', adr: recorded.adr });
     if (moved.ok) expect(moved.adr).toBe('ADR-1');
 
-    expect(factsIn(privateOf(there))).toEqual([
+    expect(factsIn(publicOf(there))).toEqual([
       'decision.recorded',
       'decision.transitioned',
       'decision.transitioned',
     ]);
-    expect(factsIn(privateOf(here))).toEqual([]);
+    expect(factsIn(publicOf(here))).toEqual([]);
     closeSession(session);
   });
 
@@ -265,12 +275,12 @@ describe('a birth routed to another project can now be MOVED', () => {
     });
     expect(moved).toMatchObject({ ok: true, to: 'reviewed', name: 'read the record first' });
 
-    expect(factsIn(privateOf(there))).toEqual([
+    expect(factsIn(publicOf(there))).toEqual([
       'skill.created',
       'skill.transitioned',
       'skill.transitioned',
     ]);
-    expect(factsIn(privateOf(here))).toEqual([]);
+    expect(factsIn(publicOf(here))).toEqual([]);
     closeSession(session);
   });
 
@@ -287,7 +297,7 @@ describe('a birth routed to another project can now be MOVED', () => {
     if (!created.ok) throw new Error('setup: create refused');
     expect(runTaskTransition(session, { id: created.id, action: 'submit' }).ok).toBe(true);
 
-    const events = eventsIn(privateOf(there));
+    const events = eventsIn(publicOf(there));
     const runs = projectRuns(events);
     // One run in that project, and every fact of it — the birth AND the move — cites
     // a run that same project holds.
@@ -298,7 +308,7 @@ describe('a birth routed to another project can now be MOVED', () => {
     expect(cited.size).toBe(1);
     for (const run of cited) expect(runs.has(run)).toBe(true);
     // And the session's own project has no run at all: nothing was written there.
-    expect(eventsIn(privateOf(here))).toEqual([]);
+    expect(eventsIn(publicOf(here))).toEqual([]);
     closeSession(session);
   });
 
@@ -316,7 +326,7 @@ describe('a birth routed to another project can now be MOVED', () => {
     const moved = runTaskTransition(session, { id: created.id, action: 'submit', project: here });
     // It landed by the ENTITY anyway — the extra key is not a destination.
     expect(moved.ok).toBe(true);
-    expect(factsIn(privateOf(here))).toEqual([]);
+    expect(factsIn(publicOf(here))).toEqual([]);
     closeSession(session);
   });
 });
@@ -354,7 +364,7 @@ describe('the two reads answer about an entity of another project', () => {
     if (!allowed.ok) throw new Error(`guard refused — ${allowed.message}`);
     expect(allowed.result.verdict.ok).toBe(true);
     // The guard is a dry run: it wrote nothing, and the move it promised then works.
-    expect(factsIn(privateOf(there))).toEqual(['task.created', 'task.transitioned']);
+    expect(factsIn(publicOf(there))).toEqual(['task.created', 'task.transitioned']);
     expect(runTaskTransition(session, { id: created.id, action: 'submit' }).ok).toBe(true);
     closeSession(session);
   });

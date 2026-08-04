@@ -38,12 +38,12 @@ function openedRun(agent = AGENT): { repo: string; env: DiscoveryEnv; id: string
 
 /** The events of `root`, so a test can read what actually landed on the envelope. */
 function eventsOf(repo: string, env: DiscoveryEnv) {
-  const root = resolveTrees(repo, env).projectPrivate as string;
+  const root = resolveTrees(repo, env).projectPublic as string;
   return orderedEvents({ root }, catalogUpcasters());
 }
 
 function runsOf(repo: string, env: DiscoveryEnv) {
-  const root = resolveTrees(repo, env).projectPrivate as string;
+  const root = resolveTrees(repo, env).projectPublic as string;
   return projectRuns(orderedEvents({ root }, catalogUpcasters()));
 }
 
@@ -74,7 +74,7 @@ describe('mnema run end', () => {
     const again = runRunEnd({ cwd: repo, env }, { run: id, which: AGENT, outcome: 'again' });
     expect(again).toMatchObject({ ok: false, reason: 'REFUSED', code: 'ALREADY_ENDED' });
     // Exactly one close was recorded, and the first outcome stands.
-    const root = resolveTrees(repo, env).projectPrivate as string;
+    const root = resolveTrees(repo, env).projectPublic as string;
     const ended = orderedEvents({ root }, catalogUpcasters()).filter(
       (e) => e.kind === 'run.ended' && e.subject === id,
     );
@@ -118,7 +118,7 @@ describe('mnema run end', () => {
   it('leaves the tree fully signed after closing a run', () => {
     const { repo, env, id } = openedRun();
     runRunEnd({ cwd: repo, env }, { run: id, which: AGENT, outcome: 'done' });
-    const verdict = verify(resolveTrees(repo, env).projectPrivate as string);
+    const verdict = verify(resolveTrees(repo, env).projectPublic as string);
     expect(verdict.ok).toBe(true);
     expect(verdict.fullySigned).toBe(true);
   });

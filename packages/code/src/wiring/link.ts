@@ -14,7 +14,7 @@ import { runLink } from '../commands/link.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -34,7 +34,8 @@ export function registerLink(program: Command, wiring: Wiring): void {
     .option(
       '--scope <scope>',
       'where the link is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public.',
+        'or global (personal, cross-project). Omitted, a link lands in the ' +
+        'public tree (an assertion about the project’s records).',
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -61,7 +62,7 @@ export function registerLink(program: Command, wiring: Wiring): void {
         if (result.ok) {
           // No id to report — a link is an edge, not an entity. Echo the fact.
           io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
-          reportReplacement(result, io);
+          reportRecorded(result, io);
           return;
         }
         reportRefusal(io, result);

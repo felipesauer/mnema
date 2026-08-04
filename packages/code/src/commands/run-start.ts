@@ -15,11 +15,18 @@
  * cannot disagree about what counts as one. (`startRun` would read a blank as
  * "no agent" and happily record a run whose payload names nobody.)
  *
- * It is born in the PRIVATE tree, with no `--scope` to move it: a work session
- * is local by nature, and it is where `focus`/`resume` read from. Outside a
- * project it refuses rather than falling back to the global tree — a run there
- * would be one no CLI read could ever surface, and a session nothing can resume
- * is worse than a refusal.
+ * It is born in the tree that TRAVELS, with no `--scope` to move it, and that is a
+ * property of the reference rather than a preference. One command-line run frames
+ * writes of MANY kinds — a public decision, a private memory — and every one of them
+ * stamps this run's id on its envelope. A fact may cite a run in a tree that travels
+ * further than its own (a private memory is only ever read beside the public tree
+ * that hides it); it may not cite one that travels less, because that reference is
+ * exactly what a clone cannot resolve. So the run goes where every kind can point at
+ * it. Outside a project it refuses rather than falling back to the global tree — a
+ * run there would be one no project's fact could honestly cite.
+ *
+ * (The MCP surface needs no such reasoning: it opens a run PER TREE, at the first
+ * write that lands in each, so there every fact cites a run of its own record.)
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -48,7 +55,7 @@ export interface RunStarted extends Replacement {
 
 /** Opening the run was refused. */
 export type RunStartRefused =
-  /** There is no project here — a run belongs to a project's private tree. */
+  /** There is no project here — a run belongs to a project's committed tree. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused, or no agent was named. */
   | {
@@ -59,7 +66,7 @@ export type RunStartRefused =
     };
 
 /**
- * Opens a run in the current project's private tree, for the named agent.
+ * Opens a run in the current project's public tree, for the named agent.
  * Refuses `NO_PROJECT` outside a project, `NO_AGENT` when no agent is named, and
  * forwards the core's own refusal otherwise. On success the tree is
  * checkpointed, so the new run is signature-covered at once.
@@ -81,12 +88,12 @@ export function runRunStart(
   }
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const root = chainRootForScope(trees, 'private');
+  const root = chainRootForScope(trees, 'public');
   if (root === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
-  const writer = openTreeForWriting(trees, 'private');
+  const writer = openTreeForWriting(trees, 'public');
   const started = startRun(
     { writer, layout: { root }, upcasters: catalogUpcasters() },
     {
