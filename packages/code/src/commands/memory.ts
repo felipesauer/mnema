@@ -13,11 +13,12 @@
  * body behind `--body` because a `name` positional competes with it; a memory
  * has no such competitor, and the asymmetry is deliberate.)
  *
- * The birth scope is a per-action choice, exactly as for a task/decision/skill:
- * an explicit `scope` wins; when omitted, the routing rule's default stands
- * (public, a deliberate human capture). A human capture carries no `which` — that
- * is what the scope resolver reads to keep a deliberate capture public rather than
- * defaulting it private the way an agent's would. An agent operating the CLI
+ * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
+ * this is one of the TWO kinds the routing rule still answers from the AUTHOR — a
+ * human capture goes public, an agent's goes private. It is not the kind-based
+ * answer the other verbs get, and that is deliberate: the same kind holds a fact the
+ * team needs and a note that is nobody's business but the writer's, so the kind does
+ * not determine the audience and the question is open. An agent operating the CLI
  * DECLARES itself (`which`), and then both halves follow: the capture defaults
  * private, and the fact names the agent that made it.
  */
@@ -31,7 +32,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { captureMemory, openTreeForWriting } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the memory command needs — injected so it is testable. */
 export interface MemoryContext {
@@ -42,7 +43,7 @@ export interface MemoryContext {
 }
 
 /** A memory was captured. */
-export interface MemoryCaptured extends Replacement {
+export interface MemoryCaptured extends Replacement, Landed {
   readonly ok: true;
   /** The minted memory id (the event subject). */
   readonly id: string;
@@ -62,22 +63,24 @@ export type MemoryRefused =
 
 /**
  * Captures a memory, routing its birth to the resolved scope. The scope rule is
- * identical to a task's: an explicit `scope` wins, else the routing default
- * (public) — `resolveScope` is the single source of that rule. A PROJECT scope
+ * the one every birth follows: an explicit `scope` wins, else `resolveScope` — which
+ * for this kind reads the author (public for a person, private for an agent), the one
+ * source of that rule. A PROJECT scope
  * (public/private) needs a project; with no `.mnema/` found from the cwd this
  * refuses `NO_PROJECT` rather than falling through. The GLOBAL scope needs none,
  * so `--scope global` works anywhere; the guard is on the RESOLVED scope, not the
  * flag.
  *
  * A declared `which` (an agent operating the CLI) shifts the omitted default to
- * private and is recorded on the event; an explicit `scope` still wins over it.
+ * private and is recorded on the event; an explicit `scope` still wins over it. The
+ * resolved scope comes back on the result, so the caller is told where it landed.
  */
 export function runMemory(
   ctx: MemoryContext,
   input: { content: string; scope?: Scope; which?: string; run?: string },
 ): MemoryCaptured | MemoryRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('memory.captured', { which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -106,5 +109,5 @@ export function runMemory(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: captured.id, ...forwardReplacement(captured) };
+  return { ok: true, id: captured.id, scope, ...forwardReplacement(captured) };
 }

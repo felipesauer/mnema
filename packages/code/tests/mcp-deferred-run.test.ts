@@ -212,9 +212,7 @@ describe('a connection that only reads', () => {
     const payload = payloadBesideTheNote(await second.client.callTool({ name: 'resume' })) as {
       readonly lastRun: { readonly id: string } | null;
     };
-    const runs = eventsIn(join(project, PROJECT_DIR, 'private')).filter(
-      (e) => e.kind === 'run.started',
-    );
+    const runs = eventsIn(join(project, PROJECT_DIR)).filter((e) => e.kind === 'run.started');
     // A `lastRun` naming a run, with no `work` beside it, is resume's answer alone.
     expect(payload.lastRun?.id).toBe(runs[0]?.subject);
     expect(payload).not.toHaveProperty('work');
@@ -297,9 +295,7 @@ describe('a connection that only reads', () => {
       ((reply as { content: { text?: string }[] }).content[0]?.text ?? '') as string,
     ) as { lastRun: { id: string } | null };
 
-    const runs = eventsIn(join(project, PROJECT_DIR, 'private')).filter(
-      (e) => e.kind === 'run.started',
-    );
+    const runs = eventsIn(join(project, PROJECT_DIR)).filter((e) => e.kind === 'run.started');
     expect(runs).toHaveLength(1);
     expect(resumed.lastRun?.id).toBe(runs[0]?.subject);
 
@@ -359,9 +355,9 @@ describe('the first write opens the run', () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
 
-    // The session's default scope is private; this write says public. The run is the
-    // authority for the CONNECTION, so it opens where the session lives, and both
-    // trees have to verify afterwards.
+    // A memory would land private (its kind still reads the author); this write says
+    // public. The run FOLLOWS it: an event and the run it cites belong to one record,
+    // or a clone of that record reads a fact pointing at an authority it cannot open.
     await client.callTool({
       name: 'capture_memory',
       arguments: { content: 'a team-visible fact', scope: 'public' },
@@ -370,9 +366,14 @@ describe('the first write opens the run', () => {
     const publicRoot = join(project, PROJECT_DIR);
     const privateRoot = join(publicRoot, 'private');
     expect(eventsIn(publicRoot).map((e) => e.kind)).toContain('memory.captured');
-    expect(eventsIn(privateRoot).filter((e) => e.kind === 'run.started')).toHaveLength(1);
+    expect(eventsIn(publicRoot).filter((e) => e.kind === 'run.started')).toHaveLength(1);
+    // And the private tree took nothing at all — not the fact, not a run for it.
+    expect(eventsIn(privateRoot).filter((e) => e.kind === 'run.started')).toHaveLength(0);
+    // The fact cites the run of its OWN tree.
+    const captured = eventsIn(publicRoot).find((e) => e.kind === 'memory.captured');
+    const opened = eventsIn(publicRoot).find((e) => e.kind === 'run.started');
+    expect(captured?.run).toBe(opened?.subject);
     expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
-    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });
@@ -416,12 +417,12 @@ describe('the log says where the session landed', () => {
     await client.callTool({ name: 'focus' });
 
     expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
-      'runs=(none — the first write to a project opens that project’s run)',
+      'runs=(none — the first write to a tree opens that tree’s run)',
     );
     expect(logged.some((line) => line.startsWith('session run '))).toBe(false);
 
     await client.callTool({ name: 'capture_memory', arguments: { content: 'something' } });
-    // The tree is named, not just the run: a connection opens one run per project it
+    // The tree is named, not just the run: a connection opens one run per TREE it
     // writes to, so a line that named only the run would leave a reader of the host's
     // log counting runs with nothing to pair them with on disk.
     const privateRoot = join(project, PROJECT_DIR, 'private');

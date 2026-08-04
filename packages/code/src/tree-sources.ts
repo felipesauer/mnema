@@ -45,3 +45,16 @@ export function withScopedCaches<T>(
     for (const source of sources) source.cache.close();
   }
 }
+
+/**
+ * The caches alone, for a derivation that reads the RECORD and not the trees it is
+ * kept in — the actor's runs, the actionable work.
+ *
+ * The scope is dropped rather than carried through, because such an answer never
+ * names it: a run is the actor's session whichever tree it was opened in, and a task
+ * is work whether the team's record holds it or this machine's. The readings that DO
+ * label their items by tree (the index, a history) take the sources themselves.
+ */
+export function caches(sources: readonly ScopedCache[]): ProjectionCache[] {
+  return sources.map((source) => source.cache);
+}

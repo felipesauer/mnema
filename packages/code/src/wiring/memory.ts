@@ -11,7 +11,7 @@ import { runMemory } from '../commands/memory.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -25,7 +25,8 @@ export function registerMemory(program: Command, wiring: Wiring): void {
     .option(
       '--scope <scope>',
       'where the memory is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public.',
+        'or global (personal, cross-project). Defaults to public; an agent that ' +
+        'declares itself with --which defaults to private.',
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -48,7 +49,7 @@ export function registerMemory(program: Command, wiring: Wiring): void {
       });
       if (result.ok) {
         io.out(`Captured memory ${result.id}`);
-        reportReplacement(result, io);
+        reportRecorded(result, io);
         return;
       }
       reportRefusal(io, result);

@@ -159,19 +159,48 @@ describe('mnema decision --which — the agent that executed', () => {
     }
   });
 
-  it('a declared agent shifts the OMITTED scope default to private', () => {
+  it('does NOT move the tree: an agent’s decision is the project’s decision', () => {
+    // The site's rule, and the defect it closes: an ADR recorded by an agent used to
+    // land in the tree that never leaves the machine, so a colleague cloning the
+    // repository inherited a founding and nothing else. A decision is born
+    // `proposed`, which is what keeps a fresh one a proposal rather than a fact.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    const byAgent = runDecision(
+      { cwd: repo, env },
+      { title: 'an agent decision', rationale: 'why', which: 'ci-runner' },
+    );
+    const byPerson = runDecision(
+      { cwd: repo, env },
+      { title: 'a person decision', rationale: 'w' },
+    );
+    expect(byAgent.ok && byPerson.ok).toBe(true);
+    if (byAgent.ok && byPerson.ok) {
+      const inPublic = decisionsOf(trees.projectPublic as string);
+      expect(inPublic.has(byAgent.id)).toBe(true);
+      expect(inPublic.has(byPerson.id)).toBe(true);
+      expect(decisionsOf(trees.projectPrivate as string).size).toBe(0);
+      expect(byAgent.scope).toBe('public');
+      expect(byPerson.scope).toBe('public');
+    }
+  });
+
+  it('an explicit scope still wins over the kind', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
     const result = runDecision(
       { cwd: repo, env },
-      { title: 'an agent decision', rationale: 'why', which: 'ci-runner' },
+      { title: 'mine alone', rationale: 'why', scope: 'private' },
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const trees = resolveTrees(repo, env);
-      expect(decisionsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
-      expect(decisionsOf(trees.projectPublic as string).has(result.id)).toBe(false);
+      expect(decisionsOf(resolveTrees(repo, env).projectPrivate as string).has(result.id)).toBe(
+        true,
+      );
+      expect(result.scope).toBe('private');
     }
   });
 

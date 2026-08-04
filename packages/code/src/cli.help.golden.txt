@@ -58,12 +58,13 @@ $ mnema task --help
 | Options:
 |   --scope <scope>               where the task is born: public (team-visible),
 |                                 private (this machine), or global (personal,
-|                                 cross-project). Defaults to public.
+|                                 cross-project). Omitted, a task lands in the
+|                                 public tree (the team’s work board).
 |   --which <agent>               the agent that executed this, when an agent (a
 |                                 script, a CI step) is driving mnema — omit it
 |                                 when you are acting directly. Declared, never
-|                                 assumed; a birth an agent makes defaults to this
-|                                 machine's private tree. A value that names no
+|                                 assumed; it names the executor. See --scope for
+|                                 where the fact lands. A value that names no
 |                                 agent (an unset variable) is refused, never
 |                                 credited to you.
 |   -h, --help                    display help for command
@@ -90,8 +91,8 @@ $ mnema decision --help
 |   rationale                              why the decision was made
 |
 | Options:
-|   --scope <scope>                        where the decision is born: public (team-visible), private (this machine), or global (personal, cross-project). Defaults to public.
-|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; a birth an agent makes defaults to this machine's private tree. A value that names no agent (an unset variable) is refused, never credited to you.
+|   --scope <scope>                        where the decision is born: public (team-visible), private (this machine), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
+|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
 |   -h, --help                             display help for command
 |
 | Commands:
@@ -118,12 +119,13 @@ $ mnema skill --help
 |   --body <text>                 the reusable pattern itself (required)
 |   --scope <scope>               where the skill is born: public (team-visible),
 |                                 private (this machine), or global (personal,
-|                                 cross-project). Defaults to public.
+|                                 cross-project). Omitted, a skill lands in the
+|                                 public tree (a declaration about the project).
 |   --which <agent>               the agent that executed this, when an agent (a
 |                                 script, a CI step) is driving mnema — omit it
 |                                 when you are acting directly. Declared, never
-|                                 assumed; a birth an agent makes defaults to this
-|                                 machine's private tree. A value that names no
+|                                 assumed; it names the executor. See --scope for
+|                                 where the fact lands. A value that names no
 |                                 agent (an unset variable) is refused, never
 |                                 credited to you.
 |   -h, --help                    display help for command
@@ -151,13 +153,13 @@ $ mnema memory --help
 | Options:
 |   --scope <scope>  where the memory is born: public (team-visible), private
 |                    (this machine), or global (personal, cross-project). Defaults
-|                    to public.
+|                    to public; an agent that declares itself with --which
+|                    defaults to private.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; a birth an agent makes
-|                    defaults to this machine's private tree. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -181,13 +183,13 @@ $ mnema observe --help
 |   --text <text>    the observation itself
 |   --scope <scope>  where the observation is born: public (team-visible), private
 |                    (this machine), or global (personal, cross-project). Defaults
-|                    to public.
+|                    to public; an agent that declares itself with --which
+|                    defaults to private.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; a birth an agent makes
-|                    defaults to this machine's private tree. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -210,14 +212,14 @@ $ mnema handoff --help
 |
 | Options:
 |   --scope <scope>  where the handoff is born: public (team-visible), private
-|                    (this machine), or global (personal, cross-project). Defaults
-|                    to public.
+|                    (this machine), or global (personal, cross-project). Omitted,
+|                    a handoff lands in the public tree (coordination between
+|                    actors).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; a birth an agent makes
-|                    defaults to this machine's private tree. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -241,14 +243,14 @@ $ mnema link --help
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
 |                    derived-from, contradicts; any label is accepted)
 |   --scope <scope>  where the link is born: public (team-visible), private (this
-|                    machine), or global (personal, cross-project). Defaults to
-|                    public.
+|                    machine), or global (personal, cross-project). Omitted, a
+|                    link lands in the public tree (an assertion about the
+|                    project’s records).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; a birth an agent makes
-|                    defaults to this machine's private tree. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:

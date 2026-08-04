@@ -2,9 +2,10 @@
  * What the surfaces say about the text they just recorded — one wording, both of
  * them.
  *
- * Two things belong here because they are the same statement told at two moments.
+ * Three things belong here because they are the same statement told at two moments.
  *
- * AFTER a write, {@link replacementNotice} says what was taken out. A scrub that
+ * AFTER a write, {@link landedNotice} says which tree it went to, and
+ * {@link replacementNotice} says what was taken out. A scrub that
  * happened in silence would be the tool lying to its caller: it asked to record X
  * and X is not what landed, so the next session reads a placeholder with no idea
  * why, and — the part that actually costs something — a live credential stays
@@ -27,7 +28,7 @@
  * block — and only that.
  */
 
-import type { SecretClass } from '@mnema/core';
+import type { Scope, SecretClass } from '@mnema/core';
 import { FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
 
 /**
@@ -50,9 +51,53 @@ export function replacementNotice(replaced: readonly SecretClass[] | undefined):
   ];
 }
 
+/**
+ * WHERE the write landed, as the line that follows every confirmation.
+ *
+ * The tree a fact lands in is now decided by what the fact IS, and nothing on the
+ * call said it — so the reply is the only place the author can learn it. That is the
+ * product's own doctrine applied to the one thing it did not cover: the content door
+ * tells the author what it replaced AT THE MOMENT they can still act, and the scope
+ * said nothing at all. A session of real use discovered its own scope by reading the
+ * record afterwards and passed it on to the person as a caveat; it was right to, and
+ * it is the proof that the surface had not spoken.
+ *
+ * Each line names the tree AND the consequence, because the name alone is a word
+ * ("private") that reads as reassurance to one caller and as a dead end to another.
+ * What a caller acts on is whether the fact travels: a decision that reaches the team
+ * on clone, or a note that never leaves this machine.
+ *
+ * It states the fact and stops there — no instruction to re-record elsewhere. The
+ * override is in every write's own interface, the routing is deliberate, and a
+ * suggestion appended to every successful write would be noise on the path that is
+ * working as designed.
+ */
+export function landedNotice(scope: Scope): string {
+  switch (scope) {
+    case 'public':
+      return '  Landed in the public tree — committed with the repository, so it reaches every clone.';
+    case 'private':
+      return "  Landed in the private tree — this machine's own; it is not committed and does not travel.";
+    case 'global':
+      return '  Landed in the global tree — personal and cross-project, outside any repository.';
+  }
+}
+
 /** The half of a write result that reports what the content door replaced. */
 export interface Replacement {
   readonly replaced?: readonly SecretClass[];
+}
+
+/**
+ * The half of a write result that reports WHERE it landed — the tree the kind (or
+ * the caller's override) routed it to.
+ *
+ * Present on every successful write of both surfaces, and not optional: a write
+ * that could not say where it went is the state this closes. It is the RESOLVED
+ * scope, never the argument — the argument is regularly absent.
+ */
+export interface Landed {
+  readonly scope: Scope;
 }
 
 /**

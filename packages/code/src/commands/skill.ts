@@ -22,11 +22,10 @@
  *      it) and `name` (which orients the human), and never a derived alias.
  *
  * The birth scope is a per-action choice, exactly as for a task or a decision:
- * an explicit `scope` wins; when omitted, the routing rule's default stands
- * (public, a deliberate human capture). That omitted default is PROVISIONAL —
- * the mechanism (the override on top) is what is settled here. An agent operating
- * the CLI declares itself (`which`), which both shifts that default to private and
- * names the agent on the fact.
+ * an explicit `scope` wins; when omitted, the KIND decides — a pattern states how
+ * the work is done here, so it goes to the tree that travels. An agent operating
+ * the CLI declares itself (`which`), which names the agent on the fact and no
+ * longer moves the tree.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -38,7 +37,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { createSkill, openTreeForWriting } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the skill command needs — injected so it is testable. */
 export interface SkillContext {
@@ -49,7 +48,7 @@ export interface SkillContext {
 }
 
 /** A skill was proposed. */
-export interface SkillCreated extends Replacement {
+export interface SkillCreated extends Replacement, Landed {
   readonly ok: true;
   /** The minted skill id — the canonical identifier, the key a move takes. */
   readonly id: string;
@@ -71,22 +70,22 @@ export type SkillRefused =
 
 /**
  * Creates a skill, routing its birth to the resolved scope. The scope rule is
- * identical to a task's and a decision's: an explicit `scope` wins, else the
- * routing default (public) — `resolveScope` is the single source of that rule. A
+ * identical to a task's and a decision's: an explicit `scope` wins, else the tree
+ * the KIND names (public) — `resolveScope` is the single source of that rule. A
  * PROJECT scope (public/private) needs a project; with no `.mnema/` found from
  * the cwd this refuses `NO_PROJECT` rather than falling through. The GLOBAL scope
  * needs none, so `--scope global` works anywhere; the guard is on the RESOLVED
  * scope, not the flag.
  *
- * A declared `which` (an agent operating the CLI) shifts the omitted default to
- * private and is recorded on the event; an explicit `scope` still wins over it.
+ * A declared `which` (an agent operating the CLI) is recorded on the event and
+ * does not move the tree. The resolved scope comes back on the result.
  */
 export function runSkill(
   ctx: SkillContext,
   input: { name: string; body: string; scope?: Scope; which?: string; run?: string },
 ): SkillCreated | SkillRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('skill.created', { which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -117,5 +116,5 @@ export function runSkill(
   writer.checkpoint();
 
   // The name AS RECORDED — screened, so the echo shows what landed.
-  return { ok: true, id: created.id, name: created.name, ...forwardReplacement(created) };
+  return { ok: true, id: created.id, name: created.name, scope, ...forwardReplacement(created) };
 }

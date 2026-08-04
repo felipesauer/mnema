@@ -23,7 +23,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -38,7 +38,8 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     .option(
       '--scope <scope>',
       'where the decision is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public.',
+        'or global (personal, cross-project). Omitted, a decision lands in the ' +
+        'public tree (a declaration about the project).',
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -62,7 +63,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
       });
       if (result.ok) {
         io.out(`Recorded decision ${result.adr} (${result.id})`);
-        reportReplacement(result, io);
+        reportRecorded(result, io);
         return;
       }
       reportRefusal(io, result);

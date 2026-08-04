@@ -29,6 +29,19 @@
  * future slice projects the run/who a task belongs to, focus gains the actor's
  * tasks with no change to this contract. (See the report's debt note.)
  *
+ * EVERY TREE THE CALLER CAN SEE, not one. A run is opened in the tree the fact it
+ * authorizes lands in, and what a session records is routed by KIND — so one
+ * connection that recorded a decision and a memory holds two runs, one per tree,
+ * and a derivation given a single cache would report half of what the actor has
+ * open while looking complete. The caller says which caches those are; passing
+ * `[cache]` is the honest answer when one tree is the whole world.
+ *
+ * Reading per-tree projections and concatenating is not an approximation of reading
+ * the union: a run's whole history lands in ONE tree (it is opened and ended in the
+ * tree it carries), so the per-tree fold and the union fold see the same events for
+ * it. The order is a property of the CONTENT (`startedAt`, then id), so adding a
+ * tree to the list never reshuffles what an asker sees.
+ *
  * WHAT IT DELIBERATELY DOES NOT DO: decide whether an open run is ABANDONED. The
  * record holds no fact about a process — no pid, no boot id — so "old" and "idle"
  * are what an asker can be told, and "dead" is not. A live agent sitting idle is
@@ -161,7 +174,7 @@ export interface Resume {
  * pruned or ranked — but they no longer list as ten runs indistinguishable from the
  * asker's own.
  */
-export function focus(cache: ProjectionCache, scope: ActorScope): Focus {
+export function focus(caches: readonly ProjectionCache[], scope: ActorScope): Focus {
   // Canonicalize the actor with the core's OWN identity rule (trim + NFC) — the
   // same rule the gate and the write operations apply, so this filter compares
   // the actor against `who` in the form the core produces it. In practice every
@@ -176,8 +189,8 @@ export function focus(cache: ProjectionCache, scope: ActorScope): Focus {
   const openRuns =
     actor === undefined
       ? []
-      : cache
-          .listOpenRuns()
+      : caches
+          .flatMap((cache) => cache.listOpenRuns())
           .filter((r) => r.who === actor)
           .sort(byStartedDesc)
           .map((r) => report(r, scope));
@@ -190,23 +203,26 @@ export function focus(cache: ProjectionCache, scope: ActorScope): Focus {
  * the actor's runs, not just the open ones — so a finished session still answers
  * "what was I doing". Composes {@link focus} for the "what is still open" half.
  */
-export function resume(cache: ProjectionCache, scope: ActorScope): Resume {
+export function resume(caches: readonly ProjectionCache[], scope: ActorScope): Resume {
   const actor = canonicalIdentity(scope.actor);
-  const mine = actor === undefined ? [] : cache.listRuns().filter((r) => r.who === actor);
+  const mine =
+    actor === undefined
+      ? []
+      : caches.flatMap((cache) => cache.listRuns()).filter((r) => r.who === actor);
   // Sort a copy, then take the head; the default handles the empty case without
   // a non-null assertion (the list may be empty).
   const newestFirst = [...mine].sort(byStartedDesc);
-  // The asker's own first, and its OWN newest at that: a session with a run in this
-  // record answers about that run. Run ids are minted, never typed, so both sides
+  // The asker's own first, and its OWN newest at that: a session with a run in these
+  // records answers about that run. Run ids are minted, never typed, so both sides
   // are already the canonical form and a plain lookup cannot false-miss. A session
-  // whose runs are all in OTHER trees finds none here and falls through, which is
-  // right — this record holds no run of its own to point at.
+  // whose runs are all in trees NOT passed here finds none and falls through, which
+  // is right — nothing given holds a run of its own to point at.
   const opened = new Set(scope.sessionRuns);
   const chosen = newestFirst.find((r) => opened.has(r.id)) ?? newestFirst[0];
   return {
     actor: actor ?? '',
     lastRun: chosen === undefined ? null : report(chosen, scope),
-    focus: focus(cache, scope),
+    focus: focus(caches, scope),
   };
 }
 

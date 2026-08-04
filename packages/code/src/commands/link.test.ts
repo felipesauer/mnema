@@ -34,7 +34,15 @@ describe('mnema link', () => {
     runInit({ cwd: repo, env });
 
     const result = runLink({ cwd: repo, env }, { subject: 'A', target: 'B', rel: 'relates-to' });
-    expect(result).toEqual({ ok: true, subject: 'A', target: 'B', rel: 'relates-to' });
+    // The whole result, so a field added here has to be declared: the tree it landed
+    // in travels back with the echo, because nothing in the call named one.
+    expect(result).toEqual({
+      ok: true,
+      subject: 'A',
+      target: 'B',
+      rel: 'relates-to',
+      scope: 'public',
+    });
     const root = resolveTrees(repo, env).projectPublic as string;
     const edges = linksOf(root);
     expect(edges).toEqual([
@@ -118,18 +126,35 @@ describe('mnema link --which — the agent that executed', () => {
     expect(edgesIn(root).find((e) => e.subject === 'A')?.which).toBe('ci-runner');
   });
 
-  it('a declared agent shifts the OMITTED scope default to private', () => {
+  it('does NOT move the tree: an edge between the project’s records lands public', () => {
+    // The site's rule: a link asserts a relation between records of the project, so it
+    // travels with them. The endpoints are not checked and may be anywhere.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    const byAgent = runLink(
+      { cwd: repo, env },
+      { subject: 'A', target: 'B', rel: 'relates-to', which: 'ci-runner' },
+    );
+    const byPerson = runLink({ cwd: repo, env }, { subject: 'C', target: 'D', rel: 'relates-to' });
+    expect(byAgent.ok && byPerson.ok).toBe(true);
+    expect(linksOf(trees.projectPublic as string).length).toBe(2);
+    expect(linksOf(trees.projectPrivate as string).length).toBe(0);
+    if (byAgent.ok) expect(byAgent.scope).toBe('public');
+  });
+
+  it('an explicit scope still wins over the kind', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
     const result = runLink(
       { cwd: repo, env },
-      { subject: 'A', target: 'B', rel: 'relates-to', which: 'ci-runner' },
+      { subject: 'A', target: 'B', rel: 'relates-to', scope: 'private' },
     );
     expect(result.ok).toBe(true);
-    const trees = resolveTrees(repo, env);
-    expect(linksOf(trees.projectPrivate as string).length).toBe(1);
-    expect(linksOf(trees.projectPublic as string).length).toBe(0);
+    expect(linksOf(resolveTrees(repo, env).projectPrivate as string).length).toBe(1);
+    if (result.ok) expect(result.scope).toBe('private');
   });
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, linking nothing', () => {

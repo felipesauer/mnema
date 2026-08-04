@@ -40,7 +40,9 @@ export {
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,
+  type RoutedKind,
   resolveScope,
   type Scope,
   TreeUnavailableError,
+  UNROUTED_KINDS,
 } from './routing.js';

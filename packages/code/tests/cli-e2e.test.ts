@@ -624,7 +624,12 @@ describe('mnema CLI — decision, end to end', () => {
     // The human name is the ADR — never a `t-xxxx`-style alias, which a decision
     // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
     // no alias in between.
-    expect(c.out.join('\n')).toMatch(/^Recorded decision ADR-1 \([0-9a-f-]{36}\)$/);
+    // Two lines: the headline, then WHERE it landed — a decision is a declaration
+    // about the project, so it goes to the tree that travels, and nothing in the
+    // command said so.
+    expect(c.out.join('\n')).toMatch(
+      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+    );
 
     const root = resolveTrees(repo, {
       xdgDataHome: join(sandbox, 'data'),
@@ -777,7 +782,9 @@ describe('mnema CLI — skill, end to end', () => {
     await run(['skill', 'stacked-prs', '--body', 'One slice per PR; merge before the next.'], c.io);
     expect(c.failed()).toBe(false);
     // The output is `"<name>" (<uuid>)`: the display name and the key, no alias.
-    expect(c.out.join('\n')).toMatch(/^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)$/);
+    expect(c.out.join('\n')).toMatch(
+      /^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+    );
 
     const root = resolveTrees(repo, {
       xdgDataHome: join(sandbox, 'data'),
@@ -924,7 +931,12 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     const c = capture();
     await run(['memory', 'the auth flow uses PKCE'], c.io);
     expect(c.failed()).toBe(false);
-    expect(c.out.join('\n')).toMatch(/^Captured memory [0-9a-f-]{36}$/);
+    // The headline plus the tree it landed in. A memory keeps the AUTHOR rule, so a
+    // person's capture is public — and the line is what makes that visible at the
+    // moment it happens instead of afterwards, in the record.
+    expect(c.out.join('\n')).toMatch(
+      /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+    );
     const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
 
     const root = treesOf().projectPublic as string;
@@ -987,7 +999,10 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     // The same agent from and to — a chat restart, legitimate.
     await run(['handoff', 'a-task-id', 'claude-code', 'claude-code'], c.io);
     expect(c.failed()).toBe(false);
-    expect(c.out.join('\n')).toBe('Recorded handoff on a-task-id: claude-code → claude-code');
+    expect(c.out.join('\n')).toBe(
+      'Recorded handoff on a-task-id: claude-code → claude-code\n' +
+        '  Landed in the public tree — committed with the repository, so it reaches every clone.',
+    );
 
     const root = treesOf().projectPublic as string;
     const list = projectHandoffs(orderedEvents({ root }, catalogUpcasters())).get('a-task-id');
@@ -1014,7 +1029,12 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
       c.io,
     );
     expect(c.failed()).toBe(false);
-    expect(c.out.join('\n')).toBe('Linked A —inspired-by→ 00000000-0000-7000-8000-000000000000');
+    // The override named the tree, and the reply names it back: the sentence is about
+    // where the fact IS, not about who chose it.
+    expect(c.out.join('\n')).toBe(
+      'Linked A —inspired-by→ 00000000-0000-7000-8000-000000000000\n' +
+        "  Landed in the private tree — this machine's own; it is not committed and does not travel.",
+    );
 
     const trees = treesOf();
     const edges = projectLinks(
@@ -2158,9 +2178,13 @@ describe('mnema CLI — run (the session), end to end', () => {
     );
     expect(written).toHaveLength(2);
     expect(written.map((e) => e.run)).toEqual([started.id, started.id]);
-    // And the run they name really is a session a human opened for that agent.
-    const session = projectRuns(eventsOf(trees.projectPrivate)).get(started.id);
+    // And the run they name really is a session a human opened for that agent. It
+    // lives in the COMMITTED tree, which is what lets the public one of those two
+    // facts cite it: the private fact reaches across into a tree it is never read
+    // without, and the public fact cites its own record.
+    const session = projectRuns(eventsOf(trees.projectPublic)).get(started.id);
     expect(session).toMatchObject({ agent: 'claude-code', who: anchor, open: true });
+    expect(projectRuns(eventsOf(trees.projectPrivate)).has(started.id)).toBe(false);
 
     // 4. focus ANSWERS now — the read that was empty forever for a CLI user.
     const f = capture();
@@ -2180,7 +2204,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     // The close names the agent that executed it, the way the birth named the one the
     // session was for — and it is on the ENVELOPE of the fact, not only on the line.
     expect(e.out.join('\n')).toContain('by claude-code');
-    const closed = eventsOf(treesOf().projectPrivate).find((x) => x.kind === 'run.ended');
+    const closed = eventsOf(treesOf().projectPublic).find((x) => x.kind === 'run.ended');
     expect(closed?.which).toBe('claude-code');
 
     // 6. resume shows the session that ended, with the goal that says what it was.
@@ -2269,7 +2293,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const s = capture();
     await run(['run', 'start'], s.io);
     expect(s.failed()).toBe(true);
-    expect(eventsOf(treesOf().projectPrivate).some((e) => e.kind === 'run.started')).toBe(false);
+    expect(eventsOf(treesOf().projectPublic).some((e) => e.kind === 'run.started')).toBe(false);
   });
 
   it('`run end` with neither an id nor MNEMA_RUN says how to close one', async () => {
@@ -2302,8 +2326,8 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(said).toContain("required option '--which <agent>' not specified");
     expect(said).not.toContain('name the one closing this session');
 
-    expect(eventsOf(treesOf().projectPrivate).some((x) => x.kind === 'run.ended')).toBe(false);
-    expect(projectRuns(eventsOf(treesOf().projectPrivate)).get(started.id)?.open).toBe(true);
+    expect(eventsOf(treesOf().projectPublic).some((x) => x.kind === 'run.ended')).toBe(false);
+    expect(projectRuns(eventsOf(treesOf().projectPublic)).get(started.id)?.open).toBe(true);
   });
 
   it('closing the same run twice is refused, never silent', async () => {
@@ -2318,17 +2342,19 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(again.failed()).toBe(true);
     expect(again.err.join('\n')).toContain('Refused (ALREADY_ENDED)');
     // Exactly one close is on the log.
-    expect(eventsOf(treesOf().projectPrivate).filter((e) => e.kind === 'run.ended')).toHaveLength(
-      1,
-    );
+    expect(eventsOf(treesOf().projectPublic).filter((e) => e.kind === 'run.ended')).toHaveLength(1);
   });
 
-  it('the session is born PRIVATE and takes no --scope', async () => {
+  it('the session is born where every kind can CITE it, and takes no --scope', async () => {
+    // One command-line run frames writes of several kinds, and each stamps its id on
+    // the envelope. So it goes to the tree that travels furthest: a private fact
+    // citing a public run resolves wherever that fact can be read at all, while a
+    // public fact citing a private run is exactly what a clone cannot resolve.
     await initHere();
     const started = await startRun('claude-code');
     const trees = treesOf();
-    expect(eventsOf(trees.projectPrivate).some((e) => e.subject === started.id)).toBe(true);
-    expect(eventsOf(trees.projectPublic).some((e) => e.subject === started.id)).toBe(false);
+    expect(eventsOf(trees.projectPublic).some((e) => e.subject === started.id)).toBe(true);
+    expect(eventsOf(trees.projectPrivate).some((e) => e.subject === started.id)).toBe(false);
 
     const scoped = capture();
     await run(['run', 'start', '--which', 'claude-code', '--scope', 'public'], scoped.io);
@@ -2382,7 +2408,12 @@ describe('mnema CLI — run (the session), end to end', () => {
     const anchor = await initHere();
     const worked = await startRun('claude-code', 'with a fact in it');
     process.env.MNEMA_RUN = worked.id;
-    await run(['memory', 'a fact pinned to that session', '--which', 'claude-code'], capture().io);
+    // A TASK, not a memory, and the reason is a real limit rather than a preference:
+    // idleness comes from the facts pinned to the run IN THE RUN'S OWN TREE, because a
+    // projection is per tree. A task is routed by its kind to the tree the run lives
+    // in, so the two meet; an agent's memory still goes private and its run stays
+    // committed, and that pairing reports "nothing recorded in it" while something was.
+    await run(['task', 'a fact pinned to that session', '--which', 'claude-code'], capture().io);
     delete process.env.MNEMA_RUN;
     const empty = await startRun('other-agent', 'with nothing in it');
 
@@ -2458,7 +2489,10 @@ describe('mnema CLI — run (the session), end to end', () => {
     if (!made.ok) throw new Error(`setup: the MCP write refused (${made.code})`);
     expect(closeSession(session).closed).toHaveLength(1);
 
-    const sealed = eventsOf(treesOf().projectPrivate).filter((e) => e.kind === 'run.ended');
+    // Both in ONE tree, and that is not incidental: the CLI's run is born where every
+    // kind can cite it, and the MCP's run opened in the tree its write landed in — a
+    // skill, so the committed one. Two surfaces, one record.
+    const sealed = eventsOf(treesOf().projectPublic).filter((e) => e.kind === 'run.ended');
     expect(sealed).toHaveLength(2);
     // The SAME envelope shape from both: one surface cannot carry a field the other
     // leaves off. Compared as key sets, because the values are an id and an instant.
@@ -2566,7 +2600,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('names no agent');
     expect(s.err.join('\n')).not.toContain('payload.agent');
-    expect(eventsOf(treesOf().projectPrivate).some((e) => e.kind === 'run.started')).toBe(false);
+    expect(eventsOf(treesOf().projectPublic).some((e) => e.kind === 'run.started')).toBe(false);
   });
 
   it('`guard --which "   "` refuses — the dry-run answers for the move it mirrors', async () => {
@@ -2581,57 +2615,62 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(g.err.join('\n')).toContain('names no agent');
   });
 
+  // The three below probe a MEMORY rather than a task, and the reason is the point:
+  // this rule lands in two places — the `which` on the envelope, and the tree a birth
+  // routes to — and the second one only reads the author for the two knowledge kinds
+  // now. A task is routed by its kind, so a task would still assert the envelope half
+  // while quietly dropping the half where the two could disagree.
   it('a zero-width name is a NAME, not a blank: it is recorded and lands private', async () => {
     // What `canonicalIdentity` does with U+200C is the answer, and it keeps it: the
     // char is not whitespace, so this is an (invisible) agent name and not an
     // absent one. That means the two things the hole broke are intact — the `which`
-    // is on the event, and the birth went to this machine's private tree — so there
+    // is on the event, and the capture went to this machine's private tree — so there
     // is nothing here to refuse. Asserting the opposite would have been asserting
     // a guess.
     await run(['init'], capture().io);
     const t = capture();
-    await run(['task', 'ship it', '--which', '‌'], t.io);
+    await run(['memory', 'a fact', '--which', '‌'], t.io);
     expect(t.failed()).toBe(false);
 
     const trees = treesOf();
-    const created = eventsOf(trees.projectPrivate).find((e) => e.kind === 'task.created');
-    expect(created?.which).toBe('‌');
-    expect(eventsOf(trees.projectPublic).some((e) => e.kind === 'task.created')).toBe(false);
+    const captured = eventsOf(trees.projectPrivate).find((e) => e.kind === 'memory.captured');
+    expect(captured?.which).toBe('‌');
+    expect(eventsOf(trees.projectPublic).some((e) => e.kind === 'memory.captured')).toBe(false);
   });
 
-  it('an ORDINARY agent name did not regress: recorded, and the birth lands private', async () => {
+  it('an ORDINARY agent name did not regress: recorded, and the capture lands private', async () => {
     await run(['init'], capture().io);
     const t = capture();
-    await run(['task', 'ship it', '--which', 'claude-code'], t.io);
+    await run(['memory', 'a fact', '--which', 'claude-code'], t.io);
     expect(t.failed()).toBe(false);
 
     const trees = treesOf();
-    const created = eventsOf(trees.projectPrivate).find((e) => e.kind === 'task.created');
-    expect(created?.which).toBe('claude-code');
+    const captured = eventsOf(trees.projectPrivate).find((e) => e.kind === 'memory.captured');
+    expect(captured?.which).toBe('claude-code');
     // A name with stray whitespace around it is still that name (trimmed), never
     // a refusal — the accident the canonical rule exists to absorb.
     const padded = capture();
-    await run(['task', 'and again', '--which', '  claude-code  '], padded.io);
+    await run(['memory', 'and again', '--which', '  claude-code  '], padded.io);
     expect(padded.failed()).toBe(false);
     expect(
       eventsOf(treesOf().projectPrivate)
-        .filter((e) => e.kind === 'task.created')
+        .filter((e) => e.kind === 'memory.captured')
         .map((e) => e.which),
     ).toEqual(['claude-code', 'claude-code']);
   });
 
-  it('an ABSENT --which still means a person acted: no which, and the birth is PUBLIC', async () => {
+  it('an ABSENT --which still means a person acted: no which, and the capture is PUBLIC', async () => {
     // The rule that must NOT change. Defaulting an omitted flag to some agent name
     // would invent an agent where there was a person — the same fiction, inverted.
     await run(['init'], capture().io);
     const t = capture();
-    await run(['task', 'ship it'], t.io);
+    await run(['memory', 'a fact'], t.io);
     expect(t.failed()).toBe(false);
 
     const trees = treesOf();
-    const created = eventsOf(trees.projectPublic).find((e) => e.kind === 'task.created');
-    expect(created?.which).toBeUndefined();
-    expect(eventsOf(trees.projectPrivate).some((e) => e.kind === 'task.created')).toBe(false);
+    const captured = eventsOf(trees.projectPublic).find((e) => e.kind === 'memory.captured');
+    expect(captured?.which).toBeUndefined();
+    expect(eventsOf(trees.projectPrivate).some((e) => e.kind === 'memory.captured')).toBe(false);
   });
 
   it('EVERY verb that declares an executing agent validates it — no site can forget', () => {
@@ -2898,9 +2937,10 @@ describe('mnema CLI — skills, the provenance audit', () => {
     expect(printed).toContain('1 pattern(s)');
     expect(printed).toContain(id);
     expect(printed).toContain('proposed by agent-A · adopted by agent-A (the same agent)');
-    // The state and the tree, which together say how far the pattern reaches. An
-    // agent's write lands private, so that is where this one is.
-    expect(printed).toMatch(/adopted\s+private\s+a-habit/);
+    // The state and the tree, which together say how far the pattern reaches. A
+    // pattern is a declaration about the project, so it lands in the tree that
+    // travels — whether an agent or a person proposed it.
+    expect(printed).toMatch(/adopted\s+public\s+a-habit/);
   });
 
   it('one agent proposing and ANOTHER adopting is distinguishable from both ends equal', async () => {
@@ -2973,7 +3013,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
         id,
         name: 'a-habit',
         state: 'adopted',
-        scope: 'private',
+        scope: 'public',
         proposedBy: 'agent-A',
         adoption: { at: expect.any(String), by: 'agent-B' },
         selfAdopted: false,
@@ -3138,18 +3178,19 @@ describe('where a pattern came from — across the two surfaces', () => {
       'proposed by agent-A · adopted by agent-A (the same agent)',
     );
 
-    // And the adoption itself was never blocked: the pattern is live, in the
-    // agent's own tree, on a chain that still verifies.
+    // And the adoption itself was never blocked: the pattern is live, in the tree that
+    // TRAVELS — a pattern an agent proposed is still a declaration about the project —
+    // on a chain that still verifies.
     const trees = resolveTrees(repo, {
       xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
-    const privateRoot = trees.projectPrivate as string;
+    const publicRoot = trees.projectPublic as string;
     expect(
-      projectSkills(orderedEvents({ root: privateRoot }, catalogUpcasters())).get(proposed.id)
+      projectSkills(orderedEvents({ root: publicRoot }, catalogUpcasters())).get(proposed.id)
         ?.state,
     ).toBe('adopted');
-    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+    expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
   });
 
   it('counts how many sessions were served each pattern, and says so when none were', async () => {

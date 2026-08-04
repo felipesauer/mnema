@@ -170,19 +170,41 @@ describe('mnema skill --which — the agent that executed', () => {
     }
   });
 
-  it('a declared agent shifts the OMITTED scope default to private', () => {
+  it('does NOT move the tree: a pattern an agent proposes is the team’s pattern', () => {
+    // The site's rule: a skill states how the work is done here, so it belongs to the
+    // record that travels. It is born `proposed`, so proposing is not adopting.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    const byAgent = runSkill(
+      { cwd: repo, env },
+      { name: 'an agent pattern', body: 'the body', which: 'ci-runner' },
+    );
+    const byPerson = runSkill({ cwd: repo, env }, { name: 'a person pattern', body: 'the body' });
+    expect(byAgent.ok && byPerson.ok).toBe(true);
+    if (byAgent.ok && byPerson.ok) {
+      const inPublic = skillsOf(trees.projectPublic as string);
+      expect(inPublic.has(byAgent.id)).toBe(true);
+      expect(inPublic.has(byPerson.id)).toBe(true);
+      expect(skillsOf(trees.projectPrivate as string).size).toBe(0);
+      expect(byAgent.scope).toBe('public');
+      expect(byPerson.scope).toBe('public');
+    }
+  });
+
+  it('an explicit scope still wins over the kind', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
     const result = runSkill(
       { cwd: repo, env },
-      { name: 'an agent pattern', body: 'the body', which: 'ci-runner' },
+      { name: 'mine alone', body: 'the body', scope: 'private' },
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const trees = resolveTrees(repo, env);
-      expect(skillsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
-      expect(skillsOf(trees.projectPublic as string).has(result.id)).toBe(false);
+      expect(skillsOf(resolveTrees(repo, env).projectPrivate as string).has(result.id)).toBe(true);
+      expect(result.scope).toBe('private');
     }
   });
 

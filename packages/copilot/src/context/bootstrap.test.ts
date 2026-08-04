@@ -25,7 +25,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking(bench.who), [cache]);
+      const b = bootstrap([cache], asking(bench.who));
       // Resume: the actor's open run is the anchor.
       expect(b.resume.lastRun?.id).toBe('run-1');
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
@@ -47,7 +47,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, dead, 'DRAFT', 'CANCELED', 'cancel', { reason: 'dropped' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking(bench.who), [cache]);
+      const b = bootstrap([cache], asking(bench.who));
       expect(b.work.map((w) => w.id)).toEqual(['task-live']);
     } finally {
       cache.close();
@@ -62,7 +62,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'IN_PROGRESS', 'DONE', 'complete', { note: 'done' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking(bench.who), [cache]);
+      const b = bootstrap([cache], asking(bench.who));
       const done = b.work.find((w) => w.id === 'task-done');
       expect(done?.actions.map((a) => a.action)).toEqual(['reopen']);
     } finally {
@@ -79,7 +79,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, a, 'DRAFT', 'READY', 'submit');
     const cache = bench.cache();
     try {
-      const boot = bootstrap(cache, asking(bench.who), [cache]);
+      const boot = bootstrap([cache], asking(bench.who));
       expect(boot.work.map((w) => w.id)).toEqual(['task-a', 'task-b']);
     } finally {
       cache.close();
@@ -92,7 +92,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     startRun(bench, 'run-theirs', { agent: 'claude', who: 'bob' });
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking('alice'), [cache]);
+      const b = bootstrap([cache], asking('alice'));
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-mine']);
       expect(b.resume.lastRun?.id).toBe('run-mine');
     } finally {
@@ -105,7 +105,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     birthSkill(bench, 'sk-1', 'Small PRs', 'adopted');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking(bench.who), [cache]);
+      const b = bootstrap([cache], asking(bench.who));
       expect(b.skills).toEqual([{ id: 'sk-1', name: 'Small PRs' }]);
       // The pattern itself never enters the opening context.
       expect(JSON.stringify(b)).not.toContain('body of Small PRs');
@@ -121,7 +121,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     birthSkill(bench, 'sk-old', 'Deprecated', 'deprecated');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking(bench.who), [cache]);
+      const b = bootstrap([cache], asking(bench.who));
       expect(b.skills.map((s) => s.id)).toEqual(['sk-live']);
     } finally {
       cache.close();
@@ -138,7 +138,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       const teamCache = team.cache();
       try {
         // The actor's world is one tree; the patterns come from both.
-        const b = bootstrap(mineCache, asking(bench.who), [mineCache, teamCache]);
+        const b = bootstrap([mineCache, teamCache], asking(bench.who));
         expect(b.skills.map((s) => s.name)).toEqual(['Mine', 'Team']);
       } finally {
         mineCache.close();
@@ -156,7 +156,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     moveTask(bench, t, 'DRAFT', 'READY', 'submit');
     const cache = bench.cache();
     try {
-      const b = bootstrap(cache, asking('newcomer'), [cache]);
+      const b = bootstrap([cache], asking('newcomer'));
       expect(b.resume.lastRun).toBeNull();
       expect(b.resume.focus.openRuns).toEqual([]);
       // The work list is workspace-wide, so it is still there.

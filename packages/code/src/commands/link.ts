@@ -19,10 +19,10 @@
  * only its own tree, so the core does not refuse a dangling target and neither
  * does the surface. The reference is an asserted fact resolved on read.
  *
- * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands — private when
- * an agent operating the CLI declares itself (`which`), which is also recorded on
- * the fact.
+ * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
+ * the KIND decides — a link asserts a relation between records of the project, so
+ * it belongs to the tree that travels with them. A declared `which` names the agent
+ * on the fact and does not move the tree.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -34,7 +34,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the link command needs — injected so it is testable. */
 export interface LinkContext {
@@ -45,7 +45,7 @@ export interface LinkContext {
 }
 
 /** A link was recorded — the fact, with its references (there is no id). */
-export interface LinkRecorded extends Replacement {
+export interface LinkRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The entity that ORIGINATES the link (the event subject). */
   readonly subject: string;
@@ -69,12 +69,12 @@ export type LinkRefused =
 
 /**
  * Records a knowledge link, routing its birth to the resolved scope. The scope
- * rule is identical to a memory's. Both `subject` and `target` are forwarded to
- * the core as-is and never validated — a dangling target is honest cross-tree,
- * never a refusal. The `rel` is an open string, forwarded verbatim. On success
- * it echoes the fact back (subject, rel, target) — there is no minted id. A
- * declared `which` shifts the omitted default to private and is recorded on the
- * event; an explicit `scope` still wins over it.
+ * the one every birth follows: an explicit `scope` wins, else the tree the KIND
+ * names (public). Both `subject` and `target` are forwarded to the core as-is and
+ * never validated — a dangling target is honest cross-tree, never a refusal. The
+ * `rel` is an open string, forwarded verbatim. On success it echoes the fact back
+ * (subject, rel, target) — there is no minted id — plus the tree it landed in. A
+ * declared `which` is recorded on the event and does not move the tree.
  */
 export function runLink(
   ctx: LinkContext,
@@ -88,7 +88,7 @@ export function runLink(
   },
 ): LinkRecorded | LinkRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('knowledge.linked', { which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -121,6 +121,7 @@ export function runLink(
     target: input.target,
     // The relation AS RECORDED — screened, so the echo shows what landed.
     rel: recorded.rel,
+    scope,
     ...forwardReplacement(recorded),
   };
 }

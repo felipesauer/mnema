@@ -97,7 +97,7 @@ describe('mnema task', () => {
     }
   });
 
-  it('an omitted scope defaults to public (the provisional default)', () => {
+  it('an omitted scope follows the kind: a task is the team’s board, so public', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
@@ -177,26 +177,45 @@ describe('mnema task --which — the agent that executed', () => {
     }
   });
 
-  it('a declared agent shifts the OMITTED scope default to private', () => {
+  it('does NOT move the tree: the KIND decides, so an agent’s task is the team’s too', () => {
+    // The site's rule, asserted against BOTH authors at once: a task is the team's
+    // board whoever opened it. This used to send an agent's task to the private
+    // tree, which left a clone of the repository with no board at all.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
 
-    const result = runTask({ cwd: repo, env }, { title: 'an agent capture', which: 'ci-runner' });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      const trees = resolveTrees(repo, env);
-      // Private, the same default the MCP session applies to an agent's write...
-      expect(creationsIn(trees.projectPrivate as string).some((e) => e.subject === result.id)).toBe(
-        true,
-      );
-      // ...and the team's public tree stays clean.
-      expect(creationsIn(trees.projectPublic as string).some((e) => e.subject === result.id)).toBe(
-        false,
-      );
+    const byAgent = runTask({ cwd: repo, env }, { title: 'an agent capture', which: 'ci-runner' });
+    const byPerson = runTask({ cwd: repo, env }, { title: 'a person capture' });
+    expect(byAgent.ok && byPerson.ok).toBe(true);
+    if (byAgent.ok && byPerson.ok) {
+      const inPublic = creationsIn(trees.projectPublic as string).map((e) => e.subject);
+      expect(inPublic).toContain(byAgent.id);
+      expect(inPublic).toContain(byPerson.id);
+      // And the private tree holds neither — it has no tail at all.
+      expect(creationsIn(trees.projectPrivate as string)).toEqual([]);
+      // The reply says where each landed, since nothing in the call did.
+      expect(byAgent.scope).toBe('public');
+      expect(byPerson.scope).toBe('public');
     }
   });
 
-  it('an explicit scope still wins over the agent default', () => {
+  it('an explicit scope still wins over the kind', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    const result = runTask({ cwd: repo, env }, { title: 'mine alone', scope: 'private' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(creationsIn(trees.projectPrivate as string).map((e) => e.subject)).toContain(
+        result.id,
+      );
+      expect(result.scope).toBe('private');
+    }
+  });
+
+  it('an explicit scope wins for an agent as well', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
@@ -213,10 +232,10 @@ describe('mnema task --which — the agent that executed', () => {
     }
   });
 
-  it('an agent named only by whitespace is no agent: public, and nothing stamped', () => {
-    // The core reads a blank identity as absent, so the scope default must read it
-    // the same way — otherwise the capture goes private on the strength of a value
-    // the event will not carry.
+  it('an agent named only by whitespace is no agent — and cannot move a tree either', () => {
+    // The core reads a blank identity as absent, so the fact carries no agent. The
+    // tree is a function of the kind now, so a blank `which` cannot make the two
+    // disagree the way it once could: the class of defect is gone, not merely tested.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
