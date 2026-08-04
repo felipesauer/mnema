@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { isDecisionState } from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   type Bench,
@@ -169,6 +170,35 @@ describe('decisionsInForce — the calls that govern', () => {
     } finally {
       a.close();
       c.close();
+    }
+  });
+
+  it('the fixture writes states the PRODUCT can produce — the guard the bench lacked', () => {
+    // The point of the rule nothing was checking, and a mutation is what found it:
+    // putting the bench back to `PROPOSED`/`ACCEPTED`/`SUPERSEDED` left the whole
+    // suite green. Every test keyed on ids, roles and counts, so a decision written in
+    // a case the gate rejects — and that `WHERE state = ?` can never match, SQLite
+    // comparing text bitwise — looked exactly like a decision. The filter this module
+    // IS would have been testable only against a record the product cannot produce.
+    const b = bench();
+    birthDecision(b, 'dec-born', 'Born');
+    const successor = accept(b, 'dec-accepted', 'Accepted');
+    birthDecision(b, 'dec-rejected', 'Rejected');
+    moveDecision(b, 'dec-rejected', 'proposed', 'rejected', 'reject');
+    accept(b, 'dec-replaced', 'Replaced');
+    supersedeDecision(b, 'dec-replaced', successor);
+    const cache = b.cache();
+    try {
+      const states = ['dec-born', 'dec-accepted', 'dec-rejected', 'dec-replaced'].map(
+        (id) => cache.getDecision(id)?.state ?? '(not projected)',
+      );
+      expect(states).toEqual(['proposed', 'accepted', 'rejected', 'superseded']);
+      // Asked of the product's own vocabulary and not only of four literals typed
+      // here: if the workflow ever renames a state, the list above is what goes
+      // stale, and this line is what stays true.
+      expect(states.filter((s) => !isDecisionState(s))).toEqual([]);
+    } finally {
+      cache.close();
     }
   });
 

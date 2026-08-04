@@ -978,7 +978,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         '(no legal moves). The task is looked for in EVERY project of this workspace; ' +
         'an id no tree of it holds is refused, naming the projects searched. Read-only.',
       inputSchema: {
-        id: z.string().min(1).describe('The task id to inspect.'),
+        id: z.string().min(1).describe('The task id to inspect (from `bootstrap`, or `search`).'),
       },
     },
     async ({ id }) => {

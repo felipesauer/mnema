@@ -2960,10 +2960,15 @@ describe('MCP — what enters the record', () => {
     // The tools it points at exist under exactly those names.
     const named = new Set(tools.tools.map((t) => t.name));
     expect(named.has('next_actions') && named.has('skills') && named.has('read_record')).toBe(true);
-    // And the door names the index back: an id from the opening read is one of the
-    // two things `read_record` takes, which is what the reader arrives holding.
-    const door = tools.tools.find((t) => t.name === 'read_record')?.description ?? '';
-    expect(door).toContain('bootstrap');
+    // And every door names the INDEX back, which is the other half of the same rule:
+    // a reader arrives at `read_record` or `next_actions` holding an id the opening
+    // read gave it, and a door that only names `search` tells that reader it came
+    // from somewhere the tool does not serve. Asserted on the whole advertised tool —
+    // description or argument, wherever the door chose to say it.
+    for (const door of ['read_record', 'next_actions']) {
+      const advertised = JSON.stringify(tools.tools.find((t) => t.name === door));
+      expect(advertised, `${door} says where the id came from`).toContain('bootstrap');
+    }
 
     await client.close();
   });
