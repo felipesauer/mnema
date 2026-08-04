@@ -15,25 +15,27 @@
  * own suite the moment it imports anything that writes.
  */
 
-export const PACKAGE_NAME = '@mnema/copilot';
-
-// The guard's request and verdict are the gate's own types (no new type). They
-// are re-exported here so a consumer of @mnema/copilot can build a guard request
-// and read its verdict without reaching into @mnema/core directly.
-export type { GateErr, GateErrorCode, GateOk, GateRequest, GateResult } from '@mnema/core';
-// The reference index's own vocabulary — the four roles and the direction of a
-// walk — is the core's, and re-exported for the same reason: a consumer reads a
-// timeline entry's `role` or asks for a direction without reaching past this
-// layer.
-export {
-  REFERENCE_ROLES,
-  type ReferenceDirection,
-  type ReferenceRole,
-  type ReferringRole,
+// The core's own types, re-exported so a consumer of @mnema/copilot can build a
+// guard request and read its verdict, or read a timeline entry's `role`, or a
+// skill's adoption, without reaching into @mnema/core directly. The guard's
+// request and verdict are the gate's own (no new type), and the reference
+// index's vocabulary is the core's.
+//
+// TYPES only. The `REFERENCE_ROLES` tuple was re-exported here too — a VALUE — and
+// no consumer ever asked this layer for it, so it is reached where it lives.
+export type {
+  GateErr,
+  GateErrorCode,
+  GateOk,
+  GateRequest,
+  GateResult,
+  ReferenceDirection,
+  ReferenceRole,
+  ReferringRole,
   // A skill's adoption — the instant and the agent, straight off the projection —
   // is re-exported for the same reason: it appears in what a provenance report
   // hands back, so reading one needs no reach past this layer.
-  type SkillAdoption,
+  SkillAdoption,
 } from '@mnema/core';
 export {
   type Bootstrap,

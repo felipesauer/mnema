@@ -75,6 +75,7 @@ import { discoveryEnv } from '../env.js';
 import {
   type Landed,
   landedNotice,
+  RECOMMENDED_RELATIONS,
   RECORD_CONTRACT,
   type Replacement,
   replacementNotice,
@@ -547,8 +548,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       description:
         'Link one piece of knowledge to another — a directed edge from a `subject` ' +
         'entity to a `target` entity, labeled by a relation `rel`. The relation is ' +
-        'an OPEN string (recommended: supersedes, relates-to, derived-from, ' +
-        'contradicts; any label is accepted). Neither endpoint is checked to ' +
+        `an OPEN string (${RECOMMENDED_RELATIONS}). Neither endpoint is checked to ` +
         'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
         'pick the scope and the project the EDGE is recorded in; omitted, a link ' +
         'asserts a relation between the project’s records and lands PUBLIC (global ' +

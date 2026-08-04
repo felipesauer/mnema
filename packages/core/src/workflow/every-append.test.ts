@@ -431,7 +431,6 @@ describe('every write refuses what no read could accept', () => {
     // The identity family: every field is derived from a key or from a decoded
     // request, and there is no argument a caller could empty.
     ensureFounded: 'the founding is derived entirely from the local key',
-    foundIdentity: 'the founding is derived entirely from the local key',
     establishIdentity: 'enrolls what the key root registered; a refusal is reported as declined',
     enrollFromRequest: 'the fingerprint is computed and the signature is rejected as absent first',
   };

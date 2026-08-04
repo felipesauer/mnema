@@ -21,9 +21,9 @@ at any time.
   event is written and only lets a change through if it is authorized, legal, and
   carries its required proof.
 - **Identity** — `deriveAlias` (a short human-facing label like `t-3a9f`, derived
-  from an id, never stored), `disambiguate` (git-style lengthening when short labels
-  collide in one view), and the canonical forms of a person (`canonicalIdentity`) and
-  of an id (`canonicalId`) that keep what is validated equal to what is written.
+  from an id, never stored, and always shown beside it), and the canonical forms of a
+  person (`canonicalIdentity`) and of an id (`canonicalId`) that keep what is
+  validated equal to what is written.
 
 ## What it guarantees — and what it does not
 
@@ -91,7 +91,7 @@ error and appends nothing — the chain never records a change the gate rejected
 - **`workflow/`** — the typed states and transitions for tasks and decisions, the pure
   gates (`gate`, `decisionGate`), and the gated write operations (`createTask`/
   `transitionTask`, `recordDecision`/`acceptDecision`/`rejectDecision`/`supersedeDecision`).
-- **`identity/`** — `deriveAlias`/`disambiguate` (the display label) and
+- **`identity/`** — `deriveAlias` (the display label) and
   `canonicalIdentity`/`canonicalId` (the canonical forms that keep validate and write
   in agreement).
 

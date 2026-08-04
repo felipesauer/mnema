@@ -10,8 +10,6 @@
  * writing, the hash chain, signed checkpoints, and verification.
  */
 
-export const PACKAGE_NAME = '@mnema/chain';
-
 // The chain.
 export {
   BACKUP_ROLE,
@@ -47,7 +45,7 @@ export {
   serializeEntry,
 } from './chain/entry.js';
 export { type ChainExtent, chainExtent } from './chain/freshness.js';
-export { contentRoot, entryHash, eventBytes, sha256Hex } from './chain/hash.js';
+export { contentRoot, entryHash, eventBytes } from './chain/hash.js';
 export {
   ANCHOR_PREFIX,
   deriveAnchor,

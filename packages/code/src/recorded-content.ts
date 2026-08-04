@@ -28,6 +28,7 @@
  * block — and only that.
  */
 
+import { RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
 import type { Scope, SecretClass } from '@mnema/core';
 import { FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
 
@@ -113,6 +114,24 @@ export interface Landed {
 export function forwardReplacement(result: Replacement): Replacement {
   return result.replaced !== undefined ? { replaced: result.replaced } : {};
 }
+
+/**
+ * What a link's relation may be, as both surfaces say it: the catalog's recommended
+ * labels, and the fact that any other label is taken.
+ *
+ * Read from the catalog's own tuple rather than typed out. It was typed out — the
+ * four labels appeared in the CLI's help, in the tool description, and in two
+ * doc-comments, while `RECOMMENDED_LINK_RELATIONS` sat exported with no caller and
+ * a docstring saying it existed so nobody would hard-code the strings. Four copies
+ * of a list is four places to forget; the vocabulary is the catalog's, so it is
+ * read from there and worded once.
+ *
+ * `cli.help.golden.txt` pins the wording this composes, so a label added to the
+ * catalog shows up as a golden diff rather than as help that has gone stale.
+ */
+export const RECOMMENDED_RELATIONS = `recommended: ${RECOMMENDED_LINK_RELATIONS.join(
+  ', ',
+)}; any label is accepted`;
 
 /**
  * What recording here means, for a caller reading a tool description. Appended to
