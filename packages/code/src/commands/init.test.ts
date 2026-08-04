@@ -1,8 +1,17 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
-import { type DiscoveryEnv, listProjects, orderedEvents } from '@mnema/core';
+import { type DiscoveryEnv, orderedEvents } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 
@@ -23,8 +32,39 @@ function setup(): { repo: string; env: DiscoveryEnv } {
   return { repo, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } };
 }
 
+/** Every file under a directory, by path relative to it, sorted. Absent ⇒ empty. */
+function filesUnder(directory: string): string[] {
+  if (!existsSync(directory)) return [];
+  const found: string[] = [];
+  const walk = (at: string, prefix: string): void => {
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
+      const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) walk(join(at, entry.name), relative);
+      else found.push(relative);
+    }
+  };
+  walk(directory, '');
+  return found.sort();
+}
+
+/**
+ * Every file under a directory with a digest of its bytes.
+ *
+ * This is what makes "init wrote nothing" an OBSERVATION rather than a count of
+ * calls: a run that appended, rewrote or added anything changes this map.
+ */
+function contentsUnder(directory: string): Record<string, string> {
+  const digests: Record<string, string> = {};
+  for (const relative of filesUnder(directory)) {
+    digests[relative] = createHash('sha256')
+      .update(readFileSync(join(directory, relative)))
+      .digest('hex');
+  }
+  return digests;
+}
+
 describe('mnema init', () => {
-  it('creates .mnema at the exact cwd, founds identity, and registers', () => {
+  it('creates .mnema at the exact cwd and founds identity', () => {
     const { repo, env } = setup();
     const result = runInit({ cwd: repo, env });
 
@@ -34,8 +74,24 @@ describe('mnema init', () => {
     // The tree is really there, at the cwd — with its own .gitignore.
     expect(statSync(join(repo, '.mnema')).isDirectory()).toBe(true);
     expect(existsSync(join(repo, '.mnema', '.gitignore'))).toBe(true);
-    // Registered in the index.
-    expect(listProjects(env).map((p) => p.root)).toEqual([join(repo, '.mnema')]);
+  });
+
+  it('writes no project index, and nothing else outside the key root', () => {
+    // The index (`<app data>/projects.json`) was written on every founding and read
+    // by no production code, while init told the person it had happened. Absence is
+    // asserted on the FILESYSTEM, at the literal path it used to take: a test that
+    // watched for a call would be satisfied by a second writer taking the same path.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
+
+    // And the whole enumeration, so the NEXT dead write is caught as well: the only
+    // thing init may leave outside the project is the key root's material, which is
+    // read on every write (it is this machine's identity).
+    const outside = filesUnder(join(sandbox, 'data'));
+    expect(outside.length).toBeGreaterThan(0);
+    expect(outside.filter((path) => !path.startsWith('mnema/identity/'))).toEqual([]);
   });
 
   it('is born verifiable: verify is ok and fully signed right after init', () => {
@@ -130,32 +186,47 @@ describe('mnema init', () => {
     expect(result.root).toBe(join(sub, '.mnema'));
   });
 
-  it('refuses to re-found on a second init, but keeps the index entry', () => {
+  it('refuses to re-found on a second init, and writes nothing at all', () => {
+    // Non-regression by the LIST of what init does, not by intention. It used to
+    // end with "and the index still carries the project exactly once", which was the
+    // index standing in for "the second run had an effect"; the substitute is
+    // stronger, because it says the effect is NONE — every file of the tree and of
+    // the app data directory is byte-identical afterwards.
     const { repo, env } = setup();
     const first = runInit({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
+    const treeBefore = contentsUnder(first.root);
+    const outsideBefore = contentsUnder(join(sandbox, 'data'));
+
+    const second = runInit({ cwd: repo, env });
+
+    expect(second.created).toBe(false);
+    expect(second.root).toBe(first.root);
+    expect(second.anchor).toBe(first.anchor);
+    // A second init appends nothing, so it has no identity to report.
+    expect(second.identity).toBeUndefined();
+    // No second founding — the chain is untouched.
+    expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
+    // Nothing moved on disk, inside the project or outside it.
+    expect(contentsUnder(first.root)).toEqual(treeBefore);
+    expect(contentsUnder(join(sandbox, 'data'))).toEqual(outsideBefore);
+  });
+
+  it('does not re-found when the app data directory itself was lost', () => {
+    // This case used to be "re-registers a project whose index entry was lost": the
+    // index was the DEVICE for observing that a second init still did something
+    // useful after the cache went away. What it actually exercises is harsher than
+    // the cache — wiping the app data directory takes the KEY ROOT with it — and
+    // that half survives the index: an existing project is still not re-founded, and
+    // its chain is untouched, by a machine that lost its own key material.
+    const { repo, env } = setup();
+    const first = runInit({ cwd: repo, env });
+    const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
+    rmSync(join(sandbox, 'data'), { recursive: true, force: true });
 
     const second = runInit({ cwd: repo, env });
     expect(second.created).toBe(false);
     expect(second.root).toBe(first.root);
-    expect(second.anchor).toBe(first.anchor);
-    // No second founding — the chain is untouched.
-    expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
-    // The index still carries the project exactly once.
-    expect(listProjects(env).map((p) => p.root)).toEqual([first.root]);
-  });
-
-  it('re-registers a project whose index entry was lost, without re-founding', () => {
-    const { repo, env } = setup();
-    const first = runInit({ cwd: repo, env });
-    const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
-    // Simulate a lost cache: the tree stays, the index is wiped.
-    rmSync(join(sandbox, 'data'), { recursive: true, force: true });
-    expect(listProjects(env)).toEqual([]);
-
-    const second = runInit({ cwd: repo, env });
-    expect(second.created).toBe(false);
-    expect(listProjects(env).map((p) => p.root)).toEqual([first.root]);
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
   });
 });
