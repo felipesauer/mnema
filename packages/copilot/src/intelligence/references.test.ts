@@ -127,8 +127,8 @@ describe('references — the lineage', () => {
     birthDecision(b, 'd1', 'first');
     birthDecision(b, 'd2', 'second');
     birthDecision(b, 'd3', 'third');
-    supersedeDecision(b, 'd1', 'd2', 'PROPOSED');
-    supersedeDecision(b, 'd2', 'd3', 'PROPOSED');
+    supersedeDecision(b, 'd1', 'd2', 'proposed');
+    supersedeDecision(b, 'd2', 'd3', 'proposed');
 
     const forward = references([tree(b)], { id: 'd1', direction: 'out', depth: 5 });
     expect(edges(forward)).toEqual(['d1 by d2', 'd2 by d3']);
@@ -220,7 +220,7 @@ describe('references — across the trees', () => {
     const mine = bench();
     birthDecision(team, 'dec-1', 'the call');
     birthDecision(team, 'dec-2', 'the newer call');
-    supersedeDecision(team, 'dec-1', 'dec-2', 'PROPOSED');
+    supersedeDecision(team, 'dec-1', 'dec-2', 'proposed');
     capture(mine, 'mem-1', 'why we chose it');
     link(mine, 'mem-1', 'dec-1', 'derived-from');
     const sources = [tree(team, 'public'), tree(mine, 'global')];
