@@ -33,6 +33,7 @@ import {
   projectSkills,
   projectTasks,
   resolveTrees,
+  type Scope,
 } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -107,6 +108,46 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
+/**
+ * The tree this connection's KNOWLEDGE writes land in — `private` in a project,
+ * `global` outside one.
+ *
+ * A session no longer carries a default scope: where a write goes is decided per call
+ * from its KIND, and only two kinds (`memory`, `observation`) still read the author —
+ * an MCP connection is always an agent, so those land private. Every other kind goes
+ * where its kind says, which for all of them is the tree that travels. So a test that
+ * means "where this connection's memory went" names that, and a test about a task or a
+ * decision names `public` outright.
+ */
+function knowledgeTree(session: Session): Scope {
+  return session.inProject ? 'private' : 'global';
+}
+
+/**
+ * The tree a task, a decision, a skill, a handoff or a link lands in — the tree that
+ * TRAVELS in a project, the global one outside it.
+ *
+ * The kind decides these, whoever wrote them, which is the change this names: an
+ * agent's decision is the project's decision, and a clone that has the repository has
+ * the board.
+ */
+function travelTree(session: Session): Scope {
+  return session.inProject ? 'public' : 'global';
+}
+
+/**
+ * The id out of a `capture_memory` reply.
+ *
+ * From the HEADLINE, not the whole text: a write reply is two lines — what landed and
+ * WHERE it landed — and taking the whole thing put a sentence about the tree inside the
+ * id. Every later read then asked about an entity nothing had ever written, and answered
+ * "not found" about a fact that was right there.
+ */
+function capturedId(result: unknown): string {
+  const [headline = ''] = textOf(result).split('\n');
+  return headline.replace('Captured memory ', '').trim();
+}
+
 describe('MCP session + tools — unit', () => {
   it('opening a session resolves the anchor and the project, and opens no run', () => {
     const project = makeProject('proj');
@@ -123,7 +164,7 @@ describe('MCP session + tools — unit', () => {
     expect(session.runs.size).toBe(0);
     // In a project, an agent connection routes writes PRIVATE (the origin rule).
     expect(session.inProject).toBe(true);
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
     // And the session can say WHERE it landed — the project, not the root it read.
     expect(session.project).toBe(project);
   });
@@ -131,7 +172,7 @@ describe('MCP session + tools — unit', () => {
   it('a session with no project lands on the global tree (never refuses)', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(session.inProject).toBe(false);
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     expect(session.project).toBeUndefined();
     expect(session.runs.size).toBe(0);
   });
@@ -154,7 +195,7 @@ describe('MCP session + tools — unit', () => {
     expect(theRun(session)).toBe(opened);
 
     // One run for the connection, and both facts pinned to it.
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, knowledgeTree(session)) as string;
     const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
     expect(events.filter((e) => e.kind === 'run.started').map((e) => e.subject)).toEqual([opened]);
     expect(events.filter((e) => e.kind === 'memory.captured').map((e) => e.run)).toEqual([
@@ -176,7 +217,7 @@ describe('MCP session + tools — unit', () => {
     expect(result.id.length).toBeGreaterThan(0);
 
     // The write landed in the session's (private) tree and verifies.
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, knowledgeTree(session)) as string;
     const verdict = verify(chainRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
 
@@ -203,7 +244,7 @@ describe('MCP session + tools — unit', () => {
     if (!runCaptureMemory(session, { content: 'something to work on' }).ok) {
       throw new Error('setup: capture refused');
     }
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, knowledgeTree(session)) as string;
     const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
 
     const focus = runFocusTool(session);
@@ -281,7 +322,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Create a task in the session's (private) tree so next_actions can find it.
-    const { ctx, run } = openWrite(session, session.scope);
+    const { ctx, run } = openWrite(session, travelTree(session));
     const created = createTask(ctx, { title: 'a task', which: session.which, run });
     if (!created.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();
@@ -314,12 +355,12 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Create a task the session can find (its private tree).
-    const { ctx, run } = openWrite(session, session.scope);
+    const { ctx, run } = openWrite(session, travelTree(session));
     const created = createTask(ctx, { title: 'a task', which: session.which, run });
     if (!created.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
 
     // submit is legal from DRAFT and needs no proof → ALLOWED, reaching READY.
@@ -365,7 +406,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // The session's default is private (an agent in a project).
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
 
     // The agent states scope=public for THIS capture — it must land in public
     // despite the session default, so one session produces both public and
@@ -409,7 +450,7 @@ describe('MCP session + tools — unit', () => {
     // A session with no project has only the global tree. Asking for public
     // names a tree that does not exist — refuse as data, never throw.
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const refused = runCaptureMemory(session, { content: 'no public here', scope: 'public' });
     expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
   });
@@ -430,7 +471,7 @@ describe('MCP session + tools — unit', () => {
     if (!result.ok) throw new Error('setup: observe refused');
     expect(result.id).not.toBe('a-task-id');
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, knowledgeTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
     const recorded = events.find((e) => e.kind === 'observation.recorded');
@@ -448,7 +489,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
     const recorded = runRecordObservation(session, {
       about: 'x',
       topic: 't',
@@ -471,7 +512,7 @@ describe('MCP session + tools — unit', () => {
 
   it('record_observation refuses a scope absent here as data', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const refused = runRecordObservation(session, {
       about: 'x',
       topic: 't',
@@ -497,9 +538,15 @@ describe('MCP session + tools — unit', () => {
     });
     // No id (the subject IS the task) — the labels AS RECORDED are what a caller
     // has to report the fact by.
-    expect(result).toEqual({ ok: true, recorded: ['claude-code', 'claude-code'] });
+    // The whole result, so a field added here has to be declared: it says WHERE the
+    // fact landed, because the call did not.
+    expect(result).toEqual({
+      ok: true,
+      recorded: ['claude-code', 'claude-code'],
+      scope: 'public',
+    });
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
     const handoff = projectHandoffs(events).get('a-task-id')?.[0];
@@ -534,9 +581,9 @@ describe('MCP session + tools — unit', () => {
       target: '00000000-0000-7000-8000-000000000000',
       rel: 'inspired-by-a-dream',
     });
-    expect(result).toEqual({ ok: true, recorded: ['inspired-by-a-dream'] });
+    expect(result).toEqual({ ok: true, recorded: ['inspired-by-a-dream'], scope: 'public' });
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const edges = projectLinks(orderedEvents({ root: chainRoot }, catalogUpcasters()));
     expect(edges).toEqual([
@@ -609,7 +656,7 @@ describe('MCP session + tools — unit', () => {
     expect(() => runCaptureMemory(forged, { content: 'x' })).toThrow(/WHO_IS_WHICH/);
 
     // And nothing landed: no run, so no fact could be pinned to one.
-    const chainRoot = chainRootForScope(forged.trees, forged.scope) as string;
+    const chainRoot = chainRootForScope(forged.trees, knowledgeTree(forged)) as string;
     const kinds = orderedEvents({ root: chainRoot }, catalogUpcasters()).map((e) => e.kind);
     expect(kinds).not.toContain('run.started');
     expect(kinds).not.toContain('memory.captured');
@@ -624,11 +671,16 @@ describe('MCP session + tools — unit', () => {
     });
     // These four facts run no gate of their own, so drive the adapters with an agent
     // equal to the anchor to prove they PROPAGATE the core's refusal instead of
-    // asserting success. The run is opened FIRST, by an honest write, so what the
-    // four hit is the refusal of their own fact and not the refusal of the run —
-    // which is the case the test above covers.
+    // asserting success. A run is opened FIRST, by honest writes, so what the four hit
+    // is the refusal of their own fact and not the refusal of the run — which is the
+    // case the test above covers. TWO honest writes, because the four land in two
+    // trees: a memory reads the author and goes private, a handoff and a link are
+    // routed by their kind to the tree that travels, and each tree opens its own run.
     if (!runCaptureMemory(session, { content: 'an honest fact, to open the run' }).ok) {
       throw new Error('setup: capture refused');
+    }
+    if (!runRecordHandoff(session, { task: 'e', from: 'a', to: 'b' }).ok) {
+      throw new Error('setup: handoff refused');
     }
     const forged: Session = { ...session, which: session.who };
 
@@ -642,15 +694,20 @@ describe('MCP session + tools — unit', () => {
       expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
     }
 
-    // None of the four was appended, and the tree still verifies — the refusal
-    // happened before the write, not after it. The one capture is the honest setup's.
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-    const kinds = orderedEvents({ root: chainRoot }, catalogUpcasters()).map((e) => e.kind);
-    expect(kinds.filter((k) => k === 'memory.captured')).toHaveLength(1);
-    expect(kinds).not.toContain('observation.recorded');
-    expect(kinds).not.toContain('handoff.recorded');
-    expect(kinds).not.toContain('knowledge.linked');
-    expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
+    // None of the four was appended, and BOTH trees still verify — the refusal
+    // happened before the write, not after it. What is on the chain is the honest
+    // setup's two facts, each in the tree its kind (or its author) sent it to.
+    const knowledge = chainRootForScope(session.trees, knowledgeTree(session)) as string;
+    const travels = chainRootForScope(session.trees, travelTree(session)) as string;
+    const kindsIn = (root: string) =>
+      orderedEvents({ root }, catalogUpcasters()).map((e) => e.kind);
+    expect(kindsIn(knowledge).filter((k) => k === 'memory.captured')).toHaveLength(1);
+    expect(kindsIn(travels).filter((k) => k === 'handoff.recorded')).toHaveLength(1);
+    for (const root of [knowledge, travels]) {
+      expect(kindsIn(root)).not.toContain('observation.recorded');
+      expect(kindsIn(root)).not.toContain('knowledge.linked');
+      expect(verify(root, catalogUpcasters()).ok).toBe(true);
+    }
   });
 
   it('create_task appends a verifiable birth, returning the id AND the alias', () => {
@@ -667,7 +724,7 @@ describe('MCP session + tools — unit', () => {
     expect(created.alias).toBe(deriveAlias('task', created.id));
     expect(created.alias).toMatch(/^t-[0-9a-f]{4}$/);
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     // Checkpointed by the tool, so the birth is signature-covered on return.
     const verdict = verify(chainRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
@@ -698,7 +755,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
 
     const created = runCreateTask(session, { title: 'a team task', scope: 'public' });
     if (!created.ok) throw new Error('create refused');
@@ -717,7 +774,7 @@ describe('MCP session + tools — unit', () => {
 
   it('create_task refuses a scope absent here (public with no project) as data', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const refused = runCreateTask(session, { title: 'nowhere', scope: 'public' });
     expect(refused).toMatchObject({ ok: false, code: 'SCOPE_UNAVAILABLE' });
   });
@@ -731,7 +788,7 @@ describe('MCP session + tools — unit', () => {
     });
 
     // Create a task in the session's (private) tree, then move it via the tool.
-    const ctx = writeContext(session.trees, session.scope, session.caches);
+    const ctx = writeContext(session.trees, travelTree(session), session.caches);
     const created = createTask(ctx, { title: 'wire the tool', which: session.which });
     if (!created.ok) throw new Error('setup: create refused');
     ctx.writer.checkpoint();
@@ -742,7 +799,7 @@ describe('MCP session + tools — unit', () => {
     expect(started).toMatchObject({ ok: true, to: 'IN_PROGRESS' });
 
     // The move landed in the session's tree and the chain still verifies.
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const state = projectTasks(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
       created.id,
@@ -756,7 +813,7 @@ describe('MCP session + tools — unit', () => {
     // must follow the entity to its home (public), NOT land in the session's
     // private tree — else the team, who reads only public, would see the task
     // frozen while the agent's move hid in private. With the old fixed
-    // session.scope this refused UNKNOWN_TASK; following the entity, it works.
+    // the session's own tree this refused UNKNOWN_TASK; following the entity, it works.
     const project = makeProject('proj');
     const trees = resolveTrees(project, env);
 
@@ -772,7 +829,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
 
     // The agent moves the human's task. It lands in PUBLIC (the task's home).
     const moved = runTaskTransition(session, { id: created.id, action: 'submit' });
@@ -809,7 +866,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    const ctx = writeContext(session.trees, session.scope, session.caches);
+    const ctx = writeContext(session.trees, travelTree(session), session.caches);
     const created = createTask(ctx, { title: 'a task', which: session.which });
     if (!created.ok) throw new Error('setup: create refused');
     ctx.writer.checkpoint();
@@ -841,7 +898,7 @@ describe('MCP session + tools — unit', () => {
     if (!result.ok) throw new Error('setup: record refused');
     expect(result.adr).toBe('ADR-1');
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
     const recorded = events.find((e) => e.kind === 'decision.recorded');
@@ -858,7 +915,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
 
     const recorded = runRecordDecision(session, {
       title: 'a team-visible call',
@@ -885,7 +942,7 @@ describe('MCP session + tools — unit', () => {
 
   it('record_decision refuses a scope absent here (public with no project) as data', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const refused = runRecordDecision(session, {
       title: 'no public here',
       rationale: 'no project',
@@ -915,7 +972,7 @@ describe('MCP session + tools — unit', () => {
     });
     expect(superseded).toMatchObject({ ok: true, to: 'superseded', adr: 'ADR-1' });
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     const d = projectDecisions(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(oldD.id);
     expect(d?.state).toBe('superseded');
     expect(d?.supersededBy).toBe(newD.id);
@@ -942,7 +999,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
     const moved = runDecisionTransition(session, {
       id: recordedByHuman.id,
       action: 'accept',
@@ -1014,7 +1071,7 @@ describe('MCP session + tools — unit', () => {
     expect(result.name).toBe('stacked-prs');
     expect(result.id.length).toBeGreaterThan(0);
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const events = orderedEvents({ root: chainRoot }, catalogUpcasters());
     const created = events.find((e) => e.kind === 'skill.created');
@@ -1031,7 +1088,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
 
     const created = runCreateSkill(session, {
       name: 'a-team-habit',
@@ -1055,7 +1112,7 @@ describe('MCP session + tools — unit', () => {
 
   it('create_skill refuses a scope absent here (public with no project) as data', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const refused = runCreateSkill(session, {
       name: 'no public here',
       body: 'no project',
@@ -1084,7 +1141,7 @@ describe('MCP session + tools — unit', () => {
     const adopted = runSkillTransition(session, { id: created.id, action: 'adopt', note: 'used' });
     expect(adopted).toMatchObject({ ok: true, to: 'adopted' });
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
     const state = projectSkills(orderedEvents({ root: chainRoot }, catalogUpcasters())).get(
       created.id,
@@ -1111,7 +1168,7 @@ describe('MCP session + tools — unit', () => {
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
+    expect(knowledgeTree(session)).toBe('private');
     const moved = runSkillTransition(session, { id: seeded.id, action: 'review', note: 'seen' });
     expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
 
@@ -1234,16 +1291,16 @@ describe('MCP session + tools — unit', () => {
       skills: [{ id, name: 'stacked-prs', body: 'One slice per PR.', adoptedBy: 'claude-code' }],
     });
     // The consultation landed in the session's own tree, tied to its run.
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([[id, theRun(session)]]);
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(consultations(publicRoot)).toEqual([[id, theRun(session)]]);
     // And it is attributed to the agent, authorized by the machine.
-    const fact = orderedEvents({ root: privateRoot }, catalogUpcasters()).find(
+    const fact = orderedEvents({ root: publicRoot }, catalogUpcasters()).find(
       (e) => e.kind === 'skill.consulted',
     );
     expect(fact?.which).toBe('claude-code');
     expect(fact?.who).toBe(session.who);
     // The tree stays verifiable and fully signed after a consultation.
-    const verdict = verify(privateRoot, catalogUpcasters());
+    const verdict = verify(publicRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
     expect(verdict.fullySigned).toBe(true);
   });
@@ -1262,8 +1319,8 @@ describe('MCP session + tools — unit', () => {
     expect(runSkillsTool(session).ok).toBe(true);
     expect(runSkillsTool(session, { id }).ok).toBe(true);
 
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([[id, theRun(session)]]);
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(consultations(publicRoot)).toEqual([[id, theRun(session)]]);
   });
 
   it('skills records one fact per skill — which pattern, not just that one was read', () => {
@@ -1278,9 +1335,9 @@ describe('MCP session + tools — unit', () => {
 
     runSkillsTool(session);
 
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
     expect(
-      consultations(privateRoot)
+      consultations(publicRoot)
         .map(([subject]) => subject)
         .sort(),
     ).toEqual([first, second].sort());
@@ -1296,8 +1353,8 @@ describe('MCP session + tools — unit', () => {
 
     runSkillsTool(second);
 
-    const privateRoot = chainRootForScope(first.trees, 'private') as string;
-    const recorded = consultations(privateRoot);
+    const publicRoot = chainRootForScope(first.trees, 'public') as string;
+    const recorded = consultations(publicRoot);
     // The same pattern, two facts — one per session, each carrying its own run.
     expect(recorded.map(([subject]) => subject)).toEqual([id, id]);
     expect(new Set(recorded.map(([, run]) => run))).toEqual(
@@ -1329,8 +1386,8 @@ describe('MCP session + tools — unit', () => {
     if (!refused.ok) expect(refused.message).toContain('deprecated');
     expect(JSON.stringify(refused)).not.toContain('the old way');
 
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([]);
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(consultations(publicRoot)).toEqual([]);
   });
 
   it('skills refuses an unknown id as data, recording nothing', () => {
@@ -1346,8 +1403,8 @@ describe('MCP session + tools — unit', () => {
       code: 'UNKNOWN_SKILL',
     });
 
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    expect(consultations(privateRoot)).toEqual([]);
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    expect(consultations(publicRoot)).toEqual([]);
   });
 
   it('a skills call that serves nothing leaves the sandbox BYTE-IDENTICAL', () => {
@@ -1371,17 +1428,17 @@ describe('MCP session + tools — unit', () => {
     expect(digest(sandbox)).toBe(before);
   });
 
-  it('skills crosses the trees: a PUBLIC pattern is served, the consultation lands PRIVATE', () => {
+  it('skills crosses the trees: a PRIVATE pattern is served, the consultation TRAVELS', () => {
     const project = makeProject('proj');
     const session = openSession({
       clientName: 'claude-code',
       roots: [pathToFileURL(project).href],
       env,
     });
-    expect(session.scope).toBe('private');
-    // The team adopts a pattern in the public tree; the agent's own is private.
-    const team = adoptSkill(session, { name: 'team habit', body: 'how we work', scope: 'public' });
-    const mine = adoptSkill(session, { name: 'my habit', body: 'how I work' });
+    // The team's pattern lands where a pattern belongs; the second one is put in the
+    // private tree by an explicit override, which is now the only way to get one there.
+    const team = adoptSkill(session, { name: 'team habit', body: 'how we work' });
+    const mine = adoptSkill(session, { name: 'my habit', body: 'how I work', scope: 'private' });
 
     const result = runSkillsTool(session);
 
@@ -1389,16 +1446,19 @@ describe('MCP session + tools — unit', () => {
     if (!result.ok) return;
     expect(result.skills.map((s) => s.id).sort()).toEqual([mine, team].sort());
 
-    // Both consultations are the agent's own facts: they land in PRIVATE, and the
-    // public one names a subject that lives in another tree (honest cross-tree).
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
+    // A consultation is a SKILL fact and travels with the rest of them: "this pattern
+    // was used" is the only evidence the team ever gets that an adopted pattern earns
+    // its place, and it is worth nothing on one machine. So both land in the committed
+    // tree — including the one whose SUBJECT lives in the private tree, which is the
+    // same honest cross-tree reference a link makes and is resolved on read.
     const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    const privateRoot = chainRootForScope(session.trees, 'private') as string;
     expect(
-      consultations(privateRoot)
+      consultations(publicRoot)
         .map(([subject]) => subject)
         .sort(),
     ).toEqual([mine, team].sort());
-    expect(consultations(publicRoot)).toEqual([]);
+    expect(consultations(privateRoot)).toEqual([]);
     expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
   });
@@ -1426,7 +1486,7 @@ describe('MCP session + tools — unit', () => {
 
   it('skills works with no project: the global tree serves and takes the fact', () => {
     const session = openSession({ clientName: 'claude-code', roots: [], env });
-    expect(session.scope).toBe('global');
+    expect(session.inProject).toBe(false);
     const id = adoptSkill(session, { name: 'personal habit', body: 'across every project' });
 
     const result = runSkillsTool(session);
@@ -1451,13 +1511,13 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     adoptSkill(session, { name: 'a pattern', body: 'the body' });
-    const privateRoot = chainRootForScope(session.trees, 'private') as string;
-    const before = orderedEvents({ root: privateRoot }, catalogUpcasters()).length;
+    const publicRoot = chainRootForScope(session.trees, 'public') as string;
+    const before = orderedEvents({ root: publicRoot }, catalogUpcasters()).length;
 
     runBootstrap(session);
 
-    expect(orderedEvents({ root: privateRoot }, catalogUpcasters())).toHaveLength(before);
-    expect(consultations(privateRoot)).toEqual([]);
+    expect(orderedEvents({ root: publicRoot }, catalogUpcasters())).toHaveLength(before);
+    expect(consultations(publicRoot)).toEqual([]);
   });
 
   it('audit_timeline gathers an entity across the union of the session trees, writing nothing', () => {
@@ -1542,7 +1602,7 @@ describe('MCP session + tools — unit', () => {
       env,
     });
     // Drive a task DRAFT→…→DONE→reopen→…→DONE→reopen via the transition tool.
-    const { ctx, run } = openWrite(session, session.scope);
+    const { ctx, run } = openWrite(session, travelTree(session));
     const created = createTask(ctx, { title: 'churn', which: session.which, run });
     if (!created.ok) throw new Error('setup');
     ctx.writer.checkpoint();
@@ -1557,7 +1617,7 @@ describe('MCP session + tools — unit', () => {
     move('complete', { note: 'done' });
     move('reopen', { reason: 'once more' });
 
-    const chainRoot = chainRootForScope(session.trees, session.scope) as string;
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     const before = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
 
     const result = runAntipatternsTool(session);
@@ -2034,7 +2094,13 @@ describe('MCP server — end to end over a real client', () => {
     });
     expect(created.isError).toBeFalsy();
     // The response carries both names: the alias for the human, the id for a move.
-    const reported = /^Created task (t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)$/.exec(textOf(created));
+    // The headline, then the tree it landed in — the reply says both, and the agent
+    // needs the first line to move the task.
+    const [headline, landed] = textOf(created).split('\n');
+    expect(landed).toBe(
+      '  Landed in the public tree — committed with the repository, so it reaches every clone.',
+    );
+    const reported = /^Created task (t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)$/.exec(headline as string);
     expect(reported).not.toBeNull();
     const [, alias, id] = reported as RegExpExecArray;
     expect(alias).toBe(deriveAlias('task', id as string));
@@ -2048,9 +2114,10 @@ describe('MCP server — end to end over a real client', () => {
     expect(moved.isError).toBeFalsy();
     expect(textOf(moved)).toBe(`Task ${alias} → READY`);
 
-    // Both writes landed in the session's private tree, fully signed.
+    // Both writes landed in the tree a task travels in, fully signed: the birth by its
+    // kind, and the move by following the entity there.
     const trees = resolveTrees(project, env);
-    const chainRoot = chainRootForScope(trees, 'private') as string;
+    const chainRoot = chainRootForScope(trees, 'public') as string;
     const verdict = verify(chainRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
     expect(verdict.fullySigned).toBe(true);
@@ -2208,7 +2275,9 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { about: 'some-id', topic: 'perf', text: 'slow path here' },
     });
     expect(observed.isError).toBeFalsy();
-    expect(textOf(observed)).toMatch(/^Recorded observation .+ about some-id$/);
+    expect(textOf(observed)).toMatch(
+      /^Recorded observation .+ about some-id\n {2}Landed in the private tree — this machine's own; it is not committed and does not travel\.$/,
+    );
 
     // handoff echoes the fact; from == to accepted.
     const handed = await client.callTool({
@@ -2216,7 +2285,10 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { task: 'some-id', from: 'claude-code', to: 'claude-code' },
     });
     expect(handed.isError).toBeFalsy();
-    expect(textOf(handed)).toBe('Recorded handoff on some-id: claude-code → claude-code');
+    expect(textOf(handed)).toBe(
+      'Recorded handoff on some-id: claude-code → claude-code\n' +
+        '  Landed in the public tree — committed with the repository, so it reaches every clone.',
+    );
 
     // link with a rel outside the recommended set and a dangling target — accepted.
     const linked = await client.callTool({
@@ -2224,15 +2296,25 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { subject: 'some-id', target: 'ghost-id', rel: 'reminds-me-of' },
     });
     expect(linked.isError).toBeFalsy();
-    expect(textOf(linked)).toBe('Linked some-id —reminds-me-of→ ghost-id');
+    expect(textOf(linked)).toBe(
+      'Linked some-id —reminds-me-of→ ghost-id\n' +
+        '  Landed in the public tree — committed with the repository, so it reaches every clone.',
+    );
 
-    // All three landed in the session's private tree and it still verifies.
+    // Where each landed, and the split is the rule rather than an accident: the
+    // observation is one of the two kinds still routed by the AUTHOR (an MCP
+    // connection is an agent, so private); the handoff and the link are routed by
+    // their KIND to the tree that travels. Both trees verify.
     const privateRoot = join(project, PROJECT_DIR, 'private');
-    const events = orderedEvents({ root: privateRoot }, catalogUpcasters());
-    expect(events.some((e) => e.kind === 'observation.recorded')).toBe(true);
-    expect(events.some((e) => e.kind === 'handoff.recorded')).toBe(true);
-    expect(events.some((e) => e.kind === 'knowledge.linked')).toBe(true);
+    const publicRoot = join(project, PROJECT_DIR);
+    const privateEvents = orderedEvents({ root: privateRoot }, catalogUpcasters());
+    const publicEvents = orderedEvents({ root: publicRoot }, catalogUpcasters());
+    expect(privateEvents.some((e) => e.kind === 'observation.recorded')).toBe(true);
+    expect(publicEvents.some((e) => e.kind === 'handoff.recorded')).toBe(true);
+    expect(publicEvents.some((e) => e.kind === 'knowledge.linked')).toBe(true);
+    expect(publicEvents.some((e) => e.kind === 'observation.recorded')).toBe(false);
     expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+    expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });
@@ -2296,26 +2378,26 @@ describe('MCP server — end to end over a real client', () => {
     // Reading it again serves the same body and records nothing new.
     expect((await client.callTool({ name: 'skills', arguments: { id } })).isError).toBeFalsy();
 
-    // The consultation is on the chain, in the agent's PRIVATE tree, carrying the
-    // run the session opened — one fact, though the pattern was served twice.
-    const privateRoot = join(project, PROJECT_DIR, 'private');
-    const consulted = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+    // The consultation is on the chain, in the tree a skill fact travels in, carrying
+    // the run the session opened — one fact, though the pattern was served twice.
+    const publicRoot = join(project, PROJECT_DIR);
+    const consulted = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
       (e) => e.kind === 'skill.consulted',
     );
     expect(consulted).toHaveLength(1);
     expect(consulted[0]?.subject).toBe(id);
     expect(consulted[0]?.which).toBe('claude-code');
-    const runs = orderedEvents({ root: privateRoot }, catalogUpcasters()).filter(
+    const runs = orderedEvents({ root: publicRoot }, catalogUpcasters()).filter(
       (e) => e.kind === 'run.started',
     );
     expect(consulted[0]?.run).toBe(runs[0]?.subject);
 
     // Both trees verify, and the tree that took the write is fully signed.
-    const publicVerdict = verify(join(project, PROJECT_DIR), catalogUpcasters());
-    const privateVerdict = verify(privateRoot, catalogUpcasters());
+    const publicVerdict = verify(publicRoot, catalogUpcasters());
+    const privateVerdict = verify(join(project, PROJECT_DIR, 'private'), catalogUpcasters());
     expect(publicVerdict.ok).toBe(true);
     expect(privateVerdict.ok).toBe(true);
-    expect(privateVerdict.fullySigned).toBe(true);
+    expect(publicVerdict.fullySigned).toBe(true);
 
     await client.close();
   });
@@ -2448,7 +2530,7 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { content: 'seed the record' },
     });
     expect(textOf(created)).toMatch(/^Captured memory /);
-    const memoryId = textOf(created).replace('Captured memory ', '').trim();
+    const memoryId = capturedId(created);
 
     // audit_timeline over the seeded memory — its own creation event is there.
     const timelineRes = await client.callTool({
@@ -2510,7 +2592,7 @@ describe('MCP server — end to end over a real client', () => {
       name: 'capture_memory',
       arguments: { content: 'the keychain call came out of the token incident' },
     });
-    const noteId = textOf(note).replace('Captured memory ', '').trim();
+    const noteId = capturedId(note);
     await client.callTool({
       name: 'link_knowledge',
       arguments: { subject: noteId, target: firstId, rel: 'derived-from' },
@@ -2987,10 +3069,16 @@ describe('MCP — who the record says acted', () => {
     expect(publicEvents.some((e) => e.kind === 'run.started')).toBe(false);
 
     // The server said so at the door, too: the handshake line declares the project it
-    // landed in and the scope its writes take, and the run line — written when the
-    // capture opened the run — names the agent the way the chain recorded it.
+    // landed in — and no scope, because a session no longer has one; where a write goes
+    // is decided per call. The run line, written when the capture opened the run, names
+    // the TREE it opened in and the agent the way the chain recorded it.
+    expect(logged.some((line) => line.includes(`project=${project}`))).toBe(true);
+    expect(logged.some((line) => line.includes('scope='))).toBe(false);
     expect(
-      logged.some((line) => line.includes(`project=${project}`) && line.includes('scope=private')),
+      logged.some(
+        (line) =>
+          line.includes('session run ') && line.includes(join(project, PROJECT_DIR, 'private')),
+      ),
     ).toBe(true);
     expect(logged.some((line) => line.includes('which=unknown-agent'))).toBe(true);
 

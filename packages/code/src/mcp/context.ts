@@ -39,10 +39,10 @@
  * in that project instead of in whichever one the cascade happened to pick.
  *
  * This module is pure: it takes the already-listed roots (the server does the
- * protocol call) and returns which tree to work on. The scope of a write —
- * private within a project, global outside one — is not decided here; that is
- * the core's routing rule ({@link resolveScope}), applied at the write with the
- * `which` in hand. This decides only WHERE (which trees), never public/private.
+ * protocol call) and returns which trees to work on. WHICH of them a write lands in is
+ * not decided here; that is the core's routing rule ({@link resolveScope}), applied at
+ * the write, where the KIND is known. This decides only which PROJECT — never
+ * public/private.
  */
 
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -99,9 +99,9 @@ export interface ResolvedContext {
   /** The three trees resolved for the chosen directory (project or global). */
   readonly trees: ResolvedTrees;
   /**
-   * Whether a project was found. True → the project scopes are present and a
-   * write goes to the project (private, by the origin rule); false → there is
-   * no project and everything works on the global tree.
+   * Whether a project was found. True → both project trees are present and a write
+   * goes to whichever of them its KIND names; false → there is no project and
+   * everything works on the global tree, the only one there is.
    */
   readonly inProject: boolean;
   /**

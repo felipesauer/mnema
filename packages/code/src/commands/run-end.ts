@@ -3,8 +3,9 @@
  * the command line.
  *
  * The other half of {@link runRunStart}, and a leaner adapter: the run already
- * exists, so there is nothing to route — it resolves the same private tree the run
- * was born in and calls one core operation.
+ * exists, so there is nothing to route — it resolves the same tree the run was born
+ * in (the project's committed one, see {@link runRunStart}) and calls one core
+ * operation.
  *
  * The agent is REQUIRED, the way it is on the other half, and the reason is what
  * this verb is FOR rather than strictness: `run start`/`run end` are how an agent
@@ -20,7 +21,7 @@
  *
  * The refusals are otherwise the core's own and each matters on an append-only log:
  * `UNKNOWN_RUN` (no `run.started` for this id here — including a run opened in
- * ANOTHER project, whose private tree this is not), `ALREADY_ENDED` (closing
+ * ANOTHER project, whose record this is not), `ALREADY_ENDED` (closing
  * twice would leave a duplicate nobody can retract) and `WHO_IS_WHICH` (an agent
  * cannot seal a session as the identity that authorized it). None is swallowed: a
  * close that silently does nothing would let a person believe a session was
@@ -92,12 +93,12 @@ export function runRunEnd(
   }
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const root = chainRootForScope(trees, 'private');
+  const root = chainRootForScope(trees, 'public');
   if (root === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
-  const writer = openTreeForWriting(trees, 'private');
+  const writer = openTreeForWriting(trees, 'public');
   const ended = endRun(
     { writer, layout: { root }, upcasters: catalogUpcasters() },
     {

@@ -293,7 +293,7 @@ describe('captureMemory — routing across the three trees (PoC)', () => {
   });
 
   it('routes an automatic agent capture (a `which`) into the PRIVATE tree', () => {
-    const scope = resolveScope({ which: 'agent-x' }); // → 'private'
+    const scope = resolveScope('memory.captured', { which: 'agent-x' }); // → 'private'
     const { ctx, root } = ctxFor(scope);
     const captured = captureMemory(ctx, { content: 'auto-note', which: 'agent-x' });
     if (!captured.ok) throw new Error('capture failed');

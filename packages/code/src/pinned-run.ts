@@ -17,12 +17,13 @@
  * command. With no variable set this returns before touching the disk at all, so
  * a person who never heard of runs pays nothing.
  *
- * WHICH TREE IT IS PROVEN AGAINST. The PRIVATE tree of the project the command is
- * run in — where runs are born and where `focus`/`resume` read them. The fact
- * being written may land in another tree (a public task, a global memory); the
- * run is still the machine's session in THIS project. A run opened in another
- * project is therefore unknown here, which is the answer that keeps a session
- * from vouching for work in a repository it never saw.
+ * WHICH TREE IT IS PROVEN AGAINST. The COMMITTED tree of the project the command is
+ * run in — where a command-line run is born ({@link runRunStart}). The fact being
+ * written may land in another tree (a private memory, a global one); the run is
+ * still the machine's session in THIS project, and it lives in the one tree every
+ * kind can cite. A run opened in another project is therefore unknown here, which
+ * is the answer that keeps a session from vouching for work in a repository it
+ * never saw.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -71,7 +72,7 @@ const HOW_TO_OPEN = 'open one with `mnema run start --which <agent>`, or unset M
  * gives `MNEMA_RUN=` (a partial unset), and the same reading `--which ""` gets.
  * It returns immediately, with no tree resolved and no projection replayed.
  *
- * A real value is proven against the project's private tree: it must name a run
+ * A real value is proven against the project's committed tree: it must name a run
  * that EXISTS and is still OPEN. What comes back is the projection's own id — not
  * the text of the variable — so the value stamped on the event is always the key
  * the record knows. Surrounding whitespace is trimmed before the lookup (an id
@@ -85,7 +86,7 @@ export function resolvePinnedRun(
   if (raw === undefined || raw.length === 0) return { ok: true };
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const root = chainRootForScope(trees, 'private');
+  const root = chainRootForScope(trees, 'public');
   if (root === undefined) {
     return {
       ok: false,

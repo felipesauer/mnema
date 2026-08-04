@@ -279,7 +279,7 @@ describe('what the sentence is careful not to say', () => {
       roots: [pathToFileURL(elsewhere).href],
       env,
     });
-    const { ctx, run } = openWrite(other, other.scope);
+    const { ctx, run } = openWrite(other, 'public');
     const theirs = createTask(ctx, { title: 'their work', which: other.which, run });
     if (!theirs.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();
@@ -363,7 +363,7 @@ describe('what the sentence is careful not to say', () => {
     // The refusal's reach, from the other side: rewording it must not widen it.
     const project = makeProject('proj');
     const session = openOn(project);
-    const { ctx, run } = openWrite(session, session.scope);
+    const { ctx, run } = openWrite(session, 'public');
     const mine = createTask(ctx, { title: 'my work', which: session.which, run });
     if (!mine.ok) throw new Error('setup: createTask refused');
     ctx.writer.checkpoint();

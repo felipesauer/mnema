@@ -31,11 +31,11 @@ describe('README example', () => {
       // Where did I leave off, what can I do next, and by what patterns?
       // `asOf` is the clock the ages are measured against; `sessionRuns` are the
       // runs this caller opened itself (none, for a caller that has only read).
-      const opening = bootstrap(
-        cache,
-        { actor: 'alice', asOf: new Date().toISOString(), sessionRuns: [] },
-        [cache],
-      );
+      const opening = bootstrap([cache], {
+        actor: 'alice',
+        asOf: new Date().toISOString(),
+        sessionRuns: [],
+      });
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
       const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
       const firstJob = opening.work[0]; // the freshest actionable task

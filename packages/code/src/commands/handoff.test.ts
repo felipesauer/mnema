@@ -37,11 +37,14 @@ describe('mnema handoff', () => {
       { cwd: repo, env },
       { task: 'a-task-id', fromAgent: 'claude-code', toAgent: 'cursor' },
     );
+    // The whole result, so a field added here has to be declared: the tree it landed
+    // in travels back with the echo, because nothing in the call named one.
     expect(result).toEqual({
       ok: true,
       task: 'a-task-id',
       fromAgent: 'claude-code',
       toAgent: 'cursor',
+      scope: 'public',
     });
     // The handoff really landed, keyed by the task.
     const root = resolveTrees(repo, env).projectPublic as string;
@@ -139,18 +142,40 @@ describe('mnema handoff --which — the agent that RECORDED it', () => {
     expect(handoffsOf(root).get('T')?.[0]?.fromAgent).toBe('alpha');
   });
 
-  it('a declared agent shifts the OMITTED scope default to private', () => {
+  it('does NOT move the tree: a handoff coordinates actors, so it lands public', () => {
+    // The site's rule: the two agents a handoff names have to be able to read it, and
+    // a tree that stays on one machine reaches neither of them.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+
+    const byAgent = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', which: 'ci-runner' },
+    );
+    const byPerson = runHandoff(
+      { cwd: repo, env },
+      { task: 'U', fromAgent: 'alpha', toAgent: 'beta' },
+    );
+    expect(byAgent.ok && byPerson.ok).toBe(true);
+    const inPublic = handoffsOf(trees.projectPublic as string);
+    expect(inPublic.has('T')).toBe(true);
+    expect(inPublic.has('U')).toBe(true);
+    expect(handoffsOf(trees.projectPrivate as string).size).toBe(0);
+    if (byAgent.ok) expect(byAgent.scope).toBe('public');
+  });
+
+  it('an explicit scope still wins over the kind', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
     const result = runHandoff(
       { cwd: repo, env },
-      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', which: 'ci-runner' },
+      { task: 'T', fromAgent: 'alpha', toAgent: 'beta', scope: 'private' },
     );
     expect(result.ok).toBe(true);
-    const trees = resolveTrees(repo, env);
-    expect(handoffsOf(trees.projectPrivate as string).has('T')).toBe(true);
-    expect(handoffsOf(trees.projectPublic as string).has('T')).toBe(false);
+    expect(handoffsOf(resolveTrees(repo, env).projectPrivate as string).has('T')).toBe(true);
+    if (result.ok) expect(result.scope).toBe('private');
   });
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, recording nothing', () => {

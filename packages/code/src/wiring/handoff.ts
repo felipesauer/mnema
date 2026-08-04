@@ -12,7 +12,7 @@ import { runHandoff } from '../commands/handoff.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -28,7 +28,8 @@ export function registerHandoff(program: Command, wiring: Wiring): void {
     .option(
       '--scope <scope>',
       'where the handoff is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public.',
+        'or global (personal, cross-project). Omitted, a handoff lands in the ' +
+        'public tree (coordination between actors).',
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
     // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
@@ -56,7 +57,7 @@ export function registerHandoff(program: Command, wiring: Wiring): void {
       if (result.ok) {
         // No id to report — a handoff has no standalone identity. Echo the fact.
         io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
-        reportReplacement(result, io);
+        reportRecorded(result, io);
         return;
       }
       reportRefusal(io, result);

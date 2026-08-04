@@ -11,12 +11,19 @@
  * particular to it.
  *
  * A REPLACEMENT is the other: it rides the SUCCESS path, because a scrub is not a
- * refusal — the fact was recorded, with a placeholder in it. The wording lives in
- * `recorded-content.ts`, shared with the MCP surface; this only puts it on the
- * stream.
+ * refusal — the fact was recorded, with a placeholder in it. So does WHERE THE WRITE
+ * LANDED, for the same reason and in the same place: nothing in the call said which
+ * tree a fact routes to, so the reply is the only moment the author can learn it.
+ * Both wordings live in `recorded-content.ts`, shared with the MCP surface; this only
+ * puts them on the stream, in one order.
  */
 
-import { type Replacement, replacementNotice } from '../recorded-content.js';
+import {
+  type Landed,
+  landedNotice,
+  type Replacement,
+  replacementNotice,
+} from '../recorded-content.js';
 import { type CliIo, writeLines } from './io.js';
 
 /**
@@ -63,4 +70,22 @@ export function reportRefusal(
  */
 export function reportReplacement(result: Replacement, io: CliIo): void {
   writeLines(io, replacementNotice(result.replaced));
+}
+
+/**
+ * What a BIRTH says under its headline: the tree it landed in, then anything the
+ * content door replaced.
+ *
+ * One function and one call per verb, so the two lines cannot be ordered differently
+ * by two verbs and neither can be forgotten by one of them. The tree comes first
+ * because it is a fact about this write; the replacement comes last because it ends
+ * with the only instruction either line gives, and an instruction reads worst in the
+ * middle.
+ *
+ * The writes that are NOT routed by kind — a run, an init, a key — use
+ * {@link reportReplacement} alone: they belong to one tree by construction, so there
+ * is no choice for the reply to report.
+ */
+export function reportRecorded(result: Landed & Replacement, io: CliIo): void {
+  writeLines(io, [landedNotice(result.scope), ...replacementNotice(result.replaced)]);
 }

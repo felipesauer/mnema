@@ -52,8 +52,9 @@ layer makes no proof of its own; being clear about that is the point.
   authorized it, so an actor's runs are known. A task's projected state does not
   carry that identity, so the tasks an actor is working cannot yet be attributed
   to them. `focus` therefore scopes to the actor's runs, and `bootstrap`'s work
-  list is workspace-wide, not the actor's own. When a later version ties a task
-  to the actor, those views narrow with no change to their shape.
+  list is every actionable task of the caches it was given, not the actor's own. When
+  a later version ties a task to the actor, those views narrow with no change to
+  their shape.
 - **An open run is not a live session, and nothing here claims otherwise.** The
   record holds no fact about a process, so a run left behind by a session that was
   killed is indistinguishable from one an agent is idle inside. `focus` and
@@ -85,11 +86,11 @@ import { adoptedSkills, bootstrap, guard } from '@mnema/copilot';
 // Where did I leave off, what can I do next, and by what patterns?
 // `asOf` is the clock the ages are measured against; `sessionRuns` are the runs
 // this caller opened itself (none, for a caller that has only read).
-const opening = bootstrap(
-  cache,
-  { actor: 'alice', asOf: new Date().toISOString(), sessionRuns: [] },
-  [cache],
-);
+const opening = bootstrap([cache], {
+  actor: 'alice',
+  asOf: new Date().toISOString(),
+  sessionRuns: [],
+});
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
 const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
 const firstJob = opening.work[0]; // the freshest actionable task
@@ -114,9 +115,10 @@ cache — none of them resolve "who am I", read a clock, or touch a writer. That
 the surface's job, not a derivation's, and it is why the instant and the caller's
 own runs arrive as arguments beside the actor.
 
-`bootstrap`'s third argument is the list of caches whose adopted patterns count.
-The actor's work lives in one cache, but a pattern is a capability rather than a
-piece of work: a caller that can see several chains passes all of them, and
+`bootstrap`, `focus` and `resume` take a LIST of caches: every chain the caller can
+see. None of the three answers name a tree — a run is the actor's session wherever it
+was opened, a task is work whichever record holds it, and a pattern is a capability —
+and where a fact lands is decided by what it IS, so no one tree is "the actor's".
 `[cache]` is the honest answer when there is only one.
 
 ## The modules

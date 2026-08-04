@@ -21,9 +21,10 @@
  * surface only forwards it. There is no `UNKNOWN_*` for the reference here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the routing default (public) stands — private when
- * an agent operating the CLI declares itself (`which`), which is also recorded on
- * the fact.
+ * `scope` wins; when omitted, this is the other kind the rule still answers from the
+ * AUTHOR — public for a person, private when an agent operating the CLI declares
+ * itself (`which`), which is also recorded on the fact. The kind cannot answer for
+ * these two (see `runMemory`), so the question stays open.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -35,7 +36,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordObservation } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the observe command needs — injected so it is testable. */
 export interface ObserveContext {
@@ -46,7 +47,7 @@ export interface ObserveContext {
 }
 
 /** An observation was recorded. */
-export interface ObservationRecorded extends Replacement {
+export interface ObservationRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The observation's OWN minted id (the event subject). */
   readonly id: string;
@@ -66,12 +67,12 @@ export type ObserveRefused =
 
 /**
  * Records an observation, routing its birth to the resolved scope. The scope
- * rule is identical to a memory's: an explicit `scope` wins, else the routing
- * default (public). A PROJECT scope needs a project; with none this refuses
- * `NO_PROJECT`. The `about` reference is forwarded to the core as-is and never
- * validated — a dangling reference is honest cross-tree, not a refusal. A declared
- * `which` shifts the omitted default to private and is recorded on the event; an
- * explicit `scope` still wins over it.
+ * rule is identical to a memory's: an explicit `scope` wins, else the author decides
+ * (public for a person, private for an agent). A PROJECT scope needs a project; with
+ * none this refuses `NO_PROJECT`. The `about` reference is forwarded to the core as-is
+ * and never validated — a dangling reference is honest cross-tree, not a refusal. A
+ * declared `which` shifts the omitted default to private and is recorded on the
+ * event; the resolved scope comes back on the result.
  */
 export function runObserve(
   ctx: ObserveContext,
@@ -85,7 +86,7 @@ export function runObserve(
   },
 ): ObservationRecorded | ObserveRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('observation.recorded', { which: input.which }, input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -112,5 +113,5 @@ export function runObserve(
   // Checkpoint so the new observation is signature-covered at once.
   writer.checkpoint();
 
-  return { ok: true, id: recorded.id, ...forwardReplacement(recorded) };
+  return { ok: true, id: recorded.id, scope, ...forwardReplacement(recorded) };
 }

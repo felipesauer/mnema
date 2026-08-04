@@ -18,8 +18,16 @@
  *      the session's own — the cascade's choice, unchanged, which is what makes a
  *      caller that says nothing behave exactly as it did before the argument
  *      existed.
- *   2. WHICH TREE inside it. The `scope` argument over that project's default, the
- *      per-action scope model applied to whichever project the write landed in.
+ *   2. WHICH TREE inside it. The `scope` argument over the tree the KIND names —
+ *      the per-action scope model applied to whichever project the write landed in.
+ *
+ * THE KIND IS AN ARGUMENT HERE, and that is what makes this the MCP's one place for
+ * the rule. A session cannot answer it: the scope used to be settled at the
+ * handshake, from the connecting agent, and the kind only exists at the tool — so a
+ * default carried on the session was a default that could not know what it was
+ * routing. Each verb passes its own kind (the same literal it appends), the core's
+ * table answers, and no verb spells out an answer of its own. That is the CLI's shape
+ * too, one verb at a time, so the two surfaces read one table.
  *
  * One function, called once by every write verb, because this is a rule that has to
  * hold at ten call sites and a rule spelled out ten times is a rule that holds at
@@ -44,7 +52,13 @@
  */
 
 import { basename, isAbsolute, resolve } from 'node:path';
-import { chainRootForScope, type Scope } from '@mnema/core';
+import {
+  chainRootForScope,
+  type ResolvedTrees,
+  type RoutedKind,
+  resolveScope,
+  type Scope,
+} from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
 import type { WorkspaceProject } from './context.js';
 import type { Session, WriteTarget } from './session.js';
@@ -78,7 +92,8 @@ export type WriteRoute =
 
 /**
  * Resolves a write's destination: the project the caller named (or the session's
- * own), and the scope inside it.
+ * own), and the scope inside it — the caller's override, else the tree this KIND
+ * belongs in.
  *
  * The order is deliberate — the project first, then the scope over it. A scope is
  * only available or not with respect to a tree set, so checking it before the
@@ -88,6 +103,7 @@ export type WriteRoute =
  */
 export function routeWrite(
   session: Session,
+  kind: RoutedKind,
   input: { readonly scope?: Scope | undefined; readonly project?: string | undefined },
 ): WriteRoute {
   let target: WriteTarget | undefined;
@@ -97,8 +113,8 @@ export function routeWrite(
     target = picked.target;
   }
 
-  const scope = input.scope ?? target?.scope ?? session.scope;
   const trees = target?.trees ?? session.trees;
+  const scope = input.scope ?? defaultTree(session, trees, kind);
   // A caller's scope may name a tree this destination does not have — `public` in a
   // session with no project. Refuse as data rather than throwing, so the server
   // shapes it into a tool error and the agent sees the write did not happen. A
@@ -111,6 +127,32 @@ export function routeWrite(
     };
   }
   return { ok: true, scope, ...(target !== undefined ? { target } : {}) };
+}
+
+/**
+ * The tree a kind lands in at a destination that says nothing — the core's rule
+ * inside a project, the global tree outside one.
+ *
+ * The second half is not a fallback but the only answer there is: outside a project
+ * there is no public and no private to choose between, so a kind that asked for one
+ * would name a tree that is not there. That is what keeps a decision recorded in a
+ * global session going to the global tree instead of earning `SCOPE_UNAVAILABLE` —
+ * the refusal is for a scope the CALLER named and this context lacks, never for one
+ * the rule chose on its own.
+ *
+ * The ORIGIN it passes is the connection's own agent, and it is always present here:
+ * a stdio connection is a program talking to a program. The core reads it for the two
+ * kinds whose tree the kind cannot decide, and that is the known-imperfect half of the
+ * rule — on this surface it answers "an agent" even for a capture the person asked
+ * for. Naming it here rather than hiding it: the session is where the value comes
+ * from, so this is where a reader looks to see what the rule was told.
+ *
+ * `projectPublic` is the test because both project trees come from one discovered
+ * project: either both are there or neither is.
+ */
+function defaultTree(session: Session, trees: ResolvedTrees, kind: RoutedKind): Scope {
+  if (trees.projectPublic === undefined) return 'global';
+  return resolveScope(kind, { which: session.which });
 }
 
 /** The project a name picks out of the workspace, or why it picks none. */

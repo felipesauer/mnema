@@ -18,11 +18,10 @@
  *      the id. So this returns the `adr`, never a derived alias.
  *
  * The birth scope is a per-action choice, exactly as for a task: an explicit
- * `scope` wins; when omitted, the routing rule's default stands (public, a
- * deliberate human capture). That omitted default is PROVISIONAL — the mechanism
- * (the override on top) is what is settled here. An agent operating the CLI
- * declares itself (`which`), which both shifts that default to private and names
- * the agent on the fact.
+ * `scope` wins; when omitted, the KIND decides, and a decision is the most
+ * team-facing artifact this product has — it goes to the tree that travels. An
+ * agent operating the CLI declares itself (`which`), which names the agent on the
+ * fact and no longer moves the tree.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -34,7 +33,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordDecision } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the decision command needs — injected so it is testable. */
 export interface DecisionContext {
@@ -45,7 +44,7 @@ export interface DecisionContext {
 }
 
 /** A decision was recorded. */
-export interface DecisionRecorded extends Replacement {
+export interface DecisionRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The minted decision id (the event subject). */
   readonly id: string;
@@ -67,22 +66,22 @@ export type DecisionRefused =
 
 /**
  * Records a decision, routing its birth to the resolved scope. The scope rule is
- * identical to a task's: an explicit `scope` wins, else the routing default
+ * identical to a task's: an explicit `scope` wins, else the tree the KIND names
  * (public) — `resolveScope` is the single source of that rule. A PROJECT scope
  * (public/private) needs a project; with no `.mnema/` found from the cwd this
  * refuses `NO_PROJECT` rather than falling through. The GLOBAL scope needs none,
  * so `--scope global` works anywhere; the guard is on the RESOLVED scope, not the
  * flag.
  *
- * A declared `which` (an agent operating the CLI) shifts the omitted default to
- * private and is recorded on the event; an explicit `scope` still wins over it.
+ * A declared `which` (an agent operating the CLI) is recorded on the event and
+ * does not move the tree. The resolved scope comes back on the result.
  */
 export function runDecision(
   ctx: DecisionContext,
   input: { title: string; rationale: string; scope?: Scope; which?: string; run?: string },
 ): DecisionRecorded | DecisionRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -112,5 +111,5 @@ export function runDecision(
   // fully signed after every command, the same posture init leaves it in.
   writer.checkpoint();
 
-  return { ok: true, id: recorded.id, adr: recorded.adr, ...forwardReplacement(recorded) };
+  return { ok: true, id: recorded.id, adr: recorded.adr, scope, ...forwardReplacement(recorded) };
 }

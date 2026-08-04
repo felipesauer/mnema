@@ -24,14 +24,19 @@ import type { CliIo } from './io.js';
  * credits its work to the person. The MCP surface has the same field filled from
  * the connecting client's name; this is the CLI's way to say the same thing.
  *
- * It also decides the default tree for a BIRTH: an agent's capture is high-volume
- * and lands private, a person's deliberate capture lands public. `--scope` still
- * overrides that.
+ * It says NOTHING about the tree a birth lands in, and that omission is deliberate. It
+ * used to promise "a birth an agent makes defaults to this machine's private tree",
+ * which was one wording for all thirteen verbs and is now true of two of them: the
+ * tree follows what the fact IS, except for a memory and an observation, where the kind
+ * cannot say who the fact is for and the author still decides. A flag whose help is
+ * false on eleven verbs is worse than a flag whose help is silent, and each verb's own
+ * `--scope` line states its own default — which is where a reader looking for the tree
+ * is looking anyway.
  */
 export const WHICH_HELP =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-  'mnema — omit it when you are acting directly. Declared, never assumed; a ' +
-  "birth an agent makes defaults to this machine's private tree. A value that " +
+  'mnema — omit it when you are acting directly. Declared, never assumed; it names ' +
+  'the executor. See --scope for where the fact lands. A value that ' +
   'names no agent (an unset variable) is refused, never credited to you.';
 
 /**
@@ -52,11 +57,14 @@ export const BLANK_WHICH_MESSAGE =
  *
  * A `--which` that names no agent is not a missing declaration — it is an invalid
  * one: the caller said an agent executed this and then named none. Left alone the
- * record credits the PERSON, in two places at once. The value drops out of the
- * envelope (so every event asserts a human acted directly), and `resolveScope`
- * reads "no agent" and sends a birth to the team's COMMITTED tree instead of this
- * machine's private one. The way in is not malice: it is `--which "$AGENT_NAME"` in
- * a CI step with the variable unset.
+ * value drops out of the envelope and the record credits the PERSON for an agent's
+ * work. The way in is not malice: it is `--which "$AGENT_NAME"` in a CI step with
+ * the variable unset.
+ *
+ * It used to cost a second thing, and no longer can: routing read the same value, so
+ * a blank one also sent the fact to a different tree than the caller expected. The
+ * tree is a function of the KIND now, so the two questions cannot disagree — this
+ * guard defends the envelope alone.
  *
  * The rule is NOT the absent flag's. On this surface an omitted `--which` means "a
  * person acted directly" — legitimate, common, and what most people who type

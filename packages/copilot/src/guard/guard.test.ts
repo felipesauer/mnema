@@ -57,7 +57,7 @@ describe('guardWithFocus — the verdict plus the asker’s focus', () => {
     try {
       const before = cache.listOpenRuns().length;
       const result = guardWithFocus(
-        cache,
+        [cache],
         { from: 'READY', action: 'start', who: 'alice', which: 'claude' },
         { asOf: ASKED_AT, sessionRuns: [] },
       );
@@ -77,7 +77,7 @@ describe('guardWithFocus — the verdict plus the asker’s focus', () => {
     const cache = bench.cache();
     try {
       const result = guardWithFocus(
-        cache,
+        [cache],
         { from: 'DONE', action: 'start', who: 'alice', which: 'claude' },
         { asOf: ASKED_AT, sessionRuns: [] },
       );

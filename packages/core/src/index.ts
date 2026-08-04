@@ -135,12 +135,14 @@ export {
   projectsIndexPath,
   type RegisteredProject,
   type ResolvedTrees,
+  type RoutedKind,
   registerProject,
   replayingBirthProbe,
   resolveScope,
   resolveTrees,
   type Scope,
   TreeUnavailableError,
+  UNROUTED_KINDS,
 } from './topology/index.js';
 export {
   type Clock,

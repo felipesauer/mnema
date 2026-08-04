@@ -13,18 +13,18 @@
  * none.
  *
  * The birth scope is a per-action choice: an explicit `scope` wins (the override
- * the caller states); when omitted, the routing rule's default stands — a
- * deliberate human capture (no executing agent) goes to the public tree. That
- * omitted default is PROVISIONAL: the team-wide default is left open to decide
- * against real use, and only the mechanism (the override on top) is settled here.
+ * the caller states); when omitted, the routing rule answers from the KIND — a task
+ * is the team's board, so it goes to the tree that travels. A clone with no tasks
+ * has no board at all, which is the reason the kind decides and not the author.
  *
  * The executing agent (`which`) is an input, not an assumption. A caller that is
  * an AGENT operating the CLI — a script, a CI step, an agent with no MCP server —
  * says so, and the fact records it; a person acting directly names none and the
- * fact says a person acted. It is forwarded to BOTH the routing rule (an agent's
- * capture defaults private, a person's public) and the operation (which records it
- * and refuses when the agent IS the identity that authorizes the write), so the
- * tree a fact lands in and the agent it names come from the one declaration.
+ * fact says a person acted. It is forwarded to the OPERATION alone (which records
+ * it and refuses when the agent IS the identity that authorizes the write) and no
+ * longer to the routing rule: who executed a write and who the write is for are two
+ * questions, and answering the second with the first is what left a project's
+ * decisions on one machine.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
@@ -37,7 +37,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the task command needs — injected so it is testable. */
 export interface TaskContext {
@@ -48,7 +48,7 @@ export interface TaskContext {
 }
 
 /** A task was created. */
-export interface TaskCreated extends Replacement {
+export interface TaskCreated extends Replacement, Landed {
   readonly ok: true;
   /** The minted task id. */
   readonly id: string;
@@ -70,9 +70,9 @@ export type TaskRefused =
 
 /**
  * Creates a task, routing its birth to the resolved scope. The scope is an
- * explicit `scope` when the caller stated one, else the routing default (public,
- * a deliberate human capture) — `resolveScope` is the single source of that rule,
- * so the command never re-decides it.
+ * explicit `scope` when the caller stated one, else the tree the KIND names
+ * (public — a task is the team's work board) — `resolveScope` is the single source
+ * of that rule, so the command never re-decides it.
  *
  * A PROJECT scope (public/private) needs a project: with no `.mnema/` found from
  * the cwd, this refuses `NO_PROJECT` rather than falling through — for a human
@@ -81,16 +81,16 @@ export type TaskRefused =
  * knowledge), so `--scope global` works anywhere; the guard is on the RESOLVED
  * scope, not on the flag, so an omitted flag outside a project still refuses.
  *
- * A declared `which` (an agent operating the CLI) shifts the omitted default to
- * private — the same rule the MCP session applies — and is recorded on the event.
- * An explicit `scope` still wins over it.
+ * A declared `which` (an agent operating the CLI) is recorded on the event and no
+ * longer moves the tree. The resolved scope comes back on the result: nothing in the
+ * call said where this would land, so the reply is where the caller learns it.
  */
 export function runTask(
   ctx: TaskContext,
   input: { title: string; scope?: Scope; which?: string; run?: string },
 ): TaskCreated | TaskRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope({ which: input.which }, input.scope);
+  const scope = resolveScope('task.created', { which: input.which }, input.scope);
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
@@ -123,6 +123,7 @@ export function runTask(
     ok: true,
     id: created.id,
     alias: deriveAlias('task', created.id),
+    scope,
     ...forwardReplacement(created),
   };
 }

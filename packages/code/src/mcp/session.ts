@@ -11,15 +11,15 @@
  * reads leaves nothing behind. When the connection ends, every run it opened is
  * closed.
  *
- * Runs are PLURAL because a workspace is. One conversation is regularly work in
- * two or three projects — a product being migrated into its successor, a fix made
- * in one codebase and normalized into two others — and each of those projects has
- * a record of its own. A write says which one it belongs to, and the run it pins
- * to is that project's: a fact in one project citing a run in another leaves the
- * first project's clone unable to resolve its own reference, and leaves the
- * chain's verdict `ok` while it does, which is the one kind of defect the proof
- * does not catch. So the run is per DESTINATION, opened at the first write that
- * lands there ({@link openWrite}) and closed with the connection.
+ * Runs are PLURAL because a record is. One conversation is regularly work in two or
+ * three projects — a product being migrated into its successor, a fix made in one
+ * codebase and normalized into two others — and it is regularly work of two KINDS
+ * inside one project, which land in two different trees. Either way the run a fact
+ * pins to is the one in ITS OWN tree: a fact citing a run somewhere else leaves a
+ * clone of its record unable to resolve its own reference, and leaves the chain's
+ * verdict `ok` while it does, which is the one kind of defect the proof does not
+ * catch. So the run is per TREE, opened at the first write that lands there
+ * ({@link openWrite}) and closed with the connection.
  *
  * Connecting used to write, and that is the defect this shape exists to remove.
  * The run opened as soon as the handshake finished, so a client that attached and
@@ -32,16 +32,16 @@
  * answers with the run the work actually happened in.
  *
  * This is the session ADAPTER, not domain logic: it composes the core's own
- * operations ({@link startRun}, {@link endRun}) over the resolved trees. The
- * decisions it makes are the two the surface owns — WHICH trees (the cascade, plus
- * the other projects a write may name) and the DEFAULT scope a new write lands in
- * (the core's origin rule: an agent connection always carries a `which`, so a
- * project write defaults PRIVATE; outside a project it is the global tree). Both
- * are only defaults: a write tool may override the scope per call (the per-action
- * scope model) and may name the project per call (the same model, one dimension
- * out), so the session fixes where a write goes WHEN THE CALLER DOES NOT SAY, not
- * for every write. It holds no gate and no workflow; those are the core's, reached
- * through the operations.
+ * operations ({@link startRun}, {@link endRun}) over the resolved trees. The one
+ * decision it makes is WHICH trees — the cascade, plus the other projects a write may
+ * name. It no longer holds a default SCOPE, and that field's absence is load-bearing:
+ * the tree a write lands in follows what the write IS, and the kind exists at the
+ * tool, not at the handshake. A per-session default was therefore a default settled
+ * before anything was known about what it would route, and it routed a project's
+ * decisions into the one tree that never leaves the machine. Where a write goes is
+ * now decided per call, from the kind and the caller's own override
+ * ({@link routeWrite}). It holds no gate and no workflow; those are the core's,
+ * reached through the operations.
  *
  * `who` (the authorizing anchor) is the machine's key, decided from the record —
  * never the client. `which` is the client's name. who != which is trivially
@@ -57,13 +57,7 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  type ResolvedTrees,
-  resolveScope,
-  type Scope,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, type ResolvedTrees, type Scope } from '@mnema/core';
 import {
   authorizingAnchor,
   endRun,
@@ -120,7 +114,7 @@ export interface OpenRun {
 }
 
 /**
- * A project a write can be routed to: where it lands, and the scope it lands in.
+ * A project a write can be routed to.
  *
  * The destination of a write is an ARGUMENT, never session state, and this is the
  * shape that argument resolves to. Nothing here changes over a connection's life:
@@ -128,19 +122,15 @@ export interface OpenRun {
  * is picking out of a fixed list rather than moving something. That is what makes
  * two concurrent writes to two projects correct without a lock — there is no
  * "current project" for one of them to move while the other reads it.
+ *
+ * It carries NO scope, and losing that field is the point rather than a tidy-up. A
+ * destination used to hold the default tree for writes routed to it, settled at the
+ * handshake from the connecting agent — a default that could not know what it was
+ * routing, since the kind only exists at the tool. Now the tree comes from the kind
+ * and the caller's override ({@link routeWrite}), so a project is a place and nothing
+ * more, and there is no per-project copy of a rule to fall out of step.
  */
-export interface WriteTarget extends WorkspaceProject {
-  /**
-   * The DEFAULT scope for a write routed here, and the scope its run opens in.
-   *
-   * The same value for every project of one workspace, and derived once: the origin
-   * rule reads the connecting agent, and one connection is one agent. It is stored
-   * per target anyway, so that the rule is applied where the session is built
-   * instead of re-derived at each write — a second application of it is a second
-   * place for it to be applied differently.
-   */
-  readonly scope: Scope;
-}
+export type WriteTarget = WorkspaceProject;
 
 /**
  * A live session: the resolved tree, the other projects a write may name, the agent
@@ -188,12 +178,6 @@ export interface Session {
    * write that names something is refused rather than routed at a guess.
    */
   readonly workspaceProjects: readonly WriteTarget[];
-  /**
-   * The DEFAULT scope a new write routes to in the session's OWN trees (private
-   * in-project, else global); a write tool may override it per call, and a write
-   * routed to another project takes that project's default instead.
-   */
-  readonly scope: Scope;
   /**
    * The connecting agent as the client ANNOUNCED it (`clientInfo.name`) — the
    * value handed to every write, where the content door screens it.
@@ -313,17 +297,14 @@ export function openSession(input: OpenSessionInput): Session {
     ...(input.roots !== undefined ? { roots: input.roots } : {}),
   });
 
-  // The DEFAULT scope for a new write, inside a project. The connection is an agent
-  // (a `which` is always present), so the origin rule defaults its writes PRIVATE —
-  // the machine's auto-memory, not the team's git. Applied ONCE and read twice, by
-  // the session's own default below and by every project a write can be routed to:
-  // the rule reads the agent, and one connection is one agent, so a second
-  // application of it could only differ by being wrong.
-  const projectScope = resolveScope({ which: input.clientName });
-  // Outside a project there is no public/private to distinguish; it is the global
-  // tree. A write tool may override this per call; this is only where a write goes
-  // when the caller does not say.
-  const scope: Scope = inProject ? projectScope : 'global';
+  // WHERE THE ANCHOR IS READ FROM, and nothing else. This is not a write default —
+  // there is none on a session any more (see {@link WriteTarget}); it is the one tree
+  // the opening question below has to be asked of. An installation records the anchor
+  // it serves PER TREE, so "who is this machine here" has one answer per tree and the
+  // question needs one named. The private tree in a project, the global tree outside
+  // one: the same tree this was asked of before the routing rule changed, so the `who`
+  // a session reports is unchanged by that change.
+  const anchorTree: Scope = inProject ? 'private' : 'global';
 
   // The caches are created BEFORE the first write so that write invalidates
   // through the same door as every later one — there is no window in which a
@@ -337,14 +318,13 @@ export function openSession(input: OpenSessionInput): Session {
   // is the whole point — it used to be taken after the run had been appended
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
-  const who = authorizingAnchor(writeContext(trees, scope, caches));
+  const who = authorizingAnchor(writeContext(trees, anchorTree, caches));
 
   return {
     trees,
     inProject,
     ...(project !== undefined ? { project } : {}),
-    workspaceProjects: workspaceProjects.map((known) => ({ ...known, scope: projectScope })),
-    scope,
+    workspaceProjects,
     which: input.clientName,
     who,
     // Empty: the first write to a tree opens that tree's run (see `openWrite`). A
@@ -395,9 +375,26 @@ export interface SessionWrite {
  * the two writers sequential, and returning the id from here — rather than letting
  * anything read it off the session — is what keeps every write on this path.
  *
- * The run opens in the DESTINATION's default scope, not the write's. A run is the
- * authority for a connection's work in a project, not for one fact, so a write that
- * overrides the scope still opens its run where that project's work lives.
+ * The run opens in the WRITE'S OWN scope, and that is a reversal. It used to open in
+ * the destination's default: a run is the authority for a connection's work in a
+ * project rather than for one fact, so a write that overrode its scope still opened
+ * its run where that project's work lived. The reasoning held while the two could
+ * only differ on an explicit override — and stopped holding when the tree became a
+ * function of the KIND, which made divergence the ORDINARY path: one connection
+ * recording a decision and a memory writes to two trees by design.
+ *
+ * What the old choice then cost fell on the tree that travels. Every event carries
+ * its `run` on the envelope, so a public decision would cite the private run, and a
+ * clone — which has the decision and no private tree at all — would read a fact
+ * pointing at an authority that exists nowhere it can look. The chain still verifies
+ * `ok` while it does, which is the one class of defect the proof does not catch. A
+ * reference may point at a tree that travels FURTHER than its own (a private fact
+ * citing a public run is resolvable wherever the private fact is readable at all);
+ * it may never point the other way.
+ *
+ * So the run is per TREE, not per project: `session.runs` is keyed by chain root and
+ * a connection holds one run per tree it has written to. Two runs in one project is
+ * the honest shape of a session that recorded a team decision and a private note.
  *
  * A write that arrives after the connection ENDED is refused here, before anything is
  * touched — see {@link Session.ended}. This is the first thing the door checks,
@@ -421,7 +418,7 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // Two statements, in this order, on purpose. Folding them into one object literal
   // would leave a load-bearing ordering to the evaluation order of its properties —
   // which is exactly the kind of thing a tidy-up reorders without knowing it mattered.
-  const run = ensureRun(session, trees, target?.scope ?? session.scope);
+  const run = ensureRun(session, trees, scope);
   return { run, ctx: writeContext(trees, scope, session.caches) };
 }
 

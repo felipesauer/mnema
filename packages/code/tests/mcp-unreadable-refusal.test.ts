@@ -57,14 +57,19 @@ beforeEach(() => {
     roots: [pathToFileURL(project).href],
     env,
   });
-  // One real write first, so the session is WARM: a connection founds this
-  // installation's anchor and opens its run on the first write it makes, and those
-  // two events would otherwise land on the way into the first refusal and make
-  // "nothing was appended" read as "two things were". Warming it up leaves the
-  // counts below measuring the refusal and nothing else — and it is also the state a
-  // real session is in by the time an agent gets an argument wrong.
-  const warm = runCaptureMemory(session, { content: 'the record already exists' });
-  expect(warm.ok).toBe(true);
+  // Two real writes first, so the session is WARM IN BOTH TREES: a connection founds
+  // this installation's anchor and opens its run on the first write it makes IN A GIVEN
+  // TREE, and those two events would otherwise land on the way into the first refusal
+  // and make "nothing was appended" read as "two things were". One warm write is no
+  // longer enough, because the tree a write lands in follows its kind: a memory reads
+  // the author and goes private, and everything refused below is routed by its kind to
+  // the tree that travels. Warming both leaves the counts measuring the refusal and
+  // nothing else — and it is also the state a real session is in by the time an agent
+  // gets an argument wrong.
+  const warmPrivate = runCaptureMemory(session, { content: 'the record already exists' });
+  expect(warmPrivate.ok).toBe(true);
+  const warmPublic = runRecordHandoff(session, { task: 'a-task', from: 'a', to: 'b' });
+  expect(warmPublic.ok).toBe(true);
 });
 
 afterEach(() => {

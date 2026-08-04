@@ -23,30 +23,43 @@ $ mnema run start --which agent-alpha --goal 'set the record up'
 ### the births
 $ mnema task 'Write the deploy runbook'
 | Created task <task-runbook-alias> (<task-runbook>)
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema task 'Rotate the local credentials' --scope private --which agent-alpha
 | Created task <task-chore-alias> (<task-chore>)
+|   Landed in the private tree — this machine's own; it is not committed and does not travel.
 $ mnema task 'Read the release notes' --scope global
 | Created task <task-errand-alias> (<task-errand>)
+|   Landed in the global tree — personal and cross-project, outside any repository.
 $ mnema decision 'Keep the runbook in the record' 'a wiki page nobody owns goes stale'
 | Recorded decision ADR-1 (<decision-runbook>)
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema decision 'Keep the runbook in the wiki' 'it is where we look'
 | Recorded decision ADR-2 (<decision-wiki>)
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema skill 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
 | Proposed skill "One slice per PR" (<skill-slices>)
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema skill 'Ship on Fridays' --body 'Cut the release at the end of the week.' --scope private
 | Proposed skill "Ship on Fridays" (<skill-fridays>)
+|   Landed in the private tree — this machine's own; it is not committed and does not travel.
 $ mnema memory 'the deploy runbook lives in the record now'
 | Captured memory <memory-runbook>
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema memory 'my own note about the runbook' --scope global
 | Captured memory <memory-personal>
+|   Landed in the global tree — personal and cross-project, outside any repository.
 $ mnema observe <task-runbook> --topic review --text 'the runbook needs a rollback section'
 | Recorded observation <observation-rollback> about <task-runbook>
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema handoff <task-runbook> agent-alpha agent-beta
 | Recorded handoff on <task-runbook>: agent-alpha → agent-beta
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> <task-runbook> --rel relates-to
 | Linked <decision-runbook> —relates-to→ <task-runbook>
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema link <task-runbook> <task-chore> --rel derived-from
 | Linked <task-runbook> —derived-from→ <task-chore>
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 
 ### the moves
 $ mnema task move submit <task-runbook>
@@ -81,6 +94,7 @@ $ mnema skill move deprecate <skill-fridays> --reason 'nobody ships on a Friday'
 ### a record written before the content door
 $ mnema memory 'a note with a token in it: ghp_abcdefghijklmnopqrstuvwxyz0123456789'
 | Captured memory <memory-scrubbed>
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 |   1 value(s) replaced before recording: <SECRET:github-token>
 |   This record is permanent. If those were real credentials, rotate them.
 

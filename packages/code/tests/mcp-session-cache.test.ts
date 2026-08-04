@@ -102,12 +102,21 @@ describe('a write is visible to the next read in the same session', () => {
    */
   const cases: {
     readonly tool: string;
+    /**
+     * The tree this tool's write lands in — stated per case, because the routing rule
+     * is per KIND: a memory and an observation still read the author (an MCP
+     * connection is an agent, so private), and everything else goes to the tree that
+     * travels. One shared "the session's tree" would have warmed and read a cache the
+     * write never touched, and passed by finding nothing in it.
+     */
+    readonly lands: Scope;
     readonly write: (session: Session) => void;
     readonly see: (cache: ProjectionCache) => boolean;
   }[] = [];
 
   cases.push({
     tool: 'capture_memory',
+    lands: 'private',
     write: (s) => {
       const done = runCaptureMemory(s, { content: 'the auth flow uses PKCE' });
       if (!done.ok) throw new Error(`capture refused: ${done.code}`);
@@ -117,6 +126,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'record_observation',
+    lands: 'private',
     write: (s) => {
       const done = runRecordObservation(s, { about: 'subject-1', topic: 'perf', text: 'slow' });
       if (!done.ok) throw new Error(`observe refused: ${done.code}`);
@@ -126,6 +136,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'record_handoff',
+    lands: 'public',
     write: (s) => {
       const done = runRecordHandoff(s, { task: 'task-1', from: 'a', to: 'b' });
       if (!done.ok) throw new Error(`handoff refused: ${done.code}`);
@@ -135,6 +146,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'link_knowledge',
+    lands: 'public',
     write: (s) => {
       const done = runLinkKnowledge(s, { subject: 'from-1', target: 'to-1', rel: 'relates-to' });
       if (!done.ok) throw new Error(`link refused: ${done.code}`);
@@ -144,6 +156,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'create_task',
+    lands: 'public',
     write: (s) => {
       const done = runCreateTask(s, { title: 'freshly opened' });
       if (!done.ok) throw new Error(`create refused: ${done.code}`);
@@ -153,6 +166,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'record_decision',
+    lands: 'public',
     write: (s) => {
       const done = runRecordDecision(s, { title: 'use PKCE', rationale: 'implicit is dead' });
       if (!done.ok) throw new Error(`decision refused: ${done.code}`);
@@ -162,6 +176,7 @@ describe('a write is visible to the next read in the same session', () => {
 
   cases.push({
     tool: 'create_skill',
+    lands: 'public',
     write: (s) => {
       const done = runCreateSkill(s, { name: 'bisect', body: 'halve the range' });
       if (!done.ok) throw new Error(`skill refused: ${done.code}`);
@@ -169,16 +184,16 @@ describe('a write is visible to the next read in the same session', () => {
     see: (cache) => cache.listSkills().some((k) => k.name === 'bisect'),
   });
 
-  for (const { tool, write, see } of cases) {
+  for (const { tool, lands, write, see } of cases) {
     it(`${tool} — the cache the next read gets already has it`, () => {
       const session = openOn(makeProject('proj'));
       // Warm it: from here on the session HAS a cache that a write can leave behind.
-      expect(cacheOf(session, session.scope)).toBeDefined();
-      expect(see(cacheOf(session, session.scope))).toBe(false);
+      expect(cacheOf(session, lands)).toBeDefined();
+      expect(see(cacheOf(session, lands))).toBe(false);
 
       write(session);
 
-      expect(see(cacheOf(session, session.scope))).toBe(true);
+      expect(see(cacheOf(session, lands))).toBe(true);
       closeSession(session);
     });
   }
@@ -212,7 +227,7 @@ describe('a write is visible to the next read in the same session', () => {
     const session = openOn(makeProject('proj'));
     const recorded = runRecordDecision(session, { title: 'adopt X', rationale: 'because' });
     if (!recorded.ok) throw new Error('setup: record refused');
-    expect(cacheOf(session, session.scope).getDecision(recorded.id)?.state).toBe('proposed');
+    expect(cacheOf(session, 'public').getDecision(recorded.id)?.state).toBe('proposed');
 
     const moved = runDecisionTransition(session, {
       id: recorded.id,
@@ -220,7 +235,7 @@ describe('a write is visible to the next read in the same session', () => {
       note: 'agreed',
     });
     expect(moved).toMatchObject({ ok: true, to: 'accepted' });
-    expect(cacheOf(session, session.scope).getDecision(recorded.id)?.state).toBe('accepted');
+    expect(cacheOf(session, 'public').getDecision(recorded.id)?.state).toBe('accepted');
     closeSession(session);
   });
 
@@ -228,7 +243,7 @@ describe('a write is visible to the next read in the same session', () => {
     const session = openOn(makeProject('proj'));
     const created = runCreateSkill(session, { name: 'bisect', body: 'halve the range' });
     if (!created.ok) throw new Error('setup: create refused');
-    expect(cacheOf(session, session.scope).getSkill(created.id)?.state).toBe('proposed');
+    expect(cacheOf(session, 'public').getSkill(created.id)?.state).toBe('proposed');
 
     const moved = runSkillTransition(session, {
       id: created.id,
@@ -236,7 +251,7 @@ describe('a write is visible to the next read in the same session', () => {
       note: 'read it',
     });
     expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
-    expect(cacheOf(session, session.scope).getSkill(created.id)?.state).toBe('reviewed');
+    expect(cacheOf(session, 'public').getSkill(created.id)?.state).toBe('reviewed');
     closeSession(session);
   });
 
@@ -259,12 +274,13 @@ describe('a write is visible to the next read in the same session', () => {
 describe('one cache per tree — the trees do not mix', () => {
   it('a task read out of the public tree is not answered from the private one', () => {
     const session = openOn(makeProject('proj'));
-    expect(session.scope).toBe('private');
 
     // Two tasks with the same title, one per tree — so an answer from the wrong
-    // cache would still look plausible. Only the ids tell them apart.
-    const inPublic = runCreateTask(session, { title: 'same name', scope: 'public' });
-    const inPrivate = runCreateTask(session, { title: 'same name' });
+    // cache would still look plausible. Only the ids tell them apart. The tree is
+    // picked per call now, so it is the OVERRIDE that puts one in the private tree:
+    // a task's kind sends it to the one that travels.
+    const inPublic = runCreateTask(session, { title: 'same name' });
+    const inPrivate = runCreateTask(session, { title: 'same name', scope: 'private' });
     if (!inPublic.ok || !inPrivate.ok) throw new Error('setup: create refused');
 
     // Each read routes by the ENTITY's home tree, so both resolve.
@@ -388,21 +404,23 @@ describe('a KNOWN LIMIT: a write from outside the session is not seen', () => {
 
     const mine = runCreateTask(session, { title: 'mine' });
     if (!mine.ok) throw new Error('setup: create refused');
-    expect(cacheOf(session, session.scope).listTasks()).toHaveLength(1);
+    expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
 
-    const outside = writeContext(resolveTrees(project, env), 'private', createCacheRegistry());
+    // The other process appends to the SAME tree this session just wrote to.
+    const outside = writeContext(resolveTrees(project, env), 'public', createCacheRegistry());
     const theirs = createTask(outside, { title: 'theirs', which: 'another-agent' });
     if (!theirs.ok) throw new Error('setup: outside create refused');
     outside.writer.checkpoint();
 
     // The chain HAS both. The session's warm cache has one.
-    expect(cacheOf(session, session.scope).getTask(theirs.id)).toBeNull();
+    expect(cacheOf(session, 'public').getTask(theirs.id)).toBeNull();
 
     // The moment this session writes to that tree again, the replay catches up —
     // so the divergence closes on its own the first time the agent does anything.
-    const anything = runCaptureMemory(session, { content: 'any write at all' });
-    if (!anything.ok) throw new Error('setup: capture refused');
-    expect(cacheOf(session, session.scope).getTask(theirs.id)).not.toBeNull();
+    // A task, because the write has to land in THAT tree to invalidate its cache.
+    const anything = runCreateTask(session, { title: 'any write at all' });
+    if (!anything.ok) throw new Error('setup: create refused');
+    expect(cacheOf(session, 'public').getTask(theirs.id)).not.toBeNull();
 
     closeSession(session);
   });
@@ -411,7 +429,7 @@ describe('a KNOWN LIMIT: a write from outside the session is not seen', () => {
 describe('the session releases what it held', () => {
   it('closing the session closes the databases it opened', () => {
     const session = openOn(makeProject('proj'));
-    const cache = cacheOf(session, session.scope);
+    const cache = cacheOf(session, 'private');
     expect(cache.listTasks()).toEqual([]);
     // A run to end, so the close does its recording half as well as its releasing
     // half — the release must not depend on the write, and this is the path where
@@ -431,7 +449,7 @@ describe('the session releases what it held', () => {
     // The case that matters for a long-lived server: the close path is
     // best-effort, so the release cannot be conditional on it succeeding.
     const session = openOn(makeProject('proj'));
-    const cache = cacheOf(session, session.scope);
+    const cache = cacheOf(session, 'private');
     if (!runCaptureMemory(session, { content: 'a note' }).ok) {
       throw new Error('setup: capture refused');
     }
@@ -464,7 +482,7 @@ describe('the session releases what it held', () => {
     if (!created.ok) throw new Error('setup: create refused');
     closeSession(session);
 
-    const reopened = cacheOf(session, session.scope);
+    const reopened = cacheOf(session, 'public');
     expect(reopened.getTask(created.id)).not.toBeNull();
     session.caches.closeAll();
   });

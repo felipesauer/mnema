@@ -77,6 +77,11 @@ function privateOf(project: string): string {
   return join(project, PROJECT_DIR, 'private');
 }
 
+/** The root of one tree of a project — the pair a per-verb assertion needs. */
+function treeOf(project: string, tree: 'public' | 'private'): string {
+  return tree === 'public' ? join(project, PROJECT_DIR) : privateOf(project);
+}
+
 /** Every event in a chain, replayed off DISK — never the tool's own answer. */
 function eventsIn(root: string): readonly ChainEvent[] {
   return orderedEvents({ root }, catalogUpcasters());
@@ -116,10 +121,20 @@ afterEach(() => {
 const WRITE_VERBS: readonly {
   readonly name: string;
   readonly kinds: readonly string[];
+  /**
+   * The tree inside the destination this verb's write lands in — stated per verb,
+   * because the routing rule reads the KIND. Two verbs still read the author instead
+   * (`capture_memory`, `record_observation`), and an MCP connection is always an
+   * agent, so those land private; the rest go to the tree that travels. What this
+   * table is about is the PROJECT, and that is exactly why the tree has to be right:
+   * a check against one tree for every verb would have read an empty tree and passed.
+   */
+  readonly tree: 'public' | 'private';
   readonly write: (session: Session, project?: string) => { readonly ok: boolean };
 }[] = [
   {
     name: 'capture_memory',
+    tree: 'private',
     kinds: ['memory.captured'],
     write: (session, project) =>
       runCaptureMemory(session, {
@@ -129,12 +144,14 @@ const WRITE_VERBS: readonly {
   },
   {
     name: 'create_task',
+    tree: 'public',
     kinds: ['task.created', 'task.transitioned'],
     write: (session, project) =>
       runCreateTask(session, { title: 'the task', ...(project !== undefined ? { project } : {}) }),
   },
   {
     name: 'record_decision',
+    tree: 'public',
     kinds: ['decision.recorded', 'decision.transitioned'],
     write: (session, project) =>
       runRecordDecision(session, {
@@ -145,6 +162,7 @@ const WRITE_VERBS: readonly {
   },
   {
     name: 'create_skill',
+    tree: 'public',
     kinds: ['skill.created', 'skill.transitioned'],
     write: (session, project) =>
       runCreateSkill(session, {
@@ -155,6 +173,7 @@ const WRITE_VERBS: readonly {
   },
   {
     name: 'record_observation',
+    tree: 'private',
     kinds: ['observation.recorded'],
     write: (session, project) =>
       runRecordObservation(session, {
@@ -166,6 +185,7 @@ const WRITE_VERBS: readonly {
   },
   {
     name: 'record_handoff',
+    tree: 'public',
     kinds: ['handoff.recorded'],
     write: (session, project) =>
       runRecordHandoff(session, {
@@ -177,6 +197,7 @@ const WRITE_VERBS: readonly {
   },
   {
     name: 'link_knowledge',
+    tree: 'public',
     kinds: ['knowledge.linked'],
     write: (session, project) =>
       runLinkKnowledge(session, {
@@ -198,8 +219,8 @@ describe('every write verb takes the project it belongs to', () => {
       expect(verb.write(session, second).ok).toBe(true);
 
       // Read off both disks. The tool's own `ok` says a write happened, never where.
-      expect(factsIn(privateOf(second))).toEqual(verb.kinds);
-      expect(factsIn(privateOf(first))).toEqual([]);
+      expect(factsIn(treeOf(second, verb.tree))).toEqual(verb.kinds);
+      expect(factsIn(treeOf(first, verb.tree))).toEqual([]);
       closeSession(session);
     });
 
@@ -212,8 +233,8 @@ describe('every write verb takes the project it belongs to', () => {
 
       expect(verb.write(session).ok).toBe(true);
 
-      expect(factsIn(privateOf(first))).toEqual(verb.kinds);
-      expect(factsIn(privateOf(second))).toEqual([]);
+      expect(factsIn(treeOf(first, verb.tree))).toEqual(verb.kinds);
+      expect(factsIn(treeOf(second, verb.tree))).toEqual([]);
       closeSession(session);
     });
   }
@@ -421,9 +442,11 @@ describe('a name the session cannot honor is refused, never guessed', () => {
 });
 
 describe('a routed write keeps the rest of the routing rules', () => {
-  it('opens the run in the destination’s own scope, not the write’s', () => {
-    // A run is the authority for a connection's work in a project, not for one fact,
-    // so a public write still opens the project's run where its work lives.
+  it('opens the run in the tree the WRITE lands in, in the project it was routed to', () => {
+    // Both halves of the destination, together: the project comes from the argument and
+    // the tree from the write itself. A run in another tree than its fact is what a
+    // clone of that fact's record cannot resolve, and a run in another PROJECT is what
+    // nothing marks afterwards — so the run is per tree, per project.
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -432,12 +455,16 @@ describe('a routed write keeps the rest of the routing rules', () => {
       runCaptureMemory(session, { content: 'team work', scope: 'public', project: there }).ok,
     ).toBe(true);
 
-    expect(factsIn(join(there, PROJECT_DIR))).toEqual(['memory.captured']);
-    expect(eventsIn(privateOf(there)).filter((e) => e.kind === 'run.started')).toHaveLength(1);
+    const theirPublic = join(there, PROJECT_DIR);
+    expect(factsIn(theirPublic)).toEqual(['memory.captured']);
+    expect(eventsIn(theirPublic).filter((e) => e.kind === 'run.started')).toHaveLength(1);
+    // The fact cites the run of its own tree, and no other tree took anything.
+    const captured = eventsIn(theirPublic).find((e) => e.kind === 'memory.captured');
+    const opened = eventsIn(theirPublic).find((e) => e.kind === 'run.started');
+    expect(captured?.run).toBe(opened?.subject);
+    expect(eventsIn(privateOf(there)).filter((e) => e.kind === 'run.started')).toEqual([]);
     expect(eventsIn(privateOf(here))).toEqual([]);
-    for (const root of [join(there, PROJECT_DIR), privateOf(there)]) {
-      expect(verify(root, catalogUpcasters()).ok).toBe(true);
-    }
+    expect(verify(theirPublic, catalogUpcasters()).ok).toBe(true);
     closeSession(session);
   });
 
@@ -470,21 +497,23 @@ describe('a routed write keeps the rest of the routing rules', () => {
     expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
 
     // And it landed in `there`, read off the disks: the birth and the review are in
-    // one tree, and the session's own project holds neither.
-    expect(factsIn(privateOf(there))).toEqual([
+    // one tree — the one a skill travels in — and the session's own project holds
+    // neither.
+    expect(factsIn(join(there, PROJECT_DIR))).toEqual([
       'skill.created',
       'skill.transitioned',
       'skill.transitioned',
     ]);
-    expect(factsIn(privateOf(here))).toEqual([]);
+    expect(factsIn(join(here, PROJECT_DIR))).toEqual([]);
     closeSession(session);
   });
 
-  it('records a consultation in the session’s own tree, with that tree’s run', () => {
+  it('records a consultation in the session’s own project, with that tree’s run', () => {
     // `skills` is a READ that writes, and the fact it writes is about the reading —
-    // which happened here. So the consultation stays in the session's own tree even
-    // when the work it informs is being recorded in another project, and the dedup
-    // that keeps it to one fact is asked per RUN rather than per session.
+    // which happened here. So the consultation stays in the session's own PROJECT even
+    // when the work it informs is being recorded in another one; the tree inside it is
+    // the one a skill fact travels in, like every other skill fact. The dedup that
+    // keeps it to one fact is asked per RUN rather than per session.
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -501,11 +530,12 @@ describe('a routed write keeps the rest of the routing rules', () => {
     expect(runSkillsTool(session).ok).toBe(true);
     expect(runSkillsTool(session).ok).toBe(true);
 
-    const own = eventsIn(privateOf(here)).filter((e) => e.kind === 'skill.consulted');
+    const ownRoot = join(here, PROJECT_DIR);
+    const own = eventsIn(ownRoot).filter((e) => e.kind === 'skill.consulted');
     // One fact for two servings — the run recorded it once — and it cites the run of
     // the tree it is in, not the run of the project the work went to.
     expect(own).toHaveLength(1);
-    expect(own[0]?.run).toBe(session.runs.get(privateOf(here))?.id);
+    expect(own[0]?.run).toBe(session.runs.get(ownRoot)?.id);
     expect(factsIn(privateOf(there))).toEqual(['memory.captured']);
     closeSession(session);
   });

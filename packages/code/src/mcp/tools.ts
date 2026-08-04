@@ -5,9 +5,10 @@
  * resolved context, calls ONE core function, and returns what that function
  * returned. It holds no domain logic — the id is minted by the operation, the
  * actor is the session's `who`. WHERE a NEW write lands is a per-action choice in
- * two dimensions, and the session carries the default for both: the PROJECT (the
- * cascade's, overridable per call with `project`) and the SCOPE inside it (the
- * origin rule's, overridable per call with `scope`). Both are answered by one
+ * two dimensions: the PROJECT (the session carries the cascade's answer, overridable
+ * per call with `project`) and the TREE inside it (the KIND decides, overridable per
+ * call with `scope`). The second one is NOT the session's — the tree follows what the
+ * fact IS, and the kind only exists here, at the tool. Both are answered by one
  * function, {@link routeWrite}, so ten verbs cannot disagree about where a write
  * goes; a MOVE, by contrast, follows the entity's home tree, never a destination
  * the caller picks. A tool only maps the session + args onto a core call and shapes
@@ -127,7 +128,7 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
-import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { oneLine } from '../served-patterns.js';
 import {
   type EntityLocation,
@@ -143,11 +144,12 @@ import { openWrite, type Session } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The minted memory id (the event subject). */
-      readonly id: string;
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The minted memory id (the event subject). */
+        readonly id: string;
+      })
   | {
       readonly ok: false;
       /**
@@ -162,13 +164,14 @@ export type CaptureResult =
 
 /** A task was created, or the write was refused (the scope guard, or the core). */
 export type CreateTaskResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The minted task id (the event subject) — the key a move takes. */
-      readonly id: string;
-      /** The short human-facing alias (`t-xxxx`), derived from the id. */
-      readonly alias: string;
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The minted task id (the event subject) — the key a move takes. */
+        readonly id: string;
+        /** The short human-facing alias (`t-xxxx`), derived from the id. */
+        readonly alias: string;
+      })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -198,13 +201,14 @@ export type TransitionResult =
 
 /** A decision was recorded, or the requested scope was not available here. */
 export type RecordDecisionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The minted decision id (the event subject). */
-      readonly id: string;
-      /** The citable `ADR-<n>` label frozen into the record — a decision's name. */
-      readonly adr: string;
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The minted decision id (the event subject). */
+        readonly id: string;
+        /** The citable `ADR-<n>` label frozen into the record — a decision's name. */
+        readonly adr: string;
+      })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -234,13 +238,14 @@ export type DecisionTransitionResult =
 
 /** A skill was proposed, or the requested scope was not available here. */
 export type CreateSkillResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The minted skill id — the canonical identifier, the key a move takes. */
-      readonly id: string;
-      /** The skill's short name — DISPLAY only, not a key (not unique). */
-      readonly name: string;
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The minted skill id — the canonical identifier, the key a move takes. */
+        readonly id: string;
+        /** The skill's short name — DISPLAY only, not a key (not unique). */
+        readonly name: string;
+      })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -271,16 +276,14 @@ export type SkillTransitionResult =
 /**
  * `capture_memory` — records one point-in-time fact into a tree.
  *
- * The tree is a per-action choice on top of the session's defaults: an explicit
- * `project` names which of the workspace's projects it belongs to, and an explicit
- * `scope` which of that project's trees; either omitted, the session's own stands
- * (the project the cascade landed on; private in a project, global outside one).
- * This is the cascade the routing model settles: `arg` > `session` > [a future
- * per-context default], one dimension at a time. It corrects the session fixing
- * the destination for every write — one agent session produces work in more than
- * one project and both public and private work in each, so the destination is
- * per-call, not per-session. The session's own remains the DEFAULT; the tool only
- * overrides it when an arg is present.
+ * The destination is a per-action choice: an explicit `project` names which of the
+ * workspace's projects it belongs to, and an explicit `scope` which of that project's
+ * trees. Omitted, the project is the one the cascade landed on and the tree is the
+ * rule's answer for this KIND — which for a memory is the one place the rule still
+ * reads the AUTHOR, so an agent's capture goes private (global outside a project).
+ * That exception is deliberate and documented in the core: the same kind holds a fact
+ * the team needs and a note that is nobody's business but the writer's, so the kind
+ * cannot say who it is for.
  *
  * Opens that tree's writer, captures the memory attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints so the new
@@ -295,7 +298,7 @@ export function runCaptureMemory(
   // can write to, a `project` naming two of them, or a `scope` naming a tree the
   // destination lacks are all refused as data rather than thrown, so the server
   // shapes them into a tool error and the agent sees the capture did not happen.
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'memory.captured', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const captured = captureMemory(ctx, {
@@ -310,16 +313,17 @@ export function runCaptureMemory(
   }
   // Checkpoint so the capture is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: captured.id, ...forwardReplacement(captured) };
+  return { ok: true, id: captured.id, scope: route.scope, ...forwardReplacement(captured) };
 }
 
 /** An observation was recorded, or the requested scope was not available here. */
 export type RecordObservationResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The observation's OWN minted id (the event subject). */
-      readonly id: string;
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The observation's OWN minted id (the event subject). */
+        readonly id: string;
+      })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -330,15 +334,16 @@ export type RecordObservationResult =
 
 /** A handoff or a link was recorded, or the requested scope was not available. */
 export type FactRecordedResult =
-  | (Replacement & {
-      readonly ok: true;
-      /**
-       * The label or relation AS RECORDED — screened, so an echo shows what
-       * landed. A handoff and a link mint no id, so this is what a caller has to
-       * report the fact by.
-       */
-      readonly recorded: readonly string[];
-    })
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /**
+         * The label or relation AS RECORDED — screened, so an echo shows what
+         * landed. A handoff and a link mint no id, so this is what a caller has to
+         * report the fact by.
+         */
+        readonly recorded: readonly string[];
+      })
   | {
       readonly ok: false;
       /** `SCOPE_UNAVAILABLE` (a tree absent here), or the core operation's code. */
@@ -350,9 +355,10 @@ export type FactRecordedResult =
 /**
  * `record_observation` — records one observation about an entity, the MCP
  * counterpart of `mnema observe`. Like `capture_memory`, the destination is a
- * per-action choice on top of the session's defaults: an explicit `project` and
- * `scope` win, else the session's own stand. An observation mints its OWN id (it is
- * an entity), which is returned.
+ * per-action choice: an explicit `project` and `scope` win, else the cascade's project
+ * and the rule's answer for this kind — the other kind that still reads the author, so
+ * an agent's observation goes private. An observation mints its OWN id (it is an
+ * entity), which is returned.
  *
  * The `about` reference is forwarded to the core as-is and NEVER validated — the
  * observed entity may live in a tree this session cannot see, an honest
@@ -368,7 +374,7 @@ export function runRecordObservation(
   session: Session,
   input: { about: string; topic: string; text: string; scope?: Scope; project?: string },
 ): RecordObservationResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'observation.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = recordObservation(ctx, {
@@ -383,7 +389,7 @@ export function runRecordObservation(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: recorded.id, ...forwardReplacement(recorded) };
+  return { ok: true, id: recorded.id, scope: route.scope, ...forwardReplacement(recorded) };
 }
 
 /**
@@ -404,7 +410,7 @@ export function runRecordHandoff(
   session: Session,
   input: { task: string; from: string; to: string; scope?: Scope; project?: string },
 ): FactRecordedResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'handoff.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = recordHandoff(ctx, {
@@ -424,15 +430,17 @@ export function runRecordHandoff(
   return {
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
+    scope: route.scope,
     ...forwardReplacement(recorded),
   };
 }
 
 /**
  * `link_knowledge` — links one entity to another, the MCP counterpart of `mnema
- * link`. The destination is a per-action choice on top of the session's defaults
- * (`project`, then `scope`). A link mints NO id (it is an edge), so the result
- * carries no id.
+ * link`. The destination is a per-action choice (`project`, then `scope`); omitted,
+ * the cascade's project and the tree this KIND names — a link asserts a relation
+ * between the project's records, so it travels with them. A link mints NO id (it is an
+ * edge), so the result carries no id.
  *
  * Neither `subject` nor `target` is validated — a link is legitimately cross-tree
  * and a dangling reference is honest, resolved on read — which is exactly why the
@@ -447,7 +455,7 @@ export function runLinkKnowledge(
   session: Session,
   input: { subject: string; target: string; rel: string; scope?: Scope; project?: string },
 ): FactRecordedResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'knowledge.linked', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = linkKnowledge(ctx, {
@@ -463,7 +471,12 @@ export function runLinkKnowledge(
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   // The relation AS RECORDED — screened, so the echo shows what landed.
-  return { ok: true, recorded: [recorded.rel], ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    recorded: [recorded.rel],
+    scope: route.scope,
+    ...forwardReplacement(recorded),
+  };
 }
 
 /**
@@ -471,9 +484,9 @@ export function runLinkKnowledge(
  * existed the agent could MOVE tasks but never open one, so an agent told to
  * break work down had no tool for it — the asymmetry this closes.
  *
- * The birth mold of `create_skill` exactly: the destination is a per-action choice
- * on top of the session's defaults (an explicit `project` and `scope` win, else the
- * session's own stand), the id is MINTED by the operation, and the write is
+ * The birth mold of `create_skill` exactly: the destination is a per-action choice (an
+ * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
+ * names — the team's board travels), the id is MINTED by the operation, and the write is
  * attributed to the connecting agent (`which`) and pinned to that destination's run.
  *
  * Returns the minted `id` (the key a move takes) AND the derived `alias` — the
@@ -485,7 +498,7 @@ export function runCreateTask(
   session: Session,
   input: { title: string; scope?: Scope; project?: string },
 ): CreateTaskResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'task.created', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const created = createTask(ctx, {
@@ -505,6 +518,7 @@ export function runCreateTask(
     ok: true,
     id: created.id,
     alias: deriveAlias('task', created.id),
+    scope: route.scope,
     ...forwardReplacement(created),
   };
 }
@@ -593,10 +607,10 @@ function proofToFields(input: {
 
 /**
  * `record_decision` — records one decision into a tree, the MCP counterpart of
- * `mnema decision`. Like `capture_memory`, the destination is a per-action choice on
- * top of the session's defaults: an explicit `project` and `scope` win, else the
- * session's own stand. A decision needs both a `title` and a `rationale`, both
- * required by the schema.
+ * `mnema decision`. The destination is a per-action choice: an explicit `project` and
+ * `scope` win, else the cascade's project and the tree this KIND names — a decision is
+ * a declaration about the project, so it goes to the record that travels. A decision
+ * needs both a `title` and a `rationale`, both required by the schema.
  *
  * Opens that tree's writer, records the decision attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints. Returns the
@@ -609,7 +623,7 @@ export function runRecordDecision(
   session: Session,
   input: { title: string; rationale: string; scope?: Scope; project?: string },
 ): RecordDecisionResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'decision.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = recordDecision(ctx, {
@@ -626,7 +640,13 @@ export function runRecordDecision(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: recorded.id, adr: recorded.adr, ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    id: recorded.id,
+    adr: recorded.adr,
+    scope: route.scope,
+    ...forwardReplacement(recorded),
+  };
 }
 
 /**
@@ -734,10 +754,10 @@ function decisionProofToFields(input: {
 
 /**
  * `create_skill` — proposes a reusable pattern into a tree, the MCP counterpart
- * of `mnema skill`. Like `capture_memory` and `record_decision`, the destination is
- * a per-action choice on top of the session's defaults: an explicit `project` and
- * `scope` win, else the session's own stand. A skill needs both a `name` and a
- * `body`, both required by the schema.
+ * of `mnema skill`. Like `record_decision`, the destination is a per-action choice: an
+ * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
+ * names — a pattern states how the work is done here, so it travels. A skill needs both
+ * a `name` and a `body`, both required by the schema.
  *
  * Opens that tree's writer, proposes the skill attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints. Returns the
@@ -749,7 +769,7 @@ export function runCreateSkill(
   session: Session,
   input: { name: string; body: string; scope?: Scope; project?: string },
 ): CreateSkillResult {
-  const route = routeWrite(session, input);
+  const route = routeWrite(session, 'skill.created', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const created = createSkill(ctx, {
@@ -766,7 +786,13 @@ export function runCreateSkill(
   }
   // Checkpoint so the propose is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
-  return { ok: true, id: created.id, name: created.name, ...forwardReplacement(created) };
+  return {
+    ok: true,
+    id: created.id,
+    name: created.name,
+    scope: route.scope,
+    ...forwardReplacement(created),
+  };
 }
 
 /**
@@ -857,14 +883,19 @@ function skillProofToFields(input: {
 /**
  * `bootstrap` — the opening context for the session's actor.
  *
- * Takes the session's cache over its resolved tree and composes the copilot's
- * `bootstrap` derivation for the machine's anchor (`who`): where the actor left
- * off, the actionable work, and the NAMES of the adopted patterns. Read-only —
- * it opens no writer and emits no event. The actor's cache is over the ONE
- * resolved tree (the session's), not the union of all three; a session works on
- * one tree, and that is the context it serves. The skills are the exception the
- * copilot documents: they come from every tree this session can see, because a
- * pattern applies to the work whatever tree it was adopted in.
+ * Takes the session's caches over EVERY tree of its project and composes the
+ * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the actor
+ * left off, the actionable work, and the NAMES of the adopted patterns. Read-only —
+ * it opens no writer and emits no event.
+ *
+ * Every tree, and no longer the one the session's writes defaulted to. A task lands
+ * in the tree that travels and a memory in this machine's own, whoever wrote either,
+ * so "the session's tree" names none of them in particular — and the work list read
+ * from one came back EMPTY while looking like an answer. An agent told there is
+ * nothing to do proceeds as if that were true, which is the worst shape the opening
+ * read can have. It also closes the older half of the same hole: a person's tasks,
+ * created on the command line into the committed tree, were invisible to every agent
+ * session that asked what there was to do.
  *
  * The caches come from the session's registry rather than being opened here, so
  * a second read in the same connection reuses the replay this one paid for. The
@@ -872,12 +903,7 @@ function skillProofToFields(input: {
  * always the chain as it stands — the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
-  const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return bootstrap(
-    session.caches.get(chainRoot),
-    { actor: session.who, ...askerContext(session) },
-    skillCaches(session),
-  );
+  return bootstrap(sessionCaches(session), { actor: session.who, ...askerContext(session) });
 }
 
 /**
@@ -1045,12 +1071,21 @@ function withCaches(session: Session, trees: readonly ScopedTree[]): ScopedCache
 }
 
 /**
- * The caches whose adopted skills this session can see — every tree, because a
- * pattern is a CAPABILITY and applies to the work whatever tree it was adopted
- * in. The scope is dropped here: a skill is served by name and body, and which
- * tree it was adopted in is not something an agent acts on.
+ * The caches of every tree of the session's own project — the source of every read
+ * that serves THE SESSION rather than audits a record: the opening context, the
+ * actor's runs, the patterns it may use.
+ *
+ * The scope is dropped here, and that is what these answers have in common: none of
+ * them names a tree. A pattern is a CAPABILITY and applies to the work whatever tree
+ * it was adopted in; a run is the actor's session wherever it was opened; a task is
+ * work whether the team's record holds it or this machine's. The readings that DO
+ * label items by tree (the index, a history) take the sources themselves.
+ *
+ * It used to serve the skills alone, while the work and the runs came from the one
+ * tree the session's writes defaulted to. Routing by kind removed that tree's claim
+ * to be "the session's", so the asymmetry went with it.
  */
-function skillCaches(session: Session): ProjectionCache[] {
+function sessionCaches(session: Session): ProjectionCache[] {
   return scopedCaches(session).map((source) => source.cache);
 }
 
@@ -1120,7 +1155,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
   // READ before WRITE: the caches are consulted first, because building a write
   // context marks the written tree stale — doing it the other way round would
   // make every call rebuild the tree it is about to read.
-  const caches = skillCaches(session);
+  const caches = sessionCaches(session);
   const served = input.id === undefined ? undefined : lookupAdoptedSkill(caches, input.id);
   if (served?.outcome === 'unknown') {
     return {
@@ -1154,10 +1189,16 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
 
 /**
  * Records one `skill.consulted` for each pattern served that this RUN has not
- * already recorded, in the session's default scope — the agent's own tree, like
- * every other fact it produces. The subject may name a skill that lives in
- * ANOTHER tree (a public pattern read by a private session); that is an honest
- * cross-tree reference, resolved on read.
+ * already recorded, in the tree the KIND names — the same tree a skill's own facts go
+ * to, because "this pattern was used" is a fact about the pattern. The evidence that
+ * an adopted pattern earns its place is worth nothing on one machine, which is why it
+ * travels with the pattern rather than staying where the reader happens to be.
+ *
+ * The subject may name a skill that lives in ANOTHER tree — the read serves patterns
+ * from every tree the session can see, so a consultation of a privately adopted one
+ * is recorded in the committed tree and points across. That is the same honest
+ * cross-tree reference a link or an observation makes, resolved on read; unlike a
+ * `run`, it is a reference the caller chose and not one the envelope imposes.
  *
  * The dedup is asked per run, and the run is identified by the tree these facts go
  * to (see {@link Session.consulted}) — which is also why the question is asked
@@ -1176,12 +1217,19 @@ function recordConsultations(
 ):
   | (Replacement & { readonly ok: true })
   | { readonly ok: false; readonly code: string; readonly message: string } {
-  const root = chainRootForScope(session.trees, session.scope) as string;
+  // Routed by KIND like every other write, through the same door, even though this
+  // one takes no `scope` and no `project` from its caller: a consultation is a fact
+  // about a pattern, and the rule that says where a pattern's facts live is the same
+  // one. Reaching for a session default here — there is none now — is what used to put
+  // it in a tree the pattern itself was not in.
+  const route = routeWrite(session, 'skill.consulted', {});
+  if (!route.ok) return route;
+  const root = chainRootForScope(session.trees, route.scope) as string;
   const already = session.consulted.get(root);
   const fresh = already === undefined ? skills : skills.filter((skill) => !already.has(skill.id));
   if (fresh.length === 0) return { ok: true };
 
-  const { ctx, run } = openWrite(session, session.scope);
+  const { ctx, run } = openWrite(session, route.scope);
   // The set for this run, created on the first consultation recorded against it.
   const recordedInRun = already ?? new Set<string>();
   session.consulted.set(root, recordedInRun);
@@ -1220,8 +1268,7 @@ function recordConsultations(
  * so the result carries only the machine's OWN open runs.
  */
 export function runFocusTool(session: Session): Focus {
-  const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return focus(session.caches.get(chainRoot), { actor: session.who, ...askerContext(session) });
+  return focus(sessionCaches(session), { actor: session.who, ...askerContext(session) });
 }
 
 /**
@@ -1232,8 +1279,7 @@ export function runFocusTool(session: Session): Focus {
  * open OR already ended, the "where was I" anchor.
  */
 export function runResumeTool(session: Session): Resume {
-  const chainRoot = chainRootForScope(session.trees, session.scope) as string;
-  return resume(session.caches.get(chainRoot), { actor: session.who, ...askerContext(session) });
+  return resume(sessionCaches(session), { actor: session.who, ...askerContext(session) });
 }
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
@@ -1354,7 +1400,11 @@ export function runGuardTool(
   }
   const fields = proofToFields(input);
   const result = guardWithFocus(
-    cache,
+    // The FOCUS's trees, not the task's. The verdict needs no cache (the gate is
+    // pure, and the state it decides from was read above), and the runs the asker
+    // has open are the asker's — a session that wrote in two trees holds a run in
+    // each, and the tree this task happens to live in answers about neither.
+    sessionCaches(session),
     {
       from: task.state,
       action: input.action,

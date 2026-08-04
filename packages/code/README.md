@@ -23,7 +23,13 @@ CLI and the MCP tools behave identically, because they are the same call.
   (a reason to cancel, a note to complete) and the gate enforces it.
 - **Three places to write** — a committed project record the team shares, a
   private one for this machine, and a global one for knowledge that outlives any
-  single project. Each write chooses; a move follows the entity it moves.
+  single project. What a fact IS decides which: a decision, a task, a skill, a
+  handoff and a link are the project's, so they go to the committed record whoever
+  wrote them. A memory and an observation are the open case — the kind cannot say
+  whether a note is the team's or nobody's but yours — so those two still follow the
+  author: an agent's stays on its machine, yours goes to the record. `--scope`
+  overrides any of it, a move follows the entity it moves, and every write says which
+  tree it landed in.
 - **Reads that answer questions** — what is in flight (`focus`), where you left
   off (`resume`), what the workflow allows next (`next-actions`), and whether a
   move would be allowed at all (`guard`, a dry run that writes nothing).
@@ -125,10 +131,12 @@ mnema task move complete "$TASK" --note "fixtures regenerated" --which release-b
 ```
 
 `mnema accountability` then separates its work from yours instead of crediting
-both to you. Two things follow from declaring it: a *birth* an agent makes goes to
-this machine's private tree by default (`--scope` still overrides), the same rule
-the MCP server applies to the agent it serves; and naming your own identity as the
-agent is refused — whoever authorized the work cannot also be who executed it.
+both to you. It does not change where the work lands: a decision an agent records is
+the project's decision, the same as yours. (`mnema memory` and `mnema observe` are
+the exception — for those two, declaring an agent still sends the capture to this
+machine's private tree, because the kind cannot say who a note is for.) Naming your
+own identity as the agent is refused — whoever authorized the work cannot also be who
+executed it.
 
 Nothing verifies the name: `--which` is a declaration, exactly as the MCP server's
 is the client's own announced name. What is *proven* is the signature — the
@@ -318,7 +326,7 @@ adopted each one — or says a person did.
 # The terminal side of the same name: not the patterns, but where they came from.
 mnema skills
 #> 2 pattern(s):
-#>   019faa06-30e1-…  adopted     private  stacked-prs  ·  proposed by claude-code · adopted by claude-code (the same agent)
+#>   019faa06-30e1-…  adopted     public   stacked-prs  ·  proposed by claude-code · adopted by claude-code (the same agent)
 #>   019faa06-335f-…  adopted     public   trunk-based  ·  proposed by a person · adopted by a person
 ```
 
