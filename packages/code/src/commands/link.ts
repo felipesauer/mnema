@@ -8,11 +8,10 @@
  *
  * The `subject` and `target` are POSITIONAL (short ids), while the relation is a
  * FLAG (`--rel <label>`). The relation is an OPEN string, not a closed set: the
- * catalog's recommended relations (supersedes, relates-to, derived-from,
- * contradicts) are DOCUMENTATION, not enforcement — a relation outside them is
- * as valid as a new action, so the surface makes no enum of it (an enum here
- * would contradict the core). The help suggests the recommended set; any string
- * is accepted.
+ * catalog's `RECOMMENDED_LINK_RELATIONS` are DOCUMENTATION, not enforcement — a
+ * relation outside them is as valid as a new action, so the surface makes no enum
+ * of it (an enum here would contradict the core). The help suggests the recommended
+ * set, read from the catalog rather than repeated here; any string is accepted.
  *
  * Neither `subject` nor `target` is verified to exist. A link is legitimately
  * cross-tree — a private memory may point at a public task — and the writer sees

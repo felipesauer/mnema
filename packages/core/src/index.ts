@@ -10,8 +10,6 @@
  * and rebuilt by dropping and replaying — there are no data migrations.
  */
 
-export const PACKAGE_NAME = '@mnema/core';
-
 // What a credential looks like, and how much text a field may hold. Detecting is
 // a READ — a pure question about a string — so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and
@@ -27,12 +25,10 @@ export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
 export {
   ALIAS_PREFIXES,
   type AliasKind,
-  type AliasSubject,
   type AnchorResolution,
   canonicalId,
   canonicalIdentity,
   deriveAlias,
-  disambiguate,
   isAnchorId,
   resolveAnchorPrefix,
   SHORT_ALIAS_HEX,
@@ -142,7 +138,6 @@ export {
   resolveTrees,
   type Scope,
   TreeUnavailableError,
-  UNROUTED_KINDS,
 } from './topology/index.js';
 export {
   type Clock,

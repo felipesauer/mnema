@@ -44,5 +44,4 @@ export {
   resolveScope,
   type Scope,
   TreeUnavailableError,
-  UNROUTED_KINDS,
 } from './routing.js';

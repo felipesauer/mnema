@@ -1,12 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import {
-  ALIAS_PREFIXES,
-  type AliasSubject,
-  deriveAlias,
-  disambiguate,
-  SHORT_ALIAS_HEX,
-} from './alias.js';
+import { ALIAS_PREFIXES, deriveAlias, SHORT_ALIAS_HEX } from './alias.js';
 
 const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
 
@@ -53,113 +47,36 @@ describe('deriveAlias', () => {
   });
 });
 
-describe('disambiguate', () => {
-  it('leaves non-colliding ids at the short default', () => {
-    const subjects: AliasSubject[] = [
-      { kind: 'task', id: 'task-1' },
-      { kind: 'task', id: 'task-2' },
-    ];
-    const map = disambiguate(subjects);
-    // these two do not collide at 4 hex (verified: distinct short aliases)
-    expect(map.get('task-1')).toBe(deriveAlias('task', 'task-1'));
-    expect(map.get('task-2')).toBe(deriveAlias('task', 'task-2'));
-    expect(map.get('task-1')).not.toBe(map.get('task-2'));
-  });
-
-  it('lengthens ONLY the ambiguous ids to the shortest distinguishing prefix', () => {
-    // task-93 and task-367 share the first 4 hex (80af) and diverge at 5.
+describe('the short form collides, and that is the accepted cost', () => {
+  /**
+   * There used to be a `disambiguate` here that lengthened the ambiguous aliases
+   * of a set shown together. It was removed because nothing shows two aliases at
+   * once, so the set it needed never existed. This pair — which the deleted tests
+   * used as the fixture that made the lengthening observable — stays as the pin
+   * that the collision is REAL and accepted, rather than a sentence in a
+   * docstring nobody can check.
+   */
+  it('two distinct ids share one alias, and the ids stay distinct', () => {
     const a = 'task-93';
     const b = 'task-367';
-    expect(sha256(a).slice(0, 4)).toBe(sha256(b).slice(0, 4));
-    expect(sha256(a).slice(0, 5)).not.toBe(sha256(b).slice(0, 5));
-
-    const map = disambiguate([
-      { kind: 'task', id: a },
-      { kind: 'task', id: b },
-      { kind: 'task', id: 'task-1' }, // an unrelated, non-colliding task
-    ]);
-
-    // the colliding pair grew to 5 hex and is now distinct
-    expect(map.get(a)).toBe(`t-${sha256(a).slice(0, 5)}`);
-    expect(map.get(b)).toBe(`t-${sha256(b).slice(0, 5)}`);
-    expect(map.get(a)).not.toBe(map.get(b));
-
-    // the unrelated task stayed short
-    expect(map.get('task-1')).toBe(deriveAlias('task', 'task-1'));
+    expect(sha256(a).slice(0, SHORT_ALIAS_HEX)).toBe(sha256(b).slice(0, SHORT_ALIAS_HEX));
+    expect(deriveAlias('task', a)).toBe(deriveAlias('task', b));
+    expect(a).not.toBe(b);
   });
 
-  it('resolves a three-way collision: each grows just far enough to be unique', () => {
-    // k-67, k-256, k-324 all share the first 4 hex (675c); each must grow
-    // enough to be distinct from BOTH others, not just one.
-    const ids = ['k-67', 'k-256', 'k-324'];
-    expect(new Set(ids.map((id) => sha256(id).slice(0, 4))).size).toBe(1);
-
-    const map = disambiguate(ids.map((id) => ({ kind: 'task' as const, id })));
-    const aliases = ids.map((id) => map.get(id) as string);
-
-    // all three distinct
-    expect(new Set(aliases).size).toBe(3);
-    // each is a genuine prefix-extension of its own full hash
-    for (const id of ids) {
-      expect(`t-${sha256(id)}`.startsWith(map.get(id) as string)).toBe(true);
-    }
-  });
-
-  it('does not confuse ids of different kinds (the prefix already separates)', () => {
-    // even if a task hash and an epic hash shared 4 hex, t- vs e- keeps them
-    // apart, so neither needs to grow.
-    const map = disambiguate([
-      { kind: 'task', id: 'task-93' },
-      { kind: 'epic', id: 'task-367' }, // different kind, ignore any hash overlap
-    ]);
-    expect(map.get('task-93')).toBe(deriveAlias('task', 'task-93'));
-    expect(map.get('task-367')).toBe(deriveAlias('epic', 'task-367'));
-  });
-
-  it('maps a repeated id once', () => {
-    const map = disambiguate([
-      { kind: 'task', id: 'task-1' },
-      { kind: 'task', id: 'task-1' },
-    ]);
-    expect(map.size).toBe(1);
-    expect(map.get('task-1')).toBe(deriveAlias('task', 'task-1'));
-  });
-
-  it('handles an empty set', () => {
-    expect(disambiguate([]).size).toBe(0);
-  });
-
-  it('a solitary id stays at the short default', () => {
-    const map = disambiguate([{ kind: 'task', id: 'task-93' }]);
-    expect(map.get('task-93')).toBe(deriveAlias('task', 'task-93'));
+  it('a kind prefix separates what a hash prefix does not', () => {
+    // The same overlap across kinds is not even a collision: `t-` and `e-` differ.
+    expect(deriveAlias('task', 'task-93')).not.toBe(deriveAlias('epic', 'task-367'));
   });
 });
 
-describe('property: derivation is stable and collisions always resolve', () => {
-  it('many ids derive deterministically and disambiguate to unique aliases per kind', () => {
-    const subjects: AliasSubject[] = [];
+describe('property: derivation is stable at scale', () => {
+  it('two thousand ids derive deterministically, in the documented form', () => {
     for (let i = 0; i < 2000; i++) {
-      subjects.push({ kind: 'task', id: `t-${i}` });
-    }
-
-    // deterministic: deriving twice gives the same short alias
-    for (const { kind, id } of subjects) {
-      expect(deriveAlias(kind, id)).toBe(deriveAlias(kind, id));
-    }
-
-    const map = disambiguate(subjects);
-    expect(map.size).toBe(subjects.length);
-
-    // every alias in the set is unique — collisions were resolved by lengthening
-    const aliases = [...map.values()];
-    expect(new Set(aliases).size).toBe(aliases.length);
-
-    // and every resolved alias is still a prefix-extension of the short form
-    for (const { id } of subjects) {
-      const full = `t-${sha256(id)}`;
-      const alias = map.get(id) as string;
-      expect(full.startsWith(alias)).toBe(true);
-      expect(alias.length).toBeGreaterThanOrEqual(2 + SHORT_ALIAS_HEX);
+      const id = `t-${i}`;
+      const alias = deriveAlias('task', id);
+      expect(alias).toBe(deriveAlias('task', id));
+      expect(alias).toBe(`t-${sha256(id).slice(0, SHORT_ALIAS_HEX)}`);
     }
   });
 });
