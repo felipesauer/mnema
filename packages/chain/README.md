@@ -131,7 +131,8 @@ folder). The private key is not part of it and must never be shared.
 - **`chain/`** — the log: the per-tail writer (`writer.ts`), the hash and content
   root (`hash.ts`), sealed entries (`entry.ts`), signed checkpoints
   (`checkpoint.ts`), keys and keystore (`keys.ts`, `keystore.ts`), tail storage
-  (`store.ts`), and the verifier (`verify.ts`).
+  (`store.ts`), how far a chain reaches on disk (`freshness.ts`), and the
+  verifier (`verify.ts`).
 
 The source is documented at the level of *why*; if you are auditing the proof,
 reading `hash.ts` and `verify.ts` is the place to start.

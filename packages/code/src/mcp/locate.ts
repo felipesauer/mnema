@@ -447,22 +447,18 @@ function severalRecordsHold(
  * and compiles. So the home is the argument, and there is no session in scope here to
  * fall back on by accident.
  *
- * It stops at what the session can SEE, and that is not fussiness — two different
- * situations reach here and only one of them is about the chain:
+ * It stops at what the session can SEE, and that is not fussiness. One situation
+ * reaches here: the chain carries the record with its initial transition still
+ * missing — a partially fetched history, because a birth is two appends written
+ * atomically and an intact chain never has one without the other.
  *
- *   - the chain carries the record with its initial transition still missing (a
- *     partially fetched history: a birth is two appends, written atomically, so
- *     an intact chain never has one without the other);
- *   - the chain is complete and this session's projection of that tree is BEHIND
- *     it, because another process — a `mnema` command in a terminal, a second
- *     agent — appended after this session last read it. The walk found the birth
- *     by replaying the chain; the state comes from the projection, and the two
- *     see different amounts of the same record.
- *
- * A sentence that blamed the chain would be false in the second case, which is
- * the ordinary one. So the claim is the session's own sight, which is what is
- * true in both, and it leaves the caller a move in either: write something (this
- * session's next write rebuilds the tree) or fetch the rest of the history.
+ * There used to be a second, and it was the ordinary one: a complete chain whose
+ * projection this session held from BEFORE another process appended to it. That
+ * is gone — a read now checks the tree's extent and replays what it finds, so the
+ * walk and the state see the same amount of the same record. The sentence still
+ * does not blame the chain, because the chain is not always what is short; it
+ * claims the session's own sight, which stays true, and leaves the caller the
+ * move that remains: fetch the rest of the history.
  */
 export function locatedButUnreadable(kind: LocatableKind, id: string, home: WorkspaceTree): string {
   return (

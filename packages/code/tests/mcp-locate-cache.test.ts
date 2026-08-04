@@ -20,14 +20,27 @@
  *
  * Two groups carry the weight. The first is the agreement itself, across every
  * entity kind and every tree. The second is the reason the session's locate
- * falls back to the chain at all: a projection holds only COMPLETE entities and
- * only what THIS session has seen, so on its own it would have lost a truncated
- * birth and — the one that would have hurt — a task another process had just
- * created, which used to move successfully. Both are exercised against the
- * projections alone, to show the fallback is load-bearing and not insurance.
+ * falls back to the chain at all: a projection holds only COMPLETE entities, so
+ * on its own it loses a TRUNCATED birth — a record whose initial transition the
+ * history does not carry yet. It is exercised against the projections alone, to
+ * show the fallback is load-bearing and not insurance.
+ *
+ * It used to lose a second thing, and that one was the ordinary case: whatever
+ * another writer had appended since this session last read the tree. A read now
+ * checks the tree before it is served, so the projection and the chain no longer
+ * see different amounts of the same record, and the fallback is left with the
+ * one case that is genuinely about the chain being short.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -153,6 +166,22 @@ function truncatedBirth(
 /** A v7-shaped id that nothing was ever written under. */
 function unusedId(): string {
   return '019fa622-0000-7000-8000-000000000000';
+}
+
+/**
+ * Replaces every segment of a chain with the same number of bytes of blank
+ * lines: a replay of it yields no events, and every file keeps the size it had.
+ * The one edit a freshness probe built on size cannot see, by construction.
+ */
+function emptySegmentsInPlace(chainRoot: string): void {
+  const tails = join(chainRoot, 'tails');
+  for (const tail of readdirSync(tails)) {
+    for (const name of readdirSync(join(tails, tail))) {
+      if (!/^\d+\.jsonl$/.test(name)) continue;
+      const file = join(tails, tail, name);
+      writeFileSync(file, '\n'.repeat(statSync(file).size));
+    }
+  }
 }
 
 beforeEach(() => {
@@ -283,13 +312,19 @@ describe('a session locates an entity exactly where a fresh process would', () =
 });
 
 describe('the projections answer first — the chain is not replayed for an entity they hold', () => {
-  it('a warm session still locates a task whose chain has been taken away', () => {
+  it('a warm session still locates a task the chain has stopped carrying', () => {
     // The decisive proof that the fast half is the one answering, and that the
-    // slow half is not run behind it. Once the projection holds the task, the
-    // public tree's event files are deleted: a replay can no longer produce that
-    // birth, and the session still locates it. If the locate had gone to the
-    // chain first — or at all, for an entity the projection holds — this would
-    // not come back 'public'.
+    // slow half is not run behind it: the public tree's events are emptied under
+    // the session, so a replay can no longer produce that birth, and the session
+    // still locates it. If the locate had gone to the chain first — or at all,
+    // for an entity the projection holds — this would not come back 'public'.
+    //
+    // Emptied WITHOUT changing a byte count, which is the only way to take the
+    // events away and leave the session's view of the tree standing. That is not
+    // a trick around the test: it is the freshness probe's declared blind spot,
+    // exercised. A rewrite that preserves the size is tampering, and tampering is
+    // `verify`'s subject — the probe answers "did anything move", and here
+    // nothing observably did.
     const project = makeProject('proj');
     const session = openOn(project);
     const created = runCreateTask(session, { title: 'in the projection', scope: 'public' });
@@ -298,8 +333,7 @@ describe('the projections answer first — the chain is not replayed for an enti
 
     // Only the public tree's tails: the private tree lives beneath it and must
     // stay intact, or this would be testing an empty context instead.
-    const publicRoot = chainRootForScope(session.trees, 'public') as string;
-    rmSync(join(publicRoot, 'tails'), { recursive: true, force: true });
+    emptySegmentsInPlace(chainRootForScope(session.trees, 'public') as string);
 
     const byReplay = (() => {
       try {
@@ -391,13 +425,11 @@ describe('what the projections alone would have got wrong', () => {
     closeSession(session);
   });
 
-  it('a task another process just created still MOVES', () => {
-    // The one that would have hurt. The session's view of a tree does not
-    // include writes it did not make — a declared limit, and already the answer
-    // `next_actions` and `guard` gave. It was never the answer a MOVE gave: the
-    // operations read the chain, so the move landed. Locating from the
-    // projection alone would have turned a task that exists into UNKNOWN_TASK on
-    // the one surface that was still right about it.
+  it('a task another writer just created is located, read AND moved', () => {
+    // This used to be the demonstration of a limit: the projection could not see
+    // an append this session had not made, so the locate fell through to the
+    // chain and the READS behind it stayed behind. All three surfaces now agree,
+    // because the projection is checked against the tree before it is served.
     const project = makeProject('proj');
     const session = openOn(project);
     // Warm every tree through the probe itself, so the setup does not depend on
@@ -409,15 +441,18 @@ describe('what the projections alone would have got wrong', () => {
     if (!theirs.ok) throw new Error('setup: outside create refused');
     outside.writer.checkpoint();
 
-    expect(viaProjectionsOnly(session, theirs.id)).toBeUndefined(); // the gap…
-    expect(viaSession(session, theirs.id)).toBe('private'); // …closed
+    expect(viaProjectionsOnly(session, theirs.id)).toBe('private');
+    expect(viaSession(session, theirs.id)).toBe('private');
+
+    // The read no longer has to be refused: the state is there to report.
+    const before = runNextActionsTool(session, { id: theirs.id });
+    if (!before.ok) throw new Error('next_actions refused on a task the chain holds');
+    expect(before.actions.map((a) => a.action).sort()).toEqual(['cancel', 'submit']);
 
     expect(runTaskTransition(session, { id: theirs.id, action: 'submit' })).toMatchObject({
       ok: true,
       to: 'READY',
     });
-    // And the move refreshed the tree, so the reads catch up with it — the
-    // limit closes on the session's first write, exactly as documented.
     const after = runNextActionsTool(session, { id: theirs.id });
     if (!after.ok) throw new Error('next_actions refused after the move');
     expect(after.actions.map((a) => a.action).sort()).toEqual(['cancel', 'start']);
@@ -425,37 +460,30 @@ describe('what the projections alone would have got wrong', () => {
     closeSession(session);
   });
 
-  it('a read of a task another process just created is refused, and says what it sees', () => {
-    // The other half of the same limit, unchanged: the READS answer from the
-    // session's projection, so they still do not see it until something this
-    // session does rebuilds the tree. The locate finds the tree; the projection
-    // it then reads is the stale one. That was the behaviour before and it is
-    // the behaviour now — the fallback restores the locate, not the read.
+  it('a read of a TRUNCATED birth is refused, and says what it sees', () => {
+    // The refusal for an entity the walk found and the projection cannot state.
+    // Its subject is now only the short chain: a birth is two appends written
+    // atomically, so an intact history never carries one without the other, and a
+    // partially fetched one can.
     //
-    // What the refusal SAYS had to change with it. The task is right here, in this
-    // project's private tree, and the walk above just found it there: a refusal
-    // claiming it does not exist was false, and one claiming it is not in this
-    // project would be false in a second way. So the sentence stops at what this
-    // session can see — the creation, and nothing after it — which is true whether
-    // the history is short or this session's view of it is behind.
+    // What the sentence claims is load-bearing. The task is right here, in this
+    // project's private tree, and the walk just found it there: a refusal saying
+    // it does not exist would be false, and one saying it is not in this project
+    // would be false in a second way. So it stops at what this session can see —
+    // the creation, and nothing after it.
     const project = makeProject('proj');
     const session = openOn(project);
-    expect(viaProjectionsOnly(session, unusedId())).toBeUndefined(); // warm
-
-    const outside = writeContext(resolveTrees(project, env), 'private', createCacheRegistry());
-    const theirs = createTask(outside, { title: 'from another process', which: 'other-agent' });
-    if (!theirs.ok) throw new Error('setup: outside create refused');
-    outside.writer.checkpoint();
+    const id = truncatedBirth(session, 'private', 'task', unusedId());
 
     const message =
-      `task "${theirs.id}" is in the private tree of "${project}", but has no readable ` +
+      `task "${id}" is in the private tree of "${project}", but has no readable ` +
       'state there — this session sees its creation and nothing after it';
-    expect(runNextActionsTool(session, { id: theirs.id })).toEqual({
+    expect(runNextActionsTool(session, { id })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
       message,
     });
-    expect(runGuardTool(session, { id: theirs.id, action: 'submit' })).toEqual({
+    expect(runGuardTool(session, { id, action: 'submit' })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
       message,

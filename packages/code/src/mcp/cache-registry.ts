@@ -29,20 +29,60 @@
  *      tree, and a tree that has never been written replays as empty without being
  *      brought into being.
  *
- *   2. **Invalidated by the write, not by a clock.** {@link invalidate} is
- *      called from the ONE place every MCP write passes through (the session's
- *      `writeContext`), so a tool cannot forget. Nothing here watches mtimes or
- *      expires on a timer: the chain only changes when this process appends to
- *      it, and that append is observable at its single door.
+ *   2. **Invalidated by the write, and CHECKED against the chain.** Two signals,
+ *      because there are two ways a retained replay goes behind and only one of
+ *      them this process knows about.
+ *
+ *      {@link invalidate} is called from the ONE place every MCP write passes
+ *      through (the session's `writeContext`), so a tool cannot forget. That is
+ *      the exact half: this connection KNOWS it appended.
+ *
+ *      It used to be the whole of it, on the premise that *the chain only
+ *      changes when this process appends to it*. Use falsified that premise —
+ *      three writers on one project is ordinary (a live MCP session, a headless
+ *      run, a `mnema` command in a terminal), and measured against a session
+ *      that read a record the CLI was writing to, the rule came out as *reading
+ *      never heals, and writing heals only the tree it wrote to*. An agent that
+ *      writes memories and observations writes PRIVATE, so nothing it does ever
+ *      refreshed the tree that answers "what has this team decided" — the answer
+ *      came back with a confident count and no sign it was a day old.
+ *
+ *      So {@link get} also OBSERVES, through {@link chainExtent}: one `stat` per
+ *      tail before serving, of the only file a tail can be growing. Cheap enough
+ *      to pay on every read, and it costs nothing on a chain that did not move.
+ *      Still no clock — nothing here expires, and nothing watches. An extent is
+ *      read when a caller asks for a cache and at no other moment.
+ *
+ *      The extent SUBSUMES the mark for correctness — an append this process
+ *      makes grows a file exactly like anyone else's — and the mark is kept
+ *      anyway, deliberately. It is knowledge rather than inference: it costs a
+ *      boolean, it does not ask the disk anything, and it is therefore the half
+ *      that holds where the inference could be wrong. A filesystem is allowed to
+ *      answer a `stat` from a cached attribute (NFS does, for seconds at a time),
+ *      and where that happens the extent can report a size that is already old.
+ *      The connection's own write never depends on being observed.
+ *
+ * The reading HEALS rather than warns, and that is the whole shape of the fix. A
+ * warning would hand the caller a fact it has no move to make about: it cannot
+ * rebuild, and it has no other source to ask. The product does warn where the
+ * author can act — which tree a write landed in, what a content door scrubbed —
+ * and this is the other kind.
  *
  * Invalidation MARKS, it does not rebuild. A session that writes five times and
  * then reads pays one replay, not five — and a session that writes without ever
  * reading again pays none. The cost of being wrong is asymmetric and the design
  * follows that: a needless rebuild costs milliseconds, while a missed one hands
- * the agent a record that no longer exists.
+ * the agent a record that no longer exists. That criterion did not change; what
+ * changed is that it now applies to an append by ANY process, which is where the
+ * expensive error was actually coming from.
  */
 
-import { catalogUpcasters, type UpcasterRegistry } from '@mnema/chain';
+import {
+  type ChainExtent,
+  catalogUpcasters,
+  chainExtent,
+  type UpcasterRegistry,
+} from '@mnema/chain';
 import { ProjectionCache } from '@mnema/core';
 
 /** A cache retained for one chain root, and whether it still matches the chain. */
@@ -50,14 +90,21 @@ interface Entry {
   readonly cache: ProjectionCache;
   /** False once a write went to this root: the next reader rebuilds before reading. */
   stale: boolean;
+  /**
+   * How far the chain reached when this projection was replayed from it. A
+   * different extent now means somebody appended in between — this process or
+   * another one — and the next reader rebuilds before being served.
+   */
+  extent: ChainExtent;
 }
 
 /** The session's warm caches, one per chain root it has read. */
 export interface CacheRegistry {
   /**
-   * The cache for a chain root, rebuilt if this is the first read or if a write
-   * marked it stale — so a caller always receives a cache that agrees with the
-   * chain, and never has to know whether it was warm.
+   * The cache for a chain root, rebuilt if this is the first read, if a write
+   * marked it stale, or if the chain has grown since the retained projection was
+   * replayed from it — so a caller always receives a cache that agrees with the
+   * chain, and never has to know whether it was warm, or who moved the record.
    */
   get(chainRoot: string): ProjectionCache;
   /**
@@ -82,20 +129,30 @@ export function createCacheRegistry(): CacheRegistry {
 
   return {
     get(chainRoot: string): ProjectionCache {
+      // Read BEFORE the replay, and recorded as what the replay covers. An
+      // append that lands DURING the rebuild is then attributed to nobody: the
+      // entry remembers the smaller extent, so the next reader replays once more
+      // for an event it may already hold. That is the direction the asymmetry
+      // points — reading the extent afterwards would record coverage of a write
+      // the replay might have missed, which is the expensive error wearing the
+      // cheap one's clothes.
+      const extent = chainExtent({ root: chainRoot });
       const existing = entries.get(chainRoot);
       if (existing !== undefined) {
-        if (existing.stale) {
-          // Rebuild BEFORE clearing the flag: a chain that fails to read throws
-          // out of here with the entry still marked stale, so the next reader
-          // tries again instead of being served a cache we know is behind.
+        if (existing.stale || existing.extent !== extent) {
+          // Rebuild BEFORE recording anything: a chain that fails to read throws
+          // out of here with the entry still marked stale and still holding the
+          // older extent, so the next reader tries again instead of being served
+          // a cache we know is behind.
           existing.cache.rebuild();
           existing.stale = false;
+          existing.extent = extent;
         }
         return existing.cache;
       }
       const cache = ProjectionCache.open(chainRoot, { upcasters });
       cache.rebuild();
-      entries.set(chainRoot, { cache, stale: false });
+      entries.set(chainRoot, { cache, stale: false, extent });
       return cache;
     },
 
