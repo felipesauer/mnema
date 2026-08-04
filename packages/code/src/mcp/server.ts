@@ -846,7 +846,14 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Bootstrap the session',
       description:
         "The opening context for this session's actor: where they left off and " +
-        'the actionable work, derived from the chain.' +
+        'the actionable work, derived from the chain. Both lists are NAMES: a task ' +
+        'arrives as id, title and state, and a pattern as id and name — call ' +
+        '`next_actions` with a task id for the moves it allows, and `skills` with a ' +
+        'skill id for the pattern itself. The work list is CUT to the freshest ' +
+        'items; `workTotal` says how many actionable tasks there are in all, so a ' +
+        'number larger than the list means there is older work it does not show. ' +
+        '`search` (kind `task`, with a `limit`) lists tasks past it, ordered by when ' +
+        'each was recorded rather than by when it last moved.' +
         OPEN_RUN_CONTRACT,
     },
     async () => {

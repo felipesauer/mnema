@@ -511,9 +511,11 @@ describe('the session says how many projects it chose from', () => {
     }
 
     // And it is beside the answer, never inside it: a caller parsing the first block
-    // gets the copilot's shape, byte for byte.
+    // gets the copilot's shape, byte for byte. `workTotal` is part of that shape —
+    // the work list is cut to a limit and this is the count that says so — and it
+    // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;
-    expect(Object.keys(payload).sort()).toEqual(['resume', 'skills', 'work']);
+    expect(Object.keys(payload).sort()).toEqual(['resume', 'skills', 'work', 'workTotal']);
 
     await client.close();
   });
