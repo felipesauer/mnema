@@ -42,6 +42,15 @@
  * printed, a count is the list's own length, and it is printed in the heading for a
  * reader who wants to check that nothing was lost between the record and this file.
  *
+ * A HANDLE THAT DOES NOT IDENTIFY IS DECLARED TOO, and it is the same doctrine again
+ * rather than a new one. The `ADR-<n>` beside each rule is here to be CITED — it is
+ * the short name a person writes into a commit — and it is numbered inside one chain,
+ * so two people deciding while apart can freeze the same one onto two rules. Neither
+ * write could have been refused and neither label may be renumbered, so what is left
+ * is to say so: {@link LABEL_NAMES_TWO} and one line per clash, above the bullets. The
+ * document itself was never ambiguous — every bullet carries its id — and that is why
+ * this is a declaration and not a change to the line.
+ *
  * WHAT IS LEFT OUT IS DECLARED, and that is the other half of the same doctrine. The
  * composition carries the tree that TRAVELS and no other, so a rule recorded privately
  * is absent from this file — and an absence a reader cannot see is exactly what "no
@@ -53,7 +62,7 @@
  * not to do.
  */
 
-import type { Brief } from '@mnema/copilot';
+import type { AdrCollision, Brief } from '@mnema/copilot';
 import { oneLine } from '../served-patterns.js';
 
 /**
@@ -149,6 +158,28 @@ const NO_DECISIONS = [
   'to hand over.',
 ];
 
+/**
+ * What a label that names more than one rule says, and why the file only says it.
+ *
+ * The bullet already prints the id beside the label, so the DOCUMENT is not
+ * ambiguous — a reader who takes the id takes one rule. What is ambiguous is the
+ * CITATION: the label exists to be written into a commit or a review, and there it
+ * travels alone. So this says which handle does not identify, and tells the reader
+ * what to write instead.
+ *
+ * It does not offer to fix it, because there is no fix to offer. Both labels were
+ * frozen into signed events on machines that could not see each other, so no write
+ * could have refused either; and renumbering one would edit a record whose whole
+ * worth is that it does not get edited. The product's move for "we changed our mind"
+ * is a new decision, never a rewrite of an old one.
+ */
+const LABEL_NAMES_TWO = [
+  'One of the labels below is answered to by more than one rule. An `ADR-<n>` is',
+  'numbered within a single chain and frozen when the rule was recorded, so two people',
+  'deciding while apart can mint the same one — and nothing renumbers either afterwards,',
+  'because the record is not edited. Cite these by id rather than by label:',
+];
+
 /** What an empty list of patterns says, on the same distinction. */
 const NO_PATTERNS = [
   'No pattern has been adopted here yet — which is not the same as there being no way',
@@ -176,7 +207,9 @@ export function briefDocument(governance: Brief): string[] {
     ...section(
       'Decisions in force',
       governance.decisions.length,
-      governance.decisions.length === 0 ? NO_DECISIONS : WHERE_THE_RATIONALE_IS,
+      governance.decisions.length === 0
+        ? NO_DECISIONS
+        : [...WHERE_THE_RATIONALE_IS, ...ambiguousLabels(governance.collisions)],
       governance.decisions.map((decision) =>
         rule(`${decision.adr} — ${decision.title}`, decision.id),
       ),
@@ -232,4 +265,46 @@ function section(
  */
 function rule(name: string, id: string): string {
   return `- **${oneLine(name)}** · \`${oneLine(id)}\``;
+}
+
+/**
+ * The declaration about the labels, and nothing at all when every label names one
+ * rule.
+ *
+ * NOTHING is the ordinary case and it is what keeps this addition free: a record
+ * without a clash prints the bytes it printed before, so the `diff` that detects a
+ * stale copy still means one thing. The empty case returns an empty list rather than
+ * a blank line, because a blank line is a byte.
+ *
+ * The lines it does add go beside the rules they are about — under the heading, above
+ * the bullets — since a reader who takes a label from this file has already passed
+ * this point by the time they use it.
+ */
+function ambiguousLabels(collisions: readonly AdrCollision[]): string[] {
+  if (collisions.length === 0) return [];
+  return ['', ...LABEL_NAMES_TWO, '', ...collisions.map(ambiguous)];
+}
+
+/**
+ * One clash, as a bullet: the label, then EVERY id that answers to it.
+ *
+ * The ids are the whole content of the warning. A reader told that `ADR-7` is
+ * ambiguous and not told which rules hold it has been told to distrust a handle with
+ * no way to stop — so the line names them, and the one that is not printed as a rule
+ * above (a call that was superseded, or one still on the table) is named too, since
+ * that is regularly the other half of the clash.
+ *
+ * It does NOT open with `- **`, and that is load-bearing rather than a taste: the
+ * bullets that do are the rules in force, counted by the heading and by a reader
+ * checking one against the other. A warning that borrowed their shape would be
+ * counted as a rule the project never made — the same failure the collapsing exists
+ * to prevent, arriving through the format instead of through a title.
+ *
+ * Every value on it goes through {@link oneLine}, here, for the reason the rule
+ * bullet does: both fields are read out of the record, and a record can be appended
+ * to by anything holding a key.
+ */
+function ambiguous(collision: AdrCollision): string {
+  const ids = collision.ids.map((id) => `\`${oneLine(id)}\``).join(', ');
+  return `- \`${oneLine(collision.adr)}\` — ${ids}`;
 }

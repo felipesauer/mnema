@@ -24,6 +24,10 @@
 // TYPES only. The `REFERENCE_ROLES` tuple was re-exported here too — a VALUE — and
 // no consumer ever asked this layer for it, so it is reached where it lives.
 export type {
+  // A label naming two rules is a shape two of this layer's answers carry — the
+  // committed document's, and the audit's — so reading either needs no reach past
+  // this layer.
+  AdrCollision,
   GateErr,
   GateErrorCode,
   GateOk,
@@ -107,6 +111,7 @@ export {
   antipatternsByProject,
   type ProjectAntipatterns,
   type ProjectEvents,
+  type RecordEvents,
   type RecurrenceFinding,
   type WorkspaceAntipatterns,
 } from './intelligence/antipatterns.js';

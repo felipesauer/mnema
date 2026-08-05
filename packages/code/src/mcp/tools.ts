@@ -1804,6 +1804,12 @@ export function runExposureTool(session: Session): ExposureToolResult {
  * decisions, deprecated skills), each with its evidence, plus the skill candidates
  * POINTED at. It points, it does not conclude, and it creates no skill.
  *
+ * The `ADR-<n>` clashes come from each CHAIN of a record rather than from the union of
+ * them, and the source hands over both views from one reading. A label is numbered
+ * inside one chain, so a project's public and private trees hold an `ADR-1` each the
+ * moment both have a decision — pooling them would report that on nearly every project
+ * and mean nothing when it did.
+ *
  * DECOMPOSED rather than merged, for the reason `accountability` is: everything here
  * is a count, and counts of three codebases added up answer a question about a
  * workspace under the name of a question about a record. The skill candidates make it

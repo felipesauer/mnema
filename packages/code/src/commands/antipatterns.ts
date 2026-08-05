@@ -1,13 +1,18 @@
 /**
  * `mnema antipatterns` — recurring shapes in the record, with their evidence.
  *
- * The third INTELLIGENCE read: it folds the UNION of the present trees
- * ({@link unionEvents}) and surfaces the shapes that recur — tasks reopened,
- * decisions superseded, skills deprecated — each with the exact events that make
- * up the count. It POINTS, it does not CONCLUDE: nothing here calls a count a
- * problem, and the `skillCandidates` it names (tasks reopened more than once) are
- * a POINTER for a human who might distill a pattern, never a skill this read
- * creates. The word "antipattern" names the shape it looks for, not a verdict.
+ * The third INTELLIGENCE read: it folds the present trees ({@link recordEvents}) and
+ * surfaces the shapes that recur — tasks reopened, decisions superseded, skills
+ * deprecated — each with the exact events that make up the count, plus the `ADR-<n>`
+ * labels that name more than one rule. It POINTS, it does not CONCLUDE: nothing here
+ * calls a count a problem, and the `skillCandidates` it names (tasks reopened more
+ * than once) are a POINTER for a human who might distill a pattern, never a skill this
+ * read creates. The word "antipattern" names the shape it looks for, not a verdict.
+ *
+ * The counts are over the UNION and the labels are per CHAIN, which is the source
+ * saying what each answer is about: a task's story is the record's, and a label is
+ * numbered inside one chain, so a public `ADR-1` beside a private one is two chains
+ * doing what they should rather than a clash.
  *
  * ONE PROJECT's record, which is what a command run in a directory is about — `cwd`
  * resolves one project and there is no workspace here to span. The MCP tool of the
@@ -25,7 +30,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { type Antipatterns, antipatterns } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { unionEvents } from '../intelligence-source.js';
+import { recordEvents } from '../intelligence-source.js';
 
 /** What the antipatterns command needs — injected so it is testable. */
 export interface AntipatternsContext {
@@ -35,10 +40,13 @@ export interface AntipatternsContext {
   readonly env: DiscoveryEnv;
 }
 
-/** The recurring shapes found across the union, each a pointer to its evidence. */
+/** The recurring shapes found in the record, each a pointer to its evidence. */
 export interface AntipatternsDone {
   readonly ok: true;
-  /** The shapes: reopened tasks, superseded decisions, deprecated skills, candidates. */
+  /**
+   * The shapes: reopened tasks, superseded decisions, deprecated skills, candidates,
+   * and the `ADR-<n>` labels more than one rule of a chain answers to.
+   */
   readonly patterns: Antipatterns;
 }
 
@@ -49,7 +57,7 @@ export interface AntipatternsRefused {
 }
 
 /**
- * Reports the recurring shapes across the union of the present trees. Each
+ * Reports the recurring shapes of the record the present trees make up. Each
  * finding carries the evidence events in stream order. A record with no such
  * shapes yields empty lists. Read-only: it reads the tails and folds them,
  * opening no writer and no cache.
@@ -59,6 +67,5 @@ export function runAntipatterns(ctx: AntipatternsContext): AntipatternsDone | An
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  const events = unionEvents(trees, catalogUpcasters());
-  return { ok: true, patterns: antipatterns(events) };
+  return { ok: true, patterns: antipatterns(recordEvents(trees, catalogUpcasters())) };
 }

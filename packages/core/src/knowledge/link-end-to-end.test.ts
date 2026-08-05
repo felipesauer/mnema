@@ -22,7 +22,7 @@ import { join } from 'node:path';
 import { type ChainLayout, catalogUpcasters, verify } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { projectKnowledge, projectLinks } from '../projections/knowledge.js';
-import { orderedEvents, orderedEventsAcross } from '../projections/order.js';
+import { orderedEvents, orderedEventsOfRecord } from '../projections/order.js';
 import { type ResolvedTrees, resolveTrees } from '../topology/resolve.js';
 import { chainRootForScope, openTreeForWriting, type Scope } from '../topology/routing.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -68,7 +68,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     linkKnowledge(prv.ctx, { subject: source.id, target: target.id, rel: 'relates-to' });
     prv.ctx.writer.checkpoint();
 
-    const union = orderedEventsAcross([layout(pub.root), layout(prv.root)], upcasters);
+    const union = orderedEventsOfRecord([layout(pub.root), layout(prv.root)], upcasters).across;
     const edges = projectLinks(union);
     expect(edges).toHaveLength(1);
     // Answerable from the subject side (the note) and the target side (the thing).

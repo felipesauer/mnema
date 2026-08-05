@@ -12,7 +12,7 @@ import {
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mintId } from '../identity/id.js';
-import { orderedEvents, orderedEventsAcross } from '../projections/order.js';
+import { orderedEvents, orderedEventsOfRecord } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { type ResolvedTrees, resolveTrees } from '../topology/resolve.js';
 import { chainRootForScope, openTreeForWriting, type Scope } from '../topology/routing.js';
@@ -405,14 +405,14 @@ describe('session — routable through the three-tree topology', () => {
   it('the PERSON sees a run opened in one tree across the union of trees', () => {
     const { ctx } = contextForScope('private');
     const id = mustStart(ctx, { agent: AGENT, goal: 'union view' });
-    const union = orderedEventsAcross(
+    const union = orderedEventsOfRecord(
       [
         { root: chainRootForScope(trees, 'public') as string },
         { root: chainRootForScope(trees, 'private') as string },
         { root: chainRootForScope(trees, 'global') as string },
       ],
       upcasters,
-    );
+    ).across;
     expect(projectRuns(union).get(id)?.goal).toBe('union view');
   });
 });

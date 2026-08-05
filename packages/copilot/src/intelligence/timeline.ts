@@ -44,7 +44,7 @@
  * order. That is a k-way merge, and a k-way merge is associative — merging each
  * tree's already-merged tails and then merging those lists lands exactly where
  * merging every tail at once lands, because every tail of an earlier tree sorts
- * before every tail of a later one. So this reproduces `orderedEventsAcross`
+ * before every tail of a later one. So this reproduces the union order
  * rather than approximating it, and a test holds it to that.
  *
  * What it does NOT do: resolve what KIND the entity is, or what kind a referring

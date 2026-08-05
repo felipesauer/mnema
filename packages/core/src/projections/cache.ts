@@ -145,8 +145,20 @@ export class ProjectionCache {
   }
 
   /**
-   * Reports every `ADR-<n>` label carried by more than one decision — a label
-   * collision to reconcile, never an error. Empty when every label is unique.
+   * Reports every `ADR-<n>` label carried by more than one decision of THIS
+   * chain — a label collision to reconcile, never an error. Empty when every
+   * label is unique.
+   *
+   * A cache is opened over one chain root, which is exactly the unit an
+   * `ADR-<n>` is numbered in, so this asks the question at the only scope where
+   * it has an answer. Its reader is the brief's composition (`brief` in
+   * @mnema/copilot), which serves the label into a committed document and so has
+   * to say when a label there names two rules.
+   *
+   * It reports EVERY decision of the chain, whatever state it is in: a label is
+   * cited by a human, and a superseded or rejected decision still answers to the
+   * one it was given. A reader that only wants the labels it is printing filters
+   * on those — which is what the brief does.
    */
   adrCollisions(): AdrCollision[] {
     return adrCollisions(listDecisions(this.db));

@@ -51,12 +51,28 @@
  *     `mnema brief > AGENTS.md` and a commit. The private tree exists precisely so
  *     that what is in it does not travel.
  * So what this composes is the tree that travels ({@link TRAVELS}) and nothing else:
- * the content of a committed document is what a clone gets, the ADR label is unique
- * inside one chain, a rule kept on one machine does not govern the team's work, and
+ * the content of a committed document is what a clone gets, the ADR label is NUMBERED
+ * inside one chain — this line said "unique inside one chain", which is what the
+ * numbering intends and not what it guarantees; two tails of one chain falsify it, and
+ * the paragraph below is what the answer does about that —
+ * a rule kept on one machine does not govern the team's work, and
  * the `diff` against a copy comes to mean ONE thing — the copy is stale — where it
  * used to mean "stale or from another tree", and a signal with two meanings is not a
  * signal. Everything else the caller can see is still the AGENT's context, which is
  * what {@link bootstrap} answers, over the union, unchanged.
+ *
+ * ONE TREE IS NOT ONE CHAIN, WHICH IS WHY THE ANSWER ALSO DECLARES. Serving the
+ * committed tree alone fixed the ADR-1 that came from FOLDING two trees, and left the
+ * one that comes from inside a single tree: the number is minted from the writer's
+ * view of the chain, so two clones deciding offline both mint `ADR-7` legitimately and
+ * the labels meet when the tails do. Nothing at write time could have refused either —
+ * the machines could not see each other — and nothing may renumber them afterwards,
+ * because the label is frozen into a signed event and a record that edited its past
+ * would be worth nothing. So what this composition owes the document is the FACT:
+ * which printed label names more than one rule, and which ids those are ({@link
+ * Brief.collisions}). Asserted in `brief.test.ts` — "declares a printed label that two
+ * decisions of one chain answer to" — over two tails, which is the only way a chain
+ * gets there.
  *
  * THE FILTER IS HERE, IN THE COMPOSITION, AND NOT IN THE DERIVATIONS. {@link
  * decisionsInForce} and {@link adoptedSkills} still read every cache they are handed,
@@ -73,7 +89,7 @@
  * dropping sources cannot reorder what the remaining ones say.
  */
 
-import type { ProjectionCache, Scope } from '@mnema/core';
+import type { AdrCollision, ProjectionCache, Scope } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import { type DecisionRef, decisionsInForce } from './decisions.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
@@ -105,6 +121,17 @@ export interface Brief {
    * that matches.
    */
   readonly skills: readonly SkillRef[];
+  /**
+   * The `ADR-<n>` labels PRINTED above that more than one decision of the same
+   * chain answers to, each with every id that carries it. Empty in the ordinary
+   * case, which is what keeps the document's bytes exactly what they were.
+   *
+   * It is here rather than left to the printer because it is a fact about the
+   * record, and this is the one place that decides which record the document is
+   * made of. What a consumer does with it is a presentation question; that a
+   * citable handle in a committed file names two rules is not.
+   */
+  readonly collisions: readonly AdrCollision[];
 }
 
 /**
@@ -132,12 +159,54 @@ export function brief(sources: readonly ScopedCache[]): Brief {
   const travels: ProjectionCache[] = sources
     .filter((source) => source.scope === TRAVELS)
     .map((source) => source.cache);
+  const decisions = decisionsInForce(travels);
   return {
-    decisions: decisionsInForce(travels),
+    decisions,
     // The body is dropped by MAPPING, not by typing: an `AdoptedSkill` satisfies
     // `SkillRef`, so assigning the list straight across would compile and carry
     // every pattern's whole text along at run time — into a file that is read on
     // every prompt. The same drop, for the same reason, as the opening context's.
     skills: adoptedSkills(travels).map(({ id, name }) => ({ id, name })),
+    collisions: printedCollisions(travels, decisions),
   };
+}
+
+/**
+ * The labels this answer PRINTS that are not unique in the chain they came from.
+ *
+ * Two halves, and each is a decision rather than a detail.
+ *
+ * PER CACHE, because a cache is one chain and one chain is the unit an `ADR-<n>`
+ * is numbered in. Asking the question over the pooled decisions would answer a
+ * different one — a workspace holding two projects' committed records holds two
+ * `ADR-1`s that were never meant to be compared, and neither of their citations is
+ * ambiguous to the person reading either repository.
+ *
+ * FILTERED TO WHAT IS PRINTED, because this document's whole claim is about the
+ * handles IN IT: a bullet says `ADR-7`, a reader cites `ADR-7`, and the warning
+ * says when that citation does not land on one rule. A collision between two rules
+ * this file does not carry is a fact about the record, which is the audit's answer
+ * and not this file's — putting it here would make a governance document warn about
+ * governance it does not state. The ids it names are NOT filtered the same way: the
+ * other holder of the label is regularly a rule that is no longer in force, and
+ * naming only the printed half would describe the ambiguity while hiding what makes
+ * it one.
+ *
+ * The order is total and comes from the content — by label, then by the first id —
+ * so the trees' order cannot reach the document's bytes.
+ */
+function printedCollisions(
+  travels: readonly ProjectionCache[],
+  decisions: readonly DecisionRef[],
+): AdrCollision[] {
+  const printed = new Set(decisions.map((decision) => decision.adr));
+  return travels
+    .flatMap((cache) => cache.adrCollisions())
+    .filter((collision) => printed.has(collision.adr))
+    .sort((a, b) => compare(a.adr, b.adr) || compare(a.ids[0] ?? '', b.ids[0] ?? ''));
+}
+
+/** String order, as a number, so two keys can be tried in sequence. */
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
