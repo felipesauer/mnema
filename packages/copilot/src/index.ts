@@ -42,10 +42,18 @@ export {
   bootstrap,
   type WorkItem,
 } from './context/bootstrap.js';
-// The TYPE only. `decisionsInForce` is called by `bootstrap` and by nothing outside
-// this package, so plumbing it to the surface would be an export with no consumer —
-// the shape `every-public-value-has-a-caller.test.ts` exists to catch. The brief that
-// will call it can carry it out here, with its caller, in the same change.
+export {
+  type Brief,
+  brief,
+} from './context/brief.js';
+// The TYPE only, still — and the prediction that used to be written here was wrong.
+// It said the brief would be the caller that carried `decisionsInForce` out to the
+// surface; the brief composes the two derivations INSIDE this package (see
+// `context/brief.ts`), so what reached the surface is `brief` and the rule for which
+// decisions govern never left. `decisionsInForce` is called by `bootstrap` and by
+// `brief`, and by nothing outside this package: exporting it would be a value with no
+// consumer, the shape `every-public-value-has-a-caller.test.ts` exists to catch. The
+// type is exported because reading a `Bootstrap` or a `Brief` needs it.
 export type { DecisionRef } from './context/decisions.js';
 export {
   type ActorScope,

@@ -3256,3 +3256,124 @@ describe('where a pattern came from — across the two surfaces', () => {
     expect(printed).not.toContain('the same agent');
   });
 });
+
+describe('mnema CLI — brief, the record as the file an agent reads', () => {
+  /** Runs a verb and returns its stdout as one string — the bytes a redirection gets. */
+  async function output(argv: string[]): Promise<string> {
+    const c = capture();
+    await run(argv, c.io);
+    expect(c.failed()).toBe(false);
+    // The stream receives a newline after every line, so a file written by
+    // `mnema brief > AGENTS.md` ends with one.
+    return `${c.out.join('\n')}\n`;
+  }
+
+  /** The id printed inside the parentheses a birth reports — never the first uuid on the line. */
+  function idOf(text: string): string {
+    return (text.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
+  }
+
+  /** Records a decision and accepts it — the two moves that put one in force. */
+  async function accept(title: string): Promise<string> {
+    const id = idOf(await output(['decision', title, 'because the record says so']));
+    await output(['decision', 'move', 'accept', id, '--note', 'agreed in review']);
+    return id;
+  }
+
+  /**
+   * Busy-waits past the next whole second.
+   *
+   * A stamp printed to the second is what a generated file would most plausibly
+   * carry, so a run that landed in the same second as the one before would not
+   * falsify a timestamp at all. Crossing the boundary costs about a second, once.
+   */
+  function pastTheSecond(): void {
+    const until = Math.ceil((Date.now() + 1) / 1000) * 1000 + 20;
+    while (Date.now() < until) {
+      // Busy, deliberately: nothing here may await, and the clock is the point.
+    }
+  }
+
+  it('prints the same bytes for the same record, with the clock moved on', async () => {
+    // The property the whole reading rests on. `mnema brief | diff - AGENTS.md` is
+    // the only thing that can tell a stale copy from a live one, so anything in the
+    // output that moved on its own — an instant, a run count, a path — would report a
+    // difference in nothing, and a check that cries wolf is a check nobody runs.
+    await run(['init'], capture().io);
+    await accept('Keep the runbook in the record');
+    await output(['skill', 'One slice per PR', '--body', 'A slice is one reviewable change.']);
+
+    const first = await output(['brief']);
+    pastTheSecond();
+    const second = await output(['brief']);
+    expect(second).toBe(first);
+    // Non-vacuity, and it is what keeps the assertion above from passing for a verb
+    // that prints a constant: the moment the RECORD changes, the bytes change — and
+    // they change by exactly the rule that was added.
+    const another = await accept('Write the rollback section first');
+    const third = await output(['brief']);
+    expect(third).not.toBe(first);
+    expect(third).toContain('Write the rollback section first');
+    expect(third).toContain(another);
+    expect(third.split('\n')).toHaveLength(first.split('\n').length + 1);
+  });
+
+  it('is what `mnema brief > AGENTS.md` writes, and `diff` is what finds it stale', async () => {
+    // The recipe, played out: redirect the document into a file, and the file matches
+    // the record until the record moves. Nothing here is a flag of the verb — the
+    // comparison is the shell's, and this is the assertion that the shell has
+    // something exact to compare.
+    await run(['init'], capture().io);
+    await accept('Keep the runbook in the record');
+
+    const generated = join(repo, 'AGENTS.md');
+    writeFileSync(generated, await output(['brief']));
+    expect(await output(['brief'])).toBe(readFileSync(generated, 'utf-8'));
+
+    await accept('Rotate the credentials every quarter');
+    expect(await output(['brief'])).not.toBe(readFileSync(generated, 'utf-8'));
+    // And what the diff would show is one line: the rule that was accepted since.
+    const lines = (await output(['brief'])).split('\n');
+    const stale = readFileSync(generated, 'utf-8').split('\n');
+    expect(lines.filter((line) => !stale.includes(line))).toEqual([
+      // The heading counts the rules, so it changes with them — and it comes first,
+      // because the document's order is the document's order.
+      '## Decisions in force (2)',
+      expect.stringContaining('Rotate the credentials every quarter'),
+    ]);
+  });
+
+  it('writes nothing — not an event, not a cache, and not the operator’s file', async () => {
+    // Three claims in one digest. Two are the ordinary read's (no event, no derived
+    // database left behind); the third is this verb's own, and it is the reason the
+    // output goes to stdout: a verb that wrote `AGENTS.md` itself would own a file the
+    // user edits, and would dirty a `git status` in the middle of an agent's session.
+    await run(['init'], capture().io);
+    await accept('A call in force');
+    await output(['task', 'a piece of work this file is not about']);
+
+    const before = digestOf(sandbox);
+    await output(['brief']);
+    await output(['brief']);
+    expect(digestOf(sandbox)).toBe(before);
+    expect(readdirSync(repo).sort()).toEqual(['.mnema']);
+  });
+
+  it('refuses outside a project, naming what to run', async () => {
+    // It composes a file about a project; with no project there is no repository to
+    // put it in, and a person's global conventions printed under that heading would
+    // be the answer that is wrong while looking right.
+    const outside = join(sandbox, 'elsewhere');
+    mkdirSync(outside, { recursive: true });
+    process.chdir(outside);
+    try {
+      const c = capture();
+      await run(['brief'], c.io);
+      expect(c.failed()).toBe(true);
+      expect(c.out).toEqual([]);
+      expect(c.err.join('\n')).toBe('No mnema project here. Run `mnema init` first.');
+    } finally {
+      process.chdir(repo);
+    }
+  });
+});

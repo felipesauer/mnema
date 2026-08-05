@@ -68,12 +68,16 @@ export const SERVED_PATTERN_CONTRACT =
  * typed into one of them can forge.
  *
  * So the rule is the LINE's, and it reaches wherever a line's shape carries meaning:
- * this framing, the provenance report, the list of open runs `focus` prints, and the
- * index `search` prints — which is the sharpest case, since its count per kind is
- * printed directly above the lines it counts. A place that prints actor text in a
- * line of its OWN (a handoff, a started run, one whole record) is not in the class —
- * a newline there is ugly, and ugly is not forgery, because there is no
- * one-item-per-line list for the second half to imitate.
+ * this framing, the provenance report, the list of open runs `focus` prints, the index
+ * `search` prints — whose count per kind is printed directly above the lines it counts
+ * — and the brief `mnema brief` prints, which is the SHARPEST case in the class. The
+ * others forge a RECORD in a list: an adoption that never happened, a hit for a record
+ * nothing wrote. The brief forges a RULE, under a heading that counts the rules, in the
+ * one file the product exists to have an agent read as instruction — so the second half
+ * of a broken title is a call the project never made, and something obeys it. A place
+ * that prints actor text in a line of its OWN (a handoff, a started run, one whole
+ * record) is not in the class — a newline there is ugly, and ugly is not forgery,
+ * because there is no one-item-per-line list for the second half to imitate.
  *
  * The line a REFUSAL occupies is in the class, and the text that reaches it is not an
  * actor's but a DIRECTORY's — the project a session names when it says which trees it

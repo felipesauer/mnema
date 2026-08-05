@@ -4,7 +4,14 @@
  */
 import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { adoptedSkills, bootstrap, guard, nextActionsForTask, readRecord } from '../src/index.js';
+import {
+  adoptedSkills,
+  bootstrap,
+  brief,
+  guard,
+  nextActionsForTask,
+  readRecord,
+} from '../src/index.js';
 import {
   type Bench,
   birthDecision,
@@ -63,6 +70,11 @@ describe('README example', () => {
       const sources = [{ scope: 'public' as const, chainRoot, cache }];
       const argued = settled && readRecord(sources, settled.id); // { kind: 'decision', … }
 
+      // Everything that governs, whole — for a file an agent host reads on its own.
+      // Same two derivations as `bootstrap`, with no cut: every rule or none.
+      const governs = brief([cache]);
+      const rules = governs.decisions.length + governs.skills.length; // 2, and nothing was cut
+
       // Before asking to move a task, is the move even allowed?
       const verdict = guard({
         from: 'IN_PROGRESS',
@@ -87,6 +99,11 @@ describe('README example', () => {
         kind: 'decision',
         record: { rationale: 'why Hand-rolled arithmetic' },
       });
+      // The whole of what governs, and it is the same governance the opening read
+      // served — one accepted decision and one adopted pattern, neither cut.
+      expect(rules).toBe(2);
+      expect(governs.decisions).toEqual(opening.decisions);
+      expect(governs.skills).toEqual(opening.skills);
       expect(verdict.ok).toBe(false);
       if (!verdict.ok) expect(verdict.code).toBe('MISSING_PROOF');
     } finally {

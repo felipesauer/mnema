@@ -6,7 +6,7 @@
  * array is what a reader sees when they ask what mnema does — the writes first, from
  * founding a project to the four knowledge facts, then the session, then every read,
  * then the machine's keys, then verification. Reordering the list reorders the help,
- * which is why it lives in one place and not in the sequence of twenty-four calls
+ * which is why it lives in one place and not in the sequence of twenty-five calls
  * inside one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
@@ -60,11 +60,23 @@
  * is a property of the record, not of who asks); accountability's `--who`/
  * `--which` are aggregation FILTERS, not the asker's identity. `--json` emits
  * the faithful object. RELATES, never JUDGES — no output editorializes.
+ *
+ * And `brief`, which is a family of one and reads unlike all of them: every verb
+ * above answers whoever ran it, and this one composes a FILE for a reader that never
+ * asked. `mnema brief > AGENTS.md` puts the decisions in force and the adopted
+ * patterns where an agent host reads them on its own, so the record reaches an agent
+ * that did not think to look for it. It is the only read with no options at all —
+ * no `--json` (the markdown IS the contract), no `--check` (a pipe into `diff`
+ * answers it), no `--actor` — and the only one whose output is guaranteed BYTE-
+ * STABLE for an unchanged record, which is what lets that `diff` mean "the copy is
+ * stale" and nothing else. It writes nothing, like every read here; the redirection
+ * belongs to whoever operates it.
  */
 
 import type { Command } from 'commander';
 import { registerAccountability } from './accountability.js';
 import { registerAntipatterns } from './antipatterns.js';
+import { registerBrief } from './brief.js';
 import { registerDecision } from './decision.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
@@ -112,6 +124,7 @@ export const VERBS: readonly Verb[] = [
   registerExposure,
   registerReferences,
   registerSkills,
+  registerBrief,
   registerKey,
   registerVerify,
   registerMcp,

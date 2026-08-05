@@ -2,7 +2,7 @@
  * What the CLI must not make every command pay for.
  *
  * The two surfaces share one binary: `mnema mcp` serves an agent host over
- * stdio, and 23 other verbs do a short piece of work and exit. The MCP SDK is by
+ * stdio, and 24 other verbs do a short piece of work and exit. The MCP SDK is by
  * far the heaviest module in the product — loading it costs more than every other
  * import of the CLI put together — and only the one verb uses it. So it is
  * reached through a dynamic import inside that verb's action, and this suite

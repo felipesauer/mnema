@@ -1,11 +1,19 @@
 /**
- * The three forms' primitives: what each one composes, and what it refuses to do.
+ * The three TERMINAL forms' primitives: what each one composes, and what it refuses
+ * to do.
  *
- * These are the only place a line's SHAPE is decided, so the properties worth
- * pinning are the ones a reader relies on without knowing it — that columns are
- * separated the same way everywhere, that a nested line is nested by exactly one
- * level, and that a column that does not fit pushes the line out rather than losing
- * a character.
+ * These are the only place a line's SHAPE is decided for a person reading output,
+ * so the properties worth pinning are the ones a reader relies on without knowing it
+ * — that columns are separated the same way everywhere, that a nested line is nested
+ * by exactly one level, and that a column that does not fit pushes the line out
+ * rather than losing a character.
+ *
+ * There is a fourth form and it has no primitives here: the DOCUMENT `mnema brief`
+ * prints (`brief.ts`) is markdown for a file an agent host reads, not a line for an
+ * eye scanning a terminal, so the columns and indentation below mean nothing to its
+ * reader. What it composes is a whole document, and its properties — the same bytes
+ * for the same record, one line per rule, a skeleton that holds when nothing was
+ * decided — are asserted in `brief.test.ts` and `one-line-per-item.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest';

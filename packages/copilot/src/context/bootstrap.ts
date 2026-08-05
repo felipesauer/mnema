@@ -211,7 +211,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
   const work = capped(actionable);
   // The rule for which decisions govern is NOT here: it is `decisionsInForce`, so
-  // the brief that will serve the same list cannot come to answer it differently.
+  // the brief that serves the same list into a file cannot answer it differently.
   const decisions = capped(decisionsInForce(caches));
   return {
     resume: resume(caches, scope),

@@ -73,11 +73,12 @@ export interface DecisionRef {
  * this in a prompt, and a stable order is what keeps the host's cache of that
  * prefix valid; the same argument the search's ordering is written on.
  *
- * ONE function, because there will be two consumers. The opening context serves the
- * first page of this list, and the per-prompt brief will serve the same list; "in
- * force" written in two places is two rules that can come to disagree about which
- * decisions govern, which is the one thing this answer must never be uncertain
- * about.
+ * ONE function, and both consumers exist now. The opening context ({@link bootstrap})
+ * serves the first page of this list; the per-prompt brief ({@link brief}) serves the
+ * whole of it into a file. "In force" written in two places is two rules that can come
+ * to disagree about which decisions govern, which is the one thing this answer must
+ * never be uncertain about — and the disagreement would be silent, since each reader
+ * would simply obey its own set.
  */
 export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRef[] {
   const all: DecisionProjection[] = [];
