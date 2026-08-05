@@ -25,8 +25,8 @@
  * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
  * derivation over the projection cache), `guard` (the read mold applied to a
  * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
- * nothing), `skills` (the one read that also WRITES: it serves the adopted
- * patterns and records that they were served, because that fact is derivable
+ * nothing), `skills` (the one read that also WRITES: it serves a pattern's body and
+ * records that it was served, because that fact is derivable
  * from nothing else afterwards), `search`/`read_record` (the read mold widened to
  * every tree the session can see: an index of what matched, then one whole record
  * by the id that index gave), and the intelligence reads `runTimelineTool`/
@@ -57,7 +57,6 @@
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
   type AccountabilityFilter,
-  type AdoptedSkill,
   type AskerContext,
   accountabilityByProject,
   adoptedSkills,
@@ -68,7 +67,7 @@ import {
   focus,
   type GuardWithFocus,
   guardWithFocus,
-  lookupAdoptedSkill,
+  lookupServedSkill,
   type NextAction,
   nextActionsForTask,
   type RecordBody,
@@ -80,6 +79,7 @@ import {
   references,
   resume,
   type ScopedCache,
+  type ServedSkill,
   searchRecords,
   type TimelineEntry,
   timeline,
@@ -1112,19 +1112,22 @@ function sessionCaches(session: Session): ProjectionCache[] {
   return scopedCaches(session).map((source) => source.cache);
 }
 
-/** The adopted patterns served, or a typed refusal when one was asked for by id. */
+/** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
   | (Replacement & {
       readonly ok: true;
-      /** The adopted patterns, each with its body. Empty when none are adopted. */
-      readonly skills: readonly AdoptedSkill[];
+      /**
+       * The patterns served, each with its body and the state it is in. Empty when
+       * the call named no id and nothing is adopted.
+       */
+      readonly skills: readonly ServedSkill[];
     })
   | {
       readonly ok: false;
       /**
-       * `UNKNOWN_SKILL` when no visible tree holds the id, `NOT_ADOPTED` when one
-       * does but the pattern is not live, or the core's own code when recording
-       * the consultation was refused.
+       * `UNKNOWN_SKILL` when no visible tree holds the id, `NOT_SERVED` when one
+       * does but its state is not one a body is served in, or the core's own code
+       * when recording the consultation was refused.
        */
       readonly code: string;
       /** The human-readable reason. */
@@ -1132,22 +1135,38 @@ export type SkillsResult =
     };
 
 /**
- * `skills` — serve the adopted patterns, and record that they were served.
+ * `skills` — serve a pattern's body, and record that it was served.
  *
- * With no argument it returns every adopted pattern WITH its body; with an `id`
- * it returns that one. This is the read the `bootstrap` names point at: the
- * opening context lists patterns by name (one line each), and this is where the
- * body comes from when a name turns out to match the task at hand.
+ * With no argument it returns every ADOPTED pattern with its body; with an `id` it
+ * returns that one, and a pattern the project has not ruled on is served THERE and
+ * only there. This is the read the `bootstrap` names point at, for both of its
+ * lists: the opening context lists the adopted patterns by name and the ones
+ * awaiting a judgement by name, and this is where either body comes from once a name
+ * turns out to matter.
+ *
+ * WHAT IS SERVED IS DECIDED BY DISPOSITION, and not here — `lookupServedSkill`
+ * classifies (`SKILL_DISPOSITION` in `@mnema/copilot`), this adapter serves what it
+ * gets back. Two places deciding which states are live is the shape that produces a
+ * refusal disagreeing with the list beside it.
+ *
+ * THE DEFAULT IS THE THING BEING PROTECTED, and the bifurcation below is the whole
+ * of the protection: the mass branch is `adoptedSkills`, so nothing awaiting a
+ * judgement can reach a caller that did not NAME it. A candidate arriving unasked
+ * would be a candidate served as an instruction; a candidate arriving by id is a
+ * caller reading what it was asked to rule on. Asserted in `mcp-e2e.test.ts` —
+ * "skills with no id serves ONLY the adopted, over a record that holds a candidate".
  *
  * Named `…Tool` because the command line has a `runSkills` of its own doing
  * something else — this serves a pattern to an agent, that audits where every
  * pattern came from for a person — the same split `runFocus`/`runFocusTool` and
  * `runSearch`/`runSearchTool` already carry.
  *
- * Each pattern comes back with the agent that adopted it, which the projection
- * folds off the adopting transition's envelope. The transport frames that in one
- * line beside the bodies: a body is served as instruction, and until it carried
- * its adopter nobody receiving it could see who put it there.
+ * Each pattern comes back with its `state` and with the agent that adopted it, which
+ * the projection folds off the adopting transition's envelope. The transport frames
+ * both in one line beside the bodies: a body in force is served as instruction, and
+ * until it carried its adopter nobody receiving it could see who put it there; a body
+ * awaiting a judgement has no adopter at all, and the line says the state instead of
+ * asserting an adoption that never happened.
  *
  * It is a read that WRITES, deliberately, and it is the only one. Whether work
  * was informed by a pattern is not derivable after the fact — nothing else in
@@ -1169,17 +1188,25 @@ export type SkillsResult =
  * is possible, and nothing observable here separates the two.
  *
  * Nothing is recorded for a call that serves nothing — an empty workspace, an
- * unknown id, a skill that is not adopted. A refusal to record IS surfaced
+ * unknown id, a pattern the project has closed. A refusal to record IS surfaced
  * rather than swallowed: a silently unrecorded consultation is exactly the
  * perishable fact this exists to capture, so it is reported like any other
  * refused write.
+ *
+ * And the converse holds with no branch to keep it holding: a body that IS served
+ * goes through {@link recordConsultations} whatever its state, because the recording
+ * is downstream of the bifurcation and reads the served list. The invariant that
+ * justified making this the only door — a body never leaves without the fact of the
+ * reading — would have been the first casualty of a candidate served on a shortcut.
+ * Asserted in `mcp-e2e.test.ts` — "skills with an id serves the body of a pattern
+ * awaiting a judgement, and records the consultation".
  */
 export function runSkillsTool(session: Session, input: { id?: string } = {}): SkillsResult {
   // READ before WRITE: the caches are consulted first, because building a write
   // context marks the written tree stale — doing it the other way round would
   // make every call rebuild the tree it is about to read.
   const caches = sessionCaches(session);
-  const served = input.id === undefined ? undefined : lookupAdoptedSkill(caches, input.id);
+  const served = input.id === undefined ? undefined : lookupServedSkill(caches, input.id);
   if (served?.outcome === 'unknown') {
     return {
       ok: false,
@@ -1191,11 +1218,29 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       message: notFoundInSessionTrees(session, 'skill', input.id as string),
     };
   }
-  if (served?.outcome === 'not-adopted') {
+  if (served?.outcome === 'not-served') {
     return {
       ok: false,
-      code: 'NOT_ADOPTED',
-      message: `skill "${input.id}" is ${served.state}, not an adopted pattern`,
+      code: 'NOT_SERVED',
+      // The STATE is what the refusal is for: an agent holding a name from an older
+      // session learns what became of the pattern instead of being told nothing.
+      // The clause after it states the RULE, not a claim about this record — which is
+      // what keeps the sentence true of a state the workflow has never had.
+      //
+      // ⚠️ The id goes through {@link oneLine}, like every other refusal that echoes a
+      // caller's argument (`notInAnyProject`, `notFoundInSessionTrees`): a refusal is
+      // read as ONE line, so an id holding a newline writes a second, well-formed
+      // refusal about something nobody asked. This and `read_record`'s
+      // `USE_SKILLS_TOOL` were the two refusals on this surface that echoed the id
+      // raw. Reaching either with a break in it needs an id the RECORD holds, and
+      // every id the product mints is a UUID — so this is the rule applied where it
+      // belongs, not a case that can be demonstrated (`mcp-e2e.test.ts` pins the
+      // branch that a caller CAN reach, "a skills refusal stays ONE line whatever id
+      // the caller sent"). `input.id` is defined here — `served` is undefined without
+      // it, the same narrowing the branch above relies on.
+      message:
+        `skill "${oneLine(input.id as string)}" is ${served.state}: a pattern the ` +
+        'project turned down or retired is not served as a way of working',
     };
   }
   const skills = served === undefined ? adoptedSkills(caches) : [served.skill];
@@ -1217,6 +1262,13 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
  * an adopted pattern earns its place is worth nothing on one machine, which is why it
  * travels with the pattern rather than staying where the reader happens to be.
  *
+ * IT DOES NOT ASK WHAT STATE THE PATTERN IS IN, and that is deliberate: it records
+ * every body the caller was served, so a candidate read by three sessions that nobody
+ * then ruled on is a fact the curation audit can see. The reading that counts these
+ * says of itself that it COUNTS and does not judge, and the auditor's own pattern list
+ * already includes the never-adopted — so nothing downstream reads a consultation as
+ * evidence of adoption.
+ *
  * The subject may name a skill that lives in ANOTHER tree — the read serves patterns
  * from every tree the session can see, so a consultation of a privately adopted one
  * is recorded in the committed tree and points across. That is the same honest
@@ -1236,7 +1288,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
  */
 function recordConsultations(
   session: Session,
-  skills: readonly AdoptedSkill[],
+  skills: readonly ServedSkill[],
 ):
   | (Replacement & { readonly ok: true })
   | { readonly ok: false; readonly code: string; readonly message: string } {
@@ -1551,14 +1603,20 @@ export type ReadRecordResult =
  * record" is a false answer with a true-sounding shape, and it is the answer an agent
  * got for any id from a sibling project of the same workspace.
  *
- * A SKILL is refused here, and pointed at the `skills` tool instead. Two reasons,
- * both of them the skills tool's own rules: serving a pattern's body is a
- * consultation, and that fact is derivable from nothing else afterwards; and
- * only ADOPTED patterns are served, because handing an agent the body of a way
- * of working the team retired is worse than handing it nothing. Letting a body
- * out through a second door would quietly undo both. The auditor's surface (the
- * CLI) makes the opposite call for the opposite reason: a person curating
- * patterns has to be able to read the one they are about to reject.
+ * A SKILL is refused here, and pointed at the `skills` tool instead. ONE reason, and
+ * it is the skills tool's own: serving a pattern's body is a CONSULTATION, and that
+ * fact is derivable from nothing else afterwards — so a body leaving through a second
+ * door would leave without it. That is the whole of it now.
+ *
+ * It used to be two, and the second was "only ADOPTED patterns are served". That is
+ * no longer the rule (`skills` serves a pattern awaiting a judgement to a caller that
+ * names it by id), and it was never a reason to refuse HERE: what this refusal
+ * protects is the ledger, not the body. The refusal that survived the change of rule
+ * is the `skills` tool's own, for a pattern the project CLOSED.
+ *
+ * The auditor's surface (the CLI) makes the opposite call for the opposite reason: a
+ * person curating patterns has to be able to read the one they are about to reject,
+ * and there is no session there to attribute a consultation to.
  */
 export function runReadRecordTool(session: Session, input: { id: string }): ReadRecordResult {
   const record = readRecord(workspaceCaches(session), input.id);
@@ -1570,8 +1628,8 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
       ok: false,
       code: 'USE_SKILLS_TOOL',
       message:
-        `"${input.id}" is a skill — read it with the \`skills\` tool, which serves ` +
-        'the adopted patterns and records that they were consulted',
+        `"${oneLine(input.id)}" is a skill — read it with the \`skills\` tool, which ` +
+        'serves a pattern’s body and records that it was consulted',
     };
   }
   return { ok: true, value: record };

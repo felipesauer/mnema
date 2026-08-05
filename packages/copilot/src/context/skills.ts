@@ -1,39 +1,65 @@
 /**
- * skills: the adopted patterns an agent may actually use.
+ * skills: the patterns an agent works by, and the one it is asked to rule on.
  *
  * A skill is a distilled way of working, and until now it was write-only — the
  * `body`, which IS the pattern, was projected and never returned to anyone. This
- * is the read that gives it back: the ADOPTED skills, by name for an index and
- * by body on demand.
+ * is the read that gives it back: the patterns by name for an index, and by body
+ * on demand.
  *
- * ONLY `adopted` IS SERVED AS A PATTERN. Proposed, reviewed, rejected and
- * deprecated are states of the process of DECIDING about a pattern, not patterns
- * to work by. Serving a deprecated body would hand an agent a way of working the
- * team retired — the one outcome worse than serving nothing.
+ * WHICH BODIES ARE SERVED IS DECIDED BY DISPOSITION, NEVER BY ONE STATE.
+ * {@link SKILL_DISPOSITION} is the table and {@link BODY_SERVED} says what each
+ * disposition gets:
+ *   - `in-force` — served, and served as an INSTRUCTION: this is how work is done here;
+ *   - `awaiting-judgement` — served too, and only to a caller that NAMES it by id;
+ *   - `closed` — refused, with the state said out loud.
  *
- * BUT TWO OF THOSE STATES ARE STILL SOMETHING TO SAY, and that is the second read
+ * The refusal of a `closed` body is where the argument that used to justify refusing
+ * four states now lives, and it is the whole of what that argument ever covered:
+ * handing an agent the body of a way of working the team RETIRED is worse than
+ * handing it nothing. Nothing in it reaches a pattern that is still being decided.
+ *
+ * NOBODY GETS A CANDIDATE BY OMISSION, and that is the half of the old rule that
+ * survives. {@link adoptedSkills} — the list asked with no id, the one an opening
+ * context and a committed brief are built from — carries `in-force` and nothing else.
+ * Only {@link lookupServedSkill}, which answers an id its caller typed, reaches the
+ * waiting ones. The split is not ours: a prompt or model registry serves the
+ * production label by default and a candidate only to whoever names the version.
+ *
+ * THE PREMISE THIS FALSIFIES was written here, and the falsification is the reason
+ * the rule moved. This module used to say "AND NO READ OF THE AGENT'S SURFACE SERVES
+ * ONE OF THOSE BODIES", and read the refusal as protecting the body. It protected
+ * nothing. The gate does not require a consultation, so an agent holding the id an
+ * opening read hands it could `review`, `adopt`, and then be served the body — two
+ * writes, and both of them false on the chain: a review and an adoption by somebody
+ * who could not read what they ruled on. The refusal made the body dearer, not
+ * unreachable, and charged the record for it. And the same surface already served
+ * the whole `rationale` of a decision still `proposed` ({@link readRecord}, no state
+ * filter at all) — the same list, the same disposition, the same reader, one half
+ * getting the text of what it must judge and the other half nothing. The asymmetry
+ * was an artefact of `skills` being the only read that WRITES, never a doctrine.
+ *
+ * WHAT DID NOT MOVE: a body leaves through ONE door, and that door records the
+ * consultation. `read_record` still refuses a skill outright (`USE_SKILLS_TOOL`) for
+ * exactly that reason — not to keep bodies in, but to keep the fact of a reading from
+ * escaping unrecorded, because whether work was informed by a pattern is derivable
+ * from nothing else afterwards. Asserted in `mcp-e2e.test.ts` — "skills with an id
+ * serves the body of a pattern awaiting a judgement, and records the consultation".
+ *
+ * The command line is unchanged, and still serves every state on purpose: `mnema
+ * show <id>` reads for a PERSON who is curating, and records nothing because there
+ * is no session there to attribute a consultation to (`show.ts`).
+ *
+ * TWO OF THOSE STATES ARE ALSO SOMETHING TO SAY UNASKED, and that is the second read
  * here. A pattern `proposed` waits for a review and a `reviewed` one waits for the
  * adoption; both are a judgement somebody owes, and a curation backlog nobody is
  * told about is a backlog that does not clear.
- * {@link skillsAwaitingJudgement} names them — WITHOUT the body, which is the
- * distinction that keeps this from being the previous paragraph's opposite: a name
- * is an invitation to rule on a pattern, a body is an instruction to work by it.
- *
- * AND NO READ OF THE AGENT'S SURFACE SERVES ONE OF THOSE BODIES. Measured, not
- * assumed: {@link lookupAdoptedSkill} refuses precisely those states
- * (`NOT_ADOPTED`), and the `read_record` tool refuses a skill outright
- * (`USE_SKILLS_TOOL`, so a body cannot leave through a second door) — the two
- * refusals point at each other. It is the axis rather than an oversight, and the
- * command line makes the opposite call on purpose: `mnema show <id>` serves a
- * proposed pattern's text, because the person reading it is CURATING. So what
- * {@link skillsAwaitingJudgement} gives an agent is the name and the state — enough
- * to raise it, or to move it — and nothing here claims a door that would refuse it.
- * Asserted in `mcp-e2e.test.ts` — "answers the SECOND READ each kind names, for
- * every item awaiting a judgement".
+ * {@link skillsAwaitingJudgement} names them — WITHOUT the body, which is what keeps
+ * an index an index: a name invites a ruling and costs one line, a body is paragraphs
+ * of instruction and belongs to whoever asked for that pattern by id.
  *
  * ONE TABLE SAYS WHICH IS WHICH. {@link SKILL_DISPOSITION} gives every state of the
- * machine a meaning, and both lists are DERIVED from it, neither restating its own
- * set beside it — the same reason `decisions.ts` has one.
+ * machine a meaning, and every list and every refusal here is DERIVED from it, none
+ * restating its own set beside it — the same reason `decisions.ts` has one.
  *
  * ACROSS THE TREES the caller can see, not one. A skill is a CAPABILITY, and a
  * capability does not belong to a tree the way a piece of work does: the team's
@@ -49,13 +75,21 @@
  * an indexed lookup instead of a linear scan.
  *
  * WITH THE BODY GOES ITS PROVENANCE — the agent that adopted it, or nobody when a
- * person did. This is the only entity whose content comes back as instruction, so
- * it is the only one whose consumer could not otherwise see who put it there.
- * ONE fact, not an account: the fuller reading (who proposed it too, and whether
- * both ends are the same agent) belongs where a person is looking at it.
+ * person did, or NOBODY AT ALL when the pattern has not been adopted. This is the
+ * only entity whose content comes back as instruction, so it is the only one whose
+ * consumer could not otherwise see who put it there. ONE fact, not an account: the
+ * fuller reading (who proposed it too, and whether both ends are the same agent)
+ * belongs where a person is looking at it.
+ *
+ * The `state` travels with the body for the neighbouring reason, and it is the
+ * WORKFLOW's own word rather than a second one: "candidate" or "pending" beside
+ * `proposed` would be two vocabularies for one fact, and the reader would have to
+ * learn which of them means what. The sentence that says what a non-adopted body IS
+ * belongs to the surface serving it, which is where the reader is.
  */
 
 import {
+  isSkillState,
   type ProjectionCache,
   SKILL_STATES,
   type SkillProjection,
@@ -80,8 +114,11 @@ import { type Disposition, statesWith } from './disposition.js';
  *
  * Exported so the claims above are CHECKABLE against the table they are read from,
  * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
- * this against `SKILL_TRANSITIONS`. It is not on the package's public surface — a
- * consumer gets the two lists, not the classification behind them.
+ * this against `SKILL_TRANSITIONS`. The TABLE is not on the package's public
+ * surface — what is, is {@link skillDisposition}, one state's answer, because a
+ * surface that frames a served body has to know whether the body is a way of working
+ * or a proposal, and re-deriving that from the state would be this table copied
+ * where nobody could see it drift.
  */
 export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
   proposed: 'awaiting-judgement',
@@ -91,6 +128,24 @@ export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
   deprecated: 'closed',
 };
 
+/**
+ * Whether the BODY of a pattern in each disposition is served — the ONE place that
+ * decision is written, and the reason it is a table and not a condition: a fourth
+ * disposition does not COMPILE until it has an answer here, where a predicate naming
+ * the two it serves would silently refuse a disposition it had never heard of.
+ *
+ * `closed` is the only `false`, and the argument is the module doc's: a way of
+ * working the team retired is worse than nothing. The two that are served are served
+ * differently, and that difference is not here — it is in WHICH READ reaches them
+ * ({@link adoptedSkills} vs {@link lookupServedSkill}), because "what a caller gets
+ * without asking" is a question about the read and not about the state.
+ */
+const BODY_SERVED: Readonly<Record<Disposition, boolean>> = {
+  'in-force': true,
+  'awaiting-judgement': true,
+  closed: false,
+};
+
 /** The states whose skills are live patterns — derived, never restated. */
 const ADOPTED = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'in-force');
 
@@ -98,19 +153,35 @@ const ADOPTED = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'in-force');
 const AWAITING_JUDGEMENT = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'awaiting-judgement');
 
 /**
- * Whether a projected state is one this module serves the body of.
+ * What one state MEANS to a reader — the classification, for the one consumer that
+ * has to say something about a body it was handed and must not decide it twice.
  *
- * The projection stores `state` as a literal string on purpose — a fact written
- * today stays legible if the workflow later renames a state — so the comparison is
- * widened to strings rather than the set being narrowed. A state outside the
- * workflow's vocabulary is therefore not adopted, which is the honest answer: this
- * module knows what `adopted` means and nothing about a word it has never seen.
+ * A surface serving a body frames it: a pattern in force is an instruction, and one
+ * awaiting a judgement is a proposal that governs nothing. The words are the
+ * surface's; the classification is this module's, asked rather than restated.
  */
-function isAdopted(state: string): boolean {
-  return (ADOPTED as readonly string[]).includes(state);
+export function skillDisposition(state: SkillState): Disposition {
+  return SKILL_DISPOSITION[state];
 }
 
-/** An adopted skill named but not spelled out — what an index is made of. */
+/**
+ * Whether this module serves the body of a pattern recorded in `state` — the single
+ * site where a recorded word becomes that decision, and a NARROWING: what it
+ * accepts is the workflow's own vocabulary.
+ *
+ * The projection stores `state` as a literal string on purpose — a fact written
+ * today stays legible if the workflow later renames a state — so a word the workflow
+ * has never had reaches here, and the honest answer for it is no: this module can
+ * classify what {@link SKILL_DISPOSITION} covers and nothing else, and a body it
+ * cannot classify is a body it does not serve. That is also what keeps the served
+ * `state` a closed vocabulary rather than recorded text, which is why a surface can
+ * print it on a line it counts.
+ */
+function servesBody(state: string): state is SkillState {
+  return isSkillState(state) && BODY_SERVED[SKILL_DISPOSITION[state]];
+}
+
+/** A skill named but not spelled out — what an index is made of. */
 export interface SkillRef {
   /** The skill's id — the key that asks for its body. */
   readonly id: string;
@@ -118,14 +189,36 @@ export interface SkillRef {
   readonly name: string;
 }
 
-/** An adopted skill with the pattern itself. */
-export interface AdoptedSkill extends SkillRef {
+/**
+ * A skill whose body is served, with the pattern itself and the state it is in.
+ *
+ * It is `Served` and not `Adopted` because a name has to say what the thing IS: an
+ * adopted pattern and a candidate somebody named both come back through here, and a
+ * type called `AdoptedSkill` carrying a `proposed` body is the type lying about its
+ * own content. ONE type for both, not two — what differs is a field
+ * ({@link ServedSkill.state}), and two types would be two shapes for one answer,
+ * each needing its own handling at every consumer.
+ */
+export interface ServedSkill extends SkillRef {
   /** The reusable pattern — the whole point of having recorded the skill. */
   readonly body: string;
   /**
+   * The workflow state this body was served in — `adopted` for a way of working
+   * here, `proposed` or `reviewed` for one the project has not ruled on.
+   *
+   * It is the WORKFLOW's word and not a second one, and it is the whole label: a
+   * consumer asks {@link skillDisposition} what it means, and the sentence that says
+   * "this is not how work is done here" is written where the reader is. Typed as the
+   * closed vocabulary, which is what lets a surface print it on a line whose count
+   * has to match the count of items served.
+   */
+  readonly state: SkillState;
+  /**
    * The agent that adopted it — the act that made this body something an agent is
-   * served. ABSENT means a person adopted it directly, which is a fact about the
-   * pattern and not a missing value.
+   * served as instruction. ABSENT means a person adopted it directly, OR that
+   * nothing has adopted it at all: the two are told apart by the `state`, and a
+   * consumer that says "adopted by a person" without reading it says something false
+   * about a candidate.
    *
    * It travels WITH the body, in one line, because nothing else the consumer
    * receives says where the pattern came from: a task or a decision carries its
@@ -136,16 +229,17 @@ export interface AdoptedSkill extends SkillRef {
   readonly adoptedBy?: string;
 }
 
-/** Asking for one skill by id: served, present but not adopted, or absent. */
+/** Asking for one skill by id: the body, the state that says why not, or absent. */
 export type SkillLookup =
-  /** Adopted here — the body is served. */
-  | { readonly outcome: 'adopted'; readonly skill: AdoptedSkill }
+  /** Served — the body comes back, with the state it is in. */
+  | { readonly outcome: 'served'; readonly skill: ServedSkill }
   /**
-   * A skill with this id exists, but it is not an adopted pattern. The state is
-   * reported (never the body), so an agent holding a stale name learns what
-   * happened to it rather than being told it never existed.
+   * A skill with this id exists and its body is not served: the project CLOSED it,
+   * or the record holds a state this module cannot classify. The state is reported
+   * (never the body), so an agent holding a stale name learns what happened to it
+   * rather than being told it never existed.
    */
-  | { readonly outcome: 'not-adopted'; readonly state: string }
+  | { readonly outcome: 'not-served'; readonly state: string }
   /** No tree the caller can see holds a skill with this id. */
   | { readonly outcome: 'unknown' };
 
@@ -155,12 +249,24 @@ export type SkillLookup =
  * skill happens to live in, so adding a tree to the list — or reading them in a
  * different order — never reshuffles the answer. Callers put this in a prompt;
  * a stable order is what keeps the host's cache of that prefix valid.
+ *
+ * `in-force` AND NOTHING ELSE, which is the one thing the change of rule did not
+ * touch: this is the answer a caller gets without naming anything, and it feeds an
+ * opening context and a committed brief. A candidate arriving here would be a
+ * candidate served as an instruction to somebody who never asked for it, which is
+ * the only part of the old rule that was ever protecting anything. Asserted in
+ * `skills.test.ts` — "serves ONLY the adopted: proposed, reviewed, rejected and
+ * deprecated are absent" — and over the tool in `mcp-e2e.test.ts`.
+ *
+ * The state is the BUCKET each row was read under, not a second reading of the
+ * projection — the same thing {@link skillsAwaitingJudgement} does, for the same
+ * reason: the indexed read already knows the answer.
  */
-export function adoptedSkills(caches: readonly ProjectionCache[]): AdoptedSkill[] {
-  const all: AdoptedSkill[] = [];
+export function adoptedSkills(caches: readonly ProjectionCache[]): ServedSkill[] {
+  const all: ServedSkill[] = [];
   for (const cache of caches) {
     for (const state of ADOPTED) {
-      for (const skill of cache.listSkillsByState(state)) all.push(toAdopted(skill));
+      for (const skill of cache.listSkillsByState(state)) all.push(toServed(skill, state));
     }
   }
   return all.sort(byNameThenId);
@@ -170,11 +276,16 @@ export function adoptedSkills(caches: readonly ProjectionCache[]): AdoptedSkill[
  * A pattern nobody has ruled on yet — a name, plus the state that says WHICH
  * ruling is missing.
  *
- * NO BODY, and that is the whole difference from {@link AdoptedSkill}. A body is
- * served as something to work by, and a pattern still under review is not one. No
- * agent-facing read serves this one's text either (see the module doc); a person
- * reads it with `mnema show <id>`. No provenance — `adoptedBy` is a fact about an
- * adoption that has not happened.
+ * NO BODY, and that is the whole difference from {@link ServedSkill}. This is an
+ * INDEX — every item of it, unasked, in every session's opening context — so a body
+ * here would be paragraphs of a pattern nobody asked about, in the one payload that
+ * has to stay short. The body is one read away, by the id on this line
+ * ({@link lookupServedSkill}), and the fact that it was read is recorded there.
+ *
+ * This doc used to say that no agent-facing read served this one's text at all. That
+ * was true of the code and wrong as a rule: it is not judgeable without its text (see
+ * the module doc for what falsified it). No provenance either — `adoptedBy` is a fact
+ * about an adoption that has not happened.
  */
 export interface SkillAwaitingJudgement extends SkillRef {
   /**
@@ -226,26 +337,38 @@ export function skillsAwaitingJudgement(
 }
 
 /**
- * Looks one skill up by id across `caches`, reporting whether it is an adopted
- * pattern. The first tree that holds the id answers — an id is minted once and
- * lives in one tree, so there is no second holder to disagree.
+ * Looks one skill up by id across `caches` and serves its body unless the state
+ * refuses it ({@link servesBody}). The first tree that holds the id answers — an id
+ * is minted once and lives in one tree, so there is no second holder to disagree.
+ *
+ * THIS IS THE READ THAT REACHES A CANDIDATE, and asking by id is the whole of the
+ * permission: the caller named the pattern it wants to rule on. It does not judge
+ * whether the caller SHOULD have it — the state comes back with the body, and what
+ * that means to a reader is said by the surface serving it.
  */
-export function lookupAdoptedSkill(caches: readonly ProjectionCache[], id: string): SkillLookup {
+export function lookupServedSkill(caches: readonly ProjectionCache[], id: string): SkillLookup {
   for (const cache of caches) {
     const skill = cache.getSkill(id);
     if (skill === null) continue;
-    if (!isAdopted(skill.state)) return { outcome: 'not-adopted', state: skill.state };
-    return { outcome: 'adopted', skill: toAdopted(skill) };
+    if (!servesBody(skill.state)) return { outcome: 'not-served', state: skill.state };
+    return { outcome: 'served', skill: toServed(skill, skill.state) };
   }
   return { outcome: 'unknown' };
 }
 
-function toAdopted(skill: SkillProjection): AdoptedSkill {
+/**
+ * The projection as a served body. `state` is passed in rather than read off the
+ * projection, so what lands on the answer is the word a caller already NARROWED to
+ * the workflow's vocabulary — the bucket of an indexed read, or the state
+ * {@link servesBody} accepted.
+ */
+function toServed(skill: SkillProjection, state: SkillState): ServedSkill {
   const adoptedBy = skill.adoption?.by;
   return {
     id: skill.id,
     name: skill.name,
     body: skill.body,
+    state,
     ...(adoptedBy !== undefined ? { adoptedBy } : {}),
   };
 }
