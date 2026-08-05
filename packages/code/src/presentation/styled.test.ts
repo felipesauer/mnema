@@ -54,9 +54,18 @@ const ACTOR_ESCAPE = `${ESC}[31m`;
 
 describe('the styled line is the plain line, wrapped', () => {
   /**
-   * Every shape the surface builds, and the four values that have broken a renderer
+   * Every shape the surface builds, and the values that have broken a renderer
    * before: a break inside a part, a padded column, an empty part, and an escape an
    * actor wrote.
+   *
+   * THE LAST TWO ARE WHITESPACE AT THE EDGE OF A PAINTED PART, and they are here
+   * because a mutation walked through this case without them. Wrapping a part in
+   * `text.trim()` — one plausible slip in a renderer that builds strings — left every
+   * other line in this corpus identical, because the parts that CARRY weight all
+   * happened to be words. No read prints such a line today; that is not the point. A
+   * part's text is a string and the renderer is total over strings: the moment a call
+   * site pads a label or a summary arrives with a trailing space, the renderer must
+   * still be the one thing in the surface that changes nothing.
    */
   const corpus: readonly Line[] = [
     itemLine(['an-id', 'public', 'a title']),
@@ -72,6 +81,8 @@ describe('the styled line is the plain line, wrapped', () => {
     statement('REFUSED (MISSING_PROOF)', `needs a note ${ACTOR_ESCAPE}`),
     statement('local integrity verified; 1 tail(s)'),
     { indent: 0, parts: [] },
+    statement(column('ALLOWED', 12), ' submit t-1 → READY '),
+    subjectLine(column('task the-id', 20), 'public'),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -84,12 +95,12 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // FIVE of the thirteen, and exactly the five that hold a role carrying weight: the
-    // two subject lines and the three statements. The other eight are `field` — a
+    // SEVEN of the fifteen, and exactly the ones holding a role that carries weight:
+    // the three subject lines and the four statements. The other eight are `field` — a
     // fact, a column, an empty part, a blank line — and they are byte for byte the
     // plain line by design, which is what the case below asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(5);
+    expect(painted.length).toBe(7);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
