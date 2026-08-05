@@ -67,7 +67,10 @@
  * `UNROUTED_KINDS` is not: nothing outside asks what nature a field has, the value
  * of the tables is the compile-time obligation they place on the catalog, and the
  * proof that consumes them lives next door in `every-door.test.ts`. Hiding them
- * costs the proof nothing.
+ * costs the proof nothing. That all three stay hidden is checked and not merely
+ * declared: `no-classification-table-reaches-the-surface.test.ts` finds this module
+ * by the sentence above and asserts that none of its tables is a runtime export of
+ * any entry point.
  */
 
 import type { CatalogEvent, Envelope, EventKind } from '@mnema/chain';
