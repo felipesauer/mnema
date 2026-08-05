@@ -2,7 +2,7 @@ import { rmSync } from 'node:fs';
 import { catalogUpcasters } from '@mnema/chain';
 import {
   type CatalogEvent,
-  orderedEventsAcross,
+  orderedEventsOfRecord,
   type ProjectionCache,
   type Scope,
 } from '@mnema/core';
@@ -154,7 +154,7 @@ describe('timeline — across the trees', () => {
   });
 
   it('lands exactly where the chain’s own union lands', () => {
-    // The guard against the merge drifting from `orderedEventsAcross`: the index
+    // The guard against the merge drifting from the core's union order: the index
     // is read per tree and merged here, so the merge has to reproduce the union's
     // order rather than approximate it. Both benches tick from the same instant,
     // so their events interleave on equal `at` — the tie-break case.
@@ -168,15 +168,16 @@ describe('timeline — across the trees', () => {
 
     const fromIndex = timeline([tree(team, 'public'), tree(mine, 'global')], 'task-1');
     const fromStream = referenceTimeline(
-      orderedEventsAcross([{ root: team.root }, { root: mine.root }], catalogUpcasters()),
+      orderedEventsOfRecord([{ root: team.root }, { root: mine.root }], catalogUpcasters()).across,
       'task-1',
     );
     expect(fromIndex.map((e) => [e.at, e.kind, e.role])).toEqual(fromStream);
     // …and the events come back byte-for-byte as written, not a reshaped copy.
     expect(fromIndex.map((e) => e.event)).toEqual(
-      orderedEventsAcross([{ root: team.root }, { root: mine.root }], catalogUpcasters()).filter(
-        (event) => roleOf(event, 'task-1') !== undefined,
-      ),
+      orderedEventsOfRecord(
+        [{ root: team.root }, { root: mine.root }],
+        catalogUpcasters(),
+      ).across.filter((event) => roleOf(event, 'task-1') !== undefined),
     );
   });
 });

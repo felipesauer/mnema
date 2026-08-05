@@ -109,7 +109,8 @@ $ mnema antipatterns --json
 |   "reopenedTasks": [],
 |   "supersededDecisions": [],
 |   "deprecatedSkills": [],
-|   "skillCandidates": []
+|   "skillCandidates": [],
+|   "labelCollisions": []
 | }
 $ mnema focus --actor <anchor-short>
 | <anchor-short> has no open runs.
@@ -957,7 +958,8 @@ $ mnema antipatterns --json
 |         }
 |       ]
 |     }
-|   ]
+|   ],
+|   "labelCollisions": []
 | }
 $ mnema focus --actor <anchor-short>
 | <anchor-short> — 1 open run(s):

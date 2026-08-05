@@ -27,7 +27,7 @@ import type { orderedEvents } from '@mnema/core';
  * One cataloged event as the chain proves it — the element type of the ordered
  * stream. A `readonly CatalogEvent[]` is the single input every intelligence
  * derivation takes; the caller decides the scope (one tree via `orderedEvents`,
- * the union of trees via `orderedEventsAcross`), and the derivation stays pure
+ * the union of trees via `orderedEventsOfRecord`), and the derivation stays pure
  * over the stream it is handed — the same "the scope is the caller's" discipline
  * the context layer applies to the actor.
  */

@@ -7,7 +7,7 @@
  * which of them exist from a working directory ({@link resolveTrees}), and
  * routes a write to one of them by scope, ensuring a project tree owns its own
  * git hygiene ({@link openTreeForWriting}). Reading the union across trees is the
- * projection layer's `orderedEventsAcross`. Finding which single tree an entity
+ * projection layer's `orderedEventsOfRecord`. Finding which single tree an entity
  * lives in — so a transition follows it and never splits its history — is
  * {@link locateEntityScope}, or {@link locateEntityScopeWith} for a caller that
  * can answer "does this tree hold it?" faster than a replay can — with

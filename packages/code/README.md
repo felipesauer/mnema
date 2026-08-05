@@ -339,11 +339,19 @@ What it does leave out is the record that **does not travel**. A decision or a p
 recorded with `--scope private`, or in your machine-global tree, governs your own work
 and is not in this file — the file is written to be committed, and the private tree
 exists precisely so that what is in it stays here. Two consequences worth knowing:
-the `ADR-<n>` label is numbered inside one chain, so committed-only is what keeps it
-citable (folding the trees printed two `ADR-1`s), and a difference against your copy
+the `ADR-<n>` label is numbered inside one chain, so committed-only is what keeps
+folding the trees from printing two `ADR-1`s, and a difference against your copy
 now means one thing only — the copy is stale. The document declares the scope in its
 own text, so nobody reads it as the whole of what governs. For that, ask the agent's
 opening context (`bootstrap` over the MCP server), which spans every tree you can see.
+
+One chain is not one machine, though, and that is the limit of the sentence above.
+The number is frozen from the writer's view of the chain, so two people who decide
+while apart both mint `ADR-7`, and the labels meet when the branches do — legitimately,
+with nothing to refuse and nothing to renumber. When a label in this document is
+answered to by more than one rule, the document **says so** above the list, names every
+id that carries it, and tells you to cite by id. `mnema antipatterns` reports the same
+thing about the whole record, chain by chain, without anyone generating the file.
 
 ### As an MCP server
 

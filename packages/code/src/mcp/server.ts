@@ -864,8 +864,10 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'actionable work, the patterns to work by, and the DECISIONS IN FORCE — what ' +
         'this project has already settled and has not replaced. Derived from the ' +
         'chain. Every list is NAMES: a task arrives as id, title and state, a pattern ' +
-        'as id and name, a decision as id, title and the citable ADR-<n> label it is ' +
-        'cited by — call `next_actions` with a task id for the moves it allows, ' +
+        'as id and name, a decision as id, title and its ADR-<n> label — which is a ' +
+        'display name a person cites, numbered within one tree and never an identity, ' +
+        'so two of the trees below can each hold an ADR-1 and only the id tells them ' +
+        'apart — call `next_actions` with a task id for the moves it allows, ' +
         '`skills` with a skill id for the pattern itself, and `read_record` with a ' +
         'decision id for its rationale, the argument behind it. Only a decision in ' +
         'force is listed: one still proposed, rejected, or superseded by a later ' +
@@ -1372,7 +1374,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Show recurring shapes across ALL trees of ALL projects in this workspace — ' +
         'tasks reopened, decisions superseded, skills deprecated — each with the exact ' +
         'events that make up the count, plus the tasks reopened more than once as ' +
-        'skill CANDIDATES (a POINTER, not an action — this creates no skill). It ' +
+        'skill CANDIDATES (a POINTER, not an action — this creates no skill). It also ' +
+        'reports any ADR-<n> label that more than one decision of the SAME chain ' +
+        'answers to, with every id that carries it: the number is frozen when a rule ' +
+        'is recorded, so two people deciding while apart can mint the same one, and ' +
+        'from then on citing it by label names two rules. Nothing renumbers them — ' +
+        'refer to those by id. It ' +
         'reports the shapes; it does NOT judge them good or bad. Use it to spot ' +
         'patterns a human might act on. The answer is ONE SET OF SHAPES PER PROJECT ' +
         '(plus the machine-global tree, which belongs to none): these are counts, and ' +
