@@ -3153,6 +3153,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     if (!served.ok) return;
     expect(served.skills).toEqual([
       {
+        state: 'adopted',
         id: proposed.id,
         name: 'Build hygiene',
         body: 'Always squash first.',

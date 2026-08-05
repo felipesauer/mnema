@@ -400,12 +400,12 @@ decision does not govern.
 The fourth list is what is **awaiting a judgement**: a decision still `proposed`, a
 pattern `proposed` or `reviewed` — everything a person has to rule on before it
 means anything. One list holds both kinds, and each item says which it is (`kind`)
-and what is owed (`state`). For a decision, `read_record` gives the argument behind
-it. For a pattern, the name and the state are all an agent gets: no read of the
-server serves the text of one still being decided on — `skills` serves adopted
-patterns only, because what it hands back is meant to be worked by — so the move is
-to raise it with you. You read it with `mnema show <id>`, which serves a proposed
-pattern precisely because the person reading it is curating. It is not a second work
+and what is owed (`state`). Both have a read that serves the rest by the same id:
+`read_record` for a decision's argument, `skills` for a pattern's text. A pattern
+awaiting a ruling is served **only when the id is named** — never in the list you get
+by asking for none — and it arrives labelled with its state, because nothing can be
+ruled on without being read. You read it with `mnema show <id>` instead, which serves
+any state and records nothing. It is not a second work
 list either: the work list means "a move is legal", and by that rule an accepted
 decision — which can always be superseded — would be pending forever.
 
@@ -415,16 +415,24 @@ cut never reads as "this is everything". The adopted patterns are the exception:
 every one is listed, so that list carries no total.
 
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
-adopted skills by name, and the tool hands over the pattern itself, all of them
+patterns by name, and the tool hands over the pattern itself, all the adopted ones
 or one by id. It is the one read that also writes — consulting a pattern is
 recorded against the session, once per skill, so the record can later show which
 work was informed by which pattern. It records that the pattern was *read*, never
 that it was followed; nothing observable here can tell those apart.
 
+**What arrives by default is what governs.** Asking with no id returns the adopted
+patterns and nothing else, which is the one thing the design protects: a candidate
+handed over unasked would be a candidate read as an instruction. Asking by id also
+reaches a pattern still `proposed` or `reviewed`, labelled with that state — a
+`rejected` or `deprecated` one is refused, because a way of working the project
+retired is worse to hand over than nothing.
+
 A pattern's body is the one thing mnema hands back as an instruction, so it does
 not arrive bare: alongside the bodies the reply states that this is content from
 your record rather than an instruction from mnema, and names the agent that
-adopted each one — or says a person did.
+adopted each one — or says a person did, or says that nothing has adopted it and
+therefore that it is not how the work is done here.
 
 ```bash
 # The terminal side of the same name: not the patterns, but where they came from.

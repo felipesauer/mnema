@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { SKILL_STATES, type SkillState } from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   type Bench,
@@ -7,7 +8,14 @@ import {
   makeBench,
   moveSkill,
 } from '../../tests/support/chain.js';
-import { adoptedSkills, lookupAdoptedSkill, skillsAwaitingJudgement } from './skills.js';
+import { statesWith } from './disposition.js';
+import {
+  adoptedSkills,
+  lookupServedSkill,
+  SKILL_DISPOSITION,
+  skillDisposition,
+  skillsAwaitingJudgement,
+} from './skills.js';
 
 describe('adoptedSkills — the patterns an agent may work by', () => {
   let benches: Bench[] = [];
@@ -29,7 +37,7 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
     const cache = b.cache();
     try {
       expect(adoptedSkills([cache])).toEqual([
-        { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs' },
+        { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs', state: 'adopted' },
       ]);
     } finally {
       cache.close();
@@ -65,8 +73,8 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
     const after = b.cache();
     try {
       expect(adoptedSkills([after])).toEqual([]);
-      expect(lookupAdoptedSkill([after], 'sk-1')).toEqual({
-        outcome: 'not-adopted',
+      expect(lookupServedSkill([after], 'sk-1')).toEqual({
+        outcome: 'not-served',
         state: 'deprecated',
       });
     } finally {
@@ -88,7 +96,7 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
           .sort(),
       ).toEqual(['sk-mine', 'sk-team']);
       // And a lookup finds one that lives in a tree that is not the first.
-      expect(lookupAdoptedSkill([a, c], 'sk-mine')).toMatchObject({ outcome: 'adopted' });
+      expect(lookupServedSkill([a, c], 'sk-mine')).toMatchObject({ outcome: 'served' });
     } finally {
       a.close();
       c.close();
@@ -148,7 +156,13 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
     const cache = b.cache();
     try {
       expect(adoptedSkills([cache])).toEqual([
-        { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs', adoptedBy: 'agent-A' },
+        {
+          id: 'sk-1',
+          name: 'Small PRs',
+          body: 'body of Small PRs',
+          state: 'adopted',
+          adoptedBy: 'agent-A',
+        },
       ]);
     } finally {
       cache.close();
@@ -179,8 +193,8 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
     const cache = b.cache();
     try {
       expect(adoptedSkills([cache])[0]?.adoptedBy).toBe('agent-B');
-      expect(lookupAdoptedSkill([cache], 'sk-1')).toMatchObject({
-        outcome: 'adopted',
+      expect(lookupServedSkill([cache], 'sk-1')).toMatchObject({
+        outcome: 'served',
         skill: { adoptedBy: 'agent-B' },
       });
     } finally {
@@ -189,7 +203,7 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
   });
 });
 
-describe('lookupAdoptedSkill — asking for one pattern by id', () => {
+describe('lookupServedSkill — asking for one pattern by id', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -207,34 +221,178 @@ describe('lookupAdoptedSkill — asking for one pattern by id', () => {
     birthSkill(b, 'sk-1', 'Small PRs', 'adopted');
     const cache = b.cache();
     try {
-      expect(lookupAdoptedSkill([cache], 'sk-1')).toEqual({
-        outcome: 'adopted',
-        skill: { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs' },
+      expect(lookupServedSkill([cache], 'sk-1')).toEqual({
+        outcome: 'served',
+        skill: { id: 'sk-1', name: 'Small PRs', body: 'body of Small PRs', state: 'adopted' },
       });
     } finally {
       cache.close();
     }
   });
 
-  it('reports the STATE of a skill that is not adopted, and never its body', () => {
+  it('serves the body of a pattern AWAITING a judgement, in both waiting states', () => {
+    // The inversion this delivery makes: a body that used to be refused. Nobody can
+    // rule on a pattern without reading it, and the state comes back with the body so
+    // the reader knows it is ruling and not being instructed.
     const b = bench();
-    birthSkill(b, 'sk-1', 'Not yet', 'proposed');
+    birthSkill(b, 'sk-new', 'Nobody has looked');
+    birthSkill(b, 'sk-seen', 'Looked at');
+    moveSkill(b, 'sk-seen', 'proposed', 'reviewed', 'review');
     const cache = b.cache();
     try {
-      const found = lookupAdoptedSkill([cache], 'sk-1');
-      expect(found).toEqual({ outcome: 'not-adopted', state: 'proposed' });
-      expect(JSON.stringify(found)).not.toContain('body of');
+      expect(lookupServedSkill([cache], 'sk-new')).toEqual({
+        outcome: 'served',
+        skill: {
+          id: 'sk-new',
+          name: 'Nobody has looked',
+          body: 'body of Nobody has looked',
+          state: 'proposed',
+        },
+      });
+      expect(lookupServedSkill([cache], 'sk-seen')).toEqual({
+        outcome: 'served',
+        skill: {
+          id: 'sk-seen',
+          name: 'Looked at',
+          body: 'body of Looked at',
+          state: 'reviewed',
+        },
+      });
     } finally {
       cache.close();
     }
   });
 
-  it('separates "no such skill" from "not adopted"', () => {
+  it('a served candidate carries NO adopter — nothing invents one', () => {
+    // The field is absent for a pattern a person adopted AND for one nothing has
+    // adopted; the `state` is what tells those apart, and a consumer that prints
+    // "adopted by a person" without reading it says something false.
+    const b = bench();
+    birthSkill(b, 'sk-1', 'On the table', 'proposed', 'agent-A');
+    const cache = b.cache();
+    try {
+      const found = lookupServedSkill([cache], 'sk-1');
+      if (found.outcome !== 'served') throw new Error('the candidate was not served');
+      expect(found.skill).not.toHaveProperty('adoptedBy');
+      expect(found.skill.state).toBe('proposed');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('refuses a CLOSED pattern, saying the state and never the body', () => {
+    // Both closed states, each reached by its own move — the argument that used to
+    // justify refusing four states, now written where it holds.
+    const b = bench();
+    birthSkill(b, 'sk-no', 'Turned down');
+    moveSkill(b, 'sk-no', 'proposed', 'rejected', 'reject');
+    birthSkill(b, 'sk-old', 'Retired');
+    moveSkill(b, 'sk-old', 'proposed', 'reviewed', 'review');
+    moveSkill(b, 'sk-old', 'reviewed', 'adopted', 'adopt');
+    deprecateSkill(b, 'sk-old');
+    const cache = b.cache();
+    try {
+      for (const [id, state] of [
+        ['sk-no', 'rejected'],
+        ['sk-old', 'deprecated'],
+      ] as const) {
+        const found = lookupServedSkill([cache], id);
+        expect(found, id).toEqual({ outcome: 'not-served', state });
+        expect(JSON.stringify(found), id).not.toContain('body of');
+      }
+    } finally {
+      cache.close();
+    }
+  });
+
+  /**
+   * THE RULE IS THE TABLE, and this is the test that says so at the point the rule is
+   * applied. It enumerates `SKILL_STATES` — the workflow's own tuple, not a list kept
+   * here — reaches each state by the moves that produce it, and asserts the lookup's
+   * answer against `SKILL_DISPOSITION`. A sixth state added to the machine arrives in
+   * this loop with no edit, and fails until `stateReachedBy` knows how to reach it;
+   * a state whose disposition CHANGES flips the expectation with it.
+   *
+   * The complement of the guard in `src`: `BODY_SERVED` is a `Record<Disposition, …>`,
+   * so a fourth disposition does not compile. What the compiler cannot check is that
+   * the SITE applying the table is the one this file exercises, which is what the loop
+   * below pins.
+   */
+  const stateReachedBy: Readonly<Record<SkillState, (b: Bench, id: string) => void>> = {
+    proposed: (b, id) => birthSkill(b, id, `pattern ${id}`),
+    reviewed: (b, id) => {
+      birthSkill(b, id, `pattern ${id}`);
+      moveSkill(b, id, 'proposed', 'reviewed', 'review');
+    },
+    adopted: (b, id) => {
+      stateReachedBy.reviewed(b, id);
+      moveSkill(b, id, 'reviewed', 'adopted', 'adopt');
+    },
+    rejected: (b, id) => {
+      birthSkill(b, id, `pattern ${id}`);
+      moveSkill(b, id, 'proposed', 'rejected', 'reject');
+    },
+    deprecated: (b, id) => {
+      stateReachedBy.adopted(b, id);
+      deprecateSkill(b, id);
+    },
+  };
+
+  it('answers by DISPOSITION for every state the workflow has, not by a list', () => {
+    const b = bench();
+    for (const state of SKILL_STATES) stateReachedBy[state](b, `sk-${state}`);
+    const cache = b.cache();
+    try {
+      const answered = SKILL_STATES.map((state) => {
+        const found = lookupServedSkill([cache], `sk-${state}`);
+        return [state, found.outcome] as const;
+      });
+      expect(answered).toEqual(
+        SKILL_STATES.map((state) => [
+          state,
+          SKILL_DISPOSITION[state] === 'closed' ? 'not-served' : 'served',
+        ]),
+      );
+      // And the loop is not vacuous about either half: the table has states on both
+      // sides of the rule, so a mutation that made every answer the same would fail.
+      expect(new Set(answered.map(([, outcome]) => outcome))).toEqual(
+        new Set(['served', 'not-served']),
+      );
+      // The state that comes back with a served body is the state it was READ in.
+      for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, 'closed')) {
+        expect(lookupServedSkill([cache], `sk-${state}`)).toEqual({
+          outcome: 'not-served',
+          state,
+        });
+      }
+      for (const disposition of ['in-force', 'awaiting-judgement'] as const) {
+        for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, disposition)) {
+          expect(lookupServedSkill([cache], `sk-${state}`)).toMatchObject({
+            outcome: 'served',
+            skill: { state },
+          });
+        }
+      }
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('skillDisposition is the table, asked rather than restated', () => {
+    // The one classification a consumer outside this module gets. It exists because a
+    // surface has to frame a body it served, and re-deriving "is this in force" out
+    // there would be this table copied where nobody could see it drift.
+    for (const state of SKILL_STATES) {
+      expect(skillDisposition(state), state).toBe(SKILL_DISPOSITION[state]);
+    }
+  });
+
+  it('separates "no such skill" from "not served"', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Adopted', 'adopted');
     const cache = b.cache();
     try {
-      expect(lookupAdoptedSkill([cache], 'sk-nowhere')).toEqual({ outcome: 'unknown' });
+      expect(lookupServedSkill([cache], 'sk-nowhere')).toEqual({ outcome: 'unknown' });
     } finally {
       cache.close();
     }

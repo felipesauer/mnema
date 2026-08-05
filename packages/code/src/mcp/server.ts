@@ -18,8 +18,8 @@
  * reads (focus/resume/next_actions/guard/search/read_record, like bootstrap) are READ-ONLY — they
  * derive from the session's projection cache; they open no writer. `guard` is a
  * dry-run of the gate: it simulates a move and returns the verdict, having
- * written nothing. `skills` is the one read that also writes: it serves the
- * adopted patterns AND records the consultation, a fact nothing else could
+ * written nothing. `skills` is the one read that also writes: it serves a pattern's
+ * body AND records the consultation, a fact nothing else could
  * recover afterwards.
  * The `audit_*` reads are read-only too, and they are the AUDITOR's view: every
  * tree the session can see. Three of them read the session's warm caches like the
@@ -877,14 +877,13 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'RULE ON before it means anything — a decision still `proposed`, a pattern ' +
         '`proposed` or `reviewed`. It is one list holding both, and each item says ' +
         'which it is in `kind` and what is owed in `state` (`proposed` needs the ' +
-        'first ruling, `reviewed` needs the adoption call). For a `decision`, ' +
-        '`read_record` with the id gives the argument behind it. For a `skill`, the ' +
-        'name and the state are all you get here: no read of this server serves the ' +
-        'text of a pattern still being decided on — `skills` serves adopted ones ' +
-        'only, because what it hands back is meant to be worked by. Not `skills` for ' +
-        'the pattern, then: raise it with the person (they read it with ' +
-        '`mnema show <id>`), or move it with `skill_transition` if the call is ' +
-        'yours to make. ' +
+        'first ruling, `reviewed` needs the adoption call). Each has a read that ' +
+        'serves the rest of it, by the same id: `read_record` for a `decision`’s ' +
+        'argument, and `skills` with the id for a `skill`’s pattern — which is ' +
+        'served labelled with its state, and NOT as a way of working here, because ' +
+        'nobody can rule on a pattern without reading it. Asking for it records the ' +
+        'consultation like any other. What the lists above never carry is a body, so ' +
+        'a `skill` here is a name until you ask. ' +
         'It is NOT more work to do: it is what a person has left open, and the ' +
         'useful move is usually to raise it rather than to move it yourself. ' +
         'Three of the four lists are CUT to the freshest ' +
@@ -914,15 +913,21 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
   server.registerTool(
     'skills',
     {
-      title: 'Skills — the adopted patterns to work by',
+      title: 'Skills — the patterns to work by, and the ones awaiting a ruling',
       description:
-        'Read the adopted patterns (skills) this project and machine work by — ' +
-        'the reusable recipe, checklist or convention itself, not just its name. ' +
-        'Call it with no `id` (an empty argument object) to get every adopted ' +
-        'pattern with its body, or with an `id` from the bootstrap list to get ' +
-        'just that one. Only adopted ' +
-        'patterns are served: a proposed, rejected or deprecated skill is not a way ' +
-        'of working and is refused. Consulting a pattern is RECORDED against this ' +
+        'Read the patterns (skills) recorded here — the reusable recipe, checklist ' +
+        'or convention itself, not just its name. ' +
+        'Call it with no `id` (an empty argument object) to get every ADOPTED ' +
+        'pattern with its body: those are the ways of working this project and ' +
+        'machine have settled on, and nothing else arrives that way. Call it with an ' +
+        '`id` to get that one, which is also how you read a pattern that is still ' +
+        '`proposed` or `reviewed` — every item `bootstrap` lists as awaiting a ' +
+        'judgement — because a pattern cannot be ruled on without being read. Each ' +
+        'answer says the `state` it served, and a pattern that is not `adopted` is ' +
+        'not how the work is done here; it was served so the ruling can be made on ' +
+        'its text. A `rejected` or `deprecated` pattern IS refused: a way of working ' +
+        'the project retired is worse to hand over than nothing. Consulting a ' +
+        'pattern is RECORDED against this ' +
         'session (once per skill), so the record shows which work was informed by ' +
         'which pattern — it records that you read it, never that you followed it.' +
         SERVED_PATTERN_CONTRACT,
@@ -931,15 +936,18 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .string()
           .min(1)
           .optional()
-          .describe('A single skill id to read; omitted, every adopted pattern.'),
+          .describe(
+            'A single skill id to read — the only way to reach one awaiting a ' +
+              'ruling; omitted, every adopted pattern.',
+          ),
       },
     },
     async ({ id }) => {
       const active = await ensureSession();
       const result = runSkillsTool(active, { ...(id !== undefined ? { id } : {}) });
       if (!result.ok) {
-        // No such skill, not an adopted pattern, or the consultation could not be
-        // recorded — surface it so the agent never mistakes a refusal for "there
+        // No such skill, a pattern the project closed, or the consultation could not
+        // be recorded — surface it so the agent never mistakes a refusal for "there
         // are no patterns here".
         return {
           isError: true,
@@ -952,9 +960,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // credential this reply is where the caller can still rotate it.
       const notice = replacementNotice(result.replaced);
       // The payload FIRST, then the framing, then the notice. The bodies are the
-      // answer; the framing is a statement about the answer (what a pattern is,
-      // and who adopted each one), and it travels as its own block so the payload
-      // stays byte-identical to what a caller parsed before it existed.
+      // answer; the framing is a statement about the answer (what a pattern is, who
+      // adopted each one, and what a pattern nobody adopted is), and it travels as its
+      // own block so the payload stays parseable on its own.
       const framing = servedPatternsFraming(result.skills);
       return {
         content: [
@@ -1176,7 +1184,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'says. It looks in EVERY project of this workspace, not only the one you are ' +
         'working in — an id is minted once and lives in one place — and the answer ' +
         'says which project and which tree hold it. A skill id is refused here and ' +
-        'pointed at the `skills` tool, which serves the adopted patterns and records ' +
+        'pointed at the `skills` tool, which serves a pattern’s body and records ' +
         'the consultation. An id no project holds is refused, in a reply that names ' +
         'where it looked. Read-only.',
       inputSchema: {

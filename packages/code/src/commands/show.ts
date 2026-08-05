@@ -7,15 +7,21 @@
  * from.
  *
  * It serves a SKILL like any other record, and that is a deliberate difference
- * from the agent's surface, where a skill's body is refused and routed to the
- * `skills` tool. The reason the two differ is the reader: an agent asking for a
- * pattern is asking how to work, so it is served only ADOPTED ones and the
- * consultation is recorded. A person on the command line is CURATING — reading a
- * proposed pattern to review it, or a deprecated one to see what was dropped —
- * and refusing them the text of the thing they are deciding about would make the
- * workflow unusable. Nothing is recorded here either: there is no session on the
- * command line to attribute a consultation to, and inventing one would put a
- * fact on the chain that no agent ever asked for.
+ * from the agent's surface, where a skill's body comes through the `skills` tool
+ * instead. What differs there is the DOOR, not the body: that tool serves an adopted
+ * pattern and one still awaiting a ruling, and refuses only the two states the
+ * project has closed. Here every state is served, including those two, because a
+ * person on the command line is CURATING — reading a deprecated pattern to see what
+ * was dropped is the reason this surface exists — and refusing them the text of the
+ * thing they are deciding about would make the workflow unusable.
+ *
+ * That sentence is the one this product's rule for the agent's surface was widened
+ * to match: it is about whoever JUDGES, not about whoever is human. What stays
+ * one-sided is the RECORDING. Nothing is recorded here: there is no session on the
+ * command line to attribute a consultation to, and inventing one would put a fact on
+ * the chain that no agent ever asked for. That is also what kills a gate of the shape
+ * "you may only move what you have consulted" — it would not be one rule across both
+ * surfaces, it would be a rule the auditor's surface cannot obey.
  *
  * Read-only: it opens a cache per tree, rebuilds it in memory, and reads. No
  * writer, no key, no event — so no `--actor`.
