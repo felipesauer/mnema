@@ -86,7 +86,11 @@ import { type Disposition, statesWith } from './disposition.js';
  * Exported so the claims above are CHECKABLE against the table they are read from,
  * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
  * this against `DECISION_TRANSITIONS`. It is not on the package's public surface —
- * a consumer gets the two lists, not the classification behind them.
+ * a consumer gets the two lists, not the classification behind them — and that it
+ * stays off it is checked, not declared: `no-classification-table-reaches-the-surface.test.ts`
+ * walks every entry point's runtime exports. Unlike the skill machine's table this one
+ * has no accessor on the surface either, because no consumer outside this package has
+ * a reason to ask what a decision's state means.
  */
 export const DECISION_DISPOSITION: Readonly<Record<DecisionState, Disposition>> = {
   proposed: 'awaiting-judgement',

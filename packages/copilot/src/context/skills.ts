@@ -119,6 +119,13 @@ import { type Disposition, statesWith } from './disposition.js';
  * surface that frames a served body has to know whether the body is a way of working
  * or a proposal, and re-deriving that from the state would be this table copied
  * where nobody could see it drift.
+ *
+ * Both halves of that sentence are CHECKED and no longer only declared:
+ * `no-classification-table-reaches-the-surface.test.ts` walks the runtime exports of
+ * every entry point in the workspace and asserts that this table is absent from all
+ * of them and that {@link skillDisposition} is present on this package's. What it
+ * does NOT cover is written in its own doc — a consumer that reimplements the
+ * classification from scratch touches neither the table nor the function.
  */
 export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
   proposed: 'awaiting-judgement',
