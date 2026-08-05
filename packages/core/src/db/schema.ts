@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS decisions (
   title         TEXT NOT NULL,
   -- The why — the whole value of the record.
   rationale     TEXT NOT NULL,
+  -- What was considered and turned down, and why not. NULL when the decision
+  -- recorded none: the absence is the fact, so it is never the empty string.
+  alternatives  TEXT,
   -- Current state: the 'to' of the decision's last transition.
   state         TEXT NOT NULL,
   -- The successor's id when this decision was superseded, else NULL.

@@ -43,6 +43,7 @@ function decision(
   rationale: string,
   day: number,
   state = 'accepted',
+  alternatives?: string,
 ): DecisionProjection {
   return {
     id,
@@ -50,6 +51,9 @@ function decision(
     title,
     rationale,
     state,
+    // Absent unless given, exactly as the projection reads it: a decision that
+    // recorded none has no key for it (see `decision.ts`).
+    ...(alternatives !== undefined ? { alternatives } : {}),
     createdAt: at(day),
     updatedAt: at(day),
   };
@@ -147,6 +151,99 @@ describe('searching the record', () => {
     });
 
     expect(ids(search({ term: 'caching' }).hits)).toEqual(['d1', 'm1']);
+  });
+
+  it('finds a decision by a word that exists only in its alternatives', () => {
+    // THE test this field exists for. The value of recording what was turned down
+    // is answering "did we already reject this?", and that question IS a search —
+    // so a field the index skipped would be write-only, and the whole field
+    // pointless. `sqlite` appears in NO other column of this row.
+    index({
+      decisions: [
+        decision(
+          'd1',
+          'Store the record as JSONL',
+          'one append is one line, and a torn write is one bad line',
+          1,
+          'accepted',
+          'a single sqlite file: one corrupt page loses the whole archive',
+        ),
+      ],
+    });
+
+    expect(ids(search({ term: 'sqlite' }).hits)).toEqual(['d1']);
+    // And the line served is still the decision's own title, not the excerpt the
+    // match fell in — the index names a record, it does not quote it.
+    expect(search({ term: 'sqlite' }).hits[0]?.title).toBe('Store the record as JSONL');
+    expect(search({ term: 'sqlite' }).hits[0]?.derived).toBe(false);
+  });
+
+  it('finds nothing in the alternatives of a decision that recorded none', () => {
+    // The other half: absence is absence in the index too. A decision with no
+    // alternatives indexes exactly the body it indexed before the field existed.
+    index({
+      decisions: [
+        decision('d1', 'Store the record as JSONL', 'one append is one line', 1),
+        decision('d2', 'Name the tails by fingerprint', 'so a fabricated tail has no key', 2),
+      ],
+    });
+
+    expect(search({ term: 'sqlite' }).hits).toEqual([]);
+    expect(search({ term: 'sqlite' }).total).toBe(0);
+  });
+
+  it('costs a rationale-only term relevance, and does not move the rank', () => {
+    // The price of indexing the field, measured rather than assumed. bm25 divides
+    // by document length, so a decision that also records what it turned down is a
+    // LONGER document and scores lower on a word from its rationale alone:
+    // -1.0472 → -0.7485, 28.5% less negative, on the corpus below.
+    //
+    // It is the price of the requirement and not of how the field is stored: the
+    // same corpus indexed with `alternatives` as a THIRD fts5 column scores
+    // -1.0471626704752035 → -0.7484883353347788, the identical pair to the digit,
+    // because fts5 normalizes by the tokens of the whole ROW and not of one column.
+    // So folding it into the body costs nothing a separate column would have saved,
+    // and it keeps the two bm25 weights and the `snippet` column index untouched.
+    //
+    // What must NOT move is the ORDER, and it does not: `m1` still outranks `d1`
+    // both ways. That is the assertion; the numbers above are the reason it is
+    // worth asserting.
+    const RATIONALE =
+      'A tail is append-only and one write is one line, so a torn write damages ' +
+      'exactly one record and a reader can skip it. Recovery is a line, never a file.';
+    const ALTERNATIVES =
+      'A single sqlite file holding the whole archive: one corrupt page takes the ' +
+      'archive with it, and repair is a database problem rather than a line problem.';
+    // Twenty rows that do NOT carry the term, so bm25's idf is not degenerate: over
+    // a handful of documents it collapses to zero and the "score" is floating-point
+    // residue rather than a relevance — an instrument that measures nothing.
+    const filler = Array.from({ length: 20 }, (_, i) =>
+      memory(`f${i}`, `an unrelated note number ${i} about the deploy window`, 5),
+    );
+    const others = {
+      memories: [memory('m1', 'a passing mention of recovery in a long paragraph', 2), ...filler],
+      observations: [observation('o1', 'ops', 'the deploy window moved to Tuesday', 3)],
+      skills: [skill('s1', 'small slices', 'one reviewable change with its tests', 4)],
+    };
+
+    index({ ...others, decisions: [decision('d1', 'Store the record as JSONL', RATIONALE, 1)] });
+    const before = search({ term: 'recovery' });
+    db.exec('DELETE FROM record_search');
+    index({
+      ...others,
+      decisions: [
+        decision('d1', 'Store the record as JSONL', RATIONALE, 1, 'accepted', ALTERNATIVES),
+      ],
+    });
+    const after = search({ term: 'recovery' });
+
+    expect(before.hits.map((hit) => hit.id)).toEqual(['m1', 'd1']);
+    expect(after.hits.map((hit) => hit.id)).toEqual(['m1', 'd1']);
+    // And the DIRECTION of the cost is pinned, so a change that made the longer
+    // document score BETTER would be caught as the anomaly it would be.
+    const d1Before = before.hits.find((hit) => hit.id === 'd1')?.score as number;
+    const d1After = after.hits.find((hit) => hit.id === 'd1')?.score as number;
+    expect(d1After).toBeGreaterThan(d1Before);
   });
 
   it('does not index structure — an id or a state is not a search term', () => {

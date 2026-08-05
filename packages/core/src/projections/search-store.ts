@@ -11,8 +11,19 @@
  * ## What is indexed, and what is only a filter
  *
  * Indexed: the text a PERSON wrote — a memory's content, an observation's topic
- * and text, a decision's title and rationale, a task's title, a skill's name and
- * body. Filters: kind, state, the instant, and (above this module) the tree.
+ * and text, a decision's title, rationale AND alternatives, a task's title, a
+ * skill's name and body. Filters: kind, state, the instant, and (above this
+ * module) the tree.
+ *
+ * Two indexed columns hold all of it, and the mapping is by ROLE rather than by
+ * field name: the column `title` takes the one short line that NAMES a record (an
+ * observation's topic, a skill's name), and `body` takes the prose, however many
+ * fields of it a kind has. A decision has two — the argument for the call and what
+ * it turned down — and both go in the body, because a word is looked for by what it
+ * MEANS and not by which field of a record happens to hold it. A searcher asking
+ * "did we already reject this?" does not know, and must not have to know, that the
+ * answer was typed into a second field. (`search-store.test.ts`, "finds a decision
+ * by a word that exists only in its alternatives".)
  * Structure is deliberately not searchable. Matching an anchor id or a state
  * name as prose would swamp the words someone actually looked for, and every
  * structural question already has a reader that answers it exactly. A second,
@@ -228,12 +239,15 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     );
   }
   for (const decision of sources.decisions) {
-    // The rationale — the WHY — is the body: it is where the reasoning a later
-    // reader searches for actually lives.
+    // The reasoning — the WHY it was chosen and the why-not of what it turned
+    // down — is the body: it is where the words a later reader searches for
+    // actually live. Both halves, because the half that is only in `alternatives`
+    // is the one that answers "did we already turn this down?", and a field the
+    // index skipped would be write-only.
     insert.run(
       row(
         decision.title,
-        decision.rationale,
+        decisionBody(decision),
         decision.id,
         'decision',
         decision.state,
@@ -370,6 +384,39 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
     sql: conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`,
     params,
   };
+}
+
+/**
+ * The prose of one decision as the index holds it: the rationale, then what was
+ * turned down when the record says so.
+ *
+ * Concatenated into ONE column rather than indexed as a third. The cost of that
+ * choice is ZERO, measured: fts5 normalizes bm25 by the tokens of the whole ROW,
+ * so the same corpus indexed with `alternatives` as a third column produces the
+ * identical score to the digit (-1.0471626704752035 -> -0.7484883353347788 either
+ * way). What one column buys is that the two bm25 weights and the `snippet` column
+ * argument below stay untouched — a third column changes the arity of both, and
+ * getting either wrong shifts the ranking of every kind, not just this one.
+ *
+ * The cost that IS real belongs to indexing the field at all, and it is not small:
+ * a decision that records what it turned down is a longer document, so a term from
+ * its rationale alone scores 28.5% less negative on the corpus measured in
+ * `search-store.test.ts` ("costs a rationale-only term relevance, and does not move
+ * the rank"). The rank did not move there, and the test asserts the rank rather
+ * than the number — but on a record where a decision and a memory are close, this
+ * is enough to swap them. It is the price of the field being findable, paid only by
+ * decisions that carry one: a decision with no alternatives indexes byte-identically
+ * to before.
+ *
+ * The separator is a blank line, and no phrase can straddle it: {@link
+ * toMatchExpression} quotes each WORD as its own phrase and ANDs them, so the index
+ * is never asked for a phrase that would have to span the boundary. If a multi-word
+ * phrase query is ever added, this is the line that has to change with it.
+ */
+function decisionBody(decision: DecisionProjection): string {
+  return decision.alternatives === undefined
+    ? decision.rationale
+    : `${decision.rationale}\n\n${decision.alternatives}`;
 }
 
 function row(

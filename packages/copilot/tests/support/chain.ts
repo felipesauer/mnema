@@ -231,7 +231,17 @@ export function consultSkill(
 export function birthDecision(b: Bench, id: string, title: string, initial = 'proposed'): string {
   for (const e of decisionBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-    { title, rationale: `why ${title}`, adr: `ADR-${id}`, initial },
+    {
+      title,
+      rationale: `why ${title}`,
+      adr: `ADR-${id}`,
+      initial,
+      // Every bench decision carries what it turned down, and that is deliberate:
+      // this layer serves NAMES and never bodies, and a decision's body is now two
+      // fields. A fixture that left the second one absent would let every "never
+      // carries the body" assertion pass by having nothing to leak.
+      alternatives: `turned down for ${title}`,
+    },
   )) {
     b.writer.append(e);
   }

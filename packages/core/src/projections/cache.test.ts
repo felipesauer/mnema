@@ -283,6 +283,34 @@ describe('ProjectionCache — decisions', () => {
     expect(cache.listDecisionsByState('proposed').map((d) => d.id)).toEqual(['d-2']);
   });
 
+  it("round-trips a decision's alternatives through the relational cache", () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(
+      decisionRecorded(env('d-1', 0), {
+        adr: 'ADR-1',
+        title: 'Store the record as JSONL',
+        rationale: 'one append is one line',
+        alternatives: 'a single sqlite file',
+      }),
+    );
+    w.append(decisionTransitioned(env('d-1', 0), { from: null, to: 'proposed', action: 'create' }));
+    w.append(
+      decisionRecorded(env('d-2', 1), { adr: 'ADR-2', title: 'Another', rationale: 'a why' }),
+    );
+    w.append(decisionTransitioned(env('d-2', 1), { from: null, to: 'proposed', action: 'create' }));
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.getDecision('d-1')?.alternatives).toBe('a single sqlite file');
+    // A NULL column comes back as an absent key, not as an empty string: the
+    // relational round trip preserves the absence the chain recorded.
+    const without = cache.getDecision('d-2');
+    expect(without).not.toBeNull();
+    if (without === null) return;
+    expect('alternatives' in without).toBe(false);
+  });
+
   it('reports an ADR label collision through the cache', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeDecision(w, 'd-1', 'ADR-1', 'proposed', 'create');
@@ -611,6 +639,27 @@ function writeEverything(w: ChainWriter): void {
 
 describe('ProjectionCache — searching the record', () => {
   /** Writes one of every recordable thing, so a search sees the whole record. */
+  it('finds a decision by a word only its alternatives carry, from the chain', () => {
+    // The whole path, not the index in isolation: chain → fold → FTS. `pineapple`
+    // is nowhere in this decision's title or rationale, so a search that answers
+    // proves the field is indexed all the way from the event.
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(
+      decisionRecorded(env('d-9', 0), {
+        adr: 'ADR-1',
+        title: 'Ship the crate',
+        rationale: 'the customer is waiting',
+        alternatives: 'shipping a pineapple instead: it does not travel',
+      }),
+    );
+    w.append(decisionTransitioned(env('d-9', 0), { from: null, to: 'proposed', action: 'create' }));
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.search({ term: 'pineapple' }).hits.map((hit) => hit.id)).toEqual(['d-9']);
+  });
+
   it('finds every indexed kind by a word the chain actually carries', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);

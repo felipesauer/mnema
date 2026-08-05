@@ -5,9 +5,12 @@
  * decision (`mnema decision "<title>" "<rationale>"`), and its subcommands move
  * an existing one. A decision needs BOTH a title and a rationale, so both are
  * required positionals — a missing one is the parser's clear error, not a late
- * gate refusal. Record takes an optional `--scope` (the per-action birth
- * override, defaulting to public); the moves take none (they follow the
- * entity). A decision has no alias — record prints its frozen `ADR-<n>` label.
+ * gate refusal. What it turned down is `--alternatives`, a flag rather than a
+ * third positional: most decisions had no contender, and a positional that is
+ * usually absent forces every caller to type an empty argument for it. Record also
+ * takes an optional `--scope` (the per-action birth override, defaulting to
+ * public); the moves take none (they follow the entity). A decision has no alias —
+ * record prints its frozen `ADR-<n>` label.
  */
 
 import type { Command } from 'commander';
@@ -36,6 +39,12 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     .argument('<title>', 'the decision title')
     .argument('<rationale>', 'why the decision was made')
     .option(
+      '--alternatives <text>',
+      'what was considered and turned down, and why not (optional). A decision ' +
+        'is immutable, so this is recorded at birth: an option rejected later is a ' +
+        'new decision, or supersedes this one.',
+    )
+    .option(
       '--scope <scope>',
       'where the decision is born: public (team-visible), private (this machine), ' +
         'or global (personal, cross-project). Omitted, a decision lands in the ' +
@@ -43,31 +52,38 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((title: string, rationale: string, opts: { scope?: string; which?: string }) => {
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
-        io.fail();
-        return;
-      }
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runDecision(here(), {
-        title,
-        rationale,
-        ...(scope !== undefined ? { scope } : {}),
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (result.ok) {
-        io.out(`Recorded decision ${result.adr} (${result.id})`);
-        reportRecorded(result, io);
-        return;
-      }
-      reportRefusal(io, result);
-    });
+    .action(
+      (
+        title: string,
+        rationale: string,
+        opts: { alternatives?: string; scope?: string; which?: string },
+      ) => {
+        const scope = parseScope(opts.scope, io);
+        if (scope === INVALID) {
+          io.fail();
+          return;
+        }
+        const run = pinnedRun();
+        if (run === PIN_REFUSED) {
+          io.fail();
+          return;
+        }
+        const result = runDecision(here(), {
+          title,
+          rationale,
+          ...(opts.alternatives !== undefined ? { alternatives: opts.alternatives } : {}),
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
+        });
+        if (result.ok) {
+          io.out(`Recorded decision ${result.adr} (${result.id})`);
+          reportRecorded(result, io);
+          return;
+        }
+        reportRefusal(io, result);
+      },
+    );
 
   // `decision move <accept|reject> <id>` — the generic move, the sibling of
   // `task move`. The action is an argument the gate validates; the surface knows

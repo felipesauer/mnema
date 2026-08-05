@@ -53,7 +53,7 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'run.ended': ['outcome'],
   'task.created': ['title'],
   'task.transitioned': ['from', 'to', 'action', 'fields'],
-  'decision.recorded': ['title', 'rationale', 'adr'],
+  'decision.recorded': ['title', 'rationale', 'adr', 'alternatives'],
   'decision.transitioned': ['from', 'to', 'action', 'by', 'fields'],
   'identity.founded': ['foundingFp'],
   'key.enrolled': ['newFp', 'reverseSig'],
@@ -235,11 +235,18 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       requireString(kind, 'payload.title', event.payload.title);
       requireString(kind, 'payload.rationale', event.payload.rationale);
       requireString(kind, 'payload.adr', event.payload.adr);
-      return {
+      requireOptionalString(kind, 'payload.alternatives', event.payload.alternatives);
+      const p: Record<string, PayloadValue> = {
         title: event.payload.title,
         rationale: event.payload.rationale,
         adr: event.payload.adr,
       };
+      // Rebuilt only when present, so a decision recorded before the field
+      // existed canonicalizes to exactly the bytes it was signed as.
+      if (event.payload.alternatives !== undefined) {
+        p.alternatives = event.payload.alternatives;
+      }
+      return p;
     }
     case 'decision.transitioned': {
       requireStringOrNull(kind, 'payload.from', event.payload.from);
