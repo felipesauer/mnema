@@ -1,14 +1,21 @@
 /**
  * The `mnema brief` wiring: what it declares, and what it prints.
  *
- * `mnema brief` — the decisions in force and the adopted patterns, as the markdown
- * file an agent host reads on its own. It takes NO options at all, which makes it
- * the only read here with none, and every one it does not take was decided rather
- * than skipped: no `--actor` (the answer is the project's, not an asker's), no
- * `--check` (a pipe into `diff` answers that, and does not have to guess where the
- * operator's file is), no `--json` — the document IS the contract, and a second
- * serialization of the same answer would be a second thing to keep byte-stable for
- * no consumer, since what reads this file reads markdown.
+ * `mnema brief` — the decisions in force and the adopted patterns of the COMMITTED
+ * record, as the markdown file an agent host reads on its own. It takes NO options at
+ * all, which makes it the only read here with none, and every one it does not take was
+ * decided rather than skipped: no `--actor` (the answer is the project's, not an
+ * asker's), no `--check` (a pipe into `diff` answers that, and does not have to guess
+ * where the operator's file is), no `--json` — the document IS the contract, and a
+ * second serialization of the same answer would be a second thing to keep byte-stable
+ * for no consumer, since what reads this file reads markdown.
+ *
+ * AND NO `--scope`, which is the one absence a reader of this list will look for now
+ * that the document has a scope. It has ONE, and it is the point rather than a default
+ * to override: the file is written to be committed, so what it carries is what a clone
+ * gets. A flag would offer to put a private rule into a tracked file — the defect this
+ * verb was corrected for — and the reader who wants the whole of what governs their
+ * own work has the agent's opening context, which spans every tree.
  *
  * The whole output goes to stdout and nothing else. `mnema brief > AGENTS.md` is the
  * operator's choice; the help says so, because a verb whose point is a file is a
@@ -44,6 +51,9 @@ export function registerBrief(program: Command, wiring: Wiring): void {
         '',
         'The output holds no clock, no session and no path, so the same record always',
         'prints the same bytes and a difference is a difference in the record.',
+        'It carries this project’s COMMITTED record — what a clone gets. A decision or a',
+        'pattern recorded with `--scope private`, or in your global tree, governs your own',
+        'work and is not in this file, which is written to be committed.',
         'It carries the RULES and the NAMES: a decision by title and `ADR-<n>` label, a',
         'pattern by name. Neither body is in it — a decision’s argument and a pattern’s',
         'text are both `mnema show <id>` (the file itself names the agent’s doors).',

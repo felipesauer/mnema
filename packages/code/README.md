@@ -40,9 +40,12 @@ CLI and the MCP tools behave identically, because they are the same call.
 - **A brief an agent reads without being asked** — `mnema brief` prints the
   decisions in force and the adopted patterns as markdown, so
   `mnema brief > AGENTS.md` puts what governs the work where an agent host reads it
-  on its own. It is a projection: the record stays the thing with the proof, and the
-  file can be thrown away and made again. The same record always prints the same
-  bytes, which is what makes `mnema brief | diff - AGENTS.md` a staleness check.
+  on its own. It carries the **committed** record — what a clone gets, not what one
+  machine keeps — and the document says so, because a file read as instruction is read
+  as the whole of what governs. It is a projection: the record stays the thing with the
+  proof, and the file can be thrown away and made again. The same record always prints
+  the same bytes, which is what makes `mnema brief | diff - AGENTS.md` a staleness
+  check.
 
 ## What it proves — and what it does not
 
@@ -295,6 +298,10 @@ mnema brief
 #>
 #> # What governs the work here
 #> …
+#> It carries what is COMMITTED to this project — the record a clone of the repository
+#> gets, and nothing kept privately on one machine or for one person. A rule recorded
+#> that way is not below, and each heading counts what is printed under it.
+#> …
 #> ## Decisions in force (2)
 #>
 #> Each was accepted, and none of them superseded. For the argument behind one, ask
@@ -325,7 +332,18 @@ pattern by name — and neither body: `mnema show <id>` is the argument behind a
 decision and the text of a pattern. It carries **no work list**, deliberately: a
 queue changes by the hour, and a copy of one in a hand-regenerated file would be
 wrong between two runs, which is the one thing this record exists not to be. And it
-is never **cut** — a rule missing from the file is a rule the agent does not follow.
+is never **cut by size** — a rule missing from the file is a rule the agent does not
+follow.
+
+What it does leave out is the record that **does not travel**. A decision or a pattern
+recorded with `--scope private`, or in your machine-global tree, governs your own work
+and is not in this file — the file is written to be committed, and the private tree
+exists precisely so that what is in it stays here. Two consequences worth knowing:
+the `ADR-<n>` label is numbered inside one chain, so committed-only is what keeps it
+citable (folding the trees printed two `ADR-1`s), and a difference against your copy
+now means one thing only — the copy is stale. The document declares the scope in its
+own text, so nobody reads it as the whole of what governs. For that, ask the agent's
+opening context (`bootstrap` over the MCP server), which spans every tree you can see.
 
 ### As an MCP server
 

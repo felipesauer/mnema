@@ -4,10 +4,14 @@
  *
  * A composed read (`search`, `timeline`, `accountability`, `refs`) asks THE
  * RECORD, not one tree, so it needs a cache per tree paired with the scope it
- * stands for. The MCP server keeps those caches warm for a connection; a command
- * is a process that runs once and exits, so it opens them, rebuilds from the
- * chain, reads, and closes — every time. That cost is the command line's, and it
- * is the price of not leaving a derived database behind between runs.
+ * stands for. So does the one read that asks about a SINGLE tree on purpose — the
+ * `brief`, whose answer becomes a committed file and therefore carries the tree that
+ * travels and no other: it is handed every tree and drops the rest itself, because
+ * which trees a document carries is one rule and belongs in one place. The MCP server
+ * keeps those caches warm for a connection; a command is a process that runs once and
+ * exits, so it opens them, rebuilds from the chain, reads, and closes — every time.
+ * That cost is the command line's, and it is the price of not leaving a derived
+ * database behind between runs.
  *
  * The order the trees are opened in reaches no answer: every reader over these
  * orders by a property of the CONTENT precisely so the order cannot reshuffle
@@ -53,7 +57,10 @@ export function withScopedCaches<T>(
  * The scope is dropped rather than carried through, because such an answer never
  * names it: a run is the actor's session whichever tree it was opened in, and a task
  * is work whether the team's record holds it or this machine's. The readings that DO
- * label their items by tree (the index, a history) take the sources themselves.
+ * label their items by tree (the index, a history) take the sources themselves — and
+ * so does the one that CHOOSES between trees instead of labelling them: the `brief`
+ * carries the tree that travels and leaves the others out, which is a question the
+ * scope is the only answer to.
  */
 export function caches(sources: readonly ScopedCache[]): ProjectionCache[] {
   return sources.map((source) => source.cache);

@@ -65,9 +65,13 @@
  * above answers whoever ran it, and this one composes a FILE for a reader that never
  * asked. `mnema brief > AGENTS.md` puts the decisions in force and the adopted
  * patterns where an agent host reads them on its own, so the record reaches an agent
- * that did not think to look for it. It is the only read with no options at all —
- * no `--json` (the markdown IS the contract), no `--check` (a pipe into `diff`
- * answers it), no `--actor` — and the only one whose output is guaranteed BYTE-
+ * that did not think to look for it. It is also the one read that deliberately does
+ * NOT fold the union: the file is written to be committed, so it carries the public
+ * tree alone — what a clone gets — and the document says so, because a governance
+ * document that quietly omits a rule is read as the whole of what governs. It is the
+ * only read with no options at all — no `--json` (the markdown IS the contract), no
+ * `--check` (a pipe into `diff` answers it), no `--actor`, no `--scope` (it has one
+ * scope and that is the point) — and the only one whose output is guaranteed BYTE-
  * STABLE for an unchanged record, which is what lets that `diff` mean "the copy is
  * stale" and nothing else. It writes nothing, like every read here; the redirection
  * belongs to whoever operates it.

@@ -75,10 +75,18 @@ export interface DecisionRef {
  *
  * ONE function, and both consumers exist now. The opening context ({@link bootstrap})
  * serves the first page of this list; the per-prompt brief ({@link brief}) serves the
- * whole of it into a file. "In force" written in two places is two rules that can come
- * to disagree about which decisions govern, which is the one thing this answer must
- * never be uncertain about — and the disagreement would be silent, since each reader
- * would simply obey its own set.
+ * whole of it, uncut, into a file. "In force" written in two places is two rules that
+ * can come to disagree about which decisions govern, which is the one thing this
+ * answer must never be uncertain about — and the disagreement would be silent, since
+ * each reader would simply obey its own set.
+ *
+ * The two consumers ask over DIFFERENT trees, and neither of them narrows this
+ * function to do it: the brief is asked about the tree that travels alone, because
+ * its answer becomes a committed file, and it filters its own sources before calling
+ * here (see {@link brief}). Which is the shape this rule has to keep — a filter
+ * pushed down into this function to satisfy one consumer would silently shrink the
+ * other's answer, and an opening context that stops mentioning a decision says
+ * nothing about having stopped.
  */
 export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRef[] {
   const all: DecisionProjection[] = [];
