@@ -5,16 +5,30 @@
  * own `verify` over it, returning the verdict as the chain computed it. The
  * command adds NO judgement of its own: `verify`'s result — and its one-line
  * `summary` — is honest by construction (it distinguishes "nothing verifiable is
- * broken" from "everything is authenticated", and reports the external witness
- * T3 as not-covered). The surface must preserve that honesty, never dress it up
- * into a "tamper-proof" claim the proof does not make; so it passes the verdict
- * through unchanged and the CLI prints its summary verbatim.
+ * broken" from "everything is authenticated", names the LEVEL the proof reached,
+ * and reports the external witness T3 as not-covered). The surface must preserve
+ * that honesty, never dress it up into a "tamper-proof" claim the proof does not
+ * make; so it passes the verdict through unchanged and the CLI prints its summary
+ * verbatim.
+ *
+ * THE ONE THING IT DECIDES is whether the level satisfies what the CALLER asked
+ * for, and it decides it by asking `meetsRequirement` — never by comparing fields
+ * of its own. The exit code is the verdict's second channel (the first is the
+ * sentence, for a person; this one is for a script, a CI step, a git hook), and the
+ * two saying different things is exactly the defect this reads from one value to
+ * avoid.
  *
  * Scope is the project of the cwd — the minimum a person asks for at a project
  * root. Verifying across projects (via the index) is a later, separate concern.
  */
 
-import { catalogUpcasters, type VerifyResult, verify } from '@mnema/chain';
+import {
+  catalogUpcasters,
+  type LevelRequirement,
+  meetsRequirement,
+  type VerifyResult,
+  verify,
+} from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 
 /** What verify needs — injected so it is testable. */
@@ -23,6 +37,13 @@ export interface VerifyContext {
   readonly cwd: string;
   /** The discovery environment (XDG/home). */
   readonly env: DiscoveryEnv;
+  /**
+   * The minimum proven level this invocation accepts. Declared by the caller and
+   * never defaulted here: what a verdict is good enough FOR is the caller's policy,
+   * not the adapter's — and a tool that demanded a signature by default would fail
+   * on every session in flight.
+   */
+  readonly requirement: LevelRequirement;
 }
 
 /** The verdict, with the tree it covered. */
@@ -32,6 +53,10 @@ export interface VerifyDone {
   readonly root: string;
   /** The chain's verdict, unmodified. */
   readonly result: VerifyResult;
+  /** The minimum the caller declared, echoed so a surface can say what it wanted. */
+  readonly requirement: LevelRequirement;
+  /** Whether {@link VerifyResult.level} satisfies it — all the exit code reads. */
+  readonly requirementMet: boolean;
 }
 
 /** There was nothing to verify — no project here. */
@@ -48,5 +73,11 @@ export function runVerify(ctx: VerifyContext): VerifyDone | VerifyRefused {
     return { ok: false, reason: 'NO_PROJECT' };
   }
   const result = verify(trees.projectPublic, catalogUpcasters());
-  return { ok: true, root: trees.projectPublic, result };
+  return {
+    ok: true,
+    root: trees.projectPublic,
+    result,
+    requirement: ctx.requirement,
+    requirementMet: meetsRequirement(result.level, ctx.requirement),
+  };
 }

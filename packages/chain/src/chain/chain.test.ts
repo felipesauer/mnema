@@ -566,6 +566,18 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     const result = verify(root);
     expect(result.ok).toBe(true);
     expect(result.tails[0]?.entryCount).toBe(5);
+    // And it SAYS it dropped something. The tolerance is right; being silent about
+    // it was not — a dropped fragment is what an interrupted append leaves AND what
+    // an appended fragment leaves, so the reader is told and neither reading is
+    // chosen for them. It is a census note, so `ok` is untouched.
+    expect(result.census).toEqual([
+      {
+        kind: 'partial-final-line',
+        tail: tailIdOf(root),
+        detail: expect.stringContaining('ends in a partial line that was dropped'),
+      },
+    ]);
+    expect(result.summary).toContain('1 tail(s) ending in a dropped partial line');
     // A fresh writer recovers and can continue.
     const w = openChain(root);
     expect(() =>
@@ -573,14 +585,48 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     ).not.toThrow();
   });
 
-  it('still throws on a malformed line that is NOT the torn trailing fragment', () => {
+  it('reports a malformed line that is NOT the torn trailing fragment as UNREADABLE', () => {
+    // It used to THROW out of verify — correct in its exit code and useless as a
+    // verdict: the caller got the parser's message ("not valid JSON: Unexpected end
+    // of JSON input") with no tail, no position, and no `issues` to read. The
+    // refusal is the same; it has an address now.
     writeSome(4, { checkpointEvery: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
     // Corrupt a MIDDLE line (has a newline after it) — real corruption.
     lines[1] = '{garbage not json';
     writeFileSync(seg, `${lines.join('\n')}\n`);
-    expect(() => verify(root)).toThrow();
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.level).toBe('unreadable');
+    expect(result.issues).toHaveLength(1);
+    const issue = result.issues[0];
+    expect(issue?.layer).toBe('T1');
+    expect(issue?.tail).toBe(tailIdOf(root));
+    // WHICH line, in a path inside the chain — not wherever this clone sits.
+    expect(issue?.detail).toContain(`UNREADABLE: tails/${tailIdOf(root)}/`);
+    expect(issue?.detail).toContain('line 2');
+    expect(issue?.detail).toContain('not valid JSON');
+    expect(issue?.detail).not.toContain(root);
+    expect(result.summary).toContain('part of the record is UNREADABLE');
+  });
+
+  it('reports an unreadable CHECKPOINT line the same way — the rule is the read, not the file', () => {
+    // The second stored file a tail is verified over. A rule that lived only where
+    // it was first needed would leave this one throwing.
+    writeSome(4, { checkpointEvery: 2 });
+    const file = checkpointsPath({ root }, tailIdOf(root));
+    const lines = readFileSync(file, 'utf-8').split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(1);
+    lines[0] = '{not a checkpoint';
+    writeFileSync(file, `${lines.join('\n')}\n`);
+
+    const result = verify(root);
+    expect(result.ok).toBe(false);
+    expect(result.level).toBe('unreadable');
+    expect(result.issues.some((i) => i.detail.includes('UNREADABLE'))).toBe(true);
+    expect(result.issues.some((i) => i.detail.includes('checkpoints.jsonl line 1'))).toBe(true);
   });
 });
 

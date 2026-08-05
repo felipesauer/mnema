@@ -39,10 +39,18 @@
  *
  * The lift is not skipped to get there, and that is deliberate: this verifier
  * also refuses a chain it cannot READ. A line whose ladder is broken — no
- * upcaster for its rung, or a version ahead of this catalog — throws out of the
- * read rather than verifying green over bytes nobody can interpret. Both halves
- * are the same promise as the writer's (writer.ts refuses to seal what no reader
- * would accept); one guards the way in, the other the way back.
+ * upcaster for its rung, or a version ahead of this catalog — is refused rather
+ * than verified green over bytes nobody can interpret. Both halves are the same
+ * promise as the writer's (writer.ts refuses to seal what no reader would accept);
+ * one guards the way in, the other the way back.
+ *
+ * HOW it refuses used to be "it throws out of the read", and that was measured and
+ * found to be a message rather than a finding: the caller got the parser's own
+ * sentence — `not valid JSON: Unexpected end of JSON input` — with no tail, no
+ * position, no word for "unreadable", and no `tails`/`issues` to read at all. It is
+ * a VERDICT now: an unreadable line becomes an issue with the tail and the position
+ * in it, and the level says `unreadable` (see level.ts and `readOrIssue`). Nothing
+ * about what is refused changed; the exception was replaced by an address.
  *
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
@@ -65,22 +73,24 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import { checkpointHash, verifyCheckpoint } from './checkpoint.js';
+import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import { resolveIdentity } from './enrollment.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import { type ChainLayout, publicKeyPath, tailProofPath } from './layout.js';
 import {
-  listPublicKeyFingerprints,
-  listTails,
-  readTailCheckpoints,
-  readTailEntries,
-} from './store.js';
+  levelHeadline,
+  type ProvenFacts,
+  type ProvenLevel,
+  provenLevel,
+  type WitnessStatus,
+} from './level.js';
+import { UnreadableLineError } from './lines.js';
+import { listPublicKeyFingerprints, listTails, readTail, readTailCheckpoints } from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
 
-/** How the external-witness (T3) layer stands for this verification. */
-export type WitnessStatus = 'not-covered';
+export type { WitnessStatus } from './level.js';
 
 /** A problem found while verifying one tail. */
 export interface TailIssue {
@@ -92,25 +102,56 @@ export interface TailIssue {
 
 /**
  * A census note: an observation about the SHAPE of the chain on disk, distinct
- * from a {@link TailIssue}, which is a break in what the crypto can prove. A
- * committed public key is written before its machine's first event and its
- * fingerprint is that machine's tail id, so `keys/` is a committed roster of
- * the tails that should exist. Crossing it against the tails actually present
- * surfaces a key whose tail is gone.
+ * from a {@link TailIssue}, which is a break in what the crypto can prove.
  *
- * This is a SIGNAL, never a verdict of tampering. A key with no tail has
- * innocent causes: a key committed by a machine that minted it but never wrote
- * an event (an empty tail directory is not versioned by git, so a clone sees
- * the key alone), or a merge that copied the key but not the tail. It also has
- * a guilty one: a tail removed to hide its events. The note cannot tell them
- * apart, so it never sets {@link VerifyResult.ok} to false — it points at
- * something worth a look, not at proof of removal. And it is blind to a tail
- * deleted together WITH its key: with nothing left on disk to cross, only an
- * external witness (a git history) can testify to what was removed.
+ * A note is a SIGNAL, never a verdict of tampering, and never sets
+ * {@link VerifyResult.ok} to false: each of the two has an innocent reading and a
+ * guilty one, and the disk cannot tell them apart. Reporting the ambiguity is the
+ * product's posture; choosing a side on the reader's behalf is not.
+ *
+ * It is a union rather than one shape because the two observations are about
+ * different things, and a reader that has to branch on `kind` is a reader who
+ * cannot mistake one for the other.
  */
-export interface CensusNote {
+export type CensusNote = KeyWithoutTailNote | PartialFinalLineNote;
+
+/**
+ * A committed public key with no tail on disk.
+ *
+ * A committed public key is written before its machine's first event and its
+ * fingerprint is that machine's tail id, so `keys/` is a committed roster of the
+ * tails that should exist. Crossing it against the tails actually present surfaces
+ * a key whose tail is gone.
+ *
+ * Innocent causes: a key committed by a machine that minted it but never wrote an
+ * event (an empty tail directory is not versioned by git, so a clone sees the key
+ * alone), or a merge that copied the key but not the tail. The guilty one: a tail
+ * removed to hide its events. And it is blind to a tail deleted together WITH its
+ * key: with nothing left on disk to cross, only an external witness (a git history)
+ * can testify to what was removed.
+ */
+export interface KeyWithoutTailNote {
+  readonly kind: 'key-without-tail';
   /** The committed public key's fingerprint (equal to the missing tail's id). */
   readonly fingerprint: string;
+  readonly detail: string;
+}
+
+/**
+ * A tail whose last line was a fragment the read dropped.
+ *
+ * A complete append ends in a newline, so an unterminated final line that will not
+ * parse is exactly what a crash mid-append leaves — the one tolerance an
+ * append-only file earns (see lines.ts). Treating it as a break would fail every
+ * legitimate crash recovery; saying NOTHING about it, which is what happened until
+ * now, leaves it indistinguishable from an attempt to append to the tail, and
+ * contradicts the doctrine of reporting what could not be checked. So it is
+ * reported as an ambiguity, and it does not touch {@link VerifyResult.ok}.
+ */
+export interface PartialFinalLineNote {
+  readonly kind: 'partial-final-line';
+  /** The tail whose physical end held the fragment. */
+  readonly tail: string;
   readonly detail: string;
 }
 
@@ -141,6 +182,15 @@ export interface VerifyResult {
    * false, {@link uncheckpointedEvents} events rest on the hash chain alone.
    */
   readonly fullySigned: boolean;
+  /**
+   * How far the proof got, as ONE value — the same one the summary is worded from
+   * and the same one an exit code is decided by (see level.ts). It says what `ok`
+   * and `fullySigned` say together, without asking a reader to add them up: it was
+   * a reader adding them up WRONG, inside this very file, that let the summary
+   * announce `verified (T1/T2/T4)` over a record where no signature had been
+   * checked at all.
+   */
+  readonly level: ProvenLevel;
   readonly tails: readonly TailResult[];
   readonly issues: readonly TailIssue[];
   /**
@@ -176,12 +226,41 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   const entriesByTail = new Map<string, readonly Entry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
+  const notes: PartialFinalLineNote[] = [];
+  let unreadable = false;
 
   for (const tail of tails) {
-    const entries = readTailEntries(layout, tail, upcasters);
-    entriesByTail.set(tail, entries);
     const issues: TailIssue[] = [];
     issuesByTail.set(tail, issues);
+    // Both stored files a tail is verified over are read HERE, through one guard.
+    // A line that will not parse is a finding ABOUT THE RECORD — which tail, which
+    // position, and that it cannot be read — not an exception thrown out of the
+    // verifier. Measured before this: the exception reached the CLI's catch-all and
+    // printed `not valid JSON: Unexpected end of JSON input`, correct in its exit
+    // code and useless as a verdict.
+    const read = readOrIssue(layout, tail, issues, () => readTail(layout, tail, upcasters));
+    const checkpoints = readOrIssue(layout, tail, issues, () => readTailCheckpoints(layout, tail));
+    if (read === UNREADABLE || checkpoints === UNREADABLE) {
+      // Nothing further is claimed about a tail that could not be read: the checks
+      // below would either need its entries or add findings about a file the
+      // verifier just said it cannot open. The verdict is already the strongest
+      // thing there is to say (see `provenLevel`).
+      unreadable = true;
+      entriesByTail.set(tail, []);
+      checkpointedByTail.set(tail, -1);
+      continue;
+    }
+    const entries = read.entries;
+    entriesByTail.set(tail, entries);
+    if (read.partialFinalLine) {
+      notes.push({
+        kind: 'partial-final-line',
+        tail,
+        detail:
+          `tail ${tail} ends in a partial line that was dropped — the mark of a write ` +
+          'interrupted mid-append, and indistinguishable from an appended fragment',
+      });
+    }
 
     if (!tailFingerprintIsCommitted(tail, committedFingerprints)) {
       issues.push({
@@ -198,7 +277,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
       verifyTailOwnership(layout, tail, issues);
     }
     verifyHashChain(tail, entries, issues);
-    const checkpointedThrough = verifyCheckpoints(layout, tail, entries, issues);
+    const checkpointedThrough = verifyCheckpoints(layout, tail, entries, checkpoints, issues);
     checkpointedByTail.set(tail, checkpointedThrough);
     uncheckpointed += entries.length - (checkpointedThrough + 1);
   }
@@ -228,21 +307,81 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   }));
   const allIssues: TailIssue[] = tailResults.flatMap((t) => t.issues as TailIssue[]);
 
-  const census = takeCensus(layout, tails);
+  const census: CensusNote[] = [...keysWithoutTail(layout, tails), ...notes];
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
   const witness: WitnessStatus = 'not-covered';
+  // Events an actually-verified checkpoint covers. Zero is the state the old
+  // summary called `verified (T1/T2/T4)`: no signature was checked, on any tail.
+  const signedEvents = tailResults.reduce((sum, t) => sum + t.checkpointedThrough + 1, 0);
+  const facts: ProvenFacts = {
+    unreadable,
+    hasIssue: !ok,
+    signedEvents,
+    uncheckpointedEvents: uncheckpointed,
+    witness,
+  };
+  const level = provenLevel(facts);
   return {
     ok,
     fullySigned,
+    level,
     tails: tailResults,
     issues: allIssues,
     census,
     uncheckpointedEvents: uncheckpointed,
     witness,
-    summary: buildSummary(ok, tailResults.length, uncheckpointed, census.length),
+    summary: buildSummary({
+      level,
+      tailCount: tailResults.length,
+      totalEvents: signedEvents + uncheckpointed,
+      signedEvents,
+      uncheckpointed,
+      census,
+    }),
   };
+}
+
+/** Returned by {@link readOrIssue} when a stored line refused to parse. */
+const UNREADABLE = Symbol('unreadable');
+
+/**
+ * Runs one read of a tail's stored files, turning an unreadable line into an
+ * {@link TailIssue} instead of an exception.
+ *
+ * This is the ONE place the verifier converts "cannot read" into a finding, so the
+ * two files a tail is verified over cannot answer differently — and a third one
+ * added tomorrow reaches the same function or it is not read here at all. The layer
+ * is T1: what failed is the record's own bytes, below any signature.
+ *
+ * The locus loses the chain root, so what a reader is shown is a path inside the
+ * chain (`tails/<id>/000001.jsonl line 3`) rather than wherever this clone happens
+ * to sit on this machine.
+ */
+function readOrIssue<T>(
+  layout: ChainLayout,
+  tail: string,
+  issues: TailIssue[],
+  read: () => T,
+): T | typeof UNREADABLE {
+  try {
+    return read();
+  } catch (error) {
+    if (!(error instanceof UnreadableLineError)) throw error;
+    issues.push({
+      tail,
+      layer: 'T1',
+      detail: `UNREADABLE: ${withinChain(layout, error.locus)}: ${error.reason}`,
+    });
+    return UNREADABLE;
+  }
+}
+
+/** A locus with the chain root stripped, so a verdict names a path inside the chain. */
+function withinChain(layout: ChainLayout, locus: string): string {
+  const prefix = `${layout.root}/`;
+  return locus.startsWith(prefix) ? locus.slice(prefix.length) : locus;
 }
 
 /**
@@ -272,12 +411,13 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * are already reported as the unsigned residual (`fullySigned`). Either way the
  * existing result covers it, so the census only looks one way: keys → tails.
  */
-function takeCensus(layout: ChainLayout, tails: readonly string[]): CensusNote[] {
+function keysWithoutTail(layout: ChainLayout, tails: readonly string[]): KeyWithoutTailNote[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
-  const notes: CensusNote[] = [];
+  const notes: KeyWithoutTailNote[] = [];
   for (const fingerprint of listPublicKeyFingerprints(layout)) {
     if (fingerprintsWithTail.has(fingerprint)) continue;
     notes.push({
+      kind: 'key-without-tail',
       fingerprint,
       detail:
         'committed public key has no tail on disk — the tail may have been dropped ' +
@@ -370,9 +510,10 @@ function verifyCheckpoints(
   layout: ChainLayout,
   tail: string,
   entries: readonly Entry[],
+  stored: readonly Checkpoint[],
   issues: TailIssue[],
 ): number {
-  const checkpoints = readTailCheckpoints(layout, tail).sort((a, b) => a.fromSeq - b.fromSeq);
+  const checkpoints = [...stored].sort((a, b) => a.fromSeq - b.fromSeq);
   let covered = -1;
   let expectedPrev: string | null = null;
 
@@ -545,28 +686,81 @@ function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssu
   }
 }
 
-function buildSummary(
-  ok: boolean,
-  tailCount: number,
-  uncheckpointed: number,
-  censusCount: number,
-): string {
-  const local = ok ? 'local integrity verified (T1/T2/T4)' : 'local integrity FAILED — see issues';
-  // The events above the last checkpoint are covered only by the keyless hash
-  // chain, not yet by a signature — so a party without the private key could
-  // still append there. Say so plainly; do not let the count read as "signed".
-  const residual =
-    uncheckpointed > 0
-      ? `${uncheckpointed} event(s) above the last checkpoint are hash-chained but NOT yet signature-covered`
-      : 'all events are signature-covered';
-  const scope = `${tailCount} tail(s); ${residual}`;
-  // A census note is not an integrity failure — it flags a committed key whose
-  // tail is missing. Report it separately and only when there is one.
-  const census =
-    censusCount > 0
-      ? `; ${censusCount} committed key(s) without a tail (see census — informational, not a break)`
-      : '';
+/** What the one-line verdict is worded from — every clause, one set of facts. */
+interface SummaryFacts {
+  readonly level: ProvenLevel;
+  readonly tailCount: number;
+  readonly totalEvents: number;
+  /** Events a verified checkpoint covers. */
+  readonly signedEvents: number;
+  /** Events resting on the hash chain alone. */
+  readonly uncheckpointed: number;
+  readonly census: readonly CensusNote[];
+}
+
+/**
+ * The one-line verdict.
+ *
+ * Its first clause is the LEVEL and nothing else (see level.ts). It used to be a
+ * function of `ok` alone while the clause beside it was a function of the residual
+ * count, and with no checkpoint at all the two contradicted each other in one
+ * sentence: `verified (T1/T2/T4)` next to `6 event(s) … NOT yet signature-covered`.
+ * Both clauses are now worded from one set of facts — the same facts the level is
+ * derived from — so no reading of this sentence can disagree with another.
+ */
+function buildSummary(facts: SummaryFacts): string {
+  const scope = `${facts.tailCount} tail(s); ${coverageClause(facts)}`;
+  const census = censusClauses(facts.census)
+    .map((clause) => `; ${clause}`)
+    .join('');
   const witness =
     'external witness (T3): not covered — enable an anchor or push to a shared remote';
-  return `${local}; ${scope}${census}; ${witness}`;
+  return `${levelHeadline(facts.level)}; ${scope}${census}; ${witness}`;
+}
+
+/**
+ * What the events rest on.
+ *
+ * The events above the last checkpoint are covered only by the keyless hash chain,
+ * so a party without the private key could still append there: say so plainly, and
+ * never let the count read as "signed". Two of the branches are corrections of a
+ * sentence that presupposed what it was reporting:
+ *
+ *   - with no verified checkpoint there is no "last checkpoint" for the events to
+ *     be ABOVE. The sentence is then about every event there is.
+ *   - with a tail unread, the counts are a floor and not a total, and the honest
+ *     thing is to say the count is incomplete rather than to publish it.
+ */
+function coverageClause(facts: SummaryFacts): string {
+  if (facts.level === 'unreadable') {
+    return 'the event count is INCOMPLETE — a tail could not be read';
+  }
+  if (facts.totalEvents === 0) return 'no events yet';
+  if (facts.uncheckpointed === 0) return 'all events are signature-covered';
+  return facts.signedEvents === 0
+    ? `${facts.uncheckpointed} event(s) are hash-chained but NOT yet signature-covered`
+    : `${facts.uncheckpointed} event(s) above the last checkpoint are hash-chained but NOT yet signature-covered`;
+}
+
+/**
+ * How each kind of census note reads, and how many there are — TOTAL over the
+ * kinds, so a third observation cannot be counted into a sentence written for
+ * another one. A note is not an integrity failure, and each clause says so where a
+ * reader meets it.
+ */
+const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => string>> = {
+  'key-without-tail': (count) =>
+    `${count} committed key(s) without a tail (see census — informational, not a break)`,
+  'partial-final-line': (count) =>
+    `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
+};
+
+/** One clause per kind of note present, in the order the kinds are declared in. */
+function censusClauses(census: readonly CensusNote[]): string[] {
+  const clauses: string[] = [];
+  for (const [kind, clause] of Object.entries(CENSUS_CLAUSE)) {
+    const count = census.filter((note) => note.kind === kind).length;
+    if (count > 0) clauses.push(clause(count));
+  }
+  return clauses;
 }

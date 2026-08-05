@@ -78,6 +78,13 @@ export {
 } from './chain/keystore.js';
 export { type ChainLayout, gitignorePath } from './chain/layout.js';
 export {
+  LEVEL_REQUIREMENTS,
+  type LevelRequirement,
+  meetsRequirement,
+  type ProvenLevel,
+  requiredLevel,
+} from './chain/level.js';
+export {
   listPublicKeyFingerprints,
   listTails,
   orderedSegments,
@@ -88,6 +95,8 @@ export { ensureTree } from './chain/tree.js';
 export {
   type CensusNote,
   canonicalIdentityForm,
+  type KeyWithoutTailNote,
+  type PartialFinalLineNote,
   type TailIssue,
   type TailResult,
   type VerifyResult,

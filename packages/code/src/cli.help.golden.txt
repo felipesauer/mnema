@@ -32,7 +32,7 @@ $ mnema --help
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   brief                                   print what governs the work here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
-|   verify                                  verify the current project's chain
+|   verify [options]                        verify the current project's chain
 |   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
 |   help [command]                          display help for command
 $ mnema --version
@@ -512,7 +512,14 @@ $ mnema verify --help
 | verify the current project's chain
 |
 | Options:
-|   -h, --help  display help for command
+|   --require <level>  the least this invocation accepts, for a script or a CI
+|                      step: chained (the default — fail only on a break, which is
+|                      what a bare `verify` has always done), signed (also fail
+|                      unless every event is covered by a verified signature —
+|                      expect this to fail while a session is in flight),
+|                      witnessed (also fail unless an external witness covers the
+|                      record — nothing provides one yet, so it never passes)
+|   -h, --help         display help for command
 
 ### mnema mcp --help
 $ mnema mcp --help
