@@ -9,7 +9,6 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runFocus } from '../commands/focus.js';
 import { itemLine } from '../presentation/items.js';
-import { renderPlain } from '../presentation/plain.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
@@ -20,7 +19,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema focus` on the program. */
 export function registerFocus(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('focus')
     .description("show an actor's open runs (what they are touching now)")
@@ -49,7 +48,7 @@ export function registerFocus(program: Command, wiring: Wiring): void {
       const actor = anchorText(result.anchors, result.focus.actor);
       if (openRuns.length === 0) {
         io.out(`${actor} has no open runs.`);
-        writeLines(io, NO_RUNS_HINT);
+        writeLines(io, NO_RUNS_HINT.map(render));
         return;
       }
       io.out(`${actor} — ${openRuns.length} open run(s):`);
@@ -60,7 +59,7 @@ export function registerFocus(program: Command, wiring: Wiring): void {
         // opens no run, so it is false in every line here, and a constant is noise
         // rather than honesty (`--json` carries it, being the faithful object).
         io.out(
-          renderPlain(
+          render(
             itemLine([
               run.id,
               `${oneLine(run.agent)}` +

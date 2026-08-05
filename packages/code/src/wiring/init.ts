@@ -16,14 +16,14 @@
 import type { Command } from 'commander';
 import { type InitResult, runInit } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
-import { renderPlain } from '../presentation/plain.js';
+import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema init` on the program. */
 export function registerInit(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('init')
     .description('establish a mnema project in the current directory')
@@ -31,11 +31,11 @@ export function registerInit(program: Command, wiring: Wiring): void {
       const result = runInit(here());
       if (result.created) {
         io.out(`Initialized mnema project at ${result.root}`);
-        io.out(renderPlain(fact(`identity: ${result.anchor}`)));
-        reportIdentity(result.identity, io);
+        io.out(render(fact(`identity: ${result.anchor}`)));
+        reportIdentity(result.identity, io, render);
       } else {
         io.out(`Already a mnema project at ${result.root} — nothing to found.`);
-        io.out(renderPlain(fact(`identity: ${result.anchor}`)));
+        io.out(render(fact(`identity: ${result.anchor}`)));
       }
     });
 }
@@ -59,28 +59,24 @@ export function registerInit(program: Command, wiring: Wiring): void {
  * changes WHO may speak for the identity. That is not something to learn by
  * reading the chain later.
  */
-function reportIdentity(identity: InitResult['identity'], io: CliIo): void {
+function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Render): void {
   if (identity === undefined) return;
   const backup = identity.backup;
   if (backup?.created === true) {
     io.out(
-      renderPlain(
-        fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`),
-      ),
+      render(fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`)),
     );
     io.out(
-      renderPlain(
-        fact('Move that file off this machine: a backup left on this disk is lost with it.'),
-      ),
+      render(fact('Move that file off this machine: a backup left on this disk is lost with it.')),
     );
   } else if (backup !== null && identity.enrolled.includes(backup.fingerprint)) {
-    io.out(renderPlain(fact('backup key: enrolled in this project')));
+    io.out(render(fact('backup key: enrolled in this project')));
   }
   for (const fingerprint of identity.enrolled) {
     if (fingerprint === backup?.fingerprint) continue;
-    io.out(renderPlain(fact(`key ${fingerprint} enrolled in this project`)));
+    io.out(render(fact(`key ${fingerprint} enrolled in this project`)));
   }
   for (const declined of identity.declined) {
-    io.out(renderPlain(fact(`key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`)));
+    io.out(render(fact(`key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`)));
   }
 }

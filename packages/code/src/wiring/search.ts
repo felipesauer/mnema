@@ -19,7 +19,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema search` on the program. */
 export function registerSearch(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('search')
     .description('find what has been recorded, or list the most recent (no term)')
@@ -83,7 +83,7 @@ export function registerSearch(program: Command, wiring: Wiring): void {
           io.out(JSON.stringify(result.result, null, 2));
           return;
         }
-        writeLines(io, searchReport(result.result, term));
+        writeLines(io, searchReport(render, result.result, term));
       },
     );
 }

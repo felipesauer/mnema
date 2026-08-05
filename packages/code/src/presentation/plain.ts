@@ -21,13 +21,21 @@
  * It never asks what it is writing to. Whether output is going to a terminal, a
  * pipe or a CI log is not a question `presentation/` may ask — a report whose bytes
  * depended on where they landed could not be compared to a recorded transcript, and
- * the whole surface is pinned by one. When a renderer exists that paints, the
- * capability that chooses it is resolved by the wiring, at the entry, and handed in;
- * it is not read from here (`parts.test.ts` refuses a `presentation/` that consults
- * one).
+ * the whole surface is pinned by one. The renderer that paints exists now
+ * (`styled.ts`), and the capability that chooses between the two is resolved by the
+ * wiring, at the entry, and handed in; it is not read from here (`parts.test.ts`
+ * refuses a `presentation/` that consults one).
+ *
+ * AND THE PAINTED ONE COMPOSES THROUGH THIS FILE — {@link renderWith} is the loop
+ * both renderers are, so "here, and only here" survived a second renderer. A styled
+ * line indents by the same constant and joins by the same table; all it adds is an
+ * escape around a part's own text. That is what makes "strip the escapes and you have
+ * the plain line" a property of the composition rather than of two files agreeing,
+ * and `styled.test.ts` asserts it over every shape the surface builds.
  */
 
-import type { Line, Role } from './line.js';
+import type { Part, Role } from './line.js';
+import type { Render } from './render.js';
 
 /** The two spaces one level of depth is. */
 const INDENT = '  ';
@@ -52,8 +60,14 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
 };
 
 /**
- * One line as the bytes a stream receives: its depth, then its parts in order, each
- * after the separator its role takes.
+ * A renderer: one line as the bytes a stream receives — its depth, then its parts in
+ * order, each after the separator its role takes, and each first handed to `paint`.
+ *
+ * `paint` receives a WHOLE part and returns what stands in for it. It is the only
+ * freedom a renderer has: the depth, the separators and the order are this loop's,
+ * so nothing a second renderer does can move a column or drop a colon. A painter
+ * that returns anything but the part's own text wrapped is a painter that changed
+ * what the line says, which on an audit surface is the one thing style may not do.
  *
  * A line with no parts renders as the empty string, and nothing in the surface builds
  * one: the blank line a report puts between two groups is written as text, because
@@ -62,10 +76,20 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
  * parts to tell apart, which is why they are not made of any (see `parts.test.ts`
  * for the roles this refuses to invent).
  */
-export function renderPlain(line: Line): string {
-  let text = INDENT.repeat(line.indent);
-  for (const [index, part] of line.parts.entries()) {
-    text += index === 0 ? part.text : `${PRECEDED_BY[part.role]}${part.text}`;
-  }
-  return text;
+export function renderWith(paint: (part: Part) => string): Render {
+  return (line) => {
+    let text = INDENT.repeat(line.indent);
+    for (const [index, part] of line.parts.entries()) {
+      text += index === 0 ? paint(part) : `${PRECEDED_BY[part.role]}${paint(part)}`;
+    }
+    return text;
+  };
 }
+
+/**
+ * The PLAIN renderer: every part as the text it holds, and nothing added.
+ *
+ * What the golden was recorded against, and what a pipe, a CI log and a redirected
+ * file get — the default in every one of those, decided at the entry and not here.
+ */
+export const renderPlain: Render = renderWith((part) => part.text);

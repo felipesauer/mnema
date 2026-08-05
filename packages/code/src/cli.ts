@@ -5,9 +5,15 @@
  * Three layers meet here and nothing else does. `commands/` implements a verb —
  * one adapter per verb, calling ONE core operation. `wiring/` declares a verb to
  * commander — its flags, its help, and what it prints. `presentation/` decides
- * what a line looks like. This file builds the program, hands the wiring the two
- * things every verb may touch (where to write, and the session its writes are
- * pinned to), and turns a throw into an honest exit code.
+ * what a line looks like. This file builds the program, hands the wiring the three
+ * things every verb may touch (where to write, how a line becomes bytes, and the
+ * session its writes are pinned to), and turns a throw into an honest exit code.
+ *
+ * THE ENTRY IS WHERE THE PROCESS IS, and that is why the style capability is read
+ * here: the flag, the environment and whether the destination is a terminal are
+ * three facts about this invocation, and `presentation/` may not ask for any of
+ * them — a line whose bytes depended on the machine could not be compared to a
+ * recorded transcript. Read once, here, and handed down as a renderer.
  *
  * There is no domain logic here and none in the adapters — the logic is the gate
  * and the projections in the core.
@@ -17,7 +23,8 @@
  */
 
 import { IdentityUnavailableError } from '@mnema/core';
-import { Command, CommanderError } from 'commander';
+import { Command, CommanderError, Option } from 'commander';
+import { COLOR_HELP, COLOR_WHENS, type ColorWhen, rendererFor } from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
 import { refusalLine } from './wiring/report.js';
@@ -54,6 +61,11 @@ export function buildProgram(io: CliIo = processIo): Command {
     .name('mnema')
     .description('A tamper-evident, local-first audit chain for AI-agent work.')
     .version('0.0.0')
+    // Declared on the program and not on a verb: one question about one invocation,
+    // asked before the verb (`mnema --color=never verify`). commander refuses a value
+    // that is not one of the three, which makes a typo a usage error this file already
+    // turns into an honest exit rather than a silent fall back to the default.
+    .addOption(new Option('--color <when>', COLOR_HELP).choices([...COLOR_WHENS]).default('auto'))
     // Throw instead of calling process.exit, so the whole program can be driven
     // in a test — {@link run} turns the thrown CommanderError into an exit code.
     .exitOverride()
@@ -69,7 +81,19 @@ export function buildProgram(io: CliIo = processIo): Command {
   // none of them stamps a `run`, so none of them has a reason to prove one.
   const pinnedRun = pinnedRunResolver(io);
 
-  registerVerbs(program, { io, pinnedRun });
+  // Which renderer, from the three facts about this invocation — read late, because
+  // `--color` does not exist until commander has parsed, and at most once, because a
+  // report styled in halves would be a report a reader has to doubt (see
+  // {@link rendererFor}). `isTty` is asked of stdout alone: it is where a report
+  // goes, and a verb whose stderr was a terminal while its stdout was a pipe would
+  // otherwise style the file it was redirected into.
+  const render = rendererFor(() => ({
+    when: program.opts<{ color: ColorWhen }>().color,
+    env: process.env,
+    isTty: process.stdout.isTTY === true,
+  }));
+
+  registerVerbs(program, { io, render, pinnedRun });
 
   return program;
 }

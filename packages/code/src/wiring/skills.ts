@@ -21,7 +21,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema skills` on the program. */
 export function registerSkills(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('skills')
     .description('show where each pattern came from (who proposed it, who adopted it)')
@@ -45,6 +45,6 @@ export function registerSkills(program: Command, wiring: Wiring): void {
         io.out(JSON.stringify(result.patterns, null, 2));
         return;
       }
-      writeLines(io, provenanceReport(result.patterns, result.consultations));
+      writeLines(io, provenanceReport(render, result.patterns, result.consultations));
     });
 }

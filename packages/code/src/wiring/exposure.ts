@@ -22,7 +22,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema exposure` on the program. */
 export function registerExposure(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('exposure')
     .description('show which records hold something shaped like a credential (never the value)')
@@ -37,6 +37,6 @@ export function registerExposure(program: Command, wiring: Wiring): void {
         io.out(JSON.stringify(result.report, null, 2));
         return;
       }
-      writeLines(io, exposureReport(result.report));
+      writeLines(io, exposureReport(render, result.report));
     });
 }

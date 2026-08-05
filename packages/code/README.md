@@ -141,6 +141,24 @@ signature, and `--require=witnessed` when no external witness covers the record
 checkpoint are the normal state of a session in flight, and a check that fails
 every time is a check somebody turns off.
 
+### Bold, dim, and what a pipe gets
+
+In a terminal, a verdict's label and a heading are **bold** and the half of a
+statement after the colon is dimmed. In a pipe, a file or a CI log, nothing is: the
+capability is resolved once per invocation and the default is what the destination
+can show.
+
+```sh
+mnema --color=never verify   # never any escape, whatever the terminal says
+mnema --color=always verify | less -R
+NO_COLOR=1 mnema verify      # and FORCE_COLOR, both as everywhere else
+```
+
+**Style never changes what a line says.** Strip the escapes and the styled output is
+the plain output, byte for byte — the same text a redirected file holds, so a verdict
+quoted from a terminal is the verdict. There is no colour, only weight: colour means
+good or bad, and nothing in a line yet says which of those it is.
+
 ### When an agent is the one running the CLI
 
 Omitting the agent says a **person** acted, and that is what the record then

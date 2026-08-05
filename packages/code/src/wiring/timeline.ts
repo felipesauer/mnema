@@ -11,14 +11,13 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runTimeline } from '../commands/timeline.js';
 import { itemLine } from '../presentation/items.js';
-import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema timeline` on the program. */
 export function registerTimeline(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('timeline')
     .description("show an entity's history across the trees (subject, about, target)")
@@ -43,7 +42,7 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
       io.out(`${id} — ${result.entries.length} event(s):`);
       for (const entry of result.entries) {
         io.out(
-          renderPlain(
+          render(
             itemLine([
               entry.at,
               entry.kind,

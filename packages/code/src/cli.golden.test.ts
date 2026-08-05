@@ -27,6 +27,16 @@
  * stdout, `! ` for one on stderr, `[exit 1]` for a non-zero exit. Interleaving is
  * preserved as emitted, so the golden pins the ORDER of the two streams as well as
  * their content, and a verb that starts or stops failing shows up as a changed line.
+ *
+ * AND IT IS PLAIN BECAUSE THE RULE SAYS SO. The surface has a renderer that paints
+ * (`presentation/styled.ts`), chosen at the entry from the flag, the environment and
+ * whether output is going to a terminal. Nothing here asks for plain: `io` is injected
+ * and no flag is passed, so the resolution falls to its last rung — no terminal, no
+ * style — which is what makes this file the proof that weight is optional. The two
+ * conventional variables are cleared in the fixture for the same reason the ids are
+ * normalized: a transcript whose bytes depended on the developer's shell could not be
+ * compared to a committed one. `presentation/styled.test.ts` is where the other half
+ * lives: strip the escapes and the styled surface is this transcript, line for line.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -329,6 +339,12 @@ beforeAll(async () => {
   process.env.HOME = join(sandbox, 'home');
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   delete process.env.MNEMA_RUN;
+  // What the transcript may not depend on: a shell that turns style on or off. Cleared
+  // rather than set, so what is recorded is the rule's own answer for output that is
+  // not a terminal — a fixture that set NO_COLOR would pin plain even if the rule had
+  // stopped falling back to it (see `wiring/color.ts`).
+  delete process.env.NO_COLOR;
+  delete process.env.FORCE_COLOR;
   process.chdir(repo);
 
   // ── The reads with nothing recorded anywhere: no project, no trees.

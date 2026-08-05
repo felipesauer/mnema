@@ -20,7 +20,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema refs` on the program. */
 export function registerReferences(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('refs')
     .description('show what an entity is connected to across the trees')
@@ -65,6 +65,6 @@ export function registerReferences(program: Command, wiring: Wiring): void {
         io.out(JSON.stringify(result.graph, null, 2));
         return;
       }
-      writeLines(io, referenceReport(result.graph));
+      writeLines(io, referenceReport(render, result.graph));
     });
 }
