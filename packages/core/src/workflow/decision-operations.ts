@@ -98,6 +98,13 @@ export interface DecisionTransitionOk extends ScreenedWrite {
 export interface RecordInput {
   readonly title: string;
   readonly rationale: string;
+  /**
+   * What was considered and turned down, and why not — the other half of the why.
+   * Optional: many decisions had no contender. Absent when there is none, never
+   * empty; an empty string reaches the append door as an unreadable event, the
+   * same refusal any other blank text field earns.
+   */
+  readonly alternatives?: string;
   /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
@@ -136,10 +143,17 @@ export function recordDecision(
   ctx: DecisionWriteContext,
   input: RecordInput,
 ): RecordOk | DecisionWriteError {
-  // The title and the rationale in one screen — a decision's rationale is the
-  // longest text this domain records, and the likeliest place a connection string
-  // is pasted as evidence of what was decided.
-  const text = screenContent({ title: input.title, rationale: input.rationale });
+  // The title, the rationale and the alternatives in ONE screen — a decision's
+  // prose is the longest text this domain records, and the likeliest place a
+  // connection string is pasted as evidence of what was decided. The alternatives
+  // go in the same call rather than a second one: `screenContent` leaves an absent
+  // field absent, so passing it unconditionally costs nothing when there is none,
+  // and a second screen would be a second place to forget.
+  const text = screenContent({
+    title: input.title,
+    rationale: input.rationale,
+    alternatives: input.alternatives,
+  });
   if (!text.ok) return text;
 
   // `who` is derived from local material and the record, always a real anchor;
@@ -182,6 +196,9 @@ export function recordDecision(
       rationale: text.fields.rationale,
       adr,
       initial: INITIAL_DECISION_STATE,
+      // The SCREENED value, and omitted when the caller gave none: absence in,
+      // absence out, so a decision with no alternative records no key for one.
+      ...(text.fields.alternatives !== undefined ? { alternatives: text.fields.alternatives } : {}),
     },
   );
   const appended = appendEvents(ctx.writer, birth);

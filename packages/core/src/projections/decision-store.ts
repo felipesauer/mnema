@@ -16,6 +16,7 @@ interface DecisionRow {
   readonly adr: string;
   readonly title: string;
   readonly rationale: string;
+  readonly alternatives: string | null;
   readonly state: string;
   readonly superseded_by: string | null;
   readonly supersedes: string | null;
@@ -29,6 +30,7 @@ interface DecisionParams {
   readonly adr: string;
   readonly title: string;
   readonly rationale: string;
+  readonly alternatives: string | null;
   readonly state: string;
   readonly supersededBy: string | null;
   readonly supersedes: string | null;
@@ -46,8 +48,8 @@ export function materializeDecisions(
   decisions: Iterable<DecisionProjection>,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO decisions (id, adr, title, rationale, state, superseded_by, supersedes, created_at, updated_at)
-     VALUES (@id, @adr, @title, @rationale, @state, @supersededBy, @supersedes, @createdAt, @updatedAt)`,
+    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at)
+     VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt)`,
   );
   for (const decision of decisions) {
     insert.run(toParams(decision));
@@ -81,6 +83,7 @@ function toParams(decision: DecisionProjection): DecisionParams {
     adr: decision.adr,
     title: decision.title,
     rationale: decision.rationale,
+    alternatives: decision.alternatives ?? null,
     state: decision.state,
     supersededBy: decision.supersededBy ?? null,
     supersedes: decision.supersedes ?? null,
@@ -99,6 +102,9 @@ function toProjection(row: DecisionRow): DecisionProjection {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+  // NULL in the column means the decision recorded none, so the projection gets
+  // no key — the round trip preserves absence rather than turning it into ''.
+  if (row.alternatives !== null) projection.alternatives = row.alternatives;
   if (row.superseded_by !== null) projection.supersededBy = row.superseded_by;
   if (row.supersedes !== null) projection.supersedes = row.supersedes;
   return projection;

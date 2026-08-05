@@ -12,6 +12,9 @@
  *   1. A decision is born with BOTH a `title` and a `rationale` — the core
  *      requires both, so both are surfaced as required inputs (positional on the
  *      CLI, so a missing one is the parser's clear error, not a late gate error).
+ *      What it turned down (`alternatives`) is optional and travels the same path:
+ *      forwarded when the caller gave one, omitted when it did not, so a decision
+ *      with no contender records no key for one.
  *
  *   2. A decision has NO alias. Its human-facing identifier is the `ADR-<n>`
  *      label the operation freezes into the record — a citation, not a hash of
@@ -78,7 +81,14 @@ export type DecisionRefused =
  */
 export function runDecision(
   ctx: DecisionContext,
-  input: { title: string; rationale: string; scope?: Scope; which?: string; run?: string },
+  input: {
+    title: string;
+    rationale: string;
+    alternatives?: string;
+    scope?: Scope;
+    which?: string;
+    run?: string;
+  },
 ): DecisionRecorded | DecisionRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
@@ -99,6 +109,7 @@ export function runDecision(
     {
       title: input.title,
       rationale: input.rationale,
+      ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
       ...(input.which !== undefined ? { which: input.which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     },

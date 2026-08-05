@@ -129,16 +129,32 @@ export const BIRTH_ACTION = 'create';
  * Builds a `decision.recorded` event (subject = the decision's id). Unlike a
  * task's creation, the decision's fact carries its `rationale` (the why) and
  * its frozen `adr` label — both part of the immutable record.
+ *
+ * `alternatives` — what was turned down, and why not — is omitted from the
+ * payload entirely when the caller has none, so a decision without one stays
+ * byte-identical to one recorded before the field existed.
+ *
+ * ABSENT is omitted; EMPTY is carried through and refused on the way in, the same
+ * treatment `run.started`'s `goal` gets and deliberately not the one a transition's
+ * `by` gets (which coerces empty to absent). A caller that passed an empty string
+ * asked to record something; silently recording nothing and reporting success is
+ * the shape this product refuses everywhere else, so the append door answers with
+ * UNREADABLE_EVENT instead.
  */
 export function decisionRecorded(
   envelope: EnvelopeInput,
-  payload: { title: string; rationale: string; adr: string },
+  payload: { title: string; rationale: string; adr: string; alternatives?: string },
 ): CatalogEvent {
   return {
     v: 1,
     kind: 'decision.recorded',
     ...envelopeFields(envelope),
-    payload: { title: payload.title, rationale: payload.rationale, adr: payload.adr },
+    payload: {
+      title: payload.title,
+      rationale: payload.rationale,
+      adr: payload.adr,
+      ...(payload.alternatives !== undefined ? { alternatives: payload.alternatives } : {}),
+    },
   };
 }
 
@@ -190,13 +206,20 @@ export function decisionTransitioned(
  */
 export function decisionBirth(
   envelope: EnvelopeInput,
-  payload: { title: string; rationale: string; adr: string; initial: string },
+  payload: {
+    title: string;
+    rationale: string;
+    adr: string;
+    initial: string;
+    alternatives?: string;
+  },
 ): [CatalogEvent, CatalogEvent] {
   return [
     decisionRecorded(envelope, {
       title: payload.title,
       rationale: payload.rationale,
       adr: payload.adr,
+      ...(payload.alternatives !== undefined ? { alternatives: payload.alternatives } : {}),
     }),
     decisionTransitioned(envelope, { from: null, to: payload.initial, action: BIRTH_ACTION }),
   ];

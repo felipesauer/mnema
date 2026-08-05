@@ -28,7 +28,7 @@ $ mnema task 'Rotate the local credentials' --scope private --which agent-alpha
 $ mnema task 'Read the release notes' --scope global
 | Created task <task-errand-alias> (<task-errand>)
 |   Landed in the global tree — personal and cross-project, outside any repository.
-$ mnema decision 'Keep the runbook in the record' 'a wiki page nobody owns goes stale'
+$ mnema decision 'Keep the runbook in the record' 'a wiki page nobody owns goes stale' --alternatives 'a shared spreadsheet: it has no history and nobody reviews it'
 | Recorded decision ADR-1 (<decision-runbook>)
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema decision 'Keep the runbook in the wiki' 'it is where we look'

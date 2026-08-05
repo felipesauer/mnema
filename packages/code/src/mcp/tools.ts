@@ -610,7 +610,9 @@ function proofToFields(input: {
  * `mnema decision`. The destination is a per-action choice: an explicit `project` and
  * `scope` win, else the cascade's project and the tree this KIND names — a decision is
  * a declaration about the project, so it goes to the record that travels. A decision
- * needs both a `title` and a `rationale`, both required by the schema.
+ * needs both a `title` and a `rationale`, both required by the schema; what it
+ * turned down (`alternatives`) is optional and forwarded only when given, so a
+ * decision with no contender records no key for one.
  *
  * Opens that tree's writer, records the decision attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints. Returns the
@@ -621,7 +623,13 @@ function proofToFields(input: {
  */
 export function runRecordDecision(
   session: Session,
-  input: { title: string; rationale: string; scope?: Scope; project?: string },
+  input: {
+    title: string;
+    rationale: string;
+    alternatives?: string;
+    scope?: Scope;
+    project?: string;
+  },
 ): RecordDecisionResult {
   const route = routeWrite(session, 'decision.recorded', input);
   if (!route.ok) return route;
@@ -629,6 +637,7 @@ export function runRecordDecision(
   const recorded = recordDecision(ctx, {
     title: input.title,
     rationale: input.rationale,
+    ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
     which: session.which,
     run,
   });

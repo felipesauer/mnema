@@ -19,13 +19,14 @@
  * the moment a successor supersedes it".
  *
  * NAMES, NEVER BODIES — the rule this layer already had, applied to the one entity
- * whose body is the longest. A decision's `rationale` is the paragraphs that argue
- * it, and twenty of those in every session's opening context would bury what
- * matters and charge for what rarely applies. What comes back is the NAME: the
- * title a reader recognizes, the `adr` label they cite it by, and the id that asks
- * for the rest. The rationale comes from a second read (`readRecord`, the
- * `read_record` tool), asked about the one decision that turned out to bear on the
- * task at hand.
+ * whose body is the longest. A decision's BODY is now two fields — the `rationale`
+ * that argues it and the `alternatives` it turned down — and twenty of those in
+ * every session's opening context would bury what matters and charge for what
+ * rarely applies. What comes back is the NAME: the title a reader recognizes, the
+ * `adr` label they cite it by, and the id that asks for the rest. Both halves of the
+ * body come from a second read (`readRecord`, the `read_record` tool), asked about
+ * the one decision that turned out to bear on the task at hand. Asserted in
+ * `decisions.test.ts` — "never carries the RATIONALE".
  *
  * The instant is NOT served, and it is what the order is made of. A decision in
  * force was last moved by its acceptance, so `updatedAt` is when it came into

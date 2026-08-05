@@ -52,6 +52,42 @@ describe('mnema decision', () => {
     }
   });
 
+  it('records what the decision turned down, all the way to the projection', () => {
+    // The option has to REACH the event: a plumbed option fed by no caller is the
+    // class this project has paid for four times over.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+
+    const result = runDecision(
+      { cwd: repo, env },
+      {
+        title: 'adopt the ledger',
+        rationale: 'it is the audit surface',
+        alternatives: 'a wiki page: nobody owns it and it goes stale',
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(decisionsOf(root).get(result.id)?.alternatives).toBe(
+      'a wiki page: nobody owns it and it goes stale',
+    );
+  });
+
+  it('records no alternatives key when the caller passed none', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runDecision({ cwd: repo, env }, { title: 't', rationale: 'r' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const root = resolveTrees(repo, env).projectPublic as string;
+    const d = decisionsOf(root).get(result.id);
+    expect(d).toBeDefined();
+    if (d === undefined) return;
+    expect('alternatives' in d).toBe(false);
+  });
+
   it('increments the ADR label per decision', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });

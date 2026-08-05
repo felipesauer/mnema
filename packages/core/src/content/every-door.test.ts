@@ -29,9 +29,22 @@ import { detectSecrets } from './secrets.js';
  * once already — as a copied block it was simply MISSING from the four knowledge
  * facts, and a self-authorized capture reached the chain before anyone noticed. So
  * these tests drive every operation that appends free text, then read the WHOLE
- * chain back and scan every payload generically. A field a future operation adds
- * and forgets to screen fails here, without anyone having to remember to extend a
- * list — the scan does not know the field names.
+ * chain back and scan every payload generically.
+ *
+ * WHAT IS GENERIC HERE, AND WHAT IS A LIST — because the two halves of this file
+ * are not the same kind of thing, and a doc-comment that said they were is what
+ * this paragraph replaces. It claimed that "a field a future operation adds and
+ * forgets to screen fails here, without anyone having to remember to extend a
+ * list". That is false, and it was measured false: `alternatives` was added to
+ * `decision.recorded` with the screen deliberately bypassed, and the whole suite of
+ * 2,059 tests stayed green — this file included, ten of ten. Only the READ half is
+ * generic (the sweep below walks every string of every event and knows no field
+ * names); the WRITE half is a hand-written list of calls with hand-written
+ * arguments, so a field no call below passes is a field no assertion can see. The
+ * sweep proves the door ran on the text it was GIVEN; it cannot prove the text
+ * reached it. Closing that is the door's own slice — the driving would have to be
+ * derived from the catalog's payload fields rather than typed out — and until then
+ * extending the lists below is a step a field-adding change owes by hand.
  *
  * And the assertion is always the same one: the value is ABSENT from what was
  * appended. Never that a counter moved (see `secrets.test.ts` for why).
@@ -111,6 +124,7 @@ describe('the content door runs at every write point', () => {
     const decision = recordDecision(ctx, {
       title: `use ${SECRET}`,
       rationale: `because ${PASSWORD_URL}`,
+      alternatives: `we turned down ${PASSWORD_URL}, and also ${SECRET}`,
       which: 'agent',
     });
     expect(decision.ok).toBe(true);
@@ -222,6 +236,16 @@ describe('the content door runs at every write point', () => {
     });
     // Both fields, both classes, one report.
     expect(decision.ok && decision.replaced).toEqual(['aws-access-key', 'url-password']);
+
+    // The third text field a decision carries reports through the same one screen,
+    // in field order — so a credential typed into what was TURNED DOWN is named in
+    // the reply exactly as one typed into the reason it was chosen.
+    const alternatives = recordDecision(ctx, {
+      title: 'clean',
+      rationale: 'clean',
+      alternatives: `we rejected ${SECRET}`,
+    });
+    expect(alternatives.ok && alternatives.replaced).toEqual(['aws-access-key']);
 
     const clean = captureMemory(ctx, { content: 'nothing sensitive here' });
     expect(clean.ok).toBe(true);
@@ -447,6 +471,10 @@ describe('the size limit refuses without appending anything', () => {
       createTask(ctx, { title: oversize }),
       recordDecision(ctx, { title: oversize, rationale: 'why' }),
       recordDecision(ctx, { title: 'ok', rationale: oversize }),
+      // The optional field is under the same ceiling as the required ones: the
+      // limit is a property of a text FIELD, not of whether the caller had to
+      // supply it.
+      recordDecision(ctx, { title: 'ok', rationale: 'why', alternatives: oversize }),
       createSkill(ctx, { name: oversize, body: 'b' }),
       createSkill(ctx, { name: 'n', body: oversize }),
       captureMemory(ctx, { content: oversize }),

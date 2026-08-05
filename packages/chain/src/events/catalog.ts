@@ -7,9 +7,34 @@
  * catalog does not describe is not a fact the chain promises to prove.
  *
  * Adding a kind is a deliberate design change (a new thing we promise to
- * prove), not an arbitrary runtime shape. Changing a published payload is
- * never an in-place edit: it is a new version plus an upcaster, so an event
- * written under an old contract stays readable and reproducible forever.
+ * prove), not an arbitrary runtime shape. Changing what a published payload
+ * MEANS is never an in-place edit: it is a new version plus an upcaster, so an
+ * event written under an old contract stays readable and reproducible forever.
+ *
+ * WHAT THAT RULE DOES AND DOES NOT COVER, measured rather than assumed. The
+ * purpose is the clause at the end — an already-written event stays reproducible
+ * — and it is the purpose that decides, because the mechanism cannot serve every
+ * shape of change:
+ *
+ *   - A field ADDED as OPTIONAL is not a version bump. Nothing already written
+ *     changes: an old event omits the field, parses, and canonicalizes to the
+ *     same bytes it always did, so its entry hash and the content root a
+ *     checkpoint signed both still match. `alternatives` on `decision.recorded`
+ *     is exactly this case (`parse.test.ts`, "reads a decision recorded before
+ *     `alternatives` existed").
+ *   - A version bump is for a change that would otherwise make an old event
+ *     UNREADABLE or make an existing field mean something else — the cases where
+ *     leaving the shape alone is what loses the past.
+ *
+ * And the reason the first case must not take a bump anyway: an upcaster raises
+ * `v` by one, `v` is part of the canonical bytes, and both the entry hash and the
+ * content root are RECOMPUTED from the event a reader reconstructed. So lifting
+ * an already-written event changes its bytes, and verify reports "entry hash
+ * mismatch: content or link was altered" on a chain nobody touched. Measured on a
+ * two-event chain with a `(decision.recorded, 1) -> 2` lift registered: green
+ * before, one T1 issue after. Bumping to protect the past would break it. This is
+ * a real limit of the ladder, not of this field — it is written down here because
+ * this is where the next person will come to ask.
  *
  * States and actions are stored as literal strings, never pointers into the
  * workflow. A pointer rots when the workflow changes; a literal is a
@@ -125,6 +150,27 @@ export interface TaskTransitionedV1 extends Envelope {
  * label over the id, not identity and not a fatal constraint — two clones may
  * mint the same `adr` offline; the ids stay unique and a projection surfaces
  * the label collision.
+ *
+ * `alternatives` is the OTHER half of the why: what was considered and turned
+ * down, and for what reason. It is optional because many decisions had no real
+ * contender, and it is TEXT rather than a list of options because the content
+ * door screens flat text fields — a nested shape would oblige the door to
+ * recurse, and a credential escaping through a nested field would regress the
+ * one guarantee it gives. It is not called `rejected`: that is a decision STATE,
+ * and one word meaning both a workflow position and a paragraph of prose is a
+ * word nobody can read twice the same way.
+ *
+ * IT IS WRITTEN AT BIRTH, because this event is immutable. There is no operation
+ * that adds an `alternatives` to a decision already recorded, and there will not
+ * be one: a rejected option discovered later is a NEW decision, or a supersession
+ * of this one — which is how the product already handles changing its mind. The
+ * record gains the later reasoning as a later fact, in order, rather than by
+ * editing what was proven.
+ *
+ * Optional, and the absence is a REPORTABLE fact rather than an unknown: the
+ * field is NAMED, so a reader can ask "did this decision record what it turned
+ * down?" — a question a section convention inside `rationale` could never answer,
+ * because prose is not interrogable.
  */
 export interface DecisionRecordedV1 extends Envelope {
   readonly kind: 'decision.recorded';
@@ -136,6 +182,11 @@ export interface DecisionRecordedV1 extends Envelope {
     readonly rationale: string;
     /** The citable label, `ADR-<n>`, frozen at write time. */
     readonly adr: string;
+    /**
+     * What was considered and turned down, and why not. Absent when the decision
+     * had no alternative worth recording — absent, never empty.
+     */
+    readonly alternatives?: string;
   };
 }
 

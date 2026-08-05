@@ -908,6 +908,69 @@ describe('MCP session + tools — unit', () => {
     expect(recorded?.who).not.toBe('claude-code');
   });
 
+  it('record_decision records what was turned down, and `search` finds it by it', () => {
+    // Both halves of the arg's reason for existing, over the MCP surface: the value
+    // reaches the event, and a word that lives ONLY there answers a search. The
+    // second half is what keeps the field from being write-only.
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+
+    const result = runRecordDecision(session, {
+      title: 'Store the record as JSONL',
+      rationale: 'one append is one line',
+      alternatives: 'a shared spreadsheet: no history and nobody reviews it',
+    });
+    if (!result.ok) throw new Error('setup: record refused');
+
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
+    const recorded = orderedEvents({ root: chainRoot }, catalogUpcasters()).find(
+      (e) => e.kind === 'decision.recorded',
+    );
+    expect(recorded).toBeDefined();
+    if (recorded === undefined || recorded.kind !== 'decision.recorded') return;
+    expect(recorded.payload.alternatives).toBe(
+      'a shared spreadsheet: no history and nobody reviews it',
+    );
+
+    const found = runSearchTool(session, { term: 'spreadsheet' });
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    expect(found.value.hits.map((hit) => hit.id)).toEqual([result.id]);
+  });
+
+  it('read_record serves what a decision turned down, and invents no section without one', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const withIt = runRecordDecision(session, {
+      title: 'With a contender',
+      rationale: 'the why',
+      alternatives: 'the one we turned down',
+    });
+    const without = runRecordDecision(session, { title: 'No contender', rationale: 'the why' });
+    if (!withIt.ok || !without.ok) throw new Error('setup: record refused');
+
+    const served = runReadRecordTool(session, { id: withIt.id });
+    expect(served.ok).toBe(true);
+    if (!served.ok || served.value.kind !== 'decision') return;
+    expect(served.value.record.alternatives).toBe('the one we turned down');
+
+    const bare = runReadRecordTool(session, { id: without.id });
+    expect(bare.ok).toBe(true);
+    if (!bare.ok || bare.value.kind !== 'decision') return;
+    // ABSENT, so the JSON the agent reads has no key for it — a null or an empty
+    // string would read as "this decision turned nothing down", which is a claim
+    // the record never made.
+    expect('alternatives' in bare.value.record).toBe(false);
+  });
+
   it('record_decision scope arg overrides the session default (per-action scope)', () => {
     const project = makeProject('proj');
     const session = openSession({
@@ -2345,14 +2408,28 @@ describe('MCP server — end to end over a real client', () => {
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
-    // Record over the wire; the ADR comes back in the text envelope.
+    // Record over the wire; the ADR comes back in the text envelope. The
+    // `alternatives` arg travels the same wire — declared in the tool's schema and
+    // destructured by its handler — and neither half is provable by calling the
+    // adapter directly, which is how a plumbed-but-unfed option has slipped through
+    // four times here.
     const recorded = await client.callTool({
       name: 'record_decision',
-      arguments: { title: 'adopt the ledger', rationale: 'audit surface' },
+      arguments: {
+        title: 'adopt the ledger',
+        rationale: 'audit surface',
+        alternatives: 'a shared spreadsheet: nobody reviews it',
+      },
     });
     expect(recorded.isError).toBeFalsy();
     expect(textOf(recorded)).toMatch(/^Recorded decision ADR-1 \(/);
     const id = /\(([^)]+)\)/.exec(textOf(recorded))?.[1] as string;
+
+    // Read it back over the same wire: what the agent asked to record is what the
+    // record now holds.
+    const read = await client.callTool({ name: 'read_record', arguments: { id } });
+    expect(read.isError).toBeFalsy();
+    expect(textOf(read)).toContain('a shared spreadsheet: nobody reviews it');
 
     // A legal accept returns ADR → accepted.
     const accepted = await client.callTool({

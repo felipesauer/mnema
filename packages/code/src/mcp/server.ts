@@ -678,7 +678,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       description:
         'Record a decision into the mnema chain, attributed to this agent and ' +
         'pinned to the current session. A decision needs both a title and a ' +
-        'rationale (why it was made). Optionally pick the scope it lands in — ' +
+        'rationale (why it was made). Optionally record what you considered and ' +
+        'turned down, and why not (`alternatives`) — the reasoning a later reader ' +
+        'needs when somebody proposes the thing you already rejected; it is ' +
+        'searchable, so `search` answers "did we already turn this down?". A ' +
+        'decision is immutable, so it is recorded now: an option rejected later is ' +
+        'a new decision, or supersedes this one. Optionally pick the scope it lands in — ' +
         'public (team-visible), private (this machine, this project), or global ' +
         '(personal, cross-project); omitted, a decision is a declaration about the ' +
         'project and lands PUBLIC — committed, so the team gets it on clone (global ' +
@@ -690,6 +695,15 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       inputSchema: {
         title: z.string().min(1).describe('The decision title.'),
         rationale: z.string().min(1).describe('Why the decision was made.'),
+        alternatives: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            'What was considered and turned down, and WHY NOT — both halves; the ' +
+              'name of a rejected option without its reason loses most of the value. ' +
+              'Omit it when there was no real alternative.',
+          ),
         scope: z
           .enum(['public', 'private', 'global'])
           .optional()
@@ -697,11 +711,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         project: PROJECT_ARG,
       },
     },
-    async ({ title, rationale, scope, project }) => {
+    async ({ title, rationale, alternatives, scope, project }) => {
       const active = await ensureSession();
       const result = runRecordDecision(active, {
         title,
         rationale,
+        ...(alternatives !== undefined ? { alternatives } : {}),
         ...(scope !== undefined ? { scope } : {}),
         ...(project !== undefined ? { project } : {}),
       });
@@ -1131,7 +1146,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Read record — one whole record by id',
       description:
-        'Read ONE record in full — a memory’s content, a decision’s rationale, an ' +
+        'Read ONE record in full — a memory’s content, a decision’s rationale and ' +
+        'what it turned down, an ' +
         'observation’s text, a task — by the id an index gave you: `search`, or the ' +
         'decisions `bootstrap` lists (which carry the title and not the argument). ' +
         'This is the second ' +

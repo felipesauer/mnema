@@ -7,7 +7,14 @@
  * rule mirrors tasks:
  *   - a decision EXISTS once its `decision.recorded` is seen;
  *   - its STATE is the `to` of its last `decision.transitioned` (birth included);
- *   - its title, rationale, and `adr` label are read literally from the record.
+ *   - its title, rationale, `alternatives` and `adr` label are read literally
+ *     from the record.
+ *
+ * `alternatives` is projected only when the record carries one. A decision that
+ * recorded none has NO key for it — not an empty string — so "did this decision
+ * say what it turned down?" is answerable from the projection by the field's own
+ * absence, which is the whole reason it is a named field rather than a convention
+ * inside the rationale.
  *
  * A supersede is the one multi-entity fact: its subject is the SUPERSEDED
  * decision, and its `by` names the SUCCESSOR. The fold updates BOTH sides — the
@@ -44,6 +51,11 @@ export interface DecisionProjection {
   readonly title: string;
   /** The why — the whole value of the record. */
   readonly rationale: string;
+  /**
+   * What was considered and turned down, and why not. ABSENT when the decision
+   * recorded none — the absence is the fact, so it is never an empty string.
+   */
+  readonly alternatives?: string;
   /** The `to` of the last transition. */
   readonly state: string;
   /** The successor's id, when this decision was superseded. */
@@ -69,6 +81,7 @@ interface DecisionAccumulator {
   adr?: string;
   title?: string;
   rationale?: string;
+  alternatives?: string;
   state?: string;
   supersededBy?: string;
   supersedes?: string;
@@ -98,6 +111,12 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       entry.adr = event.payload.adr;
       entry.title = event.payload.title;
       entry.rationale = event.payload.rationale;
+      // Only when the record has one: assigning `undefined` would be the same
+      // value, but reading it conditionally keeps the fold's shape the same as the
+      // projection it builds — absent stays absent all the way through.
+      if (event.payload.alternatives !== undefined) {
+        entry.alternatives = event.payload.alternatives;
+      }
       entry.createdAt = event.at;
     } else if (event.kind === 'decision.transitioned') {
       const entry = getOrInit(acc, event.subject);
@@ -137,6 +156,7 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
     };
+    if (entry.alternatives !== undefined) projection.alternatives = entry.alternatives;
     if (entry.supersededBy !== undefined) projection.supersededBy = entry.supersededBy;
     if (entry.supersedes !== undefined) projection.supersedes = entry.supersedes;
     result.set(id, projection);

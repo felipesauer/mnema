@@ -21,11 +21,12 @@
  *
  * NAMES, NEVER BODIES, like the reads it is built out of. A decision arrives as its
  * title, its citable `ADR-<n>` label and its id; a pattern as its name and its id.
- * A title IS the rule in short form — the body of a decision is the argument for
- * it, and the body of a pattern is the recipe — and a file that is read on every
- * single prompt pays for its length every time. The bodies come from a second read
- * asked about the one item that turned out to bear on the task ({@link readRecord}
- * for a decision's `rationale`, {@link adoptedSkills} for a pattern).
+ * A title IS the rule in short form — the body of a decision is the argument for it
+ * and what it turned down, and the body of a pattern is the recipe — and a file that
+ * is read on every single prompt pays for its length every time. The bodies come
+ * from a second read asked about the one item that turned out to bear on the task
+ * ({@link readRecord} for a decision's `rationale` and `alternatives`, {@link
+ * adoptedSkills} for a pattern).
  *
  * NO CUT BY SIZE, AND THE ASYMMETRY WITH {@link bootstrap} IS DELIBERATE. The
  * opening context cuts its lists and reports the total, because a queue of work is a
@@ -93,8 +94,9 @@ const TRAVELS: Scope = 'public';
 export interface Brief {
   /**
    * The decisions in force in the tree that travels — `accepted`, and nothing else —
-   * most recently settled first. Never the `rationale`: the argument comes from
-   * {@link readRecord}, asked about the one decision that bears on the task at hand.
+   * most recently settled first. Never the body: neither the `rationale` nor the
+   * `alternatives` it turned down. Both come from {@link readRecord}, asked about
+   * the one decision that bears on the task at hand.
    */
   readonly decisions: readonly DecisionRef[];
   /**

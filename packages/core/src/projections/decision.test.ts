@@ -11,9 +11,14 @@ const env = (subject: string, n: number) => ({
 });
 
 /** The birth pair of a decision, as ordered events. */
-function birth(id: string, adr: string, n = 0): CatalogEvent[] {
+function birth(id: string, adr: string, n = 0, alternatives?: string): CatalogEvent[] {
   return [
-    decisionRecorded(env(id, n), { title: `title ${id}`, rationale: `why ${id}`, adr }),
+    decisionRecorded(env(id, n), {
+      title: `title ${id}`,
+      rationale: `why ${id}`,
+      adr,
+      ...(alternatives !== undefined ? { alternatives } : {}),
+    }),
     decisionTransitioned(env(id, n), { from: null, to: 'proposed', action: 'create' }),
   ];
 }
@@ -30,6 +35,24 @@ describe('projectDecisions — the fold', () => {
       createdAt: at(0),
       updatedAt: at(0),
     });
+  });
+
+  it('projects the alternatives a decision recorded', () => {
+    const d = projectDecisions(birth('d-1', 'ADR-1', 0, 'a wiki page: nobody owns it'));
+    expect(d.get('d-1')?.alternatives).toBe('a wiki page: nobody owns it');
+  });
+
+  it('gives a decision with no alternatives no key for one', () => {
+    // ABSENCE, asserted as absence: the whole point of a named field is that
+    // "this decision did not say what it turned down" is answerable, and an empty
+    // string would answer it wrong.
+    const d = projectDecisions(birth('d-1', 'ADR-1')).get('d-1');
+    // Guarded rather than cast: `d && 'alternatives' in d` would report false for a
+    // decision that was never projected at all, which is a green that means nothing.
+    expect(d).toBeDefined();
+    if (d === undefined) return;
+    expect('alternatives' in d).toBe(false);
+    expect(d.alternatives).toBeUndefined();
   });
 
   it('reads state from the last transition (accept)', () => {

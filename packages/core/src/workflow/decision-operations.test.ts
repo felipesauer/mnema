@@ -57,7 +57,7 @@ function contextFor(w: ChainWriter, r: string, clock: Clock): DecisionWriteConte
  */
 function mustRecord(
   ctx: DecisionWriteContext,
-  input: { title: string; rationale: string; which?: string },
+  input: { title: string; rationale: string; alternatives?: string; which?: string },
 ): { id: string; adr: string } {
   const result = recordDecision(ctx, input);
   if (!result.ok) throw new Error(`record failed: ${result.code}`);
@@ -134,6 +134,60 @@ describe('recordDecision — the frozen ADR label', () => {
       which: w.anchor,
     });
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
+  });
+});
+
+describe('recordDecision — what the decision turned down', () => {
+  it('records the alternatives it was given, and projects them', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock } = fixedClock();
+    const { id } = mustRecord(contextFor(w, root, clock), {
+      title: 'Store the record as JSONL',
+      rationale: 'One append is one line.',
+      alternatives: 'A single sqlite file: one corrupt page loses the archive.',
+      which: WHICH,
+    });
+    expect(decisionsOf(root).get(id)?.alternatives).toBe(
+      'A single sqlite file: one corrupt page loses the archive.',
+    );
+  });
+
+  it('records no key at all when the caller had no alternative', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock } = fixedClock();
+    const { id } = mustRecord(contextFor(w, root, clock), {
+      title: 'Store the record as JSONL',
+      rationale: 'One append is one line.',
+      which: WHICH,
+    });
+    // Asserted on the EVENT, not only on the projection: a projection that dropped
+    // an empty string would hide a payload that carried one.
+    const recorded = orderedEvents({ root }, upcasters).find(
+      (event) => event.kind === 'decision.recorded' && event.subject === id,
+    );
+    expect(recorded).toBeDefined();
+    if (recorded === undefined) return;
+    expect('alternatives' in recorded.payload).toBe(false);
+    expect(decisionsOf(root).get(id)?.alternatives).toBeUndefined();
+  });
+
+  it('refuses a blank alternatives rather than recording an empty field', () => {
+    // The write asks what a READ would accept, and a read refuses a blank optional
+    // string — so the surface's own emptiness check is not the only thing standing
+    // between a blank value and the chain.
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock } = fixedClock();
+    const refused = recordDecision(contextFor(w, root, clock), {
+      title: 'A decision',
+      rationale: 'a why',
+      alternatives: '',
+      which: WHICH,
+    });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.code).toBe('UNREADABLE_EVENT');
+    // And nothing landed: the decision was not half-recorded.
+    expect(decisionsOf(root).size).toBe(0);
   });
 });
 

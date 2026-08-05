@@ -192,6 +192,15 @@ describe('every write refuses what no read could accept', () => {
         drive: () => recordDecision(ctx, { title: 't', rationale: '' }),
       },
       {
+        // An OPTIONAL field, swept like a required one: the catalog refuses a
+        // blank string wherever it appears, so "the caller did not have to supply
+        // it" is not a reason a blank one may pass. Absent is the way to say none.
+        op: 'recordDecision',
+        field: 'alternatives',
+        names: 'payload.alternatives',
+        drive: () => recordDecision(ctx, { title: 't', rationale: 'why', alternatives: '' }),
+      },
+      {
         op: 'createSkill',
         field: 'name',
         names: 'payload.name',

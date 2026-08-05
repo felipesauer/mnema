@@ -331,9 +331,12 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       expect(b.decisions).toEqual([
         { id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled arithmetic' },
       ]);
-      // The argument itself never enters the opening context. The fixture writes
-      // `why <title>` as the rationale, so this is that record's actual prose.
+      // Neither half of the body enters the opening context. The fixture writes
+      // `why <title>` as the rationale and `turned down for <title>` as the
+      // alternatives, so these are that record's actual prose — and the `toEqual`
+      // above is total, so a new key would fail it as well.
       expect(JSON.stringify(b)).not.toContain('why Hand-rolled arithmetic');
+      expect(JSON.stringify(b)).not.toContain('turned down for Hand-rolled arithmetic');
     } finally {
       cache.close();
     }

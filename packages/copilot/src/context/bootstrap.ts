@@ -29,7 +29,8 @@
  * line: it is both the index and the trigger, and an agent cannot ask for what it
  * does not know exists. The body comes from a separate read, when a name turns out
  * to match the task at hand: a pattern's from {@link adoptedSkills} (the `skills`
- * tool), a decision's `rationale` from {@link readRecord} (the `read_record` tool).
+ * tool), and a decision's — its `rationale` and the `alternatives` it turned down —
+ * from {@link readRecord} (the `read_record` tool).
  *
  * A TASK HAS A BODY TOO, AND IT IS THE MOVES. The same rule now governs the work
  * list, because it is the same distinction: a work item carries id, title, state
@@ -174,8 +175,9 @@ export interface Bootstrap {
   readonly skills: readonly SkillRef[];
   /**
    * The decisions in force — `accepted`, and nothing else — by title, `adr` label
-   * and id, never the `rationale` (see the module doc; it comes from
-   * {@link readRecord}). Most recently settled first, so the freshest calls lead
+   * and id, never the body — neither the `rationale` nor the `alternatives` (see
+   * the module doc; both come from {@link readRecord}). Most recently settled
+   * first, so the freshest calls lead
    * and the cut falls on the oldest, and everything past
    * {@link Bootstrap.decisionsTotal}'s cut is omitted.
    */
