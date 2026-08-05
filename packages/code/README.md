@@ -395,9 +395,24 @@ patterns by name (`skills` for the pattern itself), and the decisions **in force
 by title and `ADR-<n>` label (`read_record` for the rationale and what the decision
 turned down). Only an accepted
 decision is listed — one still proposed, rejected, or superseded by a later
-decision does not govern. Both lists that can grow are cut to the freshest items,
-and `workTotal`/`decisionsTotal` say how many there were, so a cut never reads as
-"this is everything".
+decision does not govern.
+
+The fourth list is what is **awaiting a judgement**: a decision still `proposed`, a
+pattern `proposed` or `reviewed` — everything a person has to rule on before it
+means anything. One list holds both kinds, and each item says which it is (`kind`)
+and what is owed (`state`). For a decision, `read_record` gives the argument behind
+it. For a pattern, the name and the state are all an agent gets: no read of the
+server serves the text of one still being decided on — `skills` serves adopted
+patterns only, because what it hands back is meant to be worked by — so the move is
+to raise it with you. You read it with `mnema show <id>`, which serves a proposed
+pattern precisely because the person reading it is curating. It is not a second work
+list either: the work list means "a move is legal", and by that rule an accepted
+decision — which can always be superseded — would be pending forever.
+
+Three of the four lists are cut to the freshest items, and
+`workTotal`/`decisionsTotal`/`awaitingJudgementTotal` say how many there were, so a
+cut never reads as "this is everything". The adopted patterns are the exception:
+every one is listed, so that list carries no total.
 
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
 adopted skills by name, and the tool hands over the pattern itself, all of them

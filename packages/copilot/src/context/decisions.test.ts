@@ -9,7 +9,7 @@ import {
   moveDecisionAt,
   supersedeDecision,
 } from '../../tests/support/chain.js';
-import { decisionsInForce } from './decisions.js';
+import { decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
 
 /**
  * Every fixture here reaches its state through the move the workflow defines, from
@@ -213,6 +213,160 @@ describe('decisionsInForce — the calls that govern', () => {
     try {
       expect(decisionsInForce([cache])).toEqual([]);
       expect(decisionsInForce([])).toEqual([]);
+    } finally {
+      cache.close();
+    }
+  });
+});
+
+describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling on', () => {
+  let benches: Bench[] = [];
+  afterEach(() => {
+    for (const b of benches) rmSync(b.root, { recursive: true, force: true });
+    benches = [];
+  });
+
+  /** A bench whose cleanup this suite owns. */
+  function bench(): Bench {
+    const b = makeBench();
+    benches.push(b);
+    return b;
+  }
+
+  /** Births a decision and accepts it — the two moves that put one in force. */
+  function accept(b: Bench, id: string, title: string): string {
+    birthDecision(b, id, title);
+    moveDecision(b, id, 'proposed', 'accepted', 'accept');
+    return id;
+  }
+
+  it('serves a proposed decision by kind, id, ADR, title, STATE and when it moved', () => {
+    const b = bench();
+    birthDecision(b, 'dec-1', 'Still on the table');
+    const cache = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([cache])).toEqual([
+        {
+          kind: 'decision',
+          id: 'dec-1',
+          adr: 'ADR-dec-1',
+          title: 'Still on the table',
+          state: 'proposed',
+          updatedAt: expect.any(String),
+        },
+      ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('an ACCEPTED decision is not awaiting anything, though `supersede` is legal from it forever', () => {
+    // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE. The work list's rule
+    // is "has at least one legal move", and `DECISION_TRANSITIONS` carries
+    // `{from: 'accepted', action: 'supersede'}` with nothing to ever make it happen
+    // — so under that rule this decision would be a pendency for as long as the
+    // project exists, and the list would grow and never empty. The rule here is
+    // "somebody owes a ruling", and nobody owes one on a call already settled.
+    const b = bench();
+    accept(b, 'dec-settled', 'Already agreed');
+    const cache = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([cache])).toEqual([]);
+      // And the same record IS served by the other list, so the absence above is
+      // the criterion and not an empty projection.
+      expect(decisionsInForce([cache]).map((d) => d.id)).toEqual(['dec-settled']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('serves ONLY the proposed — accepted, rejected and superseded are all absent', () => {
+    // The four states of the machine, each reached by its own move, and both halves
+    // of the criterion in one assertion: who is in, and who is not.
+    const b = bench();
+    birthDecision(b, 'dec-proposed', 'On the table');
+    accept(b, 'dec-accepted', 'In force');
+    birthDecision(b, 'dec-rejected', 'Refused');
+    moveDecision(b, 'dec-rejected', 'proposed', 'rejected', 'reject');
+    accept(b, 'dec-superseded', 'Replaced');
+    supersedeDecision(b, 'dec-superseded', 'dec-accepted');
+    const cache = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([cache]).map((d) => d.id)).toEqual(['dec-proposed']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('a decision that gets accepted LEAVES the list — the waiting clears', () => {
+    // The transition proves it, not a state written by hand: the same decision is
+    // waiting before the move and gone after it.
+    const b = bench();
+    birthDecision(b, 'dec-1', 'On the table');
+    const before = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([before]).map((d) => d.id)).toEqual(['dec-1']);
+    } finally {
+      before.close();
+    }
+    moveDecision(b, 'dec-1', 'proposed', 'accepted', 'accept');
+    const after = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([after])).toEqual([]);
+    } finally {
+      after.close();
+    }
+  });
+
+  it('never carries the RATIONALE or the alternatives — the keys are absent', () => {
+    const b = bench();
+    birthDecision(b, 'dec-1', 'A call with a long argument behind it');
+    const cache = b.cache();
+    try {
+      const [served] = decisionsAwaitingJudgement([cache]);
+      if (served === undefined) throw new Error('the pending decision is missing');
+      expect(Object.keys(served).sort()).toEqual([
+        'adr',
+        'id',
+        'kind',
+        'state',
+        'title',
+        'updatedAt',
+      ]);
+      // The fixture's own prose, so these are texts and not spellings of field names.
+      expect(JSON.stringify(served)).not.toContain('why A call with a long argument');
+      expect(JSON.stringify(served)).not.toContain('turned down for A call with a long');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('gathers across every cache it is given (a pending call waits wherever it lives)', () => {
+    const team = bench();
+    const mine = bench();
+    birthDecision(team, 'dec-team', 'The team has not ruled');
+    birthDecision(mine, 'dec-mine', 'This machine has not ruled');
+    const a = team.cache();
+    const c = mine.cache();
+    try {
+      expect(
+        decisionsAwaitingJudgement([a, c])
+          .map((d) => d.id)
+          .sort(),
+      ).toEqual(['dec-mine', 'dec-team']);
+    } finally {
+      a.close();
+      c.close();
+    }
+  });
+
+  it('is empty — never an error — when every call has been ruled on', () => {
+    const b = bench();
+    accept(b, 'dec-1', 'Settled');
+    const cache = b.cache();
+    try {
+      expect(decisionsAwaitingJudgement([cache])).toEqual([]);
+      expect(decisionsAwaitingJudgement([])).toEqual([]);
     } finally {
       cache.close();
     }

@@ -7,7 +7,7 @@ import {
   makeBench,
   moveSkill,
 } from '../../tests/support/chain.js';
-import { adoptedSkills, lookupAdoptedSkill } from './skills.js';
+import { adoptedSkills, lookupAdoptedSkill, skillsAwaitingJudgement } from './skills.js';
 
 describe('adoptedSkills — the patterns an agent may work by', () => {
   let benches: Bench[] = [];
@@ -235,6 +235,170 @@ describe('lookupAdoptedSkill — asking for one pattern by id', () => {
     const cache = b.cache();
     try {
       expect(lookupAdoptedSkill([cache], 'sk-nowhere')).toEqual({ outcome: 'unknown' });
+    } finally {
+      cache.close();
+    }
+  });
+});
+
+/**
+ * Every fixture in this suite reaches its state through the move the workflow
+ * defines, from the state a skill is actually born in (`proposed`,
+ * `INITIAL_SKILL_STATE`). The suites above ask a birth for its state directly,
+ * which is harmless where the case is about ids or bodies; it would not be here,
+ * because a skill born straight into `reviewed` is indistinguishable from one a
+ * reviewer moved there, and this list is ABOUT which move is still owed.
+ */
+describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling on', () => {
+  let benches: Bench[] = [];
+  afterEach(() => {
+    for (const b of benches) rmSync(b.root, { recursive: true, force: true });
+    benches = [];
+  });
+
+  /** A bench whose cleanup this suite owns. */
+  function bench(): Bench {
+    const b = makeBench();
+    benches.push(b);
+    return b;
+  }
+
+  /** Births a pattern and takes it all the way to adopted, by its own moves. */
+  function adopt(b: Bench, id: string, name: string): string {
+    birthSkill(b, id, name);
+    moveSkill(b, id, 'proposed', 'reviewed', 'review');
+    moveSkill(b, id, 'reviewed', 'adopted', 'adopt');
+    return id;
+  }
+
+  it('serves BOTH waiting states, each saying which ruling is missing', () => {
+    // The reason the state travels with the item: a proposal waits for someone to
+    // look, a reviewed pattern waits for the adoption call. Without the state the
+    // two are the same line and the reader cannot tell which move to ask for.
+    const b = bench();
+    birthSkill(b, 'sk-new', 'Nobody has looked');
+    birthSkill(b, 'sk-seen', 'Looked at, not adopted');
+    moveSkill(b, 'sk-seen', 'proposed', 'reviewed', 'review');
+    const cache = b.cache();
+    try {
+      expect(
+        skillsAwaitingJudgement([cache])
+          .map((s) => ({ id: s.id, state: s.state }))
+          .sort((x, y) => (x.id < y.id ? -1 : 1)),
+      ).toEqual([
+        { id: 'sk-new', state: 'proposed' },
+        { id: 'sk-seen', state: 'reviewed' },
+      ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('an ADOPTED pattern is not awaiting anything, though `deprecate` is legal from it forever', () => {
+    // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE, on this machine.
+    // `SKILL_TRANSITIONS` carries `{from: 'adopted', action: 'deprecate'}` with
+    // nothing to ever make it happen, so the work list's rule ("has a legal move")
+    // would keep every adopted pattern on a pendency list for good.
+    const b = bench();
+    adopt(b, 'sk-live', 'A live pattern');
+    const cache = b.cache();
+    try {
+      expect(skillsAwaitingJudgement([cache])).toEqual([]);
+      // And the same record IS served by the other list, so the absence above is
+      // the criterion and not an empty projection.
+      expect(adoptedSkills([cache]).map((s) => s.id)).toEqual(['sk-live']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('serves ONLY proposed and reviewed — adopted, rejected and deprecated are absent', () => {
+    // All five states of the machine, each reached by its own move, and both halves
+    // of the criterion in one assertion.
+    const b = bench();
+    birthSkill(b, 'sk-proposed', 'On the table');
+    birthSkill(b, 'sk-reviewed', 'Looked at');
+    moveSkill(b, 'sk-reviewed', 'proposed', 'reviewed', 'review');
+    adopt(b, 'sk-adopted', 'In use');
+    birthSkill(b, 'sk-rejected', 'Turned down');
+    moveSkill(b, 'sk-rejected', 'proposed', 'rejected', 'reject');
+    adopt(b, 'sk-deprecated', 'Retired');
+    deprecateSkill(b, 'sk-deprecated');
+    const cache = b.cache();
+    try {
+      expect(
+        skillsAwaitingJudgement([cache])
+          .map((s) => s.id)
+          .sort(),
+      ).toEqual(['sk-proposed', 'sk-reviewed']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('a pattern that gets adopted LEAVES the list — the waiting clears', () => {
+    const b = bench();
+    birthSkill(b, 'sk-1', 'On the table');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review');
+    const before = b.cache();
+    try {
+      expect(skillsAwaitingJudgement([before]).map((s) => s.state)).toEqual(['reviewed']);
+    } finally {
+      before.close();
+    }
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt');
+    const after = b.cache();
+    try {
+      expect(skillsAwaitingJudgement([after])).toEqual([]);
+    } finally {
+      after.close();
+    }
+  });
+
+  it('never carries the BODY — a pattern under review is not one to work by', () => {
+    // The distinction that keeps this list from contradicting the one above it: a
+    // name invites a ruling, a body is an instruction to work by the pattern. Nor
+    // the provenance of an adoption that has not happened.
+    const b = bench();
+    birthSkill(b, 'sk-1', 'Not yet a pattern', 'proposed', 'agent-A');
+    const cache = b.cache();
+    try {
+      const [served] = skillsAwaitingJudgement([cache]);
+      if (served === undefined) throw new Error('the pending pattern is missing');
+      expect(Object.keys(served).sort()).toEqual(['id', 'kind', 'name', 'state', 'updatedAt']);
+      expect(JSON.stringify(served)).not.toContain('body of Not yet a pattern');
+      expect(served).not.toHaveProperty('adoptedBy');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('gathers across every cache it is given (a pending pattern waits wherever it lives)', () => {
+    const team = bench();
+    const mine = bench();
+    birthSkill(team, 'sk-team', 'The team has not ruled');
+    birthSkill(mine, 'sk-mine', 'This machine has not ruled');
+    const a = team.cache();
+    const c = mine.cache();
+    try {
+      expect(
+        skillsAwaitingJudgement([a, c])
+          .map((s) => s.id)
+          .sort(),
+      ).toEqual(['sk-mine', 'sk-team']);
+    } finally {
+      a.close();
+      c.close();
+    }
+  });
+
+  it('is empty — never an error — when every pattern has been ruled on', () => {
+    const b = bench();
+    adopt(b, 'sk-1', 'Settled');
+    const cache = b.cache();
+    try {
+      expect(skillsAwaitingJudgement([cache])).toEqual([]);
+      expect(skillsAwaitingJudgement([])).toEqual([]);
     } finally {
       cache.close();
     }

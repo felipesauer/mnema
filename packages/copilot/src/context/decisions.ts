@@ -1,5 +1,5 @@
 /**
- * decisions: the calls that are in force — what governs the work here.
+ * decisions: the calls that are in force, and the calls that await a judgement.
  *
  * A decision is the record's answer to "why is it like this", and until now no
  * read of the session context mentioned one. The record could hold every ADR a
@@ -7,16 +7,33 @@
  * is the same shape as an empty answer: an agent that is not told a decision
  * exists proceeds as if none did, and re-decides what was already settled.
  *
- * ONLY `accepted`, AND ONE READ IS ENOUGH. Proposed is a call still on the table,
- * rejected is one that was refused, and superseded is one a later decision
+ * ONE TABLE SAYS WHICH IS WHICH. {@link DECISION_DISPOSITION} gives every state of
+ * the machine a meaning — what governs, what waits for somebody, what is over —
+ * and the two lists below are DERIVED from it. Neither states its own set beside
+ * it: "which state governs" written twice in one module is the shape where the
+ * second copy is the one a later edit amends, and the two readers then disagree in
+ * silence about what the project has settled.
+ *
+ * IN FORCE IS `accepted`, AND ONE READ IS ENOUGH. Proposed is a call still on the
+ * table, rejected is one that was refused, and superseded is one a later decision
  * replaced — none of the three governs anything. The workflow moves a replaced
  * decision INTO `superseded` (`DECISION_TRANSITIONS`: `supersede` reaches it from
- * both `proposed` and `accepted`), so filtering on `accepted` already excludes a
- * superseded one; no cross-check against the supersede edge is done here, and that
- * is deliberate. Two rules answering one question can come to disagree, and the
- * projected state is the one the chain proves. Asserted in `decisions.test.ts` —
- * "serves only the decisions in force, and no other state" and "drops a decision
- * the moment a successor supersedes it".
+ * both `proposed` and `accepted`), so filtering on the in-force states already
+ * excludes a superseded one; no cross-check against the supersede edge is done
+ * here, and that is deliberate. Two rules answering one question can come to
+ * disagree, and the projected state is the one the chain proves. Asserted in
+ * `decisions.test.ts` — "serves ONLY the accepted — proposed, rejected and
+ * superseded are all absent" and "drops a decision the moment a successor
+ * supersedes it".
+ *
+ * AWAITING A JUDGEMENT IS `proposed`, AND THE CRITERION IS NOT THE WORK LIST'S.
+ * The work list's rule is "has at least one legal move", and it does not transport
+ * to this machine: `supersede` is legal from `accepted` (`DECISION_TRANSITIONS`),
+ * so a decision in force has a legal move FOREVER and that rule would report it as
+ * a pendency that never clears. The rule here is narrower and it is about a person:
+ * somebody has to accept or reject this before it means anything. Asserted in
+ * `decisions.test.ts` — "an ACCEPTED decision is not awaiting anything, though
+ * `supersede` is legal from it forever".
  *
  * NAMES, NEVER BODIES — the rule this layer already had, applied to the one entity
  * whose body is the longest. A decision's BODY is now two fields — the `rationale`
@@ -44,10 +61,45 @@
  * see the same events for it.
  */
 
-import type { DecisionProjection, DecisionState, ProjectionCache } from '@mnema/core';
+import {
+  DECISION_STATES,
+  type DecisionProjection,
+  type DecisionState,
+  type ProjectionCache,
+} from '@mnema/core';
+import { type Disposition, statesWith } from './disposition.js';
 
-/** The one state whose decisions govern — typed, so a typo fails the build. */
-const IN_FORCE: DecisionState = 'accepted';
+/**
+ * What each state of the decision machine means to a reader — TOTAL, so a fifth
+ * state cannot be added to the workflow without being classified here.
+ *
+ * Read against `DECISION_TRANSITIONS`, which is the source of truth for every
+ * claim below:
+ *   - `proposed` — `accept` and `reject` both leave from it, and both are a
+ *     verdict a person owes. That is the whole of "awaiting a judgement".
+ *   - `accepted` — it governs. `supersede` is still legal from it, which is
+ *     precisely why "has a legal move" is the wrong criterion for the waiting
+ *     list; being replaceable is not being pending.
+ *   - `rejected`, `superseded` — terminal, no row leaves either. Nothing is
+ *     pending and nothing governs.
+ *
+ * Exported so the claims above are CHECKABLE against the table they are read from,
+ * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
+ * this against `DECISION_TRANSITIONS`. It is not on the package's public surface —
+ * a consumer gets the two lists, not the classification behind them.
+ */
+export const DECISION_DISPOSITION: Readonly<Record<DecisionState, Disposition>> = {
+  proposed: 'awaiting-judgement',
+  accepted: 'in-force',
+  rejected: 'closed',
+  superseded: 'closed',
+};
+
+/** The states whose decisions govern — derived, never restated. */
+const IN_FORCE = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'in-force');
+
+/** The states whose decisions are waiting on somebody — derived, never restated. */
+const AWAITING_JUDGEMENT = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'awaiting-judgement');
 
 /** A decision in force, named but not spelled out — what an index is made of. */
 export interface DecisionRef {
@@ -101,8 +153,78 @@ export interface DecisionRef {
  */
 export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRef[] {
   const all: DecisionProjection[] = [];
-  for (const cache of caches) all.push(...cache.listDecisionsByState(IN_FORCE));
+  for (const cache of caches) {
+    for (const state of IN_FORCE) all.push(...cache.listDecisionsByState(state));
+  }
   return all.sort(bySettledDesc).map(toRef);
+}
+
+/**
+ * A decision nobody has ruled on yet — a name, plus the state that says WHICH
+ * ruling is missing.
+ *
+ * It carries the same three name fields {@link DecisionRef} does, and never the
+ * body: the `rationale` and the `alternatives` come from `readRecord`, asked about
+ * the one call that turned out to matter. What it adds over a ref is the pair a
+ * reader of a mixed list needs — the `kind`, which says which second read serves
+ * this item, and the `state`, which says what is owed.
+ */
+export interface DecisionAwaitingJudgement {
+  /**
+   * Always `decision`: the discriminant, and what says the second read will hand
+   * back an ARGUMENT — the `rationale` and the alternatives, through `readRecord`.
+   */
+  readonly kind: 'decision';
+  /** The decision's id — the key `readRecord` takes. */
+  readonly id: string;
+  /** The citable `ADR-<n>` label — DISPLAY, never identity (see {@link DecisionRef.adr}). */
+  readonly adr: string;
+  /** The decision's title — the trigger a reader recognizes. */
+  readonly title: string;
+  /**
+   * The state it is waiting in, which is what says what is owed: `proposed` is a
+   * call somebody has to accept or reject. Typed as the workflow's own state
+   * rather than a bare string, and it is the state the row was READ under (the
+   * bucket the indexed lookup asked for), not a second reading of the projection.
+   */
+  readonly state: DecisionState;
+  /** `at` of its last transition — what the composed list orders on. */
+  readonly updatedAt: string;
+}
+
+/**
+ * Every decision awaiting a judgement across `caches`, in no particular order.
+ *
+ * ORDERING IS THE CALLER'S HERE, and that is the one difference from
+ * {@link decisionsInForce}. This answer is half of ONE list — decisions and skills
+ * interleaved by when each last moved (see {@link bootstrap}) — so an order imposed
+ * here would be an order the composition immediately discards, and a reader of this
+ * function could take it for the answer's.
+ *
+ * The states come from {@link DECISION_DISPOSITION} and each is fetched by
+ * `listDecisionsByState`, the INDEXED read. Listing every decision and filtering in
+ * memory would read the whole table to throw almost all of it away, and the cost of
+ * that grows with the record while this one grows with the answer.
+ */
+export function decisionsAwaitingJudgement(
+  caches: readonly ProjectionCache[],
+): DecisionAwaitingJudgement[] {
+  const pending: DecisionAwaitingJudgement[] = [];
+  for (const cache of caches) {
+    for (const state of AWAITING_JUDGEMENT) {
+      for (const decision of cache.listDecisionsByState(state)) {
+        pending.push({
+          kind: 'decision',
+          id: decision.id,
+          adr: decision.adr,
+          title: decision.title,
+          state,
+          updatedAt: decision.updatedAt,
+        });
+      }
+    }
+  }
+  return pending;
 }
 
 function toRef(decision: DecisionProjection): DecisionRef {
