@@ -83,8 +83,10 @@ export {
   meetsRequirement,
   type ProvenLevel,
   requiredLevel,
+  weakerLevel,
 } from './chain/level.js';
 export {
+  holdsRecord,
   listPublicKeyFingerprints,
   listTails,
   orderedSegments,

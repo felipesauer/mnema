@@ -32,7 +32,7 @@ $ mnema --help
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   brief                                   print what governs the work here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
-|   verify [options]                        verify the current project's chain
+|   verify [options]                        verify this project's record — its committed tree and its private one
 |   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
 |   help [command]                          display help for command
 $ mnema --version
@@ -509,9 +509,13 @@ $ mnema key --help
 $ mnema verify --help
 | Usage: mnema verify [options]
 |
-| verify the current project's chain
+| verify this project's record — its committed tree and its private one
 |
 | Options:
+|   --global           also verify this machine's global tree, the personal record
+|                      across all projects. Off by default: that tree belongs to
+|                      no project and is present in every one, so a weakness in it
+|                      would lower the verdict of every project on this disk
 |   --require <level>  the least this invocation accepts, for a script or a CI
 |                      step: chained (the default — fail only on a break, which is
 |                      what a bare `verify` has always done), signed (also fail

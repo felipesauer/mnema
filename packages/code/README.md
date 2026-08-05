@@ -50,13 +50,15 @@ CLI and the MCP tools behave identically, because they are the same call.
 ## What it proves — and what it does not
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, it
-makes one impossible to hide. `mnema verify` reads the committed events and
-public keys — no private key, no network — and prints its verdict verbatim. The
-surfaces never upgrade that verdict into a stronger claim.
+makes one impossible to hide. `mnema verify` reads the events and public keys of
+this project's trees — no private key, no network — and prints each verdict
+verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
 | Claim | What actually holds |
 |---|---|
 | **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
+| **`verify` covered the record** | Both trees of the project: the committed one and this machine's private one, each with its own verdict under its own name. The exit code is the **weakest** of them, so a gate cannot pass because one tree is healthy. It used to cover the committed tree alone, which said nothing about signed facts written `--scope private`. This machine's **global** tree is a third record, shared by every project on the disk; `mnema verify --global` covers it, and nothing does by default. |
+| **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree is gitignored, so a fresh clone has none — and *absent* is not *broken*. |
 | **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine. |
@@ -121,14 +123,18 @@ mnema next-actions "$TASK"
 mnema guard reopen "$TASK" --actor "$ME"
 #> REFUSED (MISSING_PROOF): "reopen" requires a non-empty "reason"
 
-# Verify the chain: hash links, signatures, and what is not yet covered.
+# Verify the record: hash links, signatures, and what is not yet covered — one
+# verdict per tree of the project, under the tree's name.
 mnema verify
-#> local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
+#> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
+#> private: no record here — nothing has been written to this tree on this machine, …
 ```
 
-`mnema verify` exits non-zero when the chain is broken, so it drops into CI as a
-check with no extra wiring. **What "broken" means is the caller's to declare:**
-`--require=signed` also fails when any event is not covered by a verified
+`mnema verify` exits non-zero when the record is broken — in **either** tree, and
+the line says which — so it drops into CI as a check with no extra wiring.
+**What "broken" means is the caller's to declare:**
+`--require=signed` also fails when any event of any tree it covered is not
+covered by a verified
 signature, and `--require=witnessed` when no external witness covers the record
 (nothing provides one yet, so that one never passes). The default stays
 `--require=chained` — a break and nothing else — because events above the last

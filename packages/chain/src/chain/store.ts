@@ -49,6 +49,29 @@ export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
     .sort();
 }
 
+/**
+ * Whether a chain root holds a RECORD at all — a tail, or a committed public key.
+ *
+ * The question a verifier asks before ruling on a tree it was merely NAMED: three
+ * trees are named for every project (the committed one, this machine's private one,
+ * the machine-global one) and a tree nothing was ever written to has no directory,
+ * so a verdict over it would be a verdict over nothing. False here means there is
+ * nothing to rule on; it never means a tree is in order.
+ *
+ * A COMMITTED KEY COUNTS, and that is the whole reason this is not
+ * `listTails(...).length > 0`. A key is written before its machine's first event and
+ * its fingerprint IS its tail id, so a root with keys and no tails is precisely the
+ * shape of a tail that went missing — the census note exists to say so
+ * (`key-without-tail`), and answering "nothing here" would silence it. Only a root
+ * with neither has nothing to say.
+ *
+ * Cheap by construction: two directory listings, no segment is parsed. It is asked
+ * INSTEAD of a verification, never before one that then runs anyway.
+ */
+export function holdsRecord(layout: ChainLayout): boolean {
+  return listTails(layout).length > 0 || listPublicKeyFingerprints(layout).length > 0;
+}
+
 /** The sealed + current segment files of a tail, in segment order. */
 export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
   const dir = tailDir(layout, tailId);
