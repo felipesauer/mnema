@@ -11,7 +11,6 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runAccountability } from '../commands/accountability.js';
 import { itemLine } from '../presentation/items.js';
-import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
@@ -19,7 +18,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema accountability` on the program. */
 export function registerAccountability(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('accountability')
     .description('show who authorized what across the record (optionally windowed/filtered)')
@@ -54,7 +53,7 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {
           io.out(
-            renderPlain(itemLine([anchorText(result.anchors, account.who), String(account.total)])),
+            render(itemLine([anchorText(result.anchors, account.who), String(account.total)])),
           );
         }
       },

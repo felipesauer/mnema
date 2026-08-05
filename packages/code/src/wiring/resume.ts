@@ -9,7 +9,6 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runResume } from '../commands/resume.js';
 import { fact } from '../presentation/detail.js';
-import { renderPlain } from '../presentation/plain.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
@@ -19,7 +18,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema resume` on the program. */
 export function registerResume(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('resume')
     .description('show where an actor left off (their latest run, open or ended)')
@@ -41,7 +40,7 @@ export function registerResume(program: Command, wiring: Wiring): void {
         // Not "no runs YET": for a person working the CLI directly that reads as
         // a state about to change, and it never will — nor should it.
         io.out(`${actor} has no runs.`);
-        writeLines(io, NO_RUNS_HINT);
+        writeLines(io, NO_RUNS_HINT.map(render));
         return;
       }
       const state = lastRun.open ? 'open' : 'ended';
@@ -52,6 +51,6 @@ export function registerResume(program: Command, wiring: Wiring): void {
           // beside that would read as time still passing in it.
           `${lastRun.open ? runAgeSuffix(lastRun) : ''}`,
       );
-      io.out(renderPlain(fact(`${focus.openRuns.length} run(s) still open`)));
+      io.out(render(fact(`${focus.openRuns.length} run(s) still open`)));
     });
 }

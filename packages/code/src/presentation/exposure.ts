@@ -22,20 +22,20 @@
 import type { Exposure } from '@mnema/copilot';
 import { fact } from './detail.js';
 import { itemLine } from './items.js';
-import { renderPlain } from './plain.js';
+import type { Render } from './render.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
 const DATE_LENGTH = 10;
 
 /** The lines an exposure report prints for a person. */
-export function exposureReport(report: Exposure): string[] {
+export function exposureReport(render: Render, report: Exposure): string[] {
   if (report.findings.length === 0) {
     return [
       `Nothing recognizable in ${report.scanned} record(s).`,
-      renderPlain(
+      render(
         fact('Read here: this project’s trees and the machine-global tree — no other project.'),
       ),
-      renderPlain(
+      render(
         fact('That is not the same as nothing: only known credential formats are recognized.'),
       ),
     ];
@@ -45,7 +45,7 @@ export function exposureReport(report: Exposure): string[] {
   ];
   for (const finding of report.findings) {
     lines.push(
-      renderPlain(
+      render(
         itemLine([
           finding.scope,
           finding.at.slice(0, DATE_LENGTH),
@@ -58,12 +58,12 @@ export function exposureReport(report: Exposure): string[] {
   }
   lines.push('');
   lines.push(
-    renderPlain(
+    render(
       fact('These records are permanent — nothing deletes a fact. Rotate the credentials.'),
     ),
   );
   lines.push(
-    renderPlain(
+    render(
       fact('A public record is committed and on every machine that cloned the repository.'),
     ),
   );

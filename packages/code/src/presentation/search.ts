@@ -19,13 +19,17 @@ import type { RecordSearch } from '@mnema/copilot';
 import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
 import { itemLine } from './items.js';
-import { renderPlain } from './plain.js';
+import type { Render } from './render.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
 const DATE_LENGTH = 10;
 
 /** The lines a search prints for a person: the header, then a group per kind. */
-export function searchReport(result: RecordSearch, term: string | undefined): string[] {
+export function searchReport(
+  render: Render,
+  result: RecordSearch,
+  term: string | undefined,
+): string[] {
   const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${term}"` : '';
   if (result.hits.length === 0) {
     return [term !== undefined ? `Nothing recorded${forTerm}.` : 'Nothing recorded here yet.'];
@@ -45,7 +49,7 @@ export function searchReport(result: RecordSearch, term: string | undefined): st
     for (const hit of group) {
       const state = hit.state !== undefined ? ` (${hit.state})` : '';
       lines.push(
-        renderPlain(
+        render(
           itemLine([
             hit.id,
             hit.scope,

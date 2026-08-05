@@ -19,7 +19,6 @@ import type { Command } from 'commander';
 import { runRunEnd } from '../commands/run-end.js';
 import { runRunStart } from '../commands/run-start.js';
 import { fact } from '../presentation/detail.js';
-import { renderPlain } from '../presentation/plain.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent } from './options.js';
@@ -29,7 +28,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema run` on the program. */
 export function registerRun(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   const runGroup = program
     .command('run')
     .description('open and close the session an agent works inside')
@@ -67,7 +66,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
       // Both halves AS RECORDED, never as typed: echoing `opts.goal` would print a
       // credential on the line directly above the one reporting it was replaced.
       io.out(
-        renderPlain(
+        render(
           fact(`for ${result.agent}${result.goal !== undefined ? ` — ${result.goal}` : ''}`),
         ),
       );
@@ -79,9 +78,9 @@ export function registerRun(program: Command, wiring: Wiring): void {
       io.out(`export ${RUN_ENV}=${result.id}`);
       io.out('');
       io.out(
-        renderPlain(fact('Run that in this shell: every fact written after it is pinned to this')),
+        render(fact('Run that in this shell: every fact written after it is pinned to this')),
       );
-      io.out(renderPlain(fact('session. `mnema run end` closes it.')));
+      io.out(render(fact('session. `mnema run end` closes it.')));
     });
 
   // `mnema run end [<id>] --which <agent> [--outcome <text>]`. The id is OPTIONAL
@@ -128,7 +127,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
       // session is for: `by` and not `for`, because this half says who did the
       // closing and the other says who the session was opened for — the same two
       // questions the envelope and the payload keep apart.
-      if (result.agent !== undefined) io.out(renderPlain(fact(`by ${result.agent}`)));
+      if (result.agent !== undefined) io.out(render(fact(`by ${result.agent}`)));
       reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write
       // refused (the run is no longer open), so say how to let go of it — but
@@ -137,7 +136,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
         io.out('');
         io.out(`unset ${RUN_ENV}`);
         io.out('');
-        io.out(renderPlain(fact('Run that too: a shell pinned to a closed session cannot write.')));
+        io.out(render(fact('Run that too: a shell pinned to a closed session cannot write.')));
       }
     });
 }

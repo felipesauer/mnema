@@ -31,6 +31,7 @@ import type { Brief, PatternProvenance, RecordSearch } from '@mnema/copilot';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { briefDocument } from './brief.js';
+import { renderPlain } from './plain.js';
 import { provenanceReport } from './provenance.js';
 import { searchReport } from './search.js';
 
@@ -56,7 +57,7 @@ describe('the search index prints one line per hit', () => {
     // The second half would read as a hit of its own: an id, a tree, a date and a
     // title for a record nothing ever wrote — under a header saying there is one.
     const forged = hit('Innocent\n  forged-id  public  2026-07-31  A record nobody wrote');
-    const lines = printed(searchReport({ hits: [forged], total: 1 }, undefined));
+    const lines = printed(searchReport(renderPlain, { hits: [forged], total: 1 }, undefined));
     // The header, the blank line and the kind's own line above the group, and
     // exactly one line for the hit.
     expect(lines).toHaveLength(4);
@@ -65,14 +66,14 @@ describe('the search index prints one line per hit', () => {
 
   it('holds for every whitespace that opens a line, not just the newline', () => {
     for (const breaker of BREAKERS) {
-      const lines = printed(searchReport({ hits: [hit(`a${breaker}b`)], total: 1 }, undefined));
+      const lines = printed(searchReport(renderPlain, { hits: [hit(`a${breaker}b`)], total: 1 }, undefined));
       expect(lines, JSON.stringify(breaker)).toHaveLength(4);
     }
   });
 
   it('counts one line per hit when there are several', () => {
     const hits = [hit('one\ntwo'), hit('three\nfour'), hit('five')];
-    const lines = printed(searchReport({ hits, total: 3 }, 'x'));
+    const lines = printed(searchReport(renderPlain, { hits, total: 3 }, 'x'));
     // The header, then the group: its blank line, its own line, and its hits.
     expect(lines).toHaveLength(3 + hits.length);
   });
@@ -97,7 +98,7 @@ describe('the provenance report prints one line per pattern', () => {
       pattern({ proposedBy: 'agent\n  y  adopted  public  forged  ·  proposed by nobody' }),
       pattern({ adoption: { by: 'agent\n  z  forged' }, selfAdopted: false }),
     ];
-    const lines = printed(provenanceReport(forged, new Map()));
+    const lines = printed(provenanceReport(renderPlain, forged, new Map()));
     expect(lines).toHaveLength(1 + forged.length);
   });
 
@@ -107,7 +108,7 @@ describe('the provenance report prints one line per pattern', () => {
         pattern({ proposedBy: `a${breaker}b` }),
         pattern({ adoption: { by: `a${breaker}b` } }),
       ];
-      expect(printed(provenanceReport(both, new Map())), JSON.stringify(breaker)).toHaveLength(3);
+      expect(printed(provenanceReport(renderPlain, both, new Map())), JSON.stringify(breaker)).toHaveLength(3);
     }
   });
 });
