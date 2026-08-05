@@ -17,7 +17,7 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
-import { eventBytes } from '../chain/hash.js';
+import { eventBytes, writtenAsBuilt } from '../chain/hash.js';
 import {
   decisionRecorded,
   decisionTransitioned,
@@ -32,7 +32,9 @@ import {
 import type { CatalogEvent } from './catalog.js';
 
 const digest = (event: CatalogEvent): string =>
-  createHash('sha256').update(eventBytes(event)).digest('hex');
+  createHash('sha256')
+    .update(eventBytes(writtenAsBuilt(event)))
+    .digest('hex');
 
 // `who` is an anchor id (`mnid:<hash>`) and `signerFp` a full key fingerprint —
 // both are fixed here so the frozen digests pin the real envelope shape, the one

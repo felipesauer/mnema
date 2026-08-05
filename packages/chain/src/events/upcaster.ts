@@ -15,6 +15,25 @@
  * unambiguous and total — a gap in the ladder is a bug that surfaces the first
  * time an old event is read, not a silent misread.
  *
+ * WHAT AN UPCAST IS NOT. A lifted event is a READING — it has exactly the
+ * standing of a projection, which this product treats as disposable cache — and
+ * it can never be the basis of a proof. Its bytes are not the bytes anyone
+ * signed; the event that was written is, and it is still on the tail, unchanged.
+ * So an upcaster may be a total rewrite of a shape and cost the chain nothing,
+ * but the moment a hash or a signature is recomputed over its output, every
+ * chain written before that version reports as tampered — the entry hashes stop
+ * matching and the checkpoint signatures stop verifying. That is why the chain
+ * carries both forms of an event side by side and every digest takes
+ * `WrittenEvent` (see chain/hash.ts): the type refuses the lifted form, so the
+ * rule cannot be forgotten at a call site.
+ *
+ * That separation is what makes this mechanism free to use. An upcaster does not
+ * need to be byte-preserving, does not need to keep the version number, and does
+ * not need to worry about what a verifier will recompute — it only has to produce
+ * a faithful reading. upcast-vs-proof.test.ts pins it with a synthetic ladder,
+ * because a registry that is empty (as it is while every kind is at v1) proves
+ * nothing about the code that runs when it is not.
+ *
  * The "latest version of each kind" lookup is injected (defaulting to the
  * catalog's) so the walk is defined by data, not hardcoded — and so it can be
  * exercised against a taller ladder than the current catalog happens to have.

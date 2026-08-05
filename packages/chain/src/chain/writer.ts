@@ -35,6 +35,7 @@ import {
   signCheckpoint,
 } from './checkpoint.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
+import type { WrittenEvent } from './hash.js';
 import { deriveAnchor, type KeyPair } from './keys.js';
 import { readAnchor, writeAnchor } from './keystore.js';
 import {
@@ -75,8 +76,15 @@ export class ChainWriter {
    * process refills this from the END of the tail in `recover()`. Without it,
    * signing a range of one or two events re-read and re-parsed the whole tail,
    * making a run of N writes cost O(N²).
+   *
+   * It holds the WRITTEN form, and that matters most for the entries `recover()`
+   * puts here: those came off the disk and were lifted on the way. A checkpoint
+   * folded over the lifted reading would be a signature over bytes that are not
+   * on the tail — signed by the real key, so no verifier could tell it from a
+   * forgery, and every one of them would report the range as broken. The buffer
+   * a running process fills is the same form, so the two paths cannot drift.
    */
-  private pending: CatalogEvent[] = [];
+  private pending: WrittenEvent[] = [];
 
   private readonly maxSegmentBytes: number;
   private readonly checkpointEvery: number;
@@ -190,7 +198,7 @@ export class ChainWriter {
     // buffer is only what the next checkpoint must cover.
     this.pending = tip
       .filter((entry) => entry.link.seq > this.lastCheckpointedSeq)
-      .map((entry) => entry.event);
+      .map((entry) => entry.written);
   }
 
   /**
@@ -241,7 +249,7 @@ export class ChainWriter {
     // Buffered only after the line reached the file: an append that threw must
     // not leave behind an event that a later checkpoint would sign and no reader
     // could ever find.
-    this.pending.push(entry.event);
+    this.pending.push(entry.written);
 
     this.maybeCheckpoint();
     return entry;
@@ -289,7 +297,7 @@ export class ChainWriter {
     this.nextSeq = seq;
     this.segmentBytes += Buffer.byteLength(lines, 'utf-8');
     // Same rule as the single append: buffered only after the write landed.
-    for (const entry of entries) this.pending.push(entry.event);
+    for (const entry of entries) this.pending.push(entry.written);
 
     this.maybeCheckpoint();
     return entries;
