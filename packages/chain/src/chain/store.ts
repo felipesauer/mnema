@@ -59,26 +59,89 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
     .map((name) => `${dir}/${name}`);
 }
 
+/** What one segment file held: its entries, and whether its end was a partial write. */
+interface SegmentRead {
+  readonly entries: Entry[];
+  /** The file's last line was dropped by the torn-fragment rule. */
+  readonly partialFinalLine: boolean;
+}
+
 /**
  * Parses one segment file into its entries, whole and in seq order.
  *
  * `isLast` says whether this is the tail's last segment, because that is the
  * only file whose end is the physical end of the tail — see
  * {@link parseStoredLine}, which owns the torn-fragment rule this passes it.
+ *
+ * It also REPORTS the tolerance it used. The rule drops a torn fragment so the
+ * intact prefix still reads, which is right; dropping it in silence is what left
+ * garbage at the end of a tail indistinguishable from a tail that simply ended
+ * there. Whoever needs to say so gets the fact from here rather than deciding for
+ * itself whether the last line looks torn — a second reading of that rule could
+ * disagree with this one.
  */
-function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): Entry[] {
+function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): SegmentRead {
   const raw = readFileSync(file, 'utf-8');
   const endsWithNewline = raw.endsWith('\n');
   const lines = raw.split('\n');
   const entries: Entry[] = [];
+  let partialFinalLine = false;
+  // Hoisted over the loop: the locus costs nothing per line and is read only when
+  // a line refuses to parse. See {@link parseStoredLine}.
+  let at = 0;
+  const where = (): string => `${file} line ${at}`;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] as string;
     if (line.length === 0) continue;
     const couldBeTorn = isLast && !endsWithNewline && i === lines.length - 1;
-    const entry = parseStoredLine(line, couldBeTorn, (stored) => parseEntry(stored, upcasters));
+    at = i + 1;
+    const entry = parseStoredLine(
+      line,
+      couldBeTorn,
+      (stored) => parseEntry(stored, upcasters),
+      where,
+    );
     if (entry !== null) entries.push(entry);
+    else partialFinalLine = true;
   }
-  return entries;
+  return { entries, partialFinalLine };
+}
+
+/** What a whole tail held: its entries, and whether it ends in a partial write. */
+export interface TailRead {
+  readonly entries: Entry[];
+  /**
+   * The tail's last line was a partial write, dropped by the torn-fragment rule.
+   * Ambiguous by nature — an interrupted append leaves exactly this, and so does
+   * an attempt to append garbage — which is why it is REPORTED rather than judged.
+   */
+  readonly partialFinalLine: boolean;
+}
+
+/**
+ * Reads a whole tail: every entry in seq order across its segments, and whether
+ * its physical end was a fragment the read had to drop.
+ *
+ * The verifier is what needs the second half — it has to report what it could not
+ * check — and everything else only wants the entries ({@link readTailEntries}).
+ * Both walk this one function, so a reader cannot see a different tail than the
+ * verdict was formed over.
+ */
+export function readTail(
+  layout: ChainLayout,
+  tailId: string,
+  upcasters: UpcasterRegistry,
+): TailRead {
+  const segments = orderedSegments(layout, tailId);
+  const entries: Entry[] = [];
+  let partialFinalLine = false;
+  for (let s = 0; s < segments.length; s += 1) {
+    const file = segments[s] as string;
+    const read = entriesOfSegment(file, upcasters, s === segments.length - 1);
+    for (const entry of read.entries) entries.push(entry);
+    if (read.partialFinalLine) partialFinalLine = true;
+  }
+  return { entries, partialFinalLine };
 }
 
 /**
@@ -93,15 +156,7 @@ export function readTailEntries(
   tailId: string,
   upcasters: UpcasterRegistry,
 ): Entry[] {
-  const segments = orderedSegments(layout, tailId);
-  const entries: Entry[] = [];
-  for (let s = 0; s < segments.length; s += 1) {
-    const file = segments[s] as string;
-    for (const entry of entriesOfSegment(file, upcasters, s === segments.length - 1)) {
-      entries.push(entry);
-    }
-  }
-  return entries;
+  return readTail(layout, tailId, upcasters).entries;
 }
 
 /**
@@ -176,11 +231,14 @@ export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkp
   const endsWithNewline = raw.endsWith('\n');
   const lines = raw.split('\n');
   const checkpoints: Checkpoint[] = [];
+  let at = 0;
+  const where = (): string => `${file} line ${at}`;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] as string;
     if (line.length === 0) continue;
     const couldBeTorn = !endsWithNewline && i === lines.length - 1;
-    const checkpoint = parseStoredLine(line, couldBeTorn, parseCheckpoint);
+    at = i + 1;
+    const checkpoint = parseStoredLine(line, couldBeTorn, parseCheckpoint, where);
     if (checkpoint !== null) checkpoints.push(checkpoint);
   }
   return checkpoints;
@@ -203,10 +261,11 @@ export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkp
  * behaviour wearing an optimization's clothes.
  *
  * The one thing it cannot see is corruption further up: a malformed line in the
- * MIDDLE of the file makes {@link readTailCheckpoints} throw and leaves this
+ * MIDDLE of the file makes {@link readTailCheckpoints} refuse and leaves this
  * indifferent, because it never reads that far. That is the same trade the tip
  * already makes for segments, and it costs no proof — the verifier reads every
- * checkpoint and is what reports the file.
+ * checkpoint, and it is what turns an unreadable one into a verdict naming the
+ * file and the line.
  */
 export function lastTailCheckpoint(layout: ChainLayout, tailId: string): Checkpoint | undefined {
   const file = checkpointsPath(layout, tailId);

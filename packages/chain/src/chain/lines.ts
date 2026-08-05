@@ -91,6 +91,32 @@ export function* linesFromEnd(file: string, chunkBytes = CHUNK_BYTES): Generator
 }
 
 /**
+ * A stored line that will not parse, NAMED BY WHERE IT IS.
+ *
+ * The parsers below this say what is wrong with a line ("not valid JSON:
+ * Unexpected end of JSON input") and cannot say which one, because a parser is
+ * handed a string and knows nothing about the file it came from. Measured against
+ * the shipped binary, that is exactly what a reader got: a message, not a finding
+ * — no file, no position, and no word for "this record cannot be read". So the
+ * locus is attached here, where the read still knows it, and the verifier turns
+ * this into a verdict with a tail and a position instead of letting it out as an
+ * exception (see verify.ts).
+ */
+export class UnreadableLineError extends Error {
+  override readonly name = 'UnreadableLineError';
+  /** Where the line is: the file, and the line or byte offset within it. */
+  readonly locus: string;
+  /** Why it would not parse — the reader's own message, kept verbatim. */
+  readonly reason: string;
+
+  constructor(locus: string, reason: string) {
+    super(`unreadable stored line at ${locus}: ${reason}`);
+    this.locus = locus;
+    this.reason = reason;
+  }
+}
+
+/**
  * Parses one stored line, granting the ONE tolerance an append-only file earns.
  *
  * A malformed line is corruption worth surfacing — EXCEPT one specific, benign
@@ -108,17 +134,24 @@ export function* linesFromEnd(file: string, chunkBytes = CHUNK_BYTES): Generator
  * `couldBeTorn` is the caller's answer to "is this the unterminated last line of
  * the file that ends this stream?". For a tail's segments only the LAST one
  * qualifies: an earlier segment's end is a seal, not a crash boundary.
+ *
+ * `where` is REQUIRED, and required as a function rather than a string: a reader
+ * that could omit the locus would be a reader whose corruption is anonymous
+ * again, and the type is what stops a fourth call site from being the one that
+ * forgets. Called only on the failing path, so naming a position costs a walk
+ * nothing — a caller hoists one closure over its own loop counter.
  */
 export function parseStoredLine<T>(
   line: string,
   couldBeTorn: boolean,
   parse: (line: string) => T,
+  where: () => string,
 ): T | null {
   try {
     return parse(line);
   } catch (error) {
     if (couldBeTorn) return null; // torn last write from a crash — drop it
-    throw error;
+    throw new UnreadableLineError(where(), error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -139,6 +172,10 @@ export function* parsedFromEnd<T>(
   parse: (line: string) => T,
 ): Generator<T> {
   let atPhysicalEnd = true;
+  // Hoisted over the walk so naming a position allocates nothing per line: it
+  // reads the offset of whichever line the walk is holding when a parse fails.
+  let at = 0;
+  const where = (): string => `${file} byte offset ${at}`;
   for (const line of linesFromEnd(file)) {
     // Only the walk's first line sits at the physical end of the file — and if
     // the file ended in a newline that line is empty, so a torn fragment is
@@ -146,7 +183,8 @@ export function* parsedFromEnd<T>(
     const couldBeTorn = atPhysicalEnd && endsTheStream;
     atPhysicalEnd = false;
     if (line.text.length === 0) continue;
-    const parsed = parseStoredLine(line.text, couldBeTorn, parse);
+    at = line.start;
+    const parsed = parseStoredLine(line.text, couldBeTorn, parse, where);
     if (parsed !== null) yield parsed;
   }
 }
