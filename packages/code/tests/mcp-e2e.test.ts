@@ -2508,6 +2508,15 @@ describe('MCP server — end to end over a real client', () => {
     for (const prose of ['the proposed pattern', 'the reviewed pattern']) {
       expect(textOf(boot)).not.toContain(prose);
     }
+    // AND THE FACT IS ON THE CHAIN FOR EACH ONE, over the real transport. This is the
+    // invariant that made `skills` the only door: a body is served, so the reading is
+    // recorded — otherwise the door is just a door. One per (run, skill).
+    const consultedIds = orderedEvents({ root: join(project, PROJECT_DIR) }, catalogUpcasters())
+      .filter((e) => e.kind === 'skill.consulted')
+      .map((e) => e.subject)
+      .sort();
+    expect(consultedIds).toEqual([proposed, reviewed].sort());
+
     // Neither answer is a broken call: the same two tools answer for a pattern that
     // is adopted and for a decision.
     expect(await ok('skills', { id: adopted })).toContain('the adopted pattern');
