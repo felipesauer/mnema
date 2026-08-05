@@ -9,6 +9,7 @@
 import type { Command } from 'commander';
 import { runNextActions } from '../commands/next-actions.js';
 import { itemLine } from '../presentation/items.js';
+import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
@@ -38,7 +39,7 @@ export function registerNextActions(program: Command, wiring: Wiring): void {
       io.out(`Task ${id} — ${result.actions.length} legal move(s):`);
       for (const action of result.actions) {
         const needs = action.requires.length > 0 ? ` (needs ${action.requires.join(', ')})` : '';
-        io.out(itemLine([`${action.action} → ${action.to}${needs}`]));
+        io.out(renderPlain(itemLine([`${action.action} → ${action.to}${needs}`])));
       }
     });
 }

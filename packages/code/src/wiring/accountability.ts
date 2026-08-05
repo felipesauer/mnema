@@ -11,6 +11,7 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runAccountability } from '../commands/accountability.js';
 import { itemLine } from '../presentation/items.js';
+import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
@@ -52,7 +53,9 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
         const { total, byWho } = result.account;
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {
-          io.out(itemLine([anchorText(result.anchors, account.who), String(account.total)]));
+          io.out(
+            renderPlain(itemLine([anchorText(result.anchors, account.who), String(account.total)])),
+          );
         }
       },
     );

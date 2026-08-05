@@ -22,20 +22,20 @@
  * imitate.
  */
 
-/** The two spaces a fact is indented under its subject by. */
-const INDENT = '  ';
-
-/** What separates the parts of a subject line: what it is, then where it lives. */
-const PART_GAP = '  ·  ';
+import type { Line } from './line.js';
 
 /**
  * The subject line: the parts that identify one thing, separated so the eye reads
  * them as one heading rather than as columns of a table (which is what the two
  * spaces of form A mean). `show` names the kind, the id and the tree; `refs` names
  * the id and what it turned out to be.
+ *
+ * They are parts of a heading and nothing more specific: both callers pass what
+ * identifies the thing and then where it lives, and neither says so anywhere a
+ * renderer could read.
  */
-export function subjectLine(...parts: readonly string[]): string {
-  return parts.join(PART_GAP);
+export function subjectLine(...parts: readonly string[]): Line {
+  return { indent: 0, parts: parts.map((text) => ({ role: 'subject', text })) };
 }
 
 /**
@@ -56,7 +56,12 @@ export function subjectLine(...parts: readonly string[]): string {
  * belongs to the group above" says it in words now. Here the second level marks a
  * LITERAL, not a rank, and one use is the honest count of how often output has
  * something to be typed verbatim.
+ *
+ * Its text is one FIELD — the same role an item's column takes — because a fact and
+ * an item of one field are the same line, which is asserted rather than assumed
+ * (`forms.test.ts`). The depth is the line's, so the two cannot disagree about how
+ * far in one level is: there is one constant now, in the renderer.
  */
-export function fact(text: string, depth = 1): string {
-  return `${INDENT.repeat(depth)}${text}`;
+export function fact(text: string, depth = 1): Line {
+  return { indent: depth, parts: [{ role: 'field', text }] };
 }

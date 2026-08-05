@@ -12,8 +12,11 @@
  * how many items follow, so a reader counts them by counting lines: an item that
  * printed two lines would put a record in the list that nothing ever wrote, with
  * the count beside it saying otherwise. That is why {@link itemLine} takes the
- * fields as an ARRAY and joins them itself — a caller cannot accidentally emit two
- * lines for one item, because it never writes a line at all.
+ * fields as an ARRAY — a caller cannot accidentally emit two lines for one item,
+ * because it never writes a line at all. It used to join them here as well; the
+ * joining is the renderer's now (`plain.ts`), and what a caller gets back is the
+ * line's PARTS. The property is the same one and it moved with the array: an item
+ * is a list of fields either way, and nothing a caller holds is bytes.
  *
  * What it does NOT do is collapse the whitespace inside a field. That rule belongs
  * to the fields that hold text an ACTOR wrote (a title, an agent's name), it is
@@ -26,15 +29,10 @@
  * of moving code.
  */
 
-/** The two spaces between one column and the next. */
-const COLUMN_GAP = '  ';
-
-/** The two spaces an item is indented under its header by. */
-const INDENT = '  ';
+import type { Line } from './line.js';
 
 /**
- * One item, as a line: indented under its header, its fields separated by two
- * spaces.
+ * One item, as a line: indented under its header, one part per field.
  *
  * Every item of every list in the product sits at the SAME depth, and that is now
  * true structurally rather than by agreement. One caller used to ask for a second
@@ -43,9 +41,13 @@ const INDENT = '  ';
  * above") that nothing else here gives it, and left a reader to infer what the two
  * extra spaces said. That reading names its groups instead, so the meaning is in
  * words and the depth is a constant again.
+ *
+ * The fields all take the same role, because nothing here tells them apart: a list
+ * hands over an id, a tree and a title in an array, in the order they read. That is
+ * what {@link ROLES} refuses to guess at.
  */
-export function itemLine(fields: readonly string[]): string {
-  return `${INDENT}${fields.join(COLUMN_GAP)}`;
+export function itemLine(fields: readonly string[]): Line {
+  return { indent: 1, parts: fields.map((text) => ({ role: 'field', text })) };
 }
 
 /**

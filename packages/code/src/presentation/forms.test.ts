@@ -8,6 +8,16 @@
  * by exactly one level, and that a column that does not fit pushes the line out
  * rather than losing a character.
  *
+ * The primitives no longer hand back the bytes; they hand back the line's PARTS, and
+ * `plain.ts` turns those into bytes. So every case here reads through
+ * {@link renderPlain} — the shape is still what is asserted, and the assertion is
+ * still on the text a person would see, which is the only thing worth pinning about
+ * a shape. Where the two used to be one function this file had to assert that a fact
+ * and an item AGREED on the depth; they now share one constant, and the case that
+ * checked the agreement is kept because it is a promise to a reader, not an
+ * implementation detail. What each part of a line IS, and that no role exists without
+ * something producing it, is asserted in `parts.test.ts`.
+ *
  * There is a fourth form and it has no primitives here: the DOCUMENT `mnema brief`
  * prints (`brief.ts`) is markdown for a file an agent host reads, not a line for an
  * eye scanning a terminal, so the columns and indentation below mean nothing to its
@@ -19,23 +29,24 @@
 import { describe, expect, it } from 'vitest';
 import { fact, subjectLine } from './detail.js';
 import { column, itemLine } from './items.js';
+import { renderPlain } from './plain.js';
 import { statement } from './verdict.js';
 
 describe('form A — the item line', () => {
   it('indents the item and separates its columns by two spaces', () => {
-    expect(itemLine(['an-id', 'public', 'a title'])).toBe('  an-id  public  a title');
+    expect(renderPlain(itemLine(['an-id', 'public', 'a title']))).toBe('  an-id  public  a title');
   });
 
   it('puts every item at the same depth, whatever it holds', () => {
     // There is no second level to ask for any more — the one reading that used
     // indentation to mean "this belongs to the group above" names its groups.
     for (const fields of [['a'], ['a', 'b'], ['a → b'], ['']]) {
-      expect(itemLine(fields)).toMatch(/^ {2}(?! )/);
+      expect(renderPlain(itemLine(fields))).toMatch(/^ {2}(?! )/);
     }
   });
 
   it('is one line even when a caller passes one field', () => {
-    expect(itemLine(['just this'])).toBe('  just this');
+    expect(renderPlain(itemLine(['just this']))).toBe('  just this');
   });
 
   it('pads a column and never truncates it', () => {
@@ -46,31 +57,35 @@ describe('form A — the item line', () => {
 
 describe('form B — the subject and its facts', () => {
   it('separates the parts of a subject so they read as one heading', () => {
-    expect(subjectLine('task the-id', 'public')).toBe('task the-id  ·  public');
+    expect(renderPlain(subjectLine('task the-id', 'public'))).toBe('task the-id  ·  public');
   });
 
   it('indents a fact under its subject', () => {
-    expect(fact('created at noon')).toBe('  created at noon');
+    expect(renderPlain(fact('created at noon'))).toBe('  created at noon');
   });
 
   it('indents a fact under a fact by one more level', () => {
-    expect(fact('mnema key enroll <the line>', 2)).toBe('    mnema key enroll <the line>');
+    expect(renderPlain(fact('mnema key enroll <the line>', 2))).toBe(
+      '    mnema key enroll <the line>',
+    );
   });
 
   it('indents a fact exactly as deep as an item, so the two never disagree', () => {
     // A report that mixes them — a list under a subject — would otherwise step in
     // and out by a space for no reason a reader could name.
-    expect(fact('x')).toBe(itemLine(['x']));
+    expect(renderPlain(fact('x'))).toBe(renderPlain(itemLine(['x'])));
   });
 });
 
 describe('form C — the verdict', () => {
   it('leads with the label, so a reader scanning finds it first', () => {
-    expect(statement('ALLOWED', 'submit t-1 → READY')).toBe('ALLOWED: submit t-1 → READY');
+    expect(renderPlain(statement('ALLOWED', 'submit t-1 → READY'))).toBe(
+      'ALLOWED: submit t-1 → READY',
+    );
   });
 
   it('carries the code inside the label, because the code is part of the verdict', () => {
-    expect(statement('REFUSED (MISSING_PROOF)', 'needs a note')).toBe(
+    expect(renderPlain(statement('REFUSED (MISSING_PROOF)', 'needs a note'))).toBe(
       'REFUSED (MISSING_PROOF): needs a note',
     );
   });
@@ -78,7 +93,7 @@ describe('form C — the verdict', () => {
   it('is the whole sentence when there is no detail to add', () => {
     // `verify` composes its own summary of what it could prove, and the surface
     // prints it as it came: re-wording a guarantee is how one gets upgraded.
-    expect(statement('local integrity verified; 1 tail(s)')).toBe(
+    expect(renderPlain(statement('local integrity verified; 1 tail(s)'))).toBe(
       'local integrity verified; 1 tail(s)',
     );
   });

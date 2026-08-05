@@ -9,6 +9,7 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runResume } from '../commands/resume.js';
 import { fact } from '../presentation/detail.js';
+import { renderPlain } from '../presentation/plain.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
@@ -51,6 +52,6 @@ export function registerResume(program: Command, wiring: Wiring): void {
           // beside that would read as time still passing in it.
           `${lastRun.open ? runAgeSuffix(lastRun) : ''}`,
       );
-      io.out(fact(`${focus.openRuns.length} run(s) still open`));
+      io.out(renderPlain(fact(`${focus.openRuns.length} run(s) still open`)));
     });
 }

@@ -9,6 +9,7 @@ import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runFocus } from '../commands/focus.js';
 import { itemLine } from '../presentation/items.js';
+import { renderPlain } from '../presentation/plain.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
@@ -59,12 +60,14 @@ export function registerFocus(program: Command, wiring: Wiring): void {
         // opens no run, so it is false in every line here, and a constant is noise
         // rather than honesty (`--json` carries it, being the faithful object).
         io.out(
-          itemLine([
-            run.id,
-            `${oneLine(run.agent)}` +
-              `${run.goal !== undefined ? ` — ${oneLine(run.goal)}` : ''}` +
-              runAgeSuffix(run),
-          ]),
+          renderPlain(
+            itemLine([
+              run.id,
+              `${oneLine(run.agent)}` +
+                `${run.goal !== undefined ? ` — ${oneLine(run.goal)}` : ''}` +
+                runAgeSuffix(run),
+            ]),
+          ),
         );
       }
     });

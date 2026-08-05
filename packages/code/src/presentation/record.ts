@@ -25,6 +25,7 @@ import type { RecordBody } from '@mnema/copilot';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { consultedLine } from './consultation.js';
 import { fact, subjectLine } from './detail.js';
+import { renderPlain } from './plain.js';
 
 /** What the record itself does not carry, and two of the five kinds report. */
 export interface RecordContext {
@@ -36,30 +37,36 @@ export interface RecordContext {
 
 /** The lines one whole record prints for a person. */
 export function recordReport(body: RecordBody, context: RecordContext): string[] {
-  const lines = [subjectLine(`${body.kind} ${body.id}`, body.scope)];
+  const lines = [renderPlain(subjectLine(`${body.kind} ${body.id}`, body.scope))];
   switch (body.kind) {
     case 'memory':
       lines.push(
-        fact(
-          `captured ${body.record.capturedAt} by ${anchorText(context.anchors, body.record.who)}`,
+        renderPlain(
+          fact(
+            `captured ${body.record.capturedAt} by ${anchorText(context.anchors, body.record.who)}`,
+          ),
         ),
       );
       lines.push('');
       lines.push(body.record.content);
       break;
     case 'observation':
-      lines.push(fact(`about ${body.record.about} · recorded ${body.record.recordedAt}`));
-      lines.push(fact(`topic: ${body.record.topic}`));
+      lines.push(
+        renderPlain(fact(`about ${body.record.about} · recorded ${body.record.recordedAt}`)),
+      );
+      lines.push(renderPlain(fact(`topic: ${body.record.topic}`)));
       lines.push('');
       lines.push(body.record.text);
       break;
     case 'decision':
-      lines.push(fact(`${body.record.adr} — ${body.record.title} (${body.record.state})`));
+      lines.push(
+        renderPlain(fact(`${body.record.adr} — ${body.record.title} (${body.record.state})`)),
+      );
       if (body.record.supersedes !== undefined) {
-        lines.push(fact(`supersedes ${body.record.supersedes}`));
+        lines.push(renderPlain(fact(`supersedes ${body.record.supersedes}`)));
       }
       if (body.record.supersededBy !== undefined) {
-        lines.push(fact(`superseded by ${body.record.supersededBy}`));
+        lines.push(renderPlain(fact(`superseded by ${body.record.supersededBy}`)));
       }
       lines.push('');
       lines.push(body.record.rationale);
@@ -74,12 +81,14 @@ export function recordReport(body: RecordBody, context: RecordContext): string[]
       }
       break;
     case 'task':
-      lines.push(fact(`${body.record.title} (${body.record.state})`));
-      lines.push(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`));
+      lines.push(renderPlain(fact(`${body.record.title} (${body.record.state})`)));
+      lines.push(
+        renderPlain(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
+      );
       break;
     case 'skill':
-      lines.push(fact(`${body.record.name} (${body.record.state})`));
-      lines.push(fact(consultedLine(context.consultations ?? 0)));
+      lines.push(renderPlain(fact(`${body.record.name} (${body.record.state})`)));
+      lines.push(renderPlain(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
       lines.push(body.record.body);
       break;

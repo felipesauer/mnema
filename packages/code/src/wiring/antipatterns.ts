@@ -14,6 +14,7 @@
 
 import type { Command } from 'commander';
 import { runAntipatterns } from '../commands/antipatterns.js';
+import { renderPlain } from '../presentation/plain.js';
 import { statement } from '../presentation/verdict.js';
 import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
@@ -47,14 +48,16 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
         skillCandidates,
         labelCollisions,
       } = result.patterns;
-      io.out(statement('reopened tasks', String(reopenedTasks.length)));
-      io.out(statement('superseded decisions', String(supersededDecisions.length)));
-      io.out(statement('deprecated skills', String(deprecatedSkills.length)));
+      io.out(renderPlain(statement('reopened tasks', String(reopenedTasks.length))));
+      io.out(renderPlain(statement('superseded decisions', String(supersededDecisions.length))));
+      io.out(renderPlain(statement('deprecated skills', String(deprecatedSkills.length))));
       if (skillCandidates.length > 0) {
         io.out(
-          statement(
-            'skill candidates (reopened >1×)',
-            skillCandidates.map((f) => f.entityId).join(', '),
+          renderPlain(
+            statement(
+              'skill candidates (reopened >1×)',
+              skillCandidates.map((f) => f.entityId).join(', '),
+            ),
           ),
         );
       }
@@ -62,9 +65,11 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
         // Both fields are read out of the record, and a record can be appended to by
         // anything holding a key — so neither reaches the line as it was written.
         io.out(
-          statement(
-            `label naming more than one rule (${oneLine(collision.adr)})`,
-            collision.ids.map((id) => oneLine(id)).join(', '),
+          renderPlain(
+            statement(
+              `label naming more than one rule (${oneLine(collision.adr)})`,
+              collision.ids.map((id) => oneLine(id)).join(', '),
+            ),
           ),
         );
       }

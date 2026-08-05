@@ -19,6 +19,7 @@ import type { RecordSearch } from '@mnema/copilot';
 import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
 import { itemLine } from './items.js';
+import { renderPlain } from './plain.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
 const DATE_LENGTH = 10;
@@ -44,12 +45,14 @@ export function searchReport(result: RecordSearch, term: string | undefined): st
     for (const hit of group) {
       const state = hit.state !== undefined ? ` (${hit.state})` : '';
       lines.push(
-        itemLine([
-          hit.id,
-          hit.scope,
-          hit.at.slice(0, DATE_LENGTH),
-          `${oneLine(hit.title)}${state}`,
-        ]),
+        renderPlain(
+          itemLine([
+            hit.id,
+            hit.scope,
+            hit.at.slice(0, DATE_LENGTH),
+            `${oneLine(hit.title)}${state}`,
+          ]),
+        ),
       );
     }
   }

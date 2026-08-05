@@ -19,6 +19,7 @@
 
 import type { Command } from 'commander';
 import { runGuard } from '../commands/guard.js';
+import { renderPlain } from '../presentation/plain.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
@@ -82,8 +83,8 @@ export function registerGuard(program: Command, wiring: Wiring): void {
         // the dry-run reads exactly as the real move's refusal would.
         io.out(
           result.verdict.ok
-            ? statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`)
-            : statement(`REFUSED (${result.verdict.code})`, result.verdict.message),
+            ? renderPlain(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`))
+            : renderPlain(statement(`REFUSED (${result.verdict.code})`, result.verdict.message)),
         );
       },
     );

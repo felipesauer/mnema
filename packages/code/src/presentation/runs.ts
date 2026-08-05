@@ -9,6 +9,7 @@
  */
 
 import { fact } from './detail.js';
+import { renderPlain } from './plain.js';
 
 /**
  * What `focus` and `resume` add when an actor has no run to report.
@@ -25,7 +26,7 @@ export const NO_RUNS_HINT = [
   fact("A run is an agent's working session. An MCP client opens one per connection;"),
   fact('on the command line, `mnema run start --which <agent>` opens one.'),
   fact('Work you do yourself is recorded without one.'),
-];
+].map(renderPlain);
 
 /**
  * How long an open run has been open, and how long since it recorded anything —
