@@ -19,9 +19,11 @@
  *      presence is the signal, and a tool that acted on `NO_COLOR=0` differently from
  *      `NO_COLOR=1` would be the tool that broke the promise.
  *   3. `--color=always` and `FORCE_COLOR` — force style ON where it would otherwise be
- *      off, which is what makes `mnema … --color=always | less -R` work. `FORCE_COLOR=0`
- *      is the one value that does the opposite, because that is what node and chalk
- *      made it mean and a caller who set it meant "off".
+ *      off, which is what makes `mnema … --color=always | less -R` work. `FORCE_COLOR`
+ *      decides BOTH ways: `0` is off, because that is what node and chalk made that
+ *      value mean, and a caller who typed it meant off even on a terminal. Where the
+ *      flag and the variable disagree the flag wins, which is the whole table's rule —
+ *      this invocation's own request outranks the environment it happens to run in.
  *   4. Otherwise the terminal answers: style when the destination is one, plain when it
  *      is a pipe, a file or a CI log.
  *
@@ -83,7 +85,7 @@ export function chooseRenderer(capability: Capability): Render {
   if (when === 'never') return renderPlain;
   if (env.NO_COLOR !== undefined && env.NO_COLOR !== '') return renderPlain;
   if (when === 'always') return renderStyled;
-  if (env.FORCE_COLOR !== undefined && env.FORCE_COLOR !== '0') return renderStyled;
+  if (env.FORCE_COLOR !== undefined) return env.FORCE_COLOR === '0' ? renderPlain : renderStyled;
   return isTty ? renderStyled : renderPlain;
 }
 

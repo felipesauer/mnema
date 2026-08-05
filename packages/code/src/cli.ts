@@ -65,9 +65,7 @@ export function buildProgram(io: CliIo = processIo): Command {
     // asked before the verb (`mnema --color=never verify`). commander refuses a value
     // that is not one of the three, which makes a typo a usage error this file already
     // turns into an honest exit rather than a silent fall back to the default.
-    .addOption(
-      new Option('--color <when>', COLOR_HELP).choices([...COLOR_WHENS]).default('auto'),
-    )
+    .addOption(new Option('--color <when>', COLOR_HELP).choices([...COLOR_WHENS]).default('auto'))
     // Throw instead of calling process.exit, so the whole program can be driven
     // in a test — {@link run} turns the thrown CommanderError into an exit code.
     .exitOverride()

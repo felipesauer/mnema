@@ -36,11 +36,7 @@ export interface RecordContext {
 }
 
 /** The lines one whole record prints for a person. */
-export function recordReport(
-  render: Render,
-  body: RecordBody,
-  context: RecordContext,
-): string[] {
+export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
   switch (body.kind) {
     case 'memory':
@@ -55,17 +51,13 @@ export function recordReport(
       lines.push(body.record.content);
       break;
     case 'observation':
-      lines.push(
-        render(fact(`about ${body.record.about} · recorded ${body.record.recordedAt}`)),
-      );
+      lines.push(render(fact(`about ${body.record.about} · recorded ${body.record.recordedAt}`)));
       lines.push(render(fact(`topic: ${body.record.topic}`)));
       lines.push('');
       lines.push(body.record.text);
       break;
     case 'decision':
-      lines.push(
-        render(fact(`${body.record.adr} — ${body.record.title} (${body.record.state})`)),
-      );
+      lines.push(render(fact(`${body.record.adr} — ${body.record.title} (${body.record.state})`)));
       if (body.record.supersedes !== undefined) {
         lines.push(render(fact(`supersedes ${body.record.supersedes}`)));
       }

@@ -16,8 +16,8 @@
 import type { Command } from 'commander';
 import { type InitResult, runInit } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
-import { here } from './context.js';
 import type { Render } from '../presentation/render.js';
+import { here } from './context.js';
 import type { CliIo } from './io.js';
 import type { Wiring } from './verb.js';
 
@@ -64,14 +64,10 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Ren
   const backup = identity.backup;
   if (backup?.created === true) {
     io.out(
-      render(
-        fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`),
-      ),
+      render(fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`)),
     );
     io.out(
-      render(
-        fact('Move that file off this machine: a backup left on this disk is lost with it.'),
-      ),
+      render(fact('Move that file off this machine: a backup left on this disk is lost with it.')),
     );
   } else if (backup !== null && identity.enrolled.includes(backup.fingerprint)) {
     io.out(render(fact('backup key: enrolled in this project')));

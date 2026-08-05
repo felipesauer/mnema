@@ -66,9 +66,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
       // Both halves AS RECORDED, never as typed: echoing `opts.goal` would print a
       // credential on the line directly above the one reporting it was replaced.
       io.out(
-        render(
-          fact(`for ${result.agent}${result.goal !== undefined ? ` — ${result.goal}` : ''}`),
-        ),
+        render(fact(`for ${result.agent}${result.goal !== undefined ? ` — ${result.goal}` : ''}`)),
       );
       reportReplacement(result, io);
       // The export line alone, so it can be selected, pasted or eval'd. A process
@@ -77,9 +75,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
       io.out('');
       io.out(`export ${RUN_ENV}=${result.id}`);
       io.out('');
-      io.out(
-        render(fact('Run that in this shell: every fact written after it is pinned to this')),
-      );
+      io.out(render(fact('Run that in this shell: every fact written after it is pinned to this')));
       io.out(render(fact('session. `mnema run end` closes it.')));
     });
 

@@ -50,9 +50,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
           ),
         );
         io.out(render(fact(`private half installed at ${result.installedAt}`)));
-        io.out(
-          render(fact(`Your copy at ${file} was read, not moved — keep it where it is.`)),
-        );
+        io.out(render(fact(`Your copy at ${file} was read, not moved — keep it where it is.`)));
         return;
       }
       // A recovery names ITSELF rather than `mnema init`: a machine bringing a key
@@ -100,9 +98,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
       io.out('');
       io.out(result.request);
       io.out('');
-      io.out(
-        render(fact('Hand that line to a machine already in that identity, which runs:')),
-      );
+      io.out(render(fact('Hand that line to a machine already in that identity, which runs:')));
       io.out(render(fact('mnema key enroll <the line>', 2)));
       io.out(render(fact('It proves consent to join that ONE identity and is not a secret.')));
     });
@@ -124,9 +120,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
         io.out(`Enrolled key ${result.fingerprint}`);
         io.out(render(fact(`into ${result.anchor}`)));
         io.out(render(fact(`recorded in ${result.root}`)));
-        io.out(
-          render(fact('Commit and share the record: the other machine joins by reading it.')),
-        );
+        io.out(render(fact('Commit and share the record: the other machine joins by reading it.')));
         return;
       }
       reportRefusal(io, result, {
@@ -160,14 +154,10 @@ export function registerKey(program: Command, wiring: Wiring): void {
           // it from writing again, and anything it writes now fails verification —
           // so say it plainly, at the only moment it can still be acted on.
           io.out(
-            render(
-              fact("That is THIS machine's key: it must not write to this project again."),
-            ),
+            render(fact("That is THIS machine's key: it must not write to this project again.")),
           );
           io.out(
-            render(
-              fact('Bring another key in first if this machine is to keep working here.'),
-            ),
+            render(fact('Bring another key in first if this machine is to keep working here.')),
           );
         }
         io.out(

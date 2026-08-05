@@ -58,14 +58,10 @@ export function exposureReport(render: Render, report: Exposure): string[] {
   }
   lines.push('');
   lines.push(
-    render(
-      fact('These records are permanent — nothing deletes a fact. Rotate the credentials.'),
-    ),
+    render(fact('These records are permanent — nothing deletes a fact. Rotate the credentials.')),
   );
   lines.push(
-    render(
-      fact('A public record is committed and on every machine that cloned the repository.'),
-    ),
+    render(fact('A public record is committed and on every machine that cloned the repository.')),
   );
   return lines;
 }

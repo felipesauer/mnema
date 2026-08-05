@@ -79,9 +79,7 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
   if (graph.truncated) {
     lines.push('');
     lines.push(
-      render(
-        fact(`cut at ${graph.depth} hop(s) — more lies beyond. Raise --depth to see it.`),
-      ),
+      render(fact(`cut at ${graph.depth} hop(s) — more lies beyond. Raise --depth to see it.`)),
     );
   }
   return lines;

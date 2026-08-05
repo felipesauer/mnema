@@ -25,8 +25,8 @@ import { LEVEL_REQUIREMENTS, type LevelRequirement, requiredLevel } from '@mnema
 import type { Command } from 'commander';
 import { runVerify, type TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
-import { statement } from '../presentation/verdict.js';
 import type { Render } from '../presentation/render.js';
+import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { reportRefusal } from './report.js';

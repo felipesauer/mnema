@@ -66,7 +66,9 @@ describe('the search index prints one line per hit', () => {
 
   it('holds for every whitespace that opens a line, not just the newline', () => {
     for (const breaker of BREAKERS) {
-      const lines = printed(searchReport(renderPlain, { hits: [hit(`a${breaker}b`)], total: 1 }, undefined));
+      const lines = printed(
+        searchReport(renderPlain, { hits: [hit(`a${breaker}b`)], total: 1 }, undefined),
+      );
       expect(lines, JSON.stringify(breaker)).toHaveLength(4);
     }
   });
@@ -108,7 +110,10 @@ describe('the provenance report prints one line per pattern', () => {
         pattern({ proposedBy: `a${breaker}b` }),
         pattern({ adoption: { by: `a${breaker}b` } }),
       ];
-      expect(printed(provenanceReport(renderPlain, both, new Map())), JSON.stringify(breaker)).toHaveLength(3);
+      expect(
+        printed(provenanceReport(renderPlain, both, new Map())),
+        JSON.stringify(breaker),
+      ).toHaveLength(3);
     }
   });
 });
