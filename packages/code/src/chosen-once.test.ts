@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from './cli.js';
 import { renderPlain } from './presentation/plain.js';
+import type { Render } from './presentation/render.js';
 import { renderStyled } from './presentation/styled.js';
 import { type Capability, type ColorWhen, chooseRenderer } from './wiring/color.js';
 
@@ -38,20 +39,44 @@ describe('the precedence is the conventional one', () => {
     isTty = false,
   ): Capability => ({ when, env, isTty });
 
-  it('lets `--color=never` win over everything that forces style on', () => {
-    // The last resort of a caller whose terminal lies about what it can render, so
-    // nothing may override it — not the variable node sets, and not a terminal.
+  it('lets an EXPLICIT `--color` win over the environment, in BOTH directions', () => {
+    // Rung one, and the rung that was wrong. `never` is the last resort of a caller
+    // whose terminal lies about what it can render; `always` is the same request in
+    // the other direction, from a script whose environment it did not choose. Both
+    // beat `NO_COLOR`, and the second half is the correction: this table used to let
+    // the flag win going quiet and lose going loud, which is an asymmetry no tool in
+    // the market has. `auto` is not a request and appears in none of these.
     expect(chooseRenderer(asked('never', { FORCE_COLOR: '1' }, true))).toBe(renderPlain);
+    expect(chooseRenderer(asked('never', { NO_COLOR: '1' }, true))).toBe(renderPlain);
     expect(chooseRenderer(asked('never', {}, true))).toBe(renderPlain);
+    expect(chooseRenderer(asked('always', { NO_COLOR: '1' }))).toBe(renderStyled);
+    expect(chooseRenderer(asked('always', { NO_COLOR: '1', FORCE_COLOR: '0' }))).toBe(renderStyled);
   });
 
-  it('lets `NO_COLOR` win over `--color=always`, `FORCE_COLOR` and the terminal', () => {
-    expect(chooseRenderer(asked('always', { NO_COLOR: '1' }))).toBe(renderPlain);
+  it('lets `NO_COLOR` win over `FORCE_COLOR` and the terminal, with no flag above it', () => {
     expect(chooseRenderer(asked('auto', { NO_COLOR: '1', FORCE_COLOR: '1' }))).toBe(renderPlain);
     expect(chooseRenderer(asked('auto', { NO_COLOR: '1' }, true))).toBe(renderPlain);
     // Any value, never the value: no-color.org says presence is the signal, so a
     // tool that read `NO_COLOR=0` as "colour, please" would be the tool that broke it.
     expect(chooseRenderer(asked('auto', { NO_COLOR: '0' }, true))).toBe(renderPlain);
+  });
+
+  it('answers the five cases the whole table is for', () => {
+    // The precedence as a reader would ask it, one rung per row and every rung
+    // exercised once. Row two is the one that inverted.
+    const cases: readonly (readonly [ColorWhen, Record<string, string>, boolean, Render])[] = [
+      ['never', { FORCE_COLOR: '1' }, false, renderPlain],
+      ['always', { NO_COLOR: '1' }, false, renderStyled],
+      ['auto', { NO_COLOR: '1' }, false, renderPlain],
+      ['auto', { FORCE_COLOR: '1' }, false, renderStyled],
+      ['auto', {}, false, renderPlain],
+    ];
+    for (const [when, env, isTty, expected] of cases) {
+      expect(chooseRenderer({ when, env, isTty }), JSON.stringify({ when, env })).toBe(expected);
+    }
+    // Both answers appear, so a table that returned one renderer for everything could
+    // not walk this case.
+    expect(new Set(cases.map(([, , , expected]) => expected)).size).toBe(2);
   });
 
   it('reads an EMPTY `NO_COLOR` as absent, which is what the standard says', () => {
@@ -169,14 +194,27 @@ describe('the flag reaches the bytes', () => {
   });
 
   it('honors `NO_COLOR` from the environment the process is really in', async () => {
+    // `FORCE_COLOR` is set alongside it deliberately: with neither of them, a runner in
+    // a pipe answers plain on the LAST rung and this case would pass without `NO_COLOR`
+    // doing anything at all. The same invocation paints two cases below.
+    process.env.FORCE_COLOR = '1';
     process.env.NO_COLOR = '1';
-    expect(await invoke('--color=always', 'verify')).not.toContain('\u001b');
+    expect(await invoke('verify')).not.toContain('\u001b');
   });
 
   it('honors `FORCE_COLOR`, and lets `--color=never` overrule it', async () => {
     process.env.FORCE_COLOR = '1';
     expect(await invoke('verify')).toContain('\u001b[1m');
     expect(await invoke('--color=never', 'verify')).not.toContain('\u001b');
+  });
+
+  it('lets an explicit `--color=always` overrule `NO_COLOR` — the rung that moved', async () => {
+    // The correction, driven through the real program rather than through the pure
+    // function above: a caller typing the flag on THIS invocation is being more
+    // specific than a variable exported in their shell profile, which is what git,
+    // ripgrep, fd, ls, bat and delta all do. It used to come back plain.
+    process.env.NO_COLOR = '1';
+    expect(await invoke('--color=always', 'verify')).toContain('\u001b[1m');
   });
 
   it('refuses a value that names no answer, as a usage error', async () => {

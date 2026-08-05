@@ -6,7 +6,7 @@ $ mnema --help
 |
 | Options:
 |   -V, --version                           output the version number
-|   --color <when>                          when to use bold and dim: auto (a terminal only), always (also in a pipe), never. NO_COLOR and FORCE_COLOR are honored; --color=never wins. Style never changes what a line says. (choices: "auto", "always", "never", default: "auto")
+|   --color <when>                          when to use bold, dim and color: auto (a terminal only), always (also in a pipe), never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style never changes what a line says. (choices: "auto", "always", "never", default: "auto")
 |   -h, --help                              display help for command
 |
 | Commands:
