@@ -521,6 +521,8 @@ describe('the session says how many projects it chose from', () => {
     // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;
     expect(Object.keys(payload).sort()).toEqual([
+      'awaitingJudgement',
+      'awaitingJudgementTotal',
       'decisions',
       'decisionsTotal',
       'resume',

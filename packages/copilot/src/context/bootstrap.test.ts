@@ -7,8 +7,10 @@ import {
   birthDecision,
   birthSkill,
   birthTask,
+  deprecateSkill,
   makeBench,
   moveDecision,
+  moveSkill,
   moveTask,
   moveTaskAt,
   startRun,
@@ -168,6 +170,8 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       expect(b.work.every((w) => Object.keys(w).length === 4)).toBe(true);
       // The whole answer's shape, so a field added to any half fails here.
       expect(Object.keys(b).sort()).toEqual([
+        'awaitingJudgement',
+        'awaitingJudgementTotal',
         'decisions',
         'decisionsTotal',
         'resume',
@@ -413,10 +417,10 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('counts each list, and the two totals are not each other’s', () => {
-    // One cut function serves both lists, so what the call site still owns is which
+  it('counts each list, and the totals are not each other’s', () => {
+    // One cut function serves every list, so what the call site still owns is which
     // total it hands to which list. Different counts on purpose: with equal ones, a
-    // crossed pair would pass. Both below the limit, so nothing is cut and the
+    // crossed pair would pass. All below the limit, so nothing is cut and the
     // totals are the lists themselves — the non-regression proved BY THE LIST.
     bench = makeBench();
     for (const id of ['task-a', 'task-b']) {
@@ -426,6 +430,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       birthDecision(bench, id, id);
       moveDecision(bench, id, 'proposed', 'accepted', 'accept');
     }
+    for (const id of ['dec-p', 'dec-q', 'dec-r', 'dec-s']) birthDecision(bench, id, id);
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
@@ -434,10 +439,226 @@ describe('bootstrap — the opening context, focused on the actor', () => {
         workTotal: b.workTotal,
         decisions: b.decisions.length,
         decisionsTotal: b.decisionsTotal,
-      }).toEqual({ work: 2, workTotal: 2, decisions: 3, decisionsTotal: 3 });
+        awaiting: b.awaitingJudgement.length,
+        awaitingTotal: b.awaitingJudgementTotal,
+      }).toEqual({
+        work: 2,
+        workTotal: 2,
+        decisions: 3,
+        decisionsTotal: 3,
+        awaiting: 4,
+        awaitingTotal: 4,
+      });
       // And the lists did not swap either: each carries its own kind's fields.
       expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
       expect(Object.keys(b.decisions[0] ?? {}).sort()).toEqual(['adr', 'id', 'title']);
+      expect(Object.keys(b.awaitingJudgement[0] ?? {}).sort()).toEqual([
+        'adr',
+        'id',
+        'kind',
+        'state',
+        'title',
+        'updatedAt',
+      ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('lists what awaits a judgement across BOTH machines, with the state that says which ruling is missing', () => {
+    // The record the measurement was taken over held two ADRs — and BOTH were
+    // `proposed`, so the list of what governs said nothing about them either. This
+    // is the half that answers for them, and for the curation backlog beside it.
+    bench = makeBench();
+    birthDecision(bench, 'dec-1', 'Nobody has ruled');
+    birthSkill(bench, 'sk-new', 'Nobody has looked');
+    birthSkill(bench, 'sk-seen', 'Looked at, not adopted');
+    moveSkill(bench, 'sk-seen', 'proposed', 'reviewed', 'review');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // Freshest-moved first, and the `review` was the last event written.
+      expect(b.awaitingJudgement).toEqual([
+        {
+          kind: 'skill',
+          id: 'sk-seen',
+          name: 'Looked at, not adopted',
+          state: 'reviewed',
+          updatedAt: expect.any(String),
+        },
+        {
+          kind: 'skill',
+          id: 'sk-new',
+          name: 'Nobody has looked',
+          state: 'proposed',
+          updatedAt: expect.any(String),
+        },
+        {
+          kind: 'decision',
+          id: 'dec-1',
+          adr: 'ADR-dec-1',
+          title: 'Nobody has ruled',
+          state: 'proposed',
+          updatedAt: expect.any(String),
+        },
+      ]);
+      expect(b.awaitingJudgementTotal).toBe(3);
+      // Neither body travelled: not the argument, not the pattern.
+      expect(JSON.stringify(b)).not.toContain('why Nobody has ruled');
+      expect(JSON.stringify(b)).not.toContain('body of Nobody has looked');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('does NOT list what is settled, though `supersede` and `deprecate` stay legal on both', () => {
+    // The criterion did not hitch a ride from the work list. `DECISION_TRANSITIONS`
+    // allows `supersede` from `accepted` and `SKILL_TRANSITIONS` allows `deprecate`
+    // from `adopted`, for as long as either exists — so "has at least one legal
+    // move", which is what puts a task in `work`, would report both of these as
+    // pendencies that never clear. Both are served by the lists that say what
+    // GOVERNS, so their absence here is the criterion and not an empty record.
+    bench = makeBench();
+    birthDecision(bench, 'dec-1', 'Settled');
+    moveDecision(bench, 'dec-1', 'proposed', 'accepted', 'accept');
+    birthSkill(bench, 'sk-1', 'In use');
+    moveSkill(bench, 'sk-1', 'proposed', 'reviewed', 'review');
+    moveSkill(bench, 'sk-1', 'reviewed', 'adopted', 'adopt');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect({ awaiting: b.awaitingJudgement, total: b.awaitingJudgementTotal }).toEqual({
+        awaiting: [],
+        total: 0,
+      });
+      expect(b.decisions.map((d) => d.id)).toEqual(['dec-1']);
+      expect(b.skills.map((s) => s.id)).toEqual(['sk-1']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('does NOT list what is over: rejected, superseded and deprecated are all absent', () => {
+    // The third bucket. Each state is reached by the move that reaches it, so what
+    // is being filtered is a record the product can actually produce.
+    bench = makeBench();
+    birthDecision(bench, 'dec-rejected', 'Refused');
+    moveDecision(bench, 'dec-rejected', 'proposed', 'rejected', 'reject');
+    birthDecision(bench, 'dec-successor', 'The replacement');
+    moveDecision(bench, 'dec-successor', 'proposed', 'accepted', 'accept');
+    birthDecision(bench, 'dec-superseded', 'Replaced');
+    moveDecision(bench, 'dec-superseded', 'proposed', 'accepted', 'accept');
+    supersedeDecision(bench, 'dec-superseded', 'dec-successor');
+    birthSkill(bench, 'sk-rejected', 'Turned down');
+    moveSkill(bench, 'sk-rejected', 'proposed', 'rejected', 'reject');
+    birthSkill(bench, 'sk-deprecated', 'Retired');
+    moveSkill(bench, 'sk-deprecated', 'proposed', 'reviewed', 'review');
+    moveSkill(bench, 'sk-deprecated', 'reviewed', 'adopted', 'adopt');
+    deprecateSkill(bench, 'sk-deprecated');
+    // One of each waiting kind, so the list is not empty for want of content.
+    birthDecision(bench, 'dec-open', 'Still open');
+    birthSkill(bench, 'sk-open', 'Still open');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect(b.awaitingJudgement.map((i) => i.id).sort()).toEqual(['dec-open', 'sk-open']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('cuts what awaits a judgement at the same limit and says how many there were', () => {
+    bench = makeBench();
+    // One more than the limit, so the cut is what separates the two numbers — and
+    // split across the two machines, so the cut is over the composed list.
+    const wanted = SEARCH_DEFAULT_LIMIT + 5;
+    for (let i = 0; i < wanted; i += 1) {
+      // Zero-padded, so the ids sort the way the loop wrote them.
+      const n = String(i).padStart(3, '0');
+      if (i % 2 === 0) birthDecision(bench, `dec-${n}`, `D${i}`);
+      else birthSkill(bench, `sk-${n}`, `S${i}`);
+    }
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // The number is the search's, not a third convention invented for this list.
+      expect(SEARCH_DEFAULT_LIMIT).toBe(20);
+      expect({
+        served: b.awaitingJudgement.length,
+        total: b.awaitingJudgementTotal,
+      }).toEqual({ served: SEARCH_DEFAULT_LIMIT, total: wanted });
+      // The cut falls on the STALEST, and the freshest is the last item written —
+      // whichever machine it came from.
+      const last = wanted - 1;
+      expect(b.awaitingJudgement[0]?.id).toBe(
+        `${last % 2 === 0 ? 'dec' : 'sk'}-${String(last).padStart(3, '0')}`,
+      );
+      expect(b.awaitingJudgement.map((i) => i.id)).not.toContain('dec-000');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('orders the awaiting list ACROSS the kinds, by content, whatever order the trees come in', () => {
+    // One list, not decisions-then-skills. Two things make this discriminate: the
+    // freshest item is a SKILL and it sits above a decision, so a list built kind by
+    // kind fails; and a decision and a skill share an instant, so the tie-break —
+    // which for a cut list decides what is left OUT — is exercised across the two
+    // machines and across two trees at once.
+    //
+    // The tie is built by the clocks rather than by a hand-written instant: each
+    // bench starts its own at the same epoch and ticks a second per event, so the
+    // Nth event of one tree carries the same stamp as the Nth of the other. No
+    // fixture here writes a move the workflow does not define.
+    bench = makeBench();
+    const other = makeBench();
+    try {
+      birthDecision(bench, 'dec-tie', 'Nobody has ruled');
+      birthSkill(other, 'sk-tie', 'Nobody has looked');
+      // Later than both, in the tree that is passed SECOND, and a skill.
+      birthSkill(other, 'sk-fresh', 'Looked at, not adopted');
+      moveSkill(other, 'sk-fresh', 'proposed', 'reviewed', 'review');
+      const mine = bench.cache();
+      const theirs = other.cache();
+      try {
+        const forwards = bootstrap([mine, theirs], asking(bench.who)).awaitingJudgement;
+        const backwards = bootstrap([theirs, mine], asking(bench.who)).awaitingJudgement;
+        expect(forwards.map((i) => `${i.kind}:${i.id}`)).toEqual([
+          'skill:sk-fresh',
+          'decision:dec-tie',
+          'skill:sk-tie',
+        ]);
+        // The tie is REAL — without it the two lines above prove only the sort.
+        expect(forwards[1]?.updatedAt).toBe(forwards[2]?.updatedAt);
+        // Same content, same bytes, whatever order the caller passes the trees in —
+        // an unstable order invalidates the host's cache of a prompt that did not change.
+        expect(backwards).toEqual(forwards);
+      } finally {
+        mine.close();
+        theirs.close();
+      }
+    } finally {
+      rmSync(other.root, { recursive: true, force: true });
+    }
+  });
+
+  it('serves EVERY adopted pattern, uncut and uncounted — the list this limit does not reach', () => {
+    // The narrowing the module doc now states, held as a test so the doc cannot go
+    // back to generalising. Three of the four lists are cut; this one is not, and
+    // it carries no total because there is nothing a total would report.
+    bench = makeBench();
+    const wanted = SEARCH_DEFAULT_LIMIT + 4;
+    for (let i = 0; i < wanted; i += 1) {
+      const id = `sk-${String(i).padStart(3, '0')}`;
+      birthSkill(bench, id, `S${i}`);
+      moveSkill(bench, id, 'proposed', 'reviewed', 'review');
+      moveSkill(bench, id, 'reviewed', 'adopted', 'adopt');
+    }
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      expect(b.skills).toHaveLength(wanted);
+      expect(b).not.toHaveProperty('skillsTotal');
     } finally {
       cache.close();
     }

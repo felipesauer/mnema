@@ -42,6 +42,7 @@ export type {
   SkillAdoption,
 } from '@mnema/core';
 export {
+  type AwaitingJudgement,
   type Bootstrap,
   bootstrap,
   type WorkItem,
@@ -57,7 +58,10 @@ export {
 // decisions govern never left. `decisionsInForce` is called by `bootstrap` and by
 // `brief`, and by nothing outside this package: exporting it would be a value with no
 // consumer, the shape `every-public-value-has-a-caller.test.ts` exists to catch. The
-// type is exported because reading a `Bootstrap` or a `Brief` needs it.
+// type is exported because reading a `Bootstrap` or a `Brief` needs it. The same
+// holds for the two halves of `AwaitingJudgement`: they are reachable THROUGH the
+// union (`item.kind === 'decision'` narrows it without either arm being named), so
+// exporting them as well would be surface nobody needs to write down.
 export type { DecisionRef } from './context/decisions.js';
 export {
   type ActorScope,

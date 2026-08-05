@@ -16,14 +16,26 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 - **`bootstrap`** — the opening context for a session, focused on one actor:
   where they left off (their latest run and open focus), the actionable work by
   NAME (id, title, state — freshest first, cut to a limit, with `workTotal` saying
-  how many there were), the names of the adopted patterns to work by, and the
+  how many there were), the names of the adopted patterns to work by, the
   decisions IN FORCE by name (title, the citable `ADR-<n>` label, id — freshest
-  first, cut to the same limit, with `decisionsTotal` saying how many there were).
+  first, cut to the same limit, with `decisionsTotal` saying how many there were),
+  and what is AWAITING A JUDGEMENT.
   Every list is an index: the moves a task allows come from `nextActions`, the
   pattern itself from `adoptedSkills`, a decision's `rationale` and what it turned
   down from `readRecord` — asked for the one item that turned out to matter. Only
   `accepted` decisions are served: proposed is still on the table, rejected was
   refused, and superseded was replaced, so none of the three governs anything.
+  `awaitingJudgement` is the other side of that filter — everything somebody has
+  to rule on before it means anything: a decision still `proposed`, a pattern
+  `proposed` or `reviewed`. One list holding both, freshest-moved first across the
+  two, cut to the same limit with `awaitingJudgementTotal`; each item carries the
+  `kind` that says which sort of item the line is and the `state` that says which
+  ruling is missing. A decision's argument comes from `readRecord`; a pattern's body
+  does not come from anywhere on the agent's surface, because `lookupAdoptedSkill`
+  serves adopted patterns only and the `read_record` tool refuses a skill outright —
+  the command line serves it instead, for the person curating. It is deliberately NOT the work list's
+  criterion ("has a legal move"): `supersede` stays legal on an accepted decision
+  forever, so that rule would make a pendency of every call the project ever settled.
 - **`brief`** — everything that governs the work in the tree that TRAVELS, whole:
   every decision in force and every adopted pattern of the public tree, each by name.
   It composes the same two derivations `bootstrap` does, so a file generated from it

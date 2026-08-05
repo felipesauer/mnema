@@ -1535,7 +1535,7 @@ describe('MCP session + tools — unit', () => {
     });
     const team = adoptSkill(session, { name: 'team habit', body: 'how we work', scope: 'public' });
     const mine = adoptSkill(session, { name: 'my habit', body: 'how I work' });
-    runCreateSkill(session, { name: 'not adopted', body: 'still an idea' });
+    const idea = runCreateSkill(session, { name: 'not adopted', body: 'still an idea' });
 
     const context = runBootstrap(session);
 
@@ -1544,7 +1544,16 @@ describe('MCP session + tools — unit', () => {
     const serialized = JSON.stringify(context);
     expect(serialized).not.toContain('how we work');
     expect(serialized).not.toContain('how I work');
-    expect(serialized).not.toContain('not adopted');
+    // The proposed pattern used to be proved absent from the WHOLE payload, and the
+    // name was the probe. That instrument went blind the day the opening read grew a
+    // list of what awaits a judgement: the name belongs there now, and an assertion
+    // that it appears nowhere would have had to be deleted or would have failed for
+    // the right reason. The substitute keeps both halves — it is not in the patterns
+    // to work by (by id, the list above), and its BODY is nowhere at all.
+    expect(serialized).not.toContain('still an idea');
+    expect(context.awaitingJudgement.map((i) => i.id)).toEqual([
+      idea.ok ? idea.id : 'the proposal was refused',
+    ]);
   });
 
   it('skills works with no project: the global tree serves and takes the fact', () => {
@@ -2210,6 +2219,110 @@ describe('MCP server — end to end over a real client', () => {
       expect(body.record.adr).toBe(named.adr);
       expect(body.record.rationale.length).toBeGreaterThan(0);
     }
+
+    await client.close();
+  });
+
+  it('answers the SECOND READ each kind names, for every item awaiting a judgement', async () => {
+    // The pairing for the fourth list, and the link that says the field REACHES the
+    // server: written through the tools, read back off the wire, and every id it
+    // hands out is followed through the door the description names.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    /** Calls a tool and fails loudly if the gate refused it. */
+    const ok = async (name: string, args: Record<string, string>): Promise<string> => {
+      const reply = await client.callTool({ name, arguments: args });
+      const text = textOf(reply);
+      expect(text, `${name} ${JSON.stringify(args)}`).not.toContain('Refused');
+      return text;
+    };
+    const idOf = (text: string): string => /\(([^)]+)\)/.exec(text)?.[1] ?? '';
+
+    // One of each waiting state, and one of each settled state beside it — so the
+    // filter is proved through the transport and not only in the derivation.
+    const pending = idOf(
+      await ok('record_decision', {
+        title: 'Still on the table',
+        rationale: 'why it is worth considering',
+      }),
+    );
+    const settled = idOf(
+      await ok('record_decision', { title: 'Already agreed', rationale: 'why we did it' }),
+    );
+    await ok('decision_transition', { id: settled, action: 'accept', note: 'the team agreed' });
+    const proposed = idOf(
+      await ok('create_skill', { name: 'Nobody has looked', body: 'the proposed pattern' }),
+    );
+    const reviewed = idOf(
+      await ok('create_skill', { name: 'Looked at', body: 'the reviewed pattern' }),
+    );
+    await ok('skill_transition', { id: reviewed, action: 'review', note: 'read it' });
+    const adopted = idOf(await ok('create_skill', { name: 'In use', body: 'the adopted pattern' }));
+    await ok('skill_transition', { id: adopted, action: 'review', note: 'read it' });
+    await ok('skill_transition', { id: adopted, action: 'adopt', note: 'we work this way' });
+
+    const boot = await client.callTool({ name: 'bootstrap' });
+    const context = JSON.parse(textOf(boot)) as {
+      awaitingJudgement: { kind: string; id: string; state: string }[];
+      awaitingJudgementTotal: number;
+    };
+    // The three that await a ruling, each with the state that says which — and the
+    // two that do not are absent, though `supersede` and `deprecate` stay legal on
+    // them for as long as they exist.
+    expect({
+      awaiting: context.awaitingJudgement.map((i) => `${i.kind}:${i.state}`).sort(),
+      total: context.awaitingJudgementTotal,
+    }).toEqual({
+      awaiting: ['decision:proposed', 'skill:proposed', 'skill:reviewed'],
+      total: 3,
+    });
+    const ids = new Set(context.awaitingJudgement.map((i) => i.id));
+    expect(ids).toEqual(new Set([pending, proposed, reviewed]));
+    // And no body travelled in the opening payload — neither argument nor pattern.
+    for (const prose of [
+      'why it is worth considering',
+      'the proposed pattern',
+      'the reviewed pattern',
+    ]) {
+      expect(textOf(boot)).not.toContain(prose);
+    }
+
+    // A DECISION'S REST IS REACHABLE, per id, through the door the description
+    // names — and it carries the argument the index left out.
+    for (const named of context.awaitingJudgement.filter((i) => i.kind === 'decision')) {
+      const read = JSON.parse(await ok('read_record', { id: named.id })) as {
+        kind: string;
+        record: { rationale: string; state: string };
+      };
+      expect(read.kind, `read_record for ${named.id}`).toBe('decision');
+      expect(read.record.state).toBe(named.state);
+      expect(read.record.rationale.length).toBeGreaterThan(0);
+    }
+
+    // A PATTERN'S IS NOT, AND THIS PINS WHY. Both agent-facing reads refuse it, each
+    // for its own stated reason and each pointing at the other: `skills` serves
+    // adopted patterns only (what it hands back is meant to be worked by), and
+    // `read_record` refuses a skill outright so a body cannot leave by a second door.
+    // So the list gives an agent the NAME and the state, and the description says
+    // that rather than naming a door that answers none of its own items. This is
+    // where the day somebody opens that door announces itself.
+    for (const skill of [proposed, reviewed]) {
+      expect(textOf(await client.callTool({ name: 'skills', arguments: { id: skill } }))).toContain(
+        'Refused (NOT_ADOPTED)',
+      );
+      expect(
+        textOf(await client.callTool({ name: 'read_record', arguments: { id: skill } })),
+      ).toContain('Refused (USE_SKILLS_TOOL)');
+    }
+    // And neither refusal is a broken call: the same two tools answer for a pattern
+    // that IS adopted and for a decision.
+    expect(await ok('skills', { id: adopted })).toContain('the adopted pattern');
+    expect(await ok('read_record', { id: settled })).toContain('why we did it');
+    // The one move an agent CAN make on a pending pattern without its text: the
+    // workflow itself. It is what the description sends the caller to.
+    await ok('skill_transition', { id: proposed, action: 'review', note: 'raised with the team' });
 
     await client.close();
   });
@@ -3034,6 +3147,11 @@ describe('MCP — what enters the record', () => {
     // And each cut is declared where the agent decides whether to look further.
     expect(description).toContain('workTotal');
     expect(description).toContain('decisionsTotal');
+    expect(description).toContain('awaitingJudgementTotal');
+    // The fourth list, and the door it does NOT send a pattern to: `skills` refuses
+    // a pattern that is not adopted, so the description says which read answers.
+    expect(description).toContain('awaitingJudgement');
+    expect(description).toContain('Not `skills` for the pattern');
     // The tools it points at exist under exactly those names.
     const named = new Set(tools.tools.map((t) => t.name));
     expect(named.has('next_actions') && named.has('skills') && named.has('read_record')).toBe(true);

@@ -314,6 +314,8 @@ describe('brief — everything that governs the work here', () => {
     // slice narrowed one consumer of two derivations, and the way that goes wrong is
     // the other consumer quietly losing (or growing) a field.
     expect(Object.keys(opening).sort()).toEqual([
+      'awaitingJudgement',
+      'awaitingJudgementTotal',
       'decisions',
       'decisionsTotal',
       'resume',
