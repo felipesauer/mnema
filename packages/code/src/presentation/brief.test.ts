@@ -96,9 +96,14 @@ describe('the brief costs one line per rule', () => {
     // is not the slope and is not asserted as if it were.
     expect(oneEach - none).toBeGreaterThan(0);
     // And the fixed part is small enough to be worth having in a file read on every
-    // prompt: measured at 21 lines with both lists empty, against the ~200 the market
-    // publishes for a whole project memory.
-    expect(none).toBeLessThanOrEqual(25);
+    // prompt: measured at 25 lines with both lists empty, against the ~200 the market
+    // publishes for a whole project memory. It was 21 before the document had to name
+    // the scope it carries and say what its counts count (three lines and a blank), and
+    // the bound is 30 rather than the measurement: a declaration is the one thing this
+    // skeleton is allowed to grow for, and a bound sitting on the measured value turns
+    // the next honest sentence into a failing test instead of a decision.
+    expect(none).toBe(25);
+    expect(none).toBeLessThanOrEqual(30);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {
@@ -114,6 +119,47 @@ describe('the brief costs one line per rule', () => {
     expect(text).toContain('## Decisions in force (3)');
     expect(text).toContain('## Patterns adopted (2)');
     expect(text.split('\n').filter((line) => line.startsWith('- **'))).toHaveLength(5);
+  });
+
+  it('names the scope it carries, and says the number is of what is printed', () => {
+    // The document leaves rules out — the ones that do not travel — and an omission a
+    // reader cannot see is the failure this product exists not to have. So the file
+    // declares its own scope before any content, and declares what its counts count,
+    // in BOTH states: an empty document is exactly where a reader would otherwise
+    // conclude that nothing governs anywhere.
+    //
+    // Where the private rules are dropped is not here (the composition hands over the
+    // trees that travel), which is why this asserts the DECLARATION and the count
+    // discipline; that the drop happened is asserted over the record, in
+    // `commands/brief.test.ts`.
+    for (const brief of [governance(), governance({ decisions: [decision(1)] })]) {
+      const text = printed(brief);
+      expect(text).toContain('COMMITTED to this project');
+      expect(text).toContain('a clone of the repository');
+      expect(text).toContain('nothing kept privately on one machine or for one person');
+      expect(text).toContain('each heading counts what is printed under it');
+    }
+    // And it says it BEFORE the content, which is the whole point of a declaration: a
+    // reader who stops at the first rule has already read the scope.
+    const lines = briefDocument(governance({ decisions: [decision(1)] }));
+    const declared = lines.findIndex((line) => line.includes('COMMITTED to this project'));
+    const firstRule = lines.findIndex((line) => line.startsWith('- **'));
+    expect(declared).toBeGreaterThanOrEqual(0);
+    expect(firstRule).toBeGreaterThan(declared);
+  });
+
+  it('counts nothing it did not print — no total of the record, no tally of omissions', () => {
+    // The second half of the declaration, as an ABSENCE. A heading that said "(1 of 4)"
+    // — or a line counting the private rules — would put a fact about a tree that does
+    // not travel into a file that gets committed, and would make the document move when
+    // that tree moves, which is what the byte-check exists to rule out.
+    const text = printed(governance({ decisions: [decision(1)], skills: [pattern(1)] }));
+    expect(text).toContain('## Decisions in force (1)');
+    expect(text).toContain('## Patterns adopted (1)');
+    expect(text).not.toMatch(/\(\d+\s+of\s+\d+\)/);
+    expect(text).not.toMatch(/omitted|hidden|not shown|elsewhere in the record/i);
+    // The only numbers in the document are the two counts of what is printed.
+    expect(text.match(/\(\d+\)/g)).toEqual(['(1)', '(1)']);
   });
 
   it('names each decision by its ADR label, its title and its id — and no rationale', () => {

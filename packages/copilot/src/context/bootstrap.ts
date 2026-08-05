@@ -211,7 +211,10 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
   const work = capped(actionable);
   // The rule for which decisions govern is NOT here: it is `decisionsInForce`, so
-  // the brief that serves the same list into a file cannot answer it differently.
+  // the brief that serves that same derivation into a file cannot answer "in force"
+  // differently. What the brief does differ in is the trees it asks about — it
+  // carries only the one that travels, and it filters its own sources to do it, so
+  // this answer keeps every tree the caller can see.
   const decisions = capped(decisionsInForce(caches));
   return {
     resume: resume(caches, scope),

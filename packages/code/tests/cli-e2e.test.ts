@@ -3281,6 +3281,34 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
   }
 
   /**
+   * The same, into the tree that does not travel: `--scope private` on the birth, and
+   * the move follows the entity, so nothing says `private` twice.
+   */
+  async function acceptPrivately(title: string): Promise<string> {
+    const id = idOf(
+      await output(['decision', title, 'because the record says so', '--scope', 'private']),
+    );
+    await output(['decision', 'move', 'accept', id, '--note', 'agreed in review']);
+    return id;
+  }
+
+  /** Creates a pattern and adopts it — the three moves that make one served. */
+  async function adopt(name: string, body: string, scope?: string): Promise<string> {
+    const id = idOf(
+      await output([
+        'skill',
+        name,
+        '--body',
+        body,
+        ...(scope !== undefined ? ['--scope', scope] : []),
+      ]),
+    );
+    await output(['skill', 'move', 'review', id, '--note', 'looks sound']);
+    await output(['skill', 'move', 'adopt', id, '--note', 'we work this way']);
+    return id;
+  }
+
+  /**
    * Busy-waits past the next whole second.
    *
    * A stamp printed to the second is what a generated file would most plausibly
@@ -3341,6 +3369,47 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
       '## Decisions in force (2)',
       expect.stringContaining('Rotate the credentials every quarter'),
     ]);
+  });
+
+  it('carries the committed record: no label twice, no private rule, and it says so', async () => {
+    // THE MEASUREMENT THAT ORDERED THIS SLICE, replayed on the bytes. Three accepted
+    // decisions — two public, one `--scope private` — used to print two lines labelled
+    // `ADR-1`, because the label is numbered inside one chain and the document folded
+    // three of them. And the private TITLE reached a file whose published recipe is a
+    // redirection into `AGENTS.md` and a commit.
+    //
+    // Every claim here is about the printed document, since that is the artefact that
+    // gets committed: the labels it prints, the text it does not, the numbers in its
+    // headings, and the sentence that says which record it carries.
+    await run(['init'], capture().io);
+    await accept('Round the tax once, over the invoice total');
+    await accept('Do NOT extract a shared billing package');
+    const secret = await acceptPrivately('The staging secret lives in the vault');
+    await adopt('One slice per PR', 'A slice is one reviewable change.');
+    await adopt('Keep the scratch notes here', 'This machine keeps its own notes.', 'private');
+
+    const document = await output(['brief']);
+    // No label identifies two rules — the defect, stated as the property it broke.
+    const labels = [...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1]);
+    expect([...labels].sort()).toEqual(['ADR-1', 'ADR-2']);
+    // What is not in it: the private title, the private id, and the private pattern's
+    // name. The body of neither pattern is in it either — but that is the other rule.
+    expect(document).not.toContain('The staging secret lives in the vault');
+    expect(document).not.toContain(secret);
+    expect(document).not.toContain('Keep the scratch notes here');
+    // The headings count what is printed under them, and nothing tallies the omission.
+    expect(document).toContain('## Decisions in force (2)');
+    expect(document).toContain('## Patterns adopted (1)');
+    expect(document).not.toMatch(/\(\d+ of \d+\)/);
+    // And the omission is DECLARED, in the file itself, before any of the content.
+    expect(document).toContain('COMMITTED to this project');
+    expect(document.indexOf('COMMITTED to this project')).toBeLessThan(document.indexOf('- **'));
+    // The record still holds the private rule and still serves it to whoever asks for
+    // the record — proof the absence above is the document's scope and not a lost write.
+    // Asked through a read this slice did not touch.
+    const found = await output(['search', 'staging secret']);
+    expect(found).toContain('The staging secret lives in the vault');
+    expect(found).toContain('private');
   });
 
   it('writes nothing — not an event, not a cache, and not the operator’s file', async () => {
