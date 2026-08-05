@@ -21,6 +21,7 @@ import {
   type ProvenLevel,
   provenLevel,
   requiredLevel,
+  weakerLevel,
 } from './level.js';
 
 /** A fully proven record, as facts — each test bends one thing about it. */
@@ -164,5 +165,52 @@ describe('how a level reads', () => {
     // a record whose signatures were actually checked.
     expect(levelHeadline('hash-chain-only')).not.toContain('T2/T4');
     expect(levelHeadline('unreadable')).not.toContain('T2/T4');
+  });
+});
+
+describe('folding several chains into one level', () => {
+  it('answers the WEAKER of two, in either order', () => {
+    // One record can be several chains — a project keeps its committed tree and this
+    // machine's private one — and the aggregate has to be the weak one, whichever
+    // order the trees were read in.
+    expect(weakerLevel('fully-signed', 'broken')).toBe('broken');
+    expect(weakerLevel('broken', 'fully-signed')).toBe('broken');
+    expect(weakerLevel('fully-signed', 'hash-chain-only')).toBe('hash-chain-only');
+    expect(weakerLevel('signed-through-last-checkpoint', 'unreadable')).toBe('unreadable');
+    expect(weakerLevel('unreadable', 'broken')).toBe('unreadable');
+  });
+
+  it('is the ORDER of the levels, over every pair — never a favourite', () => {
+    // Totality where a table cannot be written: every pair of levels, both ways
+    // round, answering the one that {@link PROVEN_LEVELS} puts first. A fold that
+    // returned the STRONGER of two would pass a gate on the healthy half of a record,
+    // which is the defect this exists against.
+    for (const [aRank, a] of PROVEN_LEVELS.entries()) {
+      for (const [bRank, b] of PROVEN_LEVELS.entries()) {
+        const expected = aRank <= bRank ? a : b;
+        expect(weakerLevel(a, b), `${a} vs ${b}`).toBe(expected);
+        expect(weakerLevel(b, a), `${b} vs ${a}`).toBe(expected);
+      }
+    }
+  });
+
+  it('agrees with what a requirement accepts, so one comparison is enough', () => {
+    // What lets an exit code read ONE level: a minimum is met by the weakest of
+    // several chains exactly when it is met by every one of them. If this drifted, an
+    // adapter would have to ask per tree and the two answers could disagree.
+    for (const requirement of LEVEL_REQUIREMENTS) {
+      for (const a of PROVEN_LEVELS) {
+        for (const b of PROVEN_LEVELS) {
+          expect(
+            meetsRequirement(weakerLevel(a, b), requirement),
+            `${a} + ${b} under ${requirement}`,
+          ).toBe(meetsRequirement(a, requirement) && meetsRequirement(b, requirement));
+        }
+      }
+    }
+  });
+
+  it('is idempotent on one level, so a single chain folds to itself', () => {
+    for (const level of PROVEN_LEVELS) expect(weakerLevel(level, level)).toBe(level);
   });
 });
