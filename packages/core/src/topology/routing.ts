@@ -143,7 +143,11 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
  * against these two tables rather than against a list somebody keeps in step by
  * hand. It is deliberately NOT on the package's public surface — nothing outside
  * asks why a kind is unrouted, and the type of this table is what forces a new
- * kind to be classified, so hiding it costs the proof nothing.
+ * kind to be classified, so hiding it costs the proof nothing. That it stays off the
+ * surface is checked rather than declared, by the same guard that keeps the two
+ * disposition tables off it: `no-classification-table-reaches-the-surface.test.ts`
+ * finds this module by the sentence above and walks every entry point's runtime
+ * exports.
  */
 export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: string } = {
   'task.transitioned': 'a move follows the entity it moves, to the tree it was born in',

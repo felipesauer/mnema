@@ -88,6 +88,7 @@ describe('the disposition tables agree with the workflow', () => {
     // the waiting side, so a machine whose waiting states pointed at each other in
     // a loop could keep an item legally moving and never leaving. Walked from every
     // waiting state, following only waiting→waiting edges.
+    let edges = 0;
     for (const machine of MACHINES) {
       const waiting = new Set(classified(machine, 'awaiting-judgement'));
       for (const start of waiting) {
@@ -97,6 +98,7 @@ describe('the disposition tables agree with the workflow', () => {
           const here = queue.shift() as string;
           for (const to of movesFrom(machine, here)) {
             if (!waiting.has(to)) continue;
+            edges += 1;
             expect(to, `${machine.name}: ${start} can return to itself`).not.toBe(start);
             if (!seen.has(to)) {
               seen.add(to);
@@ -106,6 +108,20 @@ describe('the disposition tables agree with the workflow', () => {
         }
       }
     }
+    // The count is of EDGES followed, not of states walked from, and that is the
+    // whole point of it: what can go vacuous here is the WALK, and the walk
+    // disappears when no move leads from one waiting state to another. Counting
+    // starting states would report three with zero edges followed — a counter that
+    // does not count the thing that can be missing, which is what the other four
+    // cases in this file carry a count against.
+    //
+    // ONE: the skill machine's `review` (`proposed → reviewed`) is the only move
+    // inside the waiting side anywhere in the product, and it is reached from one
+    // waiting start; a decision `proposed` and a skill `reviewed` lead straight out.
+    // Counted per traversal, so an edge reachable from two waiting starts would count
+    // twice. Drop that edge from `SKILL_TRANSITIONS` and this case would otherwise
+    // pass having compared nothing.
+    expect(edges).toBe(1);
   });
 
   it('an IN-FORCE state keeps a legal move forever — which is why "has a move" is the wrong rule', () => {
