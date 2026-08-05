@@ -26,9 +26,10 @@
  * day it is added, with nobody having to remember this file exists.
  *
  * THE ENVELOPE IS IN THE SWEEP, and leaving it out was a hole rather than a
- * saving. `which` — the executing agent — is the envelope's one free-text field,
- * and a payload-only scan answered "nothing recognizable" about a record whose
- * envelope held a credential on disk. That is the exact failure the audit exists
+ * saving. `which` — the executing agent — is one of the two envelope fields a
+ * caller supplies (the other is the pinned `run`, an id by contract that no write
+ * operation proves), and a payload-only scan answered "nothing recognizable" about
+ * a record whose envelope held a credential on disk. That is the exact failure the audit exists
  * to prevent, one level up: not a record written unprotected, but the report
  * declaring it clean. The other envelope fields cost nothing to include — an
  * anchor, a fingerprint, a v7 id and an ISO instant match no known-prefix pattern,

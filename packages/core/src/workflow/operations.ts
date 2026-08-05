@@ -31,9 +31,11 @@
  * `signerFp` (the signing key) both come from the writer's own key — the very
  * key that will sign the checkpoint — so a caller cannot forge who authorized a
  * fact by typing a name. The caller supplies at most `which` (the executing
- * agent). `who != which` still holds: an anchor hash never collides with an
- * agent name. And `which` is free text, so it goes through the door too: it is the
- * envelope's only typed-in field, and the report it produces joins the payload's.
+ * agent) and `run` (the session the fact belongs to). `who != which` still holds:
+ * an anchor hash never collides with an agent name. Both of the typed-in envelope
+ * fields go through the door like any payload text — `run` is an id by contract
+ * that nothing here proves, so it holds whatever arrived — and the reports they
+ * produce join the payload's, in one list.
  */
 
 import {
@@ -147,6 +149,14 @@ export function transitionTask(
     input.fields === undefined ? undefined : screenContent<TransitionFields>(input.fields);
   if (proof !== undefined && !proof.ok) return proof;
 
+  // The pinned run goes through the same door, in its own call because the proof's
+  // is conditional and a move with no proof still carries a run. It is a caller's
+  // string this package proves nothing about — see the field classification — and it
+  // is stamped on every event of the session, so it is screened like the agent name
+  // beside it rather than forwarded raw.
+  const pinned = screenContent({ run: input.run });
+  if (!pinned.ok) return pinned;
+
   // Look the task up in the chain's canonical id form — the SAME form its
   // subject is stored and read back in — so the lookup key matches the
   // projection's, and a composition variant of the id cannot false-miss. (The
@@ -193,7 +203,7 @@ export function transitionTask(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
     },
     {
       from: current,
@@ -208,7 +218,7 @@ export function transitionTask(
     ok: true,
     to: verdict.to,
     entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
   };
 }
 
@@ -222,8 +232,12 @@ export function transitionTask(
  * `which`, the same authority invariant the gate enforces.
  */
 export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | WriteError {
-  const title = screenContent({ title: input.title });
-  if (!title.ok) return title;
+  // The title and the pinned run in one screen. The run is on the envelope rather
+  // than the payload, and it is the second field there a caller supplies: nothing in
+  // this package proves it names a session, so it holds whatever arrived, under no
+  // ceiling of its own, on every event of that session.
+  const text = screenContent({ title: input.title, run: input.run });
+  if (!text.ok) return text;
 
   // `who` is derived from local material and the record, so it is always a real
   // anchor — the MISSING_WHO path a typed-in name could hit no longer exists. The one
@@ -251,9 +265,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
     },
-    { title: title.fields.title, initial: INITIAL_STATE },
+    { title: text.fields.title, initial: INITIAL_STATE },
   );
   // Append the pair atomically: a torn birth would leave a created task with no
   // state, permanently burning the id (the projection drops a stateless
@@ -261,7 +275,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   const appended = appendEvents(ctx.writer, birth);
   if (!appended.ok) return appended;
   const [e1, e2] = appended.entries as [Entry, Entry];
-  return { ok: true, id, entries: [e1, e2], ...screened([...title.replaced, ...agent.replaced]) };
+  return { ok: true, id, entries: [e1, e2], ...screened([...text.replaced, ...agent.replaced]) };
 }
 
 /**

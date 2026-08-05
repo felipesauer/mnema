@@ -24,9 +24,10 @@
  *     it is the authority invariant, and the verifier applies it to EVERY kind.
  *     Checking it at the door is what keeps a self-authorized fact out of an
  *     append-only log, where it could not be repaired afterwards. That resolution
- *     SCREENS the agent name as well — it is the envelope's one free-text field —
- *     so what it replaced joins the payload's in one report, and a caller reads a
- *     single list rather than remembering to merge two.
+ *     SCREENS the agent name as well — one of the two fields a caller supplies on
+ *     the ENVELOPE, the other being the pinned `run`, which is screened with the
+ *     payload above — so what they replaced joins the payload's in one report, and
+ *     a caller reads a single list rather than remembering to merge three.
  *   - the memory's id is MINTED by the operation (see {@link mintId}), never
  *     chosen by the caller, so two offline clones never mint the same id and two
  *     unrelated memories cannot false-merge when their chains are unioned.
@@ -111,7 +112,10 @@ export interface CaptureInput {
  * is what makes an oversize refusal cost nothing and touch nothing.
  */
 export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk | FactError {
-  const content = screenContent({ content: input.content });
+  // The content and the pinned run: the run is on the envelope rather than the
+  // payload, but it is a caller's string this package proves nothing about, so it
+  // is screened here and not forwarded raw.
+  const content = screenContent({ content: input.content, run: input.run });
   if (!content.ok) return content;
 
   const who = authorizingAnchor(ctx);
@@ -137,7 +141,7 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
         signerFp: ctx.writer.signerFingerprint,
         subject: id,
         ...(which !== undefined ? { which } : {}),
-        ...(input.run !== undefined ? { run: input.run } : {}),
+        ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
       },
       // The screened text, never `input.content` — the whole point of the door is
       // that the original does not reach the chain.
@@ -194,7 +198,16 @@ export function recordObservation(
   // a fat event is exactly what the size limit exists to keep out. No real id can
   // match a credential shape, so screening it cannot corrupt a legitimate
   // reference.
-  const text = screenContent({ about: input.about, topic: input.topic, text: input.text });
+  //
+  // The pinned run is in here for the same reason `about` is: it is a caller's
+  // string nothing in this package proves, and it rides the envelope of every event
+  // of the session rather than this one alone.
+  const text = screenContent({
+    about: input.about,
+    topic: input.topic,
+    text: input.text,
+    run: input.run,
+  });
   if (!text.ok) return text;
 
   const who = authorizingAnchor(ctx);
@@ -223,7 +236,7 @@ export function recordObservation(
         signerFp: ctx.writer.signerFingerprint,
         subject: id,
         ...(which !== undefined ? { which } : {}),
-        ...(input.run !== undefined ? { run: input.run } : {}),
+        ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
       },
       { about, topic: text.fields.topic, text: text.fields.text },
     ),
@@ -275,10 +288,13 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   // work moved to. `task` joins them because it becomes the event's SUBJECT and is
   // never validated, so it is the field through which an unbounded value could
   // reach the chain.
+  // The run joins them on the same grounds as `task`: a caller's string nothing
+  // here proves, riding the envelope of every event of the session.
   const agents = screenContent({
     task: input.task,
     fromAgent: input.fromAgent,
     toAgent: input.toAgent,
+    run: input.run,
   });
   if (!agents.ok) return agents;
 
@@ -299,7 +315,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
         signerFp: ctx.writer.signerFingerprint,
         subject: task,
         ...(which !== undefined ? { which } : {}),
-        ...(input.run !== undefined ? { run: input.run } : {}),
+        ...(agents.fields.run !== undefined ? { run: agents.fields.run } : {}),
       },
       { fromAgent: agents.fields.fromAgent, toAgent: agents.fields.toAgent },
     ),
@@ -356,6 +372,8 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
     subject: input.subject,
     target: input.target,
     rel: input.rel,
+    // And the pinned run, the envelope's own unproved string.
+    run: input.run,
   });
   if (!relation.ok) return relation;
 
@@ -377,7 +395,7 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
         signerFp: ctx.writer.signerFingerprint,
         subject,
         ...(which !== undefined ? { which } : {}),
-        ...(input.run !== undefined ? { run: input.run } : {}),
+        ...(relation.fields.run !== undefined ? { run: relation.fields.run } : {}),
       },
       { target, rel: relation.fields.rel },
     ),
