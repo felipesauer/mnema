@@ -12,6 +12,7 @@
 
 import type { ReferenceGraph } from '@mnema/copilot';
 import { describe, expect, it } from 'vitest';
+import { renderPlain } from './plain.js';
 import { referenceReport } from './references.js';
 
 /** An origin, one edge of its own, and one edge between two other entities. */
@@ -61,7 +62,7 @@ function indents(lines: readonly string[]): number[] {
 
 describe('the reference report', () => {
   it('names each list and says how much is in it', () => {
-    const lines = referenceReport(graph());
+    const lines = referenceReport(renderPlain, graph());
     expect(lines).toContain('its own edges (1)');
     expect(lines).toContain('edges further out (1)');
     expect(lines).toContain('reached, by distance (2)');
@@ -71,13 +72,14 @@ describe('the reference report', () => {
     // The edge between two OTHER entities used to be indented twice to say it was
     // not the origin's own. It is in its own named list now, at the same depth as
     // every other item in the product.
-    expect(new Set(indents(referenceReport(graph())))).toEqual(new Set([2]));
+    expect(new Set(indents(referenceReport(renderPlain, graph())))).toEqual(new Set([2]));
   });
 
   it('prints no list it has nothing for', () => {
     // A heading reading `(0)` states an absence nobody asked about. What is shown
     // says what was found, and one hop of a graph often has no edges further out.
     const lines = referenceReport(
+      renderPlain,
       graph({
         depth: 1,
         nodes: [{ id: 'origin', depth: 0, resolved: true, kind: 'task', scope: 'public' }],
@@ -90,7 +92,7 @@ describe('the reference report', () => {
   });
 
   it('still says when the depth cut the answer', () => {
-    const lines = referenceReport(graph({ truncated: true }));
+    const lines = referenceReport(renderPlain, graph({ truncated: true }));
     expect(lines.at(-1)).toContain('cut at 2 hop(s)');
   });
 });

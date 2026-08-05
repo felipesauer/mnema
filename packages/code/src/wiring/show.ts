@@ -18,7 +18,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema show` on the program. */
 export function registerShow(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('show')
     .description('show one whole record by id (the body a search only pointed at)')
@@ -36,7 +36,7 @@ export function registerShow(program: Command, wiring: Wiring): void {
       }
       writeLines(
         io,
-        recordReport(result.record, {
+        recordReport(render, result.record, {
           anchors: result.anchors,
           ...(result.consultations !== undefined ? { consultations: result.consultations } : {}),
         }),

@@ -31,7 +31,7 @@ import type { PatternProvenance } from '@mnema/copilot';
 import { A_PERSON, oneLine } from '../served-patterns.js';
 import { consultedLine } from './consultation.js';
 import { column, itemLine } from './items.js';
-import { renderPlain } from './plain.js';
+import type { Render } from './render.js';
 
 /** The width the state column is padded to, so the trees below it line up. */
 const STATE_WIDTH = 10;
@@ -41,6 +41,7 @@ const SCOPE_WIDTH = 7;
 
 /** The lines a provenance report prints for a person. */
 export function provenanceReport(
+  render: Render,
   patterns: readonly PatternProvenance[],
   consultations: ReadonlyMap<string, number>,
 ): string[] {
@@ -60,7 +61,7 @@ export function provenanceReport(
     // and the consultations are every session since that read it.
     acts.push(consultedLine(consultations.get(pattern.id) ?? 0));
     lines.push(
-      renderPlain(
+      render(
         itemLine([
           pattern.id,
           column(pattern.state, STATE_WIDTH),

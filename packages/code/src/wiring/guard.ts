@@ -19,7 +19,6 @@
 
 import type { Command } from 'commander';
 import { runGuard } from '../commands/guard.js';
-import { renderPlain } from '../presentation/plain.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
@@ -28,7 +27,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema guard` on the program. */
 export function registerGuard(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('guard')
     .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
@@ -83,8 +82,8 @@ export function registerGuard(program: Command, wiring: Wiring): void {
         // the dry-run reads exactly as the real move's refusal would.
         io.out(
           result.verdict.ok
-            ? renderPlain(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`))
-            : renderPlain(statement(`REFUSED (${result.verdict.code})`, result.verdict.message)),
+            ? render(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`))
+            : render(statement(`REFUSED (${result.verdict.code})`, result.verdict.message)),
         );
       },
     );

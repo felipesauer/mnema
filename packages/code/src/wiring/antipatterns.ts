@@ -14,7 +14,6 @@
 
 import type { Command } from 'commander';
 import { runAntipatterns } from '../commands/antipatterns.js';
-import { renderPlain } from '../presentation/plain.js';
 import { statement } from '../presentation/verdict.js';
 import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
@@ -23,7 +22,7 @@ import type { Wiring } from './verb.js';
 
 /** Registers `mnema antipatterns` on the program. */
 export function registerAntipatterns(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('antipatterns')
     .description('show recurring shapes in the record (reopens, supersessions, deprecations)')
@@ -48,12 +47,12 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
         skillCandidates,
         labelCollisions,
       } = result.patterns;
-      io.out(renderPlain(statement('reopened tasks', String(reopenedTasks.length))));
-      io.out(renderPlain(statement('superseded decisions', String(supersededDecisions.length))));
-      io.out(renderPlain(statement('deprecated skills', String(deprecatedSkills.length))));
+      io.out(render(statement('reopened tasks', String(reopenedTasks.length))));
+      io.out(render(statement('superseded decisions', String(supersededDecisions.length))));
+      io.out(render(statement('deprecated skills', String(deprecatedSkills.length))));
       if (skillCandidates.length > 0) {
         io.out(
-          renderPlain(
+          render(
             statement(
               'skill candidates (reopened >1×)',
               skillCandidates.map((f) => f.entityId).join(', '),
@@ -65,7 +64,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
         // Both fields are read out of the record, and a record can be appended to by
         // anything holding a key — so neither reaches the line as it was written.
         io.out(
-          renderPlain(
+          render(
             statement(
               `label naming more than one rule (${oneLine(collision.adr)})`,
               collision.ids.map((id) => oneLine(id)).join(', '),

@@ -15,10 +15,12 @@
  *     saying how it joins the part before it does not build.
  *   - NOTHING HERE ASKS WHERE OUTPUT IS GOING. `presentation/` is compared byte for
  *     byte against a recorded transcript, so a line whose bytes depended on a
- *     terminal, an environment variable or a flag could not be compared at all. When
- *     a renderer exists that paints, the capability that chooses it is resolved once
- *     by the wiring and handed in; the day someone reaches for `isTTY` here instead,
- *     this file is what says so.
+ *     terminal, an environment variable or a flag could not be compared at all. The
+ *     renderer that paints exists now (`styled.ts`) and it changed nothing about that:
+ *     the capability that chooses between the two is resolved once by the wiring and
+ *     handed in (`chosen-once.test.ts` asserts that no module here names a renderer
+ *     either), and the day someone reaches for `isTTY` here instead, this file is what
+ *     says so.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -80,9 +82,9 @@ describe('the plain renderer adds nothing to what the parts hold', () => {
   });
 
   it('writes no escape byte: a plain line is the text, punctuated', () => {
-    // The renderer that paints is a second one, chosen by the wiring. This one is
-    // what the golden was recorded against, and an escape sequence from here would
-    // reach a CI log and a recorded transcript alike.
+    // The renderer that paints is a second one (`styled.ts`), chosen by the wiring.
+    // This one is what the golden was recorded against, and an escape sequence from
+    // here would reach a CI log and a recorded transcript alike.
     for (const line of [
       itemLine(['an-id', 'public']),
       subjectLine('a', 'b'),

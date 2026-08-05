@@ -9,14 +9,13 @@
 import type { Command } from 'commander';
 import { runNextActions } from '../commands/next-actions.js';
 import { itemLine } from '../presentation/items.js';
-import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema next-actions` on the program. */
 export function registerNextActions(program: Command, wiring: Wiring): void {
-  const { io } = wiring;
+  const { io, render } = wiring;
   program
     .command('next-actions')
     .description('show the moves the workflow allows a task next')
@@ -39,7 +38,7 @@ export function registerNextActions(program: Command, wiring: Wiring): void {
       io.out(`Task ${id} — ${result.actions.length} legal move(s):`);
       for (const action of result.actions) {
         const needs = action.requires.length > 0 ? ` (needs ${action.requires.join(', ')})` : '';
-        io.out(renderPlain(itemLine([`${action.action} → ${action.to}${needs}`])));
+        io.out(render(itemLine([`${action.action} → ${action.to}${needs}`])));
       }
     });
 }
