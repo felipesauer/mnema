@@ -242,7 +242,11 @@ function appendUnscreenedMemory(anchor: string): string {
   return id;
 }
 
-/** Every read, human and JSON, over whatever the fixture holds when it runs. */
+/**
+ * Every read over whatever the fixture holds when it runs — human and JSON alike,
+ * for the ones that have both. `brief` has one form only: its markdown IS the
+ * contract, so there is no second serialization of it to pin.
+ */
 async function readEverything(label: string, ids: Record<string, string>): Promise<void> {
   section('reads', label);
   await mnema('reads', 'search');
@@ -307,6 +311,10 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   );
   await mnema('reads', 'skills');
   await mnema('reads', 'skills', '--json');
+  // The one read whose whole output is meant to become a file, so the golden is where
+  // its bytes are pinned for a person to read as a document — over an empty record and
+  // over a full one, which are the two things it has to say honestly.
+  await mnema('reads', 'brief');
   await mnema('reads', 'verify');
 }
 
@@ -324,6 +332,7 @@ beforeAll(async () => {
   section('reads', 'outside a project');
   await mnema('reads', 'search');
   await mnema('reads', 'exposure');
+  await mnema('reads', 'brief');
   await mnema('reads', 'verify');
 
   // ── Founding the project, twice: the run that creates the identity, and the
@@ -637,6 +646,7 @@ beforeAll(async () => {
     'exposure',
     'refs',
     'skills',
+    'brief',
     'key',
     'verify',
     'mcp',
