@@ -58,18 +58,31 @@
  * discriminant that makes the union readable in TypeScript and the label that makes
  * it actionable for an agent are the same field, which is why there is no second one.
  *
- * A DECISION'S REST IS {@link readRecord}. A PATTERN'S IS NOT SERVED TO AN AGENT AT
- * ALL, and that is measured, not assumed. The `skills` tool refuses every state on
- * this list (`NOT_ADOPTED`) because what it hands back is served as an instruction to
- * work by, and `read_record` refuses a skill outright (`USE_SKILLS_TOOL`) because a
- * body must not leave through a second door — so the agent's surface has no read that
- * serves the text of a pattern still being decided on. It is the axis and not an
- * oversight: the CLI DOES serve it (`mnema show <id>`), deliberately, because the
- * person reading a proposal is curating it. What this list gives an agent about a
- * pattern is therefore the NAME and the state — enough to raise it with a person, or
- * to move it with `skill_transition` — and the description says so rather than
- * naming a door that answers none of its own items. Asserted in `mcp-e2e.test.ts` —
- * "answers the SECOND READ each kind names, for every item awaiting a judgement".
+ * EVERY ITEM ON THIS LIST HAS A SECOND READ THAT ANSWERS IT: a decision's is
+ * {@link readRecord} (the `read_record` tool), a pattern's is
+ * {@link lookupServedSkill} (the `skills` tool, with the id). Both serve the text of
+ * something still being decided, and that is the point of naming them here — an index
+ * that points at a door which refuses its own items is an index that lies.
+ *
+ * THIS PARAGRAPH USED TO SAY THE OPPOSITE, and what falsified it is worth keeping.
+ * It read: "A PATTERN'S IS NOT SERVED TO AN AGENT AT ALL, and that is measured, not
+ * assumed" — measured correctly, on a `skills` tool that refused every state on this
+ * list, and then generalized into an axis. It was not one. The gate never required a
+ * consultation, so the body was two writes away (`review`, `adopt`) and those two
+ * writes were false: a ruling by somebody who could not read what they ruled on. The
+ * refusal did not keep a body in, it made the record lie about how the body was
+ * reached. And `read_record` was already serving the whole `rationale` of a decision
+ * `proposed` on this very list — the same disposition, the same reader, one half
+ * given the text of what it must judge and the other half nothing.
+ *
+ * What did NOT change is the door being ONE: `read_record` still refuses a skill
+ * (`USE_SKILLS_TOOL`), because the `skills` tool records the consultation and a
+ * second door would let the body out without the fact. Asserted in `mcp-e2e.test.ts`
+ * — "answers the SECOND READ each kind names, for every item awaiting a judgement".
+ *
+ * The CLI is unchanged and still serves any state to a person (`mnema show <id>`),
+ * recording nothing, because a command line has no session to attribute a
+ * consultation to.
  *
  * A TASK HAS A BODY TOO, AND IT IS THE MOVES. The same rule now governs the work
  * list, because it is the same distinction: a work item carries id, title, state

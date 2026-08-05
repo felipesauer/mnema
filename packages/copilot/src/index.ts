@@ -87,11 +87,12 @@ export {
   searchRecords,
 } from './context/search.js';
 export {
-  type AdoptedSkill,
   adoptedSkills,
-  lookupAdoptedSkill,
+  lookupServedSkill,
+  type ServedSkill,
   type SkillLookup,
   type SkillRef,
+  skillDisposition,
 } from './context/skills.js';
 export {
   type GuardWithFocus,

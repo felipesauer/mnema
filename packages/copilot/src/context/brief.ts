@@ -162,10 +162,13 @@ export function brief(sources: readonly ScopedCache[]): Brief {
   const decisions = decisionsInForce(travels);
   return {
     decisions,
-    // The body is dropped by MAPPING, not by typing: an `AdoptedSkill` satisfies
+    // The body is dropped by MAPPING, not by typing: a `ServedSkill` satisfies
     // `SkillRef`, so assigning the list straight across would compile and carry
     // every pattern's whole text along at run time — into a file that is read on
     // every prompt. The same drop, for the same reason, as the opening context's.
+    // What it drops the `state` for is narrower: this file carries only what
+    // GOVERNS, and `adoptedSkills` answers `adopted` and nothing else, so a state
+    // printed here would be one word repeated once per rule.
     skills: adoptedSkills(travels).map(({ id, name }) => ({ id, name })),
     collisions: printedCollisions(travels, decisions),
   };
