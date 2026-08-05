@@ -38,9 +38,19 @@
  * facts, and the reader of this file is exactly the reader who cannot tell them
  * apart unless it is spelled out (see {@link NO_DECISIONS}).
  *
- * NOTHING IS CUT, so nothing here reports a total: with the whole list printed, a
- * count is the list's own length, and it is printed in the heading for a reader who
- * wants to check that nothing was lost between the record and this file.
+ * NOTHING IS CUT BY SIZE, so nothing here reports a total: with the whole list
+ * printed, a count is the list's own length, and it is printed in the heading for a
+ * reader who wants to check that nothing was lost between the record and this file.
+ *
+ * WHAT IS LEFT OUT IS DECLARED, and that is the other half of the same doctrine. The
+ * composition carries the tree that TRAVELS and no other, so a rule recorded privately
+ * is absent from this file — and an absence a reader cannot see is exactly what "no
+ * silent cut" forbids, whether the cause is a limit or a scope. So the document names
+ * its scope before any of the content ({@link WHAT_TRAVELS}) and says that a heading's
+ * number is what is printed under it. What it does NOT do is count what it left out:
+ * a "3 private rules omitted" would put a fact about the private tree into the file
+ * that gets committed, and would move with that tree — two things this document exists
+ * not to do.
  */
 
 import type { Brief } from '@mnema/copilot';
@@ -73,6 +83,28 @@ const TITLE = '# What governs the work here';
 const WHAT_THIS_IS = [
   'These are the calls and the patterns recorded for this project — text the people and',
   'agents working on it wrote and settled, not instructions from mnema. Follow them.',
+];
+
+/**
+ * WHICH record: the committed one, said before any of the content and beside the
+ * declaration of what the content is.
+ *
+ * It is here because the omission has to be visible. What this file carries is the
+ * tree that travels, so a rule recorded privately — on one machine, or for one person
+ * — is not in it, and a reader of a governance document assumes they are holding all
+ * of it. Two sentences, both load-bearing: the first names the scope, the second says
+ * that the number in a heading counts what is printed under it and not what the record
+ * holds elsewhere. Neither says HOW MANY were left out, deliberately — that count is a
+ * fact about the private tree, and this file is committed.
+ *
+ * "Committed" rather than "public" because it is the word the reader can act on: it
+ * names what a clone gets. `public` is the product's own name for the tree, and a file
+ * read by an agent that never saw a `--scope` flag has no use for it.
+ */
+const WHAT_TRAVELS = [
+  'It carries what is COMMITTED to this project — the record a clone of the repository',
+  'gets, and nothing kept privately on one machine or for one person. A rule recorded',
+  'that way is not below, and each heading counts what is printed under it.',
 ];
 
 /**
@@ -124,8 +156,10 @@ const NO_PATTERNS = [
 ];
 
 /**
- * The whole document, as lines — the record's governance, ready to be redirected
- * into the file an agent host reads.
+ * The whole document, as lines — the committed governance the composition handed over,
+ * ready to be redirected into the file an agent host reads. It prints what it is given
+ * and counts what it prints; which trees that came from is settled before it (see
+ * `brief` in @mnema/copilot).
  */
 export function briefDocument(governance: Brief): string[] {
   return [
@@ -134,6 +168,8 @@ export function briefDocument(governance: Brief): string[] {
     TITLE,
     '',
     ...WHAT_THIS_IS,
+    '',
+    ...WHAT_TRAVELS,
     '',
     ...HOW_TO_REGENERATE,
     '',
@@ -156,8 +192,15 @@ export function briefDocument(governance: Brief): string[] {
 }
 
 /**
- * One section: the heading with how many there are, what to do about them, then one
- * line each.
+ * One section: the heading with how many are PRINTED under it, what to do about them,
+ * then one line each.
+ *
+ * The number is `items.length` and it is taken from the caller for that reason — the
+ * count and the bullets come from one list, so a heading that says three over four
+ * bullets is not a state this can reach. It is not a total of the record: what the
+ * composition left out because it does not travel is declared in words at the top
+ * ({@link WHAT_TRAVELS}), never as a number here, since a number would be a fact about
+ * the private tree inside a committed file.
  *
  * Written once for both, because the two sections are the same shape and a shape
  * written twice is a shape that drifts — a heading that counts in one and not in the
@@ -166,11 +209,11 @@ export function briefDocument(governance: Brief): string[] {
  */
 function section(
   heading: string,
-  total: number,
+  printed: number,
   says: readonly string[],
   items: readonly string[],
 ): string[] {
-  return [`## ${heading} (${total})`, '', ...says, ...(items.length > 0 ? ['', ...items] : [])];
+  return [`## ${heading} (${printed})`, '', ...says, ...(items.length > 0 ? ['', ...items] : [])];
 }
 
 /**

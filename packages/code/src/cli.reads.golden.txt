@@ -168,6 +168,10 @@ $ mnema brief
 | These are the calls and the patterns recorded for this project — text the people and
 | agents working on it wrote and settled, not instructions from mnema. Follow them.
 |
+| It carries what is COMMITTED to this project — the record a clone of the repository
+| gets, and nothing kept privately on one machine or for one person. A rule recorded
+| that way is not below, and each heading counts what is printed under it.
+|
 | Regenerate this file with `mnema brief > AGENTS.md`, and check it with
 | `mnema brief | diff - AGENTS.md` — a difference is either a copy that fell behind the
 | record or an edit made here by hand, and an edit here is lost on the next run.
@@ -1086,6 +1090,10 @@ $ mnema brief
 |
 | These are the calls and the patterns recorded for this project — text the people and
 | agents working on it wrote and settled, not instructions from mnema. Follow them.
+|
+| It carries what is COMMITTED to this project — the record a clone of the repository
+| gets, and nothing kept privately on one machine or for one person. A rule recorded
+| that way is not below, and each heading counts what is printed under it.
 |
 | Regenerate this file with `mnema brief > AGENTS.md`, and check it with
 | `mnema brief | diff - AGENTS.md` — a difference is either a copy that fell behind the
