@@ -22,6 +22,7 @@
 import type { Exposure } from '@mnema/copilot';
 import { fact } from './detail.js';
 import { itemLine } from './items.js';
+import { renderPlain } from './plain.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
 const DATE_LENGTH = 10;
@@ -31,8 +32,12 @@ export function exposureReport(report: Exposure): string[] {
   if (report.findings.length === 0) {
     return [
       `Nothing recognizable in ${report.scanned} record(s).`,
-      fact('Read here: this project’s trees and the machine-global tree — no other project.'),
-      fact('That is not the same as nothing: only known credential formats are recognized.'),
+      renderPlain(
+        fact('Read here: this project’s trees and the machine-global tree — no other project.'),
+      ),
+      renderPlain(
+        fact('That is not the same as nothing: only known credential formats are recognized.'),
+      ),
     ];
   }
   const lines = [
@@ -40,17 +45,27 @@ export function exposureReport(report: Exposure): string[] {
   ];
   for (const finding of report.findings) {
     lines.push(
-      itemLine([
-        finding.scope,
-        finding.at.slice(0, DATE_LENGTH),
-        finding.kind,
-        finding.id,
-        finding.classes.join(', '),
-      ]),
+      renderPlain(
+        itemLine([
+          finding.scope,
+          finding.at.slice(0, DATE_LENGTH),
+          finding.kind,
+          finding.id,
+          finding.classes.join(', '),
+        ]),
+      ),
     );
   }
   lines.push('');
-  lines.push(fact('These records are permanent — nothing deletes a fact. Rotate the credentials.'));
-  lines.push(fact('A public record is committed and on every machine that cloned the repository.'));
+  lines.push(
+    renderPlain(
+      fact('These records are permanent — nothing deletes a fact. Rotate the credentials.'),
+    ),
+  );
+  lines.push(
+    renderPlain(
+      fact('A public record is committed and on every machine that cloned the repository.'),
+    ),
+  );
   return lines;
 }

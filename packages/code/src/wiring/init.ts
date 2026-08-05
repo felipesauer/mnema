@@ -16,6 +16,7 @@
 import type { Command } from 'commander';
 import { type InitResult, runInit } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
+import { renderPlain } from '../presentation/plain.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import type { Wiring } from './verb.js';
@@ -30,11 +31,11 @@ export function registerInit(program: Command, wiring: Wiring): void {
       const result = runInit(here());
       if (result.created) {
         io.out(`Initialized mnema project at ${result.root}`);
-        io.out(fact(`identity: ${result.anchor}`));
+        io.out(renderPlain(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io);
       } else {
         io.out(`Already a mnema project at ${result.root} — nothing to found.`);
-        io.out(fact(`identity: ${result.anchor}`));
+        io.out(renderPlain(fact(`identity: ${result.anchor}`)));
       }
     });
 }
@@ -62,16 +63,24 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo): void {
   if (identity === undefined) return;
   const backup = identity.backup;
   if (backup?.created === true) {
-    io.out(fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`));
-    io.out(fact('Move that file off this machine: a backup left on this disk is lost with it.'));
+    io.out(
+      renderPlain(
+        fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`),
+      ),
+    );
+    io.out(
+      renderPlain(
+        fact('Move that file off this machine: a backup left on this disk is lost with it.'),
+      ),
+    );
   } else if (backup !== null && identity.enrolled.includes(backup.fingerprint)) {
-    io.out(fact('backup key: enrolled in this project'));
+    io.out(renderPlain(fact('backup key: enrolled in this project')));
   }
   for (const fingerprint of identity.enrolled) {
     if (fingerprint === backup?.fingerprint) continue;
-    io.out(fact(`key ${fingerprint} enrolled in this project`));
+    io.out(renderPlain(fact(`key ${fingerprint} enrolled in this project`)));
   }
   for (const declined of identity.declined) {
-    io.out(fact(`key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`));
+    io.out(renderPlain(fact(`key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`)));
   }
 }

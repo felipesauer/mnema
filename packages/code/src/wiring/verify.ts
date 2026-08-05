@@ -25,6 +25,7 @@ import { LEVEL_REQUIREMENTS, type LevelRequirement, requiredLevel } from '@mnema
 import type { Command } from 'commander';
 import { runVerify, type TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
+import { renderPlain } from '../presentation/plain.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
@@ -117,10 +118,12 @@ export function registerVerify(program: Command, wiring: Wiring): void {
         // several trees — which tree is the one at it.
         if (result.record.ok) {
           io.err(
-            fact(
-              `requirement not met: --require=${result.requirement} needs ` +
-                `${requiredLevel(result.requirement)}, this record is ` +
-                `${result.record.level} (${result.record.scopes.join(', ')})`,
+            renderPlain(
+              fact(
+                `requirement not met: --require=${result.requirement} needs ` +
+                  `${requiredLevel(result.requirement)}, this record is ` +
+                  `${result.record.level} (${result.record.scopes.join(', ')})`,
+              ),
             ),
           );
         }
@@ -136,14 +139,16 @@ export function registerVerify(program: Command, wiring: Wiring): void {
  */
 function report(io: CliIo, tree: TreeReport): void {
   if (tree.kind === 'no-record') {
-    io.out(statement(tree.scope, NO_RECORD));
+    io.out(renderPlain(statement(tree.scope, NO_RECORD)));
     return;
   }
   // The verdict's own honest summary, verbatim — the CLI never upgrades the guarantee.
-  io.out(statement(tree.scope, tree.result.summary));
+  io.out(renderPlain(statement(tree.scope, tree.result.summary)));
   for (const issue of tree.result.issues) {
     io.err(
-      fact(`issue [${issue.layer}] ${tree.scope} ${at(issue.tail, issue.seq)}: ${issue.detail}`),
+      renderPlain(
+        fact(`issue [${issue.layer}] ${tree.scope} ${at(issue.tail, issue.seq)}: ${issue.detail}`),
+      ),
     );
   }
 }
