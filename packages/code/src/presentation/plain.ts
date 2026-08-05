@@ -55,8 +55,12 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
  * One line as the bytes a stream receives: its depth, then its parts in order, each
  * after the separator its role takes.
  *
- * A line with no parts is the empty string — which is what a blank line between two
- * groups of a report is, and how one is written where a report needs one.
+ * A line with no parts renders as the empty string, and nothing in the surface builds
+ * one: the blank line a report puts between two groups is written as text, because
+ * there is nothing on it to compose. So is the header above a list, and a record's
+ * body — a whole paragraph the read hands over verbatim. Those are lines with no
+ * parts to tell apart, which is why they are not made of any (see `parts.test.ts`
+ * for the roles this refuses to invent).
  */
 export function renderPlain(line: Line): string {
   let text = INDENT.repeat(line.indent);
