@@ -71,7 +71,7 @@ export function registerTask(program: Command, wiring: Wiring): void {
         reportRecorded(result, io);
         return;
       }
-      reportRefusal(io, result);
+      reportRefusal(wiring, result);
     });
 
   // One generic move: the action is an argument the gate validates, not a
@@ -134,7 +134,7 @@ export function registerTask(program: Command, wiring: Wiring): void {
         reportReplacement(result, io);
         return;
       }
-      reportRefusal(io, result, { UNKNOWN_TASK: `No task ${id} here.` });
+      reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
     },
   );
 }

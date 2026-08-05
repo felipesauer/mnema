@@ -27,7 +27,7 @@ export function registerShow(program: Command, wiring: Wiring): void {
     .action((id: string, opts: { json?: boolean }) => {
       const result = runShow(here(), { id });
       if (!result.ok) {
-        reportRefusal(io, result, { UNKNOWN_RECORD: `No record ${id} here.` });
+        reportRefusal(wiring, result, { UNKNOWN_RECORD: `No record ${id} here.` });
         return;
       }
       if (opts.json === true) {

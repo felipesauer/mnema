@@ -27,7 +27,7 @@ export function registerResume(program: Command, wiring: Wiring): void {
     .action((opts: { actor: string; json?: boolean }) => {
       const result = runResume(here(), { actor: opts.actor });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       if (opts.json === true) {

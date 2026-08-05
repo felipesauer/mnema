@@ -15,7 +15,7 @@ import { REFERENCE_DIRECTIONS, runReferences } from '../commands/references.js';
 import { referenceReport } from '../presentation/references.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
-import { NO_PROJECT } from './report.js';
+import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema refs` on the program. */
@@ -49,16 +49,22 @@ export function registerReferences(program: Command, wiring: Wiring): void {
         ...(opts.direction !== undefined ? { direction: opts.direction } : {}),
       });
       if (!result.ok) {
-        // The bad direction names the value it refused, which is why this one is
-        // worded here rather than through the shared refusal.
-        if (result.reason === 'NO_PROJECT') {
-          io.err(NO_PROJECT);
-        } else {
-          io.err(
-            `Not a direction: ${result.direction}. One of: ${REFERENCE_DIRECTIONS.join(', ')}.`,
-          );
-        }
-        io.fail();
+        // Through the SHARED refusal, wording only the reason this verb knows about.
+        // It used to write both of its own by hand, one of them re-typing the funnel's
+        // own `NO_PROJECT` sentence — which is how a refusal ends up being the one line
+        // on the surface that does not look like a refusal. `said` is keyed by reason,
+        // so the bad direction still names the value it refused.
+        reportRefusal(
+          wiring,
+          result,
+          result.reason === 'NO_PROJECT'
+            ? {}
+            : {
+                [result.reason]:
+                  `Not a direction: ${result.direction}. ` +
+                  `One of: ${REFERENCE_DIRECTIONS.join(', ')}.`,
+              },
+        );
         return;
       }
       if (opts.json === true) {

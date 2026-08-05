@@ -21,7 +21,7 @@
 
 import type { Exposure } from '@mnema/copilot';
 import { fact } from './detail.js';
-import { itemLine } from './items.js';
+import { asId, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
@@ -44,13 +44,16 @@ export function exposureReport(render: Render, report: Exposure): string[] {
     `${report.findings.length} of ${report.scanned} record(s) hold a credential format:`,
   ];
   for (const finding of report.findings) {
+    // The instant and the id say what they are, so the CLASS — the one column this
+    // report exists to put in front of someone — is what the eye lands on. The tree
+    // still leads, because it is what decides how far the exposure travelled.
     lines.push(
       render(
         itemLine([
           finding.scope,
-          finding.at.slice(0, DATE_LENGTH),
+          asWhen(finding.at.slice(0, DATE_LENGTH)),
           finding.kind,
-          finding.id,
+          asId(finding.id),
           finding.classes.join(', '),
         ]),
       ),
