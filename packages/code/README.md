@@ -102,13 +102,13 @@ TASK=0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44
 # Move it through the workflow. A task opens in DRAFT, so it is submitted
 # before it can start; the gate decides which moves exist, not the command.
 mnema task move submit "$TASK"
-#> Task t-4f2a → READY
+#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → READY
 mnema task move start "$TASK"
-#> Task t-4f2a → IN_PROGRESS
+#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → IN_PROGRESS
 
 # Some moves require their evidence, and the gate refuses without it.
 mnema task move complete "$TASK" --note "parser ships"
-#> Task t-4f2a → DONE
+#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → DONE
 
 # Ask what the workflow allows next.
 mnema next-actions "$TASK"

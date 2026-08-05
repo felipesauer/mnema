@@ -25,7 +25,10 @@
  *
  * A decision is named by its id (the value `decision` record returned), not an
  * alias: a decision HAS no alias — its human name is the `ADR-<n>` label, which
- * this resolves from the projection so the caller sees `ADR-7 → accepted`.
+ * this resolves from the projection ({@link movedDisplay}) so the caller sees
+ * `ADR-7 (0198…) → accepted`. The label alone would not say which decision moved,
+ * because a label is minted per chain and a record built from several trees can
+ * hold two of them.
  *
  * A move carries the executing agent (`which`) when the caller declares one, on
  * whichever op the action routes to. Unlike a birth, `which` has NO say in where
@@ -39,8 +42,6 @@ import {
   DECISION_ACTIONS,
   type DiscoveryEnv,
   locateEntityScope,
-  orderedEvents,
-  projectDecisions,
   resolveTrees,
 } from '@mnema/core';
 import {
@@ -49,6 +50,7 @@ import {
   rejectDecision,
   supersedeDecision,
 } from '@mnema/core/write';
+import { movedDisplay } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
@@ -191,7 +193,7 @@ export function runDecisionTransition(
   // Resolve the ADR from the projection: a decision has no alias, so its human
   // name is the frozen `ADR-<n>` label. Read after the append so the projection
   // reflects the move that just landed.
-  const adr = projectDecisions(orderedEvents({ root }, upcasters)).get(input.id)?.adr ?? input.id;
+  const adr = movedDisplay('decision', root, input.id, upcasters);
   return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
 }
 

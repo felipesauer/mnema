@@ -72,6 +72,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
+import { movedLine } from '../moved-record.js';
 import {
   type Landed,
   landedNotice,
@@ -667,7 +668,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(`Task ${result.alias} → ${result.to}`, result);
+      return moved(movedLine('task', result.alias, result.id, result.to), result);
     },
   );
 
@@ -769,7 +770,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(`Decision ${result.adr} → ${result.to}`, result);
+      return moved(movedLine('decision', result.adr, result.id, result.to), result);
     },
   );
 
@@ -851,7 +852,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(`Skill "${result.name}" → ${result.to}`, result);
+      return moved(movedLine('skill', result.name, result.id, result.to), result);
     },
   );
 
@@ -1480,7 +1481,12 @@ function recorded(
 }
 
 /**
- * A MOVE's successful reply: what changed, plus the replacement notice.
+ * A MOVE's successful reply: the line, plus the replacement notice.
+ *
+ * The line itself is not built here — {@link movedLine} builds it, for this surface
+ * and the command line alike, so the acknowledgement of a move reads the same
+ * wherever it is read. What this adds is the ENVELOPE: a tool call answers in one
+ * text block, where the CLI writes to a stream.
  *
  * It says no tree, and the asymmetry with {@link recorded} is the point. A birth is
  * ROUTED — the surface picks a tree from the kind, the caller said nothing, so the

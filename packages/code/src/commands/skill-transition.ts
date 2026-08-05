@@ -42,8 +42,6 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   locateEntityScope,
-  orderedEvents,
-  projectSkills,
   resolveTrees,
   SKILL_ACTIONS,
 } from '@mnema/core';
@@ -54,6 +52,7 @@ import {
   rejectSkill,
   reviewSkill,
 } from '@mnema/core/write';
+import { movedDisplay } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
@@ -170,7 +169,7 @@ export function runSkillTransition(
   // Resolve the name from the projection to orient the human — a skill has no
   // alias, so its display handle is the name. Read after the append so the
   // projection reflects the move that just landed; fall back to the id if absent.
-  const name = projectSkills(orderedEvents({ root }, upcasters)).get(input.id)?.name ?? input.id;
+  const name = movedDisplay('skill', root, input.id, upcasters);
   return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
 }
 

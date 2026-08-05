@@ -32,6 +32,7 @@ import {
   verify,
 } from '@mnema/chain';
 import {
+  deriveAlias,
   orderedEvents,
   projectDecisions,
   projectHandoffs,
@@ -189,7 +190,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     const submit = capture();
     await run(['task', 'move', 'submit', id], submit.io);
     expect(submit.failed()).toBe(false);
-    expect(submit.out.join('\n')).toMatch(/→ READY$/);
+    expect(submit.out.join('\n')).toBe(`Task ${deriveAlias('task', id)} (${id}) → READY`);
 
     const start = capture();
     await run(['task', 'move', 'start', id], start.io);
@@ -648,7 +649,7 @@ describe('mnema CLI — decision, end to end', () => {
     expect(c.failed()).toBe(true);
   });
 
-  it('accepts a decision with a note and prints ADR → accepted', async () => {
+  it('accepts a decision with a note and prints the ADR AND the id → accepted', async () => {
     await run(['init'], capture().io);
     const c = capture();
     await run(['decision', 'a call', 'because'], c.io);
@@ -657,7 +658,9 @@ describe('mnema CLI — decision, end to end', () => {
     const a = capture();
     await run(['decision', 'move', 'accept', id, '--note', 'we adopt it'], a.io);
     expect(a.failed()).toBe(false);
-    expect(a.out.join('\n')).toMatch(/^Decision ADR-1 → accepted$/);
+    // The label AND the id: the label is minted per chain, so it is the id that says
+    // WHICH decision this acknowledgement is about.
+    expect(a.out.join('\n')).toBe(`Decision ADR-1 (${id}) → accepted`);
   });
 
   it('accept without a note prints the gate refusal and fails', async () => {
@@ -684,7 +687,7 @@ describe('mnema CLI — decision, end to end', () => {
     const s = capture();
     await run(['decision', 'supersede', oldId, newId, '--reason', 'a better way'], s.io);
     expect(s.failed()).toBe(false);
-    expect(s.out.join('\n')).toMatch(/^Decision ADR-1 → superseded$/);
+    expect(s.out.join('\n')).toBe(`Decision ADR-1 (${oldId}) → superseded`);
 
     const root = resolveTrees(repo, {
       xdgDataHome: join(sandbox, 'data'),
@@ -821,7 +824,7 @@ describe('mnema CLI — skill, end to end', () => {
     const review = capture();
     await run(['skill', 'move', 'review', id, '--note', 'looks sound'], review.io);
     expect(review.failed()).toBe(false);
-    expect(review.out.join('\n')).toMatch(/^Skill "a-habit" → reviewed$/);
+    expect(review.out.join('\n')).toBe(`Skill "a-habit" (${id}) → reviewed`);
 
     const adopt = capture();
     await run(['skill', 'move', 'adopt', id, '--note', 'we use it'], adopt.io);
