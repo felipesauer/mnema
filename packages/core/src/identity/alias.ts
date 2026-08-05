@@ -14,7 +14,11 @@
  * Because the alias is display-only, a collision is a LEGIBILITY problem, never
  * a correctness one: the id stays unique, nothing in the chain is confused, and
  * the id is printed beside the alias wherever the alias appears, so a person who
- * needs certainty already has it.
+ * needs certainty already has it. That last clause was an INTENTION when it was
+ * written and is now a fact: the four places an alias is emitted are the birth and
+ * the move of a task on each of the two surfaces, and until the move echo carried
+ * the id it was the one of the four that printed the alias alone. Pinned by
+ * `code`'s `cli.writes.golden.txt`, which holds every line the command line writes.
  *
  * There was a second function here — `disambiguate`, which lengthened only the
  * ambiguous aliases of a set shown together, exactly as git does with short SHAs.

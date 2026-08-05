@@ -16,6 +16,7 @@
 import type { Command } from 'commander';
 import { runDecision } from '../commands/decision.js';
 import { runDecisionTransition } from '../commands/decision-transition.js';
+import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
@@ -164,18 +165,23 @@ export function registerDecision(program: Command, wiring: Wiring): void {
 
 /**
  * Prints the verdict of a decision move (accept/reject/supersede) — both verbs
- * share it. On success the frozen `ADR-<n>` label and the new state; on refusal
- * the surface's own message for a missing project or an unknown decision, else
- * the gate's own code and message. A decision has no alias, so its human name in
- * the output is the ADR.
+ * share it. On success the frozen `ADR-<n>` label AND the id, plus the new state; on
+ * refusal the surface's own message for a missing project or an unknown decision,
+ * else the gate's own code and message. A decision has no alias, so its human name in
+ * the output is the ADR, and {@link movedLine} is what composes the pair — the same
+ * line the MCP surface returns.
  *
- * IT SAYS NOTHING WHEN TWO RULES ANSWER TO THAT LABEL, unlike the document and the
- * audit. This line acknowledges a move the caller just asked for BY ID: the id is in
- * the command they typed and in the `--json` object beside this text, so the line
- * identifies the decision through the person who named it. Nobody cites a rule out of
- * an acknowledgement — the citing happens off the committed document, which is where
- * the declaration is. The line does not repeat the id for the same reason it did not
- * before: a verdict is short on purpose, and the id is one field away.
+ * IT USED TO SAY NOTHING WHEN TWO RULES ANSWER TO THAT LABEL, and the argument for
+ * that was: the line acknowledges a move the caller just asked for by id, so the id is
+ * in the command they typed and in the `--json` object beside this text, and nobody
+ * cites a rule out of an acknowledgement. What falsified it is that the LINE is what
+ * outlives the invocation. Over a record whose public and private trees each hold an
+ * `ADR-1`, two different decisions moved by two different ids produced the same eleven
+ * bytes — so the line, read anywhere the command that produced it is not (a
+ * scrollback, a pasted transcript, a review comment), named two rules and said which
+ * one was neither. It says the id now, which is the half a reader can act on;
+ * `moved-record.ts` carries the whole argument, and `the-echo-names-the-record.test.ts`
+ * pins the collision case.
  */
 function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
@@ -183,7 +189,7 @@ function reportDecisionMove(
   io: CliIo,
 ): void {
   if (result.ok) {
-    io.out(`Decision ${result.adr} → ${result.to}`);
+    io.out(movedLine('decision', result.adr, result.id, result.to));
     reportReplacement(result, io);
     return;
   }

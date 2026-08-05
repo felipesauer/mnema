@@ -2636,7 +2636,9 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { id, action: 'submit' },
     });
     expect(moved.isError).toBeFalsy();
-    expect(textOf(moved)).toBe(`Task ${alias} → READY`);
+    // The alias AND the id: an alias is a four-hex hash of the id, so it is the id
+    // that says which task this acknowledgement is about.
+    expect(textOf(moved)).toBe(`Task ${alias} (${id}) → READY`);
 
     // Both writes landed in the tree a task travels in, fully signed: the birth by its
     // kind, and the move by following the entity there.
@@ -2744,13 +2746,14 @@ describe('MCP server — end to end over a real client', () => {
     expect(read.isError).toBeFalsy();
     expect(textOf(read)).toContain('a shared spreadsheet: nobody reviews it');
 
-    // A legal accept returns ADR → accepted.
+    // A legal accept returns the label AND the id → accepted. The label is minted
+    // within one chain, so the id is the half that says which decision moved.
     const accepted = await client.callTool({
       name: 'decision_transition',
       arguments: { id, action: 'accept', note: 'we ship it' },
     });
     expect(accepted.isError).toBeFalsy();
-    expect(textOf(accepted)).toMatch(/^Decision ADR-1 → accepted$/);
+    expect(textOf(accepted)).toBe(`Decision ADR-1 (${id}) → accepted`);
 
     // A supersede with no `by` comes back as a tool error carrying MISSING_BY.
     const noBy = await client.callTool({
@@ -2780,13 +2783,14 @@ describe('MCP server — end to end over a real client', () => {
     expect(textOf(proposed)).toMatch(/^Proposed skill "stacked-prs" \(/);
     const id = /\(([^)]+)\)/.exec(textOf(proposed))?.[1] as string;
 
-    // A legal review returns "<name>" → reviewed.
+    // A legal review returns "<name>" AND the id → reviewed. A pattern's name has no
+    // uniqueness constraint at all, so the id is the only half that names the record.
     const reviewed = await client.callTool({
       name: 'skill_transition',
       arguments: { id, action: 'review', note: 'looks sound' },
     });
     expect(reviewed.isError).toBeFalsy();
-    expect(textOf(reviewed)).toMatch(/^Skill "stacked-prs" → reviewed$/);
+    expect(textOf(reviewed)).toBe(`Skill "stacked-prs" (${id}) → reviewed`);
 
     // An unknown verb comes back as a tool error carrying UNKNOWN_ACTION.
     const bad = await client.callTool({

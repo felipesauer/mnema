@@ -61,33 +61,33 @@ $ mnema link <task-runbook> <task-chore> --rel derived-from
 
 ### the moves
 $ mnema task move submit <task-runbook>
-| Task <task-runbook-alias> → READY
+| Task <task-runbook-alias> (<task-runbook>) → READY
 $ mnema task move start <task-runbook>
-| Task <task-runbook-alias> → IN_PROGRESS
+| Task <task-runbook-alias> (<task-runbook>) → IN_PROGRESS
 $ mnema task move complete <task-runbook> --note 'the first draft is in'
-| Task <task-runbook-alias> → DONE
+| Task <task-runbook-alias> (<task-runbook>) → DONE
 $ mnema task move reopen <task-runbook> --reason 'it has no rollback section'
-| Task <task-runbook-alias> → IN_PROGRESS
+| Task <task-runbook-alias> (<task-runbook>) → IN_PROGRESS
 $ mnema task move submit_review <task-runbook>
-| Task <task-runbook-alias> → IN_REVIEW
+| Task <task-runbook-alias> (<task-runbook>) → IN_REVIEW
 $ mnema task move approve <task-runbook> --note 'the rollback section reads well'
-| Task <task-runbook-alias> → DONE
+| Task <task-runbook-alias> (<task-runbook>) → DONE
 $ mnema task move reopen <task-runbook> --reason 'the rollback step is wrong'
-| Task <task-runbook-alias> → IN_PROGRESS
+| Task <task-runbook-alias> (<task-runbook>) → IN_PROGRESS
 $ mnema decision move accept <decision-runbook> --note 'we agreed in review'
-| Decision ADR-1 → accepted
+| Decision ADR-1 (<decision-runbook>) → accepted
 $ mnema decision supersede <decision-wiki> <decision-runbook> --reason 'the record replaces it'
-| Decision ADR-2 → superseded
+| Decision ADR-2 (<decision-wiki>) → superseded
 $ mnema skill move review <skill-slices> --note 'it reads well'
-| Skill "One slice per PR" → reviewed
+| Skill "One slice per PR" (<skill-slices>) → reviewed
 $ mnema skill move adopt <skill-slices> --note 'we work this way already'
-| Skill "One slice per PR" → adopted
+| Skill "One slice per PR" (<skill-slices>) → adopted
 $ mnema skill move review <skill-fridays> --note 'worth a look'
-| Skill "Ship on Fridays" → reviewed
+| Skill "Ship on Fridays" (<skill-fridays>) → reviewed
 $ mnema skill move adopt <skill-fridays> --note 'we tried it'
-| Skill "Ship on Fridays" → adopted
+| Skill "Ship on Fridays" (<skill-fridays>) → adopted
 $ mnema skill move deprecate <skill-fridays> --reason 'nobody ships on a Friday'
-| Skill "Ship on Fridays" → deprecated
+| Skill "Ship on Fridays" (<skill-fridays>) → deprecated
 
 ### a record written before the content door
 $ mnema memory 'a note with a token in it: ghp_abcdefghijklmnopqrstuvwxyz0123456789'

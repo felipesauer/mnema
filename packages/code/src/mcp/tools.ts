@@ -93,10 +93,7 @@ import {
   DECISION_ACTIONS,
   deriveAlias,
   isSearchKind,
-  orderedEvents,
   type ProjectionCache,
-  projectDecisions,
-  projectSkills,
   type ReferenceDirection,
   type Scope,
   SEARCH_KINDS,
@@ -128,6 +125,7 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
+import { movedDisplay } from '../moved-record.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { oneLine } from '../served-patterns.js';
 import {
@@ -735,14 +733,10 @@ export function runDecisionTransition(
   // Checkpoint so the transition is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
   // Resolve the ADR from the projection — a decision has no alias, so its human
-  // name is the frozen label. Read the ONE tree the entity was located in, which is
-  // not necessarily one of the session's own: deriving the root from the session's
-  // trees and the located scope would read this project's `public` tree for a
-  // decision that lives in another project's, and answer with a stranger's ADR or
-  // with the raw id.
-  const adr =
-    projectDecisions(orderedEvents({ root: located.home.chainRoot }, upcasters)).get(input.id)
-      ?.adr ?? input.id;
+  // name is the frozen label. Read the ONE tree the entity was located in, and read
+  // it through the one function both surfaces resolve a moved display with, fallback
+  // included.
+  const adr = movedDisplay('decision', located.home.chainRoot, input.id, upcasters);
   return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
 }
 
@@ -867,10 +861,9 @@ export function runSkillTransition(
   // Resolve the name from the projection to orient the human — a skill has no
   // alias. Read the ONE tree the entity was located in (not the session's own tree
   // of that scope, which is a different chain when the skill lives in another
-  // project); fall back to the id.
-  const name =
-    projectSkills(orderedEvents({ root: located.home.chainRoot }, upcasters)).get(input.id)?.name ??
-    input.id;
+  // project), through the one function that resolves a moved display and falls back
+  // to the id.
+  const name = movedDisplay('skill', located.home.chainRoot, input.id, upcasters);
   return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
 }
 

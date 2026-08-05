@@ -19,6 +19,7 @@
 import type { Command } from 'commander';
 import { runSkill } from '../commands/skill.js';
 import { runSkillTransition } from '../commands/skill-transition.js';
+import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -120,7 +121,7 @@ export function registerSkill(program: Command, wiring: Wiring): void {
       ...(run !== undefined ? { run } : {}),
     });
     if (result.ok) {
-      io.out(`Skill "${result.name}" → ${result.to}`);
+      io.out(movedLine('skill', result.name, result.id, result.to));
       reportReplacement(result, io);
       return;
     }
