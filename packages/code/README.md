@@ -56,8 +56,9 @@ surfaces never upgrade that verdict into a stronger claim.
 
 | Claim | What actually holds |
 |---|---|
-| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature checks out. It is **not** a claim that every event is signed. |
-| **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. |
+| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
+| **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
+| **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine. |
 | **Nothing was deleted** | Not proven locally. A hash chain shows what changed, never what was removed. Committing the record to git is what preserves the files a deletion would take with it. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
@@ -122,10 +123,17 @@ mnema guard reopen "$TASK" --actor "$ME"
 
 # Verify the chain: hash links, signatures, and what is not yet covered.
 mnema verify
+#> local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
 ```
 
 `mnema verify` exits non-zero when the chain is broken, so it drops into CI as a
-check with no extra wiring.
+check with no extra wiring. **What "broken" means is the caller's to declare:**
+`--require=signed` also fails when any event is not covered by a verified
+signature, and `--require=witnessed` when no external witness covers the record
+(nothing provides one yet, so that one never passes). The default stays
+`--require=chained` — a break and nothing else — because events above the last
+checkpoint are the normal state of a session in flight, and a check that fails
+every time is a check somebody turns off.
 
 ### When an agent is the one running the CLI
 

@@ -19,7 +19,8 @@
  *
  * What a chain written before the bump must do once that ladder is loaded: verify
  * green at T1 AND at T2/T4, keep handing the lifted event to whatever wants
- * meaning, and still refuse a line it cannot read at all.
+ * meaning, and still refuse a line it cannot read at all — as a VERDICT naming the
+ * tail, which is what it refuses with now rather than an exception.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -285,17 +286,33 @@ describe('the lift still does its job — the proof was not bought with the read
     expect(result.fullySigned).toBe(true);
   });
 
-  it('still refuses a chain it cannot READ, though every byte hashes perfectly', () => {
+  it('still refuses a chain it cannot READ, as a verdict, though every byte hashes perfectly', () => {
     // The guarantee that must not be traded for this one. Verifying over the
     // record without also reading it would be the cheaper fix, and it would make
     // the verifier blind to a line nobody can interpret — a green verdict over an
     // event no reader can open, on an append-only log where that is permanent.
     // Nothing on disk differs between the two calls below: same bytes, same
     // hashes, same real signature. Only the ladder differs.
+    //
+    // HOW it refuses changed, and only that: the missing rung used to leave the
+    // verifier as an EXCEPTION carrying the parser's message, so the caller got a
+    // string and no finding — no tail, no position, no `issues` to read. It is a
+    // verdict now (`unreadable`), which is the same refusal with an address on it.
     writeChainBeforeTheBump({ checkpoint: true });
 
     expect(verify(root, afterTheBump()).ok).toBe(true);
-    expect(() => verify(root, withAMissingRung())).toThrow(/no upcaster for task\.created@1/);
+
+    const refused = verify(root, withAMissingRung());
+    expect(refused.ok).toBe(false);
+    expect(refused.level).toBe('unreadable');
+    expect(refused.issues).toHaveLength(1);
+    expect(refused.issues[0]?.tail).toBe(tailIdOf());
+    expect(refused.issues[0]?.detail).toMatch(/UNREADABLE/);
+    expect(refused.issues[0]?.detail).toMatch(/no upcaster for task\.created@1/);
+    // And the sentence a person reads says the record could not be read, rather
+    // than a count of events it could not have counted.
+    expect(refused.summary).toContain('part of the record is UNREADABLE');
+    expect(refused.summary).toContain('the event count is INCOMPLETE');
   });
 });
 

@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { linesFromEnd, parsedFromEnd, parseStoredLine } from './lines.js';
+import { linesFromEnd, parsedFromEnd, parseStoredLine, UnreadableLineError } from './lines.js';
 
 /**
  * Counts the reads the walk actually issues. An ESM namespace cannot be spied
@@ -129,18 +129,34 @@ describe('the torn-fragment tolerance', () => {
     return parsed as { n: number };
   };
 
+  /** The locus a caller of the rule has to supply — see {@link parseStoredLine}. */
+  const where = () => 'somewhere.jsonl line 7';
+
   it('drops a line that can be torn and fails to parse', () => {
-    expect(parseStoredLine('{"n":1', true, parse)).toBeNull();
+    expect(parseStoredLine('{"n":1', true, parse, where)).toBeNull();
   });
 
-  it('throws for the same line when it cannot be torn', () => {
-    expect(() => parseStoredLine('{"n":1', false, parse)).toThrow();
+  it('refuses the same line when it cannot be torn, NAMING where it is', () => {
+    // The refusal is the caller's finding, so it has to arrive as data and not as
+    // whatever the parser happened to say: the locus and the reason, both readable.
+    let refusal: unknown;
+    try {
+      parseStoredLine('{"n":1', false, parse, where);
+    } catch (error) {
+      refusal = error;
+    }
+    expect(refusal).toBeInstanceOf(UnreadableLineError);
+    expect((refusal as UnreadableLineError).locus).toBe('somewhere.jsonl line 7');
+    expect((refusal as UnreadableLineError).reason).toMatch(/JSON/);
+    expect((refusal as Error).message).toContain(
+      'unreadable stored line at somewhere.jsonl line 7',
+    );
   });
 
   it('keeps a line that can be torn but parses — that is the caller’s problem', () => {
     // A fragment that happens to parse is indistinguishable from a complete
     // line here; a resuming writer heals the file first so it never sees one.
-    expect(parseStoredLine('{"n":1}', true, parse)).toEqual({ n: 1 });
+    expect(parseStoredLine('{"n":1}', true, parse, where)).toEqual({ n: 1 });
   });
 
   it('grants the tolerance to the first line the backward walk meets, and no other', () => {
@@ -150,12 +166,26 @@ describe('the torn-fragment tolerance', () => {
 
   it('withholds it from a file whose end is not the stream’s end', () => {
     const torn = file('{"n":1}\n{"n":3');
-    expect(() => [...parsedFromEnd(torn, false, parse)]).toThrow();
+    expect(() => [...parsedFromEnd(torn, false, parse)]).toThrow(UnreadableLineError);
   });
 
   it('withholds it from a terminated last line, so corruption there still throws', () => {
     const corrupt = file('{"n":1}\n{"n":3\n');
-    expect(() => [...parsedFromEnd(corrupt, true, parse)]).toThrow();
+    expect(() => [...parsedFromEnd(corrupt, true, parse)]).toThrow(UnreadableLineError);
+  });
+
+  it('names the OFFSET of the line the backward walk refused, not the file alone', () => {
+    // The backward walk has no line numbers — it has byte offsets, which is the
+    // position it actually knows. `{"n":1}\n` is eight bytes, so the corrupt second
+    // line starts at eight.
+    const corrupt = file('{"n":1}\n{"n":3\n');
+    let refusal: unknown;
+    try {
+      [...parsedFromEnd(corrupt, true, parse)];
+    } catch (error) {
+      refusal = error;
+    }
+    expect((refusal as UnreadableLineError).locus).toBe(`${corrupt} byte offset 8`);
   });
 
   it('never reaches corruption further up when the caller stops early', () => {
@@ -164,6 +194,6 @@ describe('the torn-fragment tolerance', () => {
     expect(walk.next().value).toEqual({ n: 2 });
     // Reading on would hit the malformed first line and throw — the point is
     // that a caller wanting only the last line never gets there.
-    expect(() => [...walk]).toThrow();
+    expect(() => [...walk]).toThrow(UnreadableLineError);
   });
 });

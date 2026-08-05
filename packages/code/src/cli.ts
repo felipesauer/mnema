@@ -75,9 +75,17 @@ export function buildProgram(io: CliIo = processIo): Command {
 }
 
 /**
- * Runs the CLI. A thrown error (e.g. a chain so corrupt it cannot be parsed)
- * becomes an honest failure — a message and a non-zero exit — never an uncaught
- * stack trace that could read as "nothing to report".
+ * Runs the CLI. A thrown error becomes an honest failure — a message and a
+ * non-zero exit — never an uncaught stack trace that could read as "nothing to
+ * report".
+ *
+ * Its example used to be `verify` over a chain too corrupt to parse, and that one
+ * no longer arrives here: an unreadable line is part of the VERDICT now (a `T1`
+ * issue naming the tail and the position — see the chain's verify.ts), because a
+ * parser's message reaching this catch-all was a correct exit code carrying no
+ * finding. Every other verb still reaches it: a read that replays the trees and a
+ * write that resumes a tail both parse stored lines, and a corrupt one there is a
+ * throw with nowhere honest to put a verdict.
  */
 export async function run(argv: readonly string[], io: CliIo = processIo): Promise<void> {
   try {
@@ -101,8 +109,10 @@ export async function run(argv: readonly string[], io: CliIo = processIo): Promi
       io.fail();
       return;
     }
-    // Any other throw — e.g. a chain too corrupt to parse — is an honest
-    // failure, not an uncaught stack trace that could read as "nothing wrong".
+    // Any other throw — e.g. a read whose replay meets a stored line no parser
+    // can open — is an honest failure, not an uncaught stack trace that could
+    // read as "nothing wrong". (`verify` no longer arrives here for that: it
+    // answers with a verdict naming the tail and the line.)
     io.err(error instanceof Error ? error.message : String(error));
     io.fail();
   }
