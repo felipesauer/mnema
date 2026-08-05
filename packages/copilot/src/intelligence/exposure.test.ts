@@ -45,8 +45,9 @@ describe('exposure — what it finds', () => {
     // The hole this closes, and the worst kind there is: with a payload-only sweep
     // this record answered "nothing recognizable" while the credential sat on disk
     // in `which`. Not a record written unprotected — the AUDIT declaring it clean,
-    // which ends the investigation. `which` is the envelope's one free-text field
-    // and it is stamped on every event of a session, so one value is many records.
+    // which ends the investigation. `which` is one of the two envelope fields a
+    // caller supplies, and it is stamped on every event of a session, so one value
+    // is many records.
     const report = exposure([
       source('public', [
         {

@@ -14,6 +14,16 @@
  * `which` — the one on the envelope, stamped on every event of a session — went
  * through unscreened while a payload-only sweep reported everything clean.
  *
+ * WHICH FIELDS ARE HANDED IN IS THE CALLER'S CHOICE, and that is the one thing this
+ * function cannot check. It screens what it is given; a field the caller never
+ * passes is a field it never sees, and the test that drove every write point could
+ * not tell the difference — measured, when an added `alternatives` bypassed this
+ * door and the whole suite stayed green. What answers for the selection now is the
+ * field classification (`fields.ts`) and the guard derived from it
+ * (`every-field.test.ts`), which poison every field the catalog declares as prose
+ * and read the chain back. The selection stays the caller's; forgetting one no
+ * longer passes in silence.
+ *
  * THE LIMIT COMES FIRST, AND IT IS NOT A PREFERENCE. Nothing capped the size of
  * a text field before this, and a single 5 MB event was accepted in 321 ms and
  * then cost 116.9 ms of replay on every rebuild afterwards — against 35.2 ms for

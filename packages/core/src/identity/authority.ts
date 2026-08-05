@@ -25,15 +25,28 @@
  * "differs" from `who` at the check can end up byte-identical to it in the signed
  * event.
  *
- * SCREENING IS BUNDLED HERE FOR THE SAME REASON, AND IT RUNS FIRST. `which` is
- * the envelope's only free-text field — `who` and `signerFp` are derived from a
- * key, `at` is an instant, `subject` and `run` are ids — so it is the one place a
+ * SCREENING IS BUNDLED HERE FOR THE SAME REASON, AND IT RUNS FIRST. `which` is one
+ * of the two envelope fields a caller supplies, so it is one of the two places a
  * credential can reach an event without passing through a payload. It is also the
  * worst place for one: `which` is stamped on EVERY event of a session, so a single
  * dirty value is as many disclosures as the session has facts, and over MCP it is
  * taken from the client's announced name, which nobody typed and nobody reads.
  * Screening it where it is already resolved makes "every free-text field is
  * screened" true of the envelope too, instead of true of the payload only.
+ *
+ * THE OTHER ONE IS `run`, and this paragraph used to say it was not — it read
+ * "`which` is the envelope's ONLY free-text field … `subject` and `run` are ids".
+ * `subject` is an id on eleven kinds and a caller's unproved reference on three
+ * (a handoff's task, a link's origin, a consultation's skill), all of which have
+ * always gone through the door; `run` was the one that had not. It is an id by
+ * contract and nothing in this package proves it, so what reaches the chain is
+ * whatever a caller sent, under no ceiling — and it rides every event of the
+ * session exactly as `which` does. The surfaces do prove it before they call, which
+ * is the same argument this codebase already refused for the consultation's skill
+ * id: an invariant enforced only where someone remembered it is a habit, not a
+ * property. It is screened by the operations, beside the payload's own text; the
+ * field classification and its guard are what keep the next such field from being
+ * missed the same way.
  *
  * The order is screen, THEN canonicalize, and it is the same requirement stated
  * above: the value compared against `who` has to be the value the chain records.

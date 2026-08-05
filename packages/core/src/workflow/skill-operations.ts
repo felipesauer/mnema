@@ -129,7 +129,9 @@ export function createSkill(
   // The body is the largest text any write here carries — a whole recipe or
   // checklist — so it is both the field most likely to hold a worked example with
   // real values in it and the one the size limit is really about.
-  const text = screenContent({ name: input.name, body: input.body });
+  // The pinned run joins them: it is the envelope's second caller-supplied field
+  // and nothing here proves it names a session, so it goes through the same door.
+  const text = screenContent({ name: input.name, body: input.body, run: input.run });
   if (!text.ok) return text;
 
   // `who` is derived from local material and the record, always a real anchor;
@@ -155,7 +157,7 @@ export function createSkill(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
     },
     { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
   );
@@ -218,7 +220,11 @@ export function recordConsultation(
   ctx: SkillWriteContext,
   input: ConsultationInput,
 ): ConsultationOk | SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr {
-  const named = screenContent({ skill: input.skill });
+  // Both of its caller-supplied strings in one screen: the skill id that becomes
+  // the SUBJECT, and the run that pins the fact to a session. Neither is proved
+  // here, so both are fields through which an unbounded — or dirty — value could
+  // reach the chain.
+  const named = screenContent({ skill: input.skill, run: input.run });
   if (!named.ok) return named;
 
   const who = authorizingAnchor(ctx);
@@ -242,7 +248,7 @@ export function recordConsultation(
       signerFp: ctx.writer.signerFingerprint,
       subject: skill,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(named.fields.run !== undefined ? { run: named.fields.run } : {}),
     }),
   );
   if (!appended.ok) return appended;
@@ -302,6 +308,11 @@ function transition(
     input.fields === undefined ? undefined : screenContent<TransitionFields>(input.fields);
   if (proof !== undefined && !proof.ok) return proof;
 
+  // The pinned run through the same door, in its own call because the proof's is
+  // conditional and a move with no proof still carries a run.
+  const pinned = screenContent({ run: input.run });
+  if (!pinned.ok) return pinned;
+
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
@@ -342,7 +353,7 @@ function transition(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
     },
     {
       from: current.state,
@@ -357,7 +368,7 @@ function transition(
     ok: true,
     to: verdict.to,
     entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
   };
 }
 

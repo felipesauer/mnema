@@ -32,19 +32,28 @@ import { detectSecrets } from './secrets.js';
  * chain back and scan every payload generically.
  *
  * WHAT IS GENERIC HERE, AND WHAT IS A LIST — because the two halves of this file
- * are not the same kind of thing, and a doc-comment that said they were is what
- * this paragraph replaces. It claimed that "a field a future operation adds and
- * forgets to screen fails here, without anyone having to remember to extend a
- * list". That is false, and it was measured false: `alternatives` was added to
+ * are not the same kind of thing, and two doc-comments that said otherwise are what
+ * this paragraph replaces. The first claimed that "a field a future operation adds
+ * and forgets to screen fails here, without anyone having to remember to extend a
+ * list". That was false, and measured false: `alternatives` was added to
  * `decision.recorded` with the screen deliberately bypassed, and the whole suite of
  * 2,059 tests stayed green — this file included, ten of ten. Only the READ half is
  * generic (the sweep below walks every string of every event and knows no field
  * names); the WRITE half is a hand-written list of calls with hand-written
- * arguments, so a field no call below passes is a field no assertion can see. The
- * sweep proves the door ran on the text it was GIVEN; it cannot prove the text
- * reached it. Closing that is the door's own slice — the driving would have to be
- * derived from the catalog's payload fields rather than typed out — and until then
- * extending the lists below is a step a field-adding change owes by hand.
+ * arguments, so a field no call below passes is a field no assertion can see. That
+ * much is still true of THIS file and always will be.
+ *
+ * The second claim is the one that is now out of date, and it was the honest reading
+ * at the time: that closing it "is the door's own slice", and that until then
+ * "extending the lists below is a step a field-adding change owes by hand". That
+ * slice happened. `every-field.test.ts` next door drives every kind with every value
+ * asked for BY FIELD PATH, from a classification (`fields.ts`) the compiler forces
+ * to stay total over the catalog's declarations — so a text field added to any
+ * payload fails the build until it is classified, fails that file until a driver
+ * passes it, and fails it again until the operation screens it. What this file
+ * covers is the axis that one does not: the WRITE POINTS, driven the way a caller
+ * really calls them, several operations deep, in one chain read back whole. Two
+ * files, two axes; neither is the other's list.
  *
  * And the assertion is always the same one: the value is ABSENT from what was
  * appended. Never that a counter moved (see `secrets.test.ts` for why).
@@ -255,15 +264,20 @@ describe('the content door runs at every write point', () => {
 });
 
 /**
- * The envelope's one free-text field, which the sweep above used to miss.
+ * The envelope's executing agent, which the sweep above used to miss.
  *
- * `which` is the agent that executed a fact. Everything else on an envelope is
- * derived — `who` and `signerFp` from a key, `at` from a clock, `subject` and `run`
- * from a mint — so `which` is the only place a credential can reach an event
- * without passing through a payload, and the worst place for one: it is stamped on
- * EVERY event of a session, so one dirty value is as many disclosures as the
- * session has facts. Over MCP it is worse still, because it comes from the client's
- * announced name — nobody types it and nobody reads it.
+ * `which` is the agent that executed a fact, and it is one of the two envelope
+ * fields a CALLER supplies — `who` and `signerFp` come from a key, `at` from a
+ * clock, and `subject` from a mint on eleven of the sixteen kinds. It is the worst
+ * of them for a credential: it is stamped on EVERY event of a session, so one dirty
+ * value is as many disclosures as the session has facts, and over MCP it comes from
+ * the client's announced name — nobody types it and nobody reads it.
+ *
+ * The other one is `run`, and the sentence this replaces called it a mint: "`subject`
+ * and `run` [come] from a mint". A run id is minted, but not by the write that
+ * stamps it — the caller hands it back in, and no operation here proves it names a
+ * session. It goes through the same door now, and the field classification is what
+ * found it.
  */
 describe('the executing agent goes through the same door', () => {
   let root: string;
