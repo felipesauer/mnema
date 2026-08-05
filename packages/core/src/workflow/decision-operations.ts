@@ -149,10 +149,16 @@ export function recordDecision(
   // go in the same call rather than a second one: `screenContent` leaves an absent
   // field absent, so passing it unconditionally costs nothing when there is none,
   // and a second screen would be a second place to forget.
+  //
+  // The pinned run joins them for a different reason: it is not payload at all, it
+  // is the envelope's second caller-supplied field, and nothing in this package
+  // proves it names a session — so it goes through the door beside the prose rather
+  // than around it.
   const text = screenContent({
     title: input.title,
     rationale: input.rationale,
     alternatives: input.alternatives,
+    run: input.run,
   });
   if (!text.ok) return text;
 
@@ -189,7 +195,7 @@ export function recordDecision(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
     },
     {
       title: text.fields.title,
@@ -263,6 +269,11 @@ function transition(
     input.fields === undefined ? undefined : screenContent<TransitionFields>(input.fields);
   if (proof !== undefined && !proof.ok) return proof;
 
+  // The pinned run through the same door, in its own call because the proof's is
+  // conditional and a move with no proof still carries a run.
+  const pinned = screenContent({ run: input.run });
+  if (!pinned.ok) return pinned;
+
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
@@ -324,7 +335,7 @@ function transition(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       ...(which !== undefined ? { which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
     },
     {
       from: current.state,
@@ -340,7 +351,7 @@ function transition(
     ok: true,
     to: verdict.to,
     entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...agent.replaced]),
+    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
   };
 }
 
