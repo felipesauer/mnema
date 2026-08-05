@@ -20,6 +20,7 @@
 import type { Command } from 'commander';
 import { runTask } from '../commands/task.js';
 import { runTaskTransition } from '../commands/task-transition.js';
+import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -129,7 +130,7 @@ export function registerTask(program: Command, wiring: Wiring): void {
         ...(run !== undefined ? { run } : {}),
       });
       if (result.ok) {
-        io.out(`Task ${result.alias} → ${result.to}`);
+        io.out(movedLine('task', result.alias, result.id, result.to));
         reportReplacement(result, io);
         return;
       }
