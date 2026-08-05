@@ -6,10 +6,34 @@
  * is the read that gives it back: the ADOPTED skills, by name for an index and
  * by body on demand.
  *
- * ONLY `adopted`. Proposed, reviewed, rejected and deprecated are states of the
- * process of DECIDING about a pattern, not patterns to work by. Serving a
- * deprecated body would hand an agent a way of working the team retired — the
- * one outcome worse than serving nothing.
+ * ONLY `adopted` IS SERVED AS A PATTERN. Proposed, reviewed, rejected and
+ * deprecated are states of the process of DECIDING about a pattern, not patterns
+ * to work by. Serving a deprecated body would hand an agent a way of working the
+ * team retired — the one outcome worse than serving nothing.
+ *
+ * BUT TWO OF THOSE STATES ARE STILL SOMETHING TO SAY, and that is the second read
+ * here. A pattern `proposed` waits for a review and a `reviewed` one waits for the
+ * adoption; both are a judgement somebody owes, and a curation backlog nobody is
+ * told about is a backlog that does not clear.
+ * {@link skillsAwaitingJudgement} names them — WITHOUT the body, which is the
+ * distinction that keeps this from being the previous paragraph's opposite: a name
+ * is an invitation to rule on a pattern, a body is an instruction to work by it.
+ *
+ * AND NO READ OF THE AGENT'S SURFACE SERVES ONE OF THOSE BODIES. Measured, not
+ * assumed: {@link lookupAdoptedSkill} refuses precisely those states
+ * (`NOT_ADOPTED`), and the `read_record` tool refuses a skill outright
+ * (`USE_SKILLS_TOOL`, so a body cannot leave through a second door) — the two
+ * refusals point at each other. It is the axis rather than an oversight, and the
+ * command line makes the opposite call on purpose: `mnema show <id>` serves a
+ * proposed pattern's text, because the person reading it is CURATING. So what
+ * {@link skillsAwaitingJudgement} gives an agent is the name and the state — enough
+ * to raise it, or to move it — and nothing here claims a door that would refuse it.
+ * Asserted in `mcp-e2e.test.ts` — "answers the SECOND READ each kind names, for
+ * every item awaiting a judgement".
+ *
+ * ONE TABLE SAYS WHICH IS WHICH. {@link SKILL_DISPOSITION} gives every state of the
+ * machine a meaning, and both lists are DERIVED from it, neither restating its own
+ * set beside it — the same reason `decisions.ts` has one.
  *
  * ACROSS THE TREES the caller can see, not one. A skill is a CAPABILITY, and a
  * capability does not belong to a tree the way a piece of work does: the team's
@@ -31,10 +55,60 @@
  * both ends are the same agent) belongs where a person is looking at it.
  */
 
-import type { ProjectionCache, SkillProjection, SkillState } from '@mnema/core';
+import {
+  type ProjectionCache,
+  SKILL_STATES,
+  type SkillProjection,
+  type SkillState,
+} from '@mnema/core';
+import { type Disposition, statesWith } from './disposition.js';
 
-/** The one state whose skills are served — typed, so a typo fails the build. */
-const ADOPTED: SkillState = 'adopted';
+/**
+ * What each state of the skill machine means to a reader — TOTAL, so a sixth state
+ * cannot be added to the workflow without being classified here.
+ *
+ * Read against `SKILL_TRANSITIONS`, which is the source of truth for every claim
+ * below:
+ *   - `proposed` — `review` and `reject` leave from it; somebody has to look.
+ *   - `reviewed` — `adopt` and `reject` leave from it; somebody has to rule. It is
+ *     the state that makes this machine's waiting side TWO states, and it is why
+ *     the state travels with the item: "needs a review" and "needs a decision"
+ *     ask for different moves and would otherwise be the same line.
+ *   - `adopted` — it is a live pattern. `deprecate` is still legal from it, which
+ *     is why "has a legal move" is the wrong criterion for the waiting list.
+ *   - `rejected`, `deprecated` — terminal, no row leaves either.
+ *
+ * Exported so the claims above are CHECKABLE against the table they are read from,
+ * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
+ * this against `SKILL_TRANSITIONS`. It is not on the package's public surface — a
+ * consumer gets the two lists, not the classification behind them.
+ */
+export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
+  proposed: 'awaiting-judgement',
+  reviewed: 'awaiting-judgement',
+  adopted: 'in-force',
+  rejected: 'closed',
+  deprecated: 'closed',
+};
+
+/** The states whose skills are live patterns — derived, never restated. */
+const ADOPTED = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'in-force');
+
+/** The states whose skills are waiting on somebody — derived, never restated. */
+const AWAITING_JUDGEMENT = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'awaiting-judgement');
+
+/**
+ * Whether a projected state is one this module serves the body of.
+ *
+ * The projection stores `state` as a literal string on purpose — a fact written
+ * today stays legible if the workflow later renames a state — so the comparison is
+ * widened to strings rather than the set being narrowed. A state outside the
+ * workflow's vocabulary is therefore not adopted, which is the honest answer: this
+ * module knows what `adopted` means and nothing about a word it has never seen.
+ */
+function isAdopted(state: string): boolean {
+  return (ADOPTED as readonly string[]).includes(state);
+}
 
 /** An adopted skill named but not spelled out — what an index is made of. */
 export interface SkillRef {
@@ -85,9 +159,70 @@ export type SkillLookup =
 export function adoptedSkills(caches: readonly ProjectionCache[]): AdoptedSkill[] {
   const all: AdoptedSkill[] = [];
   for (const cache of caches) {
-    for (const skill of cache.listSkillsByState(ADOPTED)) all.push(toAdopted(skill));
+    for (const state of ADOPTED) {
+      for (const skill of cache.listSkillsByState(state)) all.push(toAdopted(skill));
+    }
   }
   return all.sort(byNameThenId);
+}
+
+/**
+ * A pattern nobody has ruled on yet — a name, plus the state that says WHICH
+ * ruling is missing.
+ *
+ * NO BODY, and that is the whole difference from {@link AdoptedSkill}. A body is
+ * served as something to work by, and a pattern still under review is not one. No
+ * agent-facing read serves this one's text either (see the module doc); a person
+ * reads it with `mnema show <id>`. No provenance — `adoptedBy` is a fact about an
+ * adoption that has not happened.
+ */
+export interface SkillAwaitingJudgement extends SkillRef {
+  /**
+   * Always `skill`: the discriminant, and what says this line is a PATTERN awaiting
+   * a ruling rather than a call awaiting one.
+   */
+  readonly kind: 'skill';
+  /**
+   * The state it is waiting in, which is what says what is owed: `proposed` needs
+   * a review, `reviewed` needs the adoption call. Typed as the workflow's own
+   * state, and it is the state the row was READ under (the bucket the indexed
+   * lookup asked for), not a second reading of the projection.
+   */
+  readonly state: SkillState;
+  /** `at` of its last transition — what the composed list orders on. */
+  readonly updatedAt: string;
+}
+
+/**
+ * Every skill awaiting a judgement across `caches`, in no particular order.
+ *
+ * ORDERING IS THE CALLER'S HERE, and that is the difference from
+ * {@link adoptedSkills}. This answer is half of ONE list — skills and decisions
+ * interleaved by when each last moved (see {@link bootstrap}) — so an order imposed
+ * here would be an order the composition immediately discards.
+ *
+ * The states come from {@link SKILL_DISPOSITION} and each is fetched by
+ * `listSkillsByState`, the INDEXED read: listing every skill and filtering in
+ * memory would read the whole table to throw almost all of it away.
+ */
+export function skillsAwaitingJudgement(
+  caches: readonly ProjectionCache[],
+): SkillAwaitingJudgement[] {
+  const pending: SkillAwaitingJudgement[] = [];
+  for (const cache of caches) {
+    for (const state of AWAITING_JUDGEMENT) {
+      for (const skill of cache.listSkillsByState(state)) {
+        pending.push({
+          kind: 'skill',
+          id: skill.id,
+          name: skill.name,
+          state,
+          updatedAt: skill.updatedAt,
+        });
+      }
+    }
+  }
+  return pending;
 }
 
 /**
@@ -99,7 +234,7 @@ export function lookupAdoptedSkill(caches: readonly ProjectionCache[], id: strin
   for (const cache of caches) {
     const skill = cache.getSkill(id);
     if (skill === null) continue;
-    if (skill.state !== ADOPTED) return { outcome: 'not-adopted', state: skill.state };
+    if (!isAdopted(skill.state)) return { outcome: 'not-adopted', state: skill.state };
     return { outcome: 'adopted', skill: toAdopted(skill) };
   }
   return { outcome: 'unknown' };

@@ -861,8 +861,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Bootstrap the session',
       description:
         "The opening context for this session's actor: where they left off, the " +
-        'actionable work, the patterns to work by, and the DECISIONS IN FORCE — what ' +
-        'this project has already settled and has not replaced. Derived from the ' +
+        'actionable work, the patterns to work by, the DECISIONS IN FORCE — what ' +
+        'this project has already settled and has not replaced — and what is ' +
+        'AWAITING A JUDGEMENT. Derived from the ' +
         'chain. Every list is NAMES: a task arrives as id, title and state, a pattern ' +
         'as id and name, a decision as id, title and its ADR-<n> label — which is a ' +
         'display name a person cites, numbered within one tree and never an identity, ' +
@@ -871,12 +872,30 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         '`skills` with a skill id for the pattern itself, and `read_record` with a ' +
         'decision id for its rationale, the argument behind it. Only a decision in ' +
         'force is listed: one still proposed, rejected, or superseded by a later ' +
-        'decision does not govern and is left out. The lists are CUT to the freshest ' +
-        'items; `workTotal` and `decisionsTotal` say how many there are in all, so a ' +
-        'number larger than its own list means there is more it does not show. ' +
-        '`search` reaches past both cuts (kind `task`, or kind `decision` with state ' +
-        '`accepted`, with a `limit`), ordered by when each was recorded rather than ' +
-        'by when it last moved.' +
+        'decision does not govern and is left out. ' +
+        '`awaitingJudgement` is the other side of that: everything somebody has to ' +
+        'RULE ON before it means anything — a decision still `proposed`, a pattern ' +
+        '`proposed` or `reviewed`. It is one list holding both, and each item says ' +
+        'which it is in `kind` and what is owed in `state` (`proposed` needs the ' +
+        'first ruling, `reviewed` needs the adoption call). For a `decision`, ' +
+        '`read_record` with the id gives the argument behind it. For a `skill`, the ' +
+        'name and the state are all you get here: no read of this server serves the ' +
+        'text of a pattern still being decided on — `skills` serves adopted ones ' +
+        'only, because what it hands back is meant to be worked by. Not `skills` for ' +
+        'the pattern, then: raise it with the person (they read it with ' +
+        '`mnema show <id>`), or move it with `skill_transition` if the call is ' +
+        'yours to make. ' +
+        'It is NOT more work to do: it is what a person has left open, and the ' +
+        'useful move is usually to raise it rather than to move it yourself. ' +
+        'Three of the four lists are CUT to the freshest ' +
+        'items; `workTotal`, `decisionsTotal` and `awaitingJudgementTotal` say how ' +
+        'many there are in all, so a ' +
+        'number larger than its own list means there is more it does not show. The ' +
+        'patterns are the exception — every adopted one is listed, so that list has ' +
+        'no total. ' +
+        '`search` reaches past the cuts (kind `task`, or kind `decision` or `skill` ' +
+        'with a `state`, with a `limit`), ordered by when each was recorded rather ' +
+        'than by when it last moved.' +
         OPEN_RUN_CONTRACT,
     },
     async () => {

@@ -1,26 +1,45 @@
 /**
  * bootstrap: the opening read of a session, focused on the actor.
  *
- * When an agent starts, it needs four things: where the actor left off, what can
- * be done next, what patterns it is expected to work by, and what has already been
- * decided. bootstrap composes exactly those — {@link resume} for the "where was I"
- * (the actor's latest run and open focus), the live pieces of work for the "what
- * now", the NAMES of the adopted skills ({@link adoptedSkills}) for the "how we do
- * things here", and the NAMES of the decisions in force ({@link decisionsInForce})
- * for the "what governs here". It is the "serve lean" of the design: a filtered
- * opening context, not a dump of the whole record.
+ * When an agent starts, it needs five things: where the actor left off, what can
+ * be done next, what patterns it is expected to work by, what has already been
+ * decided, and what is waiting on somebody to decide. bootstrap composes exactly
+ * those — {@link resume} for the "where was I" (the actor's latest run and open
+ * focus), the live pieces of work for the "what now", the NAMES of the adopted
+ * skills ({@link adoptedSkills}) for the "how we do things here", the NAMES of the
+ * decisions in force ({@link decisionsInForce}) for the "what governs here", and
+ * the NAMES of what awaits a judgement for the "what is still open". It is the
+ * "serve lean" of the design: a filtered opening context, not a dump of the whole
+ * record.
  *
- * THE FOURTH HALF IS THE ONE THAT WAS MISSING, and the measurement is what said so.
- * The product has three state machines (task, decision, skill) with two sides each
- * — what already holds, and what waits for a move — and this read served two of
- * those six cells: the waiting side of tasks and the holding side of skills.
- * Decision appeared on neither. Over a real record that held two ADRs, and nothing
- * else worth reading, the answer was `work: []`, `skills: []` — an empty answer
- * about a full record, in the exact shape this module already names as the worst
- * one an opening read can have. The cell filled here is the holding side of
- * decision; the waiting side of decision and of skill is a separate question with
- * a criterion of its own ("waits for a judgement somebody has to make"), and it is
- * NOT this list's criterion.
+ * THE HALVES THAT WERE MISSING, and the measurement is what said so. The product
+ * has three state machines (task, decision, skill) with two sides each — what
+ * already holds, and what waits — and this read served two of those six cells: the
+ * waiting side of tasks and the holding side of skills. Decision appeared on
+ * neither. Over a real record that held two ADRs, and nothing else worth reading,
+ * the answer was `work: []`, `skills: []` — an empty answer about a full record, in
+ * the exact shape this module already names as the worst one an opening read can
+ * have. Both ADRs were `proposed`, so the holding side of decision, filled first,
+ * still did not see them.
+ *
+ * The table is closed here. Five of the six cells are served and the sixth — the
+ * holding side of TASK — is deliberately empty: a task that holds is a terminal
+ * one, and there is nothing to be done about it.
+ *
+ * THE WAITING SIDE HAS A CRITERION OF ITS OWN, AND IT IS NOT THE WORK LIST'S. The
+ * work list's rule is "has at least one legal move", and it does not transport: a
+ * decision that is `accepted` still accepts `supersede`, and a skill that is
+ * `adopted` still accepts `deprecate` (`DECISION_TRANSITIONS`, `SKILL_TRANSITIONS`),
+ * so under that rule both would be pendencies for as long as they exist and the
+ * list would grow and never empty. The rule for {@link Bootstrap.awaitingJudgement}
+ * is about a person instead: somebody has to rule on this before it means anything.
+ * It reaches three states — a decision `proposed`, a skill `proposed` or `reviewed`
+ * — and every one of them has a way out that does not come back (proved from the
+ * transition tables in `disposition.test.ts`, "nothing can wait forever"). ONE list
+ * discriminated by `kind`, not two: the criterion is one sentence, and a criterion
+ * written twice is two criteria that come to disagree about what "waiting" means.
+ * Asserted in `bootstrap.test.ts` — "lists what awaits a judgement across BOTH
+ * machines, with the state that says which ruling is missing".
  *
  * NAMES, NEVER BODIES. The skills appear as name + id and nothing else, and the
  * decisions as title + `adr` + id. A body is the pattern, or the argument, in full
@@ -31,6 +50,26 @@
  * to match the task at hand: a pattern's from {@link adoptedSkills} (the `skills`
  * tool), and a decision's — its `rationale` and the `alternatives` it turned down —
  * from {@link readRecord} (the `read_record` tool).
+ *
+ * AND ON THE MIXED LIST, THE `kind` SAYS WHAT THE SECOND READ WILL HAND BACK. An
+ * index is only an index if its reader knows where the rest is, and one list holding
+ * two sorts of item has to say which is which per line or the reader has to guess:
+ * `decision` → the argument and the alternatives, `skill` → the pattern itself. The
+ * discriminant that makes the union readable in TypeScript and the label that makes
+ * it actionable for an agent are the same field, which is why there is no second one.
+ *
+ * A DECISION'S REST IS {@link readRecord}. A PATTERN'S IS NOT SERVED TO AN AGENT AT
+ * ALL, and that is measured, not assumed. The `skills` tool refuses every state on
+ * this list (`NOT_ADOPTED`) because what it hands back is served as an instruction to
+ * work by, and `read_record` refuses a skill outright (`USE_SKILLS_TOOL`) because a
+ * body must not leave through a second door — so the agent's surface has no read that
+ * serves the text of a pattern still being decided on. It is the axis and not an
+ * oversight: the CLI DOES serve it (`mnema show <id>`), deliberately, because the
+ * person reading a proposal is curating it. What this list gives an agent about a
+ * pattern is therefore the NAME and the state — enough to raise it with a person, or
+ * to move it with `skill_transition` — and the description says so rather than
+ * naming a door that answers none of its own items. Asserted in `mcp-e2e.test.ts` —
+ * "answers the SECOND READ each kind names, for every item awaiting a judgement".
  *
  * A TASK HAS A BODY TOO, AND IT IS THE MOVES. The same rule now governs the work
  * list, because it is the same distinction: a work item carries id, title, state
@@ -62,20 +101,36 @@
  * So the limit is STATED now, in two halves, and neither of them is a tokenizer:
  *   - each item is a NAME, which is what fixes the per-item cost at a handful of
  *     fields instead of a transition table or an argument;
- *   - a list is CUT (see {@link capped}) and the answer says how many there were
- *     ({@link Bootstrap.workTotal}, {@link Bootstrap.decisionsTotal}) — a cut that
- *     does not declare itself is the same failure as an empty answer that reads
- *     like an answer.
+ *   - THREE of the four lists are CUT (see {@link capped}) and each says how many
+ *     there were — `work`/{@link Bootstrap.workTotal},
+ *     `decisions`/{@link Bootstrap.decisionsTotal}, and
+ *     `awaitingJudgement`/{@link Bootstrap.awaitingJudgementTotal}. A cut that does
+ *     not declare itself is the same failure as an empty answer that reads like an
+ *     answer.
+ *
+ * `skills` IS THE FOURTH, AND IT IS NOT CUT. It has no total either, and that is a
+ * known gap rather than a distinction: nothing bounds it, so a record with two
+ * hundred adopted patterns puts two hundred lines here. It is left alone because
+ * cutting it is not a slice of this rule but a decision about ORDER. The other
+ * three are ordered by an instant, so a cut discards the stalest and reads as "the
+ * rest is older"; this one is ordered by NAME, so a cut would discard the end of
+ * the alphabet, which says nothing at all. Ordering it by recency instead would
+ * invert an observable that callers already depend on — a stable alphabetical list
+ * is what keeps a host's cache of that prompt prefix valid — so the fix is a change
+ * with its own reasoning, not a fourth call to {@link capped}.
+ *
  * What has NOT changed is the part that was right: nothing here estimates tokens
  * or measures bytes. A count of items is a property this layer can be correct
  * about; a token budget is not. Asserted in `bootstrap.test.ts` — "cuts the work
  * list at the convention's limit and says how many there were", "serves every
- * item, and no new field, below the limit", and "cuts the decisions at the same
- * limit and says how many there were".
+ * item, and no new field, below the limit", "cuts the decisions at the same
+ * limit and says how many there were", "cuts what awaits a judgement at the same
+ * limit and says how many there were", and "serves EVERY adopted pattern, uncut and
+ * uncounted — the list this limit does not reach".
  *
- * ONE number and ONE cut, for both lists. The limit is the search's own default
- * taken by reference (see {@link SERVED_LIMIT}), because a second number for "how
- * many items does a read hand back when nobody said" is a second convention that
+ * ONE number and ONE cut, for every list that has one. The limit is the search's own
+ * default taken by reference (see {@link SERVED_LIMIT}), because a second number for
+ * "how many items does a read hand back when nobody said" is a second convention that
  * drifts from the first; and the cut is one function ({@link capped}) rather than
  * one per list, because a slice written twice is a rule written twice.
  *
@@ -87,7 +142,10 @@
  *   - the skill list carries ONLY adopted patterns, by name;
  *   - the decision list carries ONLY decisions in force (`accepted`), by name,
  *     most recently settled first — see {@link decisionsInForce} for why one state
- *     is the whole filter.
+ *     is the whole filter;
+ *   - the awaiting list carries ONLY what a person still owes a ruling on, by name
+ *     and by the state that says which ruling — see {@link DECISION_DISPOSITION}
+ *     and {@link SKILL_DISPOSITION}, one table per machine, total in the compiler.
  *
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
  * projection carries no `who`, so the tasks cannot be attributed to the actor
@@ -114,10 +172,20 @@
  */
 
 import { type ProjectionCache, SEARCH_DEFAULT_LIMIT, type TaskProjection } from '@mnema/core';
-import { type DecisionRef, decisionsInForce } from './decisions.js';
+import {
+  type DecisionAwaitingJudgement,
+  type DecisionRef,
+  decisionsAwaitingJudgement,
+  decisionsInForce,
+} from './decisions.js';
 import { type ActorScope, type Resume, resume } from './focus.js';
 import { nextActions } from './next-action.js';
-import { adoptedSkills, type SkillRef } from './skills.js';
+import {
+  adoptedSkills,
+  type SkillAwaitingJudgement,
+  type SkillRef,
+  skillsAwaitingJudgement,
+} from './skills.js';
 
 /**
  * How many items of ONE list an opening context serves.
@@ -130,6 +198,18 @@ import { adoptedSkills, type SkillRef } from './skills.js';
  * number would answer differently is the same question.
  */
 const SERVED_LIMIT: number = SEARCH_DEFAULT_LIMIT;
+
+/**
+ * One thing waiting on a person's ruling, NAMED, from either machine that has a
+ * waiting side.
+ *
+ * A discriminated union and not a widened record: the two machines name their
+ * items differently (a decision by title and `ADR-<n>`, a pattern by its name) and
+ * flattening them into one optional-everything shape would let a consumer read a
+ * field that is never there. The `kind` narrows it, and it is the same field that
+ * tells an agent which read serves the rest (see the module doc).
+ */
+export type AwaitingJudgement = DecisionAwaitingJudgement | SkillAwaitingJudgement;
 
 /** One live piece of work, NAMED — a unit of "what can be done". */
 export interface WorkItem {
@@ -193,14 +273,39 @@ export interface Bootstrap {
    * (kind `decision`, state `accepted`) reaches past it.
    */
   readonly decisionsTotal: number;
+  /**
+   * What is waiting on a person: the decisions still `proposed` and the patterns
+   * still `proposed` or `reviewed`, in ONE list, each carrying the `kind` that says
+   * which read serves the rest of it and the `state` that says which ruling is
+   * missing. Never a body — the argument and the pattern are both a second read.
+   *
+   * Most recently moved first, ACROSS the two kinds: it is one list ordered by one
+   * property of the content, not decisions and then skills. Everything past
+   * {@link Bootstrap.awaitingJudgementTotal}'s cut is omitted.
+   *
+   * NOT the same question as `work`. That list means "a move is legal"; this one
+   * means "somebody owes a ruling", and the difference is the whole reason it
+   * exists — see the module doc.
+   */
+  readonly awaitingJudgement: readonly AwaitingJudgement[];
+  /**
+   * How many things await a judgement in all. Greater than
+   * `awaitingJudgement.length` means the list was cut, and what is missing is the
+   * STALEST — which for this list is the part most worth knowing about, since a
+   * proposal nobody has touched for a year is the one most likely to have been
+   * forgotten. `search` (kind `decision` or `skill`, with a `state`) reaches past
+   * the cut.
+   */
+  readonly awaitingJudgementTotal: number;
 }
 
 /**
  * Builds the opening context for `actor` over every tree the caller can see:
  * their resume, the freshest actionable tasks by name, the names of the adopted
- * patterns, and the names of the decisions in force. Reads caches only; composes
- * pure derivations. The four halves are independent — an actor with no runs still
- * gets the work list, and a record with no patterns still gets the other three.
+ * patterns, the names of the decisions in force, and the names of what awaits a
+ * judgement. Reads caches only; composes pure derivations. The five halves are
+ * independent — an actor with no runs still gets the work list, and a record with
+ * no patterns still gets the other four.
  */
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
   const actionable = caches
@@ -218,6 +323,14 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   // carries only the one that travels, and it filters its own sources to do it, so
   // this answer keeps every tree the caller can see.
   const decisions = capped(decisionsInForce(caches));
+  // ONE list from two machines, and the ordering happens HERE rather than in
+  // either half: interleaving by when each item last moved is a property of the
+  // composed list, and a half that sorted itself would be asserting an order this
+  // line discards. Same comparator the work list uses — "most recently moved
+  // first, ties by id" is one rule, so it is one function.
+  const awaiting = capped(
+    [...decisionsAwaitingJudgement(caches), ...skillsAwaitingJudgement(caches)].sort(byUpdatedDesc),
+  );
   return {
     resume: resume(caches, scope),
     work: work.served,
@@ -225,6 +338,8 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
     skills,
     decisions: decisions.served,
     decisionsTotal: decisions.total,
+    awaitingJudgement: awaiting.served,
+    awaitingJudgementTotal: awaiting.total,
   };
 }
 
@@ -236,13 +351,14 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
  * declaring the wrong number: the total has to be of the list BEFORE the cut, which
  * is a fact only the caller of the cut still holds.
  *
- * ONE function for every list, not one per list. Two lists are cut here and a third
- * will be; a `slice` and a `length` written per list is the same rule written that
- * many times, and the failure mode of a rule written twice is that one copy is
- * amended. What the caller still owns is naming the pair (`work`/`workTotal`,
- * `decisions`/`decisionsTotal`), and a total attached to the wrong list is caught by
- * a fixture where the two lists have DIFFERENT totals — "counts each list, and the
- * two totals are not each other's" in `bootstrap.test.ts`.
+ * ONE function for every list, not one per list. Three lists are cut here — the
+ * third arrived without this function changing, which is the point; a `slice` and a
+ * `length` written per list is the same rule written that many times, and the
+ * failure mode of a rule written twice is that one copy is amended. What the caller
+ * still owns is naming the pair (`work`/`workTotal`, `decisions`/`decisionsTotal`,
+ * `awaitingJudgement`/`awaitingJudgementTotal`), and a total attached to the wrong
+ * list is caught by a fixture where the lists have DIFFERENT totals — "counts each
+ * list, and the totals are not each other's" in `bootstrap.test.ts`.
  */
 function capped<T>(items: readonly T[]): {
   readonly served: readonly T[];
@@ -267,8 +383,20 @@ function toWorkItem(task: TaskProjection): WorkItem | null {
   };
 }
 
-/** Most recently touched first; ties keep a stable (id) order. */
-function byUpdatedDesc(a: WorkItem, b: WorkItem): number {
+/**
+ * Most recently touched first; ties keep a stable (id) order.
+ *
+ * Taken by the two lists ordered this way — the work items and the mixed awaiting
+ * list — so it is stated over the two fields the rule reads rather than over one
+ * list's type. A second copy specialized to the other list would be the same
+ * sentence twice, and the copies would decide the tie differently the day one of
+ * them is amended; that matters more than it looks, because for a CUT list the
+ * tie-break decides what is left out.
+ */
+function byUpdatedDesc(
+  a: { readonly id: string; readonly updatedAt: string },
+  b: { readonly id: string; readonly updatedAt: string },
+): number {
   if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
