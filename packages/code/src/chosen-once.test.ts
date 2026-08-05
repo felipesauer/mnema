@@ -83,6 +83,32 @@ describe('the precedence is the conventional one', () => {
     // plain, by this rule and not by a fixture that asked for it.
     expect(chooseRenderer(asked('auto', {}, false))).toBe(renderPlain);
   });
+
+  it('never paints without a terminal unless something ASKED — over the whole space', () => {
+    // The question the cases above answer one at a time, asked of every input at once:
+    // is there a way to style a pipe that nobody requested? That is the failure that
+    // reaches a CI log and a redirected file, and the one the recorded transcript would
+    // pay for. Small enough to enumerate: three flags × three states of one variable ×
+    // four of the other × two destinations.
+    const whens: ColorWhen[] = ['auto', 'always', 'never'];
+    let styled = 0;
+    for (const when of whens) {
+      for (const noColor of [undefined, '', '1']) {
+        for (const forceColor of [undefined, '', '0', '1']) {
+          for (const isTty of [false, true]) {
+            const env = { NO_COLOR: noColor, FORCE_COLOR: forceColor };
+            if (chooseRenderer({ when, env, isTty }) !== renderStyled) continue;
+            styled++;
+            const asked = when === 'always' || (forceColor !== undefined && forceColor !== '0');
+            expect(asked || isTty, JSON.stringify({ when, env, isTty })).toBe(true);
+          }
+        }
+      }
+    }
+    // And the enumeration reached the styled renderer often enough to be saying
+    // something: an implication is satisfied for free by a renderer that never paints.
+    expect(styled).toBeGreaterThan(20);
+  });
 });
 
 describe('the flag reaches the bytes', () => {
