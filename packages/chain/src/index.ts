@@ -45,7 +45,14 @@ export {
   serializeEntry,
 } from './chain/entry.js';
 export { type ChainExtent, chainExtent } from './chain/freshness.js';
-export { contentRoot, entryHash, eventBytes } from './chain/hash.js';
+export {
+  contentRoot,
+  entryHash,
+  eventBytes,
+  type WrittenEvent,
+  writtenAsBuilt,
+  writtenAsStored,
+} from './chain/hash.js';
 export {
   ANCHOR_PREFIX,
   deriveAnchor,

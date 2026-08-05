@@ -20,11 +20,10 @@ import {
   taskTransitioned,
 } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
-import { parseEvent } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
-import { entryHash } from './hash.js';
+import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
@@ -280,14 +279,13 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     openChain(root).checkpoint();
     expect(verify(root).ok).toBe(true);
 
-    const upcasters = catalogUpcasters();
     const tail = tailIdOf(root);
     const seg = orderedSegments({ root }, tail)[0] as string;
     const entries = readFileSync(seg, 'utf-8')
       .split('\n')
       .filter(Boolean)
       .map((l) => JSON.parse(l) as RawEntry);
-    const events = entries.map((e) => parseEvent(canonicalStringify(e.event as never), upcasters));
+    const events = entries.map((e) => writtenAsStored(e.event as never));
 
     const forger = generateKeyPair();
     const forged = signCheckpoint({
@@ -320,7 +318,6 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
-    const upcasters = catalogUpcasters();
     const tail = tailIdOf(root);
     const seg = orderedSegments({ root }, tail)[0] as string;
 
@@ -337,8 +334,8 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
       entry.event.who = fakeWho;
       entry.event.signerFp = fakeFp;
       entry.link.prev = prev;
-      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
-      entry.link.hash = entryHash({ event, tail, seq: entry.link.seq, prev });
+      const written = writtenAsStored(entry.event as never);
+      entry.link.hash = entryHash({ event: written, tail, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
@@ -373,7 +370,6 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     for (let i = 0; i < 3; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
-    const upcasters = catalogUpcasters();
     const tail = tailIdOf(root);
     const seg = orderedSegments({ root }, tail)[0] as string;
 
@@ -385,8 +381,8 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     for (const entry of entries) {
       if (entry.link.seq === 1) entry.event.which = entry.event.who; // which := who
       entry.link.prev = prev;
-      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
-      entry.link.hash = entryHash({ event, tail, seq: entry.link.seq, prev });
+      const written = writtenAsStored(entry.event as never);
+      entry.link.hash = entryHash({ event: written, tail, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
@@ -511,7 +507,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
     return signCheckpoint({
       tail,
       fromSeq,
-      events: range.map((e) => e.event),
+      events: range.map((e) => e.written),
       prev,
       keyPair: loadOrCreateKeyPair({ root }),
     });
@@ -824,7 +820,6 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     const realTail = tailIdOf(root);
     const fake = `${'a'.repeat(64)}-deadbeefdeadbeefdeadbeefdeadbeef`; // fake fp prefix
     cpDir(join(root, 'tails', realTail), join(root, 'tails', fake));
-    const upcasters = catalogUpcasters();
     const seg = orderedSegments({ root }, fake)[0] as string;
     const entries = readFileSync(seg, 'utf-8')
       .split('\n')
@@ -834,8 +829,8 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     for (const entry of entries) {
       entry.link.tail = fake; // relabel so link.tail == <dir>
       entry.link.prev = prev;
-      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
-      entry.link.hash = entryHash({ event, tail: fake, seq: entry.link.seq, prev });
+      const written = writtenAsStored(entry.event as never);
+      entry.link.hash = entryHash({ event: written, tail: fake, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
@@ -856,8 +851,18 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     // seq 0 founds the anchor (so its own key is enrolled), seq 1 is the task.
     const founding = identityFounded({ at, who, signerFp: fp, subject: who }, { foundingFp: fp });
     const task = taskCreated({ at, who, signerFp: fp, subject: 't-bare' }, { title: 'bare' });
-    const foundingHash = entryHash({ event: founding, tail: fp, seq: 0, prev: null });
-    const taskHash = entryHash({ event: task, tail: fp, seq: 1, prev: foundingHash });
+    const foundingHash = entryHash({
+      event: writtenAsBuilt(founding),
+      tail: fp,
+      seq: 0,
+      prev: null,
+    });
+    const taskHash = entryHash({
+      event: writtenAsBuilt(task),
+      tail: fp,
+      seq: 1,
+      prev: foundingHash,
+    });
     const lines = [
       canonicalStringify({
         event: founding as never,
@@ -878,7 +883,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     const cp = signCheckpoint({
       tail: fp,
       fromSeq: 0,
-      events: [founding, task],
+      events: [founding, task].map(writtenAsBuilt),
       prev: null,
       keyPair: kp,
     });
@@ -970,7 +975,6 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     const realFp = tailIdOf(root);
     const fake = 'f'.repeat(64);
     cpDir(join(root, 'tails', realFp), join(root, 'tails', fake));
-    const upcasters = catalogUpcasters();
     const seg = orderedSegments({ root }, fake)[0] as string;
     const entries = readFileSync(seg, 'utf-8')
       .split('\n')
@@ -980,8 +984,8 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     for (const entry of entries) {
       entry.link.tail = fake; // relabel so link.tail == <dir> again
       entry.link.prev = prev;
-      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
-      entry.link.hash = entryHash({ event, tail: fake, seq: entry.link.seq, prev });
+      const written = writtenAsStored(entry.event as never);
+      entry.link.hash = entryHash({ event: written, tail: fake, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
@@ -1006,7 +1010,6 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     const fp = fingerprintOfTail(realTail); // a REAL committed fingerprint
     const forged = `${fp}-forged00000000000000000000000000000000`;
     cpDir(join(root, 'tails', realTail), join(root, 'tails', forged));
-    const upcasters = catalogUpcasters();
     const seg = orderedSegments({ root }, forged)[0] as string;
     const entries = readFileSync(seg, 'utf-8')
       .split('\n')
@@ -1016,8 +1019,8 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     for (const entry of entries) {
       entry.link.tail = forged;
       entry.link.prev = prev;
-      const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
-      entry.link.hash = entryHash({ event, tail: forged, seq: entry.link.seq, prev });
+      const written = writtenAsStored(entry.event as never);
+      entry.link.hash = entryHash({ event: written, tail: forged, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
     writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
@@ -1043,7 +1046,7 @@ describe('chain — who != which binding survives a canonical-form bypass (audit
       { at: '2026-07-21T00:00:00.000Z', who, signerFp: fp, subject: 't-1', which },
       { title: 'x' },
     );
-    const hash = entryHash({ event, tail: fp, seq: 0, prev: null });
+    const hash = entryHash({ event: writtenAsBuilt(event), tail: fp, seq: 0, prev: null });
     const line = canonicalStringify({
       event: event as never,
       link: { tail: fp, seq: 0, prev: null, hash },
@@ -1052,7 +1055,13 @@ describe('chain — who != which binding survives a canonical-form bypass (audit
     writeFileSync(segmentPath({ root }, fp, 1), `${line}\n`);
     mkdirSync(publicKeyPath({ root }, fp).replace(/\/[^/]+$/, ''), { recursive: true });
     writeFileSync(publicKeyPath({ root }, fp), publicKeyToPem(kp.publicKey));
-    const cp = signCheckpoint({ tail: fp, fromSeq: 0, events: [event], prev: null, keyPair: kp });
+    const cp = signCheckpoint({
+      tail: fp,
+      fromSeq: 0,
+      events: [writtenAsBuilt(event)],
+      prev: null,
+      keyPair: kp,
+    });
     appendFileSync(checkpointsPath({ root }, fp), `${serializeCheckpoint(cp)}\n`);
 
     const result = verify(root);
@@ -1105,7 +1114,6 @@ function repairChainAfterEdit(
   editSeq: number,
   editTitle: (old: string) => string,
 ): void {
-  const upcasters = catalogUpcasters();
   const tail = tailIdOf(chainRoot);
   const seg = orderedSegments({ root: chainRoot }, tail)[0] as string;
   const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
@@ -1116,12 +1124,11 @@ function repairChainAfterEdit(
       entry.event.payload.title = editTitle(entry.event.payload.title);
     }
     entry.link.prev = prev;
-    // Recompute the entry hash from the (possibly edited) event, through the
-    // real parser so it matches how the verifier recomputes — this is the
-    // adversary "repairing" the keyless chain.
-    const event = parseEvent(canonicalStringify(entry.event as never), upcasters);
+    // Recompute the entry hash from the (possibly edited) event exactly as the
+    // verifier does — over the bytes on the line, not over a lifted reading of
+    // them. This is the adversary "repairing" the keyless chain.
     entry.link.hash = entryHash({
-      event,
+      event: writtenAsStored(entry.event as never),
       tail: entry.link.tail,
       seq: entry.link.seq,
       prev: entry.link.prev,

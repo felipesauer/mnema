@@ -24,7 +24,7 @@ import { canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { verify } from './chain.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
-import { entryHash } from './hash.js';
+import { entryHash, writtenAsBuilt } from './hash.js';
 import { deriveAnchor, generateKeyPair, type KeyPair, publicKeyToPem, sign } from './keys.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailDir, tailProofPath } from './layout.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
@@ -63,7 +63,7 @@ function writeTail(
   let prev: string | null = null;
   for (let seq = 0; seq < events.length; seq += 1) {
     const event = events[seq] as CatalogEvent;
-    const hash = entryHash({ event, tail: tailId, seq, prev });
+    const hash = entryHash({ event: writtenAsBuilt(event), tail: tailId, seq, prev });
     lines.push(
       canonicalStringify({ event: event as never, link: { tail: tailId, seq, prev, hash } }),
     );
@@ -78,7 +78,13 @@ function writeTail(
     writeFileSync(tailProofPath({ root }, tailId), `${serializeTailProof(proof)}\n`);
   }
   if (opts.checkpoint !== false) {
-    const cp = signCheckpoint({ tail: tailId, fromSeq: 0, events, prev: null, keyPair: signer });
+    const cp = signCheckpoint({
+      tail: tailId,
+      fromSeq: 0,
+      events: events.map(writtenAsBuilt),
+      prev: null,
+      keyPair: signer,
+    });
     appendFileSync(checkpointsPath({ root }, tailId), `${serializeCheckpoint(cp)}\n`);
   }
 }
@@ -699,7 +705,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     let prev: string | null = null;
     for (let seq = 0; seq < all.length; seq += 1) {
       const event = all[seq] as CatalogEvent;
-      const hash = entryHash({ event, tail: tailA, seq, prev });
+      const hash = entryHash({ event: writtenAsBuilt(event), tail: tailA, seq, prev });
       lines.push(
         canonicalStringify({ event: event as never, link: { tail: tailA, seq, prev, hash } }),
       );
@@ -712,7 +718,13 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
       `${serializeTailProof(signTailProof(tailA, a))}\n`,
     );
     // Checkpoint ONLY 0..2 (through the revoke), leaving the re-enroll residual.
-    const cp = signCheckpoint({ tail: tailA, fromSeq: 0, events: covered, prev: null, keyPair: a });
+    const cp = signCheckpoint({
+      tail: tailA,
+      fromSeq: 0,
+      events: covered.map(writtenAsBuilt),
+      prev: null,
+      keyPair: a,
+    });
     appendFileSync(checkpointsPath({ root }, tailA), `${serializeCheckpoint(cp)}\n`);
 
     // B writes a task at seq 0 of its own proven tail, AFTER the revoke.

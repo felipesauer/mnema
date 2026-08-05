@@ -488,7 +488,7 @@ describe('the bytes a checkpoint signs did not change', () => {
   function signFromAReReadOfTheTail(fromSeq: number, toSeq: number, prev: string | null) {
     const events = readTailEntries(layout(), tailIdOf(), upcasters)
       .filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq)
-      .map((e) => e.event);
+      .map((e) => e.written);
     return signCheckpoint({
       tail: tailIdOf(),
       fromSeq,

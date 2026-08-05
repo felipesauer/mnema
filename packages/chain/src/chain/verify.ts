@@ -25,6 +25,25 @@
  *     configured, the verifier says so plainly — never a green that reads as
  *     tamper-proof.
  *
+ * WHAT EVERY RECOMPUTATION ABOVE IS OVER. Reading a stored line lifts its event
+ * through the registered upcasters, so the event this file holds may be the
+ * CURRENT expression of a fact written years ago — a reading, not the record.
+ * Both recomputations therefore take `entry.written`, the form that reached the
+ * disk (see hash.ts). Doing it the other way is not a smaller mistake at T1 than
+ * at T2/T4: at T1 the first kind to gain a v2 reports "content or link was
+ * altered" on an untouched chain; at T2/T4 it reports a broken SIGNATURE, which
+ * is this product's word for "someone edited this without the key". Pinned by
+ * upcast-vs-proof.test.ts, which registers a synthetic v1→v2 lift — the only way
+ * to exercise a mechanism that is otherwise dormant while the catalog has one
+ * version of everything.
+ *
+ * The lift is not skipped to get there, and that is deliberate: this verifier
+ * also refuses a chain it cannot READ. A line whose ladder is broken — no
+ * upcaster for its rung, or a version ahead of this catalog — throws out of the
+ * read rather than verifying green over bytes nobody can interpret. Both halves
+ * are the same promise as the writer's (writer.ts refuses to seal what no reader
+ * would accept); one guards the way in, the other the way back.
+ *
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
  *
@@ -320,8 +339,10 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
       });
       return;
     }
+    // Over the WRITTEN event, never the lifted one the reader holds — see
+    // hash.ts and the note at the top of this file.
     const recomputed = entryHash({
-      event: entry.event,
+      event: entry.written,
       tail: entry.link.tail,
       seq: entry.link.seq,
       prev: entry.link.prev,
@@ -416,7 +437,10 @@ function verifyCheckpoints(
     }
     const verdict = verifyCheckpoint({
       checkpoint,
-      events: range.map((e) => e.event),
+      // The signed root is folded over the events AS WRITTEN. Folding it over
+      // the lifted reading would turn the first version bump into a signature
+      // failure on every chain written before it.
+      events: range.map((e) => e.written),
       publicKey,
     });
     if (!verdict.ok) {
