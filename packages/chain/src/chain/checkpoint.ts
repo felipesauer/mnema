@@ -12,6 +12,13 @@
  * cannot be re-pointed at a different key. The content root is recomputed from
  * the events, never read from stored entry hashes — see hash.ts.
  *
+ * "From the events" means from the events AS WRITTEN. A range read back from
+ * disk has been lifted to today's contract, and folding a root over that reading
+ * would make every checkpoint signed before a version bump fail its signature —
+ * the loudest alarm this product has, raised by nothing but an honest read. So
+ * both signing and verifying take {@link WrittenEvent}, which a lifted event
+ * cannot be.
+ *
  * Checkpoints CHAIN: each one signs the hash of the previous checkpoint's
  * signed message (`prev`, null for the first). This makes the run of
  * checkpoints itself tamper-evident — a trailing checkpoint cannot be dropped
@@ -24,8 +31,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import type { CatalogEvent } from '../events/catalog.js';
-import { contentRoot } from './hash.js';
+import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
 
@@ -77,7 +83,7 @@ export function checkpointHash(checkpoint: Checkpoint): string {
 export function signCheckpoint(input: {
   tail: string;
   fromSeq: number;
-  events: readonly CatalogEvent[];
+  events: readonly WrittenEvent[];
   prev: string | null;
   keyPair: KeyPair;
 }): Checkpoint {
@@ -103,7 +109,7 @@ export function signCheckpoint(input: {
  */
 export function verifyCheckpoint(input: {
   checkpoint: Checkpoint;
-  events: readonly CatalogEvent[];
+  events: readonly WrittenEvent[];
   publicKey: KeyObject;
 }): CheckpointVerdict {
   const { checkpoint, events, publicKey } = input;
