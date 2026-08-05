@@ -38,6 +38,20 @@
  * collision, not corruption and not a fatal constraint: {@link adrCollisions}
  * detects and reports it so a human can reconcile the label, exactly as the
  * chain's verifier reports (rather than fails on) a census anomaly.
+ *
+ * ONE CHAIN IS THE UNIT the number is minted in — not one in which it is unique,
+ * which is the whole reason this file has a detector — and everything that reports a
+ * collision has to be given exactly that. The number is minted from the writer's
+ * view of ONE chain (`recordDecision`: `ADR-${decisions.size + 1}` over that
+ * tree's projection), so two chains numbering their own first decision `ADR-1` is
+ * how the product works rather than a defect in it — a project's public tree and
+ * its private tree each hold an `ADR-1` the moment both have one decision, which
+ * is why the document that carries the label is committed-only. Handing a fold of
+ * SEVERAL chains to {@link adrCollisions} would report that arrangement as a
+ * clash, and a report that fires on every project with a private rule is not a
+ * report. What is genuinely broken is two decisions of ONE chain under one label:
+ * the chain promises the number is sequential in it, and two tails minting
+ * offline are how that promise breaks.
  */
 
 import type { CatalogEvent } from '@mnema/chain';
@@ -170,6 +184,19 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
  * an error that fails a read. Returns an empty array when every label is
  * unique. Only projected decisions are considered (a dropped, incomplete one
  * has no label to collide).
+ *
+ * FEED IT ONE CHAIN'S DECISIONS. It groups by label and says nothing about where
+ * the decisions came from, so the caller decides what the labels are compared
+ * within — and the only unit in which the number claims to be unique is one chain
+ * (see the module comment). Both readers of this pass exactly that:
+ * {@link ProjectionCache.adrCollisions} is a cache over one chain, and the audit
+ * folds each chain of a record on its own.
+ *
+ * THIS DOES NOT RENUMBER, and it is the only answer there is. Both labels were
+ * frozen into signed events on two machines that could not see each other, so
+ * there is no write that could have prevented them and no edit that could undo
+ * one — the record treats changing one's mind as a new decision, never as a
+ * rewrite of an old one. Detecting and declaring is the whole of the response.
  */
 export function adrCollisions(decisions: Iterable<DecisionProjection>): AdrCollision[] {
   const byLabel = new Map<string, string[]>();

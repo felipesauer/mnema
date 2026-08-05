@@ -9,7 +9,7 @@ import {
   taskTransitioned,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { orderedEvents } from './order.js';
+import { orderedEvents, orderedEventsOfRecord } from './order.js';
 
 let rootA: string;
 let rootB: string;
@@ -124,3 +124,81 @@ describe('orderedEvents — within-tail proven order beats a non-monotonic clock
     expect(tos).toEqual(['draft', 'in-progress', 'done']);
   });
 });
+
+describe('orderedEventsOfRecord — the same tails, ordered two ways, read once', () => {
+  /**
+   * Two chains, each with two tails, and every `at` COLLIDING across them — so both
+   * orders are decided by the tie-break rather than by the clock. On a fixture where
+   * the instants differ, a merge that got the tie-break wrong still comes out right,
+   * and the equivalence below would be asserting nothing.
+   */
+  function twoChainsOfTwoTails(): void {
+    const sameAt = '2026-07-21T00:00:00.000Z';
+    for (const [root, prefix] of [
+      [rootA, 'a'],
+      [rootB, 'b'],
+    ] as const) {
+      const first = openChainForWriting(root, { keyRoot: root });
+      first.append(taskCreated(env(`${prefix}-1`, sameAt), { title: '1' }));
+      first.append(taskCreated(env(`${prefix}-2`, sameAt), { title: '2' }));
+      // A second tail of the SAME chain: another installation's key, its own file.
+      const otherRoot = mkdtempSync(join(tmpdir(), `mnema-order-${prefix}-2nd-`));
+      try {
+        const second = openChainForWriting(otherRoot, { keyRoot: otherRoot });
+        second.append(taskCreated(env(`${prefix}-3`, sameAt), { title: '3' }));
+        mergeTails(otherRoot, root);
+      } finally {
+        rmSync(otherRoot, { recursive: true, force: true });
+      }
+    }
+  }
+
+  it('orders each chain exactly as `orderedEvents` does, and the union over all of them', () => {
+    // The whole justification for this function is that it gives BOTH answers from one
+    // reading. If either differed from the function it stands in for, the saving would
+    // be a behaviour change wearing a performance argument.
+    twoChainsOfTwoTails();
+    const layouts = [{ root: rootA }, { root: rootB }];
+    const { chains, across } = orderedEventsOfRecord(layouts, upcasters);
+
+    expect(chains).toHaveLength(2);
+    expect(chains[0]).toEqual(orderedEvents({ root: rootA }, upcasters));
+    expect(chains[1]).toEqual(orderedEvents({ root: rootB }, upcasters));
+    // The union is every chain's tails in one interleave: the same events, and each
+    // chain's own order preserved inside it. What that order IS over several trees is
+    // asserted in `topology/compose.test.ts`; what is asserted here is that asking for
+    // both views does not cost either of them anything.
+    expect([...across].sort(bySubject)).toEqual([...chains.flat()].sort(bySubject));
+    for (const chain of chains) {
+      expect(across.filter((e) => chain.includes(e))).toEqual(chain);
+    }
+    // Non-vacuity: the fixture really has two tails per chain and both orders have
+    // something to get wrong — three events each, six in the union.
+    expect(chains.map((chain) => chain.length)).toEqual([3, 3]);
+    expect(across).toHaveLength(6);
+  });
+
+  it('keeps one entry per layout, empty for a chain nothing was written to', () => {
+    // A named tree with no directory contributes nothing, and it must not shift the
+    // entries: a caller pairs `chains[i]` with `layouts[i]`.
+    const w = openChainForWriting(rootB, { keyRoot: rootB });
+    w.append(taskCreated(env('only', '2026-07-21T00:00:00.000Z'), { title: 'only' }));
+    const { chains, across } = orderedEventsOfRecord([{ root: rootA }, { root: rootB }], upcasters);
+    expect(chains.map((chain) => chain.map((e) => e.subject))).toEqual([[], ['only']]);
+    expect(across.map((e) => e.subject)).toEqual(['only']);
+  });
+
+  it('hands back arrays a caller may not disturb for the other view', () => {
+    // Both views are drained from the same in-memory streams, so a merge that consumed
+    // shared cursors would return one full answer and one truncated one. Asked in the
+    // order that would expose it: the union is built last, and it is complete.
+    twoChainsOfTwoTails();
+    const { chains, across } = orderedEventsOfRecord([{ root: rootA }, { root: rootB }], upcasters);
+    expect(across).toHaveLength(chains.reduce((total, chain) => total + chain.length, 0));
+  });
+});
+
+/** Subject order, so two lists of the same events can be compared as sets. */
+function bySubject(a: { subject: string }, b: { subject: string }): number {
+  return a.subject < b.subject ? -1 : a.subject > b.subject ? 1 : 0;
+}

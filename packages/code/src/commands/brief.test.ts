@@ -11,7 +11,15 @@
  */
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
@@ -36,10 +44,33 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-function setup(): { repo: string; env: DiscoveryEnv } {
-  const repo = join(sandbox, 'repo');
+function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
+  const repo = join(sandbox, name);
   mkdirSync(repo, { recursive: true });
-  return { repo, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } };
+  return {
+    repo,
+    env: { xdgDataHome: join(sandbox, `${name}-data`), home: join(sandbox, `${name}-home`) },
+  };
+}
+
+/**
+ * Lands another working copy's committed tail in this one — the offline merge two
+ * clones of a repository produce when their branches meet.
+ *
+ * It copies the tails and the public key material, which is what a clone of the
+ * repository brings: the signing key lives in the machine's key root and never in a
+ * tree. Nothing here writes an event; both tails were written by the product, each on
+ * the machine that owns it, and this is the moment they meet.
+ *
+ * It is the only way one chain comes to hold two `ADR-1`s. The label is numbered from
+ * the writer's view of the chain, so a second decision on ONE machine is `ADR-2` — a
+ * fixture that wrote two `ADR-1`s into one tail would be a record the product cannot
+ * produce, and the whole slice would be tested against a fiction.
+ */
+function merge(from: string, into: string): void {
+  for (const part of ['tails', 'keys']) {
+    cpSync(join(from, '.mnema', part), join(into, '.mnema', part), { recursive: true });
+  }
 }
 
 /**
@@ -194,6 +225,62 @@ describe('mnema brief (what governs the work here)', () => {
     expect(result.brief.decisions.map((d) => d.id)).not.toContain(secret.id);
   });
 
+  it('declares the label two clones of one repository both minted, and renumbers neither', () => {
+    // THE DEFECT THIS SLICE IS FOR, at the level where the write happens. Two clones of
+    // one repository work while apart. Each records its first decision and the product
+    // freezes `ADR-1` into it — legitimately, from the only chain that machine could
+    // see. The branches meet, the tails land in one tree, and the committed document now
+    // prints a citable handle that names two rules.
+    //
+    // Nothing could have been refused at write time (neither machine knew about the
+    // other) and nothing may be renumbered afterwards (the label is inside a signed
+    // event). So the answer is the whole of what is possible: detect it, and say so.
+    const mine = setup();
+    const theirs = setup('clone');
+    runInit({ cwd: mine.repo, env: mine.env });
+    runInit({ cwd: theirs.repo, env: theirs.env });
+    const here = { cwd: mine.repo, env: mine.env };
+    const there = { cwd: theirs.repo, env: theirs.env };
+    const ours = accepted(here, 'Round the tax once, over the invoice total', 'public');
+    const yours = accepted(there, 'Round the tax per line, then sum', 'public');
+    // The PRODUCT minted the clash — read off its own two reports, not assumed.
+    expect([ours.adr, yours.adr]).toEqual(['ADR-1', 'ADR-1']);
+    expect(ours.id).not.toBe(yours.id);
+
+    merge(theirs.repo, mine.repo);
+    const result = runBrief(here);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Both rules are in force, and both still carry the label they were SIGNED with.
+    expect(result.brief.decisions.map((d) => [d.id, d.adr]).sort()).toEqual(
+      [
+        [ours.id, 'ADR-1'],
+        [yours.id, 'ADR-1'],
+      ].sort(),
+    );
+    // And the answer declares it, naming every id that carries the label.
+    expect(result.brief.collisions).toEqual([{ adr: 'ADR-1', ids: [ours.id, yours.id].sort() }]);
+  });
+
+  it('says nothing about a public ADR-1 beside a private one — that is one chain each', () => {
+    // The `ADR-<n>` is numbered inside one chain, so a project with a committed rule and
+    // a rule of its own has an `ADR-1` in each tree, and neither citation is ambiguous:
+    // the document carries the committed one alone. A read that compared labels across
+    // the trees would report this on nearly every project and mean nothing when it did.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const here = { cwd: repo, env };
+    const team = accepted(here, 'What the team settled', 'public');
+    const machine = accepted(here, 'What this machine settled', 'private');
+    // The record really holds the same label twice — this is the material a
+    // cross-chain read would have fired on.
+    expect([team.adr, machine.adr]).toEqual(['ADR-1', 'ADR-1']);
+
+    const result = runBrief(here);
+    expect(result.ok && result.brief.collisions).toEqual([]);
+    expect(result.ok && result.brief.decisions.map((d) => d.id)).toEqual([team.id]);
+  });
+
   it('refuses outside a project, because the document is about a project', () => {
     // Unlike `search` and `skills`, which audit whatever record the caller can see:
     // this composes a file that says "recorded for this project" and is meant to be
@@ -234,7 +321,7 @@ describe('mnema brief (what governs the work here)', () => {
     runInit({ cwd: repo, env });
     expect(runBrief({ cwd: repo, env })).toEqual({
       ok: true,
-      brief: { decisions: [], skills: [] },
+      brief: { decisions: [], skills: [], collisions: [] },
     });
   });
 

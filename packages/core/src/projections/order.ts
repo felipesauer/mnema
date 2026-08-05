@@ -61,27 +61,75 @@ export function orderedEvents(layout: ChainLayout, upcasters: UpcasterRegistry):
   return mergeStreams(streamsOf(layout, upcasters, ''));
 }
 
+/** Several chains ordered two ways, from ONE reading of their tails. */
+export interface RecordOrder {
+  /**
+   * Each chain on its own, in the order {@link orderedEvents} gives it — the view
+   * of a question whose answer is a property of ONE chain rather than of the
+   * record as a whole. One entry per layout, in the caller's order; a chain with
+   * no tails contributes an empty entry rather than dropping out, so the entries
+   * still line up with the layouts.
+   */
+  readonly chains: readonly (readonly CatalogEvent[])[];
+  /**
+   * ALL of the chains' tails in one total, deterministic order — the union a person
+   * sees across their trees (project-public, project-private, global). Every tail
+   * from every chain joins ONE k-way merge, so there is no cross-tree precedence:
+   * an event's place is decided by its own `at` against every other head, the same
+   * rule that orders tails within a chain. Two trees never collide on the same
+   * event id (ids are minted v7), so this is a plain interleave with no
+   * de-duplication.
+   */
+  readonly across: readonly CatalogEvent[];
+}
+
 /**
- * Reads several chains and merges ALL their tails into one total, deterministic
- * order — the union a person sees across their trees (project-public,
- * project-private, global). Each chain's tails are read exactly as
- * {@link orderedEvents} reads one chain's, then every tail from every chain
- * joins ONE k-way merge, so there is no cross-tree precedence: an event's place
- * is decided by its own `at` against every other head, the same rule that orders
- * tails within a chain. Two trees never collide on the same event id (ids are
- * minted v7), so the union is a plain interleave with no de-duplication.
+ * Reads the tails of `layouts` ONCE and orders them both ways: each chain by
+ * itself, and all of them together.
  *
- * Each layout is tagged with an index so tie-breaking stays deterministic even
- * when two trees share a tail id (one key installed into each). Absent or empty
- * chains contribute no streams — a caller can pass every candidate tree and let
- * the ones that do not exist drop out.
+ * BOTH, from one reading, because reading is the expensive half and the callers that
+ * want the union want the chains too. A question about the record as a whole folds
+ * `across`; a question whose answer is a property of one chain — the `ADR-<n>` label,
+ * numbered from the writer's view of a single chain — folds `chains`. The second order
+ * is a walk over streams already in memory, so it costs a walk rather than a second
+ * parse of every segment.
+ *
+ * It replaced a narrower `orderedEventsAcross` that gave the union alone. When the
+ * audit came to need both views, that function's every production caller became a
+ * caller of this one, and a public value with no caller is the defect the workspace
+ * guards against — so the union kept its behaviour and lost its own name. What guards
+ * that behaviour now is `topology/compose.test.ts`, which asserts the interleave, the
+ * determinism and the absence of id collisions over three trees.
+ *
+ * Each layout is tagged with an index so tie-breaking stays deterministic even when
+ * two trees share a tail id (one key installed into each). Absent or empty chains
+ * contribute no streams — a caller can pass every candidate tree and let the ones
+ * that do not exist drop out — but they still hold their place in `chains`.
+ *
+ * A chain's own order is the one {@link orderedEvents} gives it, and that is asserted
+ * rather than assumed (`order.test.ts`, "orders each chain exactly as `orderedEvents`
+ * does"). The per-chain tie-break key is qualified here where that function leaves it
+ * bare, which cannot change a within-chain order: every stream of one chain gets the
+ * same qualifier, so their keys compare exactly as their tail ids do.
  */
-export function orderedEventsAcross(
+export function orderedEventsOfRecord(
   layouts: readonly ChainLayout[],
   upcasters: UpcasterRegistry,
-): CatalogEvent[] {
-  const streams = layouts.flatMap((layout, index) => streamsOf(layout, upcasters, `${index}:`));
-  return mergeStreams(streams);
+): RecordOrder {
+  const perChain = layouts.map((layout, index) => streamsOf(layout, upcasters, `${index}:`));
+  return {
+    chains: perChain.map((streams) => mergeStreams(rewound(streams))),
+    across: mergeStreams(rewound(perChain.flat())),
+  };
+}
+
+/**
+ * The same streams with fresh cursors — one read, several merges. It copies the
+ * cursor and SHARES the events, because draining a stream is what consumes it and
+ * the events are what cost something to obtain.
+ */
+function rewound(streams: readonly TailStream[]): TailStream[] {
+  return streams.map((stream) => ({ key: stream.key, events: stream.events, cursor: 0 }));
 }
 
 /**

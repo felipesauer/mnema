@@ -58,6 +58,16 @@ export interface DecisionRef {
    * person cites the decision in a commit or a review, which is why it travels
    * beside the title; it is NOT identity (two offline clones can mint one label
    * twice), so it is never what a second read is asked by.
+   *
+   * A LIST OF THESE MAY HOLD THE SAME LABEL TWICE, and no reader of this type is
+   * told otherwise. The number is minted within one chain, so a list built across
+   * the trees an actor can see — which is what {@link decisionsInForce} answers —
+   * carries a public `ADR-1` beside a private one as soon as both trees have a rule.
+   * That is the design and not a clash, and the id beside it is why it costs
+   * nothing: everything a consumer does with a decision, it does by id. The one
+   * place a repeat IS a defect is a single chain, where the number claims to be
+   * sequential, and the two answers that carry a label somewhere it will be cited
+   * on its own — the committed document and the audit — report it there.
    */
   readonly adr: string;
   /** The decision's title — DISPLAY, and the trigger a reader recognizes. */

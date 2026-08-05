@@ -9,7 +9,7 @@
  * copilot package itself writes nothing (see boundaries.test.ts).
  */
 
-import { mkdirSync, mkdtempSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -228,13 +228,24 @@ export function consultSkill(
  * ever match. It cost nothing while every test keyed on ids and roles; it would have
  * made a state FILTER untestable, which is what {@link decisionsInForce} is.
  */
-export function birthDecision(b: Bench, id: string, title: string, initial = 'proposed'): string {
+export function birthDecision(
+  b: Bench,
+  id: string,
+  title: string,
+  initial = 'proposed',
+  // The label the chain would have minted, when a case is ABOUT the label. It
+  // defaults to one derived from the id, which keeps every other fixture's labels
+  // distinct without a case having to say so — a shape the product never produces,
+  // and harmless everywhere the label is carried rather than compared. A case that
+  // compares them passes the number this chain's own count would have frozen.
+  adr = `ADR-${id}`,
+): string {
   for (const e of decisionBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
     {
       title,
       rationale: `why ${title}`,
-      adr: `ADR-${id}`,
+      adr,
       initial,
       // Every bench decision carries what it turned down, and that is deliberate:
       // this layer serves NAMES and never bodies, and a decision's body is now two
@@ -413,4 +424,21 @@ export function link(b: Bench, subject: string, target: string, rel = 'relates-t
       { target, rel },
     ),
   );
+}
+
+/**
+ * Lands another bench's tail in this one's tree — the offline merge two clones of a
+ * repository produce when their branches meet.
+ *
+ * It is the only way a chain comes to hold two `ADR-1`s: each bench numbered its own
+ * first decision from the chain IT could see, and neither write could have known about
+ * the other. Copying the tail and the public key material is what a clone brings; the
+ * signing key never lives in a tree.
+ *
+ * The merged-into bench keeps reading through its own root, so `events()` and
+ * `cache()` now see both tails.
+ */
+export function mergeTailInto(into: Bench, from: Bench): void {
+  cpSync(join(from.root, 'tails'), join(into.root, 'tails'), { recursive: true });
+  cpSync(join(from.root, 'keys'), join(into.root, 'keys'), { recursive: true });
 }

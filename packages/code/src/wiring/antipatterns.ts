@@ -4,11 +4,18 @@
  * `mnema antipatterns [--json]` — recurring shapes with their evidence. The
  * human summary is a count per category plus the candidate ids pointed at; the
  * full evidence per finding is in --json. It POINTS, never CONCLUDES.
+ *
+ * A label naming more than one rule is the one shape printed as its own line rather
+ * than as a count, and the ids are the reason: a reader told that a citation is
+ * ambiguous and not told which rules hold the label cannot do anything about it. It
+ * is printed only when there is one — an always-present "labels: 0" would be a line
+ * every reader of every project learns to skip.
  */
 
 import type { Command } from 'commander';
 import { runAntipatterns } from '../commands/antipatterns.js';
 import { statement } from '../presentation/verdict.js';
+import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
@@ -33,8 +40,13 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
       // Human summary — one level: a count per category, then the skill candidates
       // as pointed-at ids. Nothing calls a count good or bad; the evidence per
       // finding is in --json.
-      const { reopenedTasks, supersededDecisions, deprecatedSkills, skillCandidates } =
-        result.patterns;
+      const {
+        reopenedTasks,
+        supersededDecisions,
+        deprecatedSkills,
+        skillCandidates,
+        labelCollisions,
+      } = result.patterns;
       io.out(statement('reopened tasks', String(reopenedTasks.length)));
       io.out(statement('superseded decisions', String(supersededDecisions.length)));
       io.out(statement('deprecated skills', String(deprecatedSkills.length)));
@@ -43,6 +55,16 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
           statement(
             'skill candidates (reopened >1×)',
             skillCandidates.map((f) => f.entityId).join(', '),
+          ),
+        );
+      }
+      for (const collision of labelCollisions) {
+        // Both fields are read out of the record, and a record can be appended to by
+        // anything holding a key — so neither reaches the line as it was written.
+        io.out(
+          statement(
+            `label naming more than one rule (${oneLine(collision.adr)})`,
+            collision.ids.map((id) => oneLine(id)).join(', '),
           ),
         );
       }

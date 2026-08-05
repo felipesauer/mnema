@@ -144,6 +144,16 @@ describe('adrCollisions — the label collision detector', () => {
     expect(collisions).toEqual([{ adr: 'ADR-7', ids: ['d-1', 'd-2'] }]);
   });
 
+  it('reports THREE holders as one finding of three ids, never as a pair', () => {
+    // Three clones is not an exotic case — it is three people. The finding is keyed by
+    // the LABEL, so the answer grows an id rather than splitting into pairs: a reader
+    // told `ADR-7` is held twice, when a third rule holds it, would reconcile two of
+    // three and believe they were done.
+    expect(adrCollisions([mk('d-3', 'ADR-7'), mk('d-1', 'ADR-7'), mk('d-2', 'ADR-7')])).toEqual([
+      { adr: 'ADR-7', ids: ['d-1', 'd-2', 'd-3'] },
+    ]);
+  });
+
   it('reports multiple distinct collisions in a stable label order', () => {
     const collisions = adrCollisions([
       mk('d-1', 'ADR-3'),

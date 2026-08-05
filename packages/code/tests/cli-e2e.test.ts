@@ -3412,6 +3412,78 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(found).toContain('private');
   });
 
+  it('declares the label two clones both minted, in the bytes, and renumbers neither', async () => {
+    // WHAT SERVING ONE TREE LEFT OPEN, on the artefact that gets committed. Serving
+    // the committed tree alone stopped the document folding two trees' labels together;
+    // it did nothing about two CLONES of that one tree. Each numbers its first decision
+    // from the chain it can see, so both freeze `ADR-1`, and neither write could have
+    // been refused — the machines could not see each other.
+    //
+    // The fixture is the merge itself: a second working copy, on its own machine (its
+    // own XDG data, so its own key), and its committed tail landing in this one. That is
+    // the only way one chain holds two `ADR-1`s — a second decision on ONE machine is
+    // `ADR-2`, so a hand-made pair would be a record the product cannot produce.
+    await run(['init'], capture().io);
+    const ours = await accept('Round the tax once, over the invoice total');
+
+    const clone = join(sandbox, 'clone');
+    mkdirSync(clone, { recursive: true });
+    const mine = { xdg: process.env.XDG_DATA_HOME, home: process.env.HOME };
+    process.env.XDG_DATA_HOME = join(sandbox, 'clone-data');
+    process.env.HOME = join(sandbox, 'clone-home');
+    process.chdir(clone);
+    let yours: string;
+    try {
+      await run(['init'], capture().io);
+      yours = await accept('Round the tax per line, then sum');
+    } finally {
+      process.env.XDG_DATA_HOME = mine.xdg;
+      process.env.HOME = mine.home;
+      process.chdir(repo);
+    }
+    // What a pull brings: the tails and the public key material. The signing key lives
+    // in each machine's key root and never in a tree.
+    for (const part of ['tails', 'keys']) {
+      cpSync(join(clone, '.mnema', part), join(repo, '.mnema', part), { recursive: true });
+    }
+
+    const document = await output(['brief']);
+    // Both rules are printed, both still labelled `ADR-1`: nothing was renumbered, which
+    // is the half of the answer a reader has to be able to trust.
+    const labels = [...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1]);
+    expect(labels).toEqual(['ADR-1', 'ADR-1']);
+    // And the file says so, above the rules, naming the label and both ids.
+    const declaration = document.slice(0, document.indexOf('- **'));
+    expect(declaration).toContain('more than one rule');
+    expect(declaration).toContain('Cite these by id rather than by label');
+    expect(declaration).toContain(ours);
+    expect(declaration).toContain(yours);
+    // The document is still a pure function of the record — the check that finds a stale
+    // copy has to keep meaning one thing.
+    expect(await output(['brief'])).toBe(document);
+    // And the same clash is known WITHOUT generating the file, through a verb this slice
+    // reaches by another path entirely.
+    const audited = await output(['antipatterns']);
+    expect(audited).toContain('label naming more than one rule (ADR-1)');
+    expect(audited).toContain(ours);
+    expect(audited).toContain(yours);
+  });
+
+  it('says nothing about the labels when the record has no clash', async () => {
+    // The ordinary case, on the bytes: two rules, two labels, and not a word about
+    // citation. A declaration that showed up here would show up in every project at
+    // once, and the file is read on every prompt.
+    await run(['init'], capture().io);
+    await accept('Keep the runbook in the record');
+    await accept('Rotate the credentials every quarter');
+    const document = await output(['brief']);
+    expect([...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1])).toEqual(['ADR-2', 'ADR-1']);
+    for (const absent of ['more than one rule', 'Cite these by id', '- `ADR-']) {
+      expect(document, `the document says ${absent}`).not.toContain(absent);
+    }
+    expect(await output(['antipatterns'])).not.toContain('label naming');
+  });
+
   it('writes nothing — not an event, not a cache, and not the operator’s file', async () => {
     // Three claims in one digest. Two are the ordinary read's (no event, no derived
     // database left behind); the third is this verb's own, and it is the reason the

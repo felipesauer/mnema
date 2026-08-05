@@ -7,7 +7,7 @@
  * record rather than of one tree's slice. A task's story crosses trees (an observation
  * `about` it, or a link whose `target` is it, can live in a different tree from the task
  * itself), so the honest source is every tree's events in one deterministic order. That
- * is exactly what {@link orderedEventsAcross} gives: a k-way merge of the present trees,
+ * is exactly what {@link orderedEventsOfRecord} gives: a k-way merge of the present trees,
  * with no cross-tree precedence. The other reads of the record reach the same trees
  * through their projection caches; what differs is the mechanism, never the coverage.
  *
@@ -27,24 +27,30 @@
  *   then computed.
  *
  *   HOW THEY ARE TAKEN. A question about the record as a whole wants them MERGED
- *   ({@link unionEvents}, {@link projectEventsOf}); a question whose answer has to
+ *   ({@link recordEvents}, {@link projectEventsOf}); a question whose answer has to
  *   say which tree wants them SEPARATE ({@link scopedEvents},
  *   {@link scopedEventsOf}). A report about credentials is the second case: a fact in
  *   the public tree is committed and clones to everyone, and the same fact in the
  *   global tree is on one disk — the same finding, two situations, and a merge is
  *   exactly what would lose the difference.
  *
+ *   THE FIRST TWO CARRY BOTH, and that is not a third axis. A record's shapes are
+ *   counted over the merge, and the one `ADR-<n>` question is asked of each chain
+ *   alone — one answer, two views of the same reading, rather than a caller choosing.
+ *   Which is why they hand over a record and not a stream: the two views are read
+ *   together, so they cannot come from different trees.
+ *
  * The `*Of` pair takes an explicit tree list, which is what lets one session reach
  * every project of a workspace; the two that take a {@link ResolvedTrees} are the
  * command line's, where `cwd` resolves one project and there is no workspace to span.
  */
 
-import type { CatalogEvent, ChainLayout, UpcasterRegistry } from '@mnema/chain';
-import type { ProjectEvents, ScopedEvents } from '@mnema/copilot';
+import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
+import type { ProjectEvents, RecordEvents, ScopedEvents } from '@mnema/copilot';
 import {
   chainRootForScope,
   orderedEvents,
-  orderedEventsAcross,
+  orderedEventsOfRecord,
   type ResolvedTrees,
   type Scope,
 } from '@mnema/core';
@@ -107,7 +113,7 @@ export function recordTrees(trees: ResolvedTrees, project: string | undefined): 
 
 /**
  * The chain layouts of every tree `trees` names, in {@link recordTrees}' order. The
- * order only fixes the tie-break qualifier {@link orderedEventsAcross} applies — it
+ * order only fixes the tie-break qualifier {@link orderedEventsOfRecord} applies — it
  * never grants one tree precedence over another.
  */
 export function unionLayouts(trees: ResolvedTrees): ChainLayout[] {
@@ -115,12 +121,20 @@ export function unionLayouts(trees: ResolvedTrees): ChainLayout[] {
 }
 
 /**
- * The union of every present tree's events in one total, deterministic order —
- * the stream the intelligence derivations fold. Read-only: it reads the tails of
- * the present trees and merges them, opening no cache and no writer.
+ * One record, both ways: every present tree's events in one total, deterministic
+ * order, and each tree's chain on its own.
+ *
+ * The union is what a question about the record as a whole folds. The chains are
+ * what a question whose answer is a property of ONE chain folds — the `ADR-<n>`
+ * label, whose number is minted from the writer's view of a single chain and means
+ * nothing across two. Both come from ONE reading of the tails, so the second view
+ * costs a merge rather than a second parse of every segment.
+ *
+ * Read-only: it reads the tails of the present trees, opening no cache and no writer.
  */
-export function unionEvents(trees: ResolvedTrees, upcasters: UpcasterRegistry): CatalogEvent[] {
-  return orderedEventsAcross(unionLayouts(trees), upcasters);
+export function recordEvents(trees: ResolvedTrees, upcasters: UpcasterRegistry): RecordEvents {
+  const { chains, across } = orderedEventsOfRecord(unionLayouts(trees), upcasters);
+  return { events: across, chains };
 }
 
 /**
@@ -162,6 +176,10 @@ export function scopedEventsOf(
  * The merge happens per group, so each stream is a k-way merge of exactly the tails of
  * one record: the same order that record's own session would fold. Groups are in
  * first-seen order, which the caller fixed.
+ *
+ * Each record also arrives as its CHAINS, for the same reason and at the same cost as
+ * in {@link recordEvents}: the merged stream cannot say which chain an event came from,
+ * and a label that is numbered inside one chain has no meaning across two.
  */
 export function projectEventsOf(
   trees: readonly ScopedTree[],
@@ -173,8 +191,12 @@ export function projectEventsOf(
     if (layouts === undefined) grouped.set(tree.project, [{ root: tree.chainRoot }]);
     else layouts.push({ root: tree.chainRoot });
   }
-  return [...grouped.entries()].map(([project, layouts]) => ({
-    ...(project !== undefined ? { project } : {}),
-    events: orderedEventsAcross(layouts, upcasters),
-  }));
+  return [...grouped.entries()].map(([project, layouts]) => {
+    const { chains, across } = orderedEventsOfRecord(layouts, upcasters);
+    return {
+      ...(project !== undefined ? { project } : {}),
+      events: across,
+      chains,
+    };
+  });
 }

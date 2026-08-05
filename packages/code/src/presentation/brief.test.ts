@@ -20,7 +20,7 @@ import { briefDocument } from './brief.js';
 
 /** What governs, as the composition hands it over. */
 function governance(over: Partial<Brief> = {}): Brief {
-  return { decisions: [], skills: [], ...over };
+  return { decisions: [], skills: [], collisions: [], ...over };
 }
 
 /** One decision in force, named the way the record names it. */
@@ -180,6 +180,98 @@ describe('the brief costs one line per rule', () => {
     expect(text).toContain('`read_record`');
     expect(text).toContain('`skills`');
     expect(printed(governance())).not.toContain('`read_record`');
+  });
+});
+
+describe('the brief declares a label that names more than one rule', () => {
+  /** The same two rules, with and without the clash between their labels. */
+  const rules = { decisions: [decision(1, 'Round over the total'), decision(2)] };
+  const clash = { adr: 'ADR-1', ids: [decision(1).id, '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b09'] };
+
+  it('adds NOTHING when every label names one rule — by the list, not by a spot check', () => {
+    // The ordinary case has to be byte-for-byte what it was, because the only thing that
+    // detects a stale copy is `mnema brief | diff - AGENTS.md`: a line that appeared for
+    // a record with no clash would report a difference in nothing, once, to every reader
+    // at the same time.
+    const quiet = briefDocument(governance(rules));
+    const declared = briefDocument(governance({ ...rules, collisions: [clash] }));
+    // Where the block goes, and how long it is — taken from the two documents rather
+    // than typed here, so the removal below cannot be tuned to pass.
+    const at = declared.findIndex((line) => line.includes('more than one rule'));
+    const added = declared.length - quiet.length;
+    expect(at).toBeGreaterThan(0);
+    expect(added).toBeGreaterThan(0);
+    // Take the inserted block out of the longer document and it IS the shorter one —
+    // every line, in order. Nothing else moved, and nothing was reworded.
+    const withoutBlock = [...declared.slice(0, at - 1), ...declared.slice(at - 1 + added)];
+    expect(withoutBlock).toEqual(quiet);
+  });
+
+  it('names the label and EVERY id that carries it', () => {
+    // A reader told a citation is ambiguous and not told which rules hold the label has
+    // been told to distrust a handle with no way to stop. Both ids are on the line, and
+    // one of them is a rule this document does not print — which is regularly the other
+    // half of a clash, and the reason the ids are not filtered to what is listed.
+    const text = printed(governance({ ...rules, collisions: [clash] }));
+    expect(text).toContain(
+      '- `ADR-1` — `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b01`, `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b09`',
+    );
+    // And it says what to do instead, in the file itself.
+    expect(text).toContain('Cite these by id rather than by label');
+  });
+
+  it('declares it BEFORE the rules, and does not borrow the shape of one', () => {
+    // Two properties in one case. The declaration is above the bullets, because a reader
+    // who takes a label has already passed it by the time they use it; and the clash line
+    // does not open with `- **`, which is what the heading counts and what a reader counts
+    // against it. A warning shaped like a rule would be counted as a rule.
+    const lines = briefDocument(governance({ ...rules, collisions: [clash] }));
+    const declared = lines.findIndex((line) => line.includes('more than one rule'));
+    const firstRule = lines.findIndex((line) => line.startsWith('- **'));
+    expect(declared).toBeGreaterThanOrEqual(0);
+    expect(firstRule).toBeGreaterThan(declared);
+    expect(lines.filter((line) => line.startsWith('- **'))).toHaveLength(2);
+    expect(printed(governance({ ...rules, collisions: [clash] }))).toContain(
+      '## Decisions in force (2)',
+    );
+  });
+
+  it('holds the document`s own rules while it declares: no clock, no count, no work list', () => {
+    // The declaration is text in the same file, so it is held to the same three things
+    // the rest of it is: nothing volatile (or the diff moves on its own), no number
+    // beside the two counts of what is printed (or a reader cannot tell which number
+    // counts the list), and no work.
+    const text = printed(governance({ ...rules, skills: [pattern(1)], collisions: [clash] }));
+    expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(text).not.toMatch(/mnid:/);
+    expect(text.match(/\(\d+\)/g)).toEqual(['(2)', '(1)']);
+    for (const absent of ['task', 'in_progress', 'to do', 'next up', 'work item']) {
+      expect(text.toLowerCase(), `the declaration mentions ${absent}`).not.toContain(absent);
+    }
+  });
+
+  it('says "more than one" and lists all THREE, when three rules hold the label', () => {
+    // The wording has to survive a third holder, and so does the line: a declaration
+    // that said "two rules" would be false the moment a third clone landed, and a line
+    // that printed two of three ids would have a reader reconcile the wrong pair.
+    const ids = [decision(1).id, decision(2).id, decision(3).id];
+    const text = printed(governance({ ...rules, collisions: [{ adr: 'ADR-1', ids }] }));
+    for (const id of ids) expect(text).toContain(id);
+    expect(text).toContain('more than one rule');
+    expect(text).not.toMatch(/\btwo rules\b/);
+  });
+
+  it('prints one line per clash, and the same bytes for the same record', () => {
+    const two = governance({
+      decisions: [decision(1), decision(2)],
+      collisions: [
+        clash,
+        { adr: 'ADR-2', ids: [decision(2).id, '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b0a'] },
+      ],
+    });
+    const lines = briefDocument(two);
+    expect(lines.filter((line) => line.startsWith('- `'))).toHaveLength(2);
+    expect(printed(two)).toBe(printed(two));
   });
 });
 

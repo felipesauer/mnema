@@ -168,6 +168,14 @@ export function registerDecision(program: Command, wiring: Wiring): void {
  * the surface's own message for a missing project or an unknown decision, else
  * the gate's own code and message. A decision has no alias, so its human name in
  * the output is the ADR.
+ *
+ * IT SAYS NOTHING WHEN TWO RULES ANSWER TO THAT LABEL, unlike the document and the
+ * audit. This line acknowledges a move the caller just asked for BY ID: the id is in
+ * the command they typed and in the `--json` object beside this text, so the line
+ * identifies the decision through the person who named it. Nobody cites a rule out of
+ * an acknowledgement — the citing happens off the committed document, which is where
+ * the declaration is. The line does not repeat the id for the same reason it did not
+ * before: a verdict is short on purpose, and the id is one field away.
  */
 function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,

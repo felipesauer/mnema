@@ -31,7 +31,11 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   they differ is the trees: this one takes the SCOPED sources and keeps the public
   ones, because what it composes becomes a committed file — a rule kept privately does
   not travel, and two chains numbering their own `ADR-<n>` would put two rules under
-  one label. The narrowing is here and not in the derivations, which keep reading every
+  one label. Narrowing to one chain is not the same as narrowing to one label, so it
+  also DECLARES: two clones deciding while apart each freeze their own `ADR-7` inside
+  that one chain, and `collisions` names every printed label more than one rule answers
+  to, with the ids. It reports; it never renumbers, because the label is part of a
+  signed event. The narrowing is here and not in the derivations, which keep reading every
   cache they are given: `bootstrap` needs the union, and a filter pushed down would
   have shrunk its answer in silence. It CUTS nothing by size and reports no total,
   which is the deliberate asymmetry with `bootstrap`: a queue of work can wait for a

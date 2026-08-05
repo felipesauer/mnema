@@ -114,7 +114,12 @@ describe('the provenance report prints one line per pattern', () => {
 
 describe('the brief prints one line per rule', () => {
   /** What governs, with nothing in it but what a case puts there. */
-  const governs = (over: Partial<Brief>): Brief => ({ decisions: [], skills: [], ...over });
+  const governs = (over: Partial<Brief>): Brief => ({
+    decisions: [],
+    skills: [],
+    collisions: [],
+    ...over,
+  });
   const decision = (over: Partial<Brief['decisions'][number]> = {}) => ({
     id: 'the-id',
     adr: 'ADR-1',
@@ -143,6 +148,13 @@ describe('the brief prints one line per rule', () => {
   const plain = (brief: Brief): Brief => ({
     decisions: brief.decisions.map((_d, i) => ({ id: `d-${i}`, adr: `ADR-${i}`, title: `t-${i}` })),
     skills: brief.skills.map((_s, i) => ({ id: `s-${i}`, name: `n-${i}` })),
+    // The declaration about the labels is text in the same document, so the baseline
+    // carries as many clashes as the case does — otherwise a case about a broken clash
+    // line would be measured against a document that has no clash line at all.
+    collisions: brief.collisions.map((c, i) => ({
+      adr: `ADR-${i}`,
+      ids: c.ids.map((_id, j) => `c-${i}-${j}`),
+    })),
   });
 
   it('is the SHARPEST case in the class: a forged rule is a rule an agent obeys', () => {
@@ -176,6 +188,34 @@ describe('the brief prints one line per rule', () => {
         governs({ decisions: [decision({ adr: `ADR-1${breaker}x` })] }),
         governs({ decisions: [decision({ id: `the-id${breaker}x` })] }),
         governs({ skills: [{ id: 'the-id', name: `a${breaker}b` }] }),
+      ];
+      for (const one of cases) {
+        expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);
+      }
+    }
+  });
+
+  it('holds the DECLARATION about the labels too, in both of its fields', () => {
+    // The line that says a label names two rules is built out of the same record: the
+    // label, and every id that carries it. A break in either would put a second line
+    // under the declaration — which the reader has just been told to trust over the
+    // labels — so it is collapsed in the one place that composes it.
+    for (const breaker of BREAKERS) {
+      const cases: Brief[] = [
+        governs({
+          decisions: [decision()],
+          collisions: [{ adr: `ADR-1${breaker}x`, ids: ['a', 'b'] }],
+        }),
+        governs({
+          decisions: [decision()],
+          collisions: [{ adr: 'ADR-1', ids: [`a${breaker}b`, 'c'] }],
+        }),
+        // And the second id, not just the first: the join is where a per-field fix
+        // forgets one.
+        governs({
+          decisions: [decision()],
+          collisions: [{ adr: 'ADR-1', ids: ['a', `b${breaker}c`] }],
+        }),
       ];
       for (const one of cases) {
         expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);

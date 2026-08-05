@@ -74,7 +74,7 @@ export {
   listMemories,
   listObservationsAbout,
 } from './projections/knowledge-store.js';
-export { orderedEvents, orderedEventsAcross } from './projections/order.js';
+export { orderedEvents, orderedEventsOfRecord, type RecordOrder } from './projections/order.js';
 export {
   type AuthorshipFilter,
   type AuthorshipTally,

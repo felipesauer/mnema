@@ -16,6 +16,7 @@ import {
   capture,
   deprecateSkill,
   makeBench,
+  mergeTailInto,
   moveDecision,
   moveDecisionAt,
   moveSkill,
@@ -61,10 +62,23 @@ describe('brief — everything that governs the work here', () => {
     return { scope, chainRoot: b.root, cache };
   }
 
-  /** Births a decision and accepts it — the two moves that put one in force. */
-  function accept(b: Bench, id: string, title: string): string {
-    birthDecision(b, id, title);
+  /**
+   * Births a decision and accepts it — the two moves that put one in force.
+   *
+   * `adr` is the label the chain would have frozen, and it is an argument for the cases
+   * that are ABOUT the label: the default derived from the id keeps every other
+   * fixture's labels distinct, which is exactly what a case testing a clash cannot use.
+   */
+  function accept(b: Bench, id: string, title: string, adr?: string): string {
+    birthDecision(b, id, title, 'proposed', adr);
     moveDecision(b, id, 'proposed', 'accepted', 'accept');
+    return id;
+  }
+
+  /** Births a decision and refuses it — in the record, and out of force. */
+  function reject(b: Bench, id: string, title: string, adr?: string): string {
+    birthDecision(b, id, title, 'proposed', adr);
+    moveDecision(b, id, 'proposed', 'rejected', 'reject');
     return id;
   }
 
@@ -96,6 +110,7 @@ describe('brief — everything that governs the work here', () => {
     expect(brief([tree(b, 'public')])).toEqual({
       decisions: [{ id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' }],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
+      collisions: [],
     });
   });
 
@@ -198,7 +213,7 @@ describe('brief — everything that governs the work here', () => {
     const source = tree(b, 'public');
     const composed = brief([source]);
     // No field for it, and no text of it anywhere in the answer.
-    expect(Object.keys(composed).sort()).toEqual(['decisions', 'skills']);
+    expect(Object.keys(composed).sort()).toEqual(['collisions', 'decisions', 'skills']);
     expect(JSON.stringify(composed)).not.toContain('Write the deploy runbook');
     expect(JSON.stringify(composed)).not.toContain('task-ready');
     // And the record really did hold actionable work: without this the absence
@@ -366,14 +381,89 @@ describe('brief — everything that governs the work here', () => {
     expect(composed.decisions.map((d) => d.id).filter((id) => privately.includes(id))).toEqual([]);
   });
 
+  it('declares a printed label that two decisions of one chain answer to', () => {
+    // THE DEFECT, in the only shape that produces it. Two clones of one repository
+    // work while apart: each numbers its FIRST decision `ADR-1` from the chain it can
+    // see, and neither write could have refused, because neither machine knew about the
+    // other. Their branches meet, the tails land in one tree, and the committed
+    // document now prints a handle that names two rules.
+    //
+    // Two benches merged into one, rather than two labels written into one tail: a
+    // single chain the product wrote would have numbered the second decision `ADR-2`,
+    // so a hand-made pair would be a record the product cannot produce.
+    const here = bench();
+    const clone = bench();
+    accept(here, 'dec-here', 'Round the tax over the invoice total', 'ADR-1');
+    accept(clone, 'dec-clone', 'Round the tax per line', 'ADR-1');
+    mergeTailInto(here, clone);
+
+    const composed = brief([tree(here, 'public')]);
+    // Both rules are in force and both still carry the label they were SIGNED with:
+    // nothing renumbered, which is the other half of the answer.
+    expect(composed.decisions.map((d) => [d.id, d.adr]).sort()).toEqual([
+      ['dec-clone', 'ADR-1'],
+      ['dec-here', 'ADR-1'],
+    ]);
+    // And the fact is declared, with every id that carries the label — a reader told a
+    // citation is ambiguous and not told which rules hold it can do nothing about it.
+    expect(composed.collisions).toEqual([{ adr: 'ADR-1', ids: ['dec-clone', 'dec-here'] }]);
+  });
+
+  it('names the holder that is NOT in force, and stays quiet about a label it does not print', () => {
+    // Both halves of the filter, over one record, because they pull opposite ways.
+    //
+    // The label is cited OUTSIDE this file — in a commit, in a review — so the other
+    // rule answering to it counts even when it is not printed here: `ADR-1` is held by
+    // a call in force and by one that was refused, and the refused id is named.
+    //
+    // And a clash between two rules the document does not carry is not this file's to
+    // report: `ADR-2` is held twice, by two calls that were both refused, and the
+    // document says nothing about it. That is the audit's answer, over the record.
+    const here = bench();
+    const clone = bench();
+    accept(here, 'dec-in-force', 'What the team settled', 'ADR-1');
+    reject(here, 'dec-refused-here', 'What the team turned down', 'ADR-2');
+    reject(clone, 'dec-refused-clone', 'What the clone turned down', 'ADR-1');
+    reject(clone, 'dec-refused-too', 'What the clone also turned down', 'ADR-2');
+    mergeTailInto(here, clone);
+
+    const composed = brief([tree(here, 'public')]);
+    expect(composed.decisions.map((d) => d.id)).toEqual(['dec-in-force']);
+    expect(composed.collisions).toEqual([
+      { adr: 'ADR-1', ids: ['dec-in-force', 'dec-refused-clone'] },
+    ]);
+    // Non-vacuity: `ADR-2` really is held twice in that chain, and the document is
+    // silent about it — so the filter is doing something rather than finding nothing.
+    const chain = tree(here, 'public').cache.adrCollisions();
+    expect(chain.map((c) => c.adr)).toEqual(['ADR-1', 'ADR-2']);
+  });
+
+  it('never compares labels ACROSS chains — two committed records each hold their own ADR-1', () => {
+    // The unit is one chain, and this is the case that says so. Two projects' public
+    // trees each numbered their first rule `ADR-1`, which is the product working: the
+    // number is minted from one chain's own count, and neither citation is ambiguous to
+    // the person reading either repository. A read that pooled the decisions would
+    // report a clash on nearly every workspace and mean nothing when it did.
+    const alpha = bench();
+    const beta = bench();
+    accept(alpha, 'dec-alpha', 'What alpha settled', 'ADR-1');
+    accept(beta, 'dec-beta', 'What beta settled', 'ADR-1');
+
+    const composed = brief([tree(alpha, 'public'), tree(beta, 'public')]);
+    // The pooled answer HAS the same label twice — so the silence below is a decision
+    // about what a collision is, not an absence of material to find one in.
+    expect(composed.decisions.map((d) => d.adr)).toEqual(['ADR-1', 'ADR-1']);
+    expect(composed.collisions).toEqual([]);
+  });
+
   it('answers an empty record with two empty lists, never with an error', () => {
     // The honest empty: the composition has nothing to say and says nothing, and it is
     // the DOCUMENT that has to spell out which kind of empty this is (see
     // `presentation/brief.test.ts`). A refusal here would make "nobody has decided
     // yet" indistinguishable from "the record could not be read".
     const b = bench();
-    expect(brief([tree(b, 'public')])).toEqual({ decisions: [], skills: [] });
-    expect(brief([])).toEqual({ decisions: [], skills: [] });
+    expect(brief([tree(b, 'public')])).toEqual({ decisions: [], skills: [], collisions: [] });
+    expect(brief([])).toEqual({ decisions: [], skills: [], collisions: [] });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
     // in it is the shape this filter is for.
@@ -383,6 +473,7 @@ describe('brief — everything that governs the work here', () => {
     expect(brief([tree(machine, 'private'), tree(machine, 'global')])).toEqual({
       decisions: [],
       skills: [],
+      collisions: [],
     });
   });
 });

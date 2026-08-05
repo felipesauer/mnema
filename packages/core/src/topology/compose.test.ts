@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type ChainLayout, catalogUpcasters, openChainForWriting, taskCreated } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { orderedEvents, orderedEventsAcross } from '../projections/order.js';
+import { orderedEvents, orderedEventsOfRecord } from '../projections/order.js';
 
 let publicRoot: string;
 let privateRoot: string;
@@ -36,16 +36,16 @@ function writeTask(root: string, at: string, title: string): string {
 
 const layout = (root: string): ChainLayout => ({ root });
 
-describe('orderedEventsAcross — union of three trees', () => {
+describe('orderedEventsOfRecord — the union of three trees', () => {
   it('shows events from all three trees, interleaved by time', () => {
     writeTask(publicRoot, '2026-07-21T00:00:00.000Z', 'pub');
     writeTask(privateRoot, '2026-07-21T00:00:01.000Z', 'prv');
     writeTask(globalRoot, '2026-07-21T00:00:02.000Z', 'glb');
 
-    const union = orderedEventsAcross(
+    const union = orderedEventsOfRecord(
       [layout(publicRoot), layout(privateRoot), layout(globalRoot)],
       upcasters,
-    );
+    ).across;
     expect(union.map((e) => e.subject)).toEqual(['sub-pub', 'sub-prv', 'sub-glb']);
   });
 
@@ -62,21 +62,21 @@ describe('orderedEventsAcross — union of three trees', () => {
   it('drops trees that do not exist (empty layouts contribute nothing)', () => {
     writeTask(publicRoot, '2026-07-21T00:00:00.000Z', 'pub');
     // privateRoot and globalRoot are never written to — no tails on disk.
-    const union = orderedEventsAcross(
+    const union = orderedEventsOfRecord(
       [layout(publicRoot), layout(privateRoot), layout(globalRoot)],
       upcasters,
-    );
+    ).across;
     expect(union.map((e) => e.subject)).toEqual(['sub-pub']);
   });
 });
 
-describe('orderedEventsAcross — distinct ids across trees never collide', () => {
+describe('orderedEventsOfRecord — distinct ids across trees never collide', () => {
   it('two trees each with an event counts BOTH, never de-duplicating', () => {
     // The false-merge base: distinct v7 ids across trees are distinct events; the
     // union is a plain interleave, no de-duplication and no double-counting.
     writeTask(publicRoot, '2026-07-21T00:00:00.000Z', 'one');
     writeTask(globalRoot, '2026-07-21T00:00:01.000Z', 'two');
-    const union = orderedEventsAcross([layout(publicRoot), layout(globalRoot)], upcasters);
+    const union = orderedEventsOfRecord([layout(publicRoot), layout(globalRoot)], upcasters).across;
     expect(union).toHaveLength(2);
     expect(new Set(union.map((e) => e.subject)).size).toBe(2);
   });
@@ -87,8 +87,11 @@ describe('orderedEventsAcross — distinct ids across trees never collide', () =
     const sameAt = '2026-07-21T00:00:00.000Z';
     writeTask(publicRoot, sameAt, 'p');
     writeTask(globalRoot, sameAt, 'g');
-    const first = orderedEventsAcross([layout(publicRoot), layout(globalRoot)], upcasters);
-    const second = orderedEventsAcross([layout(publicRoot), layout(globalRoot)], upcasters);
+    const first = orderedEventsOfRecord([layout(publicRoot), layout(globalRoot)], upcasters).across;
+    const second = orderedEventsOfRecord(
+      [layout(publicRoot), layout(globalRoot)],
+      upcasters,
+    ).across;
     expect(first.map((e) => e.subject)).toEqual(second.map((e) => e.subject));
     expect(first).toHaveLength(2);
   });

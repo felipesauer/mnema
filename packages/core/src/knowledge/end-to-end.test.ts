@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { type ChainLayout, catalogUpcasters, verify } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { projectKnowledge } from '../projections/knowledge.js';
-import { orderedEvents, orderedEventsAcross } from '../projections/order.js';
+import { orderedEvents, orderedEventsOfRecord } from '../projections/order.js';
 import { type ResolvedTrees, resolveTrees } from '../topology/resolve.js';
 import { chainRootForScope, openTreeForWriting, type Scope } from '../topology/routing.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -63,10 +63,10 @@ describe('memory.captured — end to end, the four publics', () => {
     const prv = captureInto('private', 'a private note');
     const glb = captureInto('global', 'a global note');
 
-    const union = orderedEventsAcross(
+    const union = orderedEventsOfRecord(
       [layout(pub.root), layout(prv.root), layout(glb.root)],
       upcasters,
-    );
+    ).across;
     const memories = projectKnowledge(union);
     expect(memories.size).toBe(3);
     expect(memories.get(pub.id)?.content).toBe('a public note');

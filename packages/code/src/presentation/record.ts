@@ -11,6 +11,14 @@
  * one-line-per-item class, because there is no list of items around it for a second
  * line to imitate. Collapsing it would damage the one thing this read exists to
  * serve.
+ *
+ * IT PRINTS A DECISION'S `ADR-<n>` AND SAYS NOTHING ABOUT THE LABEL BEING SHARED, and
+ * that is a decision rather than a gap. Two rules of one chain can answer to one
+ * label (two clones minting offline), and the two answers that carry a label somewhere
+ * it will be read ALONE both declare it: the committed document, and the audit. This
+ * one is asked BY ID and answers about that id — the reader is already holding the
+ * handle that identifies, so a note about a second rule would be a survey of the
+ * record inside a read of one record, paid for on every open.
  */
 
 import type { RecordBody } from '@mnema/copilot';
