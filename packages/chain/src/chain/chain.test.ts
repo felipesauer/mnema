@@ -27,7 +27,7 @@ import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
-import { orderedSegments, readTailEntries } from './store.js';
+import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import type { ChainWriter } from './writer.js';
 
@@ -1115,6 +1115,36 @@ describe('chain — who != which binding survives a canonical-form bypass (audit
     // crypto. Now the canonical compare catches it.
     expect(result.ok).toBe(false);
     expect(result.issues.some((i) => i.detail.includes('identity does not bind'))).toBe(true);
+  });
+});
+
+describe('chain — whether a root holds a record at all', () => {
+  it('says no for a root that is not there, and no for an empty one', () => {
+    // The question a verifier asks about a tree it was merely NAMED. Three trees are
+    // named for every project and one of them — the gitignored private tree — is
+    // absent on every fresh clone, so "there is nothing here" has to be answerable
+    // without replaying a chain that does not exist.
+    expect(holdsRecord({ root: join(root, 'nowhere') })).toBe(false);
+    expect(holdsRecord({ root })).toBe(false);
+  });
+
+  it('says yes once anything has been written', () => {
+    writeSome(2).checkpoint();
+    expect(holdsRecord({ root })).toBe(true);
+  });
+
+  it('says yes when the TAILS are gone and the committed keys remain', () => {
+    // The case that decides this is not `listTails().length > 0`. A key is written
+    // before its machine's first event and its fingerprint IS its tail id, so keys
+    // with no tails is exactly the shape of a tail that went missing — the census
+    // note exists to say so, and answering "nothing here" would silence it.
+    writeSome(2).checkpoint();
+    rmSync(join(root, 'tails'), { recursive: true, force: true });
+
+    expect(listTails({ root })).toEqual([]);
+    expect(holdsRecord({ root })).toBe(true);
+    // And the verdict over it is the one that carries the signal.
+    expect(verify(root).census.some((note) => note.kind === 'key-without-tail')).toBe(true);
   });
 });
 

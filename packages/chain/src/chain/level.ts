@@ -155,6 +155,29 @@ export function requiredLevel(requirement: LevelRequirement): ProvenLevel {
 }
 
 /**
+ * The WEAKER of two proven levels — what an aggregate over several chains reports.
+ *
+ * One record can be several chains: a project keeps its committed tree and this
+ * machine's private one, and both hold signed facts. A verdict over them has to be
+ * ONE level, and it is the weakest, because the alternative is a pass earned by the
+ * healthy half — a gate that goes green while a broken chain sits beside the one it
+ * looked at is worse than no gate, and it is the same defect as a sentence that
+ * claims a layer that did not run.
+ *
+ * It lives HERE, beside {@link LEVEL_RANK}, for the reason {@link meetsRequirement}
+ * does: the rank order is this file's, so an adapter that folded levels by comparing
+ * them itself would be a second place where the order of {@link PROVEN_LEVELS} is
+ * known — and the two could then disagree about which of two records is the weak one.
+ *
+ * Binary and total, so the fold has no empty case to invent an answer for: a caller
+ * with no chain to verify has no level to report, and one with chains folds from the
+ * first.
+ */
+export function weakerLevel(a: ProvenLevel, b: ProvenLevel): ProvenLevel {
+  return LEVEL_RANK[a] <= LEVEL_RANK[b] ? a : b;
+}
+
+/**
  * How each level READS — the first clause of the one-line verdict, TOTAL over the
  * union so a level cannot reach a reader without a sentence of its own.
  *

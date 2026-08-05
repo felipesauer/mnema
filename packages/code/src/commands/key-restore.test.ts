@@ -86,8 +86,8 @@ describe('mnema key restore', () => {
       anchor: lost.anchorBefore,
       membership: 'enrolled',
     });
-    const verified = runVerify({ cwd: repo, env });
-    expect(verified.ok && verified.result.ok).toBe(true);
+    const verified = runVerify({ cwd: repo, env, requirement: 'chained', global: false });
+    expect(verified.ok && verified.record.ok).toBe(true);
   });
 
   it('resolves a RELATIVE path against the injected cwd, not the process one', () => {
