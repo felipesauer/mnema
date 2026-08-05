@@ -2,9 +2,9 @@
  * One whole record: a subject line naming what it is and where it lives, then the
  * fields that kind actually has.
  *
- * A memory is its content, a decision is its rationale, an observation is what it
- * is about — printing one shape for all five would hide exactly the field the
- * reader opened the record for.
+ * A memory is its content, a decision is its rationale and what it turned down, an
+ * observation is what it is about — printing one shape for all five would hide
+ * exactly the field the reader opened the record for.
  *
  * The body goes out verbatim, newlines and all, and that is the form's rule rather
  * than an omission: a body printed on lines of its own is not in the
@@ -55,6 +55,15 @@ export function recordReport(body: RecordBody, context: RecordContext): string[]
       }
       lines.push('');
       lines.push(body.record.rationale);
+      // What it turned down, when the record says so — a SECOND body, headed, so
+      // the two paragraphs are not read as one argument. Absent when the decision
+      // recorded none: no heading, no blank line, nothing that would read as an
+      // empty section and make a reader wonder what was left out.
+      if (body.record.alternatives !== undefined) {
+        lines.push('');
+        lines.push('Considered and turned down:');
+        lines.push(body.record.alternatives);
+      }
       break;
     case 'task':
       lines.push(fact(`${body.record.title} (${body.record.state})`));

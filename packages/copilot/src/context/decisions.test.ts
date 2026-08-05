@@ -108,9 +108,13 @@ describe('decisionsInForce — the calls that govern', () => {
       if (served === undefined) throw new Error('the decision in force is missing');
       expect(served).not.toHaveProperty('rationale');
       expect(Object.keys(served).sort()).toEqual(['adr', 'id', 'title']);
-      // The fixture's rationale is `why <title>`, so this is the actual text of this
-      // record's argument, not a spelling of the field name.
+      // The fixture's rationale is `why <title>` and its alternatives
+      // `turned down for <title>`, so these are the actual texts of this record's
+      // two body fields, not spellings of the field names. BOTH halves are checked:
+      // the argument for the call, and what the call turned down.
       expect(JSON.stringify(served)).not.toContain('why A call with a long argument');
+      expect(served).not.toHaveProperty('alternatives');
+      expect(JSON.stringify(served)).not.toContain('turned down for A call with a long');
       // Nor the links the projection carries: a supersede is the audit's reading.
       expect(served).not.toHaveProperty('supersedes');
       expect(served).not.toHaveProperty('supersededBy');

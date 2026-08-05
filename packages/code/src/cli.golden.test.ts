@@ -251,6 +251,9 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   section('reads', label);
   await mnema('reads', 'search');
   await mnema('reads', 'search', 'runbook');
+  // A word that appears ONLY in what a decision turned down. The answer is the
+  // whole point of recording it, so the transcript pins that it is findable.
+  await mnema('reads', 'search', 'spreadsheet');
   await mnema('reads', 'search', 'runbook', '--json');
   await mnema('reads', 'search', '--kind', 'task', '--scope', 'public');
   await mnema('reads', 'show', ids.task ?? 'no-such-id');
@@ -388,11 +391,16 @@ beforeAll(async () => {
   name(inParens(errand, 'Created task '), 'task-errand');
   name(after(errand, 'Created task ').split(' ')[0] as string, 'task-errand-alias');
 
+  // One of the two decisions records what it turned down and the other does not,
+  // so the transcript pins BOTH halves of the form: the section when there is one,
+  // and no section at all when there is none.
   const decision = await mnema(
     'writes',
     'decision',
     'Keep the runbook in the record',
     'a wiki page nobody owns goes stale',
+    '--alternatives',
+    'a shared spreadsheet: it has no history and nobody reviews it',
   );
   const decisionId = name(inParens(decision, 'Recorded decision '), 'decision-runbook');
   const older = await mnema(

@@ -226,6 +226,9 @@ describe('brief — everything that governs the work here', () => {
     // for a rationale and `body of <name>` for a body.
     const emitted = JSON.stringify(composed);
     expect(emitted).not.toContain('why A call with a long argument');
+    // The decision's OTHER body field, which the bench also writes: what it turned
+    // down is prose too, and a file read on every prompt carries no prose.
+    expect(emitted).not.toContain('turned down for A call with a long');
     expect(emitted).not.toContain('body of A pattern with a body');
     // Nor anything else the record holds: governance is the whole of this answer.
     expect(emitted).not.toContain('a memory that is not governance');

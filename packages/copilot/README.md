@@ -20,10 +20,10 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   decisions IN FORCE by name (title, the citable `ADR-<n>` label, id — freshest
   first, cut to the same limit, with `decisionsTotal` saying how many there were).
   Every list is an index: the moves a task allows come from `nextActions`, the
-  pattern itself from `adoptedSkills`, a decision's `rationale` from `readRecord` —
-  asked for the one item that turned out to matter. Only `accepted` decisions are
-  served: proposed is still on the table, rejected was refused, and superseded was
-  replaced, so none of the three governs anything.
+  pattern itself from `adoptedSkills`, a decision's `rationale` and what it turned
+  down from `readRecord` — asked for the one item that turned out to matter. Only
+  `accepted` decisions are served: proposed is still on the table, rejected was
+  refused, and superseded was replaced, so none of the three governs anything.
 - **`brief`** — everything that governs the work in the tree that TRAVELS, whole:
   every decision in force and every adopted pattern of the public tree, each by name.
   It composes the same two derivations `bootstrap` does, so a file generated from it

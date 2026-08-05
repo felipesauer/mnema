@@ -16,6 +16,8 @@ $ mnema search
 | Nothing recorded here yet.
 $ mnema search runbook
 | Nothing recorded matching "runbook".
+$ mnema search spreadsheet
+| Nothing recorded matching "spreadsheet".
 $ mnema search runbook --json
 | {
 |   "hits": [],
@@ -230,6 +232,11 @@ $ mnema search runbook
 |
 | task (1)
 |   <task-runbook>  public  <date:01>  Write the deploy runbook (IN_PROGRESS)
+$ mnema search spreadsheet
+| 1 record(s) matching "spreadsheet":
+|
+| decision (1)
+|   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
 $ mnema search runbook --json
 | {
 |   "hits": [
@@ -1126,6 +1133,9 @@ $ mnema show <decision-runbook>
 |   supersedes <decision-wiki>
 |
 | a wiki page nobody owns goes stale
+|
+| Considered and turned down:
+| a shared spreadsheet: it has no history and nobody reviews it
 $ mnema show <decision-wiki>
 | decision <decision-wiki>  ·  public
 |   ADR-2 — Keep the runbook in the wiki (superseded)

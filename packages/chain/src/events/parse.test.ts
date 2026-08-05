@@ -337,6 +337,46 @@ describe('parseEvent — decision events', () => {
     expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
   });
 
+  it('parses a decision.recorded carrying alternatives and round-trips it', () => {
+    const event = decisionRecorded(
+      { ...envelope, subject: 'd-1' },
+      {
+        title: 'Fix the workflow',
+        rationale: 'The why is the value.',
+        adr: 'ADR-42',
+        alternatives: 'A state machine per kind: three tables to keep in step.',
+      },
+    );
+    const parsed = parseEvent(line(event), reg);
+    expect(parsed).toEqual(event);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(line(event));
+  });
+
+  it('reads a decision recorded before `alternatives` existed', () => {
+    // The version question, settled as data. A decision written under the payload
+    // as it was — title, rationale, adr and nothing else — parses unchanged and
+    // canonicalizes to the SAME bytes it was signed as, which is why adding an
+    // optional field is not a version bump: nothing already written moves.
+    //
+    // In CANONICAL form, which is the only form a writer ever stored: keys sorted,
+    // envelope and payload both. A hand-ordered line would compare unequal for a
+    // reason that has nothing to do with the field being tested.
+    const asWritten =
+      '{"at":"2026-07-21T00:00:00.000Z","kind":"decision.recorded","payload":{"adr":"ADR-1","rationale":"y","title":"x"},"signerFp":"fp","subject":"d-1","v":1,"who":"h"}';
+    const parsed = parseEvent(asWritten, reg);
+    expect(canonicalStringify(toCanonical(parsed))).toBe(asWritten);
+    // Absent, not empty: the reader invents no key for a field the record lacks.
+    expect(parsed.kind).toBe('decision.recorded');
+    if (parsed.kind !== 'decision.recorded') return;
+    expect('alternatives' in parsed.payload).toBe(false);
+  });
+
+  it('refuses an empty alternatives (a named absence is absent, never blank)', () => {
+    const forged =
+      '{"at":"2026-07-21T00:00:00.000Z","kind":"decision.recorded","payload":{"adr":"ADR-1","alternatives":"","rationale":"y","title":"x"},"signerFp":"fp","subject":"d-1","v":1,"who":"h"}';
+    expect(() => parseEvent(forged, reg)).toThrow(/payload\.alternatives/);
+  });
+
   it('requires a non-empty rationale (an ADR with no why records nothing)', () => {
     const forged =
       '{"kind":"decision.recorded","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"title":"x","rationale":"","adr":"ADR-1"}}';

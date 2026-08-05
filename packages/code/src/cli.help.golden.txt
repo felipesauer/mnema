@@ -92,6 +92,7 @@ $ mnema decision --help
 |   rationale                              why the decision was made
 |
 | Options:
+|   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
 |   --scope <scope>                        where the decision is born: public (team-visible), private (this machine), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
 |   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
 |   -h, --help                             display help for command
