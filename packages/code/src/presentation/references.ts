@@ -32,15 +32,16 @@
 import type { ReferenceGraph } from '@mnema/copilot';
 import { fact, subjectLine } from './detail.js';
 import { itemLine } from './items.js';
+import { renderPlain } from './plain.js';
 
 /** The lines a reference graph prints for a person. */
 export function referenceReport(graph: ReferenceGraph): string[] {
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
   const origin = nodes.get(graph.id);
   const known = origin?.resolved === true ? (origin.kind ?? 'entity') : 'unresolved';
-  const lines = [subjectLine(graph.id, known)];
+  const lines = [renderPlain(subjectLine(graph.id, known))];
   if (graph.links.length === 0) {
-    lines.push(fact('nothing references it, and it references nothing.'));
+    lines.push(renderPlain(fact('nothing references it, and it references nothing.')));
     return lines;
   }
   const label = (id: string) => {
@@ -61,9 +62,9 @@ export function referenceReport(graph: ReferenceGraph): string[] {
   const written = (link: ReferenceGraph['links'][number]) => {
     const rel = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
     const tree = `[${link.scope}]`;
-    if (link.from === graph.id) return itemLine([`→ ${rel}`, label(link.to), tree]);
-    if (link.to === graph.id) return itemLine([`← ${rel}`, label(link.from), tree]);
-    return itemLine([`${label(link.from)} → ${rel} → ${label(link.to)}`, tree]);
+    if (link.from === graph.id) return renderPlain(itemLine([`→ ${rel}`, label(link.to), tree]));
+    if (link.to === graph.id) return renderPlain(itemLine([`← ${rel}`, label(link.from), tree]));
+    return renderPlain(itemLine([`${label(link.from)} → ${rel} → ${label(link.to)}`, tree]));
   };
   group('its own edges', graph.links.filter(touchesOrigin).map(written));
   group('edges further out', graph.links.filter((l) => !touchesOrigin(l)).map(written));
@@ -72,12 +73,16 @@ export function referenceReport(graph: ReferenceGraph): string[] {
       'reached, by distance',
       graph.nodes
         .filter((node) => node.depth > 0)
-        .map((node) => itemLine([`${node.depth} hop(s)`, label(node.id)])),
+        .map((node) => renderPlain(itemLine([`${node.depth} hop(s)`, label(node.id)]))),
     );
   }
   if (graph.truncated) {
     lines.push('');
-    lines.push(fact(`cut at ${graph.depth} hop(s) — more lies beyond. Raise --depth to see it.`));
+    lines.push(
+      renderPlain(
+        fact(`cut at ${graph.depth} hop(s) — more lies beyond. Raise --depth to see it.`),
+      ),
+    );
   }
   return lines;
 }

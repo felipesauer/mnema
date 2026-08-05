@@ -18,6 +18,7 @@ import { runKeyRequest } from '../commands/key-request.js';
 import { runKeyRestore } from '../commands/key-restore.js';
 import { runKeyRevoke } from '../commands/key-revoke.js';
 import { fact } from '../presentation/detail.js';
+import { renderPlain } from '../presentation/plain.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { reportRefusal, reportReplacement } from './report.js';
@@ -42,13 +43,17 @@ export function registerKey(program: Command, wiring: Wiring): void {
       if (result.ok) {
         io.out(`Restored key ${result.fingerprint}`);
         io.out(
-          fact(
-            `identity: ${result.anchor}` +
-              `${result.membership === 'founded' ? ' (this project was founded by this key)' : ' (this project enrolled this key)'}`,
+          renderPlain(
+            fact(
+              `identity: ${result.anchor}` +
+                `${result.membership === 'founded' ? ' (this project was founded by this key)' : ' (this project enrolled this key)'}`,
+            ),
           ),
         );
-        io.out(fact(`private half installed at ${result.installedAt}`));
-        io.out(fact(`Your copy at ${file} was read, not moved — keep it where it is.`));
+        io.out(renderPlain(fact(`private half installed at ${result.installedAt}`)));
+        io.out(
+          renderPlain(fact(`Your copy at ${file} was read, not moved — keep it where it is.`)),
+        );
         return;
       }
       // A recovery names ITSELF rather than `mnema init`: a machine bringing a key
@@ -91,14 +96,16 @@ export function registerKey(program: Command, wiring: Wiring): void {
             `${result.source === 'file' ? ' (read from the file you named, not installed)' : ''}`,
         );
       }
-      io.out(fact(`to join ${result.anchor}`));
+      io.out(renderPlain(fact(`to join ${result.anchor}`)));
       // The request itself, alone on its line so it can be selected and pasted.
       io.out('');
       io.out(result.request);
       io.out('');
-      io.out(fact('Hand that line to a machine already in that identity, which runs:'));
-      io.out(fact('mnema key enroll <the line>', 2));
-      io.out(fact('It proves consent to join that ONE identity and is not a secret.'));
+      io.out(
+        renderPlain(fact('Hand that line to a machine already in that identity, which runs:')),
+      );
+      io.out(renderPlain(fact('mnema key enroll <the line>', 2)));
+      io.out(renderPlain(fact('It proves consent to join that ONE identity and is not a secret.')));
     });
 
   // `mnema key enroll <request>` — on a machine that is already a member. The
@@ -116,9 +123,11 @@ export function registerKey(program: Command, wiring: Wiring): void {
           return;
         }
         io.out(`Enrolled key ${result.fingerprint}`);
-        io.out(fact(`into ${result.anchor}`));
-        io.out(fact(`recorded in ${result.root}`));
-        io.out(fact('Commit and share the record: the other machine joins by reading it.'));
+        io.out(renderPlain(fact(`into ${result.anchor}`)));
+        io.out(renderPlain(fact(`recorded in ${result.root}`)));
+        io.out(
+          renderPlain(fact('Commit and share the record: the other machine joins by reading it.')),
+        );
         return;
       }
       reportRefusal(io, result, {
@@ -146,16 +155,26 @@ export function registerKey(program: Command, wiring: Wiring): void {
       if (result.ok) {
         io.out(`Revoked key ${result.fingerprint}`);
         reportReplacement(result, io);
-        io.out(fact(`from ${result.anchor} — ${result.remaining} key(s) left`));
+        io.out(renderPlain(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
         if (result.self) {
           // The person just retired the key this machine signs with. Nothing stops
           // it from writing again, and anything it writes now fails verification —
           // so say it plainly, at the only moment it can still be acted on.
-          io.out(fact("That is THIS machine's key: it must not write to this project again."));
-          io.out(fact('Bring another key in first if this machine is to keep working here.'));
+          io.out(
+            renderPlain(
+              fact("That is THIS machine's key: it must not write to this project again."),
+            ),
+          );
+          io.out(
+            renderPlain(
+              fact('Bring another key in first if this machine is to keep working here.'),
+            ),
+          );
         }
         io.out(
-          fact('Commit and share the record: a retirement others cannot read retires nothing.'),
+          renderPlain(
+            fact('Commit and share the record: a retirement others cannot read retires nothing.'),
+          ),
         );
         return;
       }
