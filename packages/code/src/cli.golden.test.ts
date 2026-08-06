@@ -688,6 +688,7 @@ beforeAll(async () => {
     'key',
     'verify',
     'mcp',
+    'completion',
   ]) {
     section('help', `mnema ${verb} --help`);
     await mnema('help', verb, '--help');

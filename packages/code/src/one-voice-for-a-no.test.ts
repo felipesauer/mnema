@@ -149,7 +149,7 @@ describe('every command of the program answers a misuse in the product’s voice
   it('covers a command nobody has written yet, by construction', async () => {
     // A verb added tomorrow is covered because the walk runs over what is registered,
     // not over a table. Built here as its own program so the case cannot be satisfied
-    // by the twenty-five that already exist.
+    // by the twenty-six that already exist.
     const said: string[] = [];
     const program = new Command().name('later').exitOverride();
     program
@@ -305,6 +305,30 @@ describe('and what it says comes from what the command already declares', () => 
       typed,
     }).map((line) => renderPlain(line));
   }
+
+  it('words the SECOND shape of `invalidArgument`: a positional value, not a flag', async () => {
+    // One code, two shapes. The table above has the option shape (`--which " "`), and the
+    // other one was unreachable until a verb declared an ARGUMENT with `.choices()` — so
+    // it fell through to the fallback and came out as commander's own sentence, `error:`
+    // and all, on the only refusal `mnema completion` has. What it says now is the
+    // declaration's: the term the usage line spells, and the description the help prints
+    // WITH the choices after it, which is the text the caller has already read.
+    const said = await invoke('completion', 'powershell');
+    const completion = commandNamed('completion');
+    const help = completion.createHelp();
+    const shell = completion.registeredArguments[0] as (typeof completion.registeredArguments)[0];
+    expect(said.failed).toBe(true);
+    expect(said.err.length).toBe(2);
+    expect(said.err[0]).toBe(
+      `mnema completion does not accept "powershell" for <${shell.name()}>: ` +
+        help.argumentDescription(shell),
+    );
+    expect(said.err[0]).toContain('choices');
+    expect(said.err.join('')).not.toContain('error:');
+    // And the code really is the one this case claims — the other shape's case would
+    // otherwise be covering it.
+    expect(await codeOf(['completion', 'powershell'])).toBe('commander.invalidArgument');
+  });
 
   it('and the line to type is the one `--help` prints, not a second copy of it', async () => {
     // The other half of "one text": the usage line is composed by commander from the
