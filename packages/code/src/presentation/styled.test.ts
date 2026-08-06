@@ -27,10 +27,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
-import { fact, subjectLine } from './detail.js';
+import { fact, statedFact, subjectLine } from './detail.js';
 import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { renderPlain } from './plain.js';
+import { asState } from './state.js';
 import { renderStyled } from './styled.js';
 import { clauseStatement, statement } from './verdict.js';
 
@@ -114,6 +115,16 @@ describe('the styled line is the plain line, wrapped', () => {
       { text: `6 event(s) hash-chained ${ACTOR_ESCAPE}` },
     ]),
     clauseStatement(column('private', 12), [{ text: ' local integrity FAILED ', severity: 'bad' }]),
+    // A task's position, in both forms that show one: the three dispositions that carry
+    // news, and the one that carries none — which is the majority of what the surface
+    // prints and therefore the line that must come out byte for byte the plain one.
+    itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title', asState('BLOCKED')]),
+    itemLine(['a title', asState('IN_REVIEW')]),
+    statedFact('a title', asState('DONE')),
+    statedFact('a title', asState('DRAFT')),
+    // A state belonging to another machine, which a search lists in the same column: it
+    // is a part like the others and it is not painted, so its line is the plain line.
+    itemLine(['a title', asState('accepted')]),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -126,14 +137,15 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // FIFTEEN of the twenty-three, and exactly the ones holding a role or a severity
+    // EIGHTEEN of the twenty-eight, and exactly the ones holding a role or a severity
     // that shows: the three subject lines, the seven statements, the three clause
-    // statements and the two lists with a said column. The other eight are bare `field` —
-    // a fact, a plain column, an empty part, a blank line — and they are byte for byte
-    // the plain line by design, which is what the last case in this block asserts on
-    // purpose.
+    // statements, the two lists with a said column and the three states whose disposition
+    // is news. The other ten are bare `field` and bare `state` — a fact, a plain column,
+    // an empty part, a blank line, an advancing task, another machine's position — and
+    // they are byte for byte the plain line by design, which is what the last case in
+    // this block asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(15);
+    expect(painted.length).toBe(18);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
@@ -183,6 +195,17 @@ describe('the styled line is the plain line, wrapped', () => {
       '\u001b[1mpublic\u001b[22m: \u001b[2m\u001b[33mT1 only\u001b[39m\u001b[22m' +
         '; \u001b[2m1 tail(s)\u001b[22m',
     );
+    // A state opens NO weight, so it closes one wrap and not two — and the space that
+    // joins it to the title stays outside, exactly like the colon after a label. The
+    // title is untouched: what carries the news is the position, not the words beside it.
+    expect(renderStyled(itemLine(['a title', asState('BLOCKED')]))).toBe(
+      '  a title \u001b[31m(BLOCKED)\u001b[39m',
+    );
+    expect(renderStyled(statedFact('a title', asState('DONE')))).toBe(
+      '  a title \u001b[32m(DONE)\u001b[39m',
+    );
+    // And an advancing position is not a painted part at all.
+    expect(renderStyled(itemLine(['a title', asState('READY')]))).toBe('  a title (READY)');
   });
 
   it('costs a list of columns nothing at all', () => {

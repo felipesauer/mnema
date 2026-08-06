@@ -59,6 +59,14 @@ const INDENT = '  ';
  * site said what a column was. Every transcript this product is pinned by was
  * recorded before either role existed.
  *
+ * `state` takes ONE space, and that is the byte it already had. A task's position used
+ * to be concatenated into the title beside it — `` `${title}${state}` `` — with the
+ * parenthesized state carrying its own leading space inside one field. Splitting it into
+ * a part of its own is what lets it be painted while the title is not, and it may not
+ * move a character while doing it: two spaces here would turn it into a column of the
+ * table, which is what the state is NOT (it belongs to the title it rides). Pinned by
+ * `forms.test.ts` on the bytes, and by the golden over the whole surface.
+ *
  * `clause` is the ONE entry that is not punctuation this surface chose. The chain's
  * one-line verdict is a sentence of clauses separated by `; `, and it hands `verify`
  * those clauses rather than the string; the `; ` here is what puts them back in the
@@ -74,6 +82,7 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
   field: '  ',
   id: '  ',
   when: '  ',
+  state: ' ',
   subject: '  ·  ',
 };
 

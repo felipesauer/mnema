@@ -27,10 +27,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fact, subjectLine } from './detail.js';
+import { fact, statedFact, subjectLine } from './detail.js';
 import { asId, asWhen, itemLine } from './items.js';
 import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
+import { asState } from './state.js';
 import { clauseStatement, statement } from './verdict.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -47,6 +48,14 @@ describe('every role has something that produces it', () => {
   const everyPrimitive: readonly Line[] = [
     itemLine(['an-id', 'public', 'a title']),
     itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title']),
+    // The state as its own part, in both forms that show one and in all three shapes a
+    // disposition takes: news to act on, news that is neither, and no news at all. The
+    // last is the majority of what the surface prints, which is why it is in the corpus
+    // rather than left to be inferred from the two that paint.
+    itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title', asState('BLOCKED')]),
+    itemLine(['a title', asState('IN_REVIEW')]),
+    statedFact('a title', asState('DONE')),
+    statedFact('a title', asState('DRAFT')),
     subjectLine('task the-id', 'public'),
     fact('created at noon'),
     fact('mnema key enroll <the line>', 2),

@@ -20,6 +20,7 @@ import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
 import { asId, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
+import { asState } from './state.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
 const DATE_LENGTH = 10;
@@ -47,18 +48,27 @@ export function searchReport(
     lines.push('');
     lines.push(`${kind} (${group.length})`);
     for (const hit of group) {
-      const state = hit.state !== undefined ? ` (${hit.state})` : '';
       // The id and the date SAY what they are. This line is where four columns used
       // to weigh the same, and the two nobody reads are what a reader had to look
-      // past to reach the title (see `presentation/items.ts`). The tree and the
-      // state stay plain: they are categories, and a hue per category is noise.
+      // past to reach the title (see `presentation/items.ts`).
+      //
+      // AND THE STATE IS A PART OF ITS OWN NOW, where it used to be concatenated into
+      // the title. The reason written here for keeping it plain was that a state is a
+      // category and a hue per category is noise. Half of that stands: the TREE is a
+      // category and stays unpainted for that reason. A task's state is not one — it is
+      // a position in a cycle whose exits differ, which collapses to three hues rather
+      // than one per value (see `presentation/state.ts`). The bytes are the same either
+      // way: the parenthesis, the space before it and the position on the line are
+      // untouched, and the golden is what says so.
+      const state = hit.state;
       lines.push(
         render(
           itemLine([
             asId(hit.id),
             hit.scope,
             asWhen(hit.at.slice(0, DATE_LENGTH)),
-            `${oneLine(hit.title)}${state}`,
+            oneLine(hit.title),
+            ...(state !== undefined ? [asState(state)] : []),
           ]),
         ),
       );
