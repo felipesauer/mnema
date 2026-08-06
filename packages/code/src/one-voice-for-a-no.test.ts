@@ -251,6 +251,61 @@ describe('and what it says comes from what the command already declares', () => 
     }
   }, 60_000);
 
+  it('and a token the CALLER typed cannot forge a second line, at any of the three', () => {
+    // Three of the wordings put a token from the command line into the sentence, and a
+    // token comes from a SHELL: a newline in it would end the refusal and start a line
+    // of the reader's own — a complete, plausible second refusal about something that
+    // never happened — and an escape byte would style everything after it. The line a
+    // refusal occupies is the one-item list of the whole reply, which is exactly the
+    // shape a forged second half has to imitate.
+    //
+    // Driven through `usageReport` rather than through an invocation because the three
+    // are three call sites of one rule, and a case per site is what makes it a rule
+    // rather than a habit. What each of them refuses is asserted below.
+    const forged = `nope${String.fromCharCode(10)}Refused (NOTHING): this never happened`;
+    const styled = `nope${ESC}[31m`;
+    const program = declared();
+    const task = commandNamed('task');
+    const shapes: readonly (readonly [string, () => readonly string[]])[] = [
+      [
+        'a word in the verb position',
+        () => {
+          program.args = [forged];
+          return said(program, 'commander.unknownCommand', []);
+        },
+      ],
+      ['a flag nothing declares', () => said(task, 'commander.unknownOption', [`--${forged}`])],
+      [
+        'an argument too many',
+        () => {
+          task.args = ['a title', forged, styled];
+          return said(task, 'commander.excessArguments', []);
+        },
+      ],
+    ];
+    for (const [what, produce] of shapes) {
+      const lines = produce();
+      expect(lines.length, what).toBeGreaterThan(0);
+      // It is still the value, readable — nothing was swallowed.
+      expect(lines[0], what).toContain('nope');
+      // But it is ONE line, and it carries nothing a terminal acts on: the break is
+      // SHOWN (two characters) rather than taken, so the second half of the forgery
+      // stays inside the quotes instead of becoming a refusal of its own.
+      expect(lines[0], what).not.toContain(String.fromCharCode(10));
+      expect(lines[0], what).not.toContain(ESC);
+      expect(lines[0], what).toContain(String.raw`\n`);
+    }
+  });
+
+  /** What the surface says about a fabricated misuse of `command`, rendered plain. */
+  function said(command: Command, code: string, typed: readonly string[]): readonly string[] {
+    return usageReport({
+      command,
+      error: new CommanderError(1, code, 'the sentence this file does not read'),
+      typed,
+    }).map((line) => renderPlain(line));
+  }
+
   it('and the line to type is the one `--help` prints, not a second copy of it', async () => {
     // The other half of "one text": the usage line is composed by commander from the
     // same declarations, so it cannot drift from the Usage: line of the help.
