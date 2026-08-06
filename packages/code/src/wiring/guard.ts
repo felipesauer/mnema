@@ -23,12 +23,12 @@ import { here } from './context.js';
 import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './enumerated.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema guard` on the program. */
-export function registerGuard(program: Command, wiring: Wiring): void {
+export function registerGuard(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const guard = program
     .command('guard')
     .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
     .addArgument(enumeratedArgument('<action>', 'the transition to test', TASK_ACTIONS))
@@ -95,4 +95,5 @@ export function registerGuard(program: Command, wiring: Wiring): void {
         );
       },
     );
+  return readsTheRecord(guard);
 }

@@ -17,10 +17,10 @@ import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { reportRefusal, reportReplacement } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema key` on the program. */
-export function registerKey(program: Command, wiring: Wiring): void {
+export function registerKey(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const key = program.command('key').description("manage this machine's signing keys");
 
@@ -172,4 +172,5 @@ export function registerKey(program: Command, wiring: Wiring): void {
           'No mnema project here. Run `mnema key revoke` inside the project to record it.',
       });
     });
+  return mutatesTheRecord(key);
 }

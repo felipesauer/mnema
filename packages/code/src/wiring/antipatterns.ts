@@ -16,12 +16,12 @@ import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema antipatterns` on the program. */
-export function registerAntipatterns(program: Command, wiring: Wiring): void {
+export function registerAntipatterns(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const antipatterns = program
     .command('antipatterns')
     .description('show recurring shapes in the record (reopens, supersessions, deprecations)')
     .option('--json', 'emit the faithful shapes with their evidence as JSON')
@@ -73,4 +73,5 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
         );
       }
     });
+  return readsTheRecord(antipatterns);
 }

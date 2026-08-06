@@ -15,12 +15,12 @@
 import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema skills` on the program. */
-export function registerSkills(program: Command, wiring: Wiring): void {
+export function registerSkills(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const skills = program
     .command('skills')
     .description('show where each pattern came from (who proposed it, who adopted it)')
     .option('--json', 'emit the faithful provenance as JSON')
@@ -47,4 +47,5 @@ export function registerSkills(program: Command, wiring: Wiring): void {
       }
       writeLines(io, provenanceReport(render, result.patterns, result.consultations));
     });
+  return readsTheRecord(skills);
 }

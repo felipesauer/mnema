@@ -11,12 +11,12 @@ import type { Command } from 'commander';
 import { asWhen, itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema timeline` on the program. */
-export function registerTimeline(program: Command, wiring: Wiring): void {
+export function registerTimeline(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const timeline = program
     .command('timeline')
     .description("show an entity's history across the trees (subject, about, target)")
     .argument('<id>', 'the entity id (a task, decision, skill, memory, …)')
@@ -58,4 +58,5 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
         );
       }
     });
+  return readsTheRecord(timeline);
 }

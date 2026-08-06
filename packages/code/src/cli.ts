@@ -115,9 +115,17 @@ export function buildProgram(io: CliIo = processIo, typed: readonly string[] = [
   }));
 
   // The open session's run, resolved lazily and at most once (see
-  // {@link pinnedRunResolver}). Every WRITING verb asks it and forwards what it
-  // returns; the reads, `init`, `verify`, `key` and `run` itself never do —
-  // none of them stamps a `run`, so none of them has a reason to prove one.
+  // {@link pinnedRunResolver}). A verb asks it when it STAMPS a run, and forwards what
+  // it returns; the reads never do, and neither do `init`, `verify`, `key` and `run`
+  // itself — none of those stamps a run, so none has a reason to prove one.
+  //
+  // THAT IS NOT WHICH VERBS WRITE, and this comment used to read as though it were: it
+  // listed the four alongside "the reads", and three of them (`init`, `key`, `run`) write
+  // — they found an identity, move a key roster, open and seal a session. Anything that
+  // needs to know what a verb may do to the record asks the verb, which declares it
+  // (`wiring/verb.ts`); asking this resolver would have answered a different question
+  // and looked right.
+  //
   // It is built after the renderer because its own refusal is rendered like every
   // other; both are lazy, so the order costs nothing at run time.
   const pinnedRun = pinnedRunResolver({ io, render });
