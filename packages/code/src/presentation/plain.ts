@@ -58,10 +58,19 @@ const INDENT = '  ';
  * its neighbour by anything else would be a list whose bytes changed the day a call
  * site said what a column was. Every transcript this product is pinned by was
  * recorded before either role existed.
+ *
+ * `clause` is the ONE entry that is not punctuation this surface chose. The chain's
+ * one-line verdict is a sentence of clauses separated by `; `, and it hands `verify`
+ * those clauses rather than the string; the `; ` here is what puts them back in the
+ * order and the shape the chain's own sentence has. So it is a byte this table holds
+ * and the chain holds too, and the two are not left agreeing by inspection: the
+ * unpainted `verify` line is asserted to be the tree's name and the chain's own
+ * `summary`, byte for byte.
  */
 const PRECEDED_BY: { readonly [R in Role]: string } = {
   label: '',
   detail: ': ',
+  clause: '; ',
   field: '  ',
   id: '  ',
   when: '  ',

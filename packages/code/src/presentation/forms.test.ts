@@ -30,7 +30,7 @@ import { describe, expect, it } from 'vitest';
 import { fact, subjectLine } from './detail.js';
 import { column, itemLine } from './items.js';
 import { renderPlain } from './plain.js';
-import { statement } from './verdict.js';
+import { clauseStatement, statement } from './verdict.js';
 
 describe('form A — the item line', () => {
   it('indents the item and separates its columns by two spaces', () => {
@@ -91,10 +91,34 @@ describe('form C — the verdict', () => {
   });
 
   it('is the whole sentence when there is no detail to add', () => {
-    // `verify` composes its own summary of what it could prove, and the surface
-    // prints it as it came: re-wording a guarantee is how one gets upgraded.
+    // A bare label is a complete line, which is what the head of a clause verdict is
+    // before its clauses are laid beside it.
     expect(renderPlain(statement('local integrity verified; 1 tail(s)'))).toBe(
       'local integrity verified; 1 tail(s)',
+    );
+  });
+
+  it('separates the clauses of a verdict that arrived in several', () => {
+    // `verify` does not word its verdict: the chain hands over the clauses of its own
+    // one-line sentence, and this is where they are laid out. The bytes are the reason
+    // it can be done at all — the label, a colon, and the chain's sentence — so a reader
+    // of a terminal and a reader of the structured `summary` are reading one thing.
+    expect(
+      renderPlain(
+        clauseStatement('public', [
+          { text: 'local integrity verified (T1/T2/T4)' },
+          { text: '1 tail(s)' },
+          { text: 'all events are signature-covered' },
+        ]),
+      ),
+    ).toBe(
+      'public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered',
+    );
+  });
+
+  it('is the label and one clause when the verdict has nothing to qualify', () => {
+    expect(renderPlain(clauseStatement('public', [{ text: 'no events yet' }]))).toBe(
+      'public: no events yet',
     );
   });
 });

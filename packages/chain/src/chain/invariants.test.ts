@@ -18,6 +18,12 @@
  *   - RESIDUAL ACCOUNTING: `uncheckpointedEvents` equals the events written
  *     after the last checkpoint fired — summed across every tail — the declared,
  *     honest keyless window.
+ *   - ONE VERDICT, TWO RENDERINGS: `summary` is `clauses` joined, and the sentence
+ *     splits back into exactly those clauses. The verdict is handed over both ways —
+ *     as the parts it is made of, and as the one line it reads as — so this is the
+ *     property that says the two can never come apart, over every shape. A clause
+ *     dropped, a clause invented, or a clause that swallowed the separator would each
+ *     leave one of the two saying something the other does not.
  */
 
 import { cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
@@ -283,5 +289,71 @@ describe('invariant — the invariants hold when a tail spans several segments',
     expect(r.tails).toHaveLength(2);
     expect(r.uncheckpointedEvents).toBe(expectedResidual);
     expect(r.fullySigned).toBe(expectedResidual === 0);
+  });
+});
+
+/**
+ * What separates two clauses of the verdict, as a READER of the sentence sees it.
+ *
+ * Written here rather than imported, deliberately: the point of the case below is that
+ * the joined sentence can be taken apart again by anything holding this one byte pair,
+ * which is what every consumer of `summary` that ever split it has been doing. Importing
+ * the producer's own constant would make the round trip true by construction and assert
+ * nothing.
+ */
+const BETWEEN_CLAUSES = '; ';
+
+describe('invariant — the summary is the clauses, joined, and splits back into them', () => {
+  /** Both halves of the round trip, over whatever chain is on disk. */
+  function assertOneVerdict(result: ReturnType<typeof verify>): void {
+    // The join: one wording, and the string is derived from it.
+    expect(result.summary).toBe(result.clauses.map((clause) => clause.text).join(BETWEEN_CLAUSES));
+    // And the split: no clause holds the separator, so the sentence a reader is given
+    // takes apart into exactly the clauses it was built from — never more of them.
+    expect(result.summary.split(BETWEEN_CLAUSES)).toHaveLength(result.clauses.length);
+    // The level leads, always. It is the only clause that is good or bad news, and a
+    // sentence that opened with a qualification would bury the answer mid-line.
+    expect(result.clauses[0]?.of).toBe('level');
+    expect(result.clauses.filter((clause) => clause.of === 'level')).toHaveLength(1);
+    // The external witness is reported whatever else was found: the honest last word on
+    // a verdict that local crypto cannot give.
+    expect(result.clauses.at(-1)?.of).toBe('witness');
+    // No clause is empty — a blank one would render as a stray separator on the line.
+    for (const clause of result.clauses) expect(clause.text.trim()).not.toBe('');
+  }
+
+  const counts = [0, 1, 3, 8, 16];
+  const cadences = [1, 3, 8, 1000];
+
+  for (const count of counts) {
+    for (const every of cadences) {
+      it(`holds for ${count} events, checkpointEvery=${every}`, () => {
+        writeChain(count, every);
+        assertOneVerdict(verify(root));
+      });
+    }
+  }
+
+  for (const [i, specs] of MULTI_TAIL_SHAPES.entries()) {
+    const label = specs.map((s) => `${s.count}/${s.every}`).join('+');
+    it(`holds across ${specs.length} tails [${label}] (shape ${i})`, () => {
+      writeManyTails(specs);
+      assertOneVerdict(verify(root));
+    });
+  }
+
+  it('holds when the census has something to say, and the clause count grows with it', () => {
+    // A census note adds a clause, which is the case that separates "the sentence is the
+    // clauses" from "the sentence has a fixed number of parts": a committed key with no
+    // tail is one more clause and one more `; `, and the round trip has to survive it.
+    writeChain(3, 2);
+    const before = verify(root);
+    // What a botched merge leaves: the key travels, the tail does not.
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    rmSync(join(root, 'tails', tail), { recursive: true, force: true });
+    const after = verify(root);
+    expect(after.census.length).toBeGreaterThan(0);
+    expect(after.clauses.length).toBe(before.clauses.length + after.census.length);
+    assertOneVerdict(after);
   });
 });

@@ -15,10 +15,18 @@
  *
  * What the rule still does NOT reach is an ANSWER that happens to be unwelcome, and
  * the boundary is worth stating because it is the one an adversary probes: `verify`
- * naming a broken tree DID what it was asked — it ruled — and its per-tree summary is
- * the chain's own sentence printed verbatim, with the tree's name in the label the
- * colour would land on. `guard`'s `REFUSED` is the one verdict that paints, and it
- * paints the word.
+ * naming a broken tree DID what it was asked — it ruled — so its line is not a no and
+ * this file's rule says nothing about it.
+ *
+ * HALF OF WHY IT SAID NOTHING WAS A TECHNICAL LIMIT, AND THE LIMIT IS GONE. The reason
+ * given here used to end: *its per-tree summary is the chain's own sentence printed
+ * verbatim, with the tree's name in the label the colour would land on*. Both clauses
+ * were true and the conclusion drawn from them was not, because a verdict's news does
+ * not have to ride its label: the chain hands its verdict over as CLAUSES now, and the
+ * hue lands on the one clause that is the answer, while the label — a tree's name —
+ * stays unpainted for exactly the reason that sentence gave. So `verify` paints, and it
+ * is still not a refusal; what it paints is how far the proof got, on a scale, which is
+ * why its severity is decided in the verb and not in the funnel.
  *
  * Two halves of one promise, and they fail in opposite directions.
  *
@@ -151,17 +159,19 @@ describe('a refusal is worded in exactly one place', () => {
     expect(total).toBeGreaterThanOrEqual(6);
   });
 
-  it('decides the severity in one place, and names the only other one', () => {
+  it('decides the severity in one place, and names the only other ones', () => {
     // What makes "every no is red" one edit rather than a habit: the hue is a
-    // consequence of `'bad'`, and `'bad'` is written where the shape is. A verb that
-    // reached for it directly would be deciding its own severity, which is how a
-    // surface ends up with two reds that mean different things.
+    // consequence of `'bad'`, and for a REFUSAL `'bad'` is written where the shape is. A
+    // verb that reached for it to word its own no would be deciding its own severity,
+    // which is how a surface ends up with two reds that mean different things.
     const deciding = shipped().filter((file) => sourceOf(file).includes("'bad'"));
-    // `guard.ts` is the second, and it is a VERDICT rather than a refusal: the gate
-    // ruled, the answer is REFUSED, and the word is what carries the news. It is
-    // named here rather than folded into the funnel because folding it would make an
-    // answer look like a failure to answer.
-    expect(deciding).toEqual(['guard.ts', 'report.ts']);
+    // The other two are VERDICTS rather than refusals, and each is named here rather
+    // than folded into the funnel because folding an answer into the funnel would make
+    // it look like a failure to answer. `guard.ts` ruled and the answer is REFUSED, so
+    // the word carries the news. `verify.ts` ruled too, and what it says is how far the
+    // proof got — a level, on a scale with a middle, which is a table only the verb that
+    // reads levels can hold.
+    expect(deciding).toEqual(['guard.ts', 'report.ts', 'verify.ts']);
     // And the funnel is where the parser's no gets it too — never at the call site.
     expect(sourceOf('usage.ts')).not.toContain("'bad'");
     expect(sourceOf('usage.ts')).toContain('refusalSentence(');

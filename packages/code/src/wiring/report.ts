@@ -36,9 +36,11 @@
  *
  * What that rule does NOT reach is an ANSWER that happens to be unwelcome. `verify`
  * naming a broken tree did what it was asked — it ruled — and `antipatterns` counting
- * three reopenings is not bad news, it is a count (see `presentation/verdict.ts`). The
- * one verdict that paints is `guard`'s `REFUSED`, and it paints the WORD, not the
- * reading.
+ * three reopenings is not bad news, it is a count (see `presentation/verdict.ts`). Two
+ * VERDICTS paint, and neither is a no: `guard`'s `REFUSED` paints the word it answers
+ * with, and `verify` paints the clause that names how far the proof got. Each decides its
+ * own severity in the verb that holds the vocabulary, which is what
+ * `every-refusal-is-red.test.ts` names and bounds.
  */
 
 import type { Line } from '../presentation/line.js';

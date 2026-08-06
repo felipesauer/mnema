@@ -38,9 +38,9 @@
  *
  * The escapes are SGR: `1` is bold, `2` is faint, and `22` returns to normal
  * intensity — one closer for both, because it is the ANSI code for "neither bold nor
- * faint" and nothing here nests. `31` and `32` are red and green, closed by `39`, the
- * default foreground. Deliberately not `0`, which would also reset a colour a
- * caller's terminal set for its own reasons.
+ * faint" and nothing here nests. `31`, `32` and `33` are red, green and yellow, all
+ * closed by `39`, the default foreground. Deliberately not `0`, which would also reset a
+ * colour a caller's terminal set for its own reasons.
  */
 
 import type { Part, Role, Severity } from './line.js';
@@ -58,7 +58,9 @@ const NORMAL = '\u001b[22m';
 const RED = '\u001b[31m';
 /** Green: SGR 32, the basic one, for the same reason. */
 const GREEN = '\u001b[32m';
-/** Back to the terminal's own foreground: SGR 39, the closer for both hues. */
+/** Yellow: SGR 33, the basic one — the third, for news that is neither. */
+const YELLOW = '\u001b[33m';
+/** Back to the terminal's own foreground: SGR 39, the closer for every hue. */
 const DEFAULT_HUE = '\u001b[39m';
 
 /**
@@ -69,7 +71,7 @@ const DEFAULT_HUE = '\u001b[39m';
  * a fallback chose, and a surface would acquire an emphasis nobody decided on. A role
  * added to the union without an entry here does not build.
  *
- * The six, and the convention each follows:
+ * The seven, and the convention each follows:
  *
  *   - `label` — bold. It leads the line and it is what a reader scanning a log for a
  *     refusal reads first, which is the one thing git, gh and kubectl all embolden.
@@ -80,6 +82,12 @@ const DEFAULT_HUE = '\u001b[39m';
  *   - `detail` — dim. Secondary by construction: it is the half of a statement that
  *     follows the colon, and dimming what is secondary is the convention a reader
  *     already knows from `git status` and `gh pr list`.
+ *   - `clause` — dim, the same as the detail it is a refinement of, and the sameness is
+ *     load-bearing rather than a coincidence to collapse. `verify`'s verdict used to
+ *     arrive as ONE detail holding every clause, so the whole sentence was dim; splitting
+ *     it into the clauses the chain hands over must not change the weight of a single
+ *     word of it, or the split would have been a restyling wearing a decomposition's
+ *     clothes. What the split buys is that ONE clause can now carry a hue.
  *   - `id` and `when` — dim, and they are the reason this map was worth extending. A
  *     list of hits is columns of `field` that all weigh the same, so nothing in it
  *     stood out; dimming the two columns nobody READS makes the title beside them the
@@ -92,6 +100,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   subject: BOLD,
   field: '',
   detail: DIM,
+  clause: DIM,
   id: DIM,
   when: DIM,
 };
@@ -103,13 +112,17 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * severity a call site could set and this map had no entry for would be news reported
  * in whatever a fallback chose.
  *
- * Two entries, and the pair is deliberately the most conventional one in a terminal:
- * red is the answer a caller has to act on, green is the one they do not. Nothing here
- * decides WHICH is which for a given line — the call site says (see `verdict.ts`), and
- * that is what keeps the renderer from being the thing that judges the record.
+ * THREE ENTRIES, and the triple is deliberately the most conventional one in a terminal:
+ * red is the answer a caller has to act on, green is the one they do not, and yellow is
+ * the one where neither is true. It was two, and `line.ts` says what falsified the
+ * premise that there was no third to say — a proven level that is neither a break nor a
+ * signature. Nothing here decides WHICH a given line is: the call site says (see
+ * `verdict.ts` and `wiring/verify.ts`), and that is what keeps the renderer from being
+ * the thing that judges the record.
  */
 const PAINTED_BY: { readonly [S in Severity]: string } = {
   good: GREEN,
+  warn: YELLOW,
   bad: RED,
 };
 

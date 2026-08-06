@@ -155,6 +155,32 @@ export interface PartialFinalLineNote {
   readonly detail: string;
 }
 
+/**
+ * Which part of the verdict a clause is.
+ *
+ * A closed vocabulary, because the point of it is that a consumer can tell the level's
+ * clause from a qualification WITHOUT looking at the words. The word `verified` sits in
+ * the middle of a sentence and `FAILED` beside it; a surface that searched the text for
+ * either would be re-deriving the verdict from a rendering of it, which is the one thing
+ * a tool for auditing a record must not do — and it would break the day a clause was
+ * reworded.
+ */
+export type VerdictClauseOf = 'level' | 'tails' | 'coverage' | 'census' | 'witness';
+
+/**
+ * One clause of the one-line verdict: what it is about, and what it says.
+ *
+ * The WORDS ARE ALWAYS THIS FILE'S. A clause exists so a reader can be shown the
+ * sentence differently — a level painted, a census set apart — never so a consumer can
+ * say something else: {@link VerifyResult.summary} is these clauses joined, by the one
+ * function that joins them, so no rendering of the verdict can come to disagree with
+ * another.
+ */
+export interface VerdictClause {
+  readonly of: VerdictClauseOf;
+  readonly text: string;
+}
+
 /** The per-tail result. */
 export interface TailResult {
   readonly tail: string;
@@ -202,7 +228,24 @@ export interface VerifyResult {
   /** Events proven only by the hash chain, not yet by a signature. */
   readonly uncheckpointedEvents: number;
   readonly witness: WitnessStatus;
-  /** A scoped, honest one-line summary. */
+  /**
+   * The verdict as its CLAUSES — the sentence {@link summary} is, before it was joined.
+   *
+   * A pre-joined string is a verdict a reader can only PRINT. One of its clauses is good
+   * news or bad news — the level — and the rest are qualifications of it, so anything
+   * that wanted to say which was which had to find the level's words inside the string.
+   * Handing over the parts costs a caller nothing and takes the guess out.
+   *
+   * Nothing here decides how a clause LOOKS, and that is the only thing a consumer
+   * decides: the words are this file's, and {@link summary} is the proof, being the join
+   * of exactly these.
+   *
+   * NON-EMPTY BY TYPE. Every verdict has a level and the level always reads as something
+   * (see level.ts), so a consumer composing these never has an empty case to invent a
+   * sentence for.
+   */
+  readonly clauses: readonly [VerdictClause, ...VerdictClause[]];
+  /** A scoped, honest one-line summary: {@link clauses}, joined. */
   readonly summary: string;
 }
 
@@ -323,6 +366,17 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     witness,
   };
   const level = provenLevel(facts);
+  // One derivation, two renderings: the clauses are worded once and the sentence is
+  // those clauses joined. Wording the sentence separately is what let two readings of
+  // one chain contradict each other on one line (see `verdictClauses`).
+  const clauses = verdictClauses({
+    level,
+    tailCount: tailResults.length,
+    totalEvents: signedEvents + uncheckpointed,
+    signedEvents,
+    uncheckpointed,
+    census,
+  });
   return {
     ok,
     fullySigned,
@@ -332,14 +386,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     census,
     uncheckpointedEvents: uncheckpointed,
     witness,
-    summary: buildSummary({
-      level,
-      tailCount: tailResults.length,
-      totalEvents: signedEvents + uncheckpointed,
-      signedEvents,
-      uncheckpointed,
-      census,
-    }),
+    clauses,
+    summary: verdictSentence(clauses),
   };
 }
 
@@ -686,8 +734,8 @@ function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssu
   }
 }
 
-/** What the one-line verdict is worded from — every clause, one set of facts. */
-interface SummaryFacts {
+/** What every clause of the verdict is worded from — one set of facts. */
+interface VerdictFacts {
   readonly level: ProvenLevel;
   readonly tailCount: number;
   readonly totalEvents: number;
@@ -699,23 +747,58 @@ interface SummaryFacts {
 }
 
 /**
- * The one-line verdict.
+ * The one-line verdict, clause by clause.
  *
  * Its first clause is the LEVEL and nothing else (see level.ts). It used to be a
  * function of `ok` alone while the clause beside it was a function of the residual
  * count, and with no checkpoint at all the two contradicted each other in one
  * sentence: `verified (T1/T2/T4)` next to `6 event(s) … NOT yet signature-covered`.
- * Both clauses are now worded from one set of facts — the same facts the level is
+ * Every clause is now worded from one set of facts — the same facts the level is
  * derived from — so no reading of this sentence can disagree with another.
+ *
+ * THE CLAUSES ARE THE SENTENCE, and the sentence is no longer built beside them: it is
+ * {@link verdictSentence} over exactly this list. A caller that shows the verdict its
+ * own way therefore shows THESE words, in this order, and the string every other reader
+ * gets is the same list joined.
+ *
+ * The witness clause is last and it is a constant, because T3 is out of scope for local
+ * crypto whatever the rest of the verdict found: with no witness configured the verifier
+ * says so plainly rather than leaving a green that reads as tamper-proof.
  */
-function buildSummary(facts: SummaryFacts): string {
-  const scope = `${facts.tailCount} tail(s); ${coverageClause(facts)}`;
-  const census = censusClauses(facts.census)
-    .map((clause) => `; ${clause}`)
-    .join('');
-  const witness =
-    'external witness (T3): not covered — enable an anchor or push to a shared remote';
-  return `${levelHeadline(facts.level)}; ${scope}${census}; ${witness}`;
+function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...VerdictClause[]] {
+  return [
+    { of: 'level', text: levelHeadline(facts.level) },
+    { of: 'tails', text: `${facts.tailCount} tail(s)` },
+    { of: 'coverage', text: coverageClause(facts) },
+    ...censusClauses(facts.census).map((text): VerdictClause => ({ of: 'census', text })),
+    { of: 'witness', text: WITNESS_CLAUSE },
+  ];
+}
+
+/** How the external-witness layer reads while nothing provides one. */
+const WITNESS_CLAUSE =
+  'external witness (T3): not covered — enable an anchor or push to a shared remote';
+
+/**
+ * What separates two clauses of the verdict — the whole punctuation of the sentence.
+ *
+ * A consumer that composes the clauses ITSELF holds this punctuation too, because it is
+ * doing the joining (the CLI's renderer separates the parts of a line). The two agreeing
+ * is not left to a reading of this constant: the surface's own unpainted line is
+ * asserted, byte for byte, to be the tree's name and this sentence.
+ */
+const CLAUSE_SEPARATOR = '; ';
+
+/**
+ * The clauses as one line — the ONE place they are joined.
+ *
+ * So `summary` cannot be a second wording of the verdict. It was one string before this,
+ * and the clauses were pieces of it that only ever existed inside a template; now the
+ * pieces are the thing and the string is derived, which is what makes a decomposition
+ * that dropped a clause visible in every reader that prints the sentence.
+ */
+function verdictSentence(clauses: readonly VerdictClause[]): string {
+  return clauses.map((clause) => clause.text).join(CLAUSE_SEPARATOR);
 }
 
 /**
@@ -731,7 +814,7 @@ function buildSummary(facts: SummaryFacts): string {
  *   - with a tail unread, the counts are a floor and not a total, and the honest
  *     thing is to say the count is incomplete rather than to publish it.
  */
-function coverageClause(facts: SummaryFacts): string {
+function coverageClause(facts: VerdictFacts): string {
   if (facts.level === 'unreadable') {
     return 'the event count is INCOMPLETE — a tail could not be read';
   }
