@@ -5,16 +5,21 @@
  * for the life of a connection. Its output is not for a person at all: stdout
  * carries the JSON-RPC protocol, so everything this surface would say goes to
  * stderr instead.
+ *
+ * IT IS CLASSIFIED A WRITE even though this file appends nothing. What it starts serves
+ * every write tool the product has, so whoever can run this verb can record anything —
+ * and the classification is about what an invocation CAN do (see `verb.ts`). Reading the
+ * body for the answer would have called it a read.
  */
 
 import type { Command } from 'commander';
 import { discoveryEnv } from '../env.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema mcp` on the program. */
-export function registerMcp(program: Command, wiring: Wiring): void {
+export function registerMcp(program: Command, wiring: Wiring): Declared {
   const { io } = wiring;
-  program
+  const mcp = program
     .command('mcp')
     .description('run the mnema MCP server over stdio (for an agent host)')
     // The one verb that takes a project instead of reading it off `cwd`, and the
@@ -52,4 +57,5 @@ export function registerMcp(program: Command, wiring: Wiring): void {
       // closes — the process serves for the life of the connection.
       await connect();
     });
+  return mutatesTheRecord(mcp);
 }

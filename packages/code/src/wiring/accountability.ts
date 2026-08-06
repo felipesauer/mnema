@@ -12,12 +12,12 @@ import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema accountability` on the program. */
-export function registerAccountability(program: Command, wiring: Wiring): void {
+export function registerAccountability(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const accountability = program
     .command('accountability')
     .description('show who authorized what across the record (optionally windowed/filtered)')
     .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
@@ -64,4 +64,5 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
         }
       },
     );
+  return readsTheRecord(accountability);
 }

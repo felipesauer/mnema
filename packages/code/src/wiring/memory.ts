@@ -13,12 +13,12 @@ import { scopeOption } from './enumerated.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema memory` on the program. */
-export function registerMemory(program: Command, wiring: Wiring): void {
+export function registerMemory(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
-  program
+  const memory = program
     .command('memory')
     .description('capture a memory in the current project')
     .argument('<content>', 'the memory to record')
@@ -52,4 +52,5 @@ export function registerMemory(program: Command, wiring: Wiring): void {
       }
       reportRefusal(wiring, result);
     });
+  return mutatesTheRecord(memory);
 }

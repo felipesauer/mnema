@@ -16,12 +16,12 @@ import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema exposure` on the program. */
-export function registerExposure(program: Command, wiring: Wiring): void {
+export function registerExposure(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const exposure = program
     .command('exposure')
     .description('show which records hold something shaped like a credential (never the value)')
     .option('--json', 'emit the faithful report as JSON (still without any value)')
@@ -39,4 +39,5 @@ export function registerExposure(program: Command, wiring: Wiring): void {
       }
       writeLines(io, exposureReport(render, result.report));
     });
+  return readsTheRecord(exposure);
 }

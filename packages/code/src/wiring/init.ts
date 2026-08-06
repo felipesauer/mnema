@@ -19,12 +19,12 @@ import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema init` on the program. */
-export function registerInit(program: Command, wiring: Wiring): void {
+export function registerInit(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const init = program
     .command('init')
     .description('establish a mnema project in the current directory')
     .action(async () => {
@@ -39,6 +39,7 @@ export function registerInit(program: Command, wiring: Wiring): void {
         io.out(render(fact(`identity: ${result.anchor}`)));
       }
     });
+  return mutatesTheRecord(init);
 }
 
 /**

@@ -10,12 +10,12 @@ import type { Command } from 'commander';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema next-actions` on the program. */
-export function registerNextActions(program: Command, wiring: Wiring): void {
+export function registerNextActions(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const nextActions = program
     .command('next-actions')
     .description('show the moves the workflow allows a task next')
     .argument('<task-id>', 'the task id (the value shown when it was created)')
@@ -41,4 +41,5 @@ export function registerNextActions(program: Command, wiring: Wiring): void {
         io.out(render(itemLine([`${action.action} → ${action.to}${needs}`])));
       }
     });
+  return readsTheRecord(nextActions);
 }

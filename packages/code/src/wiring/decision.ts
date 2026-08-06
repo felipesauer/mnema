@@ -39,10 +39,10 @@ import {
   reportUsage,
 } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema decision` on the program. */
-export function registerDecision(program: Command, wiring: Wiring): void {
+export function registerDecision(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
   const decision = program
     .command('decision')
@@ -176,6 +176,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     });
     await reportDecisionMove(result, oldId, wiring);
   });
+  return mutatesTheRecord(decision);
 }
 
 /**

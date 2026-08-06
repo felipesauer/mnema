@@ -93,7 +93,15 @@
  * to finish a verb a person is typing. They come last for that reason — a reader looking
  * for what mnema records has found it before reaching them — and `completion` comes last
  * of all because it is generated FROM this list: it is the one verb whose answer changes
- * when any line above it does.
+ * when any line above it does. Neither reads the record — and `mcp` is still classified a
+ * WRITE, because it serves every write tool this product has to whoever connects to it.
+ *
+ * EVERY SENTENCE ABOVE THAT SAYS "READ" OR "WRITE" IS NOW A DECLARATION IN THE CODE. The
+ * order of this list is the help; it is NOT the classification, and reading it as one is
+ * how a reader ends up believing the eight writes at the top are all of them. Each verb
+ * answers for itself (`verb.ts`), the type makes the answer compulsory, and
+ * `every-verb-says-if-it-writes.test.ts` exercises the ones that claim to read and counts
+ * what reached the chain.
  */
 
 import type { Command } from 'commander';
@@ -122,7 +130,7 @@ import { registerSkill } from './skill.js';
 import { registerSkills } from './skills.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
-import type { Verb, Wiring } from './verb.js';
+import type { Declared, Verb, Wiring } from './verb.js';
 import { registerVerify } from './verify.js';
 
 /** Every verb, in the order `mnema --help` lists them. */
@@ -155,7 +163,16 @@ export const VERBS: readonly Verb[] = [
   registerCompletion,
 ];
 
-/** Hangs every verb on the program, in order. */
-export function registerVerbs(program: Command, wiring: Wiring): void {
-  for (const verb of VERBS) verb(program, wiring);
+/**
+ * Hangs every verb on the program, in order, and answers with what each one may do to
+ * the record.
+ *
+ * The answers travel back rather than being discarded, because the classification is
+ * only worth declaring if it can be ASKED: a caller that decides what it is willing to
+ * run — this list is what a read-only session is allowed to offer — has to read it off
+ * the same registration the parser routes with, never off a list of names kept beside
+ * it. The entry ignores the answer, having nothing to decide (see `cli.ts`).
+ */
+export function registerVerbs(program: Command, wiring: Wiring): readonly Declared[] {
+  return VERBS.map((verb) => verb(program, wiring));
 }

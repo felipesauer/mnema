@@ -17,12 +17,12 @@ import { scopeOption } from './enumerated.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema link` on the program. */
-export function registerLink(program: Command, wiring: Wiring): void {
+export function registerLink(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
-  program
+  const link = program
     .command('link')
     .description('link one piece of knowledge to another in the current project')
     .argument('<subject>', 'the entity that originates the link')
@@ -67,4 +67,5 @@ export function registerLink(program: Command, wiring: Wiring): void {
         reportRefusal(wiring, result);
       },
     );
+  return mutatesTheRecord(link);
 }

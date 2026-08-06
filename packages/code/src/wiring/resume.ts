@@ -12,12 +12,12 @@ import { here } from './context.js';
 import { writeLines } from './io.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema resume` on the program. */
-export function registerResume(program: Command, wiring: Wiring): void {
+export function registerResume(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const resume = program
     .command('resume')
     .description('show where an actor left off (their latest run, open or ended)')
     .requiredOption('--actor <id>', `the identity whose last run to show — ${ACTOR_HELP}`)
@@ -53,4 +53,5 @@ export function registerResume(program: Command, wiring: Wiring): void {
       );
       io.out(render(fact(`${focus.openRuns.length} run(s) still open`)));
     });
+  return readsTheRecord(resume);
 }

@@ -12,12 +12,12 @@ import { here } from './context.js';
 import { writeLines } from './io.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema focus` on the program. */
-export function registerFocus(program: Command, wiring: Wiring): void {
+export function registerFocus(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const focus = program
     .command('focus')
     .description("show an actor's open runs (what they are touching now)")
     .requiredOption('--actor <id>', `the identity whose focus to show — ${ACTOR_HELP}`)
@@ -73,4 +73,5 @@ export function registerFocus(program: Command, wiring: Wiring): void {
         );
       }
     });
+  return readsTheRecord(focus);
 }

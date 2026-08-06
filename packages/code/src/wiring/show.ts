@@ -12,12 +12,12 @@ import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema show` on the program. */
-export function registerShow(program: Command, wiring: Wiring): void {
+export function registerShow(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const show = program
     .command('show')
     .description('show one whole record by id (the body a search only pointed at)')
     .argument('<id>', 'the record id (from `mnema search`)')
@@ -42,4 +42,5 @@ export function registerShow(program: Command, wiring: Wiring): void {
         }),
       );
     });
+  return readsTheRecord(show);
 }

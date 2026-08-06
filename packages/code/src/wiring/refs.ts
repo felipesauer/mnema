@@ -16,12 +16,12 @@ import { here } from './context.js';
 import { enumeratedOption, listed } from './enumerated.js';
 import { writeLines } from './io.js';
 import { reportRefusal, reportUsage } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema refs` on the program. */
-export function registerReferences(program: Command, wiring: Wiring): void {
+export function registerReferences(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const references = program
     .command('refs')
     .description('show what an entity is connected to across the trees')
     .argument('<id>', 'the entity id (a task, decision, memory, skill, …)')
@@ -76,4 +76,5 @@ export function registerReferences(program: Command, wiring: Wiring): void {
       }
       writeLines(io, referenceReport(render, result.graph));
     });
+  return readsTheRecord(references);
 }
