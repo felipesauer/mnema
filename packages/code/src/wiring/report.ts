@@ -155,9 +155,15 @@ export function reportRefusal(
  * so a no the surface authored looks exactly like the gate's and exactly like the
  * parser's. They used to be written straight to the stream, which is how eighteen
  * lines of this surface ended up being the ones a reader could not tell from output.
+ *
+ * `detail` is the half after the colon, where the no has somewhere to send the reader:
+ * the read-only session refuses a write by naming it AND saying to run it outside, and
+ * a refusal that only says no is a refusal a caller has to guess their way out of. It
+ * is the same second half {@link refusalSentence} already gives the parser's no, so
+ * nothing new is being shaped here — the shape simply became reachable from this door.
  */
-export function reportUsage(to: Reporter, sentence: string): void {
-  to.io.err(to.render(refusalSentence(sentence)));
+export function reportUsage(to: Reporter, sentence: string, detail?: string): void {
+  to.io.err(to.render(refusalSentence(sentence, detail)));
   to.io.fail();
 }
 

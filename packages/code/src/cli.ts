@@ -31,6 +31,7 @@ import { type CliIo, processIo } from './wiring/io.js';
 import { refusalLine, refusalSentence } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
 import { speakUsageErrors } from './wiring/usage.js';
+import type { Declared } from './wiring/verb.js';
 
 export type { CliIo } from './wiring/io.js';
 
@@ -69,6 +70,20 @@ export interface BuiltProgram {
   readonly program: Command;
   /** How a line becomes bytes for this invocation — resolved once, on first use. */
   readonly render: Render;
+  /** Where this program writes, so whoever parses it reports through the same port. */
+  readonly io: CliIo;
+  /**
+   * What each verb of this program declared it can do to the record.
+   *
+   * It travels because a caller can DECIDE with it: the read-only session
+   * (`wiring/repl.ts`) offers a line only when the verb it names declared `reads`, and
+   * it has to read that off the SAME registration the parser is about to route with.
+   * A second `registerVerbs` into a program of its own would answer about a program
+   * nobody runs — which is precisely how the first half of
+   * `every-verb-says-if-it-writes.test.ts` was once a tautology, and what a command
+   * hung on the entry's program by any other path would slip through.
+   */
+  readonly verbs: readonly Declared[];
 }
 
 /**
@@ -81,8 +96,20 @@ export interface BuiltProgram {
  * after it), and naming the token is the difference between telling a caller what is
  * wrong and telling them that something is. Defaulted, because a caller that only
  * wants the declarations — the guards that walk the command tree — parses nothing.
+ *
+ * `render` is given by a caller that has ALREADY resolved the capability and must not
+ * resolve it again. There is one such caller and there was never going to be a second:
+ * an interactive session builds a program per line, and a session whose first answer
+ * was painted and whose tenth was not would be one line's worth of doubt about every
+ * line in the scrollback — the same argument that makes {@link rendererFor} answer at
+ * most once inside one command, one level up. Omitted, this invocation resolves its
+ * own, which is what every other caller does.
  */
-export function buildProgram(io: CliIo = processIo, typed: readonly string[] = []): BuiltProgram {
+export function buildProgram(
+  io: CliIo = processIo,
+  typed: readonly string[] = [],
+  render?: Render,
+): BuiltProgram {
   const program = new Command();
   program
     .name('mnema')
@@ -108,11 +135,13 @@ export function buildProgram(io: CliIo = processIo, typed: readonly string[] = [
   // {@link rendererFor}). `isTty` is asked of stdout alone: it is where a report
   // goes, and a verb whose stderr was a terminal while its stdout was a pipe would
   // otherwise style the file it was redirected into.
-  const render = rendererFor(() => ({
-    when: program.opts<{ color: ColorWhen }>().color,
-    env: process.env,
-    isTty: process.stdout.isTTY === true,
-  }));
+  const resolved =
+    render ??
+    rendererFor(() => ({
+      when: program.opts<{ color: ColorWhen }>().color,
+      env: process.env,
+      isTty: process.stdout.isTTY === true,
+    }));
 
   // The open session's run, resolved lazily and at most once (see
   // {@link pinnedRunResolver}). A verb asks it when it STAMPS a run, and forwards what
@@ -128,22 +157,25 @@ export function buildProgram(io: CliIo = processIo, typed: readonly string[] = [
   //
   // It is built after the renderer because its own refusal is rendered like every
   // other; both are lazy, so the order costs nothing at run time.
-  const pinnedRun = pinnedRunResolver({ io, render });
+  const pinnedRun = pinnedRunResolver({ io, render: resolved });
 
-  registerVerbs(program, { io, render, pinnedRun });
+  const verbs = registerVerbs(program, { io, render: resolved, pinnedRun });
 
   // AFTER the verbs, and over all of them at once: the parser's own refusals, said
   // the way this surface says every other one (see `wiring/usage.ts`). It walks what
   // was just registered, so a verb added to the list above arrives covered.
-  speakUsageErrors(program, { io, render }, typed);
+  speakUsageErrors(program, { io, render: resolved }, typed);
 
-  return { program, render };
+  return { program, render: resolved, io, verbs };
 }
 
 /**
- * Runs the CLI. A thrown error becomes an honest failure — a message and a
- * non-zero exit — never an uncaught stack trace that could read as "nothing to
- * report".
+ * Runs the CLI: builds the program for this invocation and parses the line with it.
+ *
+ * A thrown error becomes an honest failure — a message and a non-zero exit — never an
+ * uncaught stack trace that could read as "nothing to report". That half is
+ * {@link parseWith}, which is where the catch lives so the one caller that inspects a
+ * program before parsing it reports exactly the same way.
  *
  * Its example used to be `verify` over a chain too corrupt to parse, and that one
  * no longer arrives here: an unreadable line is part of the VERDICT now (a `T1`
@@ -153,8 +185,28 @@ export function buildProgram(io: CliIo = processIo, typed: readonly string[] = [
  * write that resumes a tail both parse stored lines, and a corrupt one there is a
  * throw with nowhere honest to put a verdict.
  */
-export async function run(argv: readonly string[], io: CliIo = processIo): Promise<void> {
-  const { program, render } = buildProgram(io, argv);
+export async function run(
+  argv: readonly string[],
+  io: CliIo = processIo,
+  render?: Render,
+): Promise<void> {
+  await parseWith(buildProgram(io, argv, render), argv);
+}
+
+/**
+ * Parses one command line with a program that is already built, turning a throw into
+ * an honest failure.
+ *
+ * It is separate from {@link run} for the one caller that has to look at the program
+ * BEFORE it parses: the read-only session reads each verb's declaration off
+ * {@link BuiltProgram.verbs} and only then hands the line over. Building a second
+ * program to run it would mean deciding about one program and parsing with another,
+ * and writing the catch below a second time would put the surface's last-resort report
+ * in two places — which is the shape three deliveries of this series spent themselves
+ * removing.
+ */
+export async function parseWith(built: BuiltProgram, argv: readonly string[]): Promise<void> {
+  const { program, render, io } = built;
   try {
     await program.parseAsync(argv, { from: 'user' });
   } catch (error) {

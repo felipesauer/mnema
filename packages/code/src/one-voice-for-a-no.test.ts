@@ -149,7 +149,7 @@ describe('every command of the program answers a misuse in the product’s voice
   it('covers a command nobody has written yet, by construction', async () => {
     // A verb added tomorrow is covered because the walk runs over what is registered,
     // not over a table. Built here as its own program so the case cannot be satisfied
-    // by the twenty-six that already exist.
+    // by the twenty-seven that already exist.
     const said: string[] = [];
     const program = new Command().name('later').exitOverride();
     program

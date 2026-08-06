@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp completion help'
+            echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -81,6 +81,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the wo
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
+complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
 complete -c mnema -f -n '__mnema_at ""' -a 'completion' -d 'print the tab-completion script for a shell'
 complete -c mnema -f -n '__mnema_at ""' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at ""' -s V -l version
@@ -355,6 +356,11 @@ complete -c mnema -f -n '__mnema_at "mcp"' -l project -r
 complete -c mnema -f -n '__mnema_at "mcp"' -s h -l help
 complete -c mnema -f -n '__mnema_at "mcp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "mcp"' -l color -x -a 'auto always never'
+
+# mnema repl
+complete -c mnema -f -n '__mnema_at "repl"' -s h -l help
+complete -c mnema -f -n '__mnema_at "repl"' -s V -l version
+complete -c mnema -f -n '__mnema_at "repl"' -l color -x -a 'auto always never'
 
 # mnema completion
 complete -c mnema -f -n '__mnema_at "completion"' -s h -l help

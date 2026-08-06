@@ -688,6 +688,7 @@ beforeAll(async () => {
     'key',
     'verify',
     'mcp',
+    'repl',
     'completion',
   ]) {
     section('help', `mnema ${verb} --help`);

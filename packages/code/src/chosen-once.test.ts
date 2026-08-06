@@ -259,6 +259,20 @@ describe('nothing else decides which renderer', () => {
     expect(naming('presentation')).toEqual(['plain.ts', 'styled.ts']);
   });
 
+  it('and not in the session, which is the newest thing that prints', () => {
+    // A DIRECTORY THAT PRINTS AND IS NOT A VERB. The two cases above are the whole rule
+    // as long as everything that reaches a stream is a verb or a composer; the
+    // interactive session is neither — it prints a banner, a menu of what it runs and
+    // its own refusals — and it is the one place on this surface where the renderer
+    // could be resolved a SECOND time, because it is the one that lives long enough to
+    // ask twice. It takes one, resolved at the entry for the whole session, and names
+    // neither.
+    expect(naming('repl')).toEqual([]);
+    // Read, rather than absent: the directory exists and it does print.
+    expect(shipped('repl')).toEqual(['complete.ts', 'gate.ts', 'session.ts']);
+    expect(readFileSync(join(HERE, 'repl', 'session.ts'), 'utf-8')).toContain('writeLines(io,');
+  });
+
   it('read the modules it claims to have read', () => {
     // The vacuous form: a scan of an empty directory passes and says nothing.
     expect(shipped('wiring').length).toBeGreaterThan(20);

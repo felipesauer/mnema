@@ -2,11 +2,11 @@
  * Every verb says whether it can change the record — and the record says whether it told
  * the truth.
  *
- * The next thing built on this surface is a session that offers a caller only the verbs
- * that CANNOT write, and it has to be default-deny: a write added tomorrow must be
- * refused because nobody classified it, not because somebody remembered. So the
- * classification had to exist, and it was looked for before it was declared. It is not
- * in the code:
+ * The thing built on this surface next was a session that offers a caller only the verbs
+ * that CANNOT write (`mnema repl`), and it had to be default-deny: a write added
+ * tomorrow must be refused because nobody classified it, not because somebody
+ * remembered. So the classification had to exist, and it was looked for before it was
+ * declared. It is not in the code:
  *
  *   - `grep writer` over the adapters names FIFTEEN files, and six of them are reads —
  *     `show`, `timeline`, `resume`, `next-actions`, `brief`, `accountability` — because
@@ -55,6 +55,13 @@
  *   - `mcp` is not exercised: it serves a connection for its lifetime and would never
  *     return. It is declared a WRITE from what it serves, and the sandbox says nothing
  *     about it either way.
+ *   - `repl` is not exercised either, and this one is on the READ side, which is the
+ *     side with the rule. It refuses without a terminal at both ends, so no invocation
+ *     from a test process can reach its loop, and a row that ran it would be measuring a
+ *     refusal — the shape this file already refuses everywhere else. Its claim to read
+ *     is measured in `a-terminal-of-its-own.test.ts` instead, where the session is driven
+ *     over a real record and what reached the chain is counted the same way: the
+ *     measurement moved, it was not dropped.
  *   - The MCP tools are a second surface with the same rule and are NOT classified here.
  *     There are twenty-three of them (`mcp/server.ts`), they are reached only through a
  *     server this surface's `mcp` verb starts, and that verb is already declared a write —
@@ -113,7 +120,16 @@ function verbsThat(effect: RecordEffect): string[] {
 // How each verb is exercised
 // ---------------------------------------------------------------------------
 
-/** A verb no invocation can exercise, and why — the marker, so the row still exists. */
+/**
+ * A verb no invocation can exercise, and why — the marker, so the row still exists.
+ *
+ * TWO verbs carry it, one on each side of the classification, and the reason is the same
+ * shape: both serve the surface for the length of a connection instead of doing a piece
+ * of work and returning. `mcp` would never come back; `repl` refuses outright without a
+ * terminal at both ends, and this harness has neither. The consequence is stated in this
+ * file's doc, because a read that is declared and never measured is exactly the gap this
+ * file exists to close, and it is closed for `repl` somewhere else.
+ */
 const CANNOT_BE_EXERCISED = Symbol('cannot-be-exercised');
 
 /** What the fixture hands an invocation: the values only a founded project can produce. */
@@ -175,7 +191,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   mcp: CANNOT_BE_EXERCISED,
-  // The fifteen reads.
+  // The sixteen reads.
   focus: { argv: (f) => ['focus', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
   'next-actions': { argv: (f) => ['next-actions', f.task] },
@@ -190,6 +206,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   skills: { argv: () => ['skills'] },
   brief: { argv: () => ['brief'] },
   verify: { argv: () => ['verify'] },
+  repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
 };
 
@@ -470,7 +487,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts eleven writes and fifteen reads over the whole surface', () => {
+  it('counts eleven writes and sixteen reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -502,6 +519,7 @@ describe('every verb says if it writes', () => {
       'skills',
       'brief',
       'verify',
+      'repl',
       'completion',
     ]);
     expect(verbsThat('mutates').length + verbsThat('reads').length).toBe(DECLARED.length);
