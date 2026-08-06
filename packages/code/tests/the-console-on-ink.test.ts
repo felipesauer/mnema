@@ -553,6 +553,41 @@ describe('the same verbs, the same lines, another place', () => {
     expect(said.join('\n')).toContain('is an interactive session and this is not a terminal');
   });
 
+  it('hooks every way out on the port it was handed, and takes them off on the way back', async () => {
+    // THE ELO, and the reason it is asserted here rather than left to the pty. Taking the
+    // hooks away does NOT turn the pty cases red: the layout library registers a teardown
+    // of its own on the same exit and the same signals, three levels down from a package
+    // chosen for its boxes. So the pty can say the promise is kept and cannot say by
+    // whom — and a promise made out of somebody else's transitive dependency is not a
+    // promise this product can make. This is what says the hooks are ours.
+    const terminal = fakeTerminal();
+    const hooked: string[] = [];
+    const unhooked: string[] = [];
+    const closed = openSession({
+      io: { out: () => undefined, err: () => undefined, fail: () => undefined },
+      render: renderPlain,
+      self: REPL_VERB,
+      input: terminal.stdin,
+      output: terminal.stdout,
+      interactive: true,
+      leaving: {
+        on: (event) => {
+          hooked.push(event);
+        },
+        off: (event) => {
+          unhooked.push(event);
+        },
+        raise: () => undefined,
+      },
+    });
+    await until(() => terminal.bytes().includes('a session over this project'), 'opened');
+    expect([...hooked].sort()).toEqual(['exit', ...EXIT_SIGNALS].sort());
+    terminal.type('.exit\r');
+    await closed;
+    // And off again, so a second session in this process does not find the first one's.
+    expect([...unhooked].sort()).toEqual([...hooked].sort());
+  }, 120_000);
+
   it('gives the mode back when the session merely RETURNS, which no exit hook covers', async () => {
     // The half of the restoration that is unambiguously this product's. `.exit` ends the
     // SESSION and not the process: nothing is exiting, so no hook of anybody's fires, and
