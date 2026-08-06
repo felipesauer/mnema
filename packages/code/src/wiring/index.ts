@@ -87,12 +87,20 @@
  * STABLE for an unchanged record, which is what lets that `diff` mean "the copy is
  * stale" and nothing else. It writes nothing, like every read here; the redirection
  * belongs to whoever operates it.
+ *
+ * And the LAST TWO read nothing at all, because they are not about the record: `mcp`
+ * serves this surface to an agent host, and `completion` writes the script a shell needs
+ * to finish a verb a person is typing. They come last for that reason — a reader looking
+ * for what mnema records has found it before reaching them — and `completion` comes last
+ * of all because it is generated FROM this list: it is the one verb whose answer changes
+ * when any line above it does.
  */
 
 import type { Command } from 'commander';
 import { registerAccountability } from './accountability.js';
 import { registerAntipatterns } from './antipatterns.js';
 import { registerBrief } from './brief.js';
+import { registerCompletion } from './completion.js';
 import { registerDecision } from './decision.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
@@ -144,6 +152,7 @@ export const VERBS: readonly Verb[] = [
   registerKey,
   registerVerify,
   registerMcp,
+  registerCompletion,
 ];
 
 /** Hangs every verb on the program, in order. */
