@@ -38,11 +38,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
 import {
   DECISION_ACTIONS,
+  DECISION_TRANSITIONS,
   type DiscoveryEnv,
   PROJECT_DIR,
+  type ProofField,
   SEARCH_KINDS,
   SKILL_ACTIONS,
+  SKILL_TRANSITIONS,
   TASK_ACTIONS,
+  TRANSITIONS,
 } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -283,52 +287,71 @@ describe('the MCP takes its sets from the domain', () => {
 
   it('names, in each proof field, exactly the actions the workflow table requires it for', async () => {
     const { fields } = await advertised();
-    // The MCP's ten proof descriptions, against the rows the gate enforces — derived here
-    // from `actionsRequiring`, which is the function the CLI's nine read too. One rule,
-    // two surfaces, and the list is in the vocabulary's order on both.
+    // The MCP's ten proof descriptions, against the rows the gate enforces — derived HERE,
+    // independently of the production helper, over each workflow's own table. That
+    // independence is the whole assertion and it was learned the hard way: a first version
+    // read `actionsRequiring`, so inverting that function's filter left these ten cases
+    // green while every one of the sentences was wrong. A test that asks the code what it
+    // should have produced proves nothing about what it produced.
+    const requiring = (
+      table: readonly { readonly action: string; readonly requires: readonly ProofField[] }[],
+      actions: readonly string[],
+      field: ProofField,
+    ): string =>
+      actions
+        .filter((action) =>
+          table.some((row) => row.action === action && row.requires.includes(field)),
+        )
+        .join(', ');
+
     expect(fieldAt(fields, 'task_transition.reason').description).toBe(
-      `Why (${listed(actionsRequiring('task', 'reason'))}).`,
+      `Why (${requiring(TRANSITIONS, TASK_ACTIONS, 'reason')}).`,
     );
     expect(fieldAt(fields, 'task_transition.note').description).toBe(
-      `What was done (${listed(actionsRequiring('task', 'note'))}).`,
+      `What was done (${requiring(TRANSITIONS, TASK_ACTIONS, 'note')}).`,
     );
     expect(fieldAt(fields, 'task_transition.feedback').description).toBe(
-      `What must change (${listed(actionsRequiring('task', 'feedback'))}).`,
+      `What must change (${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')}).`,
     );
     expect(fieldAt(fields, 'guard.reason').description).toBe(
-      `Simulate the reason (${listed(actionsRequiring('task', 'reason'))}).`,
+      `Simulate the reason (${requiring(TRANSITIONS, TASK_ACTIONS, 'reason')}).`,
     );
     expect(fieldAt(fields, 'guard.note').description).toBe(
-      `Simulate the note (${listed(actionsRequiring('task', 'note'))}).`,
+      `Simulate the note (${requiring(TRANSITIONS, TASK_ACTIONS, 'note')}).`,
     );
     expect(fieldAt(fields, 'guard.feedback').description).toBe(
-      `Simulate the feedback (${listed(actionsRequiring('task', 'feedback'))}).`,
+      `Simulate the feedback (${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')}).`,
     );
     expect(fieldAt(fields, 'decision_transition.note').description).toBe(
-      `Why this verdict (${listed(actionsRequiring('decision', 'note'))}).`,
+      `Why this verdict (${requiring(DECISION_TRANSITIONS, DECISION_ACTIONS, 'note')}).`,
     );
     expect(fieldAt(fields, 'decision_transition.reason').description).toBe(
-      `Why it is being replaced (${listed(actionsRequiring('decision', 'reason'))}).`,
+      `Why it is being replaced (${requiring(DECISION_TRANSITIONS, DECISION_ACTIONS, 'reason')}).`,
     );
     expect(fieldAt(fields, 'skill_transition.note').description).toBe(
-      `Why this verdict (${listed(actionsRequiring('skill', 'note'))}).`,
+      `Why this verdict (${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'note')}).`,
     );
     expect(fieldAt(fields, 'skill_transition.reason').description).toBe(
-      `Why it fell out of use (${listed(actionsRequiring('skill', 'reason'))}).`,
+      `Why it fell out of use (${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason')}).`,
     );
     // Each of those lists has to hold something, or the ten assertions above would pass
     // on empty parentheses — which is what a table read the wrong way round produces.
-    for (const [workflow, field] of [
-      ['task', 'reason'],
-      ['task', 'note'],
-      ['task', 'feedback'],
-      ['decision', 'note'],
-      ['decision', 'reason'],
-      ['skill', 'note'],
-      ['skill', 'reason'],
+    for (const [table, actions, field] of [
+      [TRANSITIONS, TASK_ACTIONS, 'reason'],
+      [TRANSITIONS, TASK_ACTIONS, 'note'],
+      [TRANSITIONS, TASK_ACTIONS, 'feedback'],
+      [DECISION_TRANSITIONS, DECISION_ACTIONS, 'note'],
+      [DECISION_TRANSITIONS, DECISION_ACTIONS, 'reason'],
+      [SKILL_TRANSITIONS, SKILL_ACTIONS, 'note'],
+      [SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason'],
     ] as const) {
-      expect(actionsRequiring(workflow, field).length, `${workflow}/${field}`).toBeGreaterThan(0);
+      expect(requiring(table, actions, field).length, field).toBeGreaterThan(0);
     }
+    // And the production helper agrees with the table read here, which is what makes the
+    // CLI's nine sentences and the MCP's ten the SAME rule rather than two that match.
+    expect(listed(actionsRequiring('task', 'reason'))).toBe(
+      requiring(TRANSITIONS, TASK_ACTIONS, 'reason'),
+    );
   });
 });
 
