@@ -22,7 +22,7 @@
  * indented under a verdict and a fact indented under a subject are the same line.
  */
 
-import type { Line } from './line.js';
+import type { Line, Part, Severity } from './line.js';
 
 /**
  * The verdict line: a label, then what it is about. `detail` is optional because a
@@ -34,14 +34,29 @@ import type { Line } from './line.js';
  * a line apart, so it is the one place with two roles: the label leads and carries
  * the colon, the detail follows it. Where the verdict is the whole sentence there is
  * no detail and no colon — a bare label is a complete line.
+ *
+ * `severity` IS OPTIONAL, AND THAT IS MEASURED RATHER THAN CAUTIOUS. This form serves
+ * three different things across its call sites: a verdict that really is one (`guard`
+ * answering ALLOWED or REFUSED, a refusal funnelled through `wiring/report.ts`), a
+ * named COUNT (`antipatterns` stating "reopened tasks: 3") and a per-tree SUMMARY
+ * (`verify` naming a tree and printing the chain's own sentence). Only the first knows
+ * whether its news is good or bad. Made required, the argument would force two dozen
+ * sites to declare something they do not know, and the ones with nothing to say would
+ * answer with whatever value read as neutral — which is how a surface ends up calling
+ * a count bad. Absent means what it meant before: weight, no hue.
+ *
+ * It rides the LABEL and not the line, because the label is the word that says it.
+ * `REFUSED (MISSING_PROOF)` is what a reader scanning for the answer looks at; the
+ * detail after the colon is the evidence, and evidence is not good or bad news, it is
+ * what the news was about.
  */
-export function statement(label: string, detail?: string): Line {
+export function statement(label: string, detail?: string, severity?: Severity): Line {
+  const head: Part = {
+    role: 'label',
+    text: label,
+    ...(severity !== undefined ? { severity } : {}),
+  };
   const parts: Line['parts'] =
-    detail === undefined
-      ? [{ role: 'label', text: label }]
-      : [
-          { role: 'label', text: label },
-          { role: 'detail', text: detail },
-        ];
+    detail === undefined ? [head] : [head, { role: 'detail', text: detail }];
   return { indent: 0, parts };
 }

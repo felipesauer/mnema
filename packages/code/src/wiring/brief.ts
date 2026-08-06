@@ -64,7 +64,7 @@ export function registerBrief(program: Command, wiring: Wiring): void {
     .action(() => {
       const result = runBrief(here());
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       writeLines(io, briefDocument(result.brief));

@@ -11,21 +11,33 @@
  * knows what `NO_COLOR` does to ripgrep, fd, cargo, gh, bat and delta has to be right
  * about what it does here:
  *
- *   1. `--color=never` — the explicit request of THIS invocation, which nothing may
- *      override. It is last-resort quiet: the answer for a caller whose terminal lies
- *      about what it can render.
- *   2. `NO_COLOR` — set and non-empty turns style off whatever else says, per
- *      no-color.org, which is also why the value is never read: the standard is that
- *      presence is the signal, and a tool that acted on `NO_COLOR=0` differently from
- *      `NO_COLOR=1` would be the tool that broke the promise.
- *   3. `--color=always` and `FORCE_COLOR` — force style ON where it would otherwise be
- *      off, which is what makes `mnema … --color=always | less -R` work. `FORCE_COLOR`
- *      decides BOTH ways: `0` is off, because that is what node and chalk made that
- *      value mean, and a caller who typed it meant off even on a terminal. Where the
- *      flag and the variable disagree the flag wins, which is the whole table's rule —
- *      this invocation's own request outranks the environment it happens to run in.
+ *   1. `--color`, WHEN IT IS EXPLICIT — `never` or `always`. The request of THIS
+ *      invocation, and nothing overrides it: `never` is last-resort quiet for a caller
+ *      whose terminal lies about what it can render, and `always` is what makes
+ *      `mnema … --color=always | less -R` work from inside a script whose environment
+ *      the caller did not choose. `auto` is not a request, it is the absence of one,
+ *      and it falls through to everything below.
+ *   2. `NO_COLOR` — set and non-empty turns style off, per no-color.org, which is also
+ *      why the value is never read: the standard is that presence is the signal, and a
+ *      tool that acted on `NO_COLOR=0` differently from `NO_COLOR=1` would be the tool
+ *      that broke the promise.
+ *   3. `FORCE_COLOR` — forces style on where it would otherwise be off, and it decides
+ *      BOTH ways: `0` is off, because that is what node and chalk made that value mean,
+ *      and a caller who typed it meant off even on a terminal.
  *   4. Otherwise the terminal answers: style when the destination is one, plain when it
  *      is a pipe, a file or a CI log.
+ *
+ * RUNG ONE USED TO BE HALF OF ITSELF, and correcting it is the one behaviour change in
+ * this file's history. The premise written here was that `--color=never` outranked
+ * `NO_COLOR` but `--color=always` did NOT — the flag won going quiet and lost going
+ * loud. What falsified it is the market the rest of this file defers to: git, ripgrep,
+ * fd, ls, bat and delta all let an explicit `--color` beat the environment in BOTH
+ * directions, because a caller typing a flag now is being more specific than a variable
+ * exported in their shell profile. And no-color.org, the authority for rung two, speaks
+ * only about the variable and does not discuss flags at all — so the ordering was never
+ * something it said. The asymmetry was ours, it was not conventional, and the honest
+ * reading of "the flag is this invocation's own request" is that it holds either way.
+ * `chosen-once.test.ts` asserts the inversion by name.
  *
  * NOTHING HERE READS THE ENVIRONMENT. The three inputs arrive as a value ({@link
  * Capability}), read at the entry where the process actually is (`cli.ts`), which is
@@ -34,10 +46,13 @@
  * RULE rather than by a fixture forcing it.
  *
  * `--color` is the option's name, and `NO_COLOR` and `FORCE_COLOR` are the variables',
- * because that is what the market standardised. What this surface spends the capability
- * on is WEIGHT and not hue (see `presentation/styled.ts` for why), so the flag turns
- * bold and dim on and off. A flag named `--style` would be more literal and would be
- * one nobody's fingers know.
+ * because that is what the market standardised. The name is now literal as well as
+ * conventional: what this surface spends the capability on used to be WEIGHT alone, and
+ * `presentation/styled.ts` says what falsified that — the refusal and the gate's verdict
+ * carry a severity, so the flag turns bold, dim AND two hues on and off. The name was
+ * right before it was accurate, which is the argument for taking a market's name rather
+ * than describing your own implementation: `--style` would have been more literal in
+ * October and wrong in November, and it is one nobody's fingers know either way.
  */
 
 import { renderPlain } from '../presentation/plain.js';
@@ -59,9 +74,9 @@ export type ColorWhen = (typeof COLOR_WHENS)[number];
  * one verb's help would have no reason to think the next verb agreed.
  */
 export const COLOR_HELP =
-  'when to use bold and dim: auto (a terminal only), always (also in a pipe), never. ' +
-  'NO_COLOR and FORCE_COLOR are honored; --color=never wins. Style never changes what ' +
-  'a line says.';
+  'when to use bold, dim and color: auto (a terminal only), always (also in a pipe), ' +
+  'never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style ' +
+  'never changes what a line says.';
 
 /** The three things the answer depends on, read where the process is. */
 export interface Capability {
@@ -83,8 +98,8 @@ export interface Capability {
 export function chooseRenderer(capability: Capability): Render {
   const { when, env, isTty } = capability;
   if (when === 'never') return renderPlain;
-  if (env.NO_COLOR !== undefined && env.NO_COLOR !== '') return renderPlain;
   if (when === 'always') return renderStyled;
+  if (env.NO_COLOR !== undefined && env.NO_COLOR !== '') return renderPlain;
   if (env.FORCE_COLOR !== undefined) return env.FORCE_COLOR === '0' ? renderPlain : renderStyled;
   return isTty ? renderStyled : renderPlain;
 }

@@ -18,7 +18,7 @@
 import type { RecordSearch } from '@mnema/copilot';
 import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
-import { itemLine } from './items.js';
+import { asId, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
@@ -48,12 +48,16 @@ export function searchReport(
     lines.push(`${kind} (${group.length})`);
     for (const hit of group) {
       const state = hit.state !== undefined ? ` (${hit.state})` : '';
+      // The id and the date SAY what they are. This line is where four columns used
+      // to weigh the same, and the two nobody reads are what a reader had to look
+      // past to reach the title (see `presentation/items.ts`). The tree and the
+      // state stay plain: they are categories, and a hue per category is noise.
       lines.push(
         render(
           itemLine([
-            hit.id,
+            asId(hit.id),
             hit.scope,
-            hit.at.slice(0, DATE_LENGTH),
+            asWhen(hit.at.slice(0, DATE_LENGTH)),
             `${oneLine(hit.title)}${state}`,
           ]),
         ),

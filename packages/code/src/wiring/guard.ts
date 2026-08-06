@@ -70,7 +70,7 @@ export function registerGuard(program: Command, wiring: Wiring): void {
           ...(opts.which !== undefined ? { which: opts.which } : {}),
         });
         if (!result.ok) {
-          reportRefusal(io, result, { UNKNOWN_TASK: `No task ${id} here.` });
+          reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
           return;
         }
         if (opts.json === true) {
@@ -80,10 +80,15 @@ export function registerGuard(program: Command, wiring: Wiring): void {
         // Human summary — the gate's verdict, one line. ALLOWED names the state
         // the move would reach; REFUSED echoes the gate's own code and reason, so
         // the dry-run reads exactly as the real move's refusal would.
+        //
+        // THE ONLY TWO PLACES ON THE SURFACE THAT SAY GOOD OR BAD. This verb is a
+        // question with a yes-or-no answer, so it is the one reading where a colour
+        // is a fact rather than a taste — and the words still carry it, which is what
+        // makes `--color=never` and a monochrome terminal lose nothing.
         io.out(
           result.verdict.ok
-            ? render(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`))
-            : render(statement(`REFUSED (${result.verdict.code})`, result.verdict.message)),
+            ? render(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`, 'good'))
+            : render(statement(`REFUSED (${result.verdict.code})`, result.verdict.message, 'bad')),
         );
       },
     );

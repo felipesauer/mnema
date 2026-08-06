@@ -40,7 +40,7 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
           ...(opts.which !== undefined ? { which: opts.which } : {}),
         });
         if (!result.ok) {
-          reportRefusal(io, result);
+          reportRefusal(wiring, result);
           return;
         }
         if (opts.json === true) {

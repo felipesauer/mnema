@@ -30,7 +30,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
     .action((opts: { json?: boolean }) => {
       const result = runAntipatterns(here());
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       if (opts.json === true) {

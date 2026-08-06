@@ -24,6 +24,7 @@
 
 import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
+import type { Render } from './presentation/render.js';
 import { COLOR_HELP, COLOR_WHENS, type ColorWhen, rendererFor } from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
@@ -54,8 +55,23 @@ function exitQuietlyOnClosedPipe(): void {
   }
 }
 
+/**
+ * The configured program, and the renderer its own `--color` resolves to.
+ *
+ * The two travel together because the LAST-RESORT report needs both: a throw caught
+ * outside the parse is still a refusal, and a refusal is a line before it is bytes (see
+ * `wiring/report.ts`). Returning the program alone would leave the one report nobody
+ * wired as the one report that does not look like the others.
+ */
+export interface BuiltProgram {
+  /** The program, ready to parse. */
+  readonly program: Command;
+  /** How a line becomes bytes for this invocation — resolved once, on first use. */
+  readonly render: Render;
+}
+
 /** Builds the configured `mnema` program. `io` defaults to the real streams. */
-export function buildProgram(io: CliIo = processIo): Command {
+export function buildProgram(io: CliIo = processIo): BuiltProgram {
   const program = new Command();
   program
     .name('mnema')
@@ -75,12 +91,6 @@ export function buildProgram(io: CliIo = processIo): Command {
       writeErr: (str) => io.err(str.replace(/\n$/, '')),
     });
 
-  // The open session's run, resolved lazily and at most once (see
-  // {@link pinnedRunResolver}). Every WRITING verb asks it and forwards what it
-  // returns; the reads, `init`, `verify`, `key` and `run` itself never do —
-  // none of them stamps a `run`, so none of them has a reason to prove one.
-  const pinnedRun = pinnedRunResolver(io);
-
   // Which renderer, from the three facts about this invocation — read late, because
   // `--color` does not exist until commander has parsed, and at most once, because a
   // report styled in halves would be a report a reader has to doubt (see
@@ -93,9 +103,17 @@ export function buildProgram(io: CliIo = processIo): Command {
     isTty: process.stdout.isTTY === true,
   }));
 
+  // The open session's run, resolved lazily and at most once (see
+  // {@link pinnedRunResolver}). Every WRITING verb asks it and forwards what it
+  // returns; the reads, `init`, `verify`, `key` and `run` itself never do —
+  // none of them stamps a `run`, so none of them has a reason to prove one.
+  // It is built after the renderer because its own refusal is rendered like every
+  // other; both are lazy, so the order costs nothing at run time.
+  const pinnedRun = pinnedRunResolver({ io, render });
+
   registerVerbs(program, { io, render, pinnedRun });
 
-  return program;
+  return { program, render };
 }
 
 /**
@@ -112,8 +130,9 @@ export function buildProgram(io: CliIo = processIo): Command {
  * throw with nowhere honest to put a verdict.
  */
 export async function run(argv: readonly string[], io: CliIo = processIo): Promise<void> {
+  const { program, render } = buildProgram(io);
   try {
-    await buildProgram(io).parseAsync(argv, { from: 'user' });
+    await program.parseAsync(argv, { from: 'user' });
   } catch (error) {
     // commander throws for --help/--version (a clean, zero exit — it already
     // printed) and for a usage error (a non-zero exit it already reported).
@@ -129,7 +148,7 @@ export async function run(argv: readonly string[], io: CliIo = processIo): Promi
     // that already turns a throw into an honest failure, and it reads exactly like
     // any other refusal.
     if (error instanceof IdentityUnavailableError) {
-      io.err(refusalLine(error.code, error.message));
+      io.err(render(refusalLine(error.code, error.message)));
       io.fail();
       return;
     }

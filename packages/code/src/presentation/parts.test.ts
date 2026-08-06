@@ -28,8 +28,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { fact, subjectLine } from './detail.js';
-import { itemLine } from './items.js';
-import { type Line, ROLES, type Role } from './line.js';
+import { asId, asWhen, itemLine } from './items.js';
+import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
 import { statement } from './verdict.js';
 
@@ -46,17 +46,50 @@ describe('every role has something that produces it', () => {
    */
   const everyPrimitive: readonly Line[] = [
     itemLine(['an-id', 'public', 'a title']),
+    itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title']),
     subjectLine('task the-id', 'public'),
     fact('created at noon'),
     fact('mnema key enroll <the line>', 2),
     statement('ALLOWED', 'submit t-1 → READY'),
     statement('local integrity verified; 1 tail(s)'),
+    statement('ALLOWED', 'submit t-1 → READY', 'good'),
+    statement('Refused (MISSING_PROOF)', 'complete needs a note', 'bad'),
   ];
 
   it('produces every role the union declares, and no other', () => {
     const produced = new Set<Role>();
     for (const line of everyPrimitive) for (const part of line.parts) produced.add(part.role);
     expect([...produced].sort()).toEqual([...ROLES].sort());
+  });
+
+  it('produces every severity too, and leaves most parts without one', () => {
+    // The same rule on the second axis: a severity nothing sets is a value the
+    // renderer branches on and never reaches. And the other half — that ABSENT is
+    // the common case — is asserted because a severity every part carried would be
+    // a surface that colours everything, which is a surface that colours nothing.
+    const produced = new Set<Severity>();
+    let unsevere = 0;
+    for (const line of everyPrimitive) {
+      for (const part of line.parts) {
+        if (part.severity === undefined) unsevere++;
+        else produced.add(part.severity);
+      }
+    }
+    expect([...produced].sort()).toEqual([...SEVERITIES].sort());
+    expect(unsevere).toBeGreaterThan(produced.size);
+  });
+
+  it('never lets a severity be the only thing a part says', () => {
+    // The accessibility rule, at the primitive: a part painted red says its own news
+    // in words, so a reader in a pipe, on a monochrome terminal or with `--color=never`
+    // reads the same answer. A coloured part with nothing in it would be a line whose
+    // meaning lived entirely in a hue.
+    for (const line of everyPrimitive) {
+      for (const part of line.parts) {
+        if (part.severity === undefined) continue;
+        expect(part.text.trim(), JSON.stringify(part)).not.toBe('');
+      }
+    }
   });
 
   it('gives every part a role, so nothing reaches a renderer unnamed', () => {

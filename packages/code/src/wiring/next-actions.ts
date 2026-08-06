@@ -24,7 +24,7 @@ export function registerNextActions(program: Command, wiring: Wiring): void {
     .action((id: string, opts: { json?: boolean }) => {
       const result = runNextActions(here(), { id });
       if (!result.ok) {
-        reportRefusal(io, result, { UNKNOWN_TASK: `No task ${id} here.` });
+        reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
         return;
       }
       if (opts.json === true) {

@@ -19,7 +19,6 @@ import { runDecisionTransition } from '../commands/decision-transition.js';
 import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
-import type { CliIo } from './io.js';
 import {
   declaredAgent,
   INVALID,
@@ -27,7 +26,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
+import { type Reporter, reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -82,7 +81,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
           reportRecorded(result, io);
           return;
         }
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
       },
     );
 
@@ -121,7 +120,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
       ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    reportDecisionMove(result, id, io);
+    reportDecisionMove(result, id, wiring);
   });
 
   // `decision supersede <old-id> <new-id> --reason` — supersede as its own verb.
@@ -159,7 +158,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
       ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    reportDecisionMove(result, oldId, io);
+    reportDecisionMove(result, oldId, wiring);
   });
 }
 
@@ -186,12 +185,12 @@ export function registerDecision(program: Command, wiring: Wiring): void {
 function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
   id: string,
-  io: CliIo,
+  to: Reporter,
 ): void {
   if (result.ok) {
-    io.out(movedLine('decision', result.adr, result.id, result.to));
-    reportReplacement(result, io);
+    to.io.out(movedLine('decision', result.adr, result.id, result.to));
+    reportReplacement(result, to.io);
     return;
   }
-  reportRefusal(io, result, { UNKNOWN_DECISION: `No decision ${id} here.` });
+  reportRefusal(to, result, { UNKNOWN_DECISION: `No decision ${id} here.` });
 }
