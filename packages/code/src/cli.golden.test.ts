@@ -590,6 +590,20 @@ beforeAll(async () => {
   await mnema('writes', 'focus', '--actor', 'whoever');
   await mnema('writes', 'key', 'request', '--anchor', 'whoever');
 
+  // ── The PARSER's refusals — one invocation per code the surface words, because
+  //    they are the lines a person meets on their FIRST command and nothing pinned
+  //    them. Each is the product speaking: what is missing and what it means (from
+  //    the declaration the help prints), then the line to type (the same `usage()`).
+  //    `--help` and `--version` are not here and must not be: they arrive by the same
+  //    door and they are the caller getting exactly what they asked for.
+  section('writes', 'refusals — what the parser turns down');
+  await mnema('writes', 'decision', 'A decision with no rationale');
+  await mnema('writes', 'task', 'A task', 'and one word too many');
+  await mnema('writes', 'task', 'A task', '--bogus');
+  await mnema('writes', 'task', 'A task', '--which');
+  await mnema('writes', 'tsk', 'a verb nobody declared');
+  await mnema('writes', 'run', 'nothing');
+
   // ── What a read could not have accepted: an empty argument in a field the catalog
   //    requires. Each of these WROTE a signed event before this door existed, and
   //    from then on every read of the project failed — so the refusal is the whole

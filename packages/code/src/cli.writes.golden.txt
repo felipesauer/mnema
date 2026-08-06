@@ -118,7 +118,8 @@ $ mnema task 'A task with a bad scope' --scope elsewhere
 ! Invalid --scope "elsewhere". Use one of: public, private, global.
 [exit 1]
 $ mnema task 'A task an unnamed agent asked for' --which '   '
-! error: option '--which <agent>' argument '   ' is invalid. it names no agent. Name the agent that executed this, or omit --which — omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
+! mnema task does not accept "   " for --which <agent>: it names no agent. Name the agent that executed this, or omit --which — omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
+!   mnema task [options] [command] <title>
 [exit 1]
 $ mnema task move submit <task-runbook> --scope public
 ! `task move` takes no --scope: a move follows the task to the tree it was born in.
@@ -142,7 +143,8 @@ $ mnema run end --which agent-beta
 ! `mnema run end` needs a run: pass its id, or set MNEMA_RUN to the one `mnema run start` printed.
 [exit 1]
 $ mnema run end no-such-run
-! error: required option '--which <agent>' not specified
+! mnema run end needs --which <agent>: the agent closing this session — required: a close with no agent is credited to you
+!   mnema run end [options] [id]
 [exit 1]
 $ mnema search --limit 0
 ! Invalid --limit "0". Use a whole number of 1 or more.
@@ -175,6 +177,32 @@ $ mnema focus --actor whoever
 [exit 1]
 $ mnema key request --anchor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
+[exit 1]
+
+### refusals — what the parser turns down
+$ mnema decision 'A decision with no rationale'
+! mnema decision needs <rationale>: why the decision was made
+!   mnema decision [options] [command] <title> <rationale>
+[exit 1]
+$ mnema task 'A task' 'and one word too many'
+! mnema task does not take "and one word too many".
+!   mnema task [options] [command] <title>
+[exit 1]
+$ mnema task 'A task' --bogus
+! mnema task does not take "--bogus".
+!   mnema task [options] [command] <title>
+[exit 1]
+$ mnema task 'A task' --which
+! mnema task needs a value after --which <agent>: the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+!   mnema task [options] [command] <title>
+[exit 1]
+$ mnema tsk 'a verb nobody declared'
+! mnema has no command "tsk". Run `mnema --help` to see what it does.
+!   mnema [options] [command]
+[exit 1]
+$ mnema run nothing
+! mnema run has no command "nothing". Run `mnema run --help` to see what it does.
+!   mnema run [options] [command]
 [exit 1]
 
 ### refusals — what no read could accept
