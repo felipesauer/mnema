@@ -6,7 +6,7 @@
  * array is what a reader sees when they ask what mnema does — the writes first, from
  * founding a project to the four knowledge facts, then the session, then every read,
  * then the machine's keys, then verification. Reordering the list reorders the help,
- * which is why it lives in one place and not in the sequence of twenty-five calls
+ * which is why it lives in one place and not in the sequence of twenty-six calls
  * inside one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
