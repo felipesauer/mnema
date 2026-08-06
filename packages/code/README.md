@@ -203,10 +203,20 @@ mnema completion fish > ~/.config/fish/completions/mnema.fish  # every fish
 
 It completes **verbs, subcommands and option names** — including an option a parent group
 declares, which the parser accepts under it (`mnema task move --which`) — and a **value
-only where the declaration enumerates one**: `--color`'s three whens, and this verb's own
-three shells. It does **not** complete an id or a transition, and that is a decision
-rather than a gap: neither is in any declaration, so answering would mean running `mnema`
-on every keystroke, and a run of it costs about 95 ms — more than the command being typed.
+only where the declaration enumerates one**. That last one now covers every closed set the
+domain owns: the ten workflow actions of `task move` and `guard`, the two of `decision
+move`, the four of `skill move`, the three scopes of every `--scope`, the levels of
+`verify --require`, the kinds of `search --kind`, the directions of `refs --direction`.
+
+It does **not** complete an **id**, and that is a decision rather than a gap: an id is in
+no declaration, so answering would mean running `mnema` on every keystroke, and a run of
+it costs about 95 ms — more than the command being typed. **This page used to say the same
+of a transition**, on the same argument. What falsified it: a transition IS in a
+declaration now — the sets moved into `wiring/vocabulary.ts`, where a declaration names
+one without commander validating it — so offering the ten actions costs a Tab nothing and
+the workflow gate still owns the vocabulary (`mnema task move nonsense <id>` is refused
+`UNKNOWN_ACTION`, by the gate, exactly as before). Asserted in
+`one-source-for-a-vocabulary.test.ts`, on the declarations and on the real binary.
 
 The script is **generated from the program's own declarations**, so a verb added to mnema
 is completed the day it ships; print the script again after an upgrade. Asserted in

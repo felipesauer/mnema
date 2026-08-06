@@ -341,8 +341,8 @@ $ mnema guard --help
 |   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
 |                      accountability`, or the short form the reads print (any
 |                      prefix that names one identity here)
-|   --reason <text>    simulate the reason (cancel, block, reopen)
-|   --note <text>      simulate the note (complete, approve)
+|   --reason <text>    simulate the reason (block, cancel, reopen)
+|   --note <text>      simulate the note (approve, complete)
 |   --feedback <text>  simulate the feedback (request_changes)
 |   --which <id>       simulate an executing agent (must differ from --actor)
 |   --json             emit the faithful gate verdict as JSON
@@ -576,8 +576,8 @@ $ mnema task move --help
 |   id                 the task id (the value shown when it was created)
 |
 | Options:
-|   --reason <text>    why (required by cancel, block, reopen)
-|   --note <text>      what was done (required by complete, approve)
+|   --reason <text>    why (required by block, cancel, reopen)
+|   --note <text>      what was done (required by approve, complete)
 |   --feedback <text>  what must change (required by request_changes)
 |   -h, --help         display help for command
 |
@@ -601,11 +601,11 @@ $ mnema decision move --help
 | accept or reject a decision (follows the decision; takes no --scope)
 |
 | Arguments:
-|   action         the transition: accept or reject
+|   action         the transition (accept, reject)
 |   id             the decision id (the value shown when it was recorded)
 |
 | Options:
-|   --note <text>  why this verdict (required by accept and reject)
+|   --note <text>  why this verdict (required by accept, reject)
 |   -h, --help     display help for command
 |
 | Also accepted here (declared on the parent group):
@@ -655,7 +655,7 @@ $ mnema skill move --help
 | move a skill through the workflow (follows the skill; takes no --scope)
 |
 | Arguments:
-|   action           the transition: review, adopt, reject, or deprecate
+|   action           the transition (review, adopt, reject, deprecate)
 |   id               the skill id (the value shown when it was proposed)
 |
 | Options:

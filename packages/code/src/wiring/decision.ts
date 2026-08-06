@@ -33,6 +33,13 @@ import {
 } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import {
+  actionsRequiring,
+  DECISION_MOVE_ACTIONS,
+  enumeratedArgument,
+  listed,
+  scopeOption,
+} from './vocabulary.js';
 
 /** Registers `mnema decision` on the program. */
 export function registerDecision(program: Command, wiring: Wiring): void {
@@ -48,11 +55,11 @@ export function registerDecision(program: Command, wiring: Wiring): void {
         'is immutable, so this is recorded at birth: an option rejected later is a ' +
         'new decision, or supersedes this one.',
     )
-    .option(
-      '--scope <scope>',
-      'where the decision is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Omitted, a decision lands in the ' +
-        'public tree (a declaration about the project).',
+    .addOption(
+      scopeOption(
+        'decision',
+        'Omitted, a decision lands in the public tree (a declaration about the project).',
+      ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -95,10 +102,15 @@ export function registerDecision(program: Command, wiring: Wiring): void {
   // has nowhere to take; it is its own verb below.
   const decisionMove = decision
     .command('move')
-    .description('accept or reject a decision (follows the decision; takes no --scope)')
-    .argument('<action>', 'the transition: accept or reject')
+    .description(
+      `${DECISION_MOVE_ACTIONS.join(' or ')} a decision (follows the decision; takes no --scope)`,
+    )
+    .addArgument(enumeratedArgument('<action>', 'the transition', DECISION_MOVE_ACTIONS))
     .argument('<id>', 'the decision id (the value shown when it was recorded)')
-    .option('--note <text>', 'why this verdict (required by accept and reject)')
+    .option(
+      '--note <text>',
+      `why this verdict (required by ${listed(actionsRequiring('decision', 'note'))})`,
+    )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   decisionMove.action(async (action: string, id: string, opts: { note?: string }) => {

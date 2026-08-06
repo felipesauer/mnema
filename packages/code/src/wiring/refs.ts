@@ -16,6 +16,7 @@ import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
+import { enumeratedOption, listed } from './vocabulary.js';
 
 /** Registers `mnema refs` on the program. */
 export function registerReferences(program: Command, wiring: Wiring): void {
@@ -24,10 +25,12 @@ export function registerReferences(program: Command, wiring: Wiring): void {
     .command('refs')
     .description('show what an entity is connected to across the trees')
     .argument('<id>', 'the entity id (a task, decision, memory, skill, …)')
-    .option(
-      '--direction <way>',
-      `which way to follow edges: ${REFERENCE_DIRECTIONS.join(', ')}`,
-      'both',
+    .addOption(
+      enumeratedOption(
+        '--direction <way>',
+        `which way to follow edges: ${listed(REFERENCE_DIRECTIONS)}`,
+        REFERENCE_DIRECTIONS,
+      ).default('both'),
     )
     .option(
       '--depth <n>',

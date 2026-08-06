@@ -13,6 +13,7 @@
 import { canonicalIdentity, type Scope } from '@mnema/core';
 import { InvalidArgumentError } from 'commander';
 import { type Reporter, reportUsage } from './report.js';
+import { SCOPES } from './vocabulary.js';
 
 /**
  * The help for `--which`, one wording on every writing verb.
@@ -139,9 +140,6 @@ export const ACTOR_HELP =
   'the `mnid:…` from `mnema accountability`, or the short form the reads print ' +
   '(any prefix that names one identity here)';
 
-/** The scopes `--scope` accepts — the surface's view of the core's three trees. */
-export const SCOPES = ['public', 'private', 'global'] as const;
-
 /** Returned by {@link parseScope} when the value is not a valid scope. */
 export const INVALID = Symbol('invalid-scope');
 
@@ -152,6 +150,11 @@ export const INVALID = Symbol('invalid-scope');
  * undefined (let the command apply its default); a bad one is REPORTED here, through
  * the same funnel every other no goes through, and returns the {@link INVALID}
  * sentinel so the action returns without a task being born.
+ *
+ * The set it reads is {@link SCOPES} — the same value the seven `--scope` declarations
+ * list in their help and the completion offers. This message is the reason the set is
+ * declared rather than validated by commander: a scope is refused HERE, in the
+ * product's voice, naming the value it refused.
  */
 export function parseScope(
   value: string | undefined,

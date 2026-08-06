@@ -48,6 +48,24 @@ import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { type Reporter, reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
+import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './vocabulary.js';
+
+/**
+ * What each requirement MEANS, in the phrase `--require` prints beside it.
+ *
+ * Total over the chain's `LevelRequirement`, so a fourth level does not compile until
+ * this says what asking for it does — the omission the help used to be able to make
+ * silently, since the three were typed out in a sentence nothing compared to anything.
+ */
+const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
+  chained: 'the default — fail only on a break, which is what a bare `verify` has always done',
+  signed:
+    'also fail unless every event is covered by a verified signature — expect this to fail ' +
+    'while a session is in flight',
+  witnessed:
+    'also fail unless an external witness covers the record — nothing provides one yet, so ' +
+    'it never passes',
+};
 
 /**
  * The minimum this surface accepts when the caller declares nothing: a break, and
@@ -70,17 +88,20 @@ const INVALID_REQUIREMENT = Symbol('invalid-requirement');
  * a bad value is a usage error the CLI reports itself rather than forwarding a
  * meaningless minimum to a verdict.
  *
- * The tuple is HANDED IN rather than imported here: it is still the chain's, and the
- * caller is the action, which is where the chain is loaded (see `verb.ts`).
+ * THE TUPLE USED TO BE HANDED IN, on the argument that it is the chain's and the caller
+ * is the action, which is where the chain is loaded. What falsified it: the flag's HELP
+ * now lists the levels, and help is built while commander is being configured — so the
+ * tuple is at module scope either way, and passing it as a parameter only made it
+ * possible for the sentence and the check to read two different tuples. They read
+ * {@link LEVEL_REQUIREMENTS}, once, and the message it words is unchanged.
  */
 function parseRequirement(
   value: string | undefined,
   to: Reporter,
-  requirements: readonly LevelRequirement[],
 ): LevelRequirement | typeof INVALID_REQUIREMENT {
   if (value === undefined) return DEFAULT_REQUIREMENT;
-  if ((requirements as readonly string[]).includes(value)) return value as LevelRequirement;
-  reportUsage(to, `Invalid --require "${value}". Use one of: ${requirements.join(', ')}.`);
+  if ((LEVEL_REQUIREMENTS as readonly string[]).includes(value)) return value as LevelRequirement;
+  reportUsage(to, `Invalid --require "${value}". Use one of: ${listed(LEVEL_REQUIREMENTS)}.`);
   return INVALID_REQUIREMENT;
 }
 
@@ -109,19 +130,18 @@ export function registerVerify(program: Command, wiring: Wiring): void {
         'in every one, so a weakness in it would lower the verdict of every project ' +
         'on this disk',
     )
-    .option(
-      '--require <level>',
-      'the least this invocation accepts, for a script or a CI step: ' +
-        'chained (the default — fail only on a break, which is what a bare `verify` ' +
-        'has always done), signed (also fail unless every event is covered by a ' +
-        'verified signature — expect this to fail while a session is in flight), ' +
-        'witnessed (also fail unless an external witness covers the record — nothing ' +
-        'provides one yet, so it never passes)',
+    .addOption(
+      enumeratedOption(
+        '--require <level>',
+        'the least this invocation accepts, for a script or a CI step: ' +
+          glossedList(LEVEL_REQUIREMENTS, LEVEL_MEANS),
+        LEVEL_REQUIREMENTS,
+      ),
     )
     .action(async (opts: { require?: string; global?: boolean }) => {
-      const { LEVEL_REQUIREMENTS, requiredLevel } = await import('@mnema/chain');
+      const { requiredLevel } = await import('@mnema/chain');
       const { runVerify } = await import('../commands/verify.js');
-      const requirement = parseRequirement(opts.require, wiring, LEVEL_REQUIREMENTS);
+      const requirement = parseRequirement(opts.require, wiring);
       if (requirement === INVALID_REQUIREMENT) return;
       const result = runVerify({ ...here(), requirement, global: opts.global === true });
       if (!result.ok) {

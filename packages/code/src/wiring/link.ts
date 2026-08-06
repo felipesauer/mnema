@@ -17,6 +17,7 @@ import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import { scopeOption } from './vocabulary.js';
 
 /** Registers `mnema link` on the program. */
 export function registerLink(program: Command, wiring: Wiring): void {
@@ -27,11 +28,11 @@ export function registerLink(program: Command, wiring: Wiring): void {
     .argument('<subject>', 'the entity that originates the link')
     .argument('<target>', 'the entity linked to')
     .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
-    .option(
-      '--scope <scope>',
-      'where the link is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Omitted, a link lands in the ' +
-        'public tree (an assertion about the project’s records).',
+    .addOption(
+      scopeOption(
+        'link',
+        'Omitted, a link lands in the public tree (an assertion about the project’s records).',
+      ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
