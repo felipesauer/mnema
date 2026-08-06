@@ -101,6 +101,8 @@ export {
   type PartialFinalLineNote,
   type TailIssue,
   type TailResult,
+  type VerdictClause,
+  type VerdictClauseOf,
   type VerifyResult,
   verifyChain,
   type WitnessStatus,

@@ -8,7 +8,7 @@
  * two accounts of one record and the terminal would be the one nobody could quote.
  * So the assertion is bytes, not "the same information".
  *
- * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES — the six SGR sequences of
+ * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES — the seven SGR sequences of
  * {@link SGR}, never every escape. A stored field can hold an escape byte of its own
  * (it is text an actor wrote, and the content door screens for credentials, not for
  * control bytes), and a strip that ate those too would compare a scrubbed styled line
@@ -32,20 +32,20 @@ import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { renderPlain } from './plain.js';
 import { renderStyled } from './styled.js';
-import { statement } from './verdict.js';
+import { clauseStatement, statement } from './verdict.js';
 
 /** The byte every sequence below opens with. */
 const ESC = '\u001b';
 
 /**
- * The six sequences the styled renderer adds, and nothing else: two weights and
- * their closer, two hues and theirs.
+ * The seven sequences the styled renderer adds, and nothing else: two weights and
+ * their closer, three hues and theirs.
  *
  * Built rather than written as a literal, because a regular expression holding a
  * control character is the thing the lint refuses — and it refuses it for the reason
  * that made this file necessary: a control byte in source is invisible to a reader.
  */
-const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|39)m`, 'g');
+const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|39)m`, 'g');
 
 /** One styled line with this renderer's own escapes taken back out. */
 const stripped = (text: string): string => text.replace(SGR, '');
@@ -102,6 +102,18 @@ describe('the styled line is the plain line, wrapped', () => {
     statement('ALLOWED', 'submit t-1 → READY', 'good'),
     statement('REFUSED (MISSING_PROOF)', `needs a note ${ACTOR_ESCAPE}`, 'bad'),
     statement(column('REFUSED', 12), ' complete t-1 ', 'bad'),
+    // The verdict whose sentence arrives in clauses: the shape `verify` prints, the
+    // MIDDLE severity — which no other call site produces and which nothing in this
+    // corpus would otherwise ask the strip to know about — and a clause padded at both
+    // edges, because a painted clause is a painted part and the trim trap above applies
+    // to it just as much.
+    clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
+    clauseStatement('public', [
+      { text: 'local integrity verified (T1 only) — no signature was checked', severity: 'warn' },
+      { text: '1 tail(s)' },
+      { text: `6 event(s) hash-chained ${ACTOR_ESCAPE}` },
+    ]),
+    clauseStatement(column('private', 12), [{ text: ' local integrity FAILED ', severity: 'bad' }]),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -114,13 +126,14 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // TWELVE of the twenty, and exactly the ones holding a role or a severity that
-    // shows: the three subject lines, the seven statements and the two lists with a
-    // said column. The other eight are bare `field` — a fact, a plain column, an empty
-    // part, a blank line — and they are byte for byte the plain line by design, which
-    // is what the last case in this block asserts on purpose.
+    // FIFTEEN of the twenty-three, and exactly the ones holding a role or a severity
+    // that shows: the three subject lines, the seven statements, the three clause
+    // statements and the two lists with a said column. The other eight are bare `field` —
+    // a fact, a plain column, an empty part, a blank line — and they are byte for byte
+    // the plain line by design, which is what the last case in this block asserts on
+    // purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(12);
+    expect(painted.length).toBe(15);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
@@ -158,6 +171,17 @@ describe('the styled line is the plain line, wrapped', () => {
     );
     expect(renderStyled(itemLine([asId('an-id'), 'public', asWhen('2026-08-05')]))).toBe(
       '  \u001b[2man-id\u001b[22m  public  \u001b[2m2026-08-05\u001b[22m',
+    );
+    // The middle hue, on the shape it exists for, and the `; ` between two clauses
+    // staying OUTSIDE both wraps — a separator belongs to the line, exactly like the
+    // colon after the label.
+    expect(
+      renderStyled(
+        clauseStatement('public', [{ text: 'T1 only', severity: 'warn' }, { text: '1 tail(s)' }]),
+      ),
+    ).toBe(
+      '\u001b[1mpublic\u001b[22m: \u001b[2m\u001b[33mT1 only\u001b[39m\u001b[22m' +
+        '; \u001b[2m1 tail(s)\u001b[22m',
     );
   });
 

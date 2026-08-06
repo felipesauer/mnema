@@ -43,8 +43,15 @@
  *     with a hash and `gh pr list` with a number.
  *   - `subject` — one part of {@link subjectLine}, which reads as a heading rather
  *     than as the columns of a table.
+ *   - `clause` — one clause of a verdict that arrives in SEVERAL, after the first. The
+ *     chain hands `verify` its one-line verdict as the clauses it is made of, and the
+ *     call site that knows one clause from another is the one that received them apart;
+ *     joining them back into a string here would throw that away again. It is a
+ *     refinement of `detail` in the same sense the two columns below are refinements of
+ *     `field`: a clause sits where a detail sits and reads as secondary, and what it
+ *     needs of its own is the `; ` that separates it from the clause before it.
  *
- * THE TWO NEWEST ARE REFINEMENTS OF `field`, and that is a constraint and not a
+ * THE TWO COLUMN ROLES ARE REFINEMENTS OF `field`, and that is a constraint and not a
  * preference. A separator is a function of the role ALONE (see `PRECEDED_BY`), so a
  * role that joined its neighbour one way inside a list and another inside a heading
  * could not exist. `id` and `when` take a column's two spaces — which is what keeps
@@ -67,7 +74,7 @@
  * The union is derived from this tuple so the roles can be walked at run time:
  * `parts.test.ts` calls every primitive and refuses a role no primitive produces.
  */
-export const ROLES = ['label', 'detail', 'field', 'id', 'when', 'subject'] as const;
+export const ROLES = ['label', 'detail', 'clause', 'field', 'id', 'when', 'subject'] as const;
 
 /** What a part is on its line. Closed: see {@link ROLES} for what it excludes. */
 export type Role = (typeof ROLES)[number];
@@ -82,16 +89,28 @@ export type Role = (typeof ROLES)[number];
  * neither. So a part always has a role and has a severity only where something knows
  * one, and the renderer composes the two (see `styled.ts`).
  *
- * TWO VALUES AND NO MIDDLE. Green and red are what a terminal has always said, and
- * they are the two a reader acts on. A `warning` would be the third, and this surface
- * has none to say: `antipatterns` states "reopened tasks: 3" and deliberately refuses
- * to call it bad, because three reopenings may be a team learning something (see
- * `verdict.ts`). That refusal is the whole reason severity is OPTIONAL rather than an
- * argument every statement has to answer.
+ * THERE IS A MIDDLE NOW, AND THIS IS WHAT FALSIFIED THE PREMISE THAT SAID THERE WAS
+ * NONE. It read: *TWO VALUES AND NO MIDDLE — green and red are what a terminal has
+ * always said, a `warning` would be the third, and this surface has none to say*. The
+ * argument for it was `antipatterns`, which states "reopened tasks: 3" and deliberately
+ * refuses to call it bad, because three reopenings may be a team learning something (see
+ * `verdict.ts`). THAT ARGUMENT SURVIVED WHOLE — a count is still not news — and what
+ * fell over it is `verify`'s `hash-chain-only`: the level of a record whose hash chain
+ * holds and whose signatures were never checked, because none was there to check. Green
+ * would be a pass over exactly the record the levels were introduced to stop calling
+ * verified; red would fail a project between its first event and its first checkpoint,
+ * which is a legitimate state, and a gate that always fails is a gate somebody switches
+ * off. The middle is the only truthful hue it has, and the difference from the count is
+ * that a level is a RANK on a closed scale, not one category among several.
+ *
+ * The list is ordered worst news last, which is the only thing its order says: nothing
+ * reads a severity by index, and the tables that consume it are total over the union.
+ * Severity stays OPTIONAL, and absent stays the common case — most of what this surface
+ * prints is neither news nor a rank.
  */
-export const SEVERITIES = ['good', 'bad'] as const;
+export const SEVERITIES = ['good', 'warn', 'bad'] as const;
 
-/** How bad a part's news is. Closed: see {@link SEVERITIES} for the missing middle. */
+/** How bad a part's news is. Closed: see {@link SEVERITIES} for why it has a middle. */
 export type Severity = (typeof SEVERITIES)[number];
 
 /** One part of a line: what it is, and what it says. */
