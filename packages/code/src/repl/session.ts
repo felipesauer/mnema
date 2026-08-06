@@ -20,10 +20,10 @@
  *   - IT REFUSES WITHOUT A TERMINAL. Reading commands from a pipe would be a second way
  *     to run this product's verbs, with its own parsing and its own rules, and the
  *     first way already exists: type the verb.
- *   - IT PERSISTS NOTHING. The history is readline's, which lives in memory for the
- *     length of the process and goes nowhere. A file would have to live in the caller's
- *     home — this product writes inside `.mnema/` and nowhere else — and WHERE is a
- *     decision nobody has taken.
+ *   - IT PERSISTS NOTHING. What the caller typed lives in the value the console keeps
+ *     (`editing.ts`), for the length of the process, and goes nowhere. A file would have
+ *     to live in the caller's home — this product writes inside `.mnema/` and nowhere
+ *     else — and WHERE is a decision nobody has taken.
  *   - IT IS NOT A SHELL. No expansion, no globbing, no pipes; and no `cd`, no `set`,
  *     nothing that changes what the session is looking at. One session, one project,
  *     resolved from the directory it was opened in.
@@ -34,19 +34,24 @@
  * and nothing else — no adapter, no domain — which is exactly what the floor work made
  * cheap.
  *
- * THE OUTPUT IS THE SURFACE'S OWN. Every line a command prints goes through the same
- * `io` and the same renderer every other invocation uses, and inside a terminal that
- * renderer is the styled one — so this is the first place where painting is the normal
- * path rather than the exception. `strip(what a command says here)` is what the same
- * command says in a pipe, byte for byte, and that is asserted rather than hoped for.
- * The two bytes this file writes to the terminal ITSELF — the prompt, and the newline
- * that ends the session on the caller's own line — are not a report and carry no style:
- * a painted prompt is escape bytes readline has to do arithmetic over, and it would be
- * the one string on this surface a renderer never saw.
+ * THE OUTPUT IS THE SURFACE'S OWN, and the console is only WHERE IT LANDS. Every line a
+ * command prints goes through the same `io` and the same renderer every other invocation
+ * uses, and inside a terminal that renderer is the styled one — so this is the first
+ * place where painting is the normal path rather than the exception. `strip(what a
+ * command says here)` is what the same command says in a pipe, and that is asserted
+ * rather than hoped for. The port this file hands the commands is the CONSOLE'S: both
+ * streams land on the same page, because inside one terminal there is no second stream —
+ * a refusal written past the console's back would land on top of whatever was being
+ * drawn.
+ *
+ * THE LAYOUT LIBRARY IS LOADED HERE AND NOWHERE ABOVE. `./console.js` is reached by a
+ * dynamic import inside this function, and this function is itself reached by one from
+ * the verb's action, so nothing of it is in the closure a `mnema --version` pays for.
+ * That is not an optimisation, it is the whole reason the session exists: a session
+ * imported at module scope would make every other verb pay for the thing built to stop
+ * paying.
  */
 
-import { once } from 'node:events';
-import { createInterface } from 'node:readline';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import { completionTree } from '../completion/tree.js';
 import { fact, subjectLine } from '../presentation/detail.js';
@@ -57,19 +62,25 @@ import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
-import { ABOUT, argvOf, dispositionOf, LEAVE, SESSION_WORDS, verbsOffered } from './gate.js';
-
-/** What a caller types in front of. Plain, for the reason the file's doc gives. */
-const PROMPT = 'mnema> ';
+import {
+  ABOUT,
+  type AfterLine,
+  argvOf,
+  dispositionOf,
+  LEAVE,
+  SESSION_WORDS,
+  verbsOffered,
+} from './gate.js';
+import type { Leaving } from './leaving.js';
 
 /**
- * How many lines readline keeps to scroll back through.
+ * What a caller types in front of.
  *
- * In memory and nowhere else: readline has no notion of a history file, which is why
- * it is the interface this session is built on rather than `node:repl`, whose history
- * DOES reach the disk when an environment variable points it there.
+ * Plain, and it is the one string on this surface a renderer never sees: it is not a
+ * report and it carries no fact. A painted prompt would be escape bytes the console has
+ * to do column arithmetic over to put the caret in the right place.
  */
-const HISTORY = 500;
+const PROMPT = 'mnema> ';
 
 /** How wide the verb column of `.help` is — the longest verb, and a space after it. */
 const VERB_WIDTH = 16;
@@ -87,15 +98,16 @@ export interface Session {
 /** Everything opening a session needs beyond one line's worth. */
 export interface SessionRequest extends Session {
   /** Where the keystrokes come from. */
-  readonly input: NodeJS.ReadableStream;
-  /** Where the prompt and the echo go. Not where a report goes — that is `io`. */
-  readonly output: NodeJS.WritableStream;
+  readonly input: NodeJS.ReadStream;
+  /** The page the console draws on. Not where a report goes — that is the console. */
+  readonly output: NodeJS.WriteStream;
   /** Whether BOTH ends are a terminal, asked at the entry where the process is. */
   readonly interactive: boolean;
+  /** Every way this process can stop, so the terminal is given back in all of them. */
+  readonly leaving: Leaving;
 }
 
-/** Whether the session goes on after a line, or closes. */
-export type AfterLine = 'go on' | 'leave';
+export type { AfterLine };
 
 /**
  * Opens the session and reads lines until the caller leaves.
@@ -107,11 +119,12 @@ export type AfterLine = 'go on' | 'leave';
  * for mistyping a word.
  */
 export async function openSession(request: SessionRequest): Promise<void> {
-  const { io, render, self, input, output, interactive } = request;
+  const { io, render, self, input, output, interactive, leaving } = request;
 
   // The refusal, in the product's own voice, before anything is opened. It says what
   // to do instead, because a caller who piped something in wanted an answer and there
-  // is one: the verb, typed directly.
+  // is one: the verb, typed directly. It goes to the caller's own port and not to a
+  // console, because the decision not to open one is what is being reported.
   if (!interactive) {
     reportUsage(
       { io, render },
@@ -121,67 +134,37 @@ export async function openSession(request: SessionRequest): Promise<void> {
     return;
   }
 
-  const session: Session = { io, render, self };
+  // The port every command inside the session prints through: the page, on both
+  // streams. It is a closure over `land` rather than the console itself because the
+  // console has to exist before it can be handed one, and what it is handed — the way
+  // a line answers a typed line — has to exist before the console does.
+  let land: (line: string) => void = () => undefined;
+  const onThePage: CliIo = {
+    out: (line) => land(line),
+    err: (line) => land(line),
+    fail: () => undefined,
+  };
+  const session: Session = { io: onThePage, render, self };
+
   // The declarations and the command tree, read off a program built the way every line
   // will build one. What Tab offers is therefore what the gate will accept, from the
   // same registration.
-  const built = buildProgram(io, [], render);
+  const built = buildProgram(onThePage, [], render);
   const offered = verbsOffered(built.verbs, self);
-  const rl = createInterface({
-    input,
-    output,
-    terminal: true,
+
+  const { openConsole } = await import('./console.js');
+  const page = openConsole({
+    stdin: input,
+    stdout: output,
     prompt: PROMPT,
-    historySize: HISTORY,
-    removeHistoryDuplicates: true,
-    completer: completerFor(completionTree(built.program), offered, SESSION_WORDS),
+    complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
+    answer: (line) => typedLine(line, session),
+    leaving,
   });
+  land = page.land;
 
-  writeLines(io, opening(offered.length).map(render));
-
-  // ONE LINE AT A TIME, and it is a chain rather than a flag because readline does not
-  // wait. An `async` handler returns at its first `await`, and a caller who pastes three
-  // lines has already given readline all three — so the three commands ran at once over
-  // one record, their answers came back interleaved, and the one that finished after
-  // `.exit` prompted a closed interface. Measured, in a real terminal, on the first
-  // probe of this file. Each line now waits for the one before it.
-  let closing = false;
-  let pending: Promise<void> = Promise.resolve();
-
-  rl.on('line', (line) => {
-    pending = pending.then(async () => {
-      if (closing) return;
-      // Paused while the command runs, so keystrokes wait in the terminal rather than
-      // being echoed into the middle of an answer.
-      rl.pause();
-      if ((await typedLine(line, session)) === 'leave') {
-        closing = true;
-        rl.close();
-        return;
-      }
-      rl.prompt();
-    });
-  });
-  rl.on('close', () => {
-    closing = true;
-  });
-  rl.on('SIGINT', () => {
-    // The LINE, not the session: kill what was typed and prompt again.
-    if (closing) return;
-    output.write('\n');
-    rl.write(null, { ctrl: true, name: 'u' });
-    rl.prompt();
-  });
-
-  // Awaited from BEFORE the first prompt: input that is already at its end closes the
-  // interface immediately, and a promise created after that would wait for an event
-  // that has been and gone.
-  const closed = once(rl, 'close');
-  rl.prompt();
-  await closed;
-  await pending;
-  // The caller's shell prompt starts on a line of its own, whichever way they left.
-  output.write('\n');
+  writeLines(onThePage, opening(offered.length).map(render));
+  await page.closed;
 }
 
 /**
@@ -192,16 +175,16 @@ export async function openSession(request: SessionRequest): Promise<void> {
  * registration, and a command reaching that program by any other path carries no
  * declaration and lands on the deny side.
  *
- * Exported because the loop above is the only thing in this file that needs a terminal:
- * everything a session DOES with a line is here, and it can be driven, asserted and
- * timed without one.
+ * Exported because the console above is the only thing in this file that needs a
+ * terminal: everything a session DOES with a line is here, and it can be driven,
+ * asserted and timed without one.
  */
 export async function typedLine(line: string, session: Session): Promise<AfterLine> {
   const { render, self } = session;
   // The line's own exit code stays off the process. A session that opened and closed
   // cleanly exits zero even if a verb inside it refused — which is what `node`,
   // `python` and `psql` all do, and what keeps `$?` from reporting a typo as a failed
-  // session. The refusal itself is on the stream, painted, like every other no.
+  // session. The refusal itself is on the page, painted, like every other no.
   const io: CliIo = { out: session.io.out, err: session.io.err, fail: () => undefined };
 
   // Tokenized here for the parser's own refusals, which name what the caller typed, and
