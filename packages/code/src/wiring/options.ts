@@ -12,8 +12,8 @@
 
 import { canonicalIdentity, type Scope } from '@mnema/core';
 import { InvalidArgumentError } from 'commander';
+import { SCOPES } from './enumerated.js';
 import { type Reporter, reportUsage } from './report.js';
-import { SCOPES } from './vocabulary.js';
 
 /**
  * The help for `--which`, one wording on every writing verb.

@@ -20,10 +20,10 @@
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
+import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './enumerated.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
-import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './vocabulary.js';
 
 /** Registers `mnema guard` on the program. */
 export function registerGuard(program: Command, wiring: Wiring): void {

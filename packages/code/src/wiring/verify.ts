@@ -45,10 +45,10 @@ import type { Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
 import { here } from './context.js';
+import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
 import type { CliIo } from './io.js';
 import { type Reporter, reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
-import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './vocabulary.js';
 
 /**
  * What each requirement MEANS, in the phrase `--require` prints beside it.

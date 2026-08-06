@@ -18,6 +18,13 @@ import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
+  actionsRequiring,
+  DECISION_MOVE_ACTIONS,
+  enumeratedArgument,
+  listed,
+  scopeOption,
+} from './enumerated.js';
+import {
   declaredAgent,
   INVALID,
   parseScope,
@@ -33,13 +40,6 @@ import {
 } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
-import {
-  actionsRequiring,
-  DECISION_MOVE_ACTIONS,
-  enumeratedArgument,
-  listed,
-  scopeOption,
-} from './vocabulary.js';
 
 /** Registers `mnema decision` on the program. */
 export function registerDecision(program: Command, wiring: Wiring): void {

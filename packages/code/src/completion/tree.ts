@@ -36,7 +36,7 @@
  * only way a declaration could name a set — so the ten workflow actions, the three
  * scopes and the three levels were offered nowhere: they existed as a sentence typed by
  * hand in the help, and reading a sentence to complete a word would be building on the
- * defect. They are now DECLARED (`wiring/vocabulary.ts`) without being validated by the
+ * defect. They are now DECLARED (`wiring/enumerated.ts`) without being validated by the
  * parser, and this file reads both channels ({@link enumeratedBy}). What is still never
  * offered is an ID: it is in no declaration, and the only way to know one is to run
  * mnema, whose floor is ~95 ms on this machine. A Tab that cost more than the command it
@@ -48,8 +48,8 @@
  */
 
 import type { Argument, Command, Help, Option } from 'commander';
+import { valuesDeclaredOn } from '../wiring/enumerated.js';
 import { everyCommandOf } from '../wiring/usage.js';
-import { valuesDeclaredOn } from '../wiring/vocabulary.js';
 
 /** One flag, in every spelling the parser answers to, and what may follow it. */
 export interface CompletionFlag {
@@ -121,7 +121,7 @@ function nodeOf(command: Command): CompletionNode {
  * anything else before an action runs. That is right for a vocabulary the SURFACE owns
  * (`--color`, `completion <shell>`) and wrong for one the DOMAIN owns, where the gate
  * is what refuses and answers with a typed code (`UNKNOWN_ACTION`). So the domain's sets
- * arrive through `wiring/vocabulary.ts` instead, declared and never validated.
+ * arrive through `wiring/enumerated.ts` instead, declared and never validated.
  *
  * A Tab cannot tell the difference and should not: both are "the words the declaration
  * says go here". A declaration has one channel or the other, never both — the union is
