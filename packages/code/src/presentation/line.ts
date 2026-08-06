@@ -30,6 +30,13 @@
  *   - `label` and `detail` — the two arguments of {@link statement}. The signature
  *     is where the distinction already lives: the label leads and takes the colon
  *     because a reader scanning a log for a refusal reads the first word.
+ *     THIS USED TO SAY `detail` WAS THAT ARGUMENT AND NOTHING ELSE, and what
+ *     falsified it is {@link aside}: a line that says what the reader can DO rather
+ *     than what is true. The reason the role fits is the one the entry already
+ *     gives — it is what this surface means by secondary — and the reason the
+ *     sentence was too narrow is that it named a CALL SITE where it meant a
+ *     meaning. What survived is the punctuation: an aside is one part, so the
+ *     `: ` a detail takes after a label never reaches it.
  *   - `field` — one column of {@link itemLine}, and the whole text of a
  *     {@link fact}. Those two are the SAME line and `forms.test.ts` pins it, so
  *     telling them apart here would invent a difference the output does not make.
