@@ -269,7 +269,15 @@ describe('nothing else decides which renderer', () => {
     // neither.
     expect(naming('repl')).toEqual([]);
     // Read, rather than absent: the directory exists and it does print.
-    expect(shipped('repl')).toEqual(['complete.ts', 'gate.ts', 'session.ts']);
+    expect(shipped('repl')).toEqual([
+      'complete.ts',
+      'console.ts',
+      'editing.ts',
+      'gate.ts',
+      'leaving.ts',
+      'region.ts',
+      'session.ts',
+    ]);
     expect(readFileSync(join(HERE, 'repl', 'session.ts'), 'utf-8')).toContain('writeLines(io,');
   });
 

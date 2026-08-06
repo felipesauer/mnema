@@ -201,6 +201,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // its own port, so there is nothing to reroute — and patching a global of the
     // caller's process in order to draw a box is a larger thing to borrow than a layout.
     patchConsole: false,
+    // WHETHER THERE IS A TERMINAL IS THIS PRODUCT'S ANSWER, not the library's. Left to
+    // itself it decides by looking for the marks of a build server, and would draw
+    // nothing but a last frame on a machine that has a real terminal and an environment
+    // variable saying `CI`. The session refuses without a terminal at both ends before
+    // it ever reaches here, so by this line the question has already been asked — and
+    // asked of the device rather than of the environment.
+    interactive: true,
   });
 
   const disarm = armLeaving(leaving, restore);

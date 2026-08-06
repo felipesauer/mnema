@@ -113,18 +113,25 @@ export type Typed =
   | { readonly does: 'leave' };
 
 /**
- * A chunk of input as the keystrokes it stands for — because a PASTE is not a key.
+ * A chunk of input as the keystrokes it stands for — because a CHUNK is not a key.
  *
- * A terminal hands over whatever arrived since it was last read, so a caller who pasted
- * three lines delivers all three at once, line breaks and all, as a single chunk. A
- * reducer that treated that as one character would put a control byte on the row and
- * drop three commands; one that ran it as one line would run the first and swallow the
- * rest. So the chunk is split HERE, where it is a value: the text between the breaks is
- * typed, and every break is a Return.
+ * A terminal hands over whatever arrived since it was last read. Somebody typing gives
+ * one character at a time; somebody PASTING gives three lines at once, breaks and all;
+ * and somebody who pressed Ctrl-C a moment before the paste gives all of it in one
+ * string. Measured, in a pty, on the case that is easiest to get wrong: a chunk holding
+ * a chord followed by two commands. A reducer handed that whole thing sees a control
+ * byte, refuses to put it on the row, and drops the two commands with it — and the row
+ * it did not clear is then submitted by the Return that follows.
  *
- * Anything that is not plain text is itself: a chord, an arrow, a Tab and a Return
- * already ARE one key, and a chunk with no break in it is the ordinary case of somebody
- * typing.
+ * So a chunk is TOKENIZED here, where it is a value: runs of ordinary characters are
+ * typed, and every control byte becomes the key it stands for. The mapping is the
+ * terminal's own and not a table of special cases — a byte between one and twenty-six is
+ * the corresponding letter with Ctrl held down, which is how Ctrl-C arrives as three and
+ * Ctrl-D as four.
+ *
+ * Anything the keyboard already NAMED is itself: an arrow, a Tab, a Return and a chord
+ * arrive decided, and a chunk of plain text with no control byte in it is the ordinary
+ * case of somebody typing.
  */
 export function keystrokesOf(stroke: Keystroke): readonly Keystroke[] {
   const named =
@@ -137,15 +144,36 @@ export function keystrokesOf(stroke: Keystroke): readonly Keystroke[] {
     stroke.rightArrow ||
     stroke.upArrow ||
     stroke.downArrow;
-  if (named || !/[\r\n]/.test(stroke.input)) return [stroke];
+  if (named || !unprintable(stroke.input)) return [stroke];
 
-  const lines = stroke.input.split(/\r\n|[\r\n]/);
   const strokes: Keystroke[] = [];
-  lines.forEach((line, index) => {
-    if (line.length > 0) strokes.push({ ...NO_KEY, input: line });
-    if (index < lines.length - 1) strokes.push({ ...NO_KEY, return: true });
-  });
+  let text = '';
+  const typed = (): void => {
+    if (text.length > 0) strokes.push({ ...NO_KEY, input: text });
+    text = '';
+  };
+  for (const character of stroke.input) {
+    if (!unprintable(character)) {
+      text += character;
+      continue;
+    }
+    typed();
+    strokes.push(controlKey(character));
+  }
+  typed();
   return strokes;
+}
+
+/** The key one control byte stands for. A byte nothing answers to presses nothing. */
+function controlKey(character: string): Keystroke {
+  const code = character.codePointAt(0) ?? 0;
+  if (character === '\r' || character === '\n') return { ...NO_KEY, return: true };
+  if (character === '\t') return { ...NO_KEY, tab: true };
+  if (code === 0x08 || code === 0x7f) return { ...NO_KEY, backspace: true };
+  if (code >= 0x01 && code <= 0x1a) {
+    return { ...NO_KEY, input: String.fromCharCode(code + 0x60), ctrl: true };
+  }
+  return { ...NO_KEY };
 }
 
 /**
