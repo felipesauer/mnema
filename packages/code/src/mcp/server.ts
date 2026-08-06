@@ -63,6 +63,7 @@
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
+  DECISION_ACTIONS,
   type DiscoveryEnv,
   type ProofField,
   SEARCH_DEFAULT_LIMIT,
@@ -87,7 +88,6 @@ import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../serv
 import {
   actionsRequiring,
   andListed,
-  DECISION_ACTIONS,
   listed,
   orListed,
   SCOPE_CHOICES,

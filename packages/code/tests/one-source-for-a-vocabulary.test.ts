@@ -20,18 +20,29 @@
  *     refusal a caller must get is the GATE's, by its own code. Asserted twice: on the
  *     declarations, and on the real binary, which is the only place that can show
  *     `UNKNOWN_ACTION` is still reachable.
- *   - NOBODY TYPES A LIST AGAIN. A source scan over the wiring, so a site that goes back
- *     to spelling out a vocabulary in a string is red — the regression this slice exists
- *     to prevent, and the one review does not catch, because a hand-typed list that is
- *     CORRECT today looks like nothing at all.
+ *   - NOBODY TYPES A LIST AGAIN. A source scan over BOTH surfaces, so a site that goes
+ *     back to spelling out a vocabulary in a string is red — the regression this slice
+ *     exists to prevent, and the one review does not catch, because a hand-typed list
+ *     that is CORRECT today looks like nothing at all.
  *
- * WHAT A PASS HERE DOES NOT COVER. The MCP server's tool descriptions type the same
- * vocabularies by hand — the ten actions in `task_transition`, the decision and skill
- * ones in their `action` field, which actions need which proof, and the scopes with a
- * gloss that DIFFERS from this surface's ("this machine, this project" against "this
- * machine"). That is the agent-facing half of the same defect and it is untouched: the
- * scan below stops at `wiring/`, and it says so out loud rather than passing quietly
- * over `mcp/`.
+ * WHERE THE SCAN USED TO STOP, AND WHAT MOVED IT. It covered `wiring/` and said so out
+ * loud: the MCP's tool descriptions typed the same vocabularies by hand, and the reason
+ * given for leaving them was that this slice built help and completion, and completion
+ * does not exist for MCP. WHAT FALSIFIED IT: the MCP was not only re-typing prose. It
+ * validated `scope` with `z.enum(['public', 'private', 'global'])` at eight sites and
+ * `direction` with `z.enum(['both', 'out', 'in'])` at a ninth — arrays, not sentences —
+ * and a tool's input schema is what the tool ACCEPTS. So a fourth tree added to the domain
+ * would have reached this surface's help, its Tab and its refusal, and left the other door
+ * refusing a word the same product takes. Two doors telling a reader different stories is
+ * a documentation defect; two doors accepting different words is not.
+ *
+ * The scan covers `wiring/` and `mcp/` now, and it looks for three shapes rather than one:
+ * a pair of members inside one literal, a set re-tupled into an array of literals, and a
+ * list with each member's gloss wedged between them. The second and third were invisible
+ * to the first — which is why `mcp/server.ts` measured at NINE hits and held
+ * TWENTY-SEVEN sites. What a pass here still does not cover is `commands/`, which speaks
+ * about the domain in prose and holds one module-private tuple of scopes, and a list of
+ * ONE member anywhere (see the blind spot named below).
  */
 
 import { spawnSync } from 'node:child_process';
@@ -395,9 +406,32 @@ const VOCABULARIES: Readonly<Record<string, readonly string[]>> = {
 /** How two members of one set are joined when somebody writes them out. */
 const JOINS = [', ', ', or ', ' or ', ', and ', ' and ', '/'];
 
+/** An array of string literals, which is how a set gets RE-TUPLED rather than described. */
+const LITERAL_ARRAY =
+  /\[\s*(?:'[^'\\\n]*'|"[^"\\\n]*")(?:\s*,\s*(?:'[^'\\\n]*'|"[^"\\\n]*"))*\s*,?\s*\]/g;
+
+/** The members of an array-of-literals, as written. */
+function membersOf(array: string): readonly string[] {
+  return [...array.matchAll(/'([^'\\\n]*)'|"([^"\\\n]*)"/g)].map(
+    (member) => (member[1] ?? member[2]) as string,
+  );
+}
+
 /**
- * Every place in `source` where two members of one vocabulary are written next to each
- * other inside a string literal.
+ * Every place in `source` where somebody typed a vocabulary out instead of reading it.
+ *
+ * THREE SHAPES, and they were found in that order — each by a surface the one before it
+ * did not cover:
+ *
+ *   - PAIRS IN ONE LITERAL: `'(submit, start, block)'`. The CLI's shape, and for a while
+ *     the only one looked for.
+ *   - AN ARRAY OF LITERALS: `z.enum(['public', 'private', 'global'])`. Invisible to the
+ *     first, because the members are in different literals — and the one shape that is
+ *     not prose at all: a `z.enum` is what a tool ACCEPTS. Nine of these sat in
+ *     `mcp/server.ts` while the pair scan reported the file at fourteen hits.
+ *   - A GLOSSED LIST: `'public (team-visible), private (this machine, …), or global (…)'`.
+ *     Also invisible to the first, because the gloss sits BETWEEN the members, so no two
+ *     of them are ever adjacent. Four more.
  *
  * A literal with an ELLIPSIS is not one, and the exclusion is the rule and not a
  * convenience: `mnema refs <id>` says "a task, decision, memory, skill, …", which names
@@ -407,7 +441,8 @@ const JOINS = [', ', ', or ', ' or ', ', and ', ' and ', '/'];
  */
 function handTypedLists(source: string): readonly string[] {
   const found: string[] = [];
-  for (const literal of codeOf(source).match(LITERAL) ?? []) {
+  const code = codeOf(source);
+  for (const literal of code.match(LITERAL) ?? []) {
     if (literal.includes('…')) continue;
     for (const [vocabulary, values] of Object.entries(VOCABULARIES)) {
       for (const first of values) {
@@ -420,27 +455,59 @@ function handTypedLists(source: string): readonly string[] {
             const pair = `${first}${join}${second}`;
             if (names(literal, pair)) found.push(`[${vocabulary}] ${pair} — ${literal}`);
           }
+          // The same list with each member's gloss wedged in after it. The gloss may
+          // hold commas of its own ("this machine, this project"), so what separates
+          // the two members is a parenthesis and then a join — and the parenthesis
+          // must not itself contain one, or the shape would jump over a whole clause.
+          const glossed = new RegExp(
+            `(^|[^\\w-])${quoted(first)} \\([^()]*\\)(?:,| or | and |, or |, and ) ?${quoted(second)}($|[^\\w-])`,
+          );
+          if (glossed.test(literal)) {
+            found.push(`[${vocabulary}] ${first} (…), ${second} — ${literal}`);
+          }
         }
+      }
+    }
+  }
+  for (const array of code.match(LITERAL_ARRAY) ?? []) {
+    const members = membersOf(array);
+    // Two members, or it is not a list of anything: a one-element array is a value.
+    if (members.length < 2) continue;
+    for (const [vocabulary, values] of Object.entries(VOCABULARIES)) {
+      if (members.every((member) => values.includes(member))) {
+        found.push(`[${vocabulary}] re-tupled — ${array.replace(/\s+/g, ' ')}`);
       }
     }
   }
   return found;
 }
 
+/** The directories of `src` the scan covers — every surface, and the shared declaration. */
+const SCANNED = ['wiring', 'mcp'];
+
 describe('no declaration writes a vocabulary out by hand', () => {
-  it('finds none anywhere in the wiring', () => {
-    const typed = sourcesUnder('wiring').flatMap((file) =>
-      handTypedLists(readFileSync(join(SRC, file), 'utf-8')).map((hit) => `${file}: ${hit}`),
+  it('finds none in either surface', () => {
+    // IT USED TO STOP AT `wiring/`, and said so out loud rather than passing quietly over
+    // the other surface. What falsified that scope: `mcp/server.ts` was not merely
+    // re-typing prose there — it was re-typing the ARRAYS its `z.enum`s validate against,
+    // so the two doors could accept different words. A guard that names where it stops is
+    // honest; it is still a guard that does not cover the case that matters most.
+    const typed = SCANNED.flatMap((directory) =>
+      sourcesUnder(directory).flatMap((file) =>
+        handTypedLists(readFileSync(join(SRC, file), 'utf-8')).map((hit) => `${file}: ${hit}`),
+      ),
     );
     expect(typed).toEqual([]);
-    // The scan reaches real files, and the whole family of them.
+    // The scan reaches real files, and the whole family of them, in both directories.
     expect(sourcesUnder('wiring').length).toBeGreaterThan(30);
+    expect(sourcesUnder('mcp').length).toBeGreaterThan(5);
   });
 
-  it('and would find one, in either half of a declaration', () => {
-    // Non-vacuity on input this test owns, in the two shapes the wiring had: a list in an
-    // argument's help, and a list of the actions a proof flag is required by. Both are
-    // what the files said before this slice, and both must be red.
+  it('and would find one, in every shape either surface had', () => {
+    // Non-vacuity on input this test owns, in the shapes the two surfaces had: a list in
+    // an argument's help, a list of the actions a proof flag is required by, a set
+    // re-tupled into a validator, and a list with a gloss between its members. All four
+    // are what the files said before, and all four must be red.
     expect(
       handTypedLists("argument('<action>', 'the transition (submit, start, block)')"),
     ).toHaveLength(2);
@@ -450,11 +517,23 @@ describe('no declaration writes a vocabulary out by hand', () => {
     expect(handTypedLists("'the transition: review, adopt, reject, or deprecate'")).not.toEqual([]);
     expect(handTypedLists("'born: public, private, global'")).not.toEqual([]);
     expect(handTypedLists("'the levels: chained, signed, witnessed'")).not.toEqual([]);
-    // And what it must NOT call a list: a comment, a sentence of examples, and two
-    // members of a set that are simply words of a sentence.
+    // The MCP's two shapes, on the very text it carried. Each is invisible to a scan for
+    // adjacent pairs, which is why the file measured clean at nine hits while holding
+    // twenty-seven sites.
+    expect(handTypedLists("z.enum(['public', 'private', 'global'])")).not.toEqual([]);
+    expect(handTypedLists("z.enum(['both', 'out', 'in'])")).not.toEqual([]);
+    expect(
+      handTypedLists("'lands in — public (team-visible), private (this machine, this project), '"),
+    ).not.toEqual([]);
+    // And what it must NOT call a list: a comment, a sentence of examples, two members of
+    // a set that are simply words of a sentence, an array of a DIFFERENT vocabulary, and
+    // an array holding one member and something else.
     expect(handTypedLists('// the transition (submit, start, block)')).toEqual([]);
     expect(handTypedLists("'the entity id (a task, decision, memory, skill, …)'")).toEqual([]);
     expect(handTypedLists("'it prints to stdout and installs nothing'")).toEqual([]);
+    expect(handTypedLists("z.enum(['auto', 'always', 'never'])")).toEqual([]);
+    expect(handTypedLists("const SHELLS = ['bash', 'zsh', 'fish']")).toEqual([]);
+    expect(handTypedLists("['public', 'a directory name']")).toEqual([]);
     // A KNOWN BLIND SPOT, said out loud: a list of ONE member is invisible to a scan for
     // pairs, so `(required by request_changes)` typed by hand would pass. What covers it
     // is that no site composes such a sentence any more — every one of them interpolates

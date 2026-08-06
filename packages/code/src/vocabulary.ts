@@ -57,7 +57,18 @@ import {
   TRANSITIONS,
 } from '@mnema/core';
 
-export { DECISION_ACTIONS, LEVEL_REQUIREMENTS, SEARCH_KINDS, SKILL_ACTIONS, TASK_ACTIONS };
+/**
+ * The sets a DECLARATION on some surface takes, re-exported so the readers name one
+ * module.
+ *
+ * `DECISION_ACTIONS` is deliberately NOT among them, though this module reads it below:
+ * no declaration takes the decision vocabulary whole — the CLI's `decision move` offers
+ * it minus `supersede`, which has a verb of its own, and the MCP's `action` is free text
+ * with the words in its description. So the surface that needs the whole set reads it from
+ * the domain, and this module publishes nothing a door does not take. That rule is
+ * asserted (`both-surfaces-one-vocabulary.test.ts`), and it caught this very export.
+ */
+export { LEVEL_REQUIREMENTS, SEARCH_KINDS, SKILL_ACTIONS, TASK_ACTIONS };
 
 // ---------------------------------------------------------------------------
 // The prose: a set, as a phrase
