@@ -81,8 +81,8 @@ function table(name: string, rows: readonly CompletionRow[]): readonly string[] 
 /**
  * The subcommands of each level as `_describe`'s `word:description` items.
  *
- * One item per LINE of the script, continued — the root offers twenty-seven of them, and
- * a single line holding all twenty-seven would be a file nobody can read a diff of.
+ * One item per LINE of the script, continued — the root offers twenty-eight of them, and
+ * a single line holding all twenty-eight would be a file nobody can read a diff of.
  * `_describe` splits an item at its FIRST colon, so a description that holds one (the
  * gate's "dry-run the gate: would a move be allowed…") arrives whole.
  */

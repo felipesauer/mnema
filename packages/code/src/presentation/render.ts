@@ -5,7 +5,7 @@
  * There are two of them now (`plain.ts` and `styled.ts`) and the surface names
  * neither: every verb that prints receives one. That is the whole point of the type
  * existing as its own module. A read that imported a renderer would be a read that
- * decided how output looks, twenty-six times over, and the decision is not the
+ * decided how output looks, twenty-seven times over, and the decision is not the
  * read's to make — it is the caller's terminal, their flag and their environment,
  * which are resolved once at the entry (see `wiring/color.ts`) and handed down.
  *

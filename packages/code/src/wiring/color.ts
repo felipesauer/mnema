@@ -70,7 +70,7 @@ export type ColorWhen = (typeof COLOR_WHENS)[number];
  *
  * It is one question about one invocation, and it is asked before the verb: `mnema
  * --color=never verify`, the way `git --no-pager log` is. Declared on each of the
- * twenty-six instead, it would be twenty-six flags with one name, and the reader of
+ * twenty-seven instead, it would be twenty-seven flags with one name, and the reader of
  * one verb's help would have no reason to think the next verb agreed.
  */
 export const COLOR_HELP =
