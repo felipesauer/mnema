@@ -189,7 +189,10 @@ describe('every position reads as what it is, and paints only where it is news',
       const painted = lineFor(styled, id);
       const hue = HUE_OF[state];
       // The words, either way: the state is named in both, so nothing lives in the hue.
-      expect(bare, state).toContain(` (${state})`);
+      // Asserted as the END of the line and with the DOUBLE space refused, because
+      // `toContain` alone reads a state joined as a column as if nothing had moved — which
+      // is exactly the mutation that turned the golden red and left this case green.
+      expect(bare, state).toMatch(new RegExp(`[^ ] \\(${state}\\)$`));
       expect(stripped(painted), state).toBe(bare);
       if (hue === undefined) {
         // Unpainted is asserted as the PLAIN sequence surviving verbatim — the space, the
@@ -221,8 +224,9 @@ describe('every position reads as what it is, and paints only where it is news',
       const id = taskIn.get(state) as string;
       const bare = (await invoke('--color=never', 'show', id)).join('\n');
       const painted = (await invoke('--color=always', 'show', id)).join('\n');
-      expect(bare, state).toContain(`the task the fixture wrote number `);
-      expect(bare, state).toContain(` (${state})`);
+      expect(bare, state).toContain('the task the fixture wrote number ');
+      // One space between the title and the position, and the position ends the line.
+      expect(bare, state).toMatch(new RegExp(`[^ ] \\(${state}\\)$`, 'm'));
       expect(stripped(painted), state).toBe(bare);
       const hue = HUE_OF[state];
       if (hue === undefined) expect(painted, state).toContain(` (${state})`);
