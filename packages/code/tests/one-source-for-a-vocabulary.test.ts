@@ -1,0 +1,532 @@
+/**
+ * One source for a vocabulary: the closed sets of domain words the CLI's declarations
+ * take, and the two things that read them.
+ *
+ * Twenty-two declarations used to write a domain vocabulary out by hand — the ten
+ * workflow actions in `task move` and again in `guard`, the three scopes in seven
+ * births, the three levels `--require` accepts, and, at nine more, WHICH actions each
+ * proof flag is required by. Nothing compared any of those sentences to the machine, so
+ * an action added to a workflow would leave every one of them a version behind with the
+ * whole suite green. A help that omits a word the gate accepts is worse than one that
+ * says nothing: the reader concludes the word does not exist.
+ *
+ * Three things are asserted here, and they are different:
+ *   - THE PROSE IS THE MACHINE'S. Every declaration that names a set lists exactly that
+ *     set's members, and the sets themselves are the domain's own constants — compared
+ *     against `@mnema/core` and `@mnema/chain`, never against a string typed in this
+ *     file, which would just move the copy from `src` to `tests`.
+ *   - NOTHING VALIDATES. Not one of those declarations carries a `.choices()`, because
+ *     commander's version installs a parser that throws before an action runs — and the
+ *     refusal a caller must get is the GATE's, by its own code. Asserted twice: on the
+ *     declarations, and on the real binary, which is the only place that can show
+ *     `UNKNOWN_ACTION` is still reachable.
+ *   - NOBODY TYPES A LIST AGAIN. A source scan over the wiring, so a site that goes back
+ *     to spelling out a vocabulary in a string is red — the regression this slice exists
+ *     to prevent, and the one review does not catch, because a hand-typed list that is
+ *     CORRECT today looks like nothing at all.
+ *
+ * WHAT A PASS HERE DOES NOT COVER. The MCP server's tool descriptions type the same
+ * vocabularies by hand — the ten actions in `task_transition`, the decision and skill
+ * ones in their `action` field, which actions need which proof, and the scopes with a
+ * gloss that DIFFERS from this surface's ("this machine, this project" against "this
+ * machine"). That is the agent-facing half of the same defect and it is untouched: the
+ * scan below stops at `wiring/`, and it says so out loud rather than passing quietly
+ * over `mcp/`.
+ */
+
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { LEVEL_REQUIREMENTS } from '@mnema/chain';
+import {
+  DECISION_ACTIONS,
+  DECISION_TRANSITIONS,
+  type ProofField,
+  SEARCH_KINDS,
+  SKILL_ACTIONS,
+  SKILL_TRANSITIONS,
+  TASK_ACTIONS,
+  TRANSITIONS,
+} from '@mnema/core';
+import { Command, type Option } from 'commander';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { buildProgram, type CliIo } from '../src/cli.js';
+import { completionScript } from '../src/completion/script.js';
+import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
+import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';
+import { SHELLS } from '../src/wiring/completion.js';
+import { everyCommandOf } from '../src/wiring/usage.js';
+import { enumeratedArgument, SCOPES, valuesDeclaredOn } from '../src/wiring/vocabulary.js';
+
+/** A silent port: everything that reads declarations writes nothing. */
+const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
+
+/** The program as the binary builds it. */
+const declared = buildProgram(silent).program;
+
+/** `packages/code/src`, where the scan starts and stays. */
+const SRC = fileURLToPath(new URL('../src', import.meta.url));
+
+/** The built CLI — the same file the `mnema` bin points at. */
+const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+
+/** The words that reach a command, without the program's own name. */
+function pathOf(command: Command): string {
+  const names: string[] = [];
+  for (let at: Command | null = command; at.parent !== null; at = at.parent) {
+    names.unshift(at.name());
+  }
+  return names.join(' ');
+}
+
+/** One declaration that names a set: where it is, what it says, and what it takes. */
+interface Declared {
+  /** `task move <action>`, `search --kind` — how a reader would name it. */
+  readonly where: string;
+  /** The help commander would print for it. */
+  readonly description: string;
+  /** The set it says its value comes from. */
+  readonly values: readonly string[];
+  /** commander's own enumeration, which also VALIDATES. Absent on every domain set. */
+  readonly argChoices: readonly string[] | undefined;
+}
+
+/** Every declaration of the program that names a closed set, arguments and options. */
+function everyDeclaredSet(): readonly Declared[] {
+  const found: Declared[] = [];
+  for (const command of everyCommandOf(declared)) {
+    const path = pathOf(command);
+    const at = (name: string): string => (path === '' ? name : `${path} ${name}`);
+    for (const argument of command.registeredArguments) {
+      const values = valuesDeclaredOn(argument);
+      if (values.length === 0) continue;
+      found.push({
+        where: at(`<${argument.name()}>`),
+        description: argument.description,
+        values,
+        argChoices: argument.argChoices,
+      });
+    }
+    for (const option of command.options) {
+      const values = valuesDeclaredOn(option);
+      if (values.length === 0) continue;
+      found.push({
+        where: at(option.long ?? option.flags),
+        description: option.description,
+        values,
+        argChoices: option.argChoices,
+      });
+    }
+  }
+  return found;
+}
+
+const DECLARED_SETS = everyDeclaredSet();
+
+/** The declaration at `where`, or a failure that names it. */
+function setAt(where: string): Declared {
+  const found = DECLARED_SETS.find((declaration) => declaration.where === where);
+  expect(found, `no declaration names a set at \`${where}\``).toBeDefined();
+  return found as Declared;
+}
+
+/** One command of the program, by the path a caller types. */
+function commandAt(path: string): Command {
+  const command = everyCommandOf(declared).find((each) => pathOf(each) === path);
+  expect(command, path).toBeDefined();
+  return command as Command;
+}
+
+/**
+ * The help of one flag, as DECLARED.
+ *
+ * Not out of `helpInformation()`: commander wraps a description to the terminal's
+ * width, so a list long enough to be worth generating is split across lines there and
+ * no assertion about a sentence could hold. What is asserted is what was declared; that
+ * the help prints a declaration is `cli.help.golden.txt`'s job.
+ */
+function optionHelp(path: string, long: string): string {
+  const option = commandAt(path).options.find((each) => each.long === long);
+  expect(option, `${path} ${long}`).toBeDefined();
+  return (option as Option).description;
+}
+
+/** The escape a member of a set needs before it goes into a pattern. */
+function quoted(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+}
+
+/** Whether `text` holds `phrase` as WORDS, not inside longer ones. */
+function names(text: string, phrase: string): boolean {
+  return new RegExp(`(^|[^\\w-])${quoted(phrase)}($|[^\\w-])`).test(text);
+}
+
+// ---------------------------------------------------------------------------
+// The prose is the machine's
+// ---------------------------------------------------------------------------
+
+describe('a declaration lists the set it takes', () => {
+  it('names every member of its own set, at every declaration that has one', () => {
+    // The link between the two halves of a declaration: a description built from
+    // another set, or a member dropped from the set after being typed into the
+    // sentence, is red here — at whichever of the sites it happens at, without this
+    // file knowing they exist.
+    for (const declaration of DECLARED_SETS) {
+      for (const value of declaration.values) {
+        expect(
+          names(declaration.description, value),
+          `${declaration.where} does not name ${value}: ${declaration.description}`,
+        ).toBe(true);
+      }
+    }
+    // And it is asked of every declaration there is, so a set that stopped being
+    // declared cannot make this vacuous by leaving the list empty.
+    expect(DECLARED_SETS.length).toBe(15);
+  });
+
+  it('takes the set from the DOMAIN, at each of the levels that take one', () => {
+    // Against the machine's own constants, never against a list typed here: a test that
+    // wrote the ten actions out again would only move the copy from `src` to `tests`.
+    expect(setAt('task move <action>').values).toBe(TASK_ACTIONS);
+    expect(setAt('guard <action>').values).toBe(TASK_ACTIONS);
+    expect(setAt('skill move <action>').values).toBe(SKILL_ACTIONS);
+    expect(setAt('search --kind').values).toBe(SEARCH_KINDS);
+    expect(setAt('verify --require').values).toBe(LEVEL_REQUIREMENTS);
+    expect(setAt('refs --direction').values).toBe(REFERENCE_DIRECTIONS);
+    // `decision move` offers the decision vocabulary MINUS what has a verb of its own:
+    // `supersede` needs a successor id the generic `move <action> <id>` cannot take, so
+    // it is `mnema decision supersede <old> <new>`. Derived by exclusion, so a fourth
+    // decision action arrives in the help by itself — and the exclusion is asserted as
+    // an exclusion, not as the pair of words that are left.
+    expect(setAt('decision move <action>').values).toEqual(
+      DECISION_ACTIONS.filter((action) => action !== 'supersede'),
+    );
+    expect(DECISION_ACTIONS).toContain('supersede');
+    // The seven births take one set, and the same one the filter on `search` takes.
+    for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'handoff', 'link']) {
+      expect(setAt(`${verb} --scope`).values, verb).toBe(SCOPES);
+    }
+    expect(setAt('search --scope').values).toBe(SCOPES);
+    expect([...SCOPES]).toEqual(['public', 'private', 'global']);
+  });
+
+  it('offers `task move` and `guard` the very same array — not two equal ones', () => {
+    // The two sites the inventory called out as one vocabulary typed twice, with two
+    // different openings ("the transition" and "the transition to test"). Identity and
+    // not equality: two arrays that happen to match today are exactly the defect.
+    expect(setAt('guard <action>').values).toBe(setAt('task move <action>').values);
+    expect(setAt('task move <action>').description).toBe(
+      `the transition (${TASK_ACTIONS.join(', ')})`,
+    );
+    expect(setAt('guard <action>').description).toBe(
+      `the transition to test (${TASK_ACTIONS.join(', ')})`,
+    );
+  });
+
+  it('names, in each proof flag, exactly the actions the table requires it for', () => {
+    // The other half of the vocabulary in these declarations, and the half the inventory
+    // did not count: not "which words go here" but "which of those words cannot move
+    // without this flag". Derived here from the TABLE, independently of the production
+    // helper, so the assertion is about the rows the gate enforces.
+    const requiring = (
+      table: readonly { readonly action: string; readonly requires: readonly ProofField[] }[],
+      actions: readonly string[],
+      field: ProofField,
+    ): string =>
+      actions
+        .filter((action) =>
+          table.some((row) => row.action === action && row.requires.includes(field)),
+        )
+        .join(', ');
+
+    expect(optionHelp('task move', '--reason')).toBe(
+      `why (required by ${requiring(TRANSITIONS, TASK_ACTIONS, 'reason')})`,
+    );
+    expect(optionHelp('task move', '--note')).toBe(
+      `what was done (required by ${requiring(TRANSITIONS, TASK_ACTIONS, 'note')})`,
+    );
+    expect(optionHelp('task move', '--feedback')).toBe(
+      `what must change (required by ${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')})`,
+    );
+    expect(optionHelp('guard', '--reason')).toBe(
+      `simulate the reason (${requiring(TRANSITIONS, TASK_ACTIONS, 'reason')})`,
+    );
+    expect(optionHelp('guard', '--note')).toBe(
+      `simulate the note (${requiring(TRANSITIONS, TASK_ACTIONS, 'note')})`,
+    );
+    expect(optionHelp('guard', '--feedback')).toBe(
+      `simulate the feedback (${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')})`,
+    );
+    expect(optionHelp('decision move', '--note')).toBe(
+      `why this verdict (required by ${requiring(DECISION_TRANSITIONS, DECISION_ACTIONS, 'note')})`,
+    );
+    expect(optionHelp('skill move', '--note')).toBe(
+      `why this verdict (required by ${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'note')})`,
+    );
+    expect(optionHelp('skill move', '--reason')).toBe(
+      `why it fell out of use (required by ${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason')})`,
+    );
+    // Each list has to have something in it, or the six assertions above would pass on
+    // empty strings — which is what a table read the wrong way round would produce.
+    expect(requiring(TRANSITIONS, TASK_ACTIONS, 'reason').length).toBeGreaterThan(0);
+    expect(requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason').length).toBeGreaterThan(0);
+  });
+
+  it('can say "required by" at all, because a table never disagrees with itself', () => {
+    // The assumption the sentence rests on: an action legal from several states requires
+    // the same proof from all of them. A workflow where `cancel` needed a reason from one
+    // state and not another could not be described by "required by cancel" in any order
+    // of words — the flag's help would have to name a state, and there is no such
+    // sentence on this surface.
+    for (const table of [TRANSITIONS, DECISION_TRANSITIONS, SKILL_TRANSITIONS]) {
+      const seen = new Map<string, string>();
+      for (const row of table) {
+        const fields = [...row.requires].sort().join(' ');
+        const before = seen.get(row.action);
+        if (before === undefined) seen.set(row.action, fields);
+        else expect(fields, `${row.action} requires two different things`).toBe(before);
+      }
+      expect(seen.size).toBeGreaterThan(0);
+    }
+  });
+
+  it('reads one tuple of scopes, wherever the surface counts the trees', () => {
+    // Two constants, two rules: what `--scope` accepts, and the order a composed read
+    // opens the trees in. They are the same three words and a fourth tree would have to
+    // be in both, so a divergence is a defect in whichever is behind. (A third copy is
+    // module-private in `commands/show.ts` — the order that read looks in — and is
+    // declared as debt rather than reached into from here.)
+    expect([...OPENED_IN_ORDER].sort()).toEqual([...SCOPES].sort());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Nothing validates
+// ---------------------------------------------------------------------------
+
+describe('naming a set does not make the parser own it', () => {
+  it('carries no `.choices()` on any domain set', () => {
+    // The structural half of the rule. `.choices()` would enumerate AND validate, and
+    // the validation runs before any action — so the gate's own refusal, with its own
+    // code, would never be reached for a bad action.
+    for (const declaration of DECLARED_SETS) {
+      expect(declaration.argChoices, `${declaration.where} carries .choices()`).toBeUndefined();
+    }
+    // And the two places a `.choices()` IS right are still there, so this is a
+    // statement about domain sets and not about the mechanism being unused: the whens of
+    // `--color` and the shells of `completion` are the SURFACE's own vocabulary, with no
+    // gate behind them to own it.
+    const whens = declared.options.find((option) => option.long === '--color')?.argChoices;
+    const shells = everyCommandOf(declared)
+      .find((command) => command.name() === 'completion')
+      ?.registeredArguments.find((argument) => argument.name() === 'shell')?.argChoices;
+    expect(whens).toHaveLength(3);
+    expect(shells).toEqual([...SHELLS]);
+  });
+
+  it('and a declaration that named a set can still be given one, which is the danger', () => {
+    // This file's own non-vacuity: the assertion above is about ABSENCE, and an
+    // `argChoices` this mechanism could never carry would make it say nothing. It can —
+    // the two are independent — which is exactly why it is asserted.
+    const argument = enumeratedArgument('<action>', 'the transition', ['one', 'two']);
+    expect(argument.argChoices).toBeUndefined();
+    expect(valuesDeclaredOn(argument)).toEqual(['one', 'two']);
+    expect(argument.choices(['one', 'two']).argChoices).toEqual(['one', 'two']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Nobody types a list again
+// ---------------------------------------------------------------------------
+
+/** Every source file of a directory of `src`, tests excluded. */
+function sourcesUnder(directory: string): readonly string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(join(SRC, directory), { withFileTypes: true })) {
+    if (entry.isDirectory()) found.push(...sourcesUnder(join(directory, entry.name)));
+    else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+      found.push(join(directory, entry.name));
+    }
+  }
+  return found;
+}
+
+/** A string literal — single-quoted, double-quoted or a template. */
+const LITERAL = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g;
+
+/** The source with every comment blanked, so prose about a vocabulary is not one. */
+function codeOf(source: string): string {
+  const blank = (text: string): string => text.replace(/[^\n]/g, ' ');
+  return source.replace(/\/\*[\s\S]*?\*\//g, blank).replace(/(^|[^:])\/\/[^\n]*/g, blank);
+}
+
+/** The vocabularies a hand-typed list would be a list OF. */
+const VOCABULARIES: Readonly<Record<string, readonly string[]>> = {
+  'task action': TASK_ACTIONS,
+  'decision action': DECISION_ACTIONS,
+  'skill action': SKILL_ACTIONS,
+  scope: SCOPES,
+  level: LEVEL_REQUIREMENTS,
+  'kind of record': SEARCH_KINDS,
+  direction: REFERENCE_DIRECTIONS,
+};
+
+/** How two members of one set are joined when somebody writes them out. */
+const JOINS = [', ', ', or ', ' or ', ', and ', ' and ', '/'];
+
+/**
+ * Every place in `source` where two members of one vocabulary are written next to each
+ * other inside a string literal.
+ *
+ * A literal with an ELLIPSIS is not one, and the exclusion is the rule and not a
+ * convenience: `mnema refs <id>` says "a task, decision, memory, skill, …", which names
+ * examples of what an id can BE and does not claim to be a set — the words are entity
+ * kinds in a sentence, and the `…` is what says so. A declaration that enumerates never
+ * ends in one.
+ */
+function handTypedLists(source: string): readonly string[] {
+  const found: string[] = [];
+  for (const literal of codeOf(source).match(LITERAL) ?? []) {
+    if (literal.includes('…')) continue;
+    for (const [vocabulary, values] of Object.entries(VOCABULARIES)) {
+      for (const first of values) {
+        for (const second of values) {
+          if (first === second) continue;
+          for (const join of JOINS) {
+            // As WORDS: `stdout and installs` holds `out and in` and is a sentence
+            // about a stream, and `submit_review` holds `submit` — a scan without
+            // boundaries accuses the wrong lines and gets switched off.
+            const pair = `${first}${join}${second}`;
+            if (names(literal, pair)) found.push(`[${vocabulary}] ${pair} — ${literal}`);
+          }
+        }
+      }
+    }
+  }
+  return found;
+}
+
+describe('no declaration writes a vocabulary out by hand', () => {
+  it('finds none anywhere in the wiring', () => {
+    const typed = sourcesUnder('wiring').flatMap((file) =>
+      handTypedLists(readFileSync(join(SRC, file), 'utf-8')).map((hit) => `${file}: ${hit}`),
+    );
+    expect(typed).toEqual([]);
+    // The scan reaches real files, and the whole family of them.
+    expect(sourcesUnder('wiring').length).toBeGreaterThan(30);
+  });
+
+  it('and would find one, in either half of a declaration', () => {
+    // Non-vacuity on input this test owns, in the two shapes the wiring had: a list in an
+    // argument's help, and a list of the actions a proof flag is required by. Both are
+    // what the files said before this slice, and both must be red.
+    expect(
+      handTypedLists("argument('<action>', 'the transition (submit, start, block)')"),
+    ).toHaveLength(2);
+    expect(
+      handTypedLists("option('--reason <text>', 'why (required by cancel, block, reopen)')"),
+    ).not.toEqual([]);
+    expect(handTypedLists("'the transition: review, adopt, reject, or deprecate'")).not.toEqual([]);
+    expect(handTypedLists("'born: public, private, global'")).not.toEqual([]);
+    expect(handTypedLists("'the levels: chained, signed, witnessed'")).not.toEqual([]);
+    // And what it must NOT call a list: a comment, a sentence of examples, and two
+    // members of a set that are simply words of a sentence.
+    expect(handTypedLists('// the transition (submit, start, block)')).toEqual([]);
+    expect(handTypedLists("'the entity id (a task, decision, memory, skill, …)'")).toEqual([]);
+    expect(handTypedLists("'it prints to stdout and installs nothing'")).toEqual([]);
+    // A KNOWN BLIND SPOT, said out loud: a list of ONE member is invisible to a scan for
+    // pairs, so `(required by request_changes)` typed by hand would pass. What covers it
+    // is that no site composes such a sentence any more — every one of them interpolates
+    // {@link actionsRequiring}, which is what the case above asserts, flag by flag.
+    expect(handTypedLists("'what must change (required by request_changes)'")).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A set the machine gains tomorrow arrives by itself
+// ---------------------------------------------------------------------------
+
+describe('a word the machine gains tomorrow', () => {
+  it('reaches the help and every shell without a line of code', () => {
+    // The mechanism, over a set this test owns — the real one is proved by mutating
+    // `TASK_ACTIONS` in the core, which is in the report. A program of its own, so the
+    // twenty-six verbs that exist cannot satisfy the case.
+    const later = new Command().name('later');
+    const actions = ['submit', 'reticulate'];
+    later
+      .command('move')
+      .description('a move added tomorrow')
+      .addArgument(enumeratedArgument('<action>', 'the transition', actions));
+    expect(later.commands[0]?.helpInformation()).toContain('the transition (submit, reticulate)');
+    for (const shell of SHELLS) {
+      expect(completionScript(later, shell), shell).toContain('reticulate');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// And the gate still refuses, in the real binary
+// ---------------------------------------------------------------------------
+
+let sandbox: string;
+let home: string;
+
+beforeEach(() => {
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-vocabulary-'));
+  home = join(sandbox, 'home');
+  mkdirSync(home, { recursive: true });
+});
+
+afterEach(() => {
+  rmSync(sandbox, { recursive: true, force: true });
+});
+
+/** Runs a real `mnema` in its own process, against the sandbox and nothing else. */
+function cli(...args: string[]): { status: number | null; out: string } {
+  const inherited = { ...process.env };
+  delete inherited.MNEMA_RUN;
+  const done = spawnSync(process.execPath, [CLI, ...args], {
+    cwd: sandbox,
+    env: { ...inherited, HOME: home, XDG_DATA_HOME: join(home, 'data') },
+    encoding: 'utf-8',
+  });
+  return { status: done.status, out: `${done.stdout}${done.stderr}` };
+}
+
+describe('the gate still owns the vocabulary', () => {
+  it('refuses an unknown action with the gate’s own code, not a usage error', () => {
+    // THE REASON THIS SLICE DOES NOT USE `.choices()`, asserted where it can be: in the
+    // process. A `.choices()` on `<action>` would have commander throw during the parse,
+    // and this line would become a usage error about an invalid argument — the refusal
+    // below would be unreachable, and a typed code the product answers with would be
+    // gone from the surface.
+    expect(cli('init').status).toBe(0);
+    const created = cli('task', 'a task for the refusal probe');
+    const id = /\(([^)]+)\)/.exec(created.out)?.[1] as string;
+    expect(id).toBeDefined();
+    const refused = cli('task', 'move', 'nonsense', id);
+    expect(refused.out).toContain('Refused (UNKNOWN_ACTION): "nonsense" is not a workflow action');
+    expect(refused.out).not.toContain('error:');
+    expect(refused.status).not.toBe(0);
+    // A legal action on the same task still moves it, so the case above is about the
+    // WORD and not about a move that stopped working.
+    expect(cli('task', 'move', 'submit', id).out).toContain('READY');
+  });
+
+  it('refuses a value outside a set in the product’s voice, naming the set', () => {
+    // The three flags whose set is now declared and whose refusal is unchanged — one per
+    // place the check lives: the shared parser, the verb's own, and the adapter's.
+    expect(cli('init').status).toBe(0);
+    expect(cli('task', 'a task', '--scope', 'nowhere').out).toContain(
+      `Invalid --scope "nowhere". Use one of: ${SCOPES.join(', ')}.`,
+    );
+    expect(cli('verify', '--require', 'nonsense').out).toContain(
+      `Invalid --require "nonsense". Use one of: ${LEVEL_REQUIREMENTS.join(', ')}.`,
+    );
+    expect(cli('search', '--kind', 'nonsense').out).toContain(
+      `Invalid --kind "nonsense". Use one of: ${SEARCH_KINDS.join(', ')}.`,
+    );
+  });
+});
