@@ -13,10 +13,10 @@ import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import type { Command } from 'commander';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { here } from './context.js';
+import { enumeratedOption, listed } from './enumerated.js';
 import { writeLines } from './io.js';
 import { reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
-import { enumeratedOption, listed } from './vocabulary.js';
 
 /** Registers `mnema refs` on the program. */
 export function registerReferences(program: Command, wiring: Wiring): void {

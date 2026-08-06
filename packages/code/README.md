@@ -212,7 +212,7 @@ It does **not** complete an **id**, and that is a decision rather than a gap: an
 no declaration, so answering would mean running `mnema` on every keystroke, and a run of
 it costs about 95 ms — more than the command being typed. **This page used to say the same
 of a transition**, on the same argument. What falsified it: a transition IS in a
-declaration now — the sets moved into `wiring/vocabulary.ts`, where a declaration names
+declaration now — the sets moved into `vocabulary.ts`, where a declaration names
 one without commander validating it — so offering the ten actions costs a Tab nothing and
 the workflow gate still owns the vocabulary (`mnema task move nonsense <id>` is refused
 `UNKNOWN_ACTION`, by the gate, exactly as before). Asserted in

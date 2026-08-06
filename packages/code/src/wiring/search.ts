@@ -11,11 +11,11 @@
 import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
 import type { Command } from 'commander';
 import { here } from './context.js';
+import { enumeratedOption, listed, SCOPES, SEARCH_KINDS } from './enumerated.js';
 import { writeLines } from './io.js';
 import { INVALID, INVALID_LIMIT, parseLimit, parseScope } from './options.js';
 import { reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
-import { enumeratedOption, listed, SCOPES, SEARCH_KINDS } from './vocabulary.js';
 
 /** Registers `mnema search` on the program. */
 export function registerSearch(program: Command, wiring: Wiring): void {
