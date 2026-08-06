@@ -23,6 +23,7 @@ import { here } from './context.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
+import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './vocabulary.js';
 
 /** Registers `mnema guard` on the program. */
 export function registerGuard(program: Command, wiring: Wiring): void {
@@ -30,16 +31,18 @@ export function registerGuard(program: Command, wiring: Wiring): void {
   program
     .command('guard')
     .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
-    .argument(
-      '<action>',
-      'the transition to test (submit, start, block, unblock, submit_review, ' +
-        'request_changes, approve, complete, cancel, reopen)',
-    )
+    .addArgument(enumeratedArgument('<action>', 'the transition to test', TASK_ACTIONS))
     .argument('<id>', 'the task id (the value shown when it was created)')
     .requiredOption('--actor <id>', `the identity asking (the \`who\`) — ${ACTOR_HELP}`)
-    .option('--reason <text>', 'simulate the reason (cancel, block, reopen)')
-    .option('--note <text>', 'simulate the note (complete, approve)')
-    .option('--feedback <text>', 'simulate the feedback (request_changes)')
+    .option(
+      '--reason <text>',
+      `simulate the reason (${listed(actionsRequiring('task', 'reason'))})`,
+    )
+    .option('--note <text>', `simulate the note (${listed(actionsRequiring('task', 'note'))})`)
+    .option(
+      '--feedback <text>',
+      `simulate the feedback (${listed(actionsRequiring('task', 'feedback'))})`,
+    )
     // Validated exactly as the real move's `--which` is: a dry-run that accepted a
     // declaration the move refuses would answer for a move nobody can make.
     .option('--which <id>', 'simulate an executing agent (must differ from --actor)', declaredAgent)

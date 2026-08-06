@@ -30,6 +30,13 @@ import {
 import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import {
+  actionsRequiring,
+  enumeratedArgument,
+  listed,
+  scopeOption,
+  TASK_ACTIONS,
+} from './vocabulary.js';
 
 /** Registers `mnema task` on the program. */
 export function registerTask(program: Command, wiring: Wiring): void {
@@ -38,11 +45,8 @@ export function registerTask(program: Command, wiring: Wiring): void {
     .command('task')
     .description('create a task in the current project')
     .argument('<title>', 'the task title')
-    .option(
-      '--scope <scope>',
-      'where the task is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Omitted, a task lands in the ' +
-        'public tree (the team’s work board).',
+    .addOption(
+      scopeOption('task', 'Omitted, a task lands in the public tree (the team’s work board).'),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -83,15 +87,17 @@ export function registerTask(program: Command, wiring: Wiring): void {
   const move = task
     .command('move')
     .description('move a task through the workflow (follows the task; takes no --scope)')
-    .argument(
-      '<action>',
-      'the transition (submit, start, block, unblock, submit_review, ' +
-        'request_changes, approve, complete, cancel, reopen)',
-    )
+    .addArgument(enumeratedArgument('<action>', 'the transition', TASK_ACTIONS))
     .argument('<id>', 'the task id (the value shown when it was created)')
-    .option('--reason <text>', 'why (required by cancel, block, reopen)')
-    .option('--note <text>', 'what was done (required by complete, approve)')
-    .option('--feedback <text>', 'what must change (required by request_changes)')
+    .option('--reason <text>', `why (required by ${listed(actionsRequiring('task', 'reason'))})`)
+    .option(
+      '--note <text>',
+      `what was done (required by ${listed(actionsRequiring('task', 'note'))})`,
+    )
+    .option(
+      '--feedback <text>',
+      `what must change (required by ${listed(actionsRequiring('task', 'feedback'))})`,
+    )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   move.action(

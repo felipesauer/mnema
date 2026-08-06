@@ -36,12 +36,16 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { LEVEL_REQUIREMENTS } from '@mnema/chain';
+import { DECISION_ACTIONS, SEARCH_KINDS, SKILL_ACTIONS, TASK_ACTIONS } from '@mnema/core';
 import { Argument, Command, Option } from 'commander';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
+import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
 import { everyCommandOf } from '../src/wiring/usage.js';
+import { SCOPES } from '../src/wiring/vocabulary.js';
 
 /** A silent port: everything here reads declarations and writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
@@ -100,14 +104,26 @@ function accepted(command: Command): readonly string[] {
   return [...names];
 }
 
-/** The ten transitions, read out of the sentence in `task move`'s help that lists them. */
-function transitionsNamedInTheHelp(): readonly string[] {
-  const move = everyCommandOf(declared).find(
-    (command) => pathOf(command).join(' ') === 'task move',
-  );
-  const action = move?.registeredArguments.find((argument) => argument.name() === 'action');
-  const inParens = /\(([^)]*)\)/.exec(action?.description ?? '');
-  return (inParens?.[1] ?? '').split(',').map((name) => name.trim());
+/**
+ * Every word of a closed DOMAIN set some declaration of this surface takes, read from
+ * the domain itself.
+ *
+ * Read here rather than through `wiring/vocabulary.ts` on purpose: the generator gets
+ * its values from that module, so a test that read the same registry would be asking
+ * the code what it should have produced. These are the constants the machine enforces,
+ * and the scopes — for which the core exports a type and no tuple, so the surface's is
+ * the only one there is.
+ */
+function everyDomainWord(): readonly string[] {
+  return [
+    ...TASK_ACTIONS,
+    ...DECISION_ACTIONS,
+    ...SKILL_ACTIONS,
+    ...SEARCH_KINDS,
+    ...LEVEL_REQUIREMENTS,
+    ...SCOPES,
+    ...REFERENCE_DIRECTIONS,
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +321,11 @@ describe('the script knows every verb the program declares', () => {
   });
 
   it('offers nothing that is not a declared name or a value a declaration enumerates', () => {
-    const allowed = new Set<string>(['help']);
+    // The absence this asserts is the one that would cost a run: an ENTITY ID is in no
+    // declaration and in no domain tuple, so the only way to offer one would be to
+    // execute mnema on every Tab. A word here is either a name the parser answers to or
+    // a member of a closed set the machine owns — and nothing else, ever.
+    const allowed = new Set<string>(['help', ...everyDomainWord()]);
     for (const command of everyCommandOf(declared)) {
       allowed.add(command.name());
       for (const name of accepted(command)) allowed.add(name);
@@ -328,20 +348,33 @@ describe('the script knows every verb the program declares', () => {
     expect(seen).toBeGreaterThan(400);
   });
 
-  it('and so no transition reaches any script — the one class that would cost a run', () => {
-    const transitions = transitionsNamedInTheHelp();
-    expect(transitions.length).toBeGreaterThanOrEqual(10);
-    expect(transitions).toContain('submit_review');
-    // `start` is BOTH a transition and a declared subcommand (`mnema run start`), so the
-    // rule is about the word's provenance and not about the word: a transition may appear
-    // only where something else declares it.
-    const declaredNames = everyCommandOf(declared).map((command) => command.name());
-    expect(declaredNames).toContain('start');
+  it('offers every workflow action where a move takes one — and at no other level', () => {
+    // THIS CASE USED TO ASSERT THE OPPOSITE, and the inversion is the point of the
+    // slice it changed in: no transition reached any script, because the ten of them
+    // existed only as a sentence typed by hand in `task move`'s help, and completing a
+    // word by parsing prose would have been building on that defect. They are DECLARED
+    // now (`wiring/vocabulary.ts`) without being validated by the parser — the gate
+    // still owns the vocabulary — so the Tab has a source and this is what it offers.
+    // The old promise is dead and is not silently weakened: what is still never offered
+    // is an id, which the case above asserts.
+    const levels = ['task move', 'guard'];
     for (const shell of SHELLS) {
-      const words = new Set(PATHS.flatMap((path) => offered(shell, path)));
-      for (const transition of transitions) {
-        if (declaredNames.includes(transition)) continue;
-        expect([...words], `${shell}: ${transition}`).not.toContain(transition);
+      for (const level of levels) {
+        for (const action of TASK_ACTIONS) {
+          expect(offered(shell, level), `${shell}: mnema ${level} → ${action}`).toContain(action);
+        }
+      }
+      // And only where a declaration takes one: an action is not a word the whole
+      // surface answers to, so the root and a read that takes no action offer none.
+      // `start` is excluded because `mnema run start` DECLARES it as a subcommand — the
+      // rule is about the provenance of a word, not about the word.
+      for (const level of ['', 'search', 'refs']) {
+        for (const action of TASK_ACTIONS) {
+          if (action === 'start') continue;
+          expect(offered(shell, level), `${shell}: mnema ${level} → ${action}`).not.toContain(
+            action,
+          );
+        }
       }
     }
   });

@@ -15,6 +15,7 @@ import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import { scopeOption } from './vocabulary.js';
 
 /** Registers `mnema observe` on the program. */
 export function registerObserve(program: Command, wiring: Wiring): void {
@@ -25,11 +26,11 @@ export function registerObserve(program: Command, wiring: Wiring): void {
     .argument('<about>', 'the id of the entity being observed (a task, decision, …)')
     .requiredOption('--topic <label>', 'a short topic label')
     .requiredOption('--text <text>', 'the observation itself')
-    .option(
-      '--scope <scope>',
-      'where the observation is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Defaults to public; an agent that ' +
-        'declares itself with --which defaults to private.',
+    .addOption(
+      scopeOption(
+        'observation',
+        'Defaults to public; an agent that declares itself with --which defaults to private.',
+      ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)

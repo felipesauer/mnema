@@ -29,6 +29,13 @@ import {
 import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import {
+  actionsRequiring,
+  enumeratedArgument,
+  listed,
+  SKILL_ACTIONS,
+  scopeOption,
+} from './vocabulary.js';
 
 /** Registers `mnema skill` on the program. */
 export function registerSkill(program: Command, wiring: Wiring): void {
@@ -38,11 +45,11 @@ export function registerSkill(program: Command, wiring: Wiring): void {
     .description('propose a reusable skill in the current project')
     .argument('<name>', 'a short title for the pattern')
     .option('--body <text>', 'the reusable pattern itself (required)')
-    .option(
-      '--scope <scope>',
-      'where the skill is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Omitted, a skill lands in the ' +
-        'public tree (a declaration about the project).',
+    .addOption(
+      scopeOption(
+        'skill',
+        'Omitted, a skill lands in the public tree (a declaration about the project).',
+      ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
@@ -86,10 +93,16 @@ export function registerSkill(program: Command, wiring: Wiring): void {
   const skillMove = skill
     .command('move')
     .description('move a skill through the workflow (follows the skill; takes no --scope)')
-    .argument('<action>', 'the transition: review, adopt, reject, or deprecate')
+    .addArgument(enumeratedArgument('<action>', 'the transition', SKILL_ACTIONS))
     .argument('<id>', 'the skill id (the value shown when it was proposed)')
-    .option('--note <text>', 'why this verdict (required by review, adopt, reject)')
-    .option('--reason <text>', 'why it fell out of use (required by deprecate)')
+    .option(
+      '--note <text>',
+      `why this verdict (required by ${listed(actionsRequiring('skill', 'note'))})`,
+    )
+    .option(
+      '--reason <text>',
+      `why it fell out of use (required by ${listed(actionsRequiring('skill', 'reason'))})`,
+    )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   skillMove.action(async (action: string, id: string, opts: { note?: string; reason?: string }) => {
