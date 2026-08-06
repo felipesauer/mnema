@@ -8,13 +8,14 @@
  * and nothing else — the read returns one ordered list either way.
  */
 
-import { SEARCH_DEFAULT_LIMIT, SEARCH_KINDS, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
 import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
-import { INVALID, INVALID_LIMIT, parseLimit, parseScope, SCOPES } from './options.js';
+import { INVALID, INVALID_LIMIT, parseLimit, parseScope } from './options.js';
 import { reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
+import { enumeratedOption, listed, SCOPES, SEARCH_KINDS } from './vocabulary.js';
 
 /** Registers `mnema search` on the program. */
 export function registerSearch(program: Command, wiring: Wiring): void {
@@ -23,8 +24,14 @@ export function registerSearch(program: Command, wiring: Wiring): void {
     .command('search')
     .description('find what has been recorded, or list the most recent (no term)')
     .argument('[term]', 'words to look for; omit to list the most recent records')
-    .option('--kind <kind>', `only this kind of record: ${SEARCH_KINDS.join(', ')}`)
-    .option('--scope <scope>', `only this tree: ${SCOPES.join(', ')}`)
+    .addOption(
+      enumeratedOption(
+        '--kind <kind>',
+        `only this kind of record: ${listed(SEARCH_KINDS)}`,
+        SEARCH_KINDS,
+      ),
+    )
+    .addOption(enumeratedOption('--scope <scope>', `only this tree: ${listed(SCOPES)}`, SCOPES))
     .option('--state <state>', 'only records in this state (excludes kinds that have none)')
     .option('--from <iso>', 'only records at or after this ISO-8601 instant')
     .option('--to <iso>', 'only records at or before this ISO-8601 instant')

@@ -213,8 +213,17 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'one that decides what the chain records. THIS is the edge that holds the floor: ' +
     'it is the only one that needs behaviour rather than a constant.',
   'wiring/refs.ts @mnema/copilot': '`--depth` states its default and its cap in its help.',
-  'wiring/search.ts @mnema/core':
-    '`--kind` lists the kinds and `--limit` states its default and its cap, in their help.',
+  'wiring/search.ts @mnema/core': '`--limit` states its default and its cap in its help.',
+  'wiring/vocabulary.ts @mnema/chain':
+    '`--require` lists the three levels, so the chain’s own tuple of them is read while ' +
+    'commander is being configured. A CONSTANT, and the tuple the flag’s refusal words ' +
+    'itself from — one set, or the help and the no can disagree.',
+  'wiring/vocabulary.ts @mnema/core':
+    'the closed sets of domain words the declarations take: the workflow actions and the ' +
+    'tables that say which proof each needs, the scopes, the kinds of record. CONSTANTS, ' +
+    'and they are what the help prints — a declaration commander is handed before it has ' +
+    'parsed a word. The alternative was the surface re-typing them, which is the defect ' +
+    'this module closed.',
 };
 
 /** What an exception table tolerates, and what it does not. */

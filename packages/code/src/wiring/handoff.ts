@@ -14,6 +14,7 @@ import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
+import { scopeOption } from './vocabulary.js';
 
 /** Registers `mnema handoff` on the program. */
 export function registerHandoff(program: Command, wiring: Wiring): void {
@@ -24,11 +25,11 @@ export function registerHandoff(program: Command, wiring: Wiring): void {
     .argument('<task>', 'the task the handoff is about')
     .argument('<from>', 'the agent handing off')
     .argument('<to>', 'the agent taking over (may equal <from>: a chat restart)')
-    .option(
-      '--scope <scope>',
-      'where the handoff is born: public (team-visible), private (this machine), ' +
-        'or global (personal, cross-project). Omitted, a handoff lands in the ' +
-        'public tree (coordination between actors).',
+    .addOption(
+      scopeOption(
+        'handoff',
+        'Omitted, a handoff lands in the public tree (coordination between actors).',
+      ),
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
     // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.

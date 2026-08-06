@@ -31,20 +31,25 @@
  * reader unable to read an absence: a flag missing from the menu would sometimes mean
  * "not accepted here" and sometimes mean "we thought you would not want it".
  *
- * AND A VALUE IS OFFERED ONLY WHERE THE DECLARATION ENUMERATES IT — `--color`'s three
- * whens, and this verb's three shells. Never an id and never a transition: those are
- * not in any declaration (the actions live in a sentence typed by hand in `task`'s
- * help), and the only way to know them is to run mnema, whose floor is ~95 ms on this
- * machine. A Tab that cost more than the command it is helping you type would be a
- * worse defect than the one this file exists to fix.
+ * AND A VALUE IS OFFERED ONLY WHERE THE DECLARATION ENUMERATES IT. That used to mean
+ * `--color`'s three whens and this verb's three shells, because a `.choices()` was the
+ * only way a declaration could name a set — so the ten workflow actions, the three
+ * scopes and the three levels were offered nowhere: they existed as a sentence typed by
+ * hand in the help, and reading a sentence to complete a word would be building on the
+ * defect. They are now DECLARED (`wiring/vocabulary.ts`) without being validated by the
+ * parser, and this file reads both channels ({@link enumeratedBy}). What is still never
+ * offered is an ID: it is in no declaration, and the only way to know one is to run
+ * mnema, whose floor is ~95 ms on this machine. A Tab that cost more than the command it
+ * is helping you type would be a worse defect than the one this file exists to fix.
  *
  * NOTHING HERE IS SHELL. The three renderers own the quoting, and a value is a value
  * until one of them writes it out — which is what lets the same tree be asserted once
  * and rendered three ways (the shape `presentation/` already uses for a line).
  */
 
-import type { Command, Help, Option } from 'commander';
+import type { Argument, Command, Help, Option } from 'commander';
 import { everyCommandOf } from '../wiring/usage.js';
+import { valuesDeclaredOn } from '../wiring/vocabulary.js';
 
 /** One flag, in every spelling the parser answers to, and what may follow it. */
 export interface CompletionFlag {
@@ -104,8 +109,26 @@ function nodeOf(command: Command): CompletionNode {
       description: oneLine(child.description()),
     })),
     flags: flagsInScopeOf(command),
-    values: command.registeredArguments.flatMap((argument) => argument.argChoices ?? []),
+    values: command.registeredArguments.flatMap((argument) => enumeratedBy(argument)),
   };
+}
+
+/**
+ * The values a declaration enumerates, from BOTH channels — and there are two because
+ * they mean two different things.
+ *
+ * `argChoices` is commander's own, and it comes with validation: the parser refuses
+ * anything else before an action runs. That is right for a vocabulary the SURFACE owns
+ * (`--color`, `completion <shell>`) and wrong for one the DOMAIN owns, where the gate
+ * is what refuses and answers with a typed code (`UNKNOWN_ACTION`). So the domain's sets
+ * arrive through `wiring/vocabulary.ts` instead, declared and never validated.
+ *
+ * A Tab cannot tell the difference and should not: both are "the words the declaration
+ * says go here". A declaration has one channel or the other, never both — the union is
+ * written this way so that a day it has both, the offer is still everything it accepts.
+ */
+function enumeratedBy(declaration: Argument | Option): readonly string[] {
+  return [...(declaration.argChoices ?? []), ...valuesDeclaredOn(declaration)];
 }
 
 /** The words that reach a command, without the program's own name. */
@@ -136,7 +159,7 @@ function flagsInScopeOf(command: Command): readonly CompletionFlag[] {
         short: option.short,
         long: option.long,
         takesValue: option.required || option.optional,
-        choices: option.argChoices ?? [],
+        choices: enumeratedBy(option),
       });
     }
   }
