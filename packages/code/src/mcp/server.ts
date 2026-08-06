@@ -64,6 +64,7 @@ import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
   type DiscoveryEnv,
+  type ProofField,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_KINDS,
   SEARCH_MAX_LIMIT,
@@ -81,7 +82,21 @@ import {
   type Replacement,
   replacementNotice,
 } from '../recorded-content.js';
+import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import {
+  actionsRequiring,
+  andListed,
+  DECISION_ACTIONS,
+  listed,
+  orListed,
+  SCOPE_CHOICES,
+  SCOPES,
+  SKILL_ACTIONS,
+  slashed,
+  TASK_ACTIONS,
+  type Workflow,
+} from '../vocabulary.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
 import { closeSession, openSession, type Session } from './session.js';
@@ -140,6 +155,58 @@ const PROJECT_ARG = z
       'resolved to (the one `bootstrap` names). Pass it whenever the work being ' +
       'recorded happened in a different project of this workspace.',
   );
+
+/**
+ * The `scope` argument a WRITE carries: which of the three trees the fact lands in.
+ *
+ * ONE schema for all eight, and the set is the DOMAIN's — `SCOPES`, the same value the
+ * CLI's seven `--scope` declarations list, its Tab offers and its refusal words itself
+ * from. It used to be `z.enum(['public', 'private', 'global'])` typed out at each of the
+ * eight, and that is a different kind of duplication from a help string repeated: a
+ * `z.enum` is what the tool ACCEPTS. A fourth tree added to the domain would have reached
+ * the CLI everywhere and left this surface refusing a word its own product takes — in the
+ * SDK's voice, not the product's, on the surface agents use.
+ *
+ * The description arrives per tool because it is not the same sentence: where an omitted
+ * `scope` lands is the KIND's rule, so a memory says "the session default" and a task says
+ * "the routing rule (public)". What must not differ is the set and the gloss, and neither
+ * is written here.
+ */
+function scopeField(description: string) {
+  return z.enum(SCOPES).optional().describe(description);
+}
+
+/**
+ * A PROOF field of a transition tool: the free text a move must carry, described with the
+ * actions that cannot move without it.
+ *
+ * `lead` is the field's own sentence ("Why", "What was done", "Simulate the note"); the
+ * list in the parenthesis is read from the workflow's TABLE, which is the only thing that
+ * knows. All ten of these used to name their actions from memory — `Why (cancel, block,
+ * reopen)` — with nothing anywhere comparing that to the rows the gate enforces, on the
+ * surface where the description IS the whole contract an agent gets.
+ *
+ * The value stays `z.string().optional()`, unchanged: which proof a move needs is the
+ * GATE's judgement, and a schema that made `reason` mandatory would refuse
+ * `task_transition` calls the gate accepts and answer in the SDK's voice instead of
+ * `Refused (MISSING_PROOF)`. This describes the requirement; it never enforces it.
+ */
+function proofField(lead: string, workflow: Workflow, field: ProofField) {
+  return z
+    .string()
+    .optional()
+    .describe(`${lead} (${listed(actionsRequiring(workflow, field))}).`);
+}
+
+/**
+ * The decision actions that are a VERDICT on a proposal — `accept and reject`, as the
+ * `decision_transition` description says them twice.
+ *
+ * Read from the table by what they REQUIRE (a note), which is what makes them one group:
+ * `supersede` is the third action and needs a reason and a successor id instead, so a
+ * sentence about "each needs a note" is a sentence about exactly these.
+ */
+const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
 
 /**
  * What the fields on a reported run MEAN — appended to the description of every read
@@ -418,18 +485,14 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       description:
         'Record a point-in-time fact into the mnema chain, attributed to this ' +
         'agent and pinned to the current session. Optionally pick the scope it ' +
-        'lands in — public (team-visible), private (this machine, this project), ' +
-        'or global (personal, cross-project); omitted, it follows the session ' +
+        `lands in — ${SCOPE_CHOICES}; omitted, it follows the session ` +
         'default (private for an agent in a project, global outside one). Optionally ' +
         'pick the project it lands in, when the workspace holds more than one. The ' +
         'reply says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         content: z.string().min(1).describe('The memory to record.'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the memory lands; overrides the session default.'),
+        scope: scopeField('Where the memory lands; overrides the session default.'),
         project: PROJECT_ARG,
       },
     },
@@ -470,10 +533,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         about: z.string().min(1).describe('The id of the entity being observed.'),
         topic: z.string().min(1).describe('A short topic label.'),
         text: z.string().min(1).describe('The observation itself.'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the observation lands; overrides the session default.'),
+        scope: scopeField('Where the observation lands; overrides the session default.'),
         project: PROJECT_ARG,
       },
     },
@@ -514,10 +574,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         task: z.string().min(1).describe('The task the handoff is about.'),
         from: z.string().min(1).describe('The agent handing off.'),
         to: z.string().min(1).describe('The agent taking over (may equal `from`).'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the handoff lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the handoff lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -560,10 +617,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         subject: z.string().min(1).describe('The entity that originates the link.'),
         target: z.string().min(1).describe('The entity linked to.'),
         rel: z.string().min(1).describe('The relation label (an open string).'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the link lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the link lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -595,8 +649,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Open a task in the mnema chain, attributed to this agent and pinned to ' +
         'the current session. A task needs a title; it starts in the workflow’s ' +
         'initial state and is moved from there with task_transition. Optionally ' +
-        'pick the scope it lands in — public (team-visible), private (this ' +
-        'machine, this project), or global (personal, cross-project); omitted, a ' +
+        `pick the scope it lands in — ${SCOPE_CHOICES}; omitted, a ` +
         'task is the team’s work board and lands PUBLIC — committed, so a clone has ' +
         'the board (global outside a project). Optionally pick the project it lands ' +
         'in, when the workspace holds more than one. Returns the minted id (the key ' +
@@ -604,10 +657,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('What the task is.'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the task lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the task lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -633,11 +683,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Move a task through the workflow',
       description:
-        'Move an existing task to a new state (submit, start, block, unblock, ' +
-        'submit_review, request_changes, approve, complete, cancel, reopen). The ' +
+        `Move an existing task to a new state (${listed(TASK_ACTIONS)}). The ` +
         'workflow gate decides whether the move is legal and carries the proof it ' +
-        'requires — cancel/block/reopen need a reason, complete/approve a note, ' +
-        'request_changes a feedback; an illegal move or missing proof is refused. ' +
+        `requires — ${slashed(actionsRequiring('task', 'reason'))} need a reason, ` +
+        `${slashed(actionsRequiring('task', 'note'))} a note, ` +
+        `${slashed(actionsRequiring('task', 'feedback'))} a feedback; an illegal move ` +
+        'or missing proof is refused. ' +
         'The task is looked for in EVERY project of this workspace and the move lands ' +
         'in the project that holds it, so no `project` is taken here: the id decides ' +
         'where the move goes.' +
@@ -645,9 +696,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       inputSchema: {
         id: z.string().min(1).describe('The task id to move.'),
         action: z.string().min(1).describe('The transition to request.'),
-        reason: z.string().optional().describe('Why (cancel, block, reopen).'),
-        note: z.string().optional().describe('What was done (complete, approve).'),
-        feedback: z.string().optional().describe('What must change (request_changes).'),
+        reason: proofField('Why', 'task', 'reason'),
+        note: proofField('What was done', 'task', 'note'),
+        feedback: proofField('What must change', 'task', 'feedback'),
       },
     },
     async ({ id, action, reason, note, feedback }) => {
@@ -685,8 +736,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'searchable, so `search` answers "did we already turn this down?". A ' +
         'decision is immutable, so it is recorded now: an option rejected later is ' +
         'a new decision, or supersedes this one. Optionally pick the scope it lands in — ' +
-        'public (team-visible), private (this machine, this project), or global ' +
-        '(personal, cross-project); omitted, a decision is a declaration about the ' +
+        `${SCOPE_CHOICES}; omitted, a decision is a declaration about the ` +
         'project and lands PUBLIC — committed, so the team gets it on clone (global ' +
         'outside a project); it is born `proposed`, so recording one proposes it ' +
         'rather than settling it. Optionally pick the project it lands in, when the ' +
@@ -705,10 +755,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
               'name of a rejected option without its reason loses most of the value. ' +
               'Omit it when there was no real alternative.',
           ),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the decision lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the decision lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -736,23 +783,26 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     {
       title: 'Move a decision through the workflow',
       description:
-        'Move an existing decision to a new state. accept and reject a proposed ' +
+        `Move an existing decision to a new state. ${DECISION_VERDICTS} a proposed ` +
         'decision (each needs a note); supersede a proposed or accepted decision ' +
         'with a later one — supersede needs the successor decision id in `by` and ' +
-        'a reason. `by` applies ONLY to supersede; accept and reject ignore it. ' +
+        `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} ignore it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
         'in the project that holds it — the id decides, so no `project` is taken.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The decision id to move.'),
-        action: z.string().min(1).describe('The transition: accept, reject, or supersede.'),
+        action: z
+          .string()
+          .min(1)
+          .describe(`The transition: ${orListed(DECISION_ACTIONS)}.`),
         by: z
           .string()
           .optional()
           .describe('The successor decision id — required by supersede, ignored otherwise.'),
-        note: z.string().optional().describe('Why this verdict (accept, reject).'),
-        reason: z.string().optional().describe('Why it is being replaced (supersede).'),
+        note: proofField('Why this verdict', 'decision', 'note'),
+        reason: proofField('Why it is being replaced', 'decision', 'reason'),
       },
     },
     async ({ id, action, by, note, reason }) => {
@@ -782,8 +832,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Propose a reusable pattern (a skill) into the mnema chain, attributed to ' +
         'this agent and pinned to the current session. A skill needs both a name ' +
         '(a short title) and a body (the reusable pattern itself). Optionally pick ' +
-        'the scope it lands in — public (team-visible), private (this machine, ' +
-        'this project), or global (personal, cross-project); omitted, a pattern ' +
+        `the scope it lands in — ${SCOPE_CHOICES}; omitted, a pattern ` +
         'states how the work is done here and lands PUBLIC — committed, so the team ' +
         'gets it on clone (global outside a project); it is born `proposed`, so ' +
         'creating one proposes it rather than adopting it. Optionally pick the ' +
@@ -793,10 +842,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       inputSchema: {
         name: z.string().min(1).describe('A short title for the pattern.'),
         body: z.string().min(1).describe('The reusable pattern itself.'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Where the skill lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the skill lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
@@ -825,17 +871,20 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       description:
         'Move an existing skill to a new state: review a proposed skill, adopt a ' +
         'reviewed one as a live pattern, reject a proposed or reviewed one, or ' +
-        'deprecate an adopted one that fell out of use. review/adopt/reject each ' +
-        'need a note; deprecate needs a reason. An illegal move or missing proof ' +
+        `deprecate an adopted one that fell out of use. ${slashed(actionsRequiring('skill', 'note'))} each ` +
+        `need a note; ${slashed(actionsRequiring('skill', 'reason'))} needs a reason. An illegal move or missing proof ` +
         'is refused with the gate’s reason. The skill is looked for in EVERY project ' +
         'of this workspace and the move lands in the project that holds it — the id ' +
         'decides, so no `project` is taken.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The skill id to move.'),
-        action: z.string().min(1).describe('The transition: review, adopt, reject, or deprecate.'),
-        note: z.string().optional().describe('Why this verdict (review, adopt, reject).'),
-        reason: z.string().optional().describe('Why it fell out of use (deprecate).'),
+        action: z
+          .string()
+          .min(1)
+          .describe(`The transition: ${orListed(SKILL_ACTIONS)}.`),
+        note: proofField('Why this verdict', 'skill', 'note'),
+        reason: proofField('Why it fell out of use', 'skill', 'reason'),
       },
     },
     async ({ id, action, note, reason }) => {
@@ -1062,9 +1111,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       inputSchema: {
         id: z.string().min(1).describe('The task id to test.'),
         action: z.string().min(1).describe('The transition to simulate.'),
-        reason: z.string().optional().describe('Simulate the reason (cancel, block, reopen).'),
-        note: z.string().optional().describe('Simulate the note (complete, approve).'),
-        feedback: z.string().optional().describe('Simulate the feedback (request_changes).'),
+        reason: proofField('Simulate the reason', 'task', 'reason'),
+        note: proofField('Simulate the note', 'task', 'note'),
+        feedback: proofField('Simulate the feedback', 'task', 'feedback'),
         which: z
           .string()
           .optional()
@@ -1129,10 +1178,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .optional()
           .describe('Words to look for; omit to list the most recent records.'),
         kind: z.enum(SEARCH_KINDS).optional().describe('Only this kind of record.'),
-        scope: z
-          .enum(['public', 'private', 'global'])
-          .optional()
-          .describe('Only this tree; omitted, every tree this session can see.'),
+        scope: scopeField('Only this tree; omitted, every tree this session can see.'),
         state: z
           .string()
           .optional()
@@ -1275,7 +1321,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       inputSchema: {
         id: z.string().min(1).describe('The entity id to walk from (from `search`).'),
         direction: z
-          .enum(['both', 'out', 'in'])
+          .enum(REFERENCE_DIRECTIONS)
           .optional()
           .describe('Which way to follow edges; omitted, both.'),
         depth: z

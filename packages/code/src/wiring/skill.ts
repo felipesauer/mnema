@@ -20,6 +20,13 @@ import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
+  actionsRequiring,
+  enumeratedArgument,
+  listed,
+  SKILL_ACTIONS,
+  scopeOption,
+} from './enumerated.js';
+import {
   declaredAgent,
   INVALID,
   parseScope,
@@ -29,13 +36,6 @@ import {
 import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
-import {
-  actionsRequiring,
-  enumeratedArgument,
-  listed,
-  SKILL_ACTIONS,
-  scopeOption,
-} from './vocabulary.js';
 
 /** Registers `mnema skill` on the program. */
 export function registerSkill(program: Command, wiring: Wiring): void {

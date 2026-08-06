@@ -179,11 +179,19 @@ const WORK = ['commands', 'mcp', 'completion'];
 /**
  * Every edge from the floor into the domain, and why that one cannot wait.
  *
- * Five of the eight are DECLARATIONS: commander is handed a help string or an
+ * Eight of the eleven are DECLARATIONS: commander is handed a help string or an
  * argument parser while the program is being built, before it has parsed a word, so
  * the value has to exist by then. Three are not, and they say so — they are what the
  * next pass at the floor is about, and all three cost nothing TODAY because the
  * declarations above them already hold `@mnema/core` open.
+ *
+ * THE COUNT USED TO SAY EIGHT, AND FIVE DECLARATIONS. What falsified it: the slice that
+ * gave the surfaces one vocabulary added the sets' own module to the floor (two edges),
+ * and the slice that split that module so both surfaces could read it added a third —
+ * and the sentence went on saying eight through both, because a number in prose is the
+ * one thing here that nothing checked. It is checked now: `reaches the domain only where
+ * the declaration needs it` asserts the table's SIZE next to its contents, so the next
+ * edge makes this paragraph red instead of stale.
  *
  * It reconciles in both directions, which is what keeps it from becoming the
  * allowlist every dead guard ends as: an edge that disappears has to leave this
@@ -214,16 +222,21 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'it is the only one that needs behaviour rather than a constant.',
   'wiring/refs.ts @mnema/copilot': '`--depth` states its default and its cap in its help.',
   'wiring/search.ts @mnema/core': '`--limit` states its default and its cap in its help.',
-  'wiring/vocabulary.ts @mnema/chain':
+  'vocabulary.ts @mnema/chain':
     '`--require` lists the three levels, so the chain’s own tuple of them is read while ' +
     'commander is being configured. A CONSTANT, and the tuple the flag’s refusal words ' +
     'itself from — one set, or the help and the no can disagree.',
-  'wiring/vocabulary.ts @mnema/core':
-    'the closed sets of domain words the declarations take: the workflow actions and the ' +
+  'vocabulary.ts @mnema/core':
+    'the closed sets of domain words BOTH surfaces take: the workflow actions and the ' +
     'tables that say which proof each needs, the scopes, the kinds of record. CONSTANTS, ' +
     'and they are what the help prints — a declaration commander is handed before it has ' +
-    'parsed a word. The alternative was the surface re-typing them, which is the defect ' +
+    'parsed a word. The alternative was each surface re-typing them, which is the defect ' +
     'this module closed.',
+  'wiring/enumerated.ts @mnema/core':
+    'the decision vocabulary MINUS the actions that have a verb of their own, which is ' +
+    'what `decision move` offers. A CONSTANT, derived by exclusion so a fourth decision ' +
+    'action arrives in the help by itself, and typed so a rename in the core breaks the ' +
+    'build instead of quietly offering a word the move cannot take.',
 };
 
 /** What an exception table tolerates, and what it does not. */
@@ -285,6 +298,10 @@ describe('the floor is the declaration', () => {
     // the copilot lands in `reached` until somebody writes down why it cannot wait,
     // and an edge that goes away lands in `stale` until its entry is deleted.
     expect(reconcile(DOMAIN_EDGES, EAGER_DOMAIN)).toEqual({ reached: [], stale: [] });
+    // And the SIZE, so the number this file's own doc states cannot drift from the
+    // table it describes. It drifted twice before anybody noticed — the prose said
+    // eight through two slices that made it ten and then eleven.
+    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(11);
   });
 
   it('walks a graph that is really there', () => {

@@ -11,11 +11,11 @@
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
+import { scopeOption } from './enumerated.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
-import { scopeOption } from './vocabulary.js';
 
 /** Registers `mnema observe` on the program. */
 export function registerObserve(program: Command, wiring: Wiring): void {

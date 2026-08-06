@@ -44,8 +44,8 @@ import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
+import { SCOPES } from '../src/wiring/enumerated.js';
 import { everyCommandOf } from '../src/wiring/usage.js';
-import { SCOPES } from '../src/wiring/vocabulary.js';
 
 /** A silent port: everything here reads declarations and writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
@@ -108,7 +108,7 @@ function accepted(command: Command): readonly string[] {
  * Every word of a closed DOMAIN set some declaration of this surface takes, read from
  * the domain itself.
  *
- * Read here rather than through `wiring/vocabulary.ts` on purpose: the generator gets
+ * Read here rather than through `wiring/enumerated.ts` on purpose: the generator gets
  * its values from that module, so a test that read the same registry would be asking
  * the code what it should have produced. These are the constants the machine enforces,
  * and the scopes — for which the core exports a type and no tuple, so the surface's is
@@ -353,7 +353,7 @@ describe('the script knows every verb the program declares', () => {
     // slice it changed in: no transition reached any script, because the ten of them
     // existed only as a sentence typed by hand in `task move`'s help, and completing a
     // word by parsing prose would have been building on that defect. They are DECLARED
-    // now (`wiring/vocabulary.ts`) without being validated by the parser — the gate
+    // now (`wiring/enumerated.ts`) without being validated by the parser — the gate
     // still owns the vocabulary — so the Tab has a source and this is what it offers.
     // The old promise is dead and is not silently weakened: what is still never offered
     // is an id, which the case above asserts.

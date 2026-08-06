@@ -57,9 +57,9 @@ import { completionScript } from '../src/completion/script.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';
 import { SHELLS } from '../src/wiring/completion.js';
+import * as vocabulary from '../src/wiring/enumerated.js';
+import { enumeratedArgument, SCOPES, valuesDeclaredOn } from '../src/wiring/enumerated.js';
 import { everyCommandOf } from '../src/wiring/usage.js';
-import * as vocabulary from '../src/wiring/vocabulary.js';
-import { enumeratedArgument, SCOPES, valuesDeclaredOn } from '../src/wiring/vocabulary.js';
 
 /** A silent port: everything that reads declarations writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
