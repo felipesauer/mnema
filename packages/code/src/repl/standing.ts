@@ -49,26 +49,41 @@ export interface Standing {
 }
 
 /**
- * Reads where a session opened, from local material only.
+ * Which trees can HOLD the answer to "who is this machine here", in the order they are
+ * asked: the project's committed half, then its local one, and the machine's own tree for
+ * a session that is in no project.
  *
- * The tree the identity is asked of is the PRIVATE one inside a project and the GLOBAL one
- * outside it — an installation records the anchor it serves per tree, so "who is this
- * machine here" has one answer per tree and the question needs one named. It is the same
- * tree the other surface asks it of (`mcp/session.ts`), for the same reason and by the
- * same rule.
+ * The order is not a preference between two identities — a key records the same anchor
+ * wherever it records one — it is about which tree HAS the file. `init` founds the identity
+ * in the committed tree, so that is where it is in a project somebody started here; a clone
+ * where the only local write was a memory has it in the private one, because that is the
+ * tree such a write founds. Asking both is what keeps the bar from going blank in the
+ * second case, and asking the committed one first is what makes the answer the one the
+ * project's own record carries.
+ *
+ * THE OTHER SURFACE ASKS THIS DIFFERENTLY AND CAN AFFORD TO. `mcp/session.ts` names ONE
+ * tree and gets an answer whatever the state, because reading the anchor there OPENS A
+ * WRITER — which creates the tree and derives the anchor the key would found with. That is
+ * a write door, measured as such (`--actor` is required on this CLI for exactly that
+ * reason), and a session that only reads may not go through it. So this asks the trees that
+ * may already hold one, and says nothing when none does.
  */
+const ASKED: readonly Scope[] = ['public', 'private'];
+
+/** Reads where a session opened, from local material only. */
 export function standing(): Standing {
   const { cwd, env } = here();
   const trees = resolveTrees(cwd, env);
-  const scope: Scope = trees.projectPublic === undefined ? 'global' : 'private';
+  const inProject = trees.projectPublic !== undefined;
   return {
     project: trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic),
-    identity: identityOf(trees, scope),
+    identity: identityIn(trees, inProject ? ASKED : ['global']),
   };
 }
 
 /**
- * The identity this installation recorded for one tree, in the SHORT form.
+ * The identity this installation recorded in the first of `scopes` that holds one, in the
+ * SHORT form.
  *
  * The short form is a PREFIX of the value, produced by the same function every read of
  * this product shortens with — so anyone holding the whole anchor can see this one at the
@@ -80,16 +95,18 @@ export function standing(): Standing {
  * candidates in the sentence — the product's existing answer for an ambiguous prefix. It
  * is never resolved to the wrong one.
  */
-function identityOf(trees: ResolvedTrees, scope: Scope): string | undefined {
-  const chainRoot = chainRootForScope(trees, scope);
-  if (chainRoot === undefined) return undefined;
+function identityIn(trees: ResolvedTrees, scopes: readonly Scope[]): string | undefined {
   // Exactly one, or none named. Two private halves in a key root is the hazard the
   // keystore documents, and a bar that picked one of them would be a second place deciding
   // which key this machine is.
   const fingerprints = listPrivateKeyFingerprints({ root: trees.keyRoot });
   const only = fingerprints.length === 1 ? fingerprints[0] : undefined;
   if (only === undefined) return undefined;
-  const anchor = readAnchor({ root: chainRoot }, only);
-  if (anchor === null) return undefined;
-  return shortenAnchors([anchor]).get(anchor);
+  for (const scope of scopes) {
+    const chainRoot = chainRootForScope(trees, scope);
+    if (chainRoot === undefined) continue;
+    const anchor = readAnchor({ root: chainRoot }, only);
+    if (anchor !== null) return shortenAnchors([anchor]).get(anchor);
+  }
+  return undefined;
 }
