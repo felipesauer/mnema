@@ -13,7 +13,6 @@
  */
 
 import type { Command } from 'commander';
-import { exposureReport } from '../presentation/exposure.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
@@ -28,6 +27,7 @@ export function registerExposure(program: Command, wiring: Wiring): void {
     .option('--json', 'emit the faithful report as JSON (still without any value)')
     .action(async (opts: { json?: boolean }) => {
       const { runExposure } = await import('../commands/exposure.js');
+      const { exposureReport } = await import('../presentation/exposure.js');
       const result = runExposure(here());
       if (!result.ok) {
         reportRefusal(wiring, result);

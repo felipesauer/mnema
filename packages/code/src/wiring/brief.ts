@@ -28,7 +28,6 @@
  */
 
 import type { Command } from 'commander';
-import { briefDocument } from '../presentation/brief.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
@@ -62,6 +61,7 @@ export function registerBrief(program: Command, wiring: Wiring): void {
     )
     .action(async () => {
       const { runBrief } = await import('../commands/brief.js');
+      const { briefDocument } = await import('../presentation/brief.js');
       const result = runBrief(here());
       if (!result.ok) {
         reportRefusal(wiring, result);

@@ -11,7 +11,6 @@
 
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import type { Command } from 'commander';
-import { referenceReport } from '../presentation/references.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
@@ -38,6 +37,7 @@ export function registerReferences(program: Command, wiring: Wiring): void {
     .option('--json', 'emit the faithful graph as JSON')
     .action(async (id: string, opts: { direction?: string; depth?: string; json?: boolean }) => {
       const { runReferences } = await import('../commands/references.js');
+      const { referenceReport } = await import('../presentation/references.js');
       const depth = Number.parseInt(opts.depth ?? '', 10);
       if (Number.isNaN(depth)) {
         io.err(`Not a number of hops: ${opts.depth}`);

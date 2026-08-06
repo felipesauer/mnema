@@ -13,7 +13,6 @@
  */
 
 import type { Command } from 'commander';
-import { provenanceReport } from '../presentation/provenance.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import type { Wiring } from './verb.js';
@@ -40,6 +39,7 @@ export function registerSkills(program: Command, wiring: Wiring): void {
     )
     .action(async (opts: { json?: boolean }) => {
       const { runSkills } = await import('../commands/skills.js');
+      const { provenanceReport } = await import('../presentation/provenance.js');
       const result = runSkills(here());
       if (opts.json === true) {
         io.out(JSON.stringify(result.patterns, null, 2));

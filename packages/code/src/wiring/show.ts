@@ -9,7 +9,6 @@
  */
 
 import type { Command } from 'commander';
-import { recordReport } from '../presentation/record.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
@@ -25,6 +24,7 @@ export function registerShow(program: Command, wiring: Wiring): void {
     .option('--json', 'emit the faithful record as JSON')
     .action(async (id: string, opts: { json?: boolean }) => {
       const { runShow } = await import('../commands/show.js');
+      const { recordReport } = await import('../presentation/record.js');
       const result = runShow(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_RECORD: `No record ${id} here.` });

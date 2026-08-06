@@ -241,26 +241,41 @@ function referencedIdentifiers(source: string): Set<string> {
 
 /** An `import { … } from '<specifier>'` statement, anchored so a commented one cannot match. */
 const IMPORT_CLAUSE = /^[ \t]*import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/gm;
+/**
+ * A `const { … } = await import('<specifier>')` — the CLI's way of loading a verb's
+ * work when the verb runs, so the floor stays the declaration (see
+ * `wiring/verb.ts`).
+ *
+ * It is a second shape of the same thing, and reading only the first one made this
+ * guard accuse `@mnema/chain requiredLevel` the day its one caller moved inside an
+ * action: the reference was still there, and the attribution was not. Anchored at
+ * the statement for the same reason the other one is anchored at the line.
+ */
+const DYNAMIC_IMPORT_CLAUSE =
+  /^[ \t]*(?:const|let|var)\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*['"]([^'"]+)['"]\s*\)/gm;
 
 /**
- * Which names this file imports from which specifier. It is how a reference is
- * attributed to the package that exports it, so two packages exporting the same
- * name cannot cover for each other.
+ * Which names this file imports from which specifier, statically or when the verb
+ * runs. It is how a reference is attributed to the package that exports it, so two
+ * packages exporting the same name cannot cover for each other.
  */
 function importedNames(source: string): Map<string, Set<string>> {
   const bySpecifier = new Map<string, Set<string>>();
-  for (const statement of source.matchAll(IMPORT_CLAUSE)) {
-    const specifier = statement[2] as string;
-    const names = bySpecifier.get(specifier) ?? new Set<string>();
-    for (const clause of (statement[1] as string).split(',')) {
-      const imported = clause
-        .trim()
-        .replace(/^type\s+/, '')
-        .split(/\s+as\s+/)[0]
-        ?.trim();
-      if (imported !== undefined && imported.length > 0) names.add(imported);
+  for (const clauses of [IMPORT_CLAUSE, DYNAMIC_IMPORT_CLAUSE]) {
+    for (const statement of source.matchAll(clauses)) {
+      const specifier = statement[2] as string;
+      const names = bySpecifier.get(specifier) ?? new Set<string>();
+      for (const clause of (statement[1] as string).split(',')) {
+        const imported = clause
+          .trim()
+          .replace(/^type\s+/, '')
+          .split(/\s+as\s+/)[0]
+          ?.split(':')[0]
+          ?.trim();
+        if (imported !== undefined && imported.length > 0) names.add(imported);
+      }
+      bySpecifier.set(specifier, names);
     }
-    bySpecifier.set(specifier, names);
   }
   return bySpecifier;
 }
@@ -632,6 +647,16 @@ describe('every public value has a caller', () => {
     // A commented-out import is not an import.
     expect(importedNames("// import { x } from '@mnema/core';").size).toBe(0);
     expect(importedNames(" * import { x } from '@mnema/core';").size).toBe(0);
+    // A verb loads its work when it runs, and that attributes the name just the same
+    // — the shape this guard did not know until a caller moved inside an action.
+    expect(
+      importedNames("      const { requiredLevel } = await import('@mnema/chain');")
+        .get('@mnema/chain')
+        ?.has('requiredLevel'),
+    ).toBe(true);
+    expect(
+      importedNames("      // const { requiredLevel } = await import('@mnema/chain');").size,
+    ).toBe(0);
     // An aliased import is attributed to the name the package exports, not the
     // local one.
     expect(
