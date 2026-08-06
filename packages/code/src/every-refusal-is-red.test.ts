@@ -75,6 +75,16 @@ const shipped = (): readonly string[] =>
 /** One shipped module's source. */
 const sourceOf = (file: string): string => readFileSync(join(HERE, 'wiring', file), 'utf-8');
 
+/** Every module of `presentation/` that ships, tests excluded. */
+const composing = (): readonly string[] =>
+  readdirSync(join(HERE, 'presentation'))
+    .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+    .sort();
+
+/** One shipped composer's source. */
+const composerOf = (file: string): string =>
+  readFileSync(join(HERE, 'presentation', file), 'utf-8');
+
 /**
  * What WORDING a refusal looks like in source: the shape's own interpolation.
  *
@@ -175,6 +185,30 @@ describe('a refusal is worded in exactly one place', () => {
     // And the funnel is where the parser's no gets it too — never at the call site.
     expect(sourceOf('usage.ts')).not.toContain("'bad'");
     expect(sourceOf('usage.ts')).toContain('refusalSentence(');
+  });
+
+  it('names the composers that decide one too, which the scan above cannot see', () => {
+    // THE SCAN ABOVE READS `wiring/` AND A SEVERITY CAN BE DECIDED A DIRECTORY OVER. A
+    // verdict's news is handed down by the verb, so the wiring was the whole corpus while
+    // that was the only way a hue was reached; a READING that paints something it composed
+    // itself decides in `presentation/`, and the case above would have stayed green with a
+    // second red arriving from there.
+    //
+    // Two files, and only one of them decides anything. `line.ts` DECLARES the vocabulary
+    // — the tuple the union is derived from — which is where the words have to appear at
+    // all. `state.ts` is the decision: what a task's position says to a reader, mapped
+    // from the disposition the domain derives (`core`'s `disposition.ts`) onto this scale.
+    // It is a table and not an `if`, so a disposition added tomorrow does not build until
+    // it says whether it is news.
+    const deciding = composing().filter((file) => composerOf(file).includes("'bad'"));
+    expect(deciding).toEqual(['line.ts', 'state.ts']);
+    // The vacuous form is a directory that stopped being read, so the corpus is asserted
+    // to be the one whose whole job is a line's bytes.
+    expect(composing().length).toBeGreaterThan(10);
+    expect(composing()).toContain('styled.ts');
+    // And the renderer decides NOTHING: it maps a severity to an escape and never picks
+    // one, which is what keeps it from being the thing that judges the record.
+    expect(composerOf('styled.ts')).not.toContain("'bad'");
   });
 
   it('would accuse a verb that worded one itself', () => {

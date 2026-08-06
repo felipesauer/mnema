@@ -88,6 +88,12 @@ const DEFAULT_HUE = '\u001b[39m';
  *     it into the clauses the chain hands over must not change the weight of a single
  *     word of it, or the split would have been a restyling wearing a decomposition's
  *     clothes. What the split buys is that ONE clause can now carry a hue.
+ *   - `state` — bare, exactly like the `field` it rides. A position's WEIGHT is the
+ *     title's: emboldening or dimming every state would say something about all of them,
+ *     and what distinguishes them is not how much they matter but what a reader does
+ *     next. That travels on the other axis — three of the five dispositions carry a
+ *     severity and two carry none (see `state.ts`) — so a state with nothing to report
+ *     comes out byte for byte the plain line, which is most of them.
  *   - `id` and `when` — dim, and they are the reason this map was worth extending. A
  *     list of hits is columns of `field` that all weigh the same, so nothing in it
  *     stood out; dimming the two columns nobody READS makes the title beside them the
@@ -103,6 +109,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   clause: DIM,
   id: DIM,
   when: DIM,
+  state: '',
 };
 
 /**
@@ -117,8 +124,15 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * the one where neither is true. It was two, and `line.ts` says what falsified the
  * premise that there was no third to say — a proven level that is neither a break nor a
  * signature. Nothing here decides WHICH a given line is: the call site says (see
- * `verdict.ts` and `wiring/verify.ts`), and that is what keeps the renderer from being
- * the thing that judges the record.
+ * `verdict.ts`, `wiring/verify.ts` and `state.ts`), and that is what keeps the renderer
+ * from being the thing that judges the record.
+ *
+ * AND THE TRIPLE MEANS ONE THING PER HUE, whichever call site sets it. That is the whole
+ * reason a task's position reuses this scale instead of getting one of its own: a
+ * `stalled` task is red because it is an answer a caller has to act on, exactly as a
+ * refusal is; a `settled` one is green for the same reason `ALLOWED` is. A second
+ * vocabulary would have given this surface two reds meaning different things, which is
+ * how a hue stops being readable at all.
  */
 const PAINTED_BY: { readonly [S in Severity]: string } = {
   good: GREEN,

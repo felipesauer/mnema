@@ -22,6 +22,7 @@
  * imitate.
  */
 
+import type { Column } from './items.js';
 import type { Line } from './line.js';
 
 /**
@@ -64,4 +65,24 @@ export function subjectLine(...parts: readonly string[]): Line {
  */
 export function fact(text: string, depth = 1): Line {
   return { indent: depth, parts: [{ role: 'field', text }] };
+}
+
+/**
+ * One fact that ends in a workflow STATE: the fact, then the position as its own part.
+ *
+ * It is {@link fact} with the state taken out of the sentence, and the split is the whole
+ * of it — `show` printed `` `${title} (${state})` `` as a single field, so nothing could
+ * paint the position without painting the title with it. The separator is the space the
+ * concatenation already held (see `plain.ts`), which is why the bytes are unchanged and
+ * the golden is the acceptance test for this.
+ *
+ * The state arrives as a COLUMN a caller already composed (`asState`, in `state.ts`),
+ * never as a bare string: what a position means to a reader is decided in one place, and a primitive
+ * that took the string would be a second place able to decide it differently.
+ *
+ * No `depth`: the one fact printed a level deeper is a command to type, and it has no
+ * state in it.
+ */
+export function statedFact(text: string, state: Column): Line {
+  return { indent: 1, parts: [{ role: 'field', text }, state] };
 }

@@ -29,24 +29,41 @@
  * of moving code.
  */
 
-import type { Line, Part } from './line.js';
+import type { Line, Part, Severity } from './line.js';
 
 /**
- * The roles a COLUMN of a list may take: the ordinary value, and the two a call site
- * can say it is handing over.
+ * The roles a COLUMN of a list may take: the ordinary value, the two a call site can
+ * say it is handing over, and the one that rides another.
  *
  * It is a SUBSET of the line's roles, and the narrowing is the point: a `label` or a
  * `subject` inside a list would take a heading's separator and put a `·` in the middle
  * of a table. The subset is checked against the whole union where {@link itemLine}
  * builds its parts — a column role that stopped being a role does not compile there,
  * in `src`.
+ *
+ * `state` is in the subset and is NOT a column of the table, which sounds like a
+ * contradiction and is the honest shape: a task's position is appended to the title it
+ * belongs to, separated by the one space it always had (see `plain.ts`), so it is passed
+ * where the columns are passed and lands beside the field it rides. What it needs of its
+ * own is not a position in the table — it is the ability to carry a hue while the title
+ * beside it does not.
  */
-export type ColumnRole = 'field' | 'id' | 'when';
+export type ColumnRole = 'field' | 'id' | 'when' | 'state';
 
-/** One column of a list, with what it is said rather than left to be guessed. */
+/**
+ * One column of a list, with what it is said rather than left to be guessed.
+ *
+ * `severity` is the second axis, and it is here for the one column that can carry news:
+ * a state whose disposition says a reader has something to do about it. It is optional
+ * and absent is the common case, exactly as it is on a {@link Part} — a column that
+ * declared its own news without knowing any would be the surface judging the record.
+ * Structurally a `Column` IS a `Part`, which is what lets {@link itemLine} hand one
+ * straight through.
+ */
 export interface Column {
   readonly role: ColumnRole;
   readonly text: string;
+  readonly severity?: Severity;
 }
 
 /**

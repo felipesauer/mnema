@@ -158,15 +158,33 @@ NO_COLOR=1 mnema verify      # and FORCE_COLOR, both as everywhere else
 the plain output, byte for byte — the same text a redirected file holds, so a verdict
 quoted from a terminal is the verdict.
 
-Colour says two things and no more. **Red means the command did not do what you
-asked** — a refusal from the workflow, a value the surface turns down, a command line
-the parser turns down: all three are the same news, and all three are red. `ALLOWED`
-is green for the same reason. And **`verify` paints how far the proof got**: green when
-every event is covered by a signature that was checked, yellow when the hash chain held
-and no signature was checked at all, red on a break. Only that one clause of the verdict
-is coloured — the tree's name beside it is not, because the tree is not the news — and
-the words are the chain's own, unchanged. A count is still not coloured: three reopened
-tasks may be a team learning something, and this tool does not decide that for you.
+Colour says three things and no more, and each hue means one thing whichever answer
+sets it. **Red means the command did not do what you asked** — a refusal from the
+workflow, a value the surface turns down, a command line the parser turns down: all
+three are the same news, and all three are red. `ALLOWED` is green for the same reason.
+And **`verify` paints how far the proof got**: green when every event is covered by a
+signature that was checked, yellow when the hash chain held and no signature was checked
+at all, red on a break. Only that one clause of the verdict is coloured — the tree's name
+beside it is not, because the tree is not the news — and the words are the chain's own,
+unchanged.
+
+The third is **a task's position in the workflow**, which a list and `mnema show` print
+in parentheses after the title. `(BLOCKED)` is red, `(IN_REVIEW)` is yellow, `(DONE)` is
+green, and the other four states carry no colour at all. That reads like a taste and it
+is read off the transition table: `BLOCKED` is the one state whose only move UNDOES it,
+so it is the one position that cannot progress; `IN_REVIEW` is left by two moves and both
+demand a verdict from somebody; `DONE` is left only by `reopen`, which demands a reason.
+Where a state is the ordinary course of work, or a cancellation, there is nothing for a
+reader to do about it and nothing is painted — which is most lines. This section used to
+say colour meant two things, and that a state would never be one of them *because states
+are categories and a hue per category is noise*. The rule held and the classification did
+not: a `scope` is a category and is still plain, while a state is a position in a cycle
+whose exits differ, which is why five meanings collapse into three hues instead of seven.
+Asserted end to end in `a-state-is-a-position.test.ts`, and the derivation from the table
+of moves in `core`'s `disposition.test.ts`.
+
+A count is still not coloured: three reopened tasks may be a team learning something, and
+this tool does not decide that for you.
 
 The hue never replaces the word that says it, which is why `--color=never`, a pipe and a
 monochrome terminal lose nothing.
