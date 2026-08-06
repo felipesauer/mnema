@@ -105,7 +105,7 @@ export function registerVerify(program: Command, wiring: Wiring): void {
       }
       const result = runVerify({ ...here(), requirement, global: opts.global === true });
       if (!result.ok) {
-        reportRefusal(io, { reason: 'NO_PROJECT' });
+        reportRefusal(wiring, { reason: 'NO_PROJECT' });
         return;
       }
       for (const tree of result.trees) report(io, render, tree);

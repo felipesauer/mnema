@@ -33,24 +33,66 @@
  *   - `field` — one column of {@link itemLine}, and the whole text of a
  *     {@link fact}. Those two are the SAME line and `forms.test.ts` pins it, so
  *     telling them apart here would invent a difference the output does not make.
+ *   - `id` and `when` — the columns of {@link itemLine} a call site hands over
+ *     KNOWING what they are. `search` passes a hit's id and the day it was written
+ *     and used to throw both facts away by passing them as `field`; recovering them
+ *     is not inventing a role, it is stopping the discard. And they are one pair
+ *     rather than two decisions because the reason is one: YOU DO NOT READ AN ID OR
+ *     A DATE, you copy one or skip past it. Dimming them is what makes the title
+ *     beside them the thing the eye lands on, which is what `git log --oneline` does
+ *     with a hash and `gh pr list` with a number.
  *   - `subject` — one part of {@link subjectLine}, which reads as a heading rather
  *     than as the columns of a table.
  *
- * WHAT IS NOT HERE, and why the list is short. An id, a state, a verdict and an
- * emphasis are all things a reader tells apart on sight, and not one of them is a
- * role: nothing in the code tells an id apart from a title on an item line — the six
- * lists pass their fields positionally, in an array — and `column` marks a WIDTH, not
- * a kind of value. A role for something no caller distinguishes would be a value
- * plumbed to a renderer with nothing feeding it, which is a defect wearing the
- * clothes of a taxonomy. The day a caller distinguishes one, it gets a role then.
+ * THE TWO NEWEST ARE REFINEMENTS OF `field`, and that is a constraint and not a
+ * preference. A separator is a function of the role ALONE (see `PRECEDED_BY`), so a
+ * role that joined its neighbour one way inside a list and another inside a heading
+ * could not exist. `id` and `when` take a column's two spaces — which is what keeps
+ * the plain renderer's bytes, and therefore the recorded transcript, identical. It is
+ * also why the id in `show`'s heading and the instants inside `show`'s facts stay
+ * unmarked: neither is a column, and marking one would move a byte.
+ *
+ * WHAT IS STILL NOT HERE, and what falsified the premise that used to be. This list
+ * used to say that "an id, a state, a verdict and an emphasis" were all things a
+ * reader tells apart on sight and that not one of them was a role, because nothing in
+ * the code told an id from a title. HALF OF THAT SURVIVED. What falsified the other
+ * half is `styled.ts`: once a renderer could dim, `search.ts` passing `hit.id` and
+ * `hit.at` as anonymous fields stopped being "nothing distinguishes them" and became
+ * a call site discarding what it knew. A `state`, a tree and a title are still not
+ * roles, and their reason is different in kind — they are CATEGORIES rather than
+ * ranks, so telling them apart means one hue per value, and five hues in a list is
+ * noise. The day someone wants them apart, the argument has to be legibility
+ * MEASURED, not variety.
  *
  * The union is derived from this tuple so the roles can be walked at run time:
  * `parts.test.ts` calls every primitive and refuses a role no primitive produces.
  */
-export const ROLES = ['label', 'detail', 'field', 'subject'] as const;
+export const ROLES = ['label', 'detail', 'field', 'id', 'when', 'subject'] as const;
 
 /** What a part is on its line. Closed: see {@link ROLES} for what it excludes. */
 export type Role = (typeof ROLES)[number];
+
+/**
+ * How bad the news on a part is, where the call site is the thing that knows.
+ *
+ * IT IS NOT A ROLE, and keeping the two apart is what stops the table of styles from
+ * doubling. A verdict's label is still a label — it leads the line and it takes the
+ * colon — and a severity is a second axis over that: `REFUSED` is a label that is bad
+ * news, `ALLOWED` is the same label with the opposite news, and a dimmed id is
+ * neither. So a part always has a role and has a severity only where something knows
+ * one, and the renderer composes the two (see `styled.ts`).
+ *
+ * TWO VALUES AND NO MIDDLE. Green and red are what a terminal has always said, and
+ * they are the two a reader acts on. A `warning` would be the third, and this surface
+ * has none to say: `antipatterns` states "reopened tasks: 3" and deliberately refuses
+ * to call it bad, because three reopenings may be a team learning something (see
+ * `verdict.ts`). That refusal is the whole reason severity is OPTIONAL rather than an
+ * argument every statement has to answer.
+ */
+export const SEVERITIES = ['good', 'bad'] as const;
+
+/** How bad a part's news is. Closed: see {@link SEVERITIES} for the missing middle. */
+export type Severity = (typeof SEVERITIES)[number];
 
 /** One part of a line: what it is, and what it says. */
 export interface Part {
@@ -58,6 +100,12 @@ export interface Part {
   readonly role: Role;
   /** What it says, verbatim. Not a line: a renderer never splits or joins it. */
   readonly text: string;
+  /**
+   * How bad this part's news is, where something knows. Absent everywhere else, and
+   * absent is the common case: a colour a renderer chose without being told would be
+   * the renderer judging the record.
+   */
+  readonly severity?: Severity;
 }
 
 /**

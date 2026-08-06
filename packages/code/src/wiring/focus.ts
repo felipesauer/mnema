@@ -8,7 +8,7 @@
 import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runFocus } from '../commands/focus.js';
-import { itemLine } from '../presentation/items.js';
+import { asId, itemLine } from '../presentation/items.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
@@ -28,7 +28,7 @@ export function registerFocus(program: Command, wiring: Wiring): void {
     .action((opts: { actor: string; json?: boolean }) => {
       const result = runFocus(here(), { actor: opts.actor });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       if (opts.json === true) {
@@ -61,7 +61,10 @@ export function registerFocus(program: Command, wiring: Wiring): void {
         io.out(
           render(
             itemLine([
-              run.id,
+              // The run id is what `mnema run end` takes, and it is the half of this
+              // line nobody reads: said as an id, it stops competing with the agent
+              // and the goal, which are what tell ten leftover runs apart.
+              asId(run.id),
               `${oneLine(run.agent)}` +
                 `${run.goal !== undefined ? ` — ${oneLine(run.goal)}` : ''}` +
                 runAgeSuffix(run),

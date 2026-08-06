@@ -8,7 +8,7 @@
  * two accounts of one record and the terminal would be the one nobody could quote.
  * So the assertion is bytes, not "the same information".
  *
- * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES — the three SGR sequences of
+ * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES — the six SGR sequences of
  * {@link SGR}, never every escape. A stored field can hold an escape byte of its own
  * (it is text an actor wrote, and the content door screens for credentials, not for
  * control bytes), and a strip that ate those too would compare a scrubbed styled line
@@ -28,7 +28,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { fact, subjectLine } from './detail.js';
-import { column, itemLine } from './items.js';
+import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { renderPlain } from './plain.js';
 import { renderStyled } from './styled.js';
@@ -38,19 +38,29 @@ import { statement } from './verdict.js';
 const ESC = '\u001b';
 
 /**
- * The three sequences the styled renderer adds, and nothing else.
+ * The six sequences the styled renderer adds, and nothing else: two weights and
+ * their closer, two hues and theirs.
  *
  * Built rather than written as a literal, because a regular expression holding a
  * control character is the thing the lint refuses — and it refuses it for the reason
  * that made this file necessary: a control byte in source is invisible to a reader.
  */
-const SGR = new RegExp(`${ESC}\\[(?:1|2|22)m`, 'g');
+const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|39)m`, 'g');
 
 /** One styled line with this renderer's own escapes taken back out. */
 const stripped = (text: string): string => text.replace(SGR, '');
 
-/** An escape a FIELD may hold: red, which this renderer never writes. */
-const ACTOR_ESCAPE = `${ESC}[31m`;
+/**
+ * An escape a FIELD may hold, and it has to be one this renderer never writes.
+ *
+ * IT USED TO BE RED, and red became OURS the day a refusal was painted. A strip that
+ * covers `31` would have taken the actor's own bytes out of the styled line and then
+ * compared the scrubbed result against an unscrubbed plain one — which is exactly the
+ * vacuous comparison the header of this file warns about, arriving through the fixture
+ * instead of through the renderer. Magenta, because nothing in `styled.ts` emits it;
+ * the day something does, this constant moves again and the cases below say so.
+ */
+const ACTOR_ESCAPE = `${ESC}[35m`;
 
 describe('the styled line is the plain line, wrapped', () => {
   /**
@@ -83,6 +93,15 @@ describe('the styled line is the plain line, wrapped', () => {
     { indent: 0, parts: [] },
     statement(column('ALLOWED', 12), ' submit t-1 → READY '),
     subjectLine(column('task the-id', 20), 'public'),
+    // The two column roles — including one whose id and instant both carry a space at
+    // the edge, because a dim column is a painted part and the trap the two lines above
+    // closed applies to it just as much.
+    itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title']),
+    itemLine([asId(' an-id '), asWhen(' 2026-08-05 ')]),
+    // And the severities, on both a bare label and one padded to a width.
+    statement('ALLOWED', 'submit t-1 → READY', 'good'),
+    statement('REFUSED (MISSING_PROOF)', `needs a note ${ACTOR_ESCAPE}`, 'bad'),
+    statement(column('REFUSED', 12), ' complete t-1 ', 'bad'),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -95,12 +114,13 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // SEVEN of the fifteen, and exactly the ones holding a role that carries weight:
-    // the three subject lines and the four statements. The other eight are `field` — a
-    // fact, a column, an empty part, a blank line — and they are byte for byte the
-    // plain line by design, which is what the case below asserts on purpose.
+    // TWELVE of the twenty, and exactly the ones holding a role or a severity that
+    // shows: the three subject lines, the seven statements and the two lists with a
+    // said column. The other eight are bare `field` — a fact, a plain column, an empty
+    // part, a blank line — and they are byte for byte the plain line by design, which
+    // is what the last case in this block asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(7);
+    expect(painted.length).toBe(12);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
@@ -122,6 +142,23 @@ describe('the styled line is the plain line, wrapped', () => {
       '\u001b[1mtask the-id\u001b[22m  ·  \u001b[1mpublic\u001b[22m',
     );
     expect(renderStyled(fact('created at noon', 2))).toBe('    created at noon');
+  });
+
+  it('wraps a weight and a hue in that order, and closes each with its own', () => {
+    // The two axes composed, byte for byte. The weight opens first and closes last,
+    // `39` returns the foreground the caller's terminal chose and `22` returns the
+    // intensity — never `0`, which would also reset a colour the caller set for their
+    // own reasons. A dim column opens one wrap and closes one.
+    expect(renderStyled(statement('ALLOWED', 'submit → READY', 'good'))).toBe(
+      '\u001b[1m\u001b[32mALLOWED\u001b[39m\u001b[22m: \u001b[2msubmit → READY\u001b[22m',
+    );
+    expect(renderStyled(statement('Refused (NO_NOTE)', 'complete needs a note', 'bad'))).toBe(
+      '\u001b[1m\u001b[31mRefused (NO_NOTE)\u001b[39m\u001b[22m' +
+        ': \u001b[2mcomplete needs a note\u001b[22m',
+    );
+    expect(renderStyled(itemLine([asId('an-id'), 'public', asWhen('2026-08-05')]))).toBe(
+      '  \u001b[2man-id\u001b[22m  public  \u001b[2m2026-08-05\u001b[22m',
+    );
   });
 
   it('costs a list of columns nothing at all', () => {
@@ -199,7 +236,10 @@ describe('every line the CLI writes says the same thing either way', () => {
     const id = /\(([^)]+)\)/.exec(created)?.[1];
     if (id === undefined) throw new Error(`fixture: no task id in ${task.join(' / ')}`);
     await invoke(['decision', 'Keep the runbook in the record', 'It is what a reader asks for']);
-    await invoke(['skill', 'Write the runbook first']);
+    // `--body` is REQUIRED and this call used to omit it, so the fixture refused
+    // silently and `skills` had nothing to list — which is why a read that composes
+    // an id column sat outside the corpus of the slice that measured what paints.
+    await invoke(['skill', 'Write the runbook first', '--body', 'Open the runbook.']);
     await invoke(['memory', 'The runbook lives in the record']);
     await invoke(['observe', id]);
     const account = await invoke(['accountability', '--json']);
@@ -226,6 +266,11 @@ describe('every line the CLI writes says the same thing either way', () => {
       const plain = await invoke(argv);
       const styled = await invoke(['--color=always', ...argv]);
       expect(styled.map(stripped), `mnema ${argv.join(' ')}`).toEqual(plain);
+      // AND THE FLAG A READER REACHES FOR LOSES NOTHING. `--color=never` is what
+      // someone on a monochrome terminal, or reading through a filter that mangles
+      // escapes, actually types — so it is asserted as its own case rather than left
+      // to be inferred from the default of a pipe. Same lines, in the same order.
+      expect(await invoke(['--color=never', ...argv]), `never: ${argv.join(' ')}`).toEqual(plain);
       compared += plain.length;
       if (styled.some((line, at) => line !== plain[at])) painting.push(argv[0] as string);
     }
@@ -236,14 +281,25 @@ describe('every line the CLI writes says the same thing either way', () => {
     // that discriminates: a verb whose renderer stopped being handed in would drop out
     // of this list while every line of it still passed the comparison above.
     //
-    // It is also the honest measure of what this slice paints, and it is FOUR of
-    // fourteen: weight lands on a `statement`'s label and detail and on a
-    // `subjectLine`'s parts, and everything else the surface prints is a `fact` or a
-    // column of a list, which are `field` and written bare. A search hit, a timeline
-    // entry and the moves a task allows are all unpainted today. That is the shape of
-    // the roles rather than a gap in the renderer: emphasis inside a list needs a call
-    // site that says which column is the id, and no read makes that distinction yet.
-    expect(painting).toEqual(['antipatterns', 'verify', 'show', 'refs', 'guard']);
+    // It is also the honest measure of what the surface paints, and it is EIGHT of
+    // fourteen, up from four. The four it was are the reads whose output is a
+    // `statement` or a `subjectLine`; the four that joined are the LISTS whose call
+    // site now says which column is an id and which is an instant. What is still
+    // unpainted is measured too, and each for a reason a reader can check:
+    // `accountability` and `next-actions` compose every column out of several values
+    // and have no bare id to say; `brief` is facts; `exposure` and `focus` do have a
+    // said column, and print none in this fixture — nothing here holds a credential
+    // format, and the actor has no open run. `resume` is facts and a hint.
+    expect(painting).toEqual([
+      'search',
+      'skills',
+      'antipatterns',
+      'verify',
+      'show',
+      'refs',
+      'timeline',
+      'guard',
+    ]);
   }, 60_000);
 
   it('leaves the machine channel unpainted, even when style is forced', async () => {

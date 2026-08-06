@@ -10,7 +10,7 @@
 import type { Command } from 'commander';
 import { anchorText } from '../anchors.js';
 import { runTimeline } from '../commands/timeline.js';
-import { itemLine } from '../presentation/items.js';
+import { asWhen, itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
@@ -26,7 +26,7 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
     .action((id: string, opts: { json?: boolean }) => {
       const result = runTimeline(here(), { id });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       if (opts.json === true) {
@@ -44,7 +44,12 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
         io.out(
           render(
             itemLine([
-              entry.at,
+              // A whole instant leads every line here, and it is the widest column of
+              // the read — said as an instant, the kind and the role beside it become
+              // what a story reads as. Nothing else on the line is an id: the `who`
+              // is an identity written through its anchor, which is a NAME a reader is
+              // meant to read (see `anchors.ts`).
+              asWhen(entry.at),
               entry.kind,
               `[${entry.role}]`,
               anchorText(result.anchors, entry.who),

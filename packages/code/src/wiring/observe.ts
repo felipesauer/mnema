@@ -59,7 +59,7 @@ export function registerObserve(program: Command, wiring: Wiring): void {
           reportRecorded(result, io);
           return;
         }
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
       },
     );
 }

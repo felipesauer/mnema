@@ -59,7 +59,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
         ...(opts.goal !== undefined ? { goal: opts.goal } : {}),
       });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       io.out(`Started run ${result.id}`);
@@ -115,7 +115,7 @@ export function registerRun(program: Command, wiring: Wiring): void {
         ...(opts.outcome !== undefined ? { outcome: opts.outcome } : {}),
       });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       io.out(`Ended run ${result.id}`);

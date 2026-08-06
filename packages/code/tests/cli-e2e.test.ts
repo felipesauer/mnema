@@ -2679,7 +2679,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     // The structural half of the proof: the behaviour above is asserted on a few
     // verbs, and this is what makes it true of the rest — and of the next one
     // somebody adds. A `--which` with no parser is a verb where the hole is open.
-    const program = buildProgram(capture().io);
+    const { program } = buildProgram(capture().io);
     const declaring: string[] = [];
     const unvalidated: string[] = [];
     const walk = (command: Command, path: string): void => {

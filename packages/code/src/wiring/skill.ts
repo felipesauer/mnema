@@ -81,7 +81,7 @@ export function registerSkill(program: Command, wiring: Wiring): void {
         reportRecorded(result, io);
         return;
       }
-      reportRefusal(io, result);
+      reportRefusal(wiring, result);
     });
 
   // `skill move <action> <id>` — the generic move, the sibling of `task move`.
@@ -125,6 +125,6 @@ export function registerSkill(program: Command, wiring: Wiring): void {
       reportReplacement(result, io);
       return;
     }
-    reportRefusal(io, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
+    reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
   });
 }

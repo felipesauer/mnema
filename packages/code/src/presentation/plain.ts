@@ -51,11 +51,20 @@ const INDENT = '  ';
  * that makes a label and it puts it first, where there is nothing to separate it
  * from. It is stated rather than omitted because the totality is what makes this
  * table the record of the surface's punctuation.
+ *
+ * `id` and `when` take a COLUMN's separator, exactly, and the identical entries are
+ * the point rather than a duplication to collapse: the two are refinements of `field`
+ * for the styled renderer to dim (see `line.ts`), and a list whose id column joined
+ * its neighbour by anything else would be a list whose bytes changed the day a call
+ * site said what a column was. Every transcript this product is pinned by was
+ * recorded before either role existed.
  */
 const PRECEDED_BY: { readonly [R in Role]: string } = {
   label: '',
   detail: ': ',
   field: '  ',
+  id: '  ',
+  when: '  ',
   subject: '  ·  ',
 };
 

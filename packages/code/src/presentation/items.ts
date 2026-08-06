@@ -29,7 +29,42 @@
  * of moving code.
  */
 
-import type { Line } from './line.js';
+import type { Line, Part } from './line.js';
+
+/**
+ * The roles a COLUMN of a list may take: the ordinary value, and the two a call site
+ * can say it is handing over.
+ *
+ * It is a SUBSET of the line's roles, and the narrowing is the point: a `label` or a
+ * `subject` inside a list would take a heading's separator and put a `·` in the middle
+ * of a table. The subset is checked against the whole union where {@link itemLine}
+ * builds its parts — a column role that stopped being a role does not compile there,
+ * in `src`.
+ */
+export type ColumnRole = 'field' | 'id' | 'when';
+
+/** One column of a list, with what it is said rather than left to be guessed. */
+export interface Column {
+  readonly role: ColumnRole;
+  readonly text: string;
+}
+
+/**
+ * This column is an ID — a handle to copy into the next command, not prose to read.
+ *
+ * The two markers exist because six lists hand over ids and instants POSITIONALLY, in
+ * an array, and the shape threw away what each call site already knew. Saying it costs
+ * a caller one word and buys the renderer the one distinction that makes a list
+ * scannable (see `line.ts` for why these two and no third).
+ */
+export function asId(text: string): Column {
+  return { role: 'id', text };
+}
+
+/** This column is an INSTANT — when it happened, which a reader scans past. */
+export function asWhen(text: string): Column {
+  return { role: 'when', text };
+}
 
 /**
  * One item, as a line: indented under its header, one part per field.
@@ -42,12 +77,20 @@ import type { Line } from './line.js';
  * extra spaces said. That reading names its groups instead, so the meaning is in
  * words and the depth is a constant again.
  *
- * The fields all take the same role, because nothing here tells them apart: a list
- * hands over an id, a tree and a title in an array, in the order they read. That is
- * what {@link ROLES} refuses to guess at.
+ * A BARE STRING IS STILL A FIELD, which is what keeps the ordinary column the default
+ * and the marked one the exception. Every list used to pass nothing but strings and
+ * every one of those columns was an anonymous value; the callers that know better now
+ * wrap two of theirs in {@link asId} or {@link asWhen}, and the rest are unchanged —
+ * including the whole of `accountability`, `next-actions` and `refs`, which compose
+ * their columns out of several values and have no bare id or instant to mark.
  */
-export function itemLine(fields: readonly string[]): Line {
-  return { indent: 1, parts: fields.map((text) => ({ role: 'field', text })) };
+export function itemLine(fields: readonly (string | Column)[]): Line {
+  return {
+    indent: 1,
+    parts: fields.map(
+      (field): Part => (typeof field === 'string' ? { role: 'field', text: field } : field),
+    ),
+  };
 }
 
 /**

@@ -16,8 +16,18 @@
  * tree a fact routes to, so the reply is the only moment the author can learn it.
  * Both wordings live in `recorded-content.ts`, shared with the MCP surface; this only
  * puts them on the stream, in one order.
+ *
+ * AND THE REFUSAL IS THE ONE THING ON THIS SURFACE PAINTED RED. It is the cheapest
+ * severity in the product to be sure of — a refusal is bad news, always, wherever it
+ * came from — and it is said in ONE function that every verb already routes through,
+ * so the whole surface acquires it at once instead of two dozen verbs each deciding.
+ * The colour repeats the word `Refused`; it never replaces it, which is what makes
+ * `--color=never` and a monochrome terminal lose nothing (see `presentation/styled.ts`).
  */
 
+import type { Line } from '../presentation/line.js';
+import type { Render } from '../presentation/render.js';
+import { statement } from '../presentation/verdict.js';
 import {
   type Landed,
   landedNotice,
@@ -25,6 +35,21 @@ import {
   replacementNotice,
 } from '../recorded-content.js';
 import { type CliIo, writeLines } from './io.js';
+
+/**
+ * The two things saying a refusal needs: where it goes, and how a line becomes bytes.
+ *
+ * Every verb's `Wiring` already holds both, so a caller passes what it was handed. It
+ * is stated here rather than imported from `verb.ts` because the two things that write
+ * a refusal WITHOUT being a verb — the run pin and the entry's last-resort catch — hold
+ * neither a program nor a session, and a wider parameter would have them making one up.
+ */
+export interface Reporter {
+  /** Where the refusal goes, and how the non-zero exit is recorded. */
+  readonly io: CliIo;
+  /** How the line becomes the bytes `io` receives — plain or painted. */
+  readonly render: Render;
+}
 
 /**
  * What a verb says when there is no project here.
@@ -36,9 +61,20 @@ import { type CliIo, writeLines } from './io.js';
  */
 export const NO_PROJECT = 'No mnema project here. Run `mnema init` first.';
 
-/** The one shape a typed refusal takes on this surface, wherever it comes from. */
-export function refusalLine(code: string, message: string): string {
-  return `Refused (${code}): ${message}`;
+/**
+ * The one shape a typed refusal takes on this surface, wherever it comes from.
+ *
+ * It returns a LINE and not bytes, which is what puts the three places that write one
+ * on the same footing: the funnel below, the run pin, and the entry's catch for a
+ * machine with no single identity. Each of them renders it, so each of them paints it,
+ * and a fourth that forgot would not compile — the type is the guard.
+ *
+ * The code leads INSIDE the label, as it always has: it is part of what the verdict IS,
+ * so it is what a reader scanning a log sees first, and the message after the colon is
+ * the evidence for it.
+ */
+export function refusalLine(code: string, message: string): Line {
+  return statement(`Refused (${code})`, message, 'bad');
 }
 
 /**
@@ -51,14 +87,22 @@ export function refusalLine(code: string, message: string): string {
  * not understand.
  */
 export function reportRefusal(
-  io: CliIo,
+  to: Reporter,
   refusal: { readonly reason: string; readonly code?: string; readonly message?: string },
   said: Readonly<Record<string, string>> = {},
 ): void {
   const wording =
     said[refusal.reason] ?? (refusal.reason === 'NO_PROJECT' ? NO_PROJECT : undefined);
-  io.err(wording ?? refusalLine(refusal.code ?? refusal.reason, refusal.message ?? ''));
-  io.fail();
+  // A worded reason is ONE sentence and takes no detail — "No task <id> here." has no
+  // half after a colon to put the evidence in. It is still the same news, so it carries
+  // the same severity: what a reader acts on is the redness of the line, not which of
+  // the two shapes the surface happened to have a wording for.
+  const line =
+    wording === undefined
+      ? refusalLine(refusal.code ?? refusal.reason, refusal.message ?? '')
+      : statement(wording, undefined, 'bad');
+  to.io.err(to.render(line));
+  to.io.fail();
 }
 
 /**

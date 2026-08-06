@@ -30,7 +30,7 @@
 import type { PatternProvenance } from '@mnema/copilot';
 import { A_PERSON, oneLine } from '../served-patterns.js';
 import { consultedLine } from './consultation.js';
-import { column, itemLine } from './items.js';
+import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** The width the state column is padded to, so the trees below it line up. */
@@ -63,7 +63,10 @@ export function provenanceReport(
     lines.push(
       render(
         itemLine([
-          pattern.id,
+          // The id leads and it is also the column a reader skips — it is here to be
+          // copied into `mnema show`, and saying so is what lets the NAME be what the
+          // line reads as. The state and the tree are padded categories, not ranks.
+          asId(pattern.id),
           column(pattern.state, STATE_WIDTH),
           column(pattern.scope, SCOPE_WIDTH),
           oneLine(pattern.name),

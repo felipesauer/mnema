@@ -8,8 +8,7 @@
 
 import { resolvePinnedRun } from '../pinned-run.js';
 import { here } from './context.js';
-import type { CliIo } from './io.js';
-import { refusalLine } from './report.js';
+import { type Reporter, refusalLine } from './report.js';
 
 /**
  * The environment variable a shell carries an open session in, between the
@@ -40,9 +39,11 @@ export const PIN_REFUSED = Symbol('pin-refused');
  * not of how many verbs happen to ask. With the variable unset it returns before
  * any tree is resolved, so a person who never opened a session pays nothing — and
  * a refusal is reported once, here, in the same `Refused (CODE)` shape every
- * other refusal takes.
+ * other refusal takes — down to the colour, which is why this takes the renderer
+ * along with the port: the shape is a {@link refusalLine} and rendering it is what
+ * makes it one.
  */
-export function pinnedRunResolver(io: CliIo): PinnedRun {
+export function pinnedRunResolver(to: Reporter): PinnedRun {
   let settled = false;
   let pinned: string | undefined | typeof PIN_REFUSED;
   return () => {
@@ -52,7 +53,7 @@ export function pinnedRunResolver(io: CliIo): PinnedRun {
       if (resolved.ok) {
         pinned = resolved.run;
       } else {
-        io.err(refusalLine(resolved.code, resolved.message));
+        to.io.err(to.render(refusalLine(resolved.code, resolved.message)));
         pinned = PIN_REFUSED;
       }
     }

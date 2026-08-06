@@ -56,7 +56,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
       // A recovery names ITSELF rather than `mnema init`: a machine bringing a key
       // back is not a machine founding a project, and telling it to found one is
       // telling it to start a second identity.
-      reportRefusal(io, result, {
+      reportRefusal(wiring, result, {
         NO_PROJECT: 'No mnema project here. Run `mnema key restore` inside the project to recover.',
       });
     });
@@ -82,7 +82,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
         ...(opts.key !== undefined ? { privateKeyPath: opts.key } : {}),
       });
       if (!result.ok) {
-        reportRefusal(io, result);
+        reportRefusal(wiring, result);
         return;
       }
       if (result.minted) {
@@ -123,7 +123,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
         io.out(render(fact('Commit and share the record: the other machine joins by reading it.')));
         return;
       }
-      reportRefusal(io, result, {
+      reportRefusal(wiring, result, {
         NO_PROJECT:
           'No mnema project here. Run `mnema key enroll` inside the project to record it.',
       });
@@ -167,7 +167,7 @@ export function registerKey(program: Command, wiring: Wiring): void {
         );
         return;
       }
-      reportRefusal(io, result, {
+      reportRefusal(wiring, result, {
         NO_PROJECT:
           'No mnema project here. Run `mnema key revoke` inside the project to record it.',
       });
