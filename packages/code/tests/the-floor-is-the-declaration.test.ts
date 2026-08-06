@@ -23,13 +23,17 @@
  * The milliseconds belong in a report.
  *
  * Two things it asserts, and they are different:
- *   - no COMMAND ADAPTER, no MCP SERVER and no COMPLETION GENERATOR is in the closure.
- *     That is the rule with no exceptions, and the one a careless import breaks. The
- *     third family is the newest and reads the command tree rather than the record, so
- *     it looks free — it is not: a verb that walked the tree at module scope would put
- *     that walk on `mnema --version`, and `wiring/completion.ts` keeps `SHELLS` next to
- *     the flag that accepts them precisely so nothing under `completion/` has a reason
- *     to be reached before the verb runs.
+ *   - no COMMAND ADAPTER, no MCP SERVER, no COMPLETION GENERATOR and no INTERACTIVE
+ *     SESSION is in the closure. That is the rule with no exceptions, and the one a
+ *     careless import breaks. The third family reads the command tree rather than the
+ *     record, so it looks free — it is not: a verb that walked the tree at module scope
+ *     would put that walk on `mnema --version`, and `wiring/completion.ts` keeps
+ *     `SHELLS` next to the flag that accepts them precisely so nothing under
+ *     `completion/` has a reason to be reached before the verb runs. The fourth is the
+ *     newest and it is the one that must not enter for the sharpest reason: the session
+ *     exists BECAUSE the floor costs what it costs, and it reaches `node:readline`, the
+ *     completion generator and the entry itself. A session imported at module scope
+ *     would make every other verb pay for the thing built to stop paying.
  *   - every edge from the closure into `@mnema/*` is DECLARED, with the reason it
  *     has to be there. The floor still reaches the domain in EIGHT places, five of
  *     them a constant or a parser commander needs before it can route anything —
@@ -170,11 +174,12 @@ const DOMAIN = ['@mnema/chain', '@mnema/core', '@mnema/core/write', '@mnema/copi
  * The directories of `src` that hold WORK rather than declarations.
  *
  * A module under one of these is loaded when a verb runs and never before it: the command
- * adapters and the MCP server because they pull the domain, and the completion generator
+ * adapters and the MCP server because they pull the domain, the completion generator
  * because it walks the whole command tree — which is cheap and is still work `mnema
- * --version` has no reason to do.
+ * --version` has no reason to do — and the interactive session because it drags all
+ * three of readline, that same generator and the entry point behind it.
  */
-const WORK = ['commands', 'mcp', 'completion'];
+const WORK = ['commands', 'mcp', 'completion', 'repl'];
 
 /**
  * Every edge from the floor into the domain, and why that one cannot wait.
@@ -283,7 +288,7 @@ function filesUnder(directory: string): string[] {
 }
 
 describe('the floor is the declaration', () => {
-  it('loads no command adapter, no MCP server and no completion generator', () => {
+  it('loads no command adapter, no MCP server, no completion generator and no session', () => {
     // The rule, with no exceptions. An adapter at module scope in a wiring file is
     // how the floor grew the first time, and it is invisible in review: the import
     // looks like every other import in the file.

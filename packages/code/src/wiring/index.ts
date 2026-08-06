@@ -88,13 +88,22 @@
  * stale" and nothing else. It writes nothing, like every read here; the redirection
  * belongs to whoever operates it.
  *
- * And the LAST TWO read nothing at all, because they are not about the record: `mcp`
- * serves this surface to an agent host, and `completion` writes the script a shell needs
- * to finish a verb a person is typing. They come last for that reason — a reader looking
- * for what mnema records has found it before reaching them — and `completion` comes last
- * of all because it is generated FROM this list: it is the one verb whose answer changes
- * when any line above it does. Neither reads the record — and `mcp` is still classified a
- * WRITE, because it serves every write tool this product has to whoever connects to it.
+ * And the LAST THREE read no record at all, because they are not about one: they are the
+ * three DOORS onto everything above them. `mcp` serves this surface to an agent host;
+ * `repl` opens an interactive session for a person, which is the same surface with the
+ * hundred-millisecond floor paid once instead of once per command; and `completion`
+ * writes the script a shell needs to finish a verb somebody is typing. They come last
+ * for that reason — a reader looking for what mnema records has found it before reaching
+ * them — and `completion` comes last of all because it is generated FROM this list: it
+ * is the one verb whose answer changes when any line above it does.
+ *
+ * The three do not agree about the record, and the disagreement is the classification
+ * doing its job. `mcp` is a WRITE, because it serves every write tool this product has
+ * to whoever connects to it. `repl` is a READ, because it will only dispatch to a verb
+ * that declared itself one — it reads the declarations of this very list and refuses
+ * everything else (`repl/gate.ts`), which is what makes it the first PRODUCTION reader
+ * of the effect each verb declares. Both answers come from the same question: what can
+ * an invocation of this verb reach?
  *
  * EVERY SENTENCE ABOVE THAT SAYS "READ" OR "WRITE" IS NOW A DECLARATION IN THE CODE. The
  * order of this list is the help; it is NOT the classification, and reading it as one is
@@ -122,6 +131,7 @@ import { registerMemory } from './memory.js';
 import { registerNextActions } from './next-actions.js';
 import { registerObserve } from './observe.js';
 import { registerReferences } from './refs.js';
+import { registerRepl } from './repl.js';
 import { registerResume } from './resume.js';
 import { registerRun } from './run.js';
 import { registerSearch } from './search.js';
@@ -160,6 +170,7 @@ export const VERBS: readonly Verb[] = [
   registerKey,
   registerVerify,
   registerMcp,
+  registerRepl,
   registerCompletion,
 ];
 
