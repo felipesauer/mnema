@@ -11,7 +11,6 @@
  */
 
 import type { Command } from 'commander';
-import { runLink } from '../commands/link.js';
 import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -37,7 +36,12 @@ export function registerLink(program: Command, wiring: Wiring): void {
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
-      (subject: string, target: string, opts: { rel: string; scope?: string; which?: string }) => {
+      async (
+        subject: string,
+        target: string,
+        opts: { rel: string; scope?: string; which?: string },
+      ) => {
+        const { runLink } = await import('../commands/link.js');
         const scope = parseScope(opts.scope, io);
         if (scope === INVALID) {
           io.fail();

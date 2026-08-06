@@ -8,7 +8,6 @@
  */
 
 import type { Command } from 'commander';
-import { runHandoff } from '../commands/handoff.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -35,31 +34,34 @@ export function registerHandoff(program: Command, wiring: Wiring): void {
     // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((task: string, from: string, to: string, opts: { scope?: string; which?: string }) => {
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
-        io.fail();
-        return;
-      }
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runHandoff(here(), {
-        task,
-        fromAgent: from,
-        toAgent: to,
-        ...(scope !== undefined ? { scope } : {}),
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (result.ok) {
-        // No id to report — a handoff has no standalone identity. Echo the fact.
-        io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
-        reportRecorded(result, io);
-        return;
-      }
-      reportRefusal(wiring, result);
-    });
+    .action(
+      async (task: string, from: string, to: string, opts: { scope?: string; which?: string }) => {
+        const { runHandoff } = await import('../commands/handoff.js');
+        const scope = parseScope(opts.scope, io);
+        if (scope === INVALID) {
+          io.fail();
+          return;
+        }
+        const run = pinnedRun();
+        if (run === PIN_REFUSED) {
+          io.fail();
+          return;
+        }
+        const result = runHandoff(here(), {
+          task,
+          fromAgent: from,
+          toAgent: to,
+          ...(scope !== undefined ? { scope } : {}),
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
+        });
+        if (result.ok) {
+          // No id to report — a handoff has no standalone identity. Echo the fact.
+          io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
+          reportRecorded(result, io);
+          return;
+        }
+        reportRefusal(wiring, result);
+      },
+    );
 }

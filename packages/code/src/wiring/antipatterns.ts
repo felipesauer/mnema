@@ -13,9 +13,7 @@
  */
 
 import type { Command } from 'commander';
-import { runAntipatterns } from '../commands/antipatterns.js';
 import { statement } from '../presentation/verdict.js';
-import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
 import type { Wiring } from './verb.js';
@@ -27,7 +25,9 @@ export function registerAntipatterns(program: Command, wiring: Wiring): void {
     .command('antipatterns')
     .description('show recurring shapes in the record (reopens, supersessions, deprecations)')
     .option('--json', 'emit the faithful shapes with their evidence as JSON')
-    .action((opts: { json?: boolean }) => {
+    .action(async (opts: { json?: boolean }) => {
+      const { runAntipatterns } = await import('../commands/antipatterns.js');
+      const { oneLine } = await import('../served-patterns.js');
       const result = runAntipatterns(here());
       if (!result.ok) {
         reportRefusal(wiring, result);

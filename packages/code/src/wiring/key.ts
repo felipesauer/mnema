@@ -13,10 +13,6 @@
  */
 
 import type { Command } from 'commander';
-import { runKeyEnroll } from '../commands/key-enroll.js';
-import { runKeyRequest } from '../commands/key-request.js';
-import { runKeyRestore } from '../commands/key-restore.js';
-import { runKeyRevoke } from '../commands/key-revoke.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
@@ -37,7 +33,8 @@ export function registerKey(program: Command, wiring: Wiring): void {
     .command('restore')
     .description("restore this machine's identity from a copy of a key's private half")
     .argument('<file>', 'the PEM file holding the private half (your backup copy)')
-    .action((file: string) => {
+    .action(async (file: string) => {
+      const { runKeyRestore } = await import('../commands/key-restore.js');
       const result = runKeyRestore(here(), { privateKeyPath: file });
       if (result.ok) {
         io.out(`Restored key ${result.fingerprint}`);
@@ -76,7 +73,8 @@ export function registerKey(program: Command, wiring: Wiring): void {
         'record knows also names it; the request is signed over the whole value either way',
     )
     .option('--key <file>', "a private key to speak for instead of this machine's own")
-    .action((opts: { anchor: string; key?: string }) => {
+    .action(async (opts: { anchor: string; key?: string }) => {
+      const { runKeyRequest } = await import('../commands/key-request.js');
       const result = runKeyRequest(here(), {
         anchor: opts.anchor,
         ...(opts.key !== undefined ? { privateKeyPath: opts.key } : {}),
@@ -110,7 +108,8 @@ export function registerKey(program: Command, wiring: Wiring): void {
     .command('enroll')
     .description('vouch for a requesting key so it joins this identity (run this on a member)')
     .argument('<request>', 'the line `mnema key request` printed on the joining machine')
-    .action((request: string) => {
+    .action(async (request: string) => {
+      const { runKeyEnroll } = await import('../commands/key-enroll.js');
       const result = runKeyEnroll(here(), { request });
       if (result.ok) {
         if (result.alreadyMember) {
@@ -143,7 +142,8 @@ export function registerKey(program: Command, wiring: Wiring): void {
     .argument('<fingerprint>', 'the full fingerprint of the key to retire')
     .requiredOption('--reason <text>', 'why it is being retired (recorded in the fact)')
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((fingerprint: string, opts: { reason: string }) => {
+    .action(async (fingerprint: string, opts: { reason: string }) => {
+      const { runKeyRevoke } = await import('../commands/key-revoke.js');
       const result = runKeyRevoke(here(), { fingerprint, reason: opts.reason });
       if (result.ok) {
         io.out(`Revoked key ${result.fingerprint}`);

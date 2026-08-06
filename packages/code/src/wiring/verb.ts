@@ -11,6 +11,38 @@
  * a type, and the day a read needs to report the pinned session it would be a
  * signature change across two dozen files. The honest statement lives in the code
  * that never calls it.
+ *
+ * A VERB DECLARES EAGERLY AND LOADS WHEN IT RUNS, and that split is the rule every
+ * file in this directory keeps.
+ *
+ * commander needs every command, every option and every line of help DECLARED
+ * before it can route a word or print `mnema --help`, so all of that is imported at
+ * the top and costs what it costs. What it does NOT need is the work: the `runX`
+ * behind the action, and the helpers that read the record to compose a line. Those
+ * arrive through an `await import()` inside the action, because importing them at
+ * the top imports the domain behind them — the chain, the projections, the
+ * derivations — on EVERY invocation of EVERY verb, including the ones that read
+ * nothing.
+ *
+ * It was measured before it was changed: the floor of the CLI (`mnema --version`,
+ * which reads nothing at all) was 121 ms against 19 ms for an empty node, and the
+ * slowest verb in the product was 169 ms. Seventy-two per cent of what a person
+ * waited for was modules loading, and the work itself — 3 to 48 ms — was under the
+ * threshold where anyone notices anything.
+ *
+ * The floor is guarded as a SHAPE, not as a stopwatch:
+ * `the-floor-is-the-declaration.test.ts` walks the entry's eager imports and holds
+ * the domain packages it reaches to a declared table. A timed test on a busy
+ * machine is a flake somebody switches off, and then the floor grows back.
+ *
+ * Two things to get right when writing one:
+ *   - AWAIT IT. An `import()` whose promise nobody waits for makes the action
+ *     return before it has written anything, and the process can exit first — a
+ *     verb that silently prints nothing and exits zero. commander awaits an action
+ *     that returns a promise (the entry parses with `parseAsync`), so an `async`
+ *     action is enough as long as every load inside it is awaited.
+ *   - DO NOT MOVE A DECLARATION. If `mnema --help` changes by one byte, something
+ *     the parser needed became lazy, and that is a regression the golden catches.
  */
 
 import type { Command } from 'commander';

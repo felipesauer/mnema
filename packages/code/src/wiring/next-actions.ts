@@ -7,7 +7,6 @@
  */
 
 import type { Command } from 'commander';
-import { runNextActions } from '../commands/next-actions.js';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
@@ -21,7 +20,8 @@ export function registerNextActions(program: Command, wiring: Wiring): void {
     .description('show the moves the workflow allows a task next')
     .argument('<task-id>', 'the task id (the value shown when it was created)')
     .option('--json', 'emit the faithful list of next actions as JSON')
-    .action((id: string, opts: { json?: boolean }) => {
+    .action(async (id: string, opts: { json?: boolean }) => {
+      const { runNextActions } = await import('../commands/next-actions.js');
       const result = runNextActions(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });

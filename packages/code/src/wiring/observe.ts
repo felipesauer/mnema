@@ -9,7 +9,6 @@
  */
 
 import type { Command } from 'commander';
-import { runObserve } from '../commands/observe.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -35,7 +34,11 @@ export function registerObserve(program: Command, wiring: Wiring): void {
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
-      (about: string, opts: { topic: string; text: string; scope?: string; which?: string }) => {
+      async (
+        about: string,
+        opts: { topic: string; text: string; scope?: string; which?: string },
+      ) => {
+        const { runObserve } = await import('../commands/observe.js');
         const scope = parseScope(opts.scope, io);
         if (scope === INVALID) {
           io.fail();

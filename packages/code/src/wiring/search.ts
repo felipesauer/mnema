@@ -10,8 +10,6 @@
 
 import { SEARCH_DEFAULT_LIMIT, SEARCH_KINDS, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
 import type { Command } from 'commander';
-import { runSearch } from '../commands/search.js';
-import { searchReport } from '../presentation/search.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { INVALID, INVALID_LIMIT, parseLimit, parseScope, SCOPES } from './options.js';
@@ -35,7 +33,7 @@ export function registerSearch(program: Command, wiring: Wiring): void {
     )
     .option('--json', 'emit the faithful index as JSON (one ordered list)')
     .action(
-      (
+      async (
         term: string | undefined,
         opts: {
           kind?: string;
@@ -47,6 +45,8 @@ export function registerSearch(program: Command, wiring: Wiring): void {
           json?: boolean;
         },
       ) => {
+        const { runSearch } = await import('../commands/search.js');
+        const { searchReport } = await import('../presentation/search.js');
         const scope = parseScope(opts.scope, io);
         if (scope === INVALID) {
           io.fail();

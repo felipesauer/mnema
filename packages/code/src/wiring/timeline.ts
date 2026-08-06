@@ -8,8 +8,6 @@
  */
 
 import type { Command } from 'commander';
-import { anchorText } from '../anchors.js';
-import { runTimeline } from '../commands/timeline.js';
 import { asWhen, itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { reportRefusal } from './report.js';
@@ -23,7 +21,9 @@ export function registerTimeline(program: Command, wiring: Wiring): void {
     .description("show an entity's history across the trees (subject, about, target)")
     .argument('<id>', 'the entity id (a task, decision, skill, memory, …)')
     .option('--json', 'emit the faithful timeline entries as JSON')
-    .action((id: string, opts: { json?: boolean }) => {
+    .action(async (id: string, opts: { json?: boolean }) => {
+      const { anchorText } = await import('../anchors.js');
+      const { runTimeline } = await import('../commands/timeline.js');
       const result = runTimeline(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result);

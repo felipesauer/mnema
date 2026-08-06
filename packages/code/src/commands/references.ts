@@ -23,15 +23,8 @@
 
 import { type ReferenceDirection, type ReferenceGraph, references } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { isReferenceDirection } from '../reference-directions.js';
 import { withScopedCaches } from '../tree-sources.js';
-
-/** The directions a walk may take, as the surface accepts them. */
-export const REFERENCE_DIRECTIONS: readonly ReferenceDirection[] = ['both', 'out', 'in'];
-
-/** Whether `value` names a direction — the surface's guard. */
-export function isReferenceDirection(value: string): value is ReferenceDirection {
-  return (REFERENCE_DIRECTIONS as readonly string[]).includes(value);
-}
 
 /** What the refs command needs — injected so it is testable. */
 export interface ReferencesContext {

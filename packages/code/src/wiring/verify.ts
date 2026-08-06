@@ -21,9 +21,9 @@
  * over a forged record.
  */
 
-import { LEVEL_REQUIREMENTS, type LevelRequirement, requiredLevel } from '@mnema/chain';
+import type { LevelRequirement } from '@mnema/chain';
 import type { Command } from 'commander';
-import { runVerify, type TreeReport } from '../commands/verify.js';
+import type { TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
@@ -52,14 +52,18 @@ const INVALID_REQUIREMENT = Symbol('invalid-requirement');
  * own tuple, so the accepted values cannot drift from the ones that have an answer;
  * a bad value is a usage error the CLI reports itself rather than forwarding a
  * meaningless minimum to a verdict.
+ *
+ * The tuple is HANDED IN rather than imported here: it is still the chain's, and the
+ * caller is the action, which is where the chain is loaded (see `verb.ts`).
  */
 function parseRequirement(
   value: string | undefined,
   io: CliIo,
+  requirements: readonly LevelRequirement[],
 ): LevelRequirement | typeof INVALID_REQUIREMENT {
   if (value === undefined) return DEFAULT_REQUIREMENT;
-  if ((LEVEL_REQUIREMENTS as readonly string[]).includes(value)) return value as LevelRequirement;
-  io.err(`Invalid --require "${value}". Use one of: ${LEVEL_REQUIREMENTS.join(', ')}.`);
+  if ((requirements as readonly string[]).includes(value)) return value as LevelRequirement;
+  io.err(`Invalid --require "${value}". Use one of: ${requirements.join(', ')}.`);
   return INVALID_REQUIREMENT;
 }
 
@@ -97,8 +101,10 @@ export function registerVerify(program: Command, wiring: Wiring): void {
         'witnessed (also fail unless an external witness covers the record — nothing ' +
         'provides one yet, so it never passes)',
     )
-    .action((opts: { require?: string; global?: boolean }) => {
-      const requirement = parseRequirement(opts.require, io);
+    .action(async (opts: { require?: string; global?: boolean }) => {
+      const { LEVEL_REQUIREMENTS, requiredLevel } = await import('@mnema/chain');
+      const { runVerify } = await import('../commands/verify.js');
+      const requirement = parseRequirement(opts.require, io, LEVEL_REQUIREMENTS);
       if (requirement === INVALID_REQUIREMENT) {
         io.fail();
         return;
