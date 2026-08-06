@@ -80,6 +80,20 @@ describe('a refusal is worded in exactly one place', () => {
     expect(entry).not.toContain(WORDS_A_REFUSAL);
   });
 
+  it('and no verb hands the shared wording to a stream itself', () => {
+    // The other half of "worded in one place", and the half the SHAPE detector above
+    // cannot see: a verb does not have to rebuild `Refused (CODE)` to write a refusal
+    // of its own — it can reach for the funnel's own sentence and print it. One did,
+    // and its line was the only refusal on the surface that came out unpainted while
+    // every case about the shape stayed green.
+    const guilty = shipped().filter(
+      (file) => file !== 'report.ts' && /io\.err\([^)]*NO_PROJECT/.test(sourceOf(file)),
+    );
+    expect(guilty).toEqual([]);
+    // And the detector still matches the line it was written against.
+    expect(/io\.err\([^)]*NO_PROJECT/.test('          io.err(NO_PROJECT);')).toBe(true);
+  });
+
   it('would accuse a verb that worded one itself', () => {
     // The other vacuous form: a detector whose term matches nothing any more. Composed
     // against the line the careful author would write — the one this guard actually
