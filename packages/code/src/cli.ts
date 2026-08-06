@@ -28,8 +28,9 @@ import type { Render } from './presentation/render.js';
 import { COLOR_HELP, COLOR_WHENS, type ColorWhen, rendererFor } from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
-import { refusalLine } from './wiring/report.js';
+import { refusalLine, refusalSentence } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
+import { speakUsageErrors } from './wiring/usage.js';
 
 export type { CliIo } from './wiring/io.js';
 
@@ -70,8 +71,18 @@ export interface BuiltProgram {
   readonly render: Render;
 }
 
-/** Builds the configured `mnema` program. `io` defaults to the real streams. */
-export function buildProgram(io: CliIo = processIo): BuiltProgram {
+/**
+ * Builds the configured `mnema` program. `io` defaults to the real streams.
+ *
+ * `typed` is what the caller wrote, and it is a fact about THIS invocation like the
+ * three the renderer is resolved from — which is why it enters at the entry rather
+ * than being read back out of the parser. Two of the parser's refusals are about a
+ * token rather than about a declaration (a flag nothing declares, a flag with nothing
+ * after it), and naming the token is the difference between telling a caller what is
+ * wrong and telling them that something is. Defaulted, because a caller that only
+ * wants the declarations — the guards that walk the command tree — parses nothing.
+ */
+export function buildProgram(io: CliIo = processIo, typed: readonly string[] = []): BuiltProgram {
   const program = new Command();
   program
     .name('mnema')
@@ -113,6 +124,11 @@ export function buildProgram(io: CliIo = processIo): BuiltProgram {
 
   registerVerbs(program, { io, render, pinnedRun });
 
+  // AFTER the verbs, and over all of them at once: the parser's own refusals, said
+  // the way this surface says every other one (see `wiring/usage.ts`). It walks what
+  // was just registered, so a verb added to the list above arrives covered.
+  speakUsageErrors(program, { io, render }, typed);
+
   return { program, render };
 }
 
@@ -130,12 +146,13 @@ export function buildProgram(io: CliIo = processIo): BuiltProgram {
  * throw with nowhere honest to put a verdict.
  */
 export async function run(argv: readonly string[], io: CliIo = processIo): Promise<void> {
-  const { program, render } = buildProgram(io);
+  const { program, render } = buildProgram(io, argv);
   try {
     await program.parseAsync(argv, { from: 'user' });
   } catch (error) {
     // commander throws for --help/--version (a clean, zero exit — it already
-    // printed) and for a usage error (a non-zero exit it already reported).
+    // printed) and for a usage error (a non-zero exit already reported in the
+    // product's own voice, by the walk `buildProgram` installed).
     // Honor its exit code; do not re-print.
     if (error instanceof CommanderError) {
       if (error.exitCode !== 0) io.fail();
@@ -155,8 +172,10 @@ export async function run(argv: readonly string[], io: CliIo = processIo): Promi
     // Any other throw — e.g. a read whose replay meets a stored line no parser
     // can open — is an honest failure, not an uncaught stack trace that could
     // read as "nothing wrong". (`verify` no longer arrives here for that: it
-    // answers with a verdict naming the tail and the line.)
-    io.err(error instanceof Error ? error.message : String(error));
+    // answers with a verdict naming the tail and the line.) It is rendered like
+    // every other no on this surface: the command did not do what was asked, and a
+    // reader has no use for the distinction between the ways it did not.
+    io.err(render(refusalSentence(error instanceof Error ? error.message : String(error))));
     io.fail();
   }
 }

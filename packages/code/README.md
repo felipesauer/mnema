@@ -156,8 +156,15 @@ NO_COLOR=1 mnema verify      # and FORCE_COLOR, both as everywhere else
 
 **Style never changes what a line says.** Strip the escapes and the styled output is
 the plain output, byte for byte — the same text a redirected file holds, so a verdict
-quoted from a terminal is the verdict. There is no colour, only weight: colour means
-good or bad, and nothing in a line yet says which of those it is.
+quoted from a terminal is the verdict.
+
+Colour is one thing and one thing only: **red means the command did not do what you
+asked.** A refusal from the workflow, a value the surface turns down, a command line
+the parser turns down — all three are the same news, and all three are red. `ALLOWED`
+is green for the same reason. Nothing else is coloured: a count is not bad news, and
+`verify` naming a broken tree *did* what it was asked. The hue never replaces the word
+that says it, which is why `--color=never`, a pipe and a monochrome terminal lose
+nothing.
 
 ### When an agent is the one running the CLI
 

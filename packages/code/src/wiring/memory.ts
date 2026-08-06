@@ -31,11 +31,8 @@ export function registerMemory(program: Command, wiring: Wiring): void {
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(async (content: string, opts: { scope?: string; which?: string }) => {
       const { runMemory } = await import('../commands/memory.js');
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
-        io.fail();
-        return;
-      }
+      const scope = parseScope(opts.scope, wiring);
+      if (scope === INVALID) return;
       const run = pinnedRun();
       if (run === PIN_REFUSED) {
         io.fail();

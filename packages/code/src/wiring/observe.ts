@@ -39,11 +39,8 @@ export function registerObserve(program: Command, wiring: Wiring): void {
         opts: { topic: string; text: string; scope?: string; which?: string },
       ) => {
         const { runObserve } = await import('../commands/observe.js');
-        const scope = parseScope(opts.scope, io);
-        if (scope === INVALID) {
-          io.fail();
-          return;
-        }
+        const scope = parseScope(opts.scope, wiring);
+        if (scope === INVALID) return;
         const run = pinnedRun();
         if (run === PIN_REFUSED) {
           io.fail();
