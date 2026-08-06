@@ -29,7 +29,7 @@ import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
-import { reportRefusal } from './report.js';
+import { type Reporter, reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
 
 /**
@@ -58,12 +58,12 @@ const INVALID_REQUIREMENT = Symbol('invalid-requirement');
  */
 function parseRequirement(
   value: string | undefined,
-  io: CliIo,
+  to: Reporter,
   requirements: readonly LevelRequirement[],
 ): LevelRequirement | typeof INVALID_REQUIREMENT {
   if (value === undefined) return DEFAULT_REQUIREMENT;
   if ((requirements as readonly string[]).includes(value)) return value as LevelRequirement;
-  io.err(`Invalid --require "${value}". Use one of: ${requirements.join(', ')}.`);
+  reportUsage(to, `Invalid --require "${value}". Use one of: ${requirements.join(', ')}.`);
   return INVALID_REQUIREMENT;
 }
 
@@ -104,11 +104,8 @@ export function registerVerify(program: Command, wiring: Wiring): void {
     .action(async (opts: { require?: string; global?: boolean }) => {
       const { LEVEL_REQUIREMENTS, requiredLevel } = await import('@mnema/chain');
       const { runVerify } = await import('../commands/verify.js');
-      const requirement = parseRequirement(opts.require, io, LEVEL_REQUIREMENTS);
-      if (requirement === INVALID_REQUIREMENT) {
-        io.fail();
-        return;
-      }
+      const requirement = parseRequirement(opts.require, wiring, LEVEL_REQUIREMENTS);
+      if (requirement === INVALID_REQUIREMENT) return;
       const result = runVerify({ ...here(), requirement, global: opts.global === true });
       if (!result.ok) {
         reportRefusal(wiring, { reason: 'NO_PROJECT' });

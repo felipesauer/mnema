@@ -14,7 +14,7 @@ import type { Command } from 'commander';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
-import { reportRefusal } from './report.js';
+import { reportRefusal, reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema refs` on the program. */
@@ -40,8 +40,7 @@ export function registerReferences(program: Command, wiring: Wiring): void {
       const { referenceReport } = await import('../presentation/references.js');
       const depth = Number.parseInt(opts.depth ?? '', 10);
       if (Number.isNaN(depth)) {
-        io.err(`Not a number of hops: ${opts.depth}`);
-        io.fail();
+        reportUsage(wiring, `Not a number of hops: ${opts.depth}`);
         return;
       }
       const result = runReferences(here(), {

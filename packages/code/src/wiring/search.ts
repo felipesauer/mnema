@@ -13,6 +13,7 @@ import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { INVALID, INVALID_LIMIT, parseLimit, parseScope, SCOPES } from './options.js';
+import { reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
 
 /** Registers `mnema search` on the program. */
@@ -47,16 +48,10 @@ export function registerSearch(program: Command, wiring: Wiring): void {
       ) => {
         const { runSearch } = await import('../commands/search.js');
         const { searchReport } = await import('../presentation/search.js');
-        const scope = parseScope(opts.scope, io);
-        if (scope === INVALID) {
-          io.fail();
-          return;
-        }
-        const limit = parseLimit(opts.limit, io);
-        if (limit === INVALID_LIMIT) {
-          io.fail();
-          return;
-        }
+        const scope = parseScope(opts.scope, wiring);
+        if (scope === INVALID) return;
+        const limit = parseLimit(opts.limit, wiring);
+        if (limit === INVALID_LIMIT) return;
         const result = runSearch(here(), {
           ...(term !== undefined ? { term } : {}),
           ...(opts.kind !== undefined ? { kind: opts.kind as SearchKind } : {}),
@@ -71,12 +66,12 @@ export function registerSearch(program: Command, wiring: Wiring): void {
           // carries the value it is about — so neither goes through the shared
           // refusal: a bad `--kind` names the kinds there are, and a tree that is
           // not here names the one that was asked for.
-          if (result.reason === 'UNKNOWN_KIND') {
-            io.err(`Invalid --kind "${result.kind}". Use one of: ${SEARCH_KINDS.join(', ')}.`);
-          } else {
-            io.err(`No ${result.scope} tree here. Run \`mnema init\` in a project first.`);
-          }
-          io.fail();
+          reportUsage(
+            wiring,
+            result.reason === 'UNKNOWN_KIND'
+              ? `Invalid --kind "${result.kind}". Use one of: ${SEARCH_KINDS.join(', ')}.`
+              : `No ${result.scope} tree here. Run \`mnema init\` in a project first.`,
+          );
           return;
         }
         if (opts.json === true) {

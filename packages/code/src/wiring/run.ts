@@ -20,7 +20,7 @@ import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent } from './options.js';
-import { reportRefusal, reportReplacement } from './report.js';
+import { reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { RUN_ENV } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -102,11 +102,11 @@ export function registerRun(program: Command, wiring: Wiring): void {
       const fromEnv = process.env[RUN_ENV]?.trim();
       const target = id ?? fromEnv;
       if (target === undefined || target.length === 0) {
-        io.err(
+        reportUsage(
+          wiring,
           '`mnema run end` needs a run: pass its id, or set ' +
             `${RUN_ENV} to the one \`mnema run start\` printed.`,
         );
-        io.fail();
         return;
       }
       const result = runRunEnd(here(), {

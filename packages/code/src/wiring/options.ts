@@ -12,7 +12,7 @@
 
 import { canonicalIdentity, type Scope } from '@mnema/core';
 import { InvalidArgumentError } from 'commander';
-import type { CliIo } from './io.js';
+import { type Reporter, reportUsage } from './report.js';
 
 /**
  * The help for `--which`, one wording on every writing verb.
@@ -149,16 +149,17 @@ export const INVALID = Symbol('invalid-scope');
  * Validates the `--scope` value on the surface. The set of scopes is closed and
  * known here (it is the core's `Scope`), so a bad value is a usage error the CLI
  * reports itself — not something to forward to the core. An absent flag returns
- * undefined (let the command apply its default); a bad one prints and returns the
- * {@link INVALID} sentinel so the action fails without a task being born.
+ * undefined (let the command apply its default); a bad one is REPORTED here, through
+ * the same funnel every other no goes through, and returns the {@link INVALID}
+ * sentinel so the action returns without a task being born.
  */
 export function parseScope(
   value: string | undefined,
-  io: CliIo,
+  to: Reporter,
 ): Scope | undefined | typeof INVALID {
   if (value === undefined) return undefined;
   if ((SCOPES as readonly string[]).includes(value)) return value as Scope;
-  io.err(`Invalid --scope "${value}". Use one of: ${SCOPES.join(', ')}.`);
+  reportUsage(to, `Invalid --scope "${value}". Use one of: ${SCOPES.join(', ')}.`);
   return INVALID;
 }
 
@@ -173,12 +174,12 @@ export const INVALID_LIMIT = Symbol('invalid-limit');
  */
 export function parseLimit(
   value: string | undefined,
-  io: CliIo,
+  to: Reporter,
 ): number | undefined | typeof INVALID_LIMIT {
   if (value === undefined) return undefined;
   const limit = Number(value);
   if (!Number.isInteger(limit) || limit < 1) {
-    io.err(`Invalid --limit "${value}". Use a whole number of 1 or more.`);
+    reportUsage(to, `Invalid --limit "${value}". Use a whole number of 1 or more.`);
     return INVALID_LIMIT;
   }
   return limit;

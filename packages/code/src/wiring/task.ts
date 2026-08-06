@@ -27,7 +27,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -48,11 +48,8 @@ export function registerTask(program: Command, wiring: Wiring): void {
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(async (title: string, opts: { scope?: string; which?: string }) => {
       const { runTask } = await import('../commands/task.js');
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
-        io.fail();
-        return;
-      }
+      const scope = parseScope(opts.scope, wiring);
+      if (scope === INVALID) return;
       const run = pinnedRun();
       if (run === PIN_REFUSED) {
         io.fail();
@@ -113,8 +110,10 @@ export function registerTask(program: Command, wiring: Wiring): void {
       // record should name, so it is forwarded.
       const parentOpts = (move.parent?.opts() ?? {}) as { scope?: string; which?: string };
       if (parentOpts.scope !== undefined) {
-        io.err('`task move` takes no --scope: a move follows the task to the tree it was born in.');
-        io.fail();
+        reportUsage(
+          wiring,
+          '`task move` takes no --scope: a move follows the task to the tree it was born in.',
+        );
         return;
       }
       const run = pinnedRun();
