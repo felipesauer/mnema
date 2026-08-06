@@ -58,6 +58,7 @@ import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';
 import { SHELLS } from '../src/wiring/completion.js';
 import { everyCommandOf } from '../src/wiring/usage.js';
+import * as vocabulary from '../src/wiring/vocabulary.js';
 import { enumeratedArgument, SCOPES, valuesDeclaredOn } from '../src/wiring/vocabulary.js';
 
 /** A silent port: everything that reads declarations writes nothing. */
@@ -290,6 +291,24 @@ describe('a declaration lists the set it takes', () => {
       }
       expect(seen.size).toBeGreaterThan(0);
     }
+  });
+
+  it('has a declaration for every set it publishes — none plumbed to nowhere', () => {
+    // A2, over this module's own exports. A vocabulary declared, glossed and exported
+    // with no declaration taking it is the shape four defects of this series had: the
+    // code under the gap is right, nothing feeds it, and every test passes because
+    // ABSENCE is what there is to see. `every-public-value-has-a-caller.test.ts` walks
+    // the packages' ENTRY POINTS and cannot see an export of a module inside one, which
+    // is what this is.
+    const taken = DECLARED_SETS.map((declaration) => declaration.values);
+    const published = Object.entries(vocabulary).filter(
+      (entry): entry is [string, readonly string[]] =>
+        Array.isArray(entry[1]) && entry[1].every((value) => typeof value === 'string'),
+    );
+    for (const [name, set] of published) {
+      expect(taken, `${name} is exported and no declaration takes it`).toContain(set);
+    }
+    expect(published.length).toBeGreaterThanOrEqual(6);
   });
 
   it('reads one tuple of scopes, wherever the surface counts the trees', () => {
