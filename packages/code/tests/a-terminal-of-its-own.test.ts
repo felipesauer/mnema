@@ -27,7 +27,6 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
@@ -36,9 +35,10 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
 import { dispositionOf, SESSION_WORDS, verbsOffered } from '../src/repl/gate.js';
-import { openSession, type Session, typedLine } from '../src/repl/session.js';
+import { openSession, typedLine } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import type { Declared } from '../src/wiring/verb.js';
+import { fakeTerminal, hooksNothing, until } from './support/console.js';
 
 /** `packages/code/src`, for the guard that reads the session's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -408,7 +408,16 @@ describe('the session writes no history anywhere', () => {
     { why: 'the caller’s home is not this product’s to write in', term: /homedir\(|env\.HOME/ },
   ];
 
-  /** Every module of `src/repl`, tests excluded. */
+  /**
+   * Every module of `src/repl`, tests excluded.
+   *
+   * By EXTENSION and not by a list, and the extension is the one thing here that could
+   * quietly stop matching: a module written in another dialect of the same language
+   * would be a module of the session this scan does not read, and the ban below would
+   * pass over it saying nothing. The enumeration at the end of the case is what makes
+   * that visible — it names every file there is, so one this filter cannot see is one
+   * the case reports missing.
+   */
   const modules = (): readonly string[] =>
     readdirSync(join(SRC, 'repl'))
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
@@ -422,8 +431,18 @@ describe('the session writes no history anywhere', () => {
     for (const file of modules()) {
       expect(reaching(readFileSync(join(SRC, 'repl', file), 'utf-8')), file).toEqual([]);
     }
-    // The corpus is real: an empty directory passes this and says nothing.
-    expect(modules()).toEqual(['complete.ts', 'gate.ts', 'session.ts']);
+    // The corpus is real: an empty directory passes this and says nothing. And it is
+    // every file, so a module the filter above cannot see is a module missing here.
+    expect(modules()).toEqual([
+      'complete.ts',
+      'console.ts',
+      'editing.ts',
+      'gate.ts',
+      'leaving.ts',
+      'region.ts',
+      'session.ts',
+    ]);
+    expect(readdirSync(join(SRC, 'repl')).filter((file) => !file.endsWith('.ts'))).toEqual([]);
   });
 
   it('would accuse the line an author would write', () => {
@@ -439,50 +458,50 @@ describe('the session writes no history anywhere', () => {
 });
 
 describe('the loop is wired to the gate and to the tree', () => {
-  /** Waits until `ready` answers true, or gives up — a poll, never a fixed sleep. */
-  async function until(ready: () => boolean, what: string): Promise<void> {
-    for (let tries = 0; tries < 400; tries++) {
-      if (ready()) return;
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-    throw new Error(`the session never ${what}`);
-  }
-
   it('completes a verb on Tab, runs it, and leaves on `.exit`', async () => {
-    // The elo, end to end and without a terminal to hand: the completer readline was
-    // given is the one built from the command tree, and the line it completes is the
-    // line the gate then runs. Each step waits for the one before it, so nothing here
-    // is a sleep whose length is a guess.
-    const input = new PassThrough();
-    const output = new PassThrough();
-    let echoed = '';
-    output.on('data', (chunk: Buffer) => {
-      echoed += chunk.toString('utf-8');
-    });
-    const out: string[] = [];
+    // The elo, end to end and without a device to hand: the completer the console was
+    // given is the one built from the command tree, the line it completes is the line
+    // the gate then runs, and the answer lands on the page. Each step waits for the one
+    // before it, so nothing here is a sleep whose length is a guess.
+    const terminal = fakeTerminal();
+    const aside: string[] = [];
     const io: CliIo = {
-      out: (line) => out.push(line),
-      err: () => undefined,
+      out: (line) => aside.push(line),
+      err: (line) => aside.push(line),
       fail: () => undefined,
     };
-    const session: Session = { io, render: renderPlain, self: REPL_VERB };
-    const closed = openSession({ ...session, input, output, interactive: true });
+    const closed = openSession({
+      io,
+      render: renderPlain,
+      self: REPL_VERB,
+      input: terminal.stdin,
+      output: terminal.stdout,
+      interactive: true,
+      leaving: hooksNothing,
+    });
 
-    await until(() => echoed.includes('mnema> '), 'prompted');
-    input.write('veri');
-    await until(() => echoed.includes('veri'), 'echoed what was typed');
-    input.write('\t');
-    await until(() => echoed.includes('verify'), 'completed the verb on Tab');
-    const before = out.length;
-    input.write('\n');
-    await until(() => out.length > before, 'answered the completed line');
-    expect(out.join('\n')).toContain('local integrity verified');
+    // The prompt WITHOUT its trailing space: the layout trims the end of every row it
+    // writes, and the caret is put back where the space would have been.
+    await until(() => terminal.bytes().includes('mnema>'), 'prompted');
+    terminal.type('veri');
+    await until(() => terminal.bytes().includes('veri'), 'echoed what was typed');
+    terminal.type('\t');
+    await until(() => terminal.bytes().includes('verify'), 'completed the verb on Tab');
+    terminal.type('\r');
+    await until(
+      () => terminal.bytes().includes('local integrity verified'),
+      'answered the completed line',
+    );
 
-    input.write('.exit\n');
+    terminal.type('.exit\r');
     await closed;
+    const page = terminal.bytes();
     // The banner is the session's own, and it counts the reads it offers rather than
     // stating a number that would go stale.
-    expect(out[0]).toContain('a session over this project');
-    expect(out[1]).toContain(`${verbsOffered(DECLARED, REPL_VERB).length} verbs`);
+    expect(page).toContain('a session over this project');
+    expect(page).toContain(`${verbsOffered(DECLARED, REPL_VERB).length} verbs`);
+    // And NOT ONE line went to the port the process would have written on: inside a
+    // session every line lands on the page, which is the whole of what changed.
+    expect(aside).toEqual([]);
   }, 60_000);
 });

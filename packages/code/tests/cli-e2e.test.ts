@@ -1734,7 +1734,7 @@ describe('mnema CLI — key restore, end to end', () => {
  */
 describe('mnema CLI — a second machine joins one identity, end to end', () => {
   /** Points the next commands at one machine's key root. Two roots, two machines. */
-  function useMachine(name: string): void {
+  function asMachine(name: string): void {
     process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
@@ -1782,20 +1782,20 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     // `init` is the command a person runs to check that joining worked, and it is
     // reached BEFORE the first write settles the anchor on disk. Reporting the
     // derived anchor there would name an identity the very next write corrects.
-    useMachine('a');
+    asMachine('a');
     const { anchor } = await initHere();
 
-    useMachine('b');
+    asMachine('b');
     const beforeJoining = await initHere();
     expect(beforeJoining.anchor).not.toBe(anchor);
     const request = await requestToJoin(anchor);
 
-    useMachine('a');
+    asMachine('a');
     await run(['key', 'enroll', request], capture().io);
 
     // B has written nothing yet: no anchor is recorded for it in this tree, so
     // this answer can only come from the record.
-    useMachine('b');
+    asMachine('b');
     const after = capture();
     await run(['init'], after.io);
     expect(after.out.join('\n')).toContain(`identity: ${anchor}`);
@@ -1812,18 +1812,18 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
 
   it('request → enroll → the second machine writes as the FIRST identity', async () => {
     // A founds the project.
-    useMachine('a');
+    asMachine('a');
     const { anchor } = await initHere();
 
     // B asks to join. It has no key yet, so this is also where its key is born —
     // and it records NO anchor: asking is not being accepted.
-    useMachine('b');
+    asMachine('b');
     const request = await requestToJoin(anchor);
     expect(request).toBeDefined();
 
     // A vouches. This is the only step that must run on a machine already in the
     // identity: membership is granted by a member's signature.
-    useMachine('a');
+    asMachine('a');
     const e = capture();
     await run(['key', 'enroll', request], e.io);
     expect(e.failed()).toBe(false);
@@ -1831,7 +1831,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     expect(e.out.join('\n')).toContain('Commit and share the record');
 
     // B writes for the first time. THIS is the moment the identity is decided.
-    useMachine('b');
+    asMachine('b');
     const m = capture();
     await run(['memory', 'written from the second machine'], m.io);
     expect(m.failed()).toBe(false);
@@ -1864,10 +1864,10 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
   it('WITHOUT the enrollment the same second machine becomes a stranger', async () => {
     // The neutralization: skip the handshake and let B just write. Two identities in
     // a record the team shares — the state the three verbs exist to avoid.
-    useMachine('a');
+    asMachine('a');
     const { anchor } = await initHere();
 
-    useMachine('b');
+    asMachine('b');
     const m = capture();
     await run(['memory', 'written by a machine nobody vouched for'], m.io);
     expect(m.failed()).toBe(false);
@@ -1881,13 +1881,13 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
   });
 
   it('refuses a request made for ANOTHER identity before it can become a fact', async () => {
-    useMachine('a');
+    asMachine('a');
     await initHere();
-    useMachine('b');
+    asMachine('b');
     const elsewhere = `mnid:${'a'.repeat(64)}`;
     const request = await requestToJoin(elsewhere);
 
-    useMachine('a');
+    asMachine('a');
     const e = capture();
     await run(['key', 'enroll', request], e.io);
 
@@ -1906,7 +1906,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     // resolves against something and an ambiguous one is refused by name — a
     // fingerprint names a physical key, and guessing which one a short value means
     // is not a guess to make about key material. Nothing is retired.
-    useMachine('a');
+    asMachine('a');
     await initHere();
     const own = privateKeysOf('a')[0]?.replace('.key', '') as string;
 
@@ -1925,7 +1925,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
   });
 
   it('refuses to retire the last key, and retires one once a second is in', async () => {
-    useMachine('a');
+    asMachine('a');
     const { anchor } = await initHere();
     // The identity has two keys from founding (this machine's and the cold backup),
     // so retiring one is allowed — and then the other is the last.
@@ -1965,7 +1965,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
  * occupies the key root.
  */
 describe('mnema CLI — asking with the cold copy while the wrong key is installed', () => {
-  function useMachine(name: string): void {
+  function asMachine(name: string): void {
     process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
@@ -1990,7 +1990,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
     vaultCopy: string;
     wrongKey: string;
   }> {
-    useMachine('m');
+    asMachine('m');
     const i = capture();
     await run(['init'], i.io);
     const output = i.out.join('\n');
@@ -2043,7 +2043,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
 
     // The path back: a key root that does NOT hold the wrong key. The cold copy is
     // restored there, and the record proves which identity it belongs to.
-    useMachine('clean');
+    asMachine('clean');
     const restored = capture();
     await run(['key', 'restore', lost.vaultCopy], restored.io);
     expect(restored.failed()).toBe(false);
@@ -2064,14 +2064,14 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
     // It works — and now that key belongs to TWO identities in this record, because
     // it also founded one. A machine cannot choose between them on the person's
     // behalf, so the next write into a tree it has no recorded anchor for refuses.
-    useMachine('m');
+    asMachine('m');
     const request = await (async (): Promise<string> => {
       const r = capture();
       await run(['key', 'request', '--anchor', lost.anchor], r.io);
       return r.out.find((line) => line.startsWith('mnema-key-request:')) as string;
     })();
 
-    useMachine('clean');
+    asMachine('clean');
     const restore = capture();
     await run(['key', 'restore', lost.vaultCopy], restore.io);
     expect(restore.failed()).toBe(false);
@@ -2090,7 +2090,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
       }
     }
     process.chdir(clone);
-    useMachine('m');
+    asMachine('m');
 
     const refused = capture();
     await run(['memory', 'which identity is this?'], refused.io);

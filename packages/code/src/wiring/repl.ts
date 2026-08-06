@@ -13,11 +13,14 @@
  * dispatch to, which is the same argument that makes `mcp` a WRITE — that one serves
  * every write tool this product has.
  *
- * THE THREE FACTS ABOUT THE PROCESS ARE READ HERE, where the process is. Whether each
- * end is a terminal is exactly the kind of question `wiring/color.ts` says may not be
- * asked further down: a session that looked at `process.stdin` from inside its own loop
- * could not be driven by a test, and the refusal that matters most here — no terminal,
- * no session — would be the one thing nothing could exercise.
+ * THE FACTS ABOUT THE PROCESS ARE READ HERE, where the process is. Whether each end is a
+ * terminal is exactly the kind of question `wiring/color.ts` says may not be asked
+ * further down: a session that looked at `process.stdin` from inside its own loop could
+ * not be driven by a test, and the refusal that matters most here — no terminal, no
+ * session — would be the one thing nothing could exercise. The FOURTH fact is the same
+ * kind and it is the newest: the ways this process can stop, which the console hooks so
+ * that the terminal is given back on every one of them. A module that reached for the
+ * global `process` to hook them would be a module no test could arm twice.
  */
 
 import type { Command } from 'commander';
@@ -62,6 +65,7 @@ export function registerRepl(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .action(async () => {
+      const { leavingProcess } = await import('../repl/leaving.js');
       const { openSession } = await import('../repl/session.js');
       await openSession({
         io,
@@ -73,6 +77,7 @@ export function registerRepl(program: Command, wiring: Wiring): Declared {
         // and stdout is where the prompt goes, so a session with either one redirected
         // is a session whose caller cannot see what they are answering.
         interactive: process.stdin.isTTY === true && process.stdout.isTTY === true,
+        leaving: leavingProcess,
       });
     });
   return readsTheRecord(repl);

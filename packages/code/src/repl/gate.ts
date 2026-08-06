@@ -53,6 +53,9 @@ export const ABOUT = `${DOT}help`;
  */
 export const SESSION_WORDS: readonly string[] = [ABOUT, LEAVE];
 
+/** Whether the session goes on after a line, or closes. */
+export type AfterLine = 'go on' | 'leave';
+
 /** What the session does with one typed line. Closed, and total over what can be typed. */
 export type Disposition =
   /** The line was blank. Nothing happened and nothing is said about it. */

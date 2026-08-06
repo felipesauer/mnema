@@ -339,6 +339,20 @@ describe('the floor is the declaration', () => {
     expect(adapter.external.map((edge) => edge.specifier)).toContain('@mnema/core/write');
   });
 
+  it('never loads the layout library, which is the newest thing it must not pay for', () => {
+    // The session's console draws with a library, and that library is the most expensive
+    // import on this surface — measured at a fifth of a second, against a floor of about
+    // a tenth. It is paid ONCE, when a caller asks for a session, and by nobody else:
+    // `mnema --version` and every verb that reads must not know it exists.
+    const external = FLOOR.external.map((edge) => edge.specifier);
+    for (const part of ['ink', 'react']) expect(external, part).not.toContain(part);
+    // Not vacuous: the console really does load it, so the absence above is a fact about
+    // the floor rather than about a library nobody installed.
+    const console = eagerClosure(join(SRC, 'repl/console.ts'));
+    expect(console.external.map((edge) => edge.specifier)).toContain('ink');
+    expect(console.unresolved).toEqual([]);
+  });
+
   it('reads an import the way the runtime does', () => {
     // The extractor's own non-vacuity, on input this test owns: each thing it must
     // see, and each thing it must not. The `import type` case is not hypothetical —
