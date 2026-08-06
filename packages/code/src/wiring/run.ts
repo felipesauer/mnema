@@ -16,8 +16,6 @@
  */
 
 import type { Command } from 'commander';
-import { runRunEnd } from '../commands/run-end.js';
-import { runRunStart } from '../commands/run-start.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
@@ -53,7 +51,8 @@ export function registerRun(program: Command, wiring: Wiring): void {
       declaredAgent,
     )
     .option('--goal <text>', 'what this session sets out to do')
-    .action((opts: { which: string; goal?: string }) => {
+    .action(async (opts: { which: string; goal?: string }) => {
+      const { runRunStart } = await import('../commands/run-start.js');
       const result = runRunStart(here(), {
         agent: opts.which,
         ...(opts.goal !== undefined ? { goal: opts.goal } : {}),
@@ -98,7 +97,8 @@ export function registerRun(program: Command, wiring: Wiring): void {
       declaredAgent,
     )
     .option('--outcome <text>', 'a short note on how the session went')
-    .action((id: string | undefined, opts: { which: string; outcome?: string }) => {
+    .action(async (id: string | undefined, opts: { which: string; outcome?: string }) => {
+      const { runRunEnd } = await import('../commands/run-end.js');
       const fromEnv = process.env[RUN_ENV]?.trim();
       const target = id ?? fromEnv;
       if (target === undefined || target.length === 0) {

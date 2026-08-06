@@ -8,8 +8,6 @@
  */
 
 import type { Command } from 'commander';
-import { anchorText } from '../anchors.js';
-import { runAccountability } from '../commands/accountability.js';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
@@ -32,7 +30,15 @@ export function registerAccountability(program: Command, wiring: Wiring): void {
     .option('--which <agent>', 'count only facts executed by this agent')
     .option('--json', 'emit the faithful account object as JSON')
     .action(
-      (opts: { from?: string; to?: string; who?: string; which?: string; json?: boolean }) => {
+      async (opts: {
+        from?: string;
+        to?: string;
+        who?: string;
+        which?: string;
+        json?: boolean;
+      }) => {
+        const { anchorText } = await import('../anchors.js');
+        const { runAccountability } = await import('../commands/accountability.js');
         const result = runAccountability(here(), {
           ...(opts.from !== undefined ? { from: opts.from } : {}),
           ...(opts.to !== undefined ? { to: opts.to } : {}),

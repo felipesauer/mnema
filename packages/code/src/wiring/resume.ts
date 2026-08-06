@@ -6,8 +6,6 @@
  */
 
 import type { Command } from 'commander';
-import { anchorText } from '../anchors.js';
-import { runResume } from '../commands/resume.js';
 import { fact } from '../presentation/detail.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
 import { here } from './context.js';
@@ -24,7 +22,9 @@ export function registerResume(program: Command, wiring: Wiring): void {
     .description('show where an actor left off (their latest run, open or ended)')
     .requiredOption('--actor <id>', `the identity whose last run to show — ${ACTOR_HELP}`)
     .option('--json', 'emit the faithful resume object as JSON')
-    .action((opts: { actor: string; json?: boolean }) => {
+    .action(async (opts: { actor: string; json?: boolean }) => {
+      const { anchorText } = await import('../anchors.js');
+      const { runResume } = await import('../commands/resume.js');
       const result = runResume(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
