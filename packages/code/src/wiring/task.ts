@@ -36,10 +36,10 @@ import {
 } from './options.js';
 import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema task` on the program. */
-export function registerTask(program: Command, wiring: Wiring): void {
+export function registerTask(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
   const task = program
     .command('task')
@@ -146,4 +146,5 @@ export function registerTask(program: Command, wiring: Wiring): void {
       reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
     },
   );
+  return mutatesTheRecord(task);
 }

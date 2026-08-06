@@ -31,12 +31,12 @@ import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema brief` on the program. */
-export function registerBrief(program: Command, wiring: Wiring): void {
+export function registerBrief(program: Command, wiring: Wiring): Declared {
   const { io } = wiring;
-  program
+  const brief = program
     .command('brief')
     .description('print what governs the work here as markdown, for an agent to read')
     .addHelpText(
@@ -69,4 +69,5 @@ export function registerBrief(program: Command, wiring: Wiring): void {
       }
       writeLines(io, briefDocument(result.brief));
     });
+  return readsTheRecord(brief);
 }

@@ -48,7 +48,7 @@ import { here } from './context.js';
 import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
 import type { CliIo } from './io.js';
 import { type Reporter, reportRefusal, reportUsage } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /**
  * What each requirement MEANS, in the phrase `--require` prints beside it.
@@ -118,9 +118,9 @@ const NO_RECORD =
   'so there is nothing to rule on';
 
 /** Registers `mnema verify` on the program. */
-export function registerVerify(program: Command, wiring: Wiring): void {
+export function registerVerify(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const verify = program
     .command('verify')
     .description("verify this project's record — its committed tree and its private one")
     .option(
@@ -170,6 +170,7 @@ export function registerVerify(program: Command, wiring: Wiring): void {
         io.fail();
       }
     });
+  return readsTheRecord(verify);
 }
 
 /**

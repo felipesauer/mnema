@@ -35,10 +35,10 @@ import {
 } from './options.js';
 import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema skill` on the program. */
-export function registerSkill(program: Command, wiring: Wiring): void {
+export function registerSkill(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
   const skill = program
     .command('skill')
@@ -138,4 +138,5 @@ export function registerSkill(program: Command, wiring: Wiring): void {
     }
     reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
   });
+  return mutatesTheRecord(skill);
 }

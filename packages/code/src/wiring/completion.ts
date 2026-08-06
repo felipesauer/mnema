@@ -27,7 +27,7 @@
  */
 
 import { Argument, type Command } from 'commander';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** The shells this verb writes a script for. Closed: commander refuses anything else. */
 export const SHELLS = ['bash', 'zsh', 'fish'] as const;
@@ -39,9 +39,9 @@ export type Shell = (typeof SHELLS)[number];
 export const SHELL_HELP = 'the shell to write the script for';
 
 /** Registers `mnema completion` on the program. */
-export function registerCompletion(program: Command, wiring: Wiring): void {
+export function registerCompletion(program: Command, wiring: Wiring): Declared {
   const { io } = wiring;
-  program
+  const completion = program
     .command('completion')
     .description('print the tab-completion script for a shell')
     .addArgument(new Argument('<shell>', SHELL_HELP).choices([...SHELLS]))
@@ -67,4 +67,5 @@ export function registerCompletion(program: Command, wiring: Wiring): void {
       const { completionScript } = await import('../completion/script.js');
       io.out(completionScript(program, shell));
     });
+  return readsTheRecord(completion);
 }

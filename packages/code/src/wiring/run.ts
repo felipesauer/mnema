@@ -22,10 +22,10 @@ import { here } from './context.js';
 import { declaredAgent } from './options.js';
 import { reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { RUN_ENV } from './run-pin.js';
-import type { Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema run` on the program. */
-export function registerRun(program: Command, wiring: Wiring): void {
+export function registerRun(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const runGroup = program
     .command('run')
@@ -135,4 +135,5 @@ export function registerRun(program: Command, wiring: Wiring): void {
         io.out(render(fact('Run that too: a shell pinned to a closed session cannot write.')));
       }
     });
+  return mutatesTheRecord(runGroup);
 }

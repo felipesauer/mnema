@@ -15,12 +15,12 @@ import { enumeratedOption, listed, SCOPES, SEARCH_KINDS } from './enumerated.js'
 import { writeLines } from './io.js';
 import { INVALID, INVALID_LIMIT, parseLimit, parseScope } from './options.js';
 import { reportUsage } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema search` on the program. */
-export function registerSearch(program: Command, wiring: Wiring): void {
+export function registerSearch(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  program
+  const search = program
     .command('search')
     .description('find what has been recorded, or list the most recent (no term)')
     .argument('[term]', 'words to look for; omit to list the most recent records')
@@ -88,4 +88,5 @@ export function registerSearch(program: Command, wiring: Wiring): void {
         writeLines(io, searchReport(render, result.result, term));
       },
     );
+  return readsTheRecord(search);
 }
