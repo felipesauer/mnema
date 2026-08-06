@@ -93,9 +93,9 @@ describe('the styled line is the plain line, wrapped', () => {
     { indent: 0, parts: [] },
     statement(column('ALLOWED', 12), ' submit t-1 → READY '),
     subjectLine(column('task the-id', 20), 'public'),
-    // The two column roles, which are the shapes this slice added — including one
-    // whose id and instant both carry a space at the edge, because a dim column is a
-    // painted part now and the trap the two lines above closed applies to it too.
+    // The two column roles — including one whose id and instant both carry a space at
+    // the edge, because a dim column is a painted part and the trap the two lines above
+    // closed applies to it just as much.
     itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title']),
     itemLine([asId(' an-id '), asWhen(' 2026-08-05 ')]),
     // And the severities, on both a bare label and one padded to a width.
