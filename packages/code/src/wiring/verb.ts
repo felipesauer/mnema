@@ -1,7 +1,7 @@
 /**
  * What a verb's wiring receives, and what a verb's wiring IS.
  *
- * One shape for all twenty-six, so the program can register them in a list
+ * One shape for all twenty-seven, so the program can register them in a list
  * instead of naming what each one needs: a verb takes the program to hang itself
  * on and the three things every verb may touch — where to write, how a line becomes
  * bytes, and the session its writes are pinned to.

@@ -1,0 +1,204 @@
+/**
+ * What the session does with a line, and what it offers before one is typed.
+ *
+ * The mechanism, on input this file owns. The guard over the REAL surface is
+ * `tests/a-terminal-of-its-own.test.ts`, which enumerates every verb from the
+ * declaration and drives the session over a record; with the surface honest, that one
+ * can only say "nothing was let through", which exercises neither the deny side nor its
+ * limit. So the cases here hand the gate declarations of their own — including the write
+ * somebody adds tomorrow, and the command that carries no declaration at all — and check
+ * that it can tell the four kinds apart.
+ */
+
+import { Command, Option } from 'commander';
+import { describe, expect, it } from 'vitest';
+import { completionTree } from '../completion/tree.js';
+import type { Declared } from '../wiring/verb.js';
+import { completerFor } from './complete.js';
+import { ABOUT, argvOf, dispositionOf, LEAVE, SESSION_WORDS, verbsOffered } from './gate.js';
+
+/** One declaration of this file's own, with the description a menu would print. */
+function declares(name: string, effect: Declared['effect']): Declared {
+  return { command: new Command(name).description(`what ${name} does`), effect };
+}
+
+/**
+ * A surface of four verbs: two reads, a write, and the session itself.
+ *
+ * `smuggle` is deliberately absent from it and present in the cases below — a command
+ * hung on the program by a path that returns no declaration is the shape the entry's own
+ * guard was once blind to, and here it is the whole point of default-deny.
+ */
+const VERBS: readonly Declared[] = [
+  declares('look', 'reads'),
+  declares('read', 'reads'),
+  declares('write', 'mutates'),
+  declares('session', 'reads'),
+];
+
+/** What the session under test calls itself. */
+const SELF = 'session';
+
+/** What the session does with `line`, over the declarations above. */
+const on = (line: string) => dispositionOf(line, VERBS, SELF);
+
+describe('a line becomes the words a parser receives', () => {
+  it('separates on whitespace and groups with either quote', () => {
+    expect(argvOf('search runbook')).toEqual(['search', 'runbook']);
+    expect(argvOf('   search    runbook   ')).toEqual(['search', 'runbook']);
+    expect(argvOf('guard complete id --note "it is done"')).toEqual([
+      'guard',
+      'complete',
+      'id',
+      '--note',
+      'it is done',
+    ]);
+    expect(argvOf("memory 'a note with spaces'")).toEqual(['memory', 'a note with spaces']);
+    // A quote inside the other kind is a character, which is what makes an apostrophe
+    // typable at all.
+    expect(argvOf(`search "an actor's run"`)).toEqual(['search', "an actor's run"]);
+    expect(argvOf('search a\\ b')).toEqual(['search', 'a b']);
+    // An empty argument is a value the surface takes seriously — it is the one the
+    // content door refuses — so a pair of quotes has to survive as one empty word.
+    expect(argvOf('task ""')).toEqual(['task', '']);
+    expect(argvOf('')).toEqual([]);
+  });
+
+  it('answers with nothing at all when a quote is never closed', () => {
+    // Not a best guess. Closing it silently runs a command with an argument the caller
+    // did not finish typing; dropping it runs one with a different argument. Both are
+    // wrong in a way the caller cannot see, and a session that reads a record is the
+    // wrong place to be inventive about what somebody meant.
+    expect(argvOf('search "unfinished')).toBeUndefined();
+    expect(argvOf("show 'x")).toBeUndefined();
+    expect(argvOf('search "closed" and "not')).toBeUndefined();
+  });
+
+  it('expands nothing, because it is not a shell', () => {
+    // A `|` is a word, a `$HOME` is a word, a `*` is a word. Each reaches the verb as
+    // typed and earns whatever the verb says about an argument it does not take.
+    expect(argvOf('search $HOME')).toEqual(['search', '$HOME']);
+    expect(argvOf('search foo | head')).toEqual(['search', 'foo', '|', 'head']);
+    expect(argvOf('search *.md')).toEqual(['search', '*.md']);
+  });
+});
+
+describe('a session offers the reads and nothing else', () => {
+  it('is every verb that declared it reads, minus the session itself', () => {
+    expect(verbsOffered(VERBS, SELF)).toEqual(['look', 'read']);
+    // And the exclusion is by IDENTITY: rename the session and the OTHER verb is the
+    // one that leaves. A literal here would have gone on excluding a name that moved.
+    expect(verbsOffered(VERBS, 'look')).toEqual(['read', 'session']);
+  });
+
+  it('runs a read, with the words the caller typed', () => {
+    expect(on('look')).toEqual({ does: 'run', argv: ['look'] });
+    expect(on('read --json two words')).toEqual({
+      does: 'run',
+      argv: ['read', '--json', 'two', 'words'],
+    });
+  });
+
+  it('refuses a verb that declared it writes, and says where to run it', () => {
+    const said = on('write something');
+    expect(said.does).toBe('refuse');
+    expect(said).toMatchObject({
+      sentence: '`write` can change the record, and this session only reads it',
+    });
+    // The refusal is actionable or it is noise: it names the line to type outside.
+    expect(said.does === 'refuse' && said.detail).toContain('mnema write');
+  });
+
+  it('refuses a command that carries NO declaration — which is the whole rule', () => {
+    // The write added tomorrow, and the command hung on the program by some other path.
+    // Neither is in `VERBS`, and neither has to be: the gate allows what declared
+    // itself a read, so everything else is refused without anybody remembering. A gate
+    // written the other way round — refuse what declared `mutates` — would let both of
+    // these through, and it is the only other way to write this rule.
+    expect(on('smuggle').does).toBe('refuse');
+    expect(on('smuggle --force').does).toBe('refuse');
+    // Including a bare flag, which names no verb at all.
+    expect(on('--help').does).toBe('refuse');
+    expect(on('-h').does).toBe('refuse');
+  });
+
+  it('refuses to open a session inside a session', () => {
+    const said = on(SELF);
+    expect(said).toMatchObject({ does: 'refuse', sentence: 'A session is already open here' });
+  });
+
+  it('leaves, says what it runs, and does neither when a word is typed after', () => {
+    expect(on(LEAVE)).toEqual({ does: 'leave' });
+    expect(on(ABOUT)).toEqual({ does: 'about' });
+    expect(on(`${LEAVE} now`).does).toBe('refuse');
+    expect(on(`${ABOUT} me`).does).toBe('refuse');
+  });
+
+  it('does nothing with a blank line, and refuses a line it cannot read', () => {
+    expect(on('')).toEqual({ does: 'nothing' });
+    expect(on('   ')).toEqual({ does: 'nothing' });
+    expect(on('look "unfinished')).toMatchObject({
+      does: 'refuse',
+      sentence: 'This line has a quote that is never closed',
+    });
+  });
+
+  it('reaches every arm, so no case above is passing by falling through', () => {
+    // The union is closed and the function is total over a string; this is the witness
+    // that the cases here actually cover it, rather than five of them landing on the
+    // same refusal.
+    const reached = new Set(
+      ['', 'look', 'write', 'smuggle', LEAVE, ABOUT].map((line) => on(line).does),
+    );
+    expect([...reached].sort()).toEqual(['about', 'leave', 'nothing', 'refuse', 'run']);
+  });
+});
+
+describe('tab offers what the session runs', () => {
+  /** A program of this file's own, so the tree is a tree and not the product's. */
+  function tree() {
+    const program = new Command('tool');
+    program.command('look').description('a read').option('--json', 'as an object');
+    program
+      .command('read')
+      .description('another read')
+      .addOption(new Option('--scope <s>', 'where').choices(['public', 'here']));
+    const write = program.command('write').description('a write');
+    write.command('move').description('a move');
+    program.command('session').description('this');
+    return completionTree(program);
+  }
+
+  const complete = completerFor(tree(), verbsOffered(VERBS, SELF), SESSION_WORDS);
+
+  it('offers the reads and the session’s own words, and not one write', () => {
+    const [hits] = complete('');
+    expect(hits).toEqual([LEAVE, ABOUT, 'look', 'read']);
+    // Named rather than implied: the write is what a menu must not carry, because a
+    // word offered by Tab and refused by the next line is the surface contradicting
+    // itself in two keystrokes. And `help` — commander's own implicit command — is
+    // absent for the same reason: this session answers with `.help`.
+    expect(hits).not.toContain('write');
+    expect(hits).not.toContain('help');
+    expect(hits).not.toContain(SELF);
+  });
+
+  it('narrows to the prefix, and offers nothing when nothing matches', () => {
+    expect(complete('lo')).toEqual([['look'], 'lo']);
+    expect(complete('.')).toEqual([[LEAVE, ABOUT], '.']);
+    expect(complete('zzz')).toEqual([[], 'zzz']);
+  });
+
+  it('offers a verb’s flags, and the values a declaration enumerates', () => {
+    expect(complete('look --')).toEqual([['--help', '--json'], '--']);
+    expect(complete('read --scope ')).toEqual([['here', 'public'], '']);
+    expect(complete('read --scope p')).toEqual([['public'], 'p']);
+  });
+
+  it('does not descend into a verb the session refuses', () => {
+    // `write move` exists in the tree and is reachable from the shell. Offering it here
+    // would be a menu of a level this session cannot get to.
+    expect(complete('write ')).toEqual([[], '']);
+    expect(complete('write mo')).toEqual([[], 'mo']);
+  });
+});

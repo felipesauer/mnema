@@ -20,8 +20,8 @@
  * IT IS INSTALLED BY WALKING THE COMMAND TREE, once, after every verb is registered.
  * commander reports a usage error from the command that FAILED — that is the only
  * object that knows which argument was missing — and `configureOutput` is per-command
- * too, so a translation wired verb by verb would be thirty-three sites and a
- * thirty-fourth verb added tomorrow would come out in the other voice. The walk is
+ * too, so a translation wired verb by verb would be thirty-eight sites and a
+ * thirty-ninth command added tomorrow would come out in the other voice. The walk is
  * one site, and the verb added tomorrow is covered by construction.
  *
  * THE CODE IS THE DISCRIMINANT, NEVER THE MESSAGE. commander's sentences are a

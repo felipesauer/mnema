@@ -211,6 +211,33 @@ describe('a refusal is worded in exactly one place', () => {
     expect(composerOf('styled.ts')).not.toContain("'bad'");
   });
 
+  it('and the session decides none either, a second directory over', () => {
+    // THE RULE IS ABOUT WHOEVER SAYS NO, AND THE INTERACTIVE SESSION IS THE NEWEST ONE.
+    // It words four refusals of its own — a write typed at its prompt, a word no verb
+    // answers to, a quote left open, a session inside a session — and none of them is a
+    // verb, so neither scan above would have looked at it. What it must do is what a
+    // verb does: hand a SENTENCE to the funnel and let the funnel decide the severity.
+    const files = readdirSync(join(HERE, 'repl'))
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .sort();
+    const sourceIn = (file: string): string => readFileSync(join(HERE, 'repl', file), 'utf-8');
+    for (const file of files) {
+      expect(sourceIn(file), file).not.toContain("'bad'");
+      expect(sourceIn(file), file).not.toContain(WORDS_A_REFUSAL);
+      // And no line reaches a stream unrendered, which is the shape eighteen verbs of
+      // this surface once had: the session writes through `reportUsage` and `writeLines`
+      // and touches neither port by hand.
+      expect(sourceIn(file).includes('io.err('), file).toBe(false);
+    }
+    // The corpus is the one whose whole job is answering a typed line.
+    expect(files).toContain('gate.ts');
+    expect(files).toContain('session.ts');
+    // And it really does refuse — otherwise the three absences above are about a
+    // directory that says no to nothing.
+    expect(sourceIn('session.ts')).toContain('reportUsage(');
+    expect(sourceIn('gate.ts')).toContain("does: 'refuse'");
+  });
+
   it('would accuse a verb that worded one itself', () => {
     // The other vacuous form: a detector whose term matches nothing any more. Composed
     // against the line the careful author would write — the one this guard actually

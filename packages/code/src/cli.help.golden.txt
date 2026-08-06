@@ -35,6 +35,7 @@ $ mnema --help
 |   key                                     manage this machine's signing keys
 |   verify [options]                        verify this project's record — its committed tree and its private one
 |   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
+|   repl                                    open an interactive session that reads this project
 |   completion <shell>                      print the tab-completion script for a shell
 |   help [command]                          display help for command
 $ mnema --version
@@ -538,6 +539,32 @@ $ mnema mcp --help
 |   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
 |                    comes from the host workspace roots
 |   -h, --help       display help for command
+
+### mnema repl --help
+$ mnema repl --help
+| Usage: mnema repl [options]
+|
+| open an interactive session that reads this project
+|
+| Options:
+|   -h, --help  display help for command
+|
+| One process, many reads. A command of this CLI spends about a tenth of a second
+| starting before it reads anything; a session pays that once, and every read after
+| the first costs only the work.
+|
+| It reads and never writes. A verb that can change the record is refused by name,
+| with the line to run outside the session — and it is refused because the verb
+| itself declares what it can do, so one added tomorrow is refused too.
+|
+|   .help   what this session runs
+|   .exit   leave (so does Ctrl-D; Ctrl-C clears the line you are typing)
+|
+| It needs a terminal at both ends and refuses without one: reading commands from a
+| pipe would be a second way to run the same verbs. The history lives in this
+| process and is written to no file. Style is decided when the session opens — from
+| `mnema --color`, the environment and the terminal — so a `--color` typed on a line
+| inside it changes nothing.
 
 ### mnema completion --help
 $ mnema completion --help

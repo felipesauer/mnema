@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move' ;;
@@ -49,6 +49,7 @@ _mnema_described() {
       'key:manage this machine'\''s signing keys' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
+      'repl:open an interactive session that reads this project' \
       'completion:print the tab-completion script for a shell' \
       'help:display help for command' ;;
     'task') printf '%s\n' \
@@ -109,6 +110,7 @@ _mnema_flags() {
     'key revoke') echo '--reason -h --help -V --version --color' ;;
     'verify') echo '--global --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
+    'repl') echo '-h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;
   esac
 }
@@ -170,6 +172,7 @@ _mnema_values() {
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;
+    'repl:--color') echo 'auto always never' ;;
     'completion:--color') echo 'auto always never' ;;
     'completion:') echo 'bash zsh fish' ;;
   esac
