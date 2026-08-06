@@ -17,9 +17,6 @@
  */
 
 import type { Command } from 'commander';
-import { runSkill } from '../commands/skill.js';
-import { runSkillTransition } from '../commands/skill-transition.js';
-import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -49,7 +46,8 @@ export function registerSkill(program: Command, wiring: Wiring): void {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((name: string, opts: { body?: string; scope?: string; which?: string }) => {
+    .action(async (name: string, opts: { body?: string; scope?: string; which?: string }) => {
+      const { runSkill } = await import('../commands/skill.js');
       // The body is required for a propose, but declared as a plain option (so it
       // is not inherited as mandatory by `move`); enforce it here.
       if (opts.body === undefined) {
@@ -98,7 +96,9 @@ export function registerSkill(program: Command, wiring: Wiring): void {
     .option('--reason <text>', 'why it fell out of use (required by deprecate)')
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  skillMove.action((action: string, id: string, opts: { note?: string; reason?: string }) => {
+  skillMove.action(async (action: string, id: string, opts: { note?: string; reason?: string }) => {
+    const { runSkillTransition } = await import('../commands/skill-transition.js');
+    const { movedLine } = await import('../moved-record.js');
     const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err('`skill move` takes no --scope: a move follows the skill to the tree it was born in.');

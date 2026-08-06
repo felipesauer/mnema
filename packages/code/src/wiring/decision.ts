@@ -14,9 +14,7 @@
  */
 
 import type { Command } from 'commander';
-import { runDecision } from '../commands/decision.js';
-import { runDecisionTransition } from '../commands/decision-transition.js';
-import { movedLine } from '../moved-record.js';
+import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -53,11 +51,12 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
-      (
+      async (
         title: string,
         rationale: string,
         opts: { alternatives?: string; scope?: string; which?: string },
       ) => {
+        const { runDecision } = await import('../commands/decision.js');
         const scope = parseScope(opts.scope, io);
         if (scope === INVALID) {
           io.fail();
@@ -99,7 +98,8 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     .option('--note <text>', 'why this verdict (required by accept and reject)')
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  decisionMove.action((action: string, id: string, opts: { note?: string }) => {
+  decisionMove.action(async (action: string, id: string, opts: { note?: string }) => {
+    const { runDecisionTransition } = await import('../commands/decision-transition.js');
     const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err(
@@ -120,7 +120,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
       ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    reportDecisionMove(result, id, wiring);
+    await reportDecisionMove(result, id, wiring);
   });
 
   // `decision supersede <old-id> <new-id> --reason` — supersede as its own verb.
@@ -136,7 +136,8 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     .option('--reason <text>', 'why it is being replaced (required)')
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  supersede.action((oldId: string, newId: string, opts: { reason?: string }) => {
+  supersede.action(async (oldId: string, newId: string, opts: { reason?: string }) => {
+    const { runDecisionTransition } = await import('../commands/decision-transition.js');
     const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
       io.err(
@@ -158,7 +159,7 @@ export function registerDecision(program: Command, wiring: Wiring): void {
       ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    reportDecisionMove(result, oldId, wiring);
+    await reportDecisionMove(result, oldId, wiring);
   });
 }
 
@@ -182,12 +183,13 @@ export function registerDecision(program: Command, wiring: Wiring): void {
  * `moved-record.ts` carries the whole argument, and `the-echo-names-the-record.test.ts`
  * pins the collision case.
  */
-function reportDecisionMove(
+async function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
   id: string,
   to: Reporter,
-): void {
+): Promise<void> {
   if (result.ok) {
+    const { movedLine } = await import('../moved-record.js');
     to.io.out(movedLine('decision', result.adr, result.id, result.to));
     reportReplacement(result, to.io);
     return;

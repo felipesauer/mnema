@@ -18,7 +18,6 @@
  */
 
 import type { Command } from 'commander';
-import { runGuard } from '../commands/guard.js';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
@@ -46,7 +45,7 @@ export function registerGuard(program: Command, wiring: Wiring): void {
     .option('--which <id>', 'simulate an executing agent (must differ from --actor)', declaredAgent)
     .option('--json', 'emit the faithful gate verdict as JSON')
     .action(
-      (
+      async (
         action: string,
         id: string,
         opts: {
@@ -58,6 +57,7 @@ export function registerGuard(program: Command, wiring: Wiring): void {
           json?: boolean;
         },
       ) => {
+        const { runGuard } = await import('../commands/guard.js');
         const result = runGuard(here(), {
           id,
           action,

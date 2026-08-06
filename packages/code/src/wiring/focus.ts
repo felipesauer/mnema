@@ -6,11 +6,8 @@
  */
 
 import type { Command } from 'commander';
-import { anchorText } from '../anchors.js';
-import { runFocus } from '../commands/focus.js';
 import { asId, itemLine } from '../presentation/items.js';
 import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
-import { oneLine } from '../served-patterns.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { ACTOR_HELP } from './options.js';
@@ -25,7 +22,10 @@ export function registerFocus(program: Command, wiring: Wiring): void {
     .description("show an actor's open runs (what they are touching now)")
     .requiredOption('--actor <id>', `the identity whose focus to show — ${ACTOR_HELP}`)
     .option('--json', 'emit the faithful focus object as JSON')
-    .action((opts: { actor: string; json?: boolean }) => {
+    .action(async (opts: { actor: string; json?: boolean }) => {
+      const { anchorText } = await import('../anchors.js');
+      const { runFocus } = await import('../commands/focus.js');
+      const { oneLine } = await import('../served-patterns.js');
       const result = runFocus(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);

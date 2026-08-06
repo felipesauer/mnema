@@ -9,7 +9,6 @@
  */
 
 import type { Command } from 'commander';
-import { runShow } from '../commands/show.js';
 import { recordReport } from '../presentation/record.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
@@ -24,7 +23,8 @@ export function registerShow(program: Command, wiring: Wiring): void {
     .description('show one whole record by id (the body a search only pointed at)')
     .argument('<id>', 'the record id (from `mnema search`)')
     .option('--json', 'emit the faithful record as JSON')
-    .action((id: string, opts: { json?: boolean }) => {
+    .action(async (id: string, opts: { json?: boolean }) => {
+      const { runShow } = await import('../commands/show.js');
       const result = runShow(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_RECORD: `No record ${id} here.` });

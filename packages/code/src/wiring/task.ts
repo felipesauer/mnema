@@ -18,9 +18,6 @@
  */
 
 import type { Command } from 'commander';
-import { runTask } from '../commands/task.js';
-import { runTaskTransition } from '../commands/task-transition.js';
-import { movedLine } from '../moved-record.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -49,7 +46,8 @@ export function registerTask(program: Command, wiring: Wiring): void {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((title: string, opts: { scope?: string; which?: string }) => {
+    .action(async (title: string, opts: { scope?: string; which?: string }) => {
+      const { runTask } = await import('../commands/task.js');
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();
@@ -100,7 +98,13 @@ export function registerTask(program: Command, wiring: Wiring): void {
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   move.action(
-    (action: string, id: string, opts: { reason?: string; note?: string; feedback?: string }) => {
+    async (
+      action: string,
+      id: string,
+      opts: { reason?: string; note?: string; feedback?: string },
+    ) => {
+      const { runTaskTransition } = await import('../commands/task-transition.js');
+      const { movedLine } = await import('../moved-record.js');
       // Both `--scope` and `--which` on a move are parsed into `task`'s options
       // (the parent), because that is where they are declared. Their verdicts
       // differ: a `--scope` means the caller tried to scope a move, which the model

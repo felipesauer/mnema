@@ -7,7 +7,6 @@
  */
 
 import type { Command } from 'commander';
-import { runMemory } from '../commands/memory.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -30,7 +29,8 @@ export function registerMemory(program: Command, wiring: Wiring): void {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action((content: string, opts: { scope?: string; which?: string }) => {
+    .action(async (content: string, opts: { scope?: string; which?: string }) => {
+      const { runMemory } = await import('../commands/memory.js');
       const scope = parseScope(opts.scope, io);
       if (scope === INVALID) {
         io.fail();

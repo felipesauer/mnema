@@ -14,7 +14,7 @@
  */
 
 import type { Command } from 'commander';
-import { type InitResult, runInit } from '../commands/init.js';
+import type { InitResult } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
@@ -27,7 +27,8 @@ export function registerInit(program: Command, wiring: Wiring): void {
   program
     .command('init')
     .description('establish a mnema project in the current directory')
-    .action(() => {
+    .action(async () => {
+      const { runInit } = await import('../commands/init.js');
       const result = runInit(here());
       if (result.created) {
         io.out(`Initialized mnema project at ${result.root}`);
