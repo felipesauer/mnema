@@ -258,6 +258,19 @@ describe('the script knows every verb the program declares', () => {
     expect(offered('bash', 'task move')).toContain('--which');
   });
 
+  it('and this program declares no HIDDEN option, which is what makes the case above right', () => {
+    // The case above derives from `.options`, which holds a hidden option too, while the
+    // generator reads the help's `visibleOptions`, which does not. The two agree today
+    // because nothing on this surface is hidden — and the day something is, the rule to
+    // write is that a hidden option is NOT completed (it is not advertised anywhere else
+    // either), and the case above is the one to narrow. Stated here so the disagreement
+    // arrives as a red line naming it rather than as a puzzling coverage failure.
+    const hidden = everyCommandOf(declared).flatMap((command) =>
+      command.options.filter((option) => option.hidden).map((option) => option.flags),
+    );
+    expect(hidden).toEqual([]);
+  });
+
   it('offers the implicit `help` command, which lives in neither .commands nor .options', () => {
     // It is not in the walk — commander creates it on demand — and it IS in the help's
     // own list, which is what the generator reads. A reader who sees `help` in
