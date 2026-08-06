@@ -2,9 +2,25 @@
  * The `mnema verify` wiring: what it declares, and what it prints.
  *
  * The one verdict the CLI does not word itself. What `runVerify` returns is, per tree
- * of the record, a summary of what could and could not be proven, and each goes out
- * VERBATIM — the surface never re-words a guarantee, because a re-wording is where
- * "local integrity" quietly becomes "verified". The issues under it are the evidence.
+ * of the record, what could and could not be proven, and every word of it goes out as it
+ * came — the surface never re-words a guarantee, because a re-wording is where "local
+ * integrity" quietly becomes "verified". The issues under it are the evidence.
+ *
+ * IT COMPOSES THE VERDICT NOW, AND THAT IS NOT A RE-WORDING. The chain hands over its
+ * one-line verdict as the CLAUSES it is made of, and this file lays them out on a line:
+ * one of them is the level, which is the only clause that is good or bad news, and it is
+ * the one that carries a colour. The clause a hue lands on is chosen by WHAT THE CLAUSE
+ * IS — never by matching its text, which on a verdict would be the surface deciding what
+ * the chain said. And the composition adds nothing: rendered without style, the line is
+ * the tree's name, a colon, and the chain's own `summary`, byte for byte, which is what
+ * `the-verdict-is-parts.test.ts` asserts. The clause list was the alternative to a
+ * sentence composed HERE beside the chain's own — two sentences about one record, which
+ * is how a surface ends up promising more than the proof does.
+ *
+ * WHY THE COLOUR IS NOT ON THE LABEL. Every other verdict on this surface paints its
+ * label, because the label is the word that answers (`guard` says `REFUSED`). Here the
+ * label is a TREE'S NAME, and a red `private` would say the tree was bad news rather
+ * than the verdict over it.
  *
  * EVERY LINE SAYS WHICH TREE IT IS ABOUT. There is more than one — the committed tree
  * and this machine's private one — so an unlabelled sentence would be a verdict whose
@@ -21,12 +37,13 @@
  * over a forged record.
  */
 
-import type { LevelRequirement } from '@mnema/chain';
+import type { LevelRequirement, ProvenLevel, VerdictClause, VerifyResult } from '@mnema/chain';
 import type { Command } from 'commander';
 import type { TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
+import type { Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
-import { statement } from '../presentation/verdict.js';
+import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { type Reporter, reportRefusal, reportUsage } from './report.js';
@@ -145,8 +162,8 @@ function report(io: CliIo, render: Render, tree: TreeReport): void {
     io.out(render(statement(tree.scope, NO_RECORD)));
     return;
   }
-  // The verdict's own honest summary, verbatim — the CLI never upgrades the guarantee.
-  io.out(render(statement(tree.scope, tree.result.summary)));
+  // The verdict's own honest clauses, laid out — the CLI never upgrades the guarantee.
+  io.out(render(clauseStatement(tree.scope, said(tree.result))));
   for (const issue of tree.result.issues) {
     io.err(
       render(
@@ -154,6 +171,69 @@ function report(io: CliIo, render: Render, tree: TreeReport): void {
       ),
     );
   }
+}
+
+/**
+ * WHAT A PROVEN LEVEL IS AS NEWS — the one place this surface decides it.
+ *
+ * TOTAL OVER THE UNION BY TYPE, and that is the whole reason it is a table rather than a
+ * branch: the chain's levels are a closed tuple, so the day a rung is added between two
+ * of these, this file does not build until somebody says whether it is good news. A
+ * fallback would have painted it whatever the fallback chose, which on a verdict is the
+ * surface answering a question the proof did not.
+ *
+ * The three, and the argument for each:
+ *
+ *   - `unreadable` and `broken` are RED. Something is wrong with the record, and the
+ *     sentence already says FAILED — the hue is a second copy of the word for an eye
+ *     scanning a screen, never the thing that says it.
+ *   - `hash-chain-only` is YELLOW, and it is the entry that matters. The hash chain holds
+ *     and NO signature was checked, because there was none to check. Green there is
+ *     exactly the pass this product was measured giving over a record whose signatures
+ *     had been deleted; red is a project between its first event and its first
+ *     checkpoint, which is a legitimate state, and a verdict that fails on it teaches its
+ *     reader to ignore verdicts. It is neither, and there is a hue for neither.
+ *   - the three signed rungs are GREEN, including `signed-through-last-checkpoint`. Its
+ *     residual is the normal state of a session in flight, the clause beside it says how
+ *     many events rest on the hash chain alone, and a caller who cannot live with that
+ *     says `--require=signed` and gets an exit code. Yellow there would be a caution on
+ *     nearly every healthy project, and a caution that is always on is not one.
+ *
+ * It lives in this verb rather than in the refusal funnel because it is not a refusal:
+ * `verify` naming a broken tree DID what it was asked. `every-refusal-is-red.test.ts`
+ * names the two places a severity is decided and why each is its own.
+ */
+const LEVEL_SEVERITY: Readonly<Record<ProvenLevel, Severity>> = {
+  unreadable: 'bad',
+  broken: 'bad',
+  'hash-chain-only': 'warn',
+  'signed-through-last-checkpoint': 'good',
+  'fully-signed': 'good',
+  'externally-witnessed': 'good',
+};
+
+/** How each level reads as news, for a caller that has to say which levels paint how. */
+export function levelSeverity(level: ProvenLevel): Severity {
+  return LEVEL_SEVERITY[level];
+}
+
+/**
+ * The chain's verdict as the clauses of a line: its words untouched, with the news on
+ * the ONE clause that carries any.
+ *
+ * The level's clause is found by WHAT IT IS and never by where it sits or what it says.
+ * By position, a chain that put a clause before the level would silently paint the wrong
+ * one; by text, this file would be reading the verdict out of its own rendering of it,
+ * and the match would break the day a level was reworded — which is the coupling that
+ * made a pre-joined summary impossible to paint at all.
+ */
+function said(result: VerifyResult): readonly [Clause, ...Clause[]] {
+  const [lead, ...rest] = result.clauses;
+  const asClause = (clause: VerdictClause): Clause =>
+    clause.of === 'level'
+      ? { text: clause.text, severity: levelSeverity(result.level) }
+      : { text: clause.text };
+  return [asClause(lead), ...rest.map(asClause)];
 }
 
 /**
