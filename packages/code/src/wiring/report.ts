@@ -17,12 +17,28 @@
  * Both wordings live in `recorded-content.ts`, shared with the MCP surface; this only
  * puts them on the stream, in one order.
  *
- * AND THE REFUSAL IS THE ONE THING ON THIS SURFACE PAINTED RED. It is the cheapest
- * severity in the product to be sure of — a refusal is bad news, always, wherever it
- * came from — and it is said in ONE function that every verb already routes through,
- * so the whole surface acquires it at once instead of two dozen verbs each deciding.
- * The colour repeats the word `Refused`; it never replaces it, which is what makes
- * `--color=never` and a monochrome terminal lose nothing (see `presentation/styled.ts`).
+ * AND WHAT IS PAINTED RED IS A NO — every one of them, wherever it came from. The
+ * severity is decided in the two functions below and nowhere else, so the whole surface
+ * acquires it at once instead of two dozen verbs each deciding. The colour repeats the
+ * word the line already says; it never replaces it, which is what makes `--color=never`
+ * and a monochrome terminal lose nothing (see `presentation/styled.ts`).
+ *
+ * THE RULE USED TO BE NARROWER, AND HERE IS WHAT FALSIFIED IT. It read: red marks a
+ * TYPED refusal — the domain's own no — and a usage error does not paint, because that
+ * one is the parser's channel. Real use at a terminal is what fell over it: a person
+ * who typed one argument too few met `error: missing required argument 'rationale'`,
+ * unpainted and in a second voice, and a person who typed one word wrong met the same.
+ * The distinction was true about where the no CAME FROM and false about what a reader
+ * does with it — "the gate said no" and "you typed it wrong" are one piece of news,
+ * which is that the thing did not happen. So the rule is now: A LINE IS RED WHEN THE
+ * COMMAND DID NOT DO WHAT YOU ASKED. `wiring/usage.ts` is where the parser's no is
+ * worded, and `every-refusal-is-red.test.ts` is the guard over both halves.
+ *
+ * What that rule does NOT reach is an ANSWER that happens to be unwelcome. `verify`
+ * naming a broken tree did what it was asked — it ruled — and `antipatterns` counting
+ * three reopenings is not bad news, it is a count (see `presentation/verdict.ts`). The
+ * one verdict that paints is `guard`'s `REFUSED`, and it paints the WORD, not the
+ * reading.
  */
 
 import type { Line } from '../presentation/line.js';
@@ -78,6 +94,28 @@ export function refusalLine(code: string, message: string): Line {
 }
 
 /**
+ * The other shape a no takes: a SENTENCE, with no code in front of it.
+ *
+ * A worded reason has nowhere to put a code — "No task <id> here." is the whole line —
+ * and neither has a usage error, which is a no about the command line rather than about
+ * the record. Both are the same news as the shape above and carry the same severity,
+ * because what a reader acts on is that the thing did not happen, not which of the two
+ * shapes the surface had a wording for.
+ *
+ * `detail` is the half after the colon where there is one: the parser's no puts what
+ * the missing argument MEANS there, taken from the description the declaration already
+ * carries (see `usage.ts`). Omitted, the sentence is the whole line.
+ *
+ * It exists as a function rather than as a `statement(…, 'bad')` at each call site so
+ * that the severity is written in one place: `every-refusal-is-red.test.ts` reads the
+ * source for who decides it, and a verb that painted its own line would be the verb
+ * whose no looks like nobody else's.
+ */
+export function refusalSentence(sentence: string, detail?: string): Line {
+  return statement(sentence, detail, 'bad');
+}
+
+/**
  * Reports a refusal and records the non-zero exit.
  *
  * `said` gives the verb its own wording for the reasons only it knows about — the
@@ -100,8 +138,24 @@ export function reportRefusal(
   const line =
     wording === undefined
       ? refusalLine(refusal.code ?? refusal.reason, refusal.message ?? '')
-      : statement(wording, undefined, 'bad');
+      : refusalSentence(wording);
   to.io.err(to.render(line));
+  to.io.fail();
+}
+
+/**
+ * Says a no the SURFACE itself decided — a value no declaration could refuse for it —
+ * and records the non-zero exit.
+ *
+ * These are the checks a parser cannot make: `--scope elsewhere` names no tree,
+ * `--limit 0` is not a count, a `move` was handed a `--scope` the model forbids. Each
+ * is worded by the verb that knows what it asked for, and each goes out through here,
+ * so a no the surface authored looks exactly like the gate's and exactly like the
+ * parser's. They used to be written straight to the stream, which is how eighteen
+ * lines of this surface ended up being the ones a reader could not tell from output.
+ */
+export function reportUsage(to: Reporter, sentence: string): void {
+  to.io.err(to.render(refusalSentence(sentence)));
   to.io.fail();
 }
 

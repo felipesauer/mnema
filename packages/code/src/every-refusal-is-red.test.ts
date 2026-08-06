@@ -1,5 +1,24 @@
 /**
- * EVERY REFUSAL IS RED, AND NOTHING IS RED ALONE.
+ * EVERY NO IS RED, AND NOTHING IS RED ALONE.
+ *
+ * THE FIRST HALF USED TO BE NARROWER, AND THIS IS WHAT FALSIFIED IT. It read: *red
+ * marks a TYPED refusal — the domain's own no — and a usage error does not paint,
+ * because that one is the parser's channel*. The argument for it was that the rule
+ * stayed sayable. What fell over it is a terminal: a person one argument short met
+ * `error: missing required argument 'rationale'` — unpainted, lowercase, naming an
+ * internal parameter — and a person one letter off met the same. The line was true
+ * about where a no CAME FROM and false about what a reader does with it, because
+ * "the gate said no" and "you typed it wrong" are one piece of news: the thing did
+ * not happen. The rule now is A LINE IS RED WHEN THE COMMAND DID NOT DO WHAT YOU
+ * ASKED, and the eighteen usage errors that used to go out unpainted go through the
+ * same funnel as the rest (`wiring/report.ts`, `wiring/usage.ts`).
+ *
+ * What the rule still does NOT reach is an ANSWER that happens to be unwelcome, and
+ * the boundary is worth stating because it is the one an adversary probes: `verify`
+ * naming a broken tree DID what it was asked — it ruled — and its per-tree summary is
+ * the chain's own sentence printed verbatim, with the tree's name in the label the
+ * colour would land on. `guard`'s `REFUSED` is the one verdict that paints, and it
+ * paints the word.
  *
  * Two halves of one promise, and they fail in opposite directions.
  *
@@ -9,7 +28,10 @@
  *     it exits non-zero either way, so nothing breaks — a reader just meets one bad
  *     line that does not look like the other twenty. This file found one when it was
  *     written (`refs` re-typed the funnel's own `NO_PROJECT` sentence by hand), which
- *     is why the guard is a scan of the SOURCE and not a list of verbs.
+ *     is why the guard is a scan of the SOURCE and not a list of verbs. The scan now
+ *     covers the OTHER way out too: a verb that hands its own sentence straight to
+ *     the stream, which is how eighteen of them stayed unpainted while every case
+ *     about the shape was green.
  *   - AND THE COLOUR ONLY REPEATS THE WORD. A refusal says `Refused`, a verdict says
  *     `ALLOWED` or `REFUSED`, and the hue is a second copy of that for an eye scanning
  *     a screen. The failure here is silent and it is the worse of the two: a line that
@@ -60,14 +82,15 @@ describe('a refusal is worded in exactly one place', () => {
     expect(wording).toEqual(['report.ts']);
   });
 
-  it('reaches the stream through a renderer at every one of its three producers', () => {
+  it('reaches the stream through a renderer at every one of its producers', () => {
     // The line is a `Line` now, so a producer that wrote it as bytes would not
     // compile — but a producer could still be ADDED with its own wording, and the case
-    // above is what refuses that. This one names the three that exist and asserts each
+    // above is what refuses that. This one names the ones that exist and asserts each
     // hands the line to a renderer rather than to `io.err` directly, because that is
-    // what makes the colour reach it.
+    // what makes the colour reach it. `usage.ts` is the newest: the parser's no falls
+    // back to this shape for a code nobody worded.
     const producers = shipped().filter((file) => sourceOf(file).includes('refusalLine('));
-    expect(producers).toEqual(['report.ts', 'run-pin.ts']);
+    expect(producers).toEqual(['report.ts', 'run-pin.ts', 'usage.ts']);
     for (const file of producers) {
       const source = sourceOf(file);
       expect(source, file).toMatch(/render\(\s*refusalLine\(|render\(line\)/);
@@ -92,6 +115,56 @@ describe('a refusal is worded in exactly one place', () => {
     expect(guilty).toEqual([]);
     // And the detector still matches the line it was written against.
     expect(/io\.err\([^)]*NO_PROJECT/.test('          io.err(NO_PROJECT);')).toBe(true);
+  });
+
+  it('and no verb writes a line to the error stream without a renderer', () => {
+    // The half the two cases above cannot see, and the one the widened rule needs: a
+    // verb does not have to REBUILD a shape or REUSE a sentence to leave a no
+    // unpainted — it can word its own and hand it to `io.err` as a string. Eighteen
+    // did, and every case in this file was green while they did it, because a plain
+    // string on stderr breaks nothing: it exits non-zero, it says the right thing,
+    // and it is the one line in the report a colour never reaches.
+    //
+    // Counted per SITE and not per file, so a module with one rendered call and one
+    // raw one is still accused.
+    const sites = (source: string): number => source.split('io.err(').length - 1;
+    const rendered = (source: string): number =>
+      source.match(/io\.err\(\s*(?:to\.)?render\(/g)?.length ?? 0;
+    const guilty = shipped().filter((file) => sites(sourceOf(file)) !== rendered(sourceOf(file)));
+    // ONE module writes to stderr without rendering, and it is not reporting a no:
+    // `mcp` serves JSON-RPC on stdout, so the server's diagnostics go to the other
+    // stream. A log line is not a refusal and painting it would say it was.
+    expect(guilty).toEqual(['mcp.ts']);
+    // The detector accuses the line a verb would actually write, and recognizes both
+    // spellings of the rendered one. The relapse is assembled rather than typed, for
+    // the reason the case below states: the lint refuses a template placeholder inside
+    // a plain string, and this repository opens no exception to a rule for a test.
+    const relapse = `io.err(\`No task $${'{'}id} here.\`);`;
+    expect(sites(relapse)).toBe(1);
+    expect(rendered(relapse)).toBe(0);
+    expect(rendered('to.io.err(to.render(line));')).toBe(1);
+    expect(rendered('io.err(\n  render(\n    fact(x),\n  ),\n);')).toBe(1);
+    // And it read a surface that really writes. FEW modules reach the stream directly
+    // now — that is the funnel working, not the scan missing — so the floor is over
+    // the SITES, and a rewrite that emptied the corpus would fall through it.
+    const total = shipped().reduce((count, file) => count + sites(sourceOf(file)), 0);
+    expect(total).toBeGreaterThanOrEqual(6);
+  });
+
+  it('decides the severity in one place, and names the only other one', () => {
+    // What makes "every no is red" one edit rather than a habit: the hue is a
+    // consequence of `'bad'`, and `'bad'` is written where the shape is. A verb that
+    // reached for it directly would be deciding its own severity, which is how a
+    // surface ends up with two reds that mean different things.
+    const deciding = shipped().filter((file) => sourceOf(file).includes("'bad'"));
+    // `guard.ts` is the second, and it is a VERDICT rather than a refusal: the gate
+    // ruled, the answer is REFUSED, and the word is what carries the news. It is
+    // named here rather than folded into the funnel because folding it would make an
+    // answer look like a failure to answer.
+    expect(deciding).toEqual(['guard.ts', 'report.ts']);
+    // And the funnel is where the parser's no gets it too — never at the call site.
+    expect(sourceOf('usage.ts')).not.toContain("'bad'");
+    expect(sourceOf('usage.ts')).toContain('refusalSentence(');
   });
 
   it('would accuse a verb that worded one itself', () => {
@@ -186,16 +259,23 @@ describe('and what it refuses comes out red, with the words still on the line', 
   });
 
   /**
-   * The four ways this surface says no, one per producer and one per shape.
+   * The ways this surface says no, one per producer and one per shape — and, since
+   * the rule widened, one per ORIGIN as well.
    *
    * The gate's typed refusal and the run pin's are the `Refused (CODE)` shape from two
    * different producers; the unknown record and the bad direction are the WORDED shape,
-   * the second of them from the verb this file's guard caught writing its own.
+   * the second of them from the verb this file's guard caught writing its own. The last
+   * two are the ones the old rule left out on purpose: a value the SURFACE turns down
+   * before any tree is opened, and a command line the PARSER turns down before the
+   * surface sees it. All six are the same news.
    */
   const ways = (): readonly (readonly [string, readonly string[], string])[] => [
     ['the gate', ['task', 'move', 'complete', taskId], 'Refused (ILLEGAL_TRANSITION)'],
     ['an unknown record', ['show', 'nope'], 'No record nope here.'],
     ['a bad direction', ['refs', taskId, '--direction', 'sideways'], 'Not a direction: sideways'],
+    ['a bad scope', ['task', 'nothing born', '--scope', 'elsewhere'], 'Invalid --scope'],
+    ['a missing argument', ['decision', 'a title'], 'mnema decision needs <rationale>'],
+    ['a word that names no verb', ['nope'], 'mnema has no command "nope".'],
   ];
 
   it('paints every one of them, and says the same thing with the paint off', async () => {

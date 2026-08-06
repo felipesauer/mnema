@@ -42,11 +42,8 @@ export function registerLink(program: Command, wiring: Wiring): void {
         opts: { rel: string; scope?: string; which?: string },
       ) => {
         const { runLink } = await import('../commands/link.js');
-        const scope = parseScope(opts.scope, io);
-        if (scope === INVALID) {
-          io.fail();
-          return;
-        }
+        const scope = parseScope(opts.scope, wiring);
+        if (scope === INVALID) return;
         const run = pinnedRun();
         if (run === PIN_REFUSED) {
           io.fail();

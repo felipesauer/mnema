@@ -26,7 +26,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -51,15 +51,11 @@ export function registerSkill(program: Command, wiring: Wiring): void {
       // The body is required for a propose, but declared as a plain option (so it
       // is not inherited as mandatory by `move`); enforce it here.
       if (opts.body === undefined) {
-        io.err('`mnema skill` requires --body: the reusable pattern itself.');
-        io.fail();
+        reportUsage(wiring, '`mnema skill` requires --body: the reusable pattern itself.');
         return;
       }
-      const scope = parseScope(opts.scope, io);
-      if (scope === INVALID) {
-        io.fail();
-        return;
-      }
+      const scope = parseScope(opts.scope, wiring);
+      if (scope === INVALID) return;
       const run = pinnedRun();
       if (run === PIN_REFUSED) {
         io.fail();
@@ -101,8 +97,10 @@ export function registerSkill(program: Command, wiring: Wiring): void {
     const { movedLine } = await import('../moved-record.js');
     const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
-      io.err('`skill move` takes no --scope: a move follows the skill to the tree it was born in.');
-      io.fail();
+      reportUsage(
+        wiring,
+        '`skill move` takes no --scope: a move follows the skill to the tree it was born in.',
+      );
       return;
     }
     const run = pinnedRun();

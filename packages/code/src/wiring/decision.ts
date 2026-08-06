@@ -24,7 +24,13 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { type Reporter, reportRecorded, reportRefusal, reportReplacement } from './report.js';
+import {
+  type Reporter,
+  reportRecorded,
+  reportRefusal,
+  reportReplacement,
+  reportUsage,
+} from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
 
@@ -57,11 +63,8 @@ export function registerDecision(program: Command, wiring: Wiring): void {
         opts: { alternatives?: string; scope?: string; which?: string },
       ) => {
         const { runDecision } = await import('../commands/decision.js');
-        const scope = parseScope(opts.scope, io);
-        if (scope === INVALID) {
-          io.fail();
-          return;
-        }
+        const scope = parseScope(opts.scope, wiring);
+        if (scope === INVALID) return;
         const run = pinnedRun();
         if (run === PIN_REFUSED) {
           io.fail();
@@ -102,10 +105,10 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
     const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
-      io.err(
+      reportUsage(
+        wiring,
         '`decision move` takes no --scope: a move follows the decision to the tree it was born in.',
       );
-      io.fail();
       return;
     }
     const run = pinnedRun();
@@ -140,10 +143,10 @@ export function registerDecision(program: Command, wiring: Wiring): void {
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
     const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string; which?: string };
     if (parentOpts.scope !== undefined) {
-      io.err(
+      reportUsage(
+        wiring,
         '`decision supersede` takes no --scope: a move follows the decision to the tree it was born in.',
       );
-      io.fail();
       return;
     }
     const run = pinnedRun();

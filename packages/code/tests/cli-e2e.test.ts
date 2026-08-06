@@ -2319,13 +2319,21 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['run', 'end', started.id], e.io);
     expect(e.failed()).toBe(true);
 
-    // The refusal is COMMANDER's, and asserting which one it is, is what makes this
+    // The refusal is the PARSER's, and asserting which one it is, is what makes this
     // test discriminate: with the flag merely optional the invocation reaches the
     // command and earns `NO_AGENT` instead — also a refusal, also non-zero, so a test
     // that only checked "it failed" passed on the declaration this one is about. (The
     // matrix found exactly that, in the first version of this test.)
+    //
+    // It used to assert commander's own sentence, `required option '--which <agent>'
+    // not specified`. That sentence no longer reaches a stream: the parser's no is
+    // said in the product's voice now (`wiring/usage.ts`), built from the very
+    // declaration this case is about — which is why the discriminant survived the
+    // change intact. The flags come from the `requiredOption`, and the half after the
+    // colon is its help.
     const said = e.err.join('\n');
-    expect(said).toContain("required option '--which <agent>' not specified");
+    expect(said).toContain('mnema run end needs --which <agent>');
+    expect(said).toContain('a close with no agent is credited to you');
     expect(said).not.toContain('name the one closing this session');
 
     expect(eventsOf(treesOf().projectPublic).some((x) => x.kind === 'run.ended')).toBe(false);
