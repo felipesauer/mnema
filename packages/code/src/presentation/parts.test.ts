@@ -31,7 +31,7 @@ import { fact, subjectLine } from './detail.js';
 import { asId, asWhen, itemLine } from './items.js';
 import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
-import { statement } from './verdict.js';
+import { clauseStatement, statement } from './verdict.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -54,6 +54,15 @@ describe('every role has something that produces it', () => {
     statement('local integrity verified; 1 tail(s)'),
     statement('ALLOWED', 'submit t-1 → READY', 'good'),
     statement('Refused (MISSING_PROOF)', 'complete needs a note', 'bad'),
+    // The verdict whose sentence arrives in clauses, both ways a caller builds one: one
+    // clause and nothing to qualify it, and the shape `verify` actually prints — the
+    // level's clause carrying the news, the rest qualifying it and carrying none.
+    clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
+    clauseStatement('public', [
+      { text: 'local integrity verified (T1 only) — no signature was checked', severity: 'warn' },
+      { text: '1 tail(s)' },
+      { text: '6 event(s) are hash-chained but NOT yet signature-covered' },
+    ]),
   ];
 
   it('produces every role the union declares, and no other', () => {

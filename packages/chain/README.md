@@ -66,6 +66,13 @@ result also carries the **level** it reached (`level`), and the one-line
 A caller that wants a gate compares it with `meetsRequirement(level,
 'chained' | 'signed' | 'witnessed')` rather than re-deriving the meaning.
 
+The same verdict is handed over as the **clauses** it is made of (`clauses`), each
+saying which part of the verdict it is — the level, the tail count, what the events
+rest on, a census note, the external witness. It is there so a caller can show the
+parts apart (a terminal paints the level's clause and dims the rest) without matching
+text on a verdict, and `summary` is those clauses joined by the one function that
+joins them, so no two readings of one verdict can disagree.
+
 The pattern is consistent: **local crypto covers alteration; an external
 witness covers omission and ties the record to an identity.** That witness is
 the last row of the first table — a git remote or an anchor — and committing

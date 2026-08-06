@@ -143,10 +143,10 @@ every time is a check somebody turns off.
 
 ### Bold, dim, and what a pipe gets
 
-In a terminal, a verdict's label and a heading are **bold** and the half of a
-statement after the colon is dimmed. In a pipe, a file or a CI log, nothing is: the
-capability is resolved once per invocation and the default is what the destination
-can show.
+In a terminal, a verdict's label and a heading are **bold**, the half of a statement
+after the colon is dimmed, and an id or a date in a list is dimmed so the title beside
+it is what the eye lands on. In a pipe, a file or a CI log, nothing is: the capability
+is resolved once per invocation and the default is what the destination can show.
 
 ```sh
 mnema --color=never verify   # never any escape, whatever the terminal says
@@ -158,13 +158,18 @@ NO_COLOR=1 mnema verify      # and FORCE_COLOR, both as everywhere else
 the plain output, byte for byte — the same text a redirected file holds, so a verdict
 quoted from a terminal is the verdict.
 
-Colour is one thing and one thing only: **red means the command did not do what you
-asked.** A refusal from the workflow, a value the surface turns down, a command line
-the parser turns down — all three are the same news, and all three are red. `ALLOWED`
-is green for the same reason. Nothing else is coloured: a count is not bad news, and
-`verify` naming a broken tree *did* what it was asked. The hue never replaces the word
-that says it, which is why `--color=never`, a pipe and a monochrome terminal lose
-nothing.
+Colour says two things and no more. **Red means the command did not do what you
+asked** — a refusal from the workflow, a value the surface turns down, a command line
+the parser turns down: all three are the same news, and all three are red. `ALLOWED`
+is green for the same reason. And **`verify` paints how far the proof got**: green when
+every event is covered by a signature that was checked, yellow when the hash chain held
+and no signature was checked at all, red on a break. Only that one clause of the verdict
+is coloured — the tree's name beside it is not, because the tree is not the news — and
+the words are the chain's own, unchanged. A count is still not coloured: three reopened
+tasks may be a team learning something, and this tool does not decide that for you.
+
+The hue never replaces the word that says it, which is why `--color=never`, a pipe and a
+monochrome terminal lose nothing.
 
 ### When an agent is the one running the CLI
 
