@@ -3,11 +3,11 @@
  * package boundary.
  *
  * A workflow state answers "where is this entity"; a table beside the machine says
- * what that state MEANS to a reader — governs, awaits somebody, is over. Four
- * modules hold such a table, and each one declares in its own doc that the table is
- * NOT on the package's public surface, because a consumer that could import it would
- * re-derive the meaning where nobody can see the two copies drift. Nothing kept any
- * of those declarations true.
+ * what that state MEANS to a reader — governs, awaits somebody, is over, can still
+ * move. FIVE modules hold such a table, and each one declares in its own doc that the
+ * table is NOT on the package's public surface, because a consumer that could import it
+ * would re-derive the meaning where nobody can see the two copies drift. Nothing kept
+ * any of those declarations true.
  *
  * It is the second guard of a pair that could not go red. Measured in the delivery
  * before this one: making a surface classify for itself (`state === 'adopted'`
@@ -214,6 +214,7 @@ const DECLARED_HIDDEN: Readonly<Record<string, readonly string[]>> = {
   'copilot/src/context/skills.ts': ['SKILL_DISPOSITION'],
   'core/src/content/fields.ts': ['ENVELOPE_TEXT', 'PAYLOAD_TEXT', 'SUBJECT_TEXT'],
   'core/src/topology/routing.ts': ['UNROUTED_KINDS'],
+  'core/src/workflow/disposition.ts': ['TASK_DISPOSITION'],
 };
 
 /**
@@ -288,12 +289,15 @@ function perStateTables(
  * so a second accessor written tomorrow fails this file until its surface status has
  * been decided.
  *
- * One entry today. `@mnema/code` frames a pattern body it just served — an
- * instruction if the pattern is in force, a proposal if it is not — and that framing
- * has to know which, from the one place that says so.
+ * Two entries. `@mnema/code` frames a pattern body it just served — an instruction if
+ * the pattern is in force, a proposal if it is not — and that framing has to know which,
+ * from the one place that says so. The same surface paints a TASK's position by what its
+ * disposition says a reader has to do about it, and the derivation from the transition
+ * table lives where the machine does.
  */
 const ASKED_NOT_COPIED: readonly { readonly specifier: string; readonly accessor: string }[] = [
   { specifier: '@mnema/copilot', accessor: 'skillDisposition' },
+  { specifier: '@mnema/core', accessor: 'taskDisposition' },
 ];
 
 /** Every `export function …Disposition` in production — the accessors that exist. */
@@ -337,7 +341,7 @@ describe('no classification table reaches the surface', () => {
   });
 
   it('keeps every table its module declares hidden off every entry point', () => {
-    // The rule. Six tables in four modules, each one declaring in its own doc that it
+    // The rule. Seven tables in five modules, each one declaring in its own doc that it
     // is not on the package's public surface — now checked instead of asserted.
     expect(leaked(publishedValues())).toEqual([]);
   });

@@ -12,6 +12,12 @@
  * line to imitate. Collapsing it would damage the one thing this read exists to
  * serve.
  *
+ * THE STATE IS ITS OWN PART, for all three kinds that have one. It was concatenated into
+ * the fact beside the title — `` `${title} (${state})` `` — so a position and the words an
+ * actor wrote were one field and nothing could tell them apart. The bytes are unchanged
+ * (see `statedFact`); what the split buys is that the position can be painted where the
+ * domain says it is news, which today is the task machine and only it (`state.ts`).
+ *
  * IT PRINTS A DECISION'S `ADR-<n>` AND SAYS NOTHING ABOUT THE LABEL BEING SHARED, and
  * that is a decision rather than a gap. Two rules of one chain can answer to one
  * label (two clones minting offline), and the two answers that carry a label somewhere
@@ -24,8 +30,9 @@
 import type { RecordBody } from '@mnema/copilot';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { consultedLine } from './consultation.js';
-import { fact, subjectLine } from './detail.js';
+import { fact, statedFact, subjectLine } from './detail.js';
 import type { Render } from './render.js';
+import { asState } from './state.js';
 
 /** What the record itself does not carry, and two of the five kinds report. */
 export interface RecordContext {
@@ -57,7 +64,9 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(body.record.text);
       break;
     case 'decision':
-      lines.push(render(fact(`${body.record.adr} — ${body.record.title} (${body.record.state})`)));
+      lines.push(
+        render(statedFact(`${body.record.adr} — ${body.record.title}`, asState(body.record.state))),
+      );
       if (body.record.supersedes !== undefined) {
         lines.push(render(fact(`supersedes ${body.record.supersedes}`)));
       }
@@ -77,13 +86,13 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       }
       break;
     case 'task':
-      lines.push(render(fact(`${body.record.title} (${body.record.state})`)));
+      lines.push(render(statedFact(body.record.title, asState(body.record.state))));
       lines.push(
         render(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
       );
       break;
     case 'skill':
-      lines.push(render(fact(`${body.record.name} (${body.record.state})`)));
+      lines.push(render(statedFact(body.record.name, asState(body.record.state))));
       lines.push(render(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
       lines.push(body.record.body);

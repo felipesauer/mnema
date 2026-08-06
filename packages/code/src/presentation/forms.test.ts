@@ -27,9 +27,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { fact, subjectLine } from './detail.js';
+import { fact, statedFact, subjectLine } from './detail.js';
 import { column, itemLine } from './items.js';
 import { renderPlain } from './plain.js';
+import { asState } from './state.js';
 import { clauseStatement, statement } from './verdict.js';
 
 describe('form A — the item line', () => {
@@ -47,6 +48,23 @@ describe('form A — the item line', () => {
 
   it('is one line even when a caller passes one field', () => {
     expect(renderPlain(itemLine(['just this']))).toBe('  just this');
+  });
+
+  it('joins a state to the field it rides by ONE space, not by a column', () => {
+    // The byte this delivery may not move. A task's position used to be concatenated
+    // into the title (`${title} (${state})`), and it is a part of its own now so that it
+    // can be painted while the title is not — which is worth nothing if the line a
+    // reader sees changed. Two spaces here would make it a column of the table; the
+    // state is not one, it belongs to the title beside it.
+    expect(renderPlain(itemLine(['a title', asState('DRAFT')]))).toBe('  a title (DRAFT)');
+    expect(renderPlain(itemLine(['an-id', 'public', 'a title', asState('IN_REVIEW')]))).toBe(
+      '  an-id  public  a title (IN_REVIEW)',
+    );
+    // And it is the same line the concatenation produced, composed rather than asserted
+    // — so this case cannot agree with a shape that drifted.
+    expect(renderPlain(itemLine(['a title', asState('DONE')]))).toBe(
+      renderPlain(itemLine(['a title (DONE)'])),
+    );
   });
 
   it('pads a column and never truncates it', () => {
@@ -67,6 +85,16 @@ describe('form B — the subject and its facts', () => {
   it('indents a fact under a fact by one more level', () => {
     expect(renderPlain(fact('mnema key enroll <the line>', 2))).toBe(
       '    mnema key enroll <the line>',
+    );
+  });
+
+  it('ends a fact in a state without moving a byte of it', () => {
+    // `show` printed the position inside the fact; the same line, with the state told
+    // apart. Asserted against the concatenation it replaced, in both directions of the
+    // one shape: with a state, and the plain fact that has none.
+    expect(renderPlain(statedFact('a title', asState('BLOCKED')))).toBe('  a title (BLOCKED)');
+    expect(renderPlain(statedFact('a title', asState('BLOCKED')))).toBe(
+      renderPlain(fact('a title (BLOCKED)')),
     );
   });
 

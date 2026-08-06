@@ -181,7 +181,9 @@ export {
   TASK_ACTIONS,
   TASK_STATES,
   type TaskAction,
+  type TaskDisposition,
   type TaskState,
   TRANSITIONS,
   type Transition,
+  taskDisposition,
 } from './workflow/index.js';
