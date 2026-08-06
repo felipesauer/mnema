@@ -189,6 +189,30 @@ this tool does not decide that for you.
 The hue never replaces the word that says it, which is why `--color=never`, a pipe and a
 monochrome terminal lose nothing.
 
+### Finishing a verb with Tab
+
+`mnema completion <shell>` prints a completion script for bash, zsh or fish. It installs
+nothing and writes to no file — where the script goes is your choice:
+
+```sh
+source <(mnema completion bash)                                # this shell, now
+mnema completion bash > /etc/bash_completion.d/mnema           # every bash
+mnema completion zsh > "${fpath[1]}/_mnema"                    # every zsh
+mnema completion fish > ~/.config/fish/completions/mnema.fish  # every fish
+```
+
+It completes **verbs, subcommands and option names** — including an option a parent group
+declares, which the parser accepts under it (`mnema task move --which`) — and a **value
+only where the declaration enumerates one**: `--color`'s three whens, and this verb's own
+three shells. It does **not** complete an id or a transition, and that is a decision
+rather than a gap: neither is in any declaration, so answering would mean running `mnema`
+on every keystroke, and a run of it costs about 95 ms — more than the command being typed.
+
+The script is **generated from the program's own declarations**, so a verb added to mnema
+is completed the day it ships; print the script again after an upgrade. Asserted in
+`the-shell-knows-the-verbs.test.ts`, which enumerates every command and option from the
+program rather than from a list, and drives the generated bash in a real bash.
+
 ### When an agent is the one running the CLI
 
 Omitting the agent says a **person** acted, and that is what the record then

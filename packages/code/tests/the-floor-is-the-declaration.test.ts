@@ -23,8 +23,13 @@
  * The milliseconds belong in a report.
  *
  * Two things it asserts, and they are different:
- *   - no COMMAND ADAPTER and no MCP SERVER is in the closure. That is the rule with
- *     no exceptions, and the one a careless import breaks.
+ *   - no COMMAND ADAPTER, no MCP SERVER and no COMPLETION GENERATOR is in the closure.
+ *     That is the rule with no exceptions, and the one a careless import breaks. The
+ *     third family is the newest and reads the command tree rather than the record, so
+ *     it looks free — it is not: a verb that walked the tree at module scope would put
+ *     that walk on `mnema --version`, and `wiring/completion.ts` keeps `SHELLS` next to
+ *     the flag that accepts them precisely so nothing under `completion/` has a reason
+ *     to be reached before the verb runs.
  *   - every edge from the closure into `@mnema/*` is DECLARED, with the reason it
  *     has to be there. The floor still reaches the domain in EIGHT places, five of
  *     them a constant or a parser commander needs before it can route anything —
@@ -162,6 +167,16 @@ function eagerClosure(entry: string): Closure {
 const DOMAIN = ['@mnema/chain', '@mnema/core', '@mnema/core/write', '@mnema/copilot'];
 
 /**
+ * The directories of `src` that hold WORK rather than declarations.
+ *
+ * A module under one of these is loaded when a verb runs and never before it: the command
+ * adapters and the MCP server because they pull the domain, and the completion generator
+ * because it walks the whole command tree — which is cheap and is still work `mnema
+ * --version` has no reason to do.
+ */
+const WORK = ['commands', 'mcp', 'completion'];
+
+/**
  * Every edge from the floor into the domain, and why that one cannot wait.
  *
  * Five of the eight are DECLARATIONS: commander is handed a help string or an
@@ -246,12 +261,12 @@ function filesUnder(directory: string): string[] {
 }
 
 describe('the floor is the declaration', () => {
-  it('loads no command adapter and no MCP server', () => {
+  it('loads no command adapter, no MCP server and no completion generator', () => {
     // The rule, with no exceptions. An adapter at module scope in a wiring file is
     // how the floor grew the first time, and it is invisible in review: the import
     // looks like every other import in the file.
-    const work = FLOOR.modules.filter(
-      (module) => module.startsWith('commands/') || module.startsWith('mcp/'),
+    const work = FLOOR.modules.filter((module) =>
+      WORK.some((directory) => module.startsWith(`${directory}/`)),
     );
     expect(work).toEqual([]);
   });
@@ -279,9 +294,12 @@ describe('the floor is the declaration', () => {
       .map((specifier) => join('wiring', specifier.replace(/^\.\//, '').replace(/\.js$/, '.ts')));
     expect(verbs.length).toBeGreaterThanOrEqual(25);
     for (const verb of verbs) expect(FLOOR.modules).toContain(verb);
-    // And the adapters the first assertion says are absent do EXIST — otherwise it
-    // would be reporting an empty directory.
+    // And the work the first assertion says is absent does EXIST — otherwise it would be
+    // reporting empty directories. Asked of every one of them, so a family added to
+    // {@link WORK} without files, or renamed, cannot leave that assertion vacuous.
     expect(filesUnder('commands').length).toBeGreaterThan(20);
+    for (const directory of WORK)
+      expect(filesUnder(directory).length, directory).toBeGreaterThan(0);
     // A relative specifier that resolves to nothing is a subtree never visited.
     expect(FLOOR.unresolved).toEqual([]);
     // The walker follows a value import INTO the domain — proved where the domain is

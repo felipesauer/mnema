@@ -35,6 +35,7 @@ $ mnema --help
 |   key                                     manage this machine's signing keys
 |   verify [options]                        verify this project's record — its committed tree and its private one
 |   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
+|   completion <shell>                      print the tab-completion script for a shell
 |   help [command]                          display help for command
 $ mnema --version
 | 0.0.0
@@ -536,6 +537,31 @@ $ mnema mcp --help
 |   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
 |                    comes from the host workspace roots
 |   -h, --help       display help for command
+
+### mnema completion --help
+$ mnema completion --help
+| Usage: mnema completion [options] <shell>
+|
+| print the tab-completion script for a shell
+|
+| Arguments:
+|   shell       the shell to write the script for (choices: "bash", "zsh", "fish")
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It prints to stdout and installs nothing — where the script goes is your choice:
+|   source <(mnema completion bash)                                this shell, now
+|   mnema completion bash > /etc/bash_completion.d/mnema           every bash
+|   mnema completion zsh > "${fpath[1]}/_mnema"                    every zsh
+|   mnema completion fish > ~/.config/fish/completions/mnema.fish  every fish
+|
+| It completes verbs, subcommands and option names, and the values of an option
+| whose declaration enumerates them (--color, and this argument). It does NOT
+| complete an id or a transition: neither is in any declaration, so answering
+| would mean running mnema on every Tab — more than the command itself costs.
+| The script is generated from this program, so a verb added to it is completed
+| the same day. Print it again after an upgrade.
 
 ### mnema task move --help
 $ mnema task move --help

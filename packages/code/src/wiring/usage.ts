@@ -41,7 +41,7 @@
  * `mnema help <unknown>` prints the whole help and exits 1, and it is still the help.
  */
 
-import type { Command, CommanderError, Option } from 'commander';
+import type { Argument, Command, CommanderError, Option } from 'commander';
 import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import { type Reporter, refusalLine, refusalSentence } from './report.js';
@@ -171,7 +171,7 @@ function missingArgument({ command }: Misuse): Line | undefined {
   );
   return missing === undefined
     ? undefined
-    : needs(command, `<${missing.name()}>`, missing.description);
+    : needs(command, spelledArgument(missing), missing.description);
 }
 
 /** A `requiredOption` was not given. Its flags and its help are on the declaration. */
@@ -230,9 +230,22 @@ function excessArguments({ command }: Misuse): Line | undefined {
 }
 
 /**
- * A value a declared parser refused — and the parser's own reason for refusing it.
+ * A value a declared parser refused: an OPTION's first, then a positional ARGUMENT's.
  *
- * This is the one code whose message the PRODUCT wrote: `--which " "` is refused by
+ * One code, two shapes, and the second only became reachable when a verb declared an
+ * argument with `.choices()` (`mnema completion <shell>`). Until then the fall-through
+ * was invisible, and what came out of it was commander's own sentence with `error:` still
+ * on it — the second voice this file exists to remove, on a brand new verb's only
+ * refusal.
+ */
+function invalidValue(misuse: Misuse): Line | undefined {
+  return refusedOptionValue(misuse) ?? refusedArgumentValue(misuse);
+}
+
+/**
+ * A value an OPTION's parser refused — and the parser's own reason for refusing it.
+ *
+ * This is the one shape whose message the PRODUCT wrote: `--which " "` is refused by
  * `declaredAgent`, which throws a paragraph explaining that an unset variable would
  * otherwise credit a person for an agent's work, and commander only frames it. Losing
  * that paragraph to a generic sentence would be the one place this file made the
@@ -244,7 +257,7 @@ function excessArguments({ command }: Misuse): Line | undefined {
  * That is also what identifies WHICH option failed when more than one on the line has
  * a parser — the one that throws is the one that threw.
  */
-function invalidValue({ command, typed }: Misuse): Line | undefined {
+function refusedOptionValue({ command, typed }: Misuse): Line | undefined {
   for (const option of unsetParsers(command)) {
     const value = valueGiven(typed, option);
     if (value === undefined) continue;
@@ -253,6 +266,32 @@ function invalidValue({ command, typed }: Misuse): Line | undefined {
     return refusalSentence(
       `${spoken(command)} does not accept ${quoted(value)} for ${option.flags}`,
       why,
+    );
+  }
+  return undefined;
+}
+
+/**
+ * A value a positional ARGUMENT's parser refused, and what the help says that argument is.
+ *
+ * The failing argument is identified the way the option above is — the parser is a pure
+ * function on the declaration, so calling it again with what the caller typed reproduces
+ * the refusal — but the DETAIL is the declaration's text rather than the thrown message,
+ * and that is the one difference. An option's parser here is the product's own and throws
+ * a paragraph worth keeping; a `.choices()` parser is commander's and throws commander's
+ * English. What the caller has already read is `--help`, which prints the description with
+ * the choices after it, so that is what the refusal says: one text, as everywhere else in
+ * this file, and the term (`<shell>`) is the help's own too.
+ */
+function refusedArgumentValue({ command }: Misuse): Line | undefined {
+  const help = command.createHelp();
+  for (const [index, argument] of command.registeredArguments.entries()) {
+    const value = command.args[index];
+    if (value === undefined) continue;
+    if (whyRefused(argument, value) === undefined) continue;
+    return refusalSentence(
+      `${spoken(command)} does not accept ${quoted(value)} for ${spelledArgument(argument)}`,
+      help.argumentDescription(argument),
     );
   }
   return undefined;
@@ -273,6 +312,18 @@ function invalidValue({ command, typed }: Misuse): Line | undefined {
 function needs(command: Command, what: string, description: string): Line {
   const label = `${spoken(command)} needs ${what}`;
   return description === '' ? refusalSentence(label) : refusalSentence(label, description);
+}
+
+/**
+ * How the command line spells an argument: `<id>` when it is required, `[id]` when it is
+ * not.
+ *
+ * One site, because two wordings say it — the argument that was missing and the value one
+ * refused — and commander's own formatter for it is not public. It is the spelling of the
+ * `usage()` printed under both of them, so a reader sees the same token twice.
+ */
+function spelledArgument(argument: Argument): string {
+  return argument.required ? `<${argument.name()}>` : `[${argument.name()}]`;
 }
 
 /** The name a caller types to reach this command: `mnema task move`. */
@@ -341,9 +392,19 @@ function flagOf(token: string): string {
   return cut === -1 ? token : token.slice(0, cut);
 }
 
+/**
+ * What an option and an argument have in common here: a parser that may refuse.
+ *
+ * Structural rather than a union of the two classes, because the only thing read is the
+ * parser — and a rule written over what is actually used cannot drift from what it needs.
+ */
+interface Parses {
+  readonly parseArg?: <T>(value: string, previous: T) => T;
+}
+
 /** Why a declared parser refuses this value, in the parser's own words. */
-function whyRefused(option: Option, value: string): string | undefined {
-  const parse = option.parseArg;
+function whyRefused(declared: Parses, value: string): string | undefined {
+  const parse = declared.parseArg;
   if (parse === undefined) return undefined;
   try {
     parse(value, undefined);
