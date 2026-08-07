@@ -157,24 +157,34 @@ const AT_THE_EDGE = 0;
 const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
 
 /**
- * THE THREE CLAUSES OF THE HINT (see {@link tips} for why three).
+ * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
+ * {@link tips} for why three).
  *
- * The key that opens the list, the key that completes, and the two ways out. The first is
- * built out of the PREFIX every word of the session begins with rather than out of a word,
- * because what it names is the keystroke and not a command; the last is built out of the
- * constant that declares the word, so a renamed word renames the hint.
+ * The first is built out of the PREFIX every word of the session begins with rather than
+ * out of a word, because what it names is the keystroke and not a command.
  *
  * ⚠️ THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
  * The rule was right and it was about a promise: a hint naming an affordance that does not
  * answer is the console lying to the reader who cannot check, and until this delivery the
  * slash answered nothing on its own — you had to type a whole word behind it. It opens the
  * palette now, so the promise is kept, and the case that held the ban is inverted rather
- * than deleted (`tests/the-input-has-its-own-place.test.ts`). `/help` is one keystroke
- * away, inside the list the slash opens, which is where it now belongs.
+ * than deleted (`tests/the-input-has-its-own-place.test.ts`).
+ *
+ * ⚠️ AND THE LAST ONE USED TO NAME `/exit`, WHICH THE FIRST CLAUSE NOW DELIVERS. A hint
+ * that says where the list of words IS does not also have to teach a word from it — that
+ * is the economy the reference this console was measured against has, and it became true
+ * here only once the palette existed. What is left is the keystroke, which is in no list.
+ * The saving is measured rather than felt: seventy-four columns to fifty-three, which is
+ * the difference between a hint an eighty-column terminal keeps and one a sixty-column
+ * terminal keeps — and below its own width the area draws no hint at all (`area.ts`).
+ *
+ * ⛔ AND `Tab completes` KEEPS NO QUALIFIER, WHICH IS PRECISION RATHER THAN BREVITY. A Tab
+ * offers the verbs AND the words the session answers to itself, so `Tab for verbs` would
+ * be shorter and false.
  */
-const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the session's words`;
+const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the words`;
 const TAB_COMPLETES = 'Tab completes';
-const HOW_TO_LEAVE = `\`${LEAVE}\` or Ctrl-D leaves`;
+const HOW_TO_LEAVE = 'Ctrl-D leaves';
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -490,19 +500,25 @@ function standingLine(where: Standing): readonly Line[] {
  * folded into two rows below ninety-seven columns — so the row that exists in order to be
  * glanced at was the tallest thing in the region on an ordinary screen. The reference this
  * console was measured against says three things in about fifty characters, and three is
- * what a person reads without stopping. What went is what {@link ABOUT} answers in full:
- * the word that clears the page, and the key that clears the line.
+ * what a person reads without stopping.
  *
- * WHICH THREE, AND WHY THEY ARE THESE: the KEY that lists everything else, so nothing
- * dropped is lost; the key that completes, which is the one affordance a caller cannot
- * guess by typing; and the way out, which is the thing nobody wants to look for. The first
- * and the last are read off the constants that DECLARE the prefix and the word, so a
- * renamed word renames the hint.
+ * WHICH THREE, AND WHY THEY ARE THESE: each clause is a KEY and what that key gives. The
+ * key that lists everything else, so nothing dropped is lost; the key that completes, which
+ * is the one affordance a caller cannot guess by typing; and the way out, which is the
+ * thing nobody wants to look for.
  *
- * ⚠️ THE FIRST CLAUSE USED TO NAME `/help` AND IT NAMES THE SLASH. What made the change
- * legitimate is the palette: the slash now opens the list of the session's own words, so
- * naming it promises something that answers. `/help` is inside that list, so nothing was
- * lost — it moved one keystroke closer.
+ * ⚠️ IT NAMED TWO WORDS AND IT NAMES NONE. The first clause used to be `/help` and the last
+ * used to be `/exit`, and the palette is what took both: the slash opens the list they are
+ * IN, so a hint that pointed at the list and then quoted an item from it would be spending
+ * a clause on what the clause beside it already hands over. Nothing was lost — both moved
+ * one keystroke closer — and what is left in the hint is three keystrokes, which are in no
+ * list and cannot be looked up.
+ *
+ * AND THE SAVING IS THE POINT, because this row has a WIDTH rule over it now: a hint the
+ * terminal would fold is not drawn at all (`area.ts`), so every column it does not spend is
+ * a narrower terminal that still gets it. Seventy-four columns to fifty-three, measured —
+ * the difference between a hint an eighty-column terminal keeps and one a sixty-column
+ * terminal keeps.
  *
  * ⛔ IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would

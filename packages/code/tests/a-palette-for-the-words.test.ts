@@ -631,42 +631,58 @@ describe('a terminal without the height shows fewer, and says how many it could 
 /**
  * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED WITH THE TALLEST THING THE REGION HOLDS.
  *
- * The palette is that thing, so if a budget were going to reopen the hole the last two
- * deliveries closed, this is where it would show. Measured on this delivery: at a hundred
- * columns the boundary is ONE row with the palette open and one row with it shut, and at
- * sixty — where the hint is not drawn — it is not reached at any height at all.
+ * The palette is that thing — eighteen rows on a Tab — so if a budget were going to reopen
+ * the hole the last two deliveries closed, this is where it would show. It does not: the
+ * boundary is ONE row with the palette open and one row with it shut, and the palette is
+ * CUT to what is left over the prompt rather than pushing the region past it.
+ *
+ * BOTH WIDTHS ARE MEASURED, AND THE SECOND IS THE ONE THAT WAS IN DOUBT. Shortening the
+ * hint gave it back to a sixty-column window, which grows that region by a row — so
+ * "does the erase come back there too" had to be asked again rather than assumed. It does,
+ * at ONE row: the same place a hundred columns is at, and one row lower than where this
+ * front found it. Where the boundary sits as a FUNCTION of the hint is
+ * `the-input-has-its-own-place.test.ts`; what this file adds is that the palette does not
+ * move it.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 
 describe('opening the palette does not move the height the library erases at', () => {
-  it('reaches the boundary at the same row it reaches it with the palette shut', async () => {
-    const columns = 100;
-    const short = await inPty({
-      columns,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [
-        opens,
-        { types: COMPLETES, until: () => true, what: 'was asked for the words' },
-        leaves,
-      ],
-    });
-    expect(short.bytes, 'the boundary moved down with the palette').toContain(ERASES_THE_HISTORY);
-
-    for (const rows of [TOO_SHORT_TO_REDRAW_IN_PART + 1, 4, 8]) {
-      const taller = await inPty({
+  for (const columns of [60, 100]) {
+    it(`reaches it at the same row with the palette open, at ${columns} columns`, async () => {
+      const short = await inPty({
         columns,
-        rows,
+        rows: TOO_SHORT_TO_REDRAW_IN_PART,
         steps: [
           opens,
-          { types: PREFIX, until: (bytes) => bytes.includes(PREFIX), what: 'opened the palette' },
           { types: COMPLETES, until: () => true, what: 'was asked for the words' },
           leaves,
         ],
       });
-      expect(taller.bytes, `${rows} rows with the palette open`).not.toContain(ERASES_THE_HISTORY);
-      expect(taller.bytes, `${rows} rows never opened`).toContain(PROMPT);
-    }
-  }, 300_000);
+      expect(short.bytes, `${columns}: the boundary moved with the palette`).toContain(
+        ERASES_THE_HISTORY,
+      );
+
+      for (const rows of [TOO_SHORT_TO_REDRAW_IN_PART + 1, 4, 8]) {
+        const taller = await inPty({
+          columns,
+          rows,
+          steps: [
+            opens,
+            { types: PREFIX, until: (bytes) => bytes.includes(PREFIX), what: 'opened the palette' },
+            { types: COMPLETES, until: () => true, what: 'was asked for the words' },
+            leaves,
+          ],
+        });
+        expect(taller.bytes, `${columns}x${rows} with the palette open`).not.toContain(
+          ERASES_THE_HISTORY,
+        );
+        expect(taller.bytes, `${columns}x${rows} never opened`).toContain(PROMPT);
+      }
+      // Not vacuous: the hint IS drawn at this width, which is what makes the region two
+      // rows and the boundary reachable at all.
+      expect(widthOf(tips()), `${columns}`).toBeLessThanOrEqual(columns);
+    }, 300_000);
+  }
 });
 
 // ---------------------------------------------------------------------------

@@ -92,14 +92,18 @@ const THEIRS = 'A-LINE-THE-CALLER-HAD';
  * has its own place now, which would have raised this; the arrangement chosen by height is
  * what stopped it, and the boundary came down to TWO.
  *
- * ⚠️ AND THEN TO ONE, at a DIFFERENT WIDTH, and the width is why the number moved. The
- * area learned to leave out a row the terminal would FOLD, and the hint is seventy-four
- * columns wide — so at the sixty columns this constant used to be taken at, the hint is
- * not drawn, the region is one row, and the library does not reach the boundary at any
- * height there is. The measurement moved to a hundred columns, where the hint IS one row,
- * and there the boundary is one. Both halves are pinned in
- * `tests/the-input-has-its-own-place.test.ts`, and it is measured again with the palette
- * open in `tests/a-palette-for-the-words.test.ts`.
+ * ⚠️ AND THEN TO ONE, and what moves it is the HINT — nothing else. The area learned to
+ * leave out a row the terminal would FOLD, so a window that keeps the hint has a two-row
+ * region and reaches the boundary at one row, and a window too narrow for it has a one-row
+ * region and never reaches it. At the sixty columns this constant used to be taken at, the
+ * number went 2 (a hint of seventy that folded in two), then none (a hint of seventy-four,
+ * dropped), then 1 (a hint of fifty-three, one row) — better than where this front found
+ * it, at every width.
+ *
+ * The measurement is kept at a hundred columns, which draws the hint at every length it
+ * has had. Where the boundary sits as a function of the hint's own width is pinned column
+ * by column in `tests/the-input-has-its-own-place.test.ts`, and it is measured again with
+ * the palette open in `tests/a-palette-for-the-words.test.ts`.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 

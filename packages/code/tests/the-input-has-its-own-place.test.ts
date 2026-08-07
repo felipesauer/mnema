@@ -709,27 +709,40 @@ describe('the caret is left on the row being typed, under everything drawn over 
 // ---------------------------------------------------------------------------
 
 /**
- * THE HEIGHTS, MEASURED AGAIN ON EVERY DELIVERY THAT TOUCHES THE REGION.
+ * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED AGAIN ON EVERY DELIVERY THAT TOUCHES THE
+ * REGION — and it turned out to be a function of ONE thing.
  *
- * ⚠️ THIS USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was
- * right when it was written. What falsified it is the WIDTH rule (`repl/area.ts`): the
- * hint is seventy-four columns wide, so on a window of sixty it is no longer DRAWN — a row
- * the terminal would fold costs two rows and the arithmetic counted one — and the bare
- * form went from two rows to one. The boundary went with it: at sixty columns the library
- * no longer reaches it at ANY height there is, one row included.
+ * ⚠️ IT USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was right
+ * when it was written. The WIDTH rule (`repl/area.ts`) is what moved it, and the whole
+ * story is the hint's own width: a hint the terminal would FOLD is not drawn, so a window
+ * that loses the hint has a one-row region and the library never reaches the boundary
+ * there, while a window that keeps it has a two-row region and reaches it at one row.
  *
- * So the measurement moved to a hundred columns, where the hint IS drawn and the boundary
- * is where the delivery before this one left it: ONE row. The width that lost it is kept
- * as a case of its own, because "the boundary is gone here" is a claim about a number and
- * not the absence of one.
+ * MEASURED THREE TIMES ACROSS THIS FRONT, at sixty columns, with the hint at three
+ * lengths: at seventy columns it folded in two and the boundary was TWO rows; at
+ * seventy-four it was dropped and the boundary was reached at NO height at all; at
+ * fifty-three it is one row again and the boundary is ONE. So the number at sixty columns
+ * went 2, then none, then 1 — better than where the front found it, at every width.
+ *
+ * The boundary is pinned three ways below: at a width that keeps the hint, at one that
+ * loses it, and — the sharp one — at the hint's own width and one column under it.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 
 /** A window with room for the hint on one row — which is what makes the region two. */
 const WIDE_ENOUGH_FOR_THE_HINT = 100;
 
-/** And one without, where the hint is not drawn and the region is one row. */
-const TOO_NARROW_FOR_THE_HINT = 60;
+/**
+ * And one without, where the hint is not drawn and the region is one row.
+ *
+ * Forty, and the number is stated rather than derived from the hint: a width computed as
+ * "one less than the hint" would make the assertion that the hint is wider than it true by
+ * construction. The sharp case below is the one that derives, and it derives the INPUT.
+ */
+const TOO_NARROW_FOR_THE_HINT = 40;
+
+/** The width the two deliveries before this one recorded the boundary at. */
+const WHERE_IT_WAS_RECORDED = 60;
 
 /** A height with no room for a rule, and enough for the row being typed and its hint. */
 const SHORT_ENOUGH_FOR_THE_BARE_FORM = 4;
@@ -789,11 +802,8 @@ describe('a terminal without the height gets less area, down to the bare prompt'
   }, 240_000);
 
   it('⚠️ and a window too narrow for the hint does not reach it at any height', async () => {
-    // THE NUMBER THAT MOVED, AS A CASE. The hint is not drawn below its own width, so the
-    // bare form is ONE row there and the region is never as tall as the viewport. This is
-    // the width the boundary was recorded at by the two deliveries before this one, so the
-    // claim is comparable rather than new: it was three rows, then two, and now there is
-    // no height at which it happens.
+    // The hint is not drawn below its own width, so the bare form is ONE row there and the
+    // region is never as tall as the viewport.
     const shortest = await inPty({
       columns: TOO_NARROW_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
@@ -802,11 +812,61 @@ describe('a terminal without the height gets less area, down to the bare prompt'
     expect(shortest.bytes, 'the boundary is still reached without the hint').not.toContain(
       ERASES_THE_HISTORY,
     );
-    // Not vacuous: the session really opened on that terminal, and the SAME height at a
-    // width that keeps the hint does reach it — so the difference is the hint's row.
+    // Not vacuous: the session really opened on that terminal, and the hint really is too
+    // wide for it — so the absence above is the hint's missing row and not a dead probe.
     expect(shortest.bytes).toContain(PROMPT);
     expect(widthOf(tips())).toBeGreaterThan(TOO_NARROW_FOR_THE_HINT);
   }, 240_000);
+
+  it('⚠️ and the boundary moves with the HINT, to the column', async () => {
+    // THE SHARP FORM, AND THE ONE THAT SAYS WHY THE NUMBER KEEPS MOVING. Everything above
+    // states the boundary at a width somebody chose; this states what the boundary is a
+    // FUNCTION of. The width is derived from the hint — which is deriving the INPUT, not
+    // the answer: what is asserted is what a real pty did at two adjacent columns.
+    const wide = widthOf(tips());
+    const keepsIt = await inPty({
+      columns: wide,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    const losesIt = await inPty({
+      columns: wide - 1,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    expect(keepsIt.bytes, `${wide} columns: the hint's row stopped counting`).toContain(
+      ERASES_THE_HISTORY,
+    );
+    expect(losesIt.bytes, `${wide - 1} columns: a hint that would fold was drawn`).not.toContain(
+      ERASES_THE_HISTORY,
+    );
+
+    // AND AT THE WIDTH THE FRONT KEEPS ITS RECORD AT, so the number is comparable with the
+    // two deliveries before this one: it was TWO rows there when the hint folded in two, it
+    // was reached at NO height when the hint was too wide to draw, and it is ONE now.
+    const recorded = await inPty({
+      columns: WHERE_IT_WAS_RECORDED,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    const oneTaller = await inPty({
+      columns: WHERE_IT_WAS_RECORDED,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
+      steps: [opens, leaves],
+    });
+    expect(recorded.bytes, `${WHERE_IT_WAS_RECORDED} columns, one row`).toContain(
+      ERASES_THE_HISTORY,
+    );
+    expect(oneTaller.bytes, `${WHERE_IT_WAS_RECORDED} columns, two rows`).not.toContain(
+      ERASES_THE_HISTORY,
+    );
+    // Every one of them really opened, so each answer above is about a height and a width
+    // rather than about a session that died.
+    for (const ran of [keepsIt, losesIt, recorded, oneTaller]) expect(ran.bytes).toContain(PROMPT);
+    // And the width that keeps it really is narrower than the one the case above uses, so
+    // the two are measuring different points rather than the same one twice.
+    expect(wide).toBeLessThan(WIDE_ENOUGH_FOR_THE_HINT);
+  }, 300_000);
 });
 
 // ---------------------------------------------------------------------------
