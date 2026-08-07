@@ -411,6 +411,20 @@ async function narrowestFor(richness: number): Promise<number> {
 }
 
 describe('the form comes out of the content, and the narrowest still says the essential', () => {
+  it('puts both sections INSIDE the box, headings and all', async () => {
+    // What the box is FOR, asserted where the box is. It is a case of its own because the
+    // floor case below cannot say it: the row under the prompt says the same words as the
+    // panel's one hint, out of the same constant, so a page that had lost the section
+    // entirely would still hold that sentence. Here the rows are the box's own.
+    const rows = boxRows(await openedAt(200));
+    for (const said of ['The record', VERIFIED, 'Hints', 'says what it runs']) {
+      expect(
+        rows.some((row) => row.includes(said)),
+        said,
+      ).toBe(true);
+    }
+  }, 120_000);
+
   it('draws all three, and never a richer one on a narrower terminal', async () => {
     // The sweep, and it is ORDERED rather than a list of widths that happen to work: what
     // is asserted is that the drawing only ever gets simpler as the terminal narrows, and
@@ -452,7 +466,10 @@ describe('the form comes out of the content, and the narrowest still says the es
     expect(page).toContain(OPENED);
     expect(page).toContain(project);
     expect(page).toContain(VERIFIED);
-    expect(page).toContain('says what it runs');
+    // The HEADING and not the hint under it: the row that never scrolls away says the same
+    // words as that hint, so looking for them here would be looking at the wrong row —
+    // measured, by a mutation that dropped the section and left this case green.
+    expect(page).toContain('Hints');
   }, 120_000);
 
   it('reports the width it gives way at, on lines a project would never have', () => {
