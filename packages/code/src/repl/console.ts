@@ -78,15 +78,21 @@ const NO_WIDTH = 0;
  * How long the size has to stop changing before the page is drawn again, in milliseconds.
  *
  * A window dragged by its corner delivers a size per step and the steps are milliseconds
- * apart (measured: a hundred changes forced through a real pseudo-terminal arrive about
- * three milliseconds apart). Reemitting the page on each of them would put one drag's
- * worth of pages in the caller's scrollback, which is worse than the folded frame this
- * exists to fix. So the page follows the size the caller STOPPED at.
+ * apart: measured on a real pseudo-terminal, a hundred changes forced through as fast as
+ * the kernel will take them arrive a median of 2 ms apart and never more than 3 — which is
+ * the FLOOR of what a drag looks like, since nothing was moving a mouse. Reemitting the
+ * page on each of them would put one drag's worth of pages in the caller's scrollback,
+ * which is worse than the folded frame this exists to fix. So the page follows the size the
+ * caller STOPPED at.
  *
- * A tenth of a second, and the number is chosen from both ends: it is longer than the gap
- * between two steps of a drag by more than an order of magnitude, so a drag coalesces into
- * one page; and it is at the threshold below which a person reads a response as immediate,
- * so a caller who resized once and let go does not watch the box lag behind their window.
+ * A tenth of a second, and the number is chosen from both ends: it is more than thirty
+ * times the gap between two steps of that drag, so a drag coalesces into one page; and it
+ * is at the threshold below which a person reads a response as immediate, so a caller who
+ * resized once and let go does not watch the box lag behind their window.
+ *
+ * WHAT IT BUYS IS THE WHOLE COST, and the cost is per PAGE rather than per event: reemitting
+ * one is linear in what the session has said, measured at about 33 ms over 200 lines and
+ * about 100 ms over 800. Thirty of those inside one drag is the defect; one is a redraw.
  */
 const AFTER_THE_LAST_CHANGE = 100;
 
