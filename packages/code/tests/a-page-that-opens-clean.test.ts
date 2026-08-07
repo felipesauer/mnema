@@ -33,7 +33,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { CLEAR, LEAVE } from '../src/session-words.js';
+import { ABOUT, CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import { screenOf } from './support/screen.js';
@@ -422,10 +422,16 @@ describe('the word that clears gives back the page the session opened with', () 
     expect(cleared.text).toBe(opened.text);
     // And said plainly, because equality alone would hold if both were empty.
     expect(cleared.text).not.toContain(SAID);
-    // Including the caller's own request for a clean page. The WORD is still on the page,
-    // in the row that says what a caller can do — what is gone is the line they typed.
+    // Including the caller's own request for a clean page: the line they typed is gone.
     expect(cleared.text).not.toContain(`${PROMPT} ${CLEAR}`);
-    expect(cleared.text).toContain(CLEAR);
+    // AND THE PAGE STILL OFFERS SOMETHING, which is what the line above needs beside it —
+    // an empty page satisfies "the echo is gone" as well as a redrawn one does. IT USED TO
+    // BE THE WORD THAT CLEARS, on the argument that it stays in the row saying what a
+    // caller can do. WHAT FALSIFIED IT is the hint being cut to three clauses: it names
+    // the word that LISTS the rest now, and the word that clears is one keystroke away
+    // inside that list rather than on the page (`repl/session.ts`, `tips`). So the
+    // affordance asserted is the one the row actually carries.
+    expect(cleared.text).toContain(ABOUT);
   }, 120_000);
 
   it('does not come back on a frame the layout redraws everything on', async () => {

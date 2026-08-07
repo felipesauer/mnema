@@ -496,6 +496,11 @@ export function tips(): Line {
  * (`commands/verify.ts`, `weakerLevel`). A second opinion in a corner would be a console
  * that says a record is fine while the verb says it is not.
  *
+ * Exported for the same reason {@link tips} is: a test that has to tell this row apart
+ * from a line the record produced would otherwise retype it, and a retyped row goes stale
+ * the day the shape changes — which is exactly the case that compares what a verb says
+ * inside the console to what it says at a shell (`tests/the-console-on-ink.test.ts`).
+ *
  * IT CARRIES NO HUE, and that is a decision rather than an omission. Where a level is
  * RULED ON — the panel's line per tree, and `verify`'s own — it is painted by the one
  * function that says how a level reads as news (`wiring/verify.ts`, `levelSeverity`). This
@@ -505,7 +510,7 @@ export function tips(): Line {
  * a screenshot of it and a pipe of it the same claim. The words are the carrier here, as
  * they are everywhere else on this surface.
  */
-function badgeLine(level: ProvenLevel): Line {
+export function badgeLine(level: ProvenLevel): Line {
   return fact(`${LEVEL_MARK} ${level}${BETWEEN_CLAUSES}${VERIFY_VERB}`, AT_THE_EDGE);
 }
 

@@ -275,6 +275,7 @@ describe('nothing else decides which renderer', () => {
     expect(naming('repl')).toEqual([]);
     // Read, rather than absent: the directory exists and it does print.
     expect(shipped('repl')).toEqual([
+      'area.ts',
       'complete.ts',
       'console.ts',
       'editing.ts',
