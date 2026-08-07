@@ -30,7 +30,6 @@
  *     number written here, and against the words the session actually answers to.
  */
 
-import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -44,12 +43,13 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { areaFor } from '../src/repl/area.js';
-import { badgeLine, openSession, tips } from '../src/repl/session.js';
+import { badgeLine, openSession, theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import { inPty as drive, type Fixture, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -142,8 +142,21 @@ afterAll(() => {
 // The arithmetic: which arrangement a height has room for
 // ---------------------------------------------------------------------------
 
-/** A request with everything to show, so a case only says what it is changing. */
-const showingEverything = { badge: true, candidates: false, hint: true };
+/**
+ * A request with everything to show, so a case only says what it is changing.
+ *
+ * THE TWO WIDTHS ARE THE PRODUCT'S OWN, measured off the rows this surface really
+ * composes rather than written down here: the area rules on whether each of them is ONE
+ * row of the terminal, so a number invented for a fixture would be ruling on a badge
+ * nobody draws. The window is wide enough for both, which is what leaves height the only
+ * thing these cases vary.
+ */
+const showingEverything = {
+  columns: 200,
+  badge: widthOf(badgeLine('fully-signed')),
+  hint: widthOf(tips()),
+  palette: 0,
+};
 
 describe('the area has forms, and the tallest one that fits is the one drawn', () => {
   it('gives up the badge first, then the rules, and never the row being typed', () => {
@@ -163,46 +176,51 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // empty — so a session outside a project gets the ruled arrangement at every height
     // the full one would have fitted.
     for (const rows of [200, 40, 6, 5]) {
-      const form = areaFor({ ...showingEverything, badge: false, rows }).form;
+      const form = areaFor({ ...showingEverything, badge: 0, rows }).form;
       expect(form, `${rows}`).not.toBe('full');
     }
-    expect(areaFor({ ...showingEverything, badge: false, rows: 40 }).form).toBe('ruled');
+    expect(areaFor({ ...showingEverything, badge: 0, rows: 40 }).form).toBe('ruled');
     // Not vacuous: the same heights DO give the full form when there is a badge.
     expect(areaFor({ ...showingEverything, rows: 6 }).form).toBe('full');
   });
 
-  it('counts the row a Tab offers, because it is a row the region redraws', () => {
-    // The words a Tab could not choose between are a row like any other. A form chosen as
-    // though they were not there would be arithmetic about a region that is not the one on
-    // the screen, which is the exact shape of instrument this bench has been wrong with.
+  it('counts the rows the palette wants, because they are rows the region redraws', () => {
+    // The words a caller could type next are rows like any other. A form chosen as though
+    // they were not there would be arithmetic about a region that is not the one on the
+    // screen, which is the exact shape of instrument this bench has been wrong with.
     const tall = { ...showingEverything, rows: 6 };
     expect(areaFor(tall).form).toBe('full');
-    expect(areaFor({ ...tall, candidates: true }).form).toBe('ruled');
-    // And the row is counted rather than merely changing the answer: the same form is one
-    // taller with it than without it.
+    expect(areaFor({ ...tall, palette: 1 }).form).toBe('ruled');
+    // And they are counted rather than merely changing the answer: the same form is one
+    // taller per row of palette.
     const wide = { ...showingEverything, rows: 40 };
-    expect(areaFor({ ...wide, candidates: true }).height - areaFor(wide).height).toBe(1);
+    expect(areaFor({ ...wide, palette: 1 }).height - areaFor(wide).height).toBe(1);
+    expect(areaFor({ ...wide, palette: 7 }).height - areaFor(wide).height).toBe(7);
   });
 
   it('says how many rows sit above the row being typed, and it is one per row drawn', () => {
     // WHAT THE CARET IS PUT AT. The differences between the forms are what says so: the
     // badge and one rule for the full form, one rule for the ruled one, nothing for the
-    // bare one — and a Tab's row is above the typed one in all three.
+    // bare one — and the palette's rows are above the typed one in all three.
     const rows = 40;
     const full = areaFor({ ...showingEverything, rows });
-    const ruled = areaFor({ ...showingEverything, badge: false, rows });
+    const ruled = areaFor({ ...showingEverything, badge: 0, rows });
     const bare = areaFor({ ...showingEverything, rows: 1 });
     expect(bare.above).toBe(0);
     expect(ruled.above - bare.above).toBe(1);
     expect(full.above - ruled.above).toBe(1);
     for (const request of [
       { ...showingEverything, rows },
-      { ...showingEverything, badge: false, rows },
-      { ...showingEverything, rows: 1 },
+      { ...showingEverything, badge: 0, rows },
+      { ...showingEverything, rows: 4 },
     ]) {
-      const offered = areaFor({ ...request, candidates: true });
+      const offered = areaFor({ ...request, palette: 1 });
       expect(offered.above - areaFor(request).above, `${request.rows}`).toBe(1);
     }
+    // And the row of a palette there is no room for is not above anything, because it is
+    // not drawn: the budget is what keeps the caret and the drawing agreeing about the
+    // shape (`a-palette-for-the-words.test.ts` measures where the room runs out).
+    expect(areaFor({ ...showingEverything, rows: 1, palette: 1 }).above).toBe(bare.above);
   });
 });
 
@@ -477,24 +495,38 @@ describe('the hint is short enough to be one row, and promises nothing that is n
     expect(clauses.length).toBeGreaterThan(1);
   });
 
-  it('names no word the session does not answer to', () => {
-    // A row under the prompt is the most believed sentence on the surface. A hint naming an
-    // affordance that does not answer yet would be the console lying to the one reader who
-    // cannot check — which is what a hint promising a list of commands would be, before
-    // there is one.
+  it('quotes only what the session answers to, which is its words and the key that lists them', () => {
+    // ⚠️ THIS CASE USED TO BE `names no word the session does not answer to`, AND IT USED
+    // TO BAN THE PREFIX. The rule it held was right and it was about a PROMISE: a row under
+    // the prompt is the most believed sentence on the surface, so a hint naming an
+    // affordance that does not answer would be the console lying to the one reader who
+    // cannot check. What falsified the ban is the palette — a slash on an empty row now
+    // opens the list of the session's own words — so the case is renamed and inverted
+    // rather than edited, because a case that keeps its name while its subject flips
+    // leaves every device built on it asserting the new behaviour by accident.
     const said = renderPlain(tips());
-    const quoted = said.match(/`[^`]+`/g) ?? [];
+    const quoted = (said.match(/`[^`]+`/g) ?? []).map((word) => word.slice(1, -1));
     expect(quoted.length, 'the hint quotes nothing at all').toBeGreaterThan(0);
-    for (const word of quoted) expect(SESSION_WORDS).toContain(word.slice(1, -1));
-    // And no bare prefix, which is the shape a promise of the list would take.
-    expect(said.includes(`${PREFIX} `), `the hint promises ${PREFIX}`).toBe(false);
+    for (const word of quoted) expect([...SESSION_WORDS, PREFIX]).toContain(word);
+    // And the prefix really is one of them: the promise is made rather than merely allowed.
+    expect(quoted, 'the hint no longer names the key that lists the words').toContain(PREFIX);
   });
 
-  it('still names the word that lists everything it dropped', () => {
-    // WHAT MAKES THREE ENOUGH. Two clauses went — the word that clears the page and the key
-    // that clears the line — and both are in what the remaining word answers, so nothing
-    // was lost, it was moved one keystroke away.
-    expect(renderPlain(tips())).toContain(ABOUT);
+  it('does not name the word it moved into the list, because the list is where it is', () => {
+    // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over two deliveries —
+    // the word that clears the page, the key that clears the line, and now the word that
+    // lists the verbs — and every one of them is one keystroke away behind the clause that
+    // stayed. ⚠️ IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What
+    // falsified it is that the slash lists `/help` itself, so naming both would be the hint
+    // spending a clause on what the clause beside it opens.
+    expect(renderPlain(tips())).not.toContain(ABOUT);
+    // THE ELO, so the absence above is a move and not a loss: the word really is in the
+    // vocabulary the prefix opens, with something to say about it.
+    const words = theSessionsOwnWords();
+    const listed = words.find((entry) => entry.word === ABOUT);
+    expect(listed, `${ABOUT} is not in what the prefix lists`).toBeDefined();
+    expect((listed as { description: string }).description.length).toBeGreaterThan(3);
+    for (const entry of words) expect(entry.word.startsWith(PREFIX), entry.word).toBe(true);
   });
 });
 
@@ -502,28 +534,14 @@ describe('the hint is short enough to be one row, and promises nothing that is n
 // A real pty: the rules, the badge and the caret on a screen
 // ---------------------------------------------------------------------------
 
-/** One thing to do in the session, and what says it is done. */
-interface Step {
-  readonly types?: string;
-  readonly resize?: { readonly columns: number; readonly rows: number };
-  readonly until: (bytes: string) => boolean;
-  readonly what: string;
-}
-
-/** What a run in a pty produced. */
-interface Ran {
-  readonly bytes: string;
-  readonly at: readonly number[];
-}
-
-/** Waits until `ready` answers true, or gives up — a poll, never a fixed sleep. */
-async function waitFor(ready: () => boolean, what: string, tries = 1200): Promise<void> {
-  for (let tried = 0; tried < tries; tried++) {
-    if (ready()) return;
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-  throw new Error(`the session never ${what}`);
-}
+/** The fixture every case below drives the built binary over. */
+const fixture = (): Fixture => ({
+  cli: CLI,
+  verb: REPL_VERB,
+  project,
+  scratch: sandbox,
+  environment,
+});
 
 /** Runs `mnema repl` on a pseudo-terminal of a given size, resizing it between steps. */
 async function inPty(options: {
@@ -531,75 +549,7 @@ async function inPty(options: {
   readonly rows: number;
   readonly steps: readonly Step[];
 }): Promise<Ran> {
-  const here = mkdtempSync(join(sandbox, 'pty-'));
-  const runner = join(here, 'run.sh');
-  const named = 'TTY=';
-  writeFileSync(
-    runner,
-    [
-      `cd ${project}`,
-      `stty rows ${options.rows} cols ${options.columns}`,
-      `echo "${named}$(tty)"`,
-      `node ${CLI} ${REPL_VERB}`,
-      '',
-    ].join('\n'),
-  );
-
-  let bytes = '';
-  let over = false;
-  const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
-    cwd: project,
-    env: environment,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  const collect = (chunk: Buffer): void => {
-    bytes += chunk.toString('utf-8');
-  };
-  child.stdout.on('data', collect);
-  child.stderr.on('data', collect);
-  const ended = new Promise<void>((resolve) => {
-    child.on('close', () => {
-      over = true;
-      resolve();
-    });
-  });
-
-  const at: number[] = [];
-  try {
-    await waitFor(() => bytes.includes(named) || over, 'said which terminal it had');
-    const device = /TTY=(\S+)/.exec(bytes)?.[1];
-    expect(device, 'the runner never named the terminal').toBeDefined();
-    for (const step of options.steps) {
-      if (step.resize !== undefined) {
-        execFileSync('stty', [
-          '-F',
-          device as string,
-          'rows',
-          String(step.resize.rows),
-          'cols',
-          String(step.resize.columns),
-        ]);
-      }
-      if (step.types !== undefined) child.stdin.write(step.types);
-      await waitFor(() => step.until(bytes) || over, step.what);
-      for (let still = 0, was = -1; still < 8; still++) {
-        if (bytes.length === was) break;
-        was = bytes.length;
-        await new Promise((resolve) => setTimeout(resolve, 40));
-        still = 0;
-        if (bytes.length === was) break;
-      }
-      at.push(bytes.length);
-    }
-    await Promise.race([
-      ended,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('never came back')), 30_000)),
-    ]);
-  } finally {
-    child.stdin.end();
-    child.kill('SIGKILL');
-  }
-  return { bytes, at };
+  return drive(fixture(), options);
 }
 
 /** The step every session begins with. */
@@ -759,28 +709,52 @@ describe('the caret is left on the row being typed, under everything drawn over 
 // ---------------------------------------------------------------------------
 
 /**
- * THE HEIGHTS, MEASURED ON THIS DELIVERY AND NOT CARRIED OVER.
+ * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED AGAIN ON EVERY DELIVERY THAT TOUCHES THE
+ * REGION — and it turned out to be a function of ONE thing.
  *
- * The region went from three rows to five, so the height at which the layout library stops
- * redrawing PART of the screen had to be measured again — it is the whole reason the area
- * has forms at all. It went DOWN rather than up, at both widths probed: at a hundred
- * columns it was two rows and is now one, and at sixty — where the hint folds in two — it
- * was three and is now two.
+ * ⚠️ IT USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was right
+ * when it was written. The WIDTH rule (`repl/area.ts`) is what moved it, and the whole
+ * story is the hint's own width: a hint the terminal would FOLD is not drawn, so a window
+ * that loses the hint has a one-row region and the library never reaches the boundary
+ * there, while a window that keeps it has a two-row region and reaches it at one row.
  *
- * Sixty columns is the width these cases use because it is the width the boundary was
- * recorded at before (`a-page-that-opens-clean.test.ts`), so the two numbers are
- * comparable.
+ * MEASURED THREE TIMES ACROSS THIS FRONT, at sixty columns, with the hint at three
+ * lengths: at seventy columns it folded in two and the boundary was TWO rows; at
+ * seventy-four it was dropped and the boundary was reached at NO height at all; at
+ * fifty-three it is one row again and the boundary is ONE. So the number at sixty columns
+ * went 2, then none, then 1 — better than where the front found it, at every width.
+ *
+ * The boundary is pinned three ways below: at a width that keeps the hint, at one that
+ * loses it, and — the sharp one — at the hint's own width and one column under it.
  */
-const TOO_SHORT_TO_REDRAW_IN_PART = 2;
+const TOO_SHORT_TO_REDRAW_IN_PART = 1;
+
+/** A window with room for the hint on one row — which is what makes the region two. */
+const WIDE_ENOUGH_FOR_THE_HINT = 100;
+
+/**
+ * And one without, where the hint is not drawn and the region is one row.
+ *
+ * Forty, and the number is stated rather than derived from the hint: a width computed as
+ * "one less than the hint" would make the assertion that the hint is wider than it true by
+ * construction. The sharp case below is the one that derives, and it derives the INPUT.
+ */
+const TOO_NARROW_FOR_THE_HINT = 40;
+
+/** The width the two deliveries before this one recorded the boundary at. */
+const WHERE_IT_WAS_RECORDED = 60;
 
 /** A height with no room for a rule, and enough for the row being typed and its hint. */
 const SHORT_ENOUGH_FOR_THE_BARE_FORM = 4;
 
 describe('a terminal without the height gets less area, down to the bare prompt', () => {
   it('draws the rules and the badge when there is room, and neither when there is not', async () => {
-    // A CASE PER FORM, on a screen. Sixty columns throughout, so the only thing that
-    // differs between the runs is the height.
-    const columns = 60;
+    // A CASE PER FORM, on a screen. One width throughout, so the only thing that differs
+    // between the runs is the height — and it is a width that has room for the HINT,
+    // because the hint is a row of the arrangement and a window that drops it is a window
+    // measuring a different ladder. ⚠️ It used to be sixty columns, which stopped being
+    // such a width when the area learned to leave out a row the terminal would fold.
+    const columns = WIDE_ENOUGH_FOR_THE_HINT;
     const drawn = async (rows: number) => {
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
       return screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
@@ -801,16 +775,14 @@ describe('a terminal without the height gets less area, down to the bare prompt'
     ).toBe(false);
   }, 240_000);
 
-  it('⚠️ and the height the library erases the caller’s history at moved DOWN', async () => {
+  it('⚠️ and the height the library erases the caller’s history at is one row', async () => {
     // A MEASUREMENT AND A BOUNDARY, and it is the LIBRARY'S rather than this product's.
     // Below a certain height it stops redrawing part of the page and redraws all of it,
-    // with a sequence that carries the one erase this product refuses to write. The
-    // delivery that gave the input an area made the region taller, which would have raised
-    // this boundary; the forms are what stopped it, and the number came out BETTER than it
-    // was — sixty columns and three rows used to reach it and no longer does. Pinned in
-    // both directions, so the boundary cannot move again in silence.
+    // with a sequence that carries the one erase this product refuses to write. Pinned in
+    // both directions, so the boundary cannot move in silence — which is what caught it
+    // moving when the width rule landed (see {@link TOO_SHORT_TO_REDRAW_IN_PART}).
     const short = await inPty({
-      columns: 60,
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
@@ -818,7 +790,7 @@ describe('a terminal without the height gets less area, down to the bare prompt'
       ERASES_THE_HISTORY,
     );
     const taller = await inPty({
-      columns: 60,
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
       steps: [opens, leaves],
     });
@@ -828,6 +800,73 @@ describe('a terminal without the height gets less area, down to the bare prompt'
     // Both sessions really opened, so the difference above is the height and nothing else.
     for (const ran of [short, taller]) expect(ran.bytes).toContain(PROMPT);
   }, 240_000);
+
+  it('⚠️ and a window too narrow for the hint does not reach it at any height', async () => {
+    // The hint is not drawn below its own width, so the bare form is ONE row there and the
+    // region is never as tall as the viewport.
+    const shortest = await inPty({
+      columns: TOO_NARROW_FOR_THE_HINT,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    expect(shortest.bytes, 'the boundary is still reached without the hint').not.toContain(
+      ERASES_THE_HISTORY,
+    );
+    // Not vacuous: the session really opened on that terminal, and the hint really is too
+    // wide for it — so the absence above is the hint's missing row and not a dead probe.
+    expect(shortest.bytes).toContain(PROMPT);
+    expect(widthOf(tips())).toBeGreaterThan(TOO_NARROW_FOR_THE_HINT);
+  }, 240_000);
+
+  it('⚠️ and the boundary moves with the HINT, to the column', async () => {
+    // THE SHARP FORM, AND THE ONE THAT SAYS WHY THE NUMBER KEEPS MOVING. Everything above
+    // states the boundary at a width somebody chose; this states what the boundary is a
+    // FUNCTION of. The width is derived from the hint — which is deriving the INPUT, not
+    // the answer: what is asserted is what a real pty did at two adjacent columns.
+    const wide = widthOf(tips());
+    const keepsIt = await inPty({
+      columns: wide,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    const losesIt = await inPty({
+      columns: wide - 1,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    expect(keepsIt.bytes, `${wide} columns: the hint's row stopped counting`).toContain(
+      ERASES_THE_HISTORY,
+    );
+    expect(losesIt.bytes, `${wide - 1} columns: a hint that would fold was drawn`).not.toContain(
+      ERASES_THE_HISTORY,
+    );
+
+    // AND AT THE WIDTH THE FRONT KEEPS ITS RECORD AT, so the number is comparable with the
+    // two deliveries before this one: it was TWO rows there when the hint folded in two, it
+    // was reached at NO height when the hint was too wide to draw, and it is ONE now.
+    const recorded = await inPty({
+      columns: WHERE_IT_WAS_RECORDED,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
+    const oneTaller = await inPty({
+      columns: WHERE_IT_WAS_RECORDED,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
+      steps: [opens, leaves],
+    });
+    expect(recorded.bytes, `${WHERE_IT_WAS_RECORDED} columns, one row`).toContain(
+      ERASES_THE_HISTORY,
+    );
+    expect(oneTaller.bytes, `${WHERE_IT_WAS_RECORDED} columns, two rows`).not.toContain(
+      ERASES_THE_HISTORY,
+    );
+    // Every one of them really opened, so each answer above is about a height and a width
+    // rather than about a session that died.
+    for (const ran of [keepsIt, losesIt, recorded, oneTaller]) expect(ran.bytes).toContain(PROMPT);
+    // And the width that keeps it really is narrower than the one the case above uses, so
+    // the two are measuring different points rather than the same one twice.
+    expect(wide).toBeLessThan(WIDE_ENOUGH_FOR_THE_HINT);
+  }, 300_000);
 });
 
 // ---------------------------------------------------------------------------

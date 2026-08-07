@@ -17,6 +17,7 @@ import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
 import { argvOf, dispositionOf, verbsOffered } from './gate.js';
+import { theSessionsOwnWords } from './session.js';
 
 /** One declaration of this file's own, with the description a menu would print. */
 function declares(name: string, effect: Declared['effect']): Declared {
@@ -170,10 +171,13 @@ describe('tab offers what the session runs', () => {
     return completionTree(program);
   }
 
-  const complete = completerFor(tree(), verbsOffered(VERBS, SELF), SESSION_WORDS);
+  const complete = completerFor(tree(), verbsOffered(VERBS, SELF), theSessionsOwnWords());
+
+  /** The words of an offer, which is what these cases were written about. */
+  const wordsOf = (line: string): readonly string[] => complete(line)[0].map((hit) => hit.word);
 
   it('offers the reads and the session’s own words, and not one write', () => {
-    const [hits] = complete('');
+    const hits = wordsOf('');
     expect(hits).toEqual([...SESSION_WORDS, 'look', 'read'].sort());
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
@@ -185,21 +189,42 @@ describe('tab offers what the session runs', () => {
   });
 
   it('narrows to the prefix, and offers nothing when nothing matches', () => {
-    expect(complete('lo')).toEqual([['look'], 'lo']);
-    expect(complete(PREFIX)).toEqual([[...SESSION_WORDS].sort(), PREFIX]);
-    expect(complete('zzz')).toEqual([[], 'zzz']);
+    expect(wordsOf('lo')).toEqual(['look']);
+    expect(wordsOf(PREFIX)).toEqual([...SESSION_WORDS].sort());
+    expect(wordsOf('zzz')).toEqual([]);
+    expect(complete('lo')[1]).toBe('lo');
   });
 
   it('offers a verb’s flags, and the values a declaration enumerates', () => {
-    expect(complete('look --')).toEqual([['--help', '--json'], '--']);
-    expect(complete('read --scope ')).toEqual([['here', 'public'], '']);
-    expect(complete('read --scope p')).toEqual([['public'], 'p']);
+    expect(wordsOf('look --')).toEqual(['--help', '--json']);
+    expect(wordsOf('read --scope ')).toEqual(['here', 'public']);
+    expect(wordsOf('read --scope p')).toEqual(['public']);
   });
 
   it('does not descend into a verb the session refuses', () => {
     // `write move` exists in the tree and is reachable from the shell. Offering it here
     // would be a menu of a level this session cannot get to.
-    expect(complete('write ')).toEqual([[], '']);
-    expect(complete('write mo')).toEqual([[], 'mo']);
+    expect(wordsOf('write ')).toEqual([]);
+    expect(wordsOf('write mo')).toEqual([]);
+  });
+
+  it('carries what each offer IS, out of the declaration and out of the vocabulary', () => {
+    // WHAT THE PALETTE DRAWS ITS SECOND COLUMN FROM, and it is not a table kept here: a
+    // verb's half comes from the same `description` commander prints in `--help`, and a
+    // session word's from the gloss the vocabulary cannot exist without.
+    const offers = complete('')[0];
+    const described = new Map(offers.map((offer) => [offer.word, offer.description]));
+    expect(described.get('look')).toBe('a read');
+    expect(described.get('read')).toBe('another read');
+    for (const entry of theSessionsOwnWords()) {
+      expect(described.get(entry.word), entry.word).toBe(entry.description);
+      // Not vacuous: the gloss is a sentence rather than an empty string.
+      expect(entry.description.length).toBeGreaterThan(3);
+    }
+    // A word the declaration says nothing about arrives undescribed rather than absent,
+    // which is what keeps a flag in the menu.
+    const flags = new Map(complete('look --')[0].map((offer) => [offer.word, offer.description]));
+    expect([...flags.keys()]).toContain('--json');
+    expect(flags.get('--json')).toBe('');
   });
 });

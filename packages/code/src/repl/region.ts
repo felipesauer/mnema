@@ -30,9 +30,11 @@
  * concatenation, and the case that proves the scan works makes a component say
  * something and watches it go red.
  *
- * THE STYLE DECISIONS HERE ARE NOT ABOUT A REPORT, and there are two of them. The row of
- * candidates a Tab offers is dimmed, and it is the console's own affordance rather than a
- * line of the record. THE TIPS ARE NOT A SECOND ONE, and the difference is the whole
+ * THE STYLE DECISIONS HERE ARE NOT ABOUT A REPORT, and there are two of them. The PALETTE
+ * is dimmed — the words a caller could type next, whether a slash or a Tab asked for them
+ * — and it is the console's own affordance rather than a line of the record. It used to be
+ * one row and it is a list now; the decision is the same one and it did not grow.
+ * THE TIPS ARE NOT A SECOND ONE, and the difference is the whole
  * reason they read the same: they are dim because the renderer made them dim
  * (`presentation/detail.ts`, `aside`), so what says "you may skip this" is the same table
  * that says it about an id and an instant, and this file did not decide anything about
@@ -138,8 +140,22 @@ export interface Shown {
   readonly past: readonly string[];
   /** The row being typed: the prompt and what is on it, already put together. */
   readonly present: string;
-  /** What a Tab could not choose between, already put together. Empty when there is none. */
-  readonly candidates: string;
+  /**
+   * THE PALETTE: the words a caller could type next, one already-composed row each, top
+   * first. Empty when there is none open.
+   *
+   * ⚠️ IT USED TO BE `candidates`, AND IT USED TO BE ONE STRING. What a Tab could not
+   * choose between was joined into a row of bare tokens; it is a list of rows now, with a
+   * column saying what each word is, and it is opened by a slash as well as by a Tab
+   * (`palette.ts`). Renamed rather than redefined, because a field that keeps its
+   * spelling while what it holds changes leaves whatever read it asserting the new shape
+   * by accident.
+   *
+   * Composed and CUT before it arrives, like every other line here. How many rows there
+   * are is the area's answer (`area.ts`) and how wide each one is is the palette's, so
+   * this file has nothing to measure and nothing to shorten.
+   */
+  readonly palette: readonly string[];
   /** Which column of {@link present} the caret sits in. */
   readonly column: number;
   /**
@@ -262,7 +278,7 @@ export function Region({
     node(Past, { panel: shown.panel, lines: shown.past, page: shown.page }),
     node(Present, {
       present: shown.present,
-      candidates: shown.candidates,
+      palette: shown.palette,
       area: shown.area,
       tips,
       badge,
@@ -515,15 +531,16 @@ function sections(panel: Panel, above: number): ReactNode[] {
  *
  * THE WORDS A TAB OFFERED MOVED ABOVE THE RULES, and that is the one part of the old order
  * that changed on purpose rather than by measurement: they answer the key that was just
- * pressed, and what answers a keystroke belongs over the input rather than under it. It is
- * also where the list of commands is going to live, and two things that answer the same key
- * may not appear on opposite sides of the row it was typed on.
+ * pressed, and what answers a keystroke belongs over the input rather than under it. That
+ * is also where the list of commands went, exactly as this paragraph said it would: the
+ * PALETTE is those rows, opened by a slash as well as by a Tab, and two things that answer
+ * the same key may not appear on opposite sides of the row it was typed on.
  *
  * WHICH ROWS THERE ARE IS NOT DECIDED HERE. A terminal without the height for all of them
- * gets fewer, tallest arrangement first, and the arithmetic is `area.ts` — the same split
- * the panel already has between how much fits and what is drawn. A row with nothing in it
- * is still left out rather than left blank, which is the half of the old shape that
- * survived whole.
+ * gets fewer, tallest arrangement first, and a terminal too narrow for the hint or the
+ * badge to be ONE row gets neither — both are `area.ts`, which is the same split the panel
+ * already has between how much fits and what is drawn. A row with nothing in it is still
+ * left out rather than left blank, which is the half of the old shape that survived whole.
  *
  * THE RULES ARE DRAWN AND NOT WRITTEN, exactly as the one inside the panel is: a box with
  * nothing in it and one edge switched on, so the run of glyphs is the library's. A string
@@ -532,13 +549,13 @@ function sections(panel: Panel, above: number): ReactNode[] {
  */
 function Present({
   present,
-  candidates,
+  palette,
   area,
   tips,
   badge,
 }: {
   readonly present: string;
-  readonly candidates: string;
+  readonly palette: readonly string[];
   readonly area: Area;
   readonly tips: string;
   readonly badge: string;
@@ -547,15 +564,31 @@ function Present({
   return node(
     Box,
     { flexDirection: 'column' },
-    candidates.length > 0 ? node(Text, { dimColor: true }, candidates) : null,
+    palette.length > 0 ? node(Box, { flexDirection: 'column' }, ...dimmed(palette)) : null,
     area.form === 'full'
       ? node(Box, { justifyContent: AT_THE_FAR_END }, node(Text, null, badge))
       : null,
     ruled ? rule() : null,
     node(Text, null, present),
     ruled ? rule() : null,
-    tips.length > 0 ? node(Text, null, tips) : null,
+    area.hint ? node(Text, null, tips) : null,
   );
+}
+
+/**
+ * The palette's rows, one to a row, dimmed.
+ *
+ * THE ONE PLACE THIS FILE DECIDES A WEIGHT, and it is the same decision it has made since
+ * a Tab first offered two words: what a caller could type next is the console's own
+ * affordance rather than a line of the record, so it reads as one. It is not a hue and it
+ * is not a severity — nothing about the record is being ruled on — and it is not a second
+ * accent, because dimming is the absence of colour rather than a colour.
+ *
+ * Nothing is added to a row and nothing is taken off one: they arrive composed, padded and
+ * cut (`palette.ts`), and all this does is put each on a row of its own.
+ */
+function dimmed(rows: readonly string[]): ReactNode[] {
+  return rows.map((row, index) => node(Text, { key: String(index), dimColor: true }, row));
 }
 
 /**
