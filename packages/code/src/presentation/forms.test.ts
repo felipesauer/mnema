@@ -158,4 +158,24 @@ describe('form C — the verdict', () => {
       'public: no events yet',
     );
   });
+
+  it('sits at the left edge, and one level in when a caller asks for one', () => {
+    // A verdict is the answer, so nothing is under it and zero is the default. The one
+    // caller that asks for a level is the console's opening panel, where a tree's verdict
+    // is written under a heading that names the section — which is form B's nesting, so it
+    // is form B's depth: exactly as deep as a fact, by the renderer's own constant, and
+    // never a second idea of how far in one level is.
+    expect(renderPlain(statement('public', 'no record here'))).toBe('public: no record here');
+    expect(renderPlain(statement('public', 'no record here', undefined, 1))).toBe(
+      `  ${renderPlain(statement('public', 'no record here'))}`,
+    );
+    expect(renderPlain(statement('x', 'y', undefined, 1))).toBe(
+      renderPlain(fact(renderPlain(statement('x', 'y')))),
+    );
+    // And the two shapes of the form agree about it, which is the whole reason the
+    // argument is passed through rather than decided twice.
+    expect(renderPlain(clauseStatement('public', [{ text: 'verified' }], 1))).toBe(
+      `  ${renderPlain(clauseStatement('public', [{ text: 'verified' }]))}`,
+    );
+  });
 });

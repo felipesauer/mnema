@@ -14,10 +14,12 @@
  * that drifted away from it. A number here would be a second opinion about how wide the
  * drawing is, and the drawing is the one that is right.
  *
- * IT MEASURES THE PLAIN LINE AND DRAWS THE RENDERED ONE, and that is deliberate: a
- * painted line is longer in bytes and exactly as wide on a screen, so the width a reader
- * sees is the width of the same line with nothing wrapped around it. Measuring the bytes
- * would make the panel degrade for having colour switched on.
+ * IT MEASURES THE LINE AND DRAWS THE RENDERED ONE, and that is deliberate: a painted line
+ * is longer in bytes and exactly as wide on a screen, so measuring the bytes would make
+ * the panel degrade for having colour switched on. How wide a line is is asked of
+ * `presentation/` (`widthOf`) rather than worked out here — nothing outside the wiring may
+ * name a renderer, and a module that counted a line's characters its own way would be a
+ * second opinion about how a line is punctuated.
  *
  * NOTHING HERE COMPOSES A LINE. What it receives is already lines — the same primitives
  * every other reading of this product is made of — and what it hands back is those lines
@@ -26,7 +28,7 @@
  */
 
 import type { Line } from '../presentation/line.js';
-import { renderPlain } from '../presentation/plain.js';
+import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 
 /**
@@ -110,11 +112,6 @@ const AROUND_TITLE = 5;
  */
 export function panelLines(panel: Panel): readonly string[] {
   return [panel.title, ...panel.mark, ...panel.standing, ...panel.record, ...panel.hints];
-}
-
-/** How wide a line is on a screen: its plain text, in characters. */
-function widthOf(line: Line): number {
-  return [...renderPlain(line)].length;
 }
 
 /** How wide the widest of some lines is, and zero when there are none. */

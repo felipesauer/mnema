@@ -296,8 +296,7 @@ function sideBySide(panel: Panel): ReactNode[] {
     node(
       Box,
       { key: 'left', flexDirection: 'column', paddingRight: BETWEEN_COLUMNS },
-      ...rows(panel.mark, true),
-      ...rows(panel.standing),
+      ...whereItStands(panel),
     ),
     node(
       Box,
@@ -318,10 +317,21 @@ function sideBySide(panel: Panel): ReactNode[] {
 
 /** The same groups, one under the other, for a terminal too narrow for two columns. */
 function oneOverTheOther(panel: Panel): ReactNode[] {
+  return [...whereItStands(panel), ...sections(panel, BETWEEN_SECTIONS)];
+}
+
+/**
+ * The mark, and under it where the session is standing.
+ *
+ * Each group is a box of its own rather than rows poured into one, and the reason is the
+ * library's: a row is identified inside its parent by its POSITION, so two groups sharing
+ * a parent would each have a first row claiming the same place. One box per group is what
+ * makes each group's positions its own.
+ */
+function whereItStands(panel: Panel): ReactNode[] {
   return [
     node(Box, { key: 'mark', flexDirection: 'column' }, ...rows(panel.mark, true)),
     node(Box, { key: 'standing', flexDirection: 'column' }, ...rows(panel.standing)),
-    ...sections(panel, BETWEEN_SECTIONS),
   ];
 }
 
