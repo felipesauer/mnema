@@ -55,6 +55,7 @@
 
 import { render } from 'ink';
 import { createElement } from 'react';
+import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
@@ -73,6 +74,14 @@ const BETWEEN_CANDIDATES = '  ';
  * width to guess at, and the form that always fits is the name.
  */
 const NO_WIDTH = 0;
+
+/**
+ * How tall the terminal is taken to be when the device does not say.
+ *
+ * Zero, for the reason the width uses: a height nobody reported is not a height to guess
+ * at, and what a height chooses here is an arrangement whose shortest form always fits.
+ */
+const NO_HEIGHT = 0;
 
 /**
  * How long the size has to stop changing before the page is drawn again, in milliseconds.
@@ -112,6 +121,22 @@ export interface ConsoleRequest {
    * a tip any more. Empty means the console offers none and draws no row for it.
    */
   readonly tips: string;
+  /**
+   * WHAT THE RECORD PROVED, as one row for the corner above the input — already rendered,
+   * and empty when there is no record to name a level of.
+   *
+   * A VALUE AND NOT A FUNCTION, unlike the opening beside it, and the difference is what
+   * each one depends on: the opening is recomposed for a WIDTH, and this says the same
+   * words at every width there is. It was paid for with the one read this surface declares
+   * (`session.ts`) and it is held here for the length of the session, so the row redrawn
+   * on every keystroke costs a string and nothing else.
+   *
+   * ⛔ IT MAY NOT BE RE-READ EITHER, and for a sharper reason than the panel's: this row is
+   * on the screen for the whole session, so a level that changed under the caller halfway
+   * through would be the corner of the console disagreeing with the box at the top of it.
+   * Counted with the rest (`tests/the-name-and-the-hints.test.ts`).
+   */
+  readonly badge: string;
   /**
    * WHAT THE PAGE OPENS WITH, on a terminal of a given width — the box and the lines that
    * go with it, already composed and already measured.
@@ -159,7 +184,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, tips, openingFor, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, tips, badge, openingFor, complete, answer, leaving } = request;
 
   /**
    * How wide the page is, asked of the DEVICE — the one place anything does.
@@ -170,6 +195,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * place would be a second answer on the frame after a resize.
    */
   const howWide = (): number => stdout.columns ?? NO_WIDTH;
+
+  /**
+   * How tall the page is, asked of the DEVICE each time rather than remembered.
+   *
+   * A terminal the caller resized is a different page, and two things are functions of how
+   * tall it is: the bytes that carry a page into the scrollback, and which arrangement the
+   * input area has room for. Asking again costs a property read and is the only way the
+   * answer can be right after a resize.
+   *
+   * It sits beside the other question rather than further down, where it was, because the
+   * value the layout reads is built before the first line of this function's body has
+   * finished running — and a question asked from inside it cannot be declared after it.
+   */
+  const howTall = (): number => stdout.rows ?? NO_HEIGHT;
 
   /** The width the page on the screen was drawn for. What a resize is compared against. */
   let drawnAt = howWide();
@@ -189,6 +228,17 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       past,
       page,
       panel: opened.panel,
+      // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
+      // held. It is a function of the terminal's HEIGHT and of whether a Tab left words on
+      // the page, and the second of those changes on a keystroke — so a value kept beside
+      // the page would be right until the first ambiguous Tab. It reads three booleans and
+      // a number and composes nothing (`area.ts`).
+      area: areaFor({
+        rows: howTall(),
+        badge: badge.length > 0,
+        candidates: editing.candidates.length > 0,
+        hint: tips.length > 0,
+      }),
       present: prompt + editing.typed,
       candidates: editing.candidates.join(BETWEEN_CANDIDATES),
       // In characters rather than in string offsets: the caret is a column on a screen,
@@ -208,15 +258,6 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     past = [...past, line];
     moved();
   }
-
-  /**
-   * How tall the page is, asked of the DEVICE each time rather than remembered.
-   *
-   * A terminal the caller resized is a different page, and the bytes that carry one into
-   * the scrollback are a function of how tall it is. Asking again costs a property read
-   * and is the only way the answer can be right after a resize.
-   */
-  const howTall = (): number => stdout.rows ?? 0;
 
   /**
    * THE PAGE, AGAIN: what was on it goes into the scrollback, and it is drawn from what
@@ -290,6 +331,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * costs one page and a drag of the bottom edge costs none.
    */
   function resized(): void {
+    // THE HEIGHT IS ANSWERED AT ONCE, and only the width waits. A window made shorter is a
+    // window with room for a different arrangement of the input area, and that arrangement
+    // is decided per frame out of what this rebuilds — nothing is carried into the
+    // scrollback and no page is turned, so there is nothing for a wait to coalesce. The
+    // page below is the other half, and it is the one a drag makes expensive.
+    moved();
     if (settling !== undefined) clearTimeout(settling);
     settling = setTimeout(() => {
       settling = undefined;
@@ -411,7 +458,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // through the layout's door once there is one ({@link thePageAgain}).
   stdout.write(carriedIntoTheScrollback(howTall()));
 
-  const app = render(createElement(Region, { watched, tips }), {
+  const app = render(createElement(Region, { watched, tips, badge }), {
     stdin,
     stdout,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the

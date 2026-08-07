@@ -435,6 +435,7 @@ describe('the session writes no history anywhere', () => {
     // The corpus is real: an empty directory passes this and says nothing. And it is
     // every file, so a module the filter above cannot see is a module missing here.
     expect(modules()).toEqual([
+      'area.ts',
       'complete.ts',
       'console.ts',
       'editing.ts',

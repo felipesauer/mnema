@@ -381,13 +381,25 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     expect(times(page, renderPlain(tips()))).toBeGreaterThan(1);
   }, 120_000);
 
-  it('says what the caller can do, and says the words a session answers to', () => {
+  it('says what the caller can do, in the weight this surface means by secondary', () => {
+    // IT USED TO ASSERT EVERY WORD THE SESSION ANSWERS TO and every keystroke besides —
+    // the three words, Ctrl-D, Ctrl-C and Tab, all on one row. WHAT FALSIFIED IT is the
+    // width: five clauses came to about a hundred and ten characters, and the terminal
+    // folded them into two rows below ninety-seven columns, so the row that exists to be
+    // GLANCED at was the tallest thing in the region. The hint says three things now, and
+    // what a hint may say is asked where the measurement is
+    // (`tests/the-input-has-its-own-place.test.ts`: it fits eighty columns, it has at most
+    // three clauses, and every word it quotes is one the session answers to).
+    //
+    // WHAT SURVIVED WHOLE is the half this case was really holding, and it is about the
+    // WEIGHT rather than the words: the row is an aside, so it is dim because the RENDERER
+    // made it dim and not because a component decided anything, and stripping the escapes
+    // gives back exactly the plain line.
     const said = renderPlain(tips());
-    for (const word of [...SESSION_WORDS, 'Ctrl-D', 'Ctrl-C', 'Tab']) {
-      expect(said).toContain(word);
-    }
-    // And it is an ASIDE rather than a fact: dim when the renderer paints, and the same
-    // words either way, which is the promise every line of this surface makes.
+    expect(said.length).toBeGreaterThan(0);
+    // It still names a word the session answers to, so the row is an affordance rather
+    // than a sentence about nothing.
+    expect(SESSION_WORDS.some((word) => said.includes(word))).toBe(true);
     expect(renderStyled(tips())).toContain(DIM);
     // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
     expect(renderStyled(tips()).replace(/\u001b\[[0-9;]*m/g, '')).toBe(said);
