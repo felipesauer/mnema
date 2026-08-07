@@ -44,7 +44,7 @@ import { openSession } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -384,7 +384,7 @@ async function opened(columns: number): Promise<{
   readonly terminal: ReturnType<typeof fakeTerminal>;
   readonly close: () => Promise<void>;
 }> {
-  const terminal = fakeTerminal({ columns, rows: 40 });
+  const terminal = fakeTerminal({ columns, rows: TALL });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
@@ -409,36 +409,61 @@ async function opened(columns: number): Promise<{
 /** How long to wait for a settled resize to have been drawn, and then some. */
 const LONGER_THAN_SETTLING = 500;
 
+/** How tall the terminals in this half of the file are. */
+const TALL = 40;
+
+/**
+ * THE BYTES THAT CARRY A PAGE INTO THE SCROLLBACK — the cursor put on the last row, which
+ * is what every row written after it scrolls off the top (`repl/page.ts`).
+ *
+ * COUNTING THIS AND NOT THE BOX is the instrument, and it is the second one this case had:
+ * counting the drawings said `2` whether the page was reemitted once or thirty times,
+ * because thirty store updates in one tick are one frame to a layout library that renders
+ * on a schedule. The COST of a drag is not how many boxes the library drew, it is how many
+ * screens went up into the caller's scrollback — and that is written straight to the
+ * device, once per page, by this product and by nothing else.
+ */
+const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
+
 describe('the page follows the width and nothing else, and once per drag', () => {
   it('draws nothing at all when only the height changed', async () => {
     // A window dragged by its bottom edge moves no glyph of a drawing measured in columns.
     const { terminal, close } = await opened(200);
-    const drawn = () => times(terminal.bytes(), TOP_LEFT);
-    expect(drawn(), 'the box was never drawn').toBe(1);
-    for (const rows of [30, 20, 10, 50]) terminal.resize(200, rows);
+    const pages = () => times(terminal.bytes(), CARRIES_THE_PAGE);
+    expect(pages(), 'the page was never opened').toBe(1);
+    // Four changes of height, ending back where it started — so the bytes that carry a
+    // page away are the ones this case counts, whichever of the five heights turned it.
+    for (const rows of [30, 20, 10, TALL]) terminal.resize(200, rows);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(drawn(), 'a change of height redrew the page').toBe(1);
+    expect(pages(), 'a change of height turned the page').toBe(1);
 
     // THE TEETH, in the same window: the same instrument, one column narrower, and it
     // moves. Without this the case above passes on a console that redraws for nothing at
     // all — including one that was never listening.
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(drawn(), 'a change of width did not redraw the page').toBe(2);
+    expect(pages(), 'a change of width did not turn the page').toBe(2);
+    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
     await close();
   }, 120_000);
 
-  it('draws one page for a drag of thirty sizes, not thirty', async () => {
+  it('turns one page for a drag of thirty sizes, not thirty', async () => {
     // THE COUNT, because "it waits for the size to settle" is not observable and this is.
-    // A drag delivers a size per step; the page is drawn for the one the caller stopped at.
+    // A drag delivers a size per step; the page is turned for the one the caller stopped
+    // at, and every other step costs the caller nothing.
+    //
+    // ⚠️ THIS CASE COUNTED THE DRAWINGS ON ITS FIRST DRAFT and could not go red: with the
+    // waiting taken out, thirty pages were turned and the layout still drew ONE box,
+    // because thirty store updates inside one tick are a single frame to a library that
+    // renders on a schedule. What a drag costs is what went into the SCROLLBACK, and that
+    // is written to the device once per page by this product itself.
     const { terminal, close } = await opened(200);
     const dragged = 30;
     for (let step = 1; step <= dragged; step++) terminal.resize(200 - step);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     // One for the page that opened, one for the size the drag ended on.
-    expect(times(terminal.bytes(), TOP_LEFT), 'a page per step of the drag').toBe(2);
-    // And it really is the size the drag ENDED on, rather than the one it started from:
-    // the last box drawn ends on the last column of a terminal 170 wide.
+    expect(times(terminal.bytes(), CARRIES_THE_PAGE), 'a page per step of the drag').toBe(2);
+    // And it really is the size the drag ENDED on, rather than the one it started from.
     const last = stripped(withoutLayout(terminal.bytes()))
       .split('\n')
       .filter((row) => row.includes(TOP_LEFT))
