@@ -267,6 +267,11 @@ describe('nothing else decides which renderer', () => {
     // could be resolved a SECOND time, because it is the one that lives long enough to
     // ask twice. It takes one, resolved at the entry for the whole session, and names
     // neither.
+    // THE ONE MODULE HERE THAT HAS A REASON TO ASK is the opening panel, which chooses
+    // between three drawings by whether each fits the terminal — and it asks how wide a
+    // line is rather than rendering one, because `presentation/` is where that question is
+    // answered (`plain.ts`, `widthOf`). It named a renderer on its first draft and this
+    // case is what said so.
     expect(naming('repl')).toEqual([]);
     // Read, rather than absent: the directory exists and it does print.
     expect(shipped('repl')).toEqual([
@@ -275,6 +280,7 @@ describe('nothing else decides which renderer', () => {
       'editing.ts',
       'gate.ts',
       'leaving.ts',
+      'panel.ts',
       'region.ts',
       'session.ts',
       'standing.ts',
