@@ -43,11 +43,22 @@ function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
   };
 }
 
-/** A completer of this file's own: three verbs, and nothing else in the world. */
+/**
+ * A completer of this file's own: three verbs, and nothing else in the world.
+ *
+ * Each offer carries what it is, because that is what a completer answers with now — the
+ * console draws a column of descriptions beside the words (`palette.ts`). What the Tab
+ * DOES with them is untouched, which is what these cases are about.
+ */
 const OFFERS: Completer = (line) => {
   const word = /\s$/.test(line) ? '' : (line.split(/\s+/).pop() ?? '');
   const words = ['verify', 'version', 'search'];
-  return [words.filter((candidate) => candidate.startsWith(word)), word];
+  return [
+    words
+      .filter((candidate) => candidate.startsWith(word))
+      .map((candidate) => ({ word: candidate, description: `what ${candidate} does` })),
+    word,
+  ];
 };
 
 /** Nothing to offer, ever — for the cases that are not about completion. */
@@ -218,13 +229,15 @@ describe('Tab takes what every candidate agrees on, and never chooses', () => {
   it('completes to the one candidate there is', () => {
     const row = typing([...characters('sea'), press('', { tab: true })], OFFERS);
     expect(row.typed).toBe('search');
-    expect(row.candidates).toEqual([]);
+    expect(row.offered).toEqual([]);
   });
 
   it('takes the shared start and carries the rest, rather than picking one', () => {
     const row = typing([...characters('ver'), press('', { tab: true })], OFFERS);
     expect(row.typed).toBe('ver');
-    expect(row.candidates).toEqual(['verify', 'version']);
+    expect(row.offered.map((offer) => offer.word)).toEqual(['verify', 'version']);
+    // AND WHAT EACH OF THEM IS, which is the half the console used to throw away.
+    expect(row.offered.every((offer) => offer.description.length > 0)).toBe(true);
     const further = typing([...characters('veri'), press('', { tab: true })], OFFERS);
     expect(further.typed).toBe('verify');
   });
@@ -241,12 +254,12 @@ describe('Tab takes what every candidate agrees on, and never chooses', () => {
     expect(row.typed).toBe('search x');
   });
 
-  it('adds nothing when nothing matches, and forgets the candidates on the next key', () => {
+  it('adds nothing when nothing matches, and forgets the offers on the next key', () => {
     const nothing = typing([...characters('zzz'), press('', { tab: true })], OFFERS);
     expect(nothing.typed).toBe('zzz');
-    expect(nothing.candidates).toEqual([]);
+    expect(nothing.offered).toEqual([]);
     const then = typing([...characters('ver'), press('', { tab: true }), press('i')], OFFERS);
-    expect(then.candidates).toEqual([]);
+    expect(then.offered).toEqual([]);
   });
 });
 

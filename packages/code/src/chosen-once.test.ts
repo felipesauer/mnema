@@ -282,6 +282,7 @@ describe('nothing else decides which renderer', () => {
       'gate.ts',
       'leaving.ts',
       'page.ts',
+      'palette.ts',
       'panel.ts',
       'region.ts',
       'session.ts',
