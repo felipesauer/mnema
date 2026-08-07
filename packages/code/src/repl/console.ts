@@ -262,7 +262,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   function followTheTerminal(): void {
     const wide = howWide();
-    // The size settled back where it started, which happens on the way through a drag.
+    // THE ONE GUARD, and it answers two questions with one comparison: a window made
+    // taller or shorter moves no glyph of a drawing whose only measurement is columns, and
+    // a drag that wandered away and came back is a caller whose page is already right.
+    // Both are the same fact — the width the page on the screen was drawn for is the width
+    // the terminal has — and asking it twice would be two ideas of when a page is stale.
     if (wide === drawnAt) return;
     drawnAt = wide;
     opened = openingFor(wide);
@@ -273,15 +277,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let settling: ReturnType<typeof setTimeout> | undefined;
 
   /**
-   * The terminal changed size — the page follows it, once the size has settled.
+   * The terminal changed size — the page follows it, once the size has SETTLED.
    *
-   * TWO GUARDS, and they answer different things. The first is the WIDTH: a window made
-   * taller or shorter moves no glyph of a drawing whose only measurement is columns, and a
-   * page reemitted for it would be a session redrawing itself because somebody dragged the
-   * bottom edge. The second is the SETTLING: one drag is dozens of these.
+   * Nothing is decided here. Every change starts the wait over, and what happens at the
+   * end of it is {@link followTheTerminal}'s to decide, which is why a drag of a corner
+   * costs one page and a drag of the bottom edge costs none.
    */
   function resized(): void {
-    if (howWide() === drawnAt) return;
     if (settling !== undefined) clearTimeout(settling);
     settling = setTimeout(() => {
       settling = undefined;
