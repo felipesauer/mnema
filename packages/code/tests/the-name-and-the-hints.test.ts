@@ -48,7 +48,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openSession, tips } from '../src/repl/session.js';
-import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
+import { CLEAR, LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
@@ -416,6 +416,26 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // so what it sees is what TYPING caused and nothing the opening paid for.
     expect(ofTheRecord(await readingWhileTyping('sear'))).toEqual([]);
   }, 120_000);
+
+  it('reads nothing at all when the caller asks for a clean page, however many times', async () => {
+    // THE DECISION, MEASURED. A clean page is the page the session opened with, and the
+    // panel on it was paid for with the one read this surface declares. Asking for it
+    // again could have been a second `verify` — and worse than costing one, it could have
+    // made the panel say something different halfway through a session. So the opening is
+    // a VALUE the console keeps, and this is what says so: three clean pages read exactly
+    // what no clean page reads.
+    const thrice = await reading(async () => {
+      await openedAt(200, [CLEAR, CLEAR, CLEAR]);
+    });
+    const once = await reading(async () => {
+      await openedAt(200);
+    });
+    expect(ofTheRecord(once).length, 'the opening read nothing at all').toBeGreaterThan(0);
+    expect(ofTheRecord(thrice)).toEqual(ofTheRecord(once));
+    // And nothing at all while the page is being cleared, on the watch that only sees
+    // what typing caused.
+    expect(ofTheRecord(await readingWhileTyping(`${CLEAR}\r`))).toEqual([]);
+  }, 180_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
     // THE TEETH, in the same window as the case above: one verb typed at the prompt, and

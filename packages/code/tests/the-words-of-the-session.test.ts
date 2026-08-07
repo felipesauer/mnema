@@ -45,26 +45,30 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const TESTS = fileURLToPath(new URL('.', import.meta.url));
 
 /**
- * The spelling these words used to have, as the accusation it makes.
- *
- * A dot before the word and a word boundary after it, and the two lookarounds are what
- * keep it from reading ordinary code as a relapse: `process.exit`, `program.help()` and
- * `.helpInformation` all have a word character on one side or the other, and every one of
- * them is in this repository.
- */
-const THE_OLD_SPELLING = /(?<![\w$/])\.(help|exit)(?![\w-])/;
-
-/**
  * What the prefix used to be, and the words as they used to be spelled.
  *
  * ASSEMBLED RATHER THAN TYPED, and not out of tidiness: the scan below reads this file
  * too, so a case that spelled the old word out would be the one file in the corpus that
  * fails it. Derived from the words themselves, so a word added tomorrow is covered by the
- * same two lines.
+ * same two lines — and one of them never had an old spelling at all, which is exactly
+ * what makes deriving the right shape: the ban is on the PREFIX, applied to every word
+ * there is.
  */
 const WAS = '.';
-const theOldSpellings = (): string[] =>
-  SESSION_WORDS.map((word) => WAS + word.slice(PREFIX.length));
+const stems = (): string[] => SESSION_WORDS.map((word) => word.slice(PREFIX.length));
+const theOldSpellings = (): string[] => stems().map((stem) => WAS + stem);
+
+/**
+ * The spelling these words used to have, as the accusation it makes.
+ *
+ * BUILT FROM THE WORDS, so it cannot fall behind them. The old prefix before the word and
+ * a word boundary after it, and the two lookarounds are what keep it from reading
+ * ordinary code as a relapse: `process.exit`, `program.help()`, `.helpInformation` and
+ * `log.clear()` all have a word character on one side or the other, and every one of them
+ * is in this repository.
+ */
+const theOldSpelling = (): RegExp =>
+  new RegExp(`(?<![\\w$/])\\${WAS}(${stems().join('|')})(?![\\w-])`);
 
 /** Every file under a directory whose name ends in one of `kinds`, recursively. */
 function filesUnder(directory: string, kinds: readonly string[]): string[] {
@@ -119,11 +123,13 @@ describe('the words the session answers to are composed, never typed', () => {
     // The vacuous form is a scan whose pattern stopped matching. Composed against the two
     // shapes the defect took: a word typed into a help string, and a word typed into a
     // comparison.
-    const relapse = [
-      `const help = '  ${SESSION_WORDS[0] as string}   what this session runs';`,
-      `if (first === "${SESSION_WORDS[1] as string}") return { does: 'leave' };`,
-    ].join('\n');
+    const relapse = SESSION_WORDS.map(
+      (word) => `const help = '  ${word}   what this word does';`,
+    ).join('\n');
     expect(typesAWord(relapse).sort()).toEqual([...SESSION_WORDS].sort());
+    // And the other shape it took: a comparison against the word rather than the constant.
+    const compared = `if (first === "${SESSION_WORDS[0] as string}") return { does: 'leave' };`;
+    expect(typesAWord(compared)).toEqual([SESSION_WORDS[0]]);
     // And it accuses neither prose nor the composition the module really uses.
     expect(typesAWord(`/* type ${SESSION_WORDS[0] as string} to see them */`)).toEqual([]);
     // Nor the composition the module really uses. The placeholder is assembled, because
@@ -136,34 +142,40 @@ describe('the words the session answers to are composed, never typed', () => {
 
 describe('the spelling these words used to have is gone', () => {
   it('is nowhere in the sources, the tests or the goldens', () => {
+    const pattern = theOldSpelling();
     for (const file of everywhere()) {
-      const said = THE_OLD_SPELLING.exec(readFileSync(file, 'utf-8'));
+      const said = pattern.exec(readFileSync(file, 'utf-8'));
       expect(said?.[0], `${file}: ${said?.[0] ?? ''}`).toBeUndefined();
     }
     // Not vacuous, in both halves. The corpus really was read…
     expect(everywhere().length).toBeGreaterThan(60);
-    // …and the words really are in it, under the spelling they have now.
+    // …and the subject really is in it. NOT the words themselves: nothing in this
+    // workspace spells one, which is the case above and would make a search for `/clear`
+    // fail on a corpus that is entirely correct. What is looked for is the STEM, which is
+    // what the module composes each word out of.
     const all = everywhere()
       .map((file) => readFileSync(file, 'utf-8'))
       .join('\n');
-    for (const word of SESSION_WORDS) expect(all).toContain(word);
+    for (const stem of stems()) expect(all, stem).toContain(stem);
   });
 
   it('would accuse the spelling, and does not accuse the code that reads like it', () => {
     // Each shape the old spelling really took in this repository — a help line, a
     // keystroke a test typed, and a sentence about the word — for every word there is.
+    const pattern = theOldSpelling();
     for (const old of theOldSpellings()) {
-      expect(THE_OLD_SPELLING.test(`  ${old}   what this session runs`), old).toBe(true);
-      expect(THE_OLD_SPELLING.test(`terminal.type('${old}\\r');`), old).toBe(true);
-      expect(THE_OLD_SPELLING.test(`leaves on \`${old}\`, after answering`), old).toBe(true);
+      expect(pattern.test(`  ${old}   what this session runs`), old).toBe(true);
+      expect(pattern.test(`terminal.type('${old}\\r');`), old).toBe(true);
+      expect(pattern.test(`leaves on \`${old}\`, after answering`), old).toBe(true);
     }
     expect(theOldSpellings().length).toBe(SESSION_WORDS.length);
     // Every one of these is really in this repository, and none of them is the word.
-    expect(THE_OLD_SPELLING.test('process.exit(1);')).toBe(false);
-    expect(THE_OLD_SPELLING.test('program.helpInformation();')).toBe(false);
-    expect(THE_OLD_SPELLING.test("const NAMES = ['commander.help'];")).toBe(false);
-    expect(THE_OLD_SPELLING.test('result.exitCode === 0')).toBe(false);
-    expect(THE_OLD_SPELLING.test('`cli.help.golden.txt` pins the wording')).toBe(false);
+    expect(pattern.test('process.exit(1);')).toBe(false);
+    expect(pattern.test('program.helpInformation();')).toBe(false);
+    expect(pattern.test("const NAMES = ['commander.help'];")).toBe(false);
+    expect(pattern.test('this.log.clear();')).toBe(false);
+    expect(pattern.test('result.exitCode === 0')).toBe(false);
+    expect(pattern.test('`cli.help.golden.txt` pins the wording')).toBe(false);
   });
 });
 

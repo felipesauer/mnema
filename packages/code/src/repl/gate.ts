@@ -32,11 +32,11 @@
  * which is the shape this series exists to remove.
  */
 
-import { ABOUT, LEAVE } from '../session-words.js';
+import { ABOUT, CLEAR, LEAVE } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 
-/** Whether the session goes on after a line, or closes. */
-export type AfterLine = 'go on' | 'leave';
+/** Whether the session goes on after a line, closes, or starts the page over. */
+export type AfterLine = 'go on' | 'leave' | 'clear';
 
 /** What the session does with one typed line. Closed, and total over what can be typed. */
 export type Disposition =
@@ -48,6 +48,11 @@ export type Disposition =
   | { readonly does: 'leave' }
   /** {@link ABOUT}. The session says what it runs. */
   | { readonly does: 'about' }
+  /**
+   * {@link CLEAR}. The page starts over: what was on it goes into the scrollback and the
+   * opening is drawn again. The session itself goes on, and nothing is read to do it.
+   */
+  | { readonly does: 'clear' }
   /** Anything else, worded for the caller. `detail` is the half after the colon. */
   | { readonly does: 'refuse'; readonly sentence: string; readonly detail?: string };
 
@@ -98,6 +103,7 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   if (first === undefined) return { does: 'nothing' };
   if (first === LEAVE) return excess(first, argv) ?? { does: 'leave' };
   if (first === ABOUT) return excess(first, argv) ?? { does: 'about' };
+  if (first === CLEAR) return excess(first, argv) ?? { does: 'clear' };
 
   const offered = verbsOffered(verbs, self);
   if (offered.includes(first)) return { does: 'run', argv };

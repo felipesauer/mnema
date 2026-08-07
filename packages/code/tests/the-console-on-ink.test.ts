@@ -675,6 +675,15 @@ const ADDED_UP_A_LINE = 'a line put together out of pieces, by addition';
 const COMPOSING = [REACHED_FOR_A_LINE, TYPED_A_TEXT, TEMPLATED_A_LINE, ADDED_UP_A_LINE];
 
 /**
+ * The two erases no module of this session may write: the screen, and the history above it.
+ *
+ * Named by what ends the sequence rather than by the whole of it, because the whole of it
+ * is assembled at three sites out of an escape and a bracket — a scan for the finished
+ * bytes would miss every one of them.
+ */
+const ERASES = ['2J', '3J'];
+
+/**
  * Which of the bans a source breaks.
  *
  * Judged over the LITERALS and not over the file, for the reason `literalsOf` gives, and
@@ -785,6 +794,26 @@ describe('no component composes a line; it only positions one the renderer produ
       expect(source, file).not.toContain('1049');
     }
     expect(modulesOf('repl').length).toBeGreaterThan(4);
+  });
+
+  it('never erases the page or the history above it, in any module of the session', () => {
+    // ⛔ THE SISTER OF THE BAN ABOVE, and it arrived with the page that opens clean. There
+    // are two ways to make a screen empty: erase it, or scroll it away. Only the second is
+    // defined to put what was there into the scrollback, which is why it is the one this
+    // console uses — and the erase that takes the HISTORY with it (`3J`) is the caller's
+    // own log of what they were doing before they opened a session, which is not ours to
+    // delete. Judged over the CODE, so the module that explains the ban may name it.
+    for (const file of modulesOf('repl')) {
+      const code = withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8'));
+      for (const erase of ERASES) expect(code, `${file} writes ${erase}`).not.toContain(erase);
+    }
+    // Not vacuous: the ban is over a real corpus, it would accuse the line an author would
+    // write, and the module whose whole subject this is NAMES both sequences in its prose.
+    expect(modulesOf('repl').length).toBeGreaterThan(4);
+    for (const erase of ERASES) {
+      expect(withoutComments(`const CLEAR_IT = ESC + '[${erase}';`)).toContain(erase);
+      expect(readFileSync(join(SRC, 'repl', 'page.ts'), 'utf-8')).toContain(erase);
+    }
   });
 });
 

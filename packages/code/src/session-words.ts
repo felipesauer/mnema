@@ -36,6 +36,9 @@ export const LEAVE = `${PREFIX}exit`;
 /** What this session runs, and how to leave it. */
 export const ABOUT = `${PREFIX}help`;
 
+/** Start the page over. What was on it is not destroyed — it is one scroll up. */
+export const CLEAR = `${PREFIX}clear`;
+
 /**
  * What each of them does, in the order the help lists them.
  *
@@ -47,6 +50,7 @@ export const ABOUT = `${PREFIX}help`;
  */
 export const WHAT_EACH_WORD_DOES: Readonly<Record<string, string>> = {
   [ABOUT]: 'what this session runs',
+  [CLEAR]: 'start the page over (what was on it stays in the scrollback)',
   [LEAVE]: 'leave (so does Ctrl-D; Ctrl-C clears the line you are typing)',
 };
 

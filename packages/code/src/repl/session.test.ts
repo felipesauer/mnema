@@ -174,7 +174,7 @@ describe('tab offers what the session runs', () => {
 
   it('offers the reads and the session’s own words, and not one write', () => {
     const [hits] = complete('');
-    expect(hits).toEqual([LEAVE, ABOUT, 'look', 'read'].sort());
+    expect(hits).toEqual([...SESSION_WORDS, 'look', 'read'].sort());
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
     // itself in two keystrokes. And `help` — commander's own implicit command — is
@@ -186,7 +186,7 @@ describe('tab offers what the session runs', () => {
 
   it('narrows to the prefix, and offers nothing when nothing matches', () => {
     expect(complete('lo')).toEqual([['look'], 'lo']);
-    expect(complete(PREFIX)).toEqual([[LEAVE, ABOUT].sort(), PREFIX]);
+    expect(complete(PREFIX)).toEqual([[...SESSION_WORDS].sort(), PREFIX]);
     expect(complete('zzz')).toEqual([[], 'zzz']);
   });
 

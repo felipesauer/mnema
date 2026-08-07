@@ -24,6 +24,16 @@
  * third: they arrive as bytes a renderer already produced, exactly like a landed line,
  * and all this file does with them is say where they go.
  *
+ * THE PAGE OPENS CLEAN, AND CLEANING IT AGAIN IS THE SAME PAGE. What the caller had on
+ * the screen is carried into the scrollback before anything is drawn (`page.ts`), and the
+ * word that clears asks for exactly that again: the same bytes, then the opening the
+ * session was handed, landed a second time. It is one value and one function, so what a
+ * cleared page shows cannot come to differ from what an opened one shows — and the
+ * opening is a VALUE for that reason rather than three lines somebody wrote once. In
+ * particular the record is not read again: what the panel says was paid for when the
+ * session opened, and a clean page that re-read it could say something different halfway
+ * through a session.
+ *
  * ONE LINE AT A TIME, and it is a chain rather than a flag. A caller who pastes three
  * lines has given the terminal all three before the first one has run, and three verbs
  * running at once over one record would answer interleaved. Each submitted line waits
@@ -38,6 +48,7 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
+import { carriedIntoTheScrollback } from './page.js';
 import type { Panel } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 
@@ -69,6 +80,15 @@ export interface ConsoleRequest {
    * lines have always been kept by.
    */
   readonly panel: Panel | undefined;
+  /**
+   * What the session says before the caller types anything, already rendered.
+   *
+   * It is landed when the page opens and landed again whenever the caller clears it,
+   * which is why it arrives as a value instead of being written through {@link
+   * OpenConsole.land} like everything after it: a clean page has to be able to show it a
+   * second time, and a line that had merely been printed once cannot be shown again.
+   */
+  readonly opening: readonly string[];
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -94,9 +114,10 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, tips, panel, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, tips, panel, opening, complete, answer, leaving } = request;
 
-  let past: readonly string[] = [];
+  let past: readonly string[] = [...opening];
+  let page = 0;
   let editing: Editing = NOTHING_TYPED;
   let shown: Shown = showing();
   const watchers = new Set<() => void>();
@@ -105,6 +126,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   function showing(): Shown {
     return {
       past,
+      page,
       present: prompt + editing.typed,
       candidates: editing.candidates.join(BETWEEN_CANDIDATES),
       // In characters rather than in string offsets: the caret is a column on a screen,
@@ -121,6 +143,34 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   function land(line: string): void {
     past = [...past, line];
+    moved();
+  }
+
+  /**
+   * How tall the page is, asked of the DEVICE each time rather than remembered.
+   *
+   * A terminal the caller resized is a different page, and the bytes that carry one into
+   * the scrollback are a function of how tall it is. Asking again costs a property read
+   * and is the only way the answer can be right after a resize.
+   */
+  const howTall = (): number => stdout.rows ?? 0;
+
+  /**
+   * A clean page: what was on it goes into the scrollback, and the opening is drawn again.
+   *
+   * The bytes go through the door the layout handed back rather than to the device, and
+   * that is the difference between this and the same call at the top of this function:
+   * with a frame on the screen, the library is counting rows it is about to redraw, and a
+   * write it did not make leaves that count pointing at the wrong ones.
+   *
+   * Nothing is read to do it. The opening is the value this console was opened with, so a
+   * cleared page is the opened page by construction rather than by a second composition
+   * that could come to say something else.
+   */
+  function cleanPage(): void {
+    carry(carriedIntoTheScrollback(howTall()));
+    past = [...opening];
+    page += 1;
     moved();
   }
 
@@ -186,7 +236,16 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
         turn = turn.then(async () => {
           if (left) return;
           land(prompt + line);
-          if ((await answer(line)) === 'leave') leave();
+          switch (await answer(line)) {
+            case 'leave':
+              leave();
+              return;
+            case 'clear':
+              cleanPage();
+              return;
+            case 'go on':
+              return;
+          }
         });
         return;
       }
@@ -199,6 +258,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     }
   }
 
+  /** The door the layout hands back once it is up. See {@link Watched.opened}. */
+  let carry: (bytes: string) => void = () => undefined;
+
   const watched: Watched = {
     now: () => shown,
     watch: (changed) => {
@@ -208,7 +270,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       };
     },
     pressed,
+    opened: (write) => {
+      carry = write;
+    },
   };
+
+  // THE PAGE OPENS CLEAN, and here it is written to the DEVICE: nothing is mounted yet,
+  // so there is no frame for these bytes to be out of step with. The same bytes go
+  // through the layout's door once there is one ({@link cleanPage}).
+  stdout.write(carriedIntoTheScrollback(howTall()));
 
   const app = render(createElement(Region, { watched, tips, panel }), {
     stdin,

@@ -454,7 +454,11 @@ describe('the form comes out of the content, and the narrowest still says the es
       expect(formOf(page), `${form} at ${edge}`).toBe(form);
       const rows = boxRows(page).map(widthOf);
       expect(new Set(rows).size, `${form}: the box is ragged`).toBe(1);
-      expect(rows[0], `${form}: the box does not fit`).toBeLessThanOrEqual(edge);
+      // Corner to corner. The box takes the width of the TERMINAL — the form is what the
+      // content chose, and how much of the screen the frame covers is not the content's
+      // to decide. Asked of a real console here; asked of a real terminal in
+      // `tests/a-page-that-opens-clean.test.ts`, at three widths.
+      expect(rows[0], `${form}: the box is not the width of the terminal`).toBe(edge);
       expect(formOf(await openedAt(edge - 1)), `${form}: did not give way`).not.toBe(form);
     }
   }, 300_000);
@@ -473,11 +477,17 @@ describe('the form comes out of the content, and the narrowest still says the es
     expect(page).toContain('Hints');
   }, 120_000);
 
-  it('reports the width it gives way at, on lines a project would never have', () => {
-    // The same property on the arithmetic alone, where a width can be ASKED FOR: whatever
-    // a form says it costs, it fits in exactly that and not in one column less. This is the
-    // half a terminal cannot reach, because a session cannot be asked to draw a panel out
-    // of lines its project does not hold.
+  it('gives each form up one column below where its own content stops fitting', () => {
+    // The same property on the arithmetic alone, where a width can be ASKED FOR. This is
+    // the half a terminal cannot reach, because a session cannot be asked to draw a panel
+    // out of lines its project does not hold.
+    //
+    // IT USED TO ASK THE PANEL HOW WIDE IT WAS, and that question no longer has an
+    // answer: the box is drawn at the width of the terminal, so what the drawing costs
+    // and what it covers came apart, and the field that used to say the first was
+    // REPLACED rather than redefined. The width each form gives way at is searched for
+    // instead, which is what the console's own case above already does — so nothing in
+    // this case knows how wide anything is.
     const made = (columns: number) =>
       panelFor({
         columns,
@@ -488,15 +498,28 @@ describe('the form comes out of the content, and the narrowest still says the es
         record: [statement('The record'), statement('public', 'verified', 'good', 1)],
         hints: [statement('Hints'), statement('what to type')],
       });
-    const twoColumns = made(Number.MAX_SAFE_INTEGER);
-    expect(twoColumns.form).toBe('columns');
-    expect(made(twoColumns.width).form).toBe('columns');
-    const stacked = made(twoColumns.width - 1);
-    expect(stacked.form).toBe('stacked');
-    expect(made(stacked.width).form).toBe('stacked');
-    expect(made(stacked.width - 1).form).toBe('bare');
-    // And the narrowest form is still a panel: it reports the width of its own widest line.
-    expect(made(1).width).toBeGreaterThan(0);
+    const narrowestFor = (form: PanelForm): number => {
+      let low = 0;
+      let high = 400;
+      expect(RICHNESS[made(high).form], form).toBeGreaterThanOrEqual(RICHNESS[form]);
+      while (high - low > 1) {
+        const middle = Math.floor((low + high) / 2);
+        if (RICHNESS[made(middle).form] >= RICHNESS[form]) high = middle;
+        else low = middle;
+      }
+      return high;
+    };
+    for (const [form, simpler] of [
+      ['columns', 'stacked'],
+      ['stacked', 'bare'],
+    ] as const) {
+      const edge = narrowestFor(form);
+      expect(made(edge).form, `${form} at ${edge}`).toBe(form);
+      expect(made(edge - 1).form, `${form} at ${edge - 1}`).toBe(simpler);
+    }
+    // And the panel reports the terminal it was measured for, which is the width the box
+    // is DRAWN at — the other of the two questions, and the one the layout reads.
+    for (const columns of [40, 100, 200]) expect(made(columns).columns).toBe(columns);
   });
 });
 
