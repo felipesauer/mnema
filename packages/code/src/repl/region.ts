@@ -200,13 +200,15 @@ export interface Watched {
 }
 
 /**
- * The console: the opening panel, everything already said, then the row being typed, then
- * what to do next.
+ * The console: the opening panel, everything already said, and then the input — the badge
+ * in the corner, the row being typed between two rules, and what to do next.
  *
- * THE TIPS ARE A PROP AND THE PANEL IS WATCHED, and that used to be one sentence about
- * both: they were resolved once when the session opened and never moved again, so putting
- * either in the value rebuilt on every keystroke would have said they might. The tips are
- * still that. The panel is not — it is drawn at the width of the TERMINAL, and a caller
+ * THE TIPS AND THE BADGE ARE PROPS AND THE PANEL IS WATCHED, and that used to be one
+ * sentence about the first and the last: they were resolved once when the session opened
+ * and never moved again, so putting either in the value rebuilt on every keystroke would
+ * have said they might. The tips are still that, and the badge joined them — it says what
+ * the record proved, out of the one read this surface pays for, and nothing that happens
+ * inside a session changes it. The panel is not — it is drawn at the width of the TERMINAL, and a caller
  * who resizes theirs gets the page again with the box recomposed for it, which is a move.
  * So it travels with {@link Shown}, beside the page identity it changes with.
  *
@@ -216,6 +218,11 @@ export interface Watched {
  * calling a pure function over lines that already exist, once the terminal has stopped
  * changing size; a value the LAYOUT re-read on every frame would still be a replay loop,
  * and this is not one (`tests/the-name-and-the-hints.test.ts` counts the reads).
+ *
+ * WHAT IS WATCHED AND IS NOT A LINE is the SHAPE of the input area, and it is watched for
+ * two reasons that have nothing to do with a read: how TALL the caller's terminal is, and
+ * whether a Tab left words on the page. Which arrangement there is room for is answered
+ * before this file is reached (`area.ts`); all this one does is draw the one it is handed.
  */
 export function Region({
   watched,
