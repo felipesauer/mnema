@@ -34,6 +34,17 @@
  * session opened, and a clean page that re-read it could say something different halfway
  * through a session.
  *
+ * AND THE PAGE FOLLOWS THE TERMINAL, which is the THIRD caller of that same page — the
+ * opening, the word that clears, and a caller who changed how wide their window is. The
+ * box is drawn corner to corner, so a session opened at a hundred and twenty columns and
+ * narrowed to seventy is a frame the terminal folds in half; the fix is not a special
+ * redraw but the page again, at the new width. What differs from a clearing is one thing:
+ * everything the session already SAID is landed with it, because a caller who resized a
+ * window did not ask to lose what they had read. WIDTH ONLY — height moves no glyph of
+ * the drawing — and after the size has SETTLED, because one drag of a window corner
+ * delivers dozens of sizes and a page reemitted on each of them is the defect this would
+ * otherwise become.
+ *
  * ONE LINE AT A TIME, and it is a chain rather than a flag. A caller who pastes three
  * lines has given the terminal all three before the first one has run, and three verbs
  * running at once over one record would answer interleaved. Each submitted line waits
@@ -49,11 +60,41 @@ import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } fr
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { carriedIntoTheScrollback } from './page.js';
-import type { Panel } from './panel.js';
+import type { Opening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 
 /** What separates two words a Tab could not choose between. */
 const BETWEEN_CANDIDATES = '  ';
+
+/**
+ * How wide the terminal is taken to be when the device does not say.
+ *
+ * Zero, so the narrowest form of everything is drawn: a width nobody reported is not a
+ * width to guess at, and the form that always fits is the name.
+ */
+const NO_WIDTH = 0;
+
+/**
+ * How long the size has to stop changing before the page is drawn again, in milliseconds.
+ *
+ * A window dragged by its corner delivers a size per step and the steps are milliseconds
+ * apart: measured on a real pseudo-terminal, a hundred changes forced through as fast as
+ * the kernel will take them arrive a median of 2 ms apart and never more than 3 — which is
+ * the FLOOR of what a drag looks like, since nothing was moving a mouse. Reemitting the
+ * page on each of them would put one drag's worth of pages in the caller's scrollback,
+ * which is worse than the folded frame this exists to fix. So the page follows the size the
+ * caller STOPPED at.
+ *
+ * A tenth of a second, and the number is chosen from both ends: it is more than thirty
+ * times the gap between two steps of that drag, so a drag coalesces into one page; and it
+ * is at the threshold below which a person reads a response as immediate, so a caller who
+ * resized once and let go does not watch the box lag behind their window.
+ *
+ * WHAT IT BUYS IS THE WHOLE COST, and the cost is per PAGE rather than per event: reemitting
+ * one is linear in what the session has said, measured at about 33 ms over 200 lines and
+ * about 100 ms over 800. Thirty of those inside one drag is the defect; one is a redraw.
+ */
+const AFTER_THE_LAST_CHANGE = 100;
 
 /** Everything opening a console needs. */
 export interface ConsoleRequest {
@@ -72,23 +113,27 @@ export interface ConsoleRequest {
    */
   readonly tips: string;
   /**
-   * The box the session opens with, already composed and already measured, or none when
-   * the terminal is too narrow for a box and the same lines are landed instead.
+   * WHAT THE PAGE OPENS WITH, on a terminal of a given width — the box and the lines that
+   * go with it, already composed and already measured.
    *
-   * It goes into what is KEPT rather than into what is redrawn: it is written once and a
-   * caller scrolls back to the top to find it, which is the same argument the opening
-   * lines have always been kept by.
-   */
-  readonly panel: Panel | undefined;
-  /**
-   * What the session says before the caller types anything, already rendered.
+   * A FUNCTION AND NOT A VALUE, and the width is the whole reason. It arrived as a value
+   * while the page was only ever drawn at the size the session opened at; a page that
+   * follows the terminal has to be able to ask for the same opening at another width, and
+   * two of the answers depend on it — which drawing there is room for, and how much of the
+   * name is drawn. Everything else it returns is closed over, composed once, and never
+   * asked for again.
    *
-   * It is landed when the page opens and landed again whenever the caller clears it,
-   * which is why it arrives as a value instead of being written through {@link
-   * OpenConsole.land} like everything after it: a clean page has to be able to show it a
-   * second time, and a line that had merely been printed once cannot be shown again.
+   * ⛔ IT MAY NOT READ THE RECORD, and that is the caller's promise rather than a
+   * signature this file can enforce. What the panel says about the record was paid for
+   * with the one read this surface declares (`session.ts`), and a redraw that asked again
+   * could say something different halfway through a session — measured by counting the
+   * reads three width changes cause, which is none (`tests/the-name-and-the-hints.test.ts`).
+   *
+   * The box goes into what is KEPT rather than into what is redrawn: it is written once
+   * per page and a caller scrolls back to the top to find it, which is the same argument
+   * the opening lines have always been kept by.
    */
-  readonly opening: readonly string[];
+  readonly openingFor: (columns: number) => Opening;
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -114,9 +159,25 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, tips, panel, opening, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, tips, openingFor, complete, answer, leaving } = request;
 
-  let past: readonly string[] = [...opening];
+  /**
+   * How wide the page is, asked of the DEVICE — the one place anything does.
+   *
+   * Everything else that needs the width is HANDED it: the panel's arithmetic, the art of
+   * the name, the layout that draws the frame corner to corner. This is the module that
+   * owns the streams, so this is where the question is asked, and asking it in a second
+   * place would be a second answer on the frame after a resize.
+   */
+  const howWide = (): number => stdout.columns ?? NO_WIDTH;
+
+  /** The width the page on the screen was drawn for. What a resize is compared against. */
+  let drawnAt = howWide();
+  /** The box and the lines this page opened with, for {@link drawnAt}. */
+  let opened: Opening = openingFor(drawnAt);
+  /** Everything the session has said SINCE the page opened — the opening is not in it. */
+  let said: readonly string[] = [];
+  let past: readonly string[] = [...opened.lines];
   let page = 0;
   let editing: Editing = NOTHING_TYPED;
   let shown: Shown = showing();
@@ -127,6 +188,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     return {
       past,
       page,
+      panel: opened.panel,
       present: prompt + editing.typed,
       candidates: editing.candidates.join(BETWEEN_CANDIDATES),
       // In characters rather than in string offsets: the caret is a column on a screen,
@@ -142,6 +204,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   function land(line: string): void {
+    said = [...said, line];
     past = [...past, line];
     moved();
   }
@@ -156,22 +219,85 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const howTall = (): number => stdout.rows ?? 0;
 
   /**
-   * A clean page: what was on it goes into the scrollback, and the opening is drawn again.
+   * THE PAGE, AGAIN: what was on it goes into the scrollback, and it is drawn from what
+   * this console holds — the opening, then whatever the session has said that is still on
+   * it.
+   *
+   * ONE FUNCTION AND THE ONLY PLACE A PAGE IS TURNED. Both callers below differ in exactly
+   * one line of their own — one empties what was said, the other recomposes the opening —
+   * and neither writes bytes, counts a page or touches the layout. That is deliberate: a
+   * second place that carried the screen away and bumped the page would be a second idea
+   * of what a page is, and the one thing every case of this surface pins is that a page
+   * drawn again is the page that opened.
    *
    * The bytes go through the door the layout handed back rather than to the device, and
    * that is the difference between this and the same call at the top of this function:
    * with a frame on the screen, the library is counting rows it is about to redraw, and a
    * write it did not make leaves that count pointing at the wrong ones.
    *
-   * Nothing is read to do it. The opening is the value this console was opened with, so a
-   * cleared page is the opened page by construction rather than by a second composition
-   * that could come to say something else.
+   * Nothing is READ to do it, in either caller.
    */
-  function cleanPage(): void {
+  function thePageAgain(): void {
     carry(carriedIntoTheScrollback(howTall()));
-    past = [...opening];
+    past = [...opened.lines, ...said];
     page += 1;
     moved();
+  }
+
+  /**
+   * A clean page: the opening, and nothing the session has said.
+   *
+   * The opening is what this console was handed for the width it is drawn at, so a cleared
+   * page is the opened page by construction rather than by a second composition that could
+   * come to say something else.
+   */
+  function cleanPage(): void {
+    said = [];
+    thePageAgain();
+  }
+
+  /**
+   * The page at the width the caller's terminal has NOW: the opening recomposed for it,
+   * and every line the session already said landed under it.
+   *
+   * What is not here is as much of the decision as what is. Nothing is re-read — the
+   * opening is recomposed out of lines that already exist, and the two things that depend
+   * on the width are which drawing there is room for and how much of the name is drawn.
+   * And nothing the caller has read is taken from them: the page they had goes UP, into
+   * the scrollback, exactly as it does when they ask for a clean one.
+   */
+  function followTheTerminal(): void {
+    const wide = howWide();
+    // THE ONE GUARD, and it answers two questions with one comparison: a window made
+    // taller or shorter moves no glyph of a drawing whose only measurement is columns, and
+    // a drag that wandered away and came back is a caller whose page is already right.
+    // Both are the same fact — the width the page on the screen was drawn for is the width
+    // the terminal has — and asking it twice would be two ideas of when a page is stale.
+    if (wide === drawnAt) return;
+    drawnAt = wide;
+    opened = openingFor(wide);
+    thePageAgain();
+  }
+
+  /** The redraw that has been asked for and not yet drawn, if any. */
+  let settling: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * The terminal changed size — the page follows it, once the size has SETTLED.
+   *
+   * Nothing is decided here. Every change starts the wait over, and what happens at the
+   * end of it is {@link followTheTerminal}'s to decide, which is why a drag of a corner
+   * costs one page and a drag of the bottom edge costs none.
+   */
+  function resized(): void {
+    if (settling !== undefined) clearTimeout(settling);
+    settling = setTimeout(() => {
+      settling = undefined;
+      followTheTerminal();
+    }, AFTER_THE_LAST_CHANGE);
+    // A page waiting to be drawn is no reason for the process to stay up: if everything
+    // else that holds it open has gone, the session is over and there is nothing to draw.
+    settling.unref();
   }
 
   /** One submitted line at a time, in the order they were typed. */
@@ -187,6 +313,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   function restore(): void {
     if (restored) return;
     restored = true;
+    // The watch on the device's size goes first, and a page that was about to be drawn is
+    // dropped: a redraw landing after the frame came down would be this session writing on
+    // a terminal that is somebody else's again.
+    stdout.off('resize', resized);
+    if (settling !== undefined) clearTimeout(settling);
     disarm();
     app.unmount();
   }
@@ -277,10 +408,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   // THE PAGE OPENS CLEAN, and here it is written to the DEVICE: nothing is mounted yet,
   // so there is no frame for these bytes to be out of step with. The same bytes go
-  // through the layout's door once there is one ({@link cleanPage}).
+  // through the layout's door once there is one ({@link thePageAgain}).
   stdout.write(carriedIntoTheScrollback(howTall()));
 
-  const app = render(createElement(Region, { watched, tips, panel }), {
+  const app = render(createElement(Region, { watched, tips }), {
     stdin,
     stdout,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the
@@ -299,6 +430,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // asked of the device rather than of the environment.
     interactive: true,
   });
+
+  // THE PAGE FOLLOWS THE TERMINAL, and the watch goes on AFTER the layout is up: the
+  // library keeps its own on the same event and recalculates the frame it is redrawing, so
+  // arming this one second is what puts the page in front of a library that has already
+  // agreed about how wide the screen is.
+  stdout.on('resize', resized);
 
   const disarm = armLeaving(leaving, restore);
 

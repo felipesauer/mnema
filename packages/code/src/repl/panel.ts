@@ -118,6 +118,28 @@ const BESIDE = 2;
 const AROUND_TITLE = 5;
 
 /**
+ * WHAT THE PAGE OPENS WITH on a terminal of a given width: the box, or the absence of one
+ * and the same lines instead.
+ *
+ * The two halves travel together because they are one answer to one question, and the
+ * answer changes with the width: a terminal too narrow for a box gets none and gets
+ * {@link panelLines} landed like any other line, so a width that crosses that threshold
+ * moves the drawing from one half of this value to the other. Whoever asked for it at one
+ * width and asked again at another has to be handed both, or the second answer would be a
+ * box the console still had to work out where to put.
+ *
+ * `lines` is not only the panel's. It is everything the page opens with — the session adds
+ * the sentence that says what it refuses — which is why this file composes none of it and
+ * only says what the shape is.
+ */
+export interface Opening {
+  /** The box, or none when the terminal is too narrow for one. */
+  readonly panel: Panel | undefined;
+  /** What is landed as the page opens, already bytes, in reading order. */
+  readonly lines: readonly string[];
+}
+
+/**
  * Every line of the panel, in reading order — what a terminal with no room for a box
  * gets.
  *
@@ -141,10 +163,22 @@ function widest(lines: readonly Line[]): number {
  *
  * `columns` is asked of the DEVICE by whoever opens the session and handed in, for the
  * reason the banner gives: nothing that composes a line may look at a terminal, and this
- * does not compose one — but it is answered ONCE, when the session opens, and the drawing
- * then belongs to the scrollback like every other line the session has already said. A
- * panel that redrew itself narrower on a resize would be rewriting what the caller can
- * scroll back to.
+ * does not compose one.
+ *
+ * THIS USED TO SAY IT WAS ANSWERED ONCE, when the session opened, and that "a panel that
+ * redrew itself narrower on a resize would be rewriting what the caller can scroll back
+ * to". What falsified it is the box taking the width of the TERMINAL: while the drawing
+ * was as wide as its own content, a terminal that shrank to eighty columns still had room
+ * for it, and not redrawing cost nothing. Corner to corner, a session opened at a hundred
+ * and twenty columns and shrunk to seventy is eight rows the terminal folds in half —
+ * not-redrawing became the broken drawing. So the answer is asked again whenever the width
+ * changes, and what the old sentence was protecting is protected by something else: the
+ * page is carried into the scrollback before the new one is drawn, so nothing the caller
+ * could scroll back to is rewritten, and this function is CALLED again rather than being a
+ * value somebody mutated. It is still pure, it still reads nothing, and the record behind
+ * `record` is still the one the session paid for when it opened
+ * (`tests/the-page-follows-the-terminal.test.ts`, and the read counter in
+ * `tests/the-name-and-the-hints.test.ts`).
  */
 export function panelFor(request: PanelRequest): Panel {
   const { columns, render, title, mark, standing, record, hints } = request;
