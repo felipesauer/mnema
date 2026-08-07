@@ -166,6 +166,15 @@ describe('one palette, two triggers, and the slash counts only at the start of t
       expect(offeredBy(line, [], words), line).toEqual([]);
     }
     expect(offeredBy(`${PREFIX}help`, [], words).length).toBe(1);
+    // ⚠️ AND IT DOES NOT SUPPRESS WHAT A TAB OFFERED, WHICH IS THE OTHER HALF AND THE ONE
+    // THE FIRST DRAFT OF THIS CASE MISSED. Reading the slash anywhere in the line is a
+    // mutation that leaves every assertion above green — filtering the vocabulary by a
+    // whole line that has a verb in it answers with nothing either way — and what it
+    // really breaks is the OTHER trigger: a Tab pressed on a line holding a path would
+    // stop offering anything at all. Measured: the mutation lit zero cases until this line
+    // existed.
+    expect(offeredBy(`show a${PREFIX}`, tabOffered, words)).toEqual(tabOffered);
+    expect(offeredBy(`show ${PREFIX}tmp${PREFIX}x`, tabOffered, words)).toEqual(tabOffered);
   });
 
   it('offers what a Tab could not choose between when the line has no slash', () => {
