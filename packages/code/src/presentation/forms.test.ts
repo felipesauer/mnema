@@ -27,7 +27,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { fact, statedFact, subjectLine } from './detail.js';
+import { aside, fact, statedFact, subjectLine } from './detail.js';
 import { column, itemLine } from './items.js';
 import { renderPlain } from './plain.js';
 import { asState } from './state.js';
@@ -96,6 +96,15 @@ describe('form B — the subject and its facts', () => {
     expect(renderPlain(statedFact('a title', asState('BLOCKED')))).toBe(
       renderPlain(fact('a title (BLOCKED)')),
     );
+  });
+
+  it('puts an aside where a fact goes, because the two are read together', () => {
+    // An aside says what the reader can DO and a fact says what is true, and a session's
+    // opening prints both. A different depth would say one of them belongs to the other,
+    // so the shape is the fact's exactly — what differs is the weight, and weight is the
+    // styled renderer's (`styled.test.ts`).
+    expect(renderPlain(aside('`.exit` or Ctrl-D leaves'))).toBe('  `.exit` or Ctrl-D leaves');
+    expect(renderPlain(aside('x'))).toBe(renderPlain(fact('x')));
   });
 
   it('indents a fact exactly as deep as an item, so the two never disagree', () => {

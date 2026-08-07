@@ -4,7 +4,16 @@
  * This is the whole of the console's layout, and it is deliberately the only file on
  * this surface that a layout library reaches. Everything in it POSITIONS: a row for what
  * the session has already said, a row for what is being typed, the caret at the offset
- * the caller's arrows put it at, a place for the words a Tab could not choose between.
+ * the caller's arrows put it at, a place for the words a Tab could not choose between,
+ * and a place for what the caller can do next.
+ *
+ * WHAT IS REDRAWN AND WHAT IS KEPT IS THE ONE DECISION THIS FILE MAKES ABOUT A LINE, and
+ * it is about WHERE and never about what. The banner is written once and stays in the
+ * scrollback, because it is the session's own opening and a caller scrolls back to the
+ * top to find it. The TIPS are the other way round and for the reverse of the same
+ * reason: a hint that has scrolled off the screen is not a hint, so they sit in the
+ * region that is redrawn and stay under the row being typed for as long as the session
+ * lives. Neither of them is composed here — both arrive as bytes a renderer produced.
  *
  * NOTHING HERE COMPOSES A LINE, and that is the limit the whole decision to take a
  * layout library rests on. Five deliveries built ONE model of what a line of this
@@ -23,7 +32,11 @@
  *
  * THE ONE STYLE DECISION HERE IS NOT ABOUT A REPORT. The row of candidates a Tab offers
  * is dimmed, and it is the console's own affordance rather than a line of the record —
- * no line that came from a renderer is touched, painted, padded or trimmed here.
+ * no line that came from a renderer is touched, painted, padded or trimmed here. THE
+ * TIPS ARE NOT A SECOND ONE, and the difference is the whole reason they read the same:
+ * they are dim because the renderer made them dim (`presentation/detail.ts`, `aside`),
+ * so what says "you may skip this" is the same table that says it about an id and an
+ * instant, and this file did not decide anything about them at all.
  *
  * AND THERE IS NO ALTERNATE SCREEN, on purpose and against the first design. Measured:
  * this library redraws the changing rows in the NORMAL buffer and leaves everything the
@@ -43,7 +56,7 @@ export interface Shown {
   /** The row being typed: the prompt and what is on it, already put together. */
   readonly present: string;
   /** What a Tab could not choose between, already put together. Empty when there is none. */
-  readonly hint: string;
+  readonly candidates: string;
   /** Which column of {@link present} the caret sits in. */
   readonly column: number;
 }
@@ -58,8 +71,20 @@ export interface Watched {
   readonly pressed: (stroke: Keystroke) => void;
 }
 
-/** The console: everything already said, then the row being typed. */
-export function Region({ watched }: { readonly watched: Watched }): ReactNode {
+/**
+ * The console: everything already said, then the row being typed, then what to do next.
+ *
+ * The tips are a PROP and not part of what is watched, and the distinction is the fact:
+ * they are resolved once when the session opens and never move again, so putting them in
+ * the value that is rebuilt on every keystroke would say they might.
+ */
+export function Region({
+  watched,
+  tips,
+}: {
+  readonly watched: Watched;
+  readonly tips: string;
+}): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
 
@@ -78,7 +103,7 @@ export function Region({ watched }: { readonly watched: Watched }): ReactNode {
     Box,
     { flexDirection: 'column' },
     node(Past, { lines: shown.past }),
-    node(Present, { present: shown.present, hint: shown.hint }),
+    node(Present, { present: shown.present, candidates: shown.candidates, tips }),
   );
 }
 
@@ -116,18 +141,29 @@ function Past({ lines }: { readonly lines: readonly string[] }): ReactNode {
   });
 }
 
-/** The row being typed, and under it the words a Tab could not choose between. */
+/**
+ * The row being typed, and under it the two rows that are about typing.
+ *
+ * The order is the order of how far each one is from the keystroke: the words a Tab could
+ * not choose between answer the key that was just pressed, and the tips answer the whole
+ * session. A row with nothing in it is left out rather than left blank — the candidates
+ * are there only after an ambiguous Tab, and a session with nothing to suggest should not
+ * push the caret up a line for an empty row.
+ */
 function Present({
   present,
-  hint,
+  candidates,
+  tips,
 }: {
   readonly present: string;
-  readonly hint: string;
+  readonly candidates: string;
+  readonly tips: string;
 }): ReactNode {
   return node(
     Box,
     { flexDirection: 'column' },
     node(Text, null, present),
-    hint.length > 0 ? node(Text, { dimColor: true }, hint) : null,
+    candidates.length > 0 ? node(Text, { dimColor: true }, candidates) : null,
+    tips.length > 0 ? node(Text, null, tips) : null,
   );
 }

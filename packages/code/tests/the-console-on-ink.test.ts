@@ -50,7 +50,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
-import { openSession } from '../src/repl/session.js';
+import { openSession, tips } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 
@@ -390,20 +390,43 @@ describe('the console gives the terminal back, whichever way the session ends', 
 // The same verbs, the same lines, another place
 // ---------------------------------------------------------------------------
 
+/** Every style sequence out, so what is left is what a pipe would have received. */
+const stripped = (line: string): string =>
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
+  line.replace(/\u001b\[[0-9;]*m/g, '');
+
+/** The console's own row of affordances, as the session composes it. Never an answer. */
+const TIPS = renderPlain(tips());
+
 /**
- * Everything the console wrote to the page that is not the row being typed.
+ * Whether a row is the console's OWN tips rather than a line the session landed.
  *
- * The row being typed is the ONE region the layout redraws, so it is written once per
- * frame and every other row is written once, ever. Telling them apart is therefore not
- * frame archaeology: a row that begins with the prompt is the input row or the echo of
- * one, and every other row is a line the session landed. The echo is checked on its own,
- * where it cannot be confused with an answer.
+ * Matched as a SUFFIX of the tips and not by equality, because the region holding them is
+ * redrawn on every keystroke and a slice of the byte stream taken between two frames can
+ * begin part-way through the row. An empty row is never the tips, and the guard is not
+ * pedantry: two of the reads compared below separate their sections with blank lines, and
+ * every string ends with the empty one.
+ */
+function isTips(row: string): boolean {
+  const text = stripped(row);
+  return text.length > 0 && TIPS.endsWith(text);
+}
+
+/**
+ * Everything the console wrote to the page that is not the row being typed, nor the two
+ * rows that are about typing.
+ *
+ * The rows the layout redraws are written once per frame and every other row is written
+ * once, ever. Telling them apart is therefore not frame archaeology: a row that begins
+ * with the prompt is the input row or the echo of one, a row that is the tips is the
+ * console's own affordance, and every other row is a line the session landed. The echo is
+ * checked on its own, where it cannot be confused with an answer.
  */
 function landed(bytes: string): string[] {
   const rows = withoutLayout(bytes).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
   rows.pop();
-  return rows.filter((row) => !row.startsWith(PROMPT));
+  return rows.filter((row) => !row.startsWith(PROMPT) && !isTips(row));
 }
 
 /** Drives a console over `typed` in this process and answers with what it drew. */

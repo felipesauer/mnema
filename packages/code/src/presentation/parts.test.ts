@@ -27,7 +27,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fact, statedFact, subjectLine } from './detail.js';
+import { aside, fact, statedFact, subjectLine } from './detail.js';
 import { asId, asWhen, itemLine } from './items.js';
 import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
@@ -59,6 +59,9 @@ describe('every role has something that produces it', () => {
     subjectLine('task the-id', 'public'),
     fact('created at noon'),
     fact('mnema key enroll <the line>', 2),
+    // The line that says what a reader can DO rather than what is true. It is the
+    // second producer of `detail`, which used to be the argument of one function.
+    aside('`.help` says what it runs'),
     statement('ALLOWED', 'submit t-1 → READY'),
     statement('local integrity verified; 1 tail(s)'),
     statement('ALLOWED', 'submit t-1 → READY', 'good'),
