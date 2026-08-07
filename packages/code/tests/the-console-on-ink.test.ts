@@ -10,7 +10,8 @@
  * frontier can produce, and the reason it is worst is that the program which caused it
  * is already gone when anybody notices.
  *
- * SO EVERY WAY OUT IS DRIVEN HERE, in a pty, on the real binary: `.exit`, Ctrl-D, Ctrl-C,
+ * SO EVERY WAY OUT IS DRIVEN HERE, in a pty, on the real binary: the word that leaves,
+ * Ctrl-D, Ctrl-C,
  * each signal the product declares it answers, and a throw nobody caught. The delivery
  * before this one proved the category — its concurrency defect was invisible in process
  * and appeared on the first probe in a terminal. Here the whole subject is of that
@@ -51,6 +52,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
 import { openSession, tips } from '../src/repl/session.js';
+import { LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 
@@ -294,17 +296,17 @@ function expectTheTerminalCameBack(ran: Ran, what: string): void {
 // ---------------------------------------------------------------------------
 
 describe('the console gives the terminal back, whichever way the session ends', () => {
-  it('on `.exit`, after answering', async () => {
+  it('on the word that leaves, after answering', async () => {
     const ran = await inPty({
       entry: [CLI, REPL_VERB],
       types: ['verify\r'],
       waitFor: 'local integrity verified',
-      thenTypes: ['.exit\r'],
+      thenTypes: [`${LEAVE}\r`],
     });
     // It really ran a verb inside the console first — a session that gave the terminal
     // back before doing anything would pass the assertions below and be useless.
     expect(ran.bytes).toContain('local integrity verified');
-    expectTheTerminalCameBack(ran, '.exit');
+    expectTheTerminalCameBack(ran, LEAVE);
   }, 120_000);
 
   it('on Ctrl-D, which is the end of the input rather than a word', async () => {
@@ -328,7 +330,7 @@ describe('the console gives the terminal back, whichever way the session ends', 
       entry: [CLI, REPL_VERB],
       types: [abandoned],
       waitFor: abandoned,
-      thenTypes: [CTRL_C, 'verify\r', '.exit\r'],
+      thenTypes: [CTRL_C, 'verify\r', `${LEAVE}\r`],
     });
     expect(ran.bytes).toContain('local integrity verified');
     // And the abandoned line was never run: the session refuses a word no verb answers
@@ -461,7 +463,7 @@ async function inTheConsole(
       still = 0;
     }
   }
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return {
     opening,
@@ -547,7 +549,7 @@ describe('the same verbs, the same lines, another place', () => {
       leaving: hooksNothing,
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
-    terminal.type('verify\raccountability\r.exit\r');
+    terminal.type(`verify\raccountability\r${LEAVE}\r`);
     await closed;
     const page = terminal.bytes();
     expect(page).toContain(`${PROMPT} verify`);
@@ -605,14 +607,14 @@ describe('the same verbs, the same lines, another place', () => {
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
     expect([...hooked].sort()).toEqual(['exit', ...EXIT_SIGNALS].sort());
-    terminal.type('.exit\r');
+    terminal.type(`${LEAVE}\r`);
     await closed;
     // And off again, so a second session in this process does not find the first one's.
     expect([...unhooked].sort()).toEqual([...hooked].sort());
   }, 120_000);
 
   it('gives the mode back when the session merely RETURNS, which no exit hook covers', async () => {
-    // The half of the restoration that is unambiguously this product's. `.exit` ends the
+    // The half of the restoration that is unambiguously this product's. The word ends the
     // SESSION and not the process: nothing is exiting, so no hook of anybody's fires, and
     // the terminal has to be the caller's again by the time this promise resolves.
     const terminal = fakeTerminal();
@@ -628,7 +630,7 @@ describe('the same verbs, the same lines, another place', () => {
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
     expect(terminal.raw()).toBe(true);
-    terminal.type('.exit\r');
+    terminal.type(`${LEAVE}\r`);
     await closed;
     expect(terminal.raw()).toBe(false);
   }, 120_000);
@@ -671,6 +673,15 @@ const ADDED_UP_A_LINE = 'a line put together out of pieces, by addition';
 
 /** Every accusation this scan can make. A ban that stops firing is one to delete. */
 const COMPOSING = [REACHED_FOR_A_LINE, TYPED_A_TEXT, TEMPLATED_A_LINE, ADDED_UP_A_LINE];
+
+/**
+ * The two erases no module of this session may write: the screen, and the history above it.
+ *
+ * Named by what ends the sequence rather than by the whole of it, because the whole of it
+ * is assembled at three sites out of an escape and a bracket — a scan for the finished
+ * bytes would miss every one of them.
+ */
+const ERASES = ['2J', '3J'];
 
 /**
  * Which of the bans a source breaks.
@@ -783,6 +794,26 @@ describe('no component composes a line; it only positions one the renderer produ
       expect(source, file).not.toContain('1049');
     }
     expect(modulesOf('repl').length).toBeGreaterThan(4);
+  });
+
+  it('never erases the page or the history above it, in any module of the session', () => {
+    // ⛔ THE SISTER OF THE BAN ABOVE, and it arrived with the page that opens clean. There
+    // are two ways to make a screen empty: erase it, or scroll it away. Only the second is
+    // defined to put what was there into the scrollback, which is why it is the one this
+    // console uses — and the erase that takes the HISTORY with it (`3J`) is the caller's
+    // own log of what they were doing before they opened a session, which is not ours to
+    // delete. Judged over the CODE, so the module that explains the ban may name it.
+    for (const file of modulesOf('repl')) {
+      const code = withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8'));
+      for (const erase of ERASES) expect(code, `${file} writes ${erase}`).not.toContain(erase);
+    }
+    // Not vacuous: the ban is over a real corpus, it would accuse the line an author would
+    // write, and the module whose whole subject this is NAMES both sequences in its prose.
+    expect(modulesOf('repl').length).toBeGreaterThan(4);
+    for (const erase of ERASES) {
+      expect(withoutComments(`const CLEAR_IT = ESC + '[${erase}';`)).toContain(erase);
+      expect(readFileSync(join(SRC, 'repl', 'page.ts'), 'utf-8')).toContain(erase);
+    }
   });
 });
 

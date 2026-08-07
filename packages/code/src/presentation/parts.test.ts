@@ -61,7 +61,7 @@ describe('every role has something that produces it', () => {
     fact('mnema key enroll <the line>', 2),
     // The line that says what a reader can DO rather than what is true. It is the
     // second producer of `detail`, which used to be the argument of one function.
-    aside('`.help` says what it runs'),
+    aside('`/help` says what it runs'),
     statement('ALLOWED', 'submit t-1 → READY'),
     statement('local integrity verified; 1 tail(s)'),
     statement('ALLOWED', 'submit t-1 → READY', 'good'),

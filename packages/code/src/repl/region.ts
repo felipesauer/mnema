@@ -59,9 +59,19 @@
  * session has already said permanently in the scrollback. The alternate screen — what
  * `vim` and `htop` take — DISCARDS the scrollback when the program exits, which is the
  * opposite of a session whose whole output a caller wants to keep reading afterwards.
+ *
+ * THAT PARAGRAPH USED TO BE THE WHOLE ANSWER TO "WHY DOES THE PAGE OPEN OVER SOMEBODY
+ * ELSE'S OUTPUT", and it was answering a question nobody asked. The page opens CLEAN now,
+ * and it is not the alternate screen and not an erase: everything on the screen is
+ * SCROLLED into the scrollback and the cursor comes back to the top, which is the one
+ * operation whose effect on the scrollback is defined (`page.ts`). Nothing of the
+ * caller's is destroyed — it is one scroll up, where it always was. The same bytes are
+ * what the caller gets when they ask for a clean page again, and the identity of the
+ * region below is what makes the second one really clean rather than a redraw over the
+ * first.
  */
 
-import { Box, Static, type StaticProps, Text, useCursor, useInput } from 'ink';
+import { Box, Static, type StaticProps, Text, useCursor, useInput, useStdout } from 'ink';
 import { createElement as node, type ReactNode, useEffect, useSyncExternalStore } from 'react';
 import type { Keystroke } from './editing.js';
 import type { Panel } from './panel.js';
@@ -103,6 +113,18 @@ export interface Shown {
   readonly candidates: string;
   /** Which column of {@link present} the caret sits in. */
   readonly column: number;
+  /**
+   * WHICH PAGE THIS IS: the one the session opened with, and one more each time the
+   * caller asked for a clean one.
+   *
+   * It is the IDENTITY of what is kept, and it is here rather than anywhere else because
+   * the library reads it as one: a region written once and never taken back can only be
+   * emptied by ceasing to be the same region. Handing it a new identity is also what
+   * makes the library forget what it wrote there, which matters for a reason nothing on
+   * the screen shows — it keeps a copy of everything written above, and there are frames
+   * on which it replays the copy.
+   */
+  readonly page: number;
 }
 
 /** What the layout reads and what it reports back to. The console implements it. */
@@ -113,6 +135,16 @@ export interface Watched {
   readonly watch: (changed: () => void) => () => void;
   /** A key the caller pressed. What it means is decided elsewhere. */
   readonly pressed: (stroke: Keystroke) => void;
+  /**
+   * The layout is up: here is the door bytes of the console's own go through.
+   *
+   * The console has one thing to write that is not a line — the bytes that carry the
+   * page into the scrollback — and while the layout is mounted it may not write them to
+   * the device itself: the library keeps count of the rows it is redrawing, and a write
+   * behind its back leaves that count pointing at the wrong ones. The door it offers
+   * takes the frame down, writes, and puts the frame back.
+   */
+  readonly opened: (write: (bytes: string) => void) => void;
 }
 
 /**
@@ -138,10 +170,16 @@ export function Region({
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
+  const { write } = useStdout();
 
   useInput((input, key) => {
     watched.pressed({ input, ...key });
   });
+
+  // The one thing handed back rather than received. See {@link Watched.opened}.
+  useEffect(() => {
+    watched.opened(write);
+  }, [watched, write]);
 
   // The real caret, on the row being typed, at the offset the arrows moved it to. The
   // row is the first of the redrawn ones because everything above it is in the
@@ -153,7 +191,7 @@ export function Region({
   return node(
     Box,
     { flexDirection: 'column' },
-    node(Past, { panel, lines: shown.past }),
+    node(Past, { panel, lines: shown.past, page: shown.page }),
     node(Present, { present: shown.present, candidates: shown.candidates, tips }),
   );
 }
@@ -193,12 +231,19 @@ type Kept = Panel | string;
 function Past({
   panel,
   lines,
+  page,
 }: {
   readonly panel: Panel | undefined;
   readonly lines: readonly string[];
+  readonly page: number;
 }): ReactNode {
   const kept: Kept[] = panel === undefined ? [...lines] : [panel, ...lines];
   return node<StaticProps<Kept>>(Static, {
+    // WHAT MAKES A CLEAN PAGE CLEAN. This region is written once and never taken back,
+    // so the only way to empty it is for it to stop being the same region — and the
+    // library answers a new identity by forgetting everything the old one wrote, which
+    // is what keeps the cleared lines from coming back on a frame that replays them.
+    key: String(page),
     items: kept,
     // biome-ignore lint/correctness/noChildrenProp: a variadic child cannot be a function
     children: (item: Kept, index: number) =>
@@ -254,7 +299,10 @@ function rows(lines: readonly string[], accented = false): ReactNode[] {
 function Opening({ panel }: { readonly panel: Panel }): ReactNode {
   return node(
     Box,
-    { flexDirection: 'column' },
+    // CORNER TO CORNER. How much of the screen the frame takes is the terminal's answer
+    // and not the content's; which arrangement goes inside it is the content's and was
+    // decided before this component was reached (`panel.ts`).
+    { flexDirection: 'column', width: panel.columns },
     node(
       Box,
       { flexDirection: 'row' },

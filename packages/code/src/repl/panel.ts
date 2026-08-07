@@ -7,6 +7,14 @@
  * nonsense — a border wrapped mid-row is worse than no border at all. So there are three
  * forms, the widest one that fits is the one drawn, and this file is the measurement.
  *
+ * HOW WIDE THE BOX IS DRAWN AND WHICH DRAWING FITS ARE TWO QUESTIONS, and only the second
+ * one is here. The box is drawn at the width of the TERMINAL — corner to corner, the way
+ * the reference does it (measured: its corner lands on column 120 of 120) — and what this
+ * file answers is which of the three arrangements the CONTENT has room for. The box used
+ * to be as wide as what was inside it, which left a frame ending in the middle of the
+ * screen and a ragged right edge under it; the arithmetic that chose the form did not
+ * change when that did, because it never was about how much of the screen to take.
+ *
  * THE THRESHOLD IS THE CONTENT'S OWN WIDTH, never a number somebody chose. It is the
  * rule the banner already works by (`presentation/banner.ts`): a form gives way when it
  * stops fitting, so the day a project's path gets longer or a verdict is reworded, the
@@ -65,8 +73,16 @@ export interface PanelRequest {
 export interface Panel {
   /** Which drawing this terminal has room for. */
   readonly form: PanelForm;
-  /** How wide the drawing is, borders included. What the guard compares against. */
-  readonly width: number;
+  /**
+   * How wide the terminal is, and therefore how wide the box is DRAWN.
+   *
+   * It used to be how wide the drawing came out, which is a different number and was
+   * the one the form was chosen by. The field was not redefined, it was replaced: a name
+   * that keeps its spelling and changes its meaning leaves whoever read it as a means
+   * looking at something else, and the case that used the old one is red and named
+   * rather than quietly wrong.
+   */
+  readonly columns: number;
   /** The title, on the border in a boxed form and on a line of its own in `bare`. */
   readonly title: string;
   /** The mark. The one group the layout paints, because it is chrome. */
@@ -139,14 +155,11 @@ export function panelFor(request: PanelRequest): Panel {
   const titled = widthOf(title) + AROUND_TITLE;
   const sideBySide = Math.max(BORDER + INSIDE + left + BETWEEN + DIVIDER + BESIDE + right, titled);
   const oneOverTheOther = Math.max(BORDER + INSIDE + Math.max(left, right), titled);
-  const chosen: { form: PanelForm; width: number } =
-    sideBySide <= columns
-      ? { form: 'columns', width: sideBySide }
-      : oneOverTheOther <= columns
-        ? { form: 'stacked', width: oneOverTheOther }
-        : { form: 'bare', width: Math.max(widthOf(title), left, right) };
+  const form: PanelForm =
+    sideBySide <= columns ? 'columns' : oneOverTheOther <= columns ? 'stacked' : 'bare';
   return {
-    ...chosen,
+    form,
+    columns,
     title: render(title),
     mark: mark.map(render),
     standing: standing.map(render),

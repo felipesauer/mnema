@@ -34,8 +34,9 @@ import { completionTree } from '../src/completion/tree.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
-import { dispositionOf, SESSION_WORDS, verbsOffered } from '../src/repl/gate.js';
+import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
 import { openSession, typedLine } from '../src/repl/session.js';
+import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import type { Declared } from '../src/wiring/verb.js';
 import { fakeTerminal, hooksNothing, until } from './support/console.js';
@@ -439,6 +440,7 @@ describe('the session writes no history anywhere', () => {
       'editing.ts',
       'gate.ts',
       'leaving.ts',
+      'page.ts',
       'panel.ts',
       'region.ts',
       'session.ts',
@@ -460,7 +462,7 @@ describe('the session writes no history anywhere', () => {
 });
 
 describe('the loop is wired to the gate and to the tree', () => {
-  it('completes a verb on Tab, runs it, and leaves on `.exit`', async () => {
+  it('completes a verb on Tab, runs it, and leaves on the word that leaves', async () => {
     // The elo, end to end and without a device to hand: the completer the console was
     // given is the one built from the command tree, the line it completes is the line
     // the gate then runs, and the answer lands on the page. Each step waits for the one
@@ -495,7 +497,7 @@ describe('the loop is wired to the gate and to the tree', () => {
       'answered the completed line',
     );
 
-    terminal.type('.exit\r');
+    terminal.type(`${LEAVE}\r`);
     await closed;
     const page = terminal.bytes();
     // The banner is the session's own, and it counts the reads it offers rather than

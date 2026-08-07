@@ -103,7 +103,7 @@ describe('form B — the subject and its facts', () => {
     // opening prints both. A different depth would say one of them belongs to the other,
     // so the shape is the fact's exactly — what differs is the weight, and weight is the
     // styled renderer's (`styled.test.ts`).
-    expect(renderPlain(aside('`.exit` or Ctrl-D leaves'))).toBe('  `.exit` or Ctrl-D leaves');
+    expect(renderPlain(aside('`/exit` or Ctrl-D leaves'))).toBe('  `/exit` or Ctrl-D leaves');
     expect(renderPlain(aside('x'))).toBe(renderPlain(fact('x')));
   });
 

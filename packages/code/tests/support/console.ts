@@ -103,6 +103,10 @@ export function withoutLayout(bytes: string): string {
       .split(`${ESC}[2K`)
       .join('')
       .replace(new RegExp(`${ESC}\\[\\d*[ABG]`, 'g'), '')
+      // And putting the cursor somewhere absolute, which is how the page is opened
+      // clean: the console goes to the last row, scrolls a page, and comes back to the
+      // top (`repl/page.ts`). It PLACES and says nothing, so it goes with the rest.
+      .replace(new RegExp(`${ESC}\\[\\d*(?:;\\d*)?H`, 'g'), '')
   );
 }
 

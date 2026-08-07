@@ -93,7 +93,7 @@ describe('every way this process can stop is hooked', () => {
   });
 
   it('takes its listeners off when the session ends without the process ending', () => {
-    // `.exit` closes the SESSION and the process goes on. A second session in the same
+    // The word that leaves closes the SESSION and the process goes on. A second session in the same
     // process would otherwise find the first one's hooks still armed, and give back a
     // terminal that was already given back.
     const { port, hooked } = aProcess();

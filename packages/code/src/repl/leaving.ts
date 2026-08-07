@@ -32,7 +32,7 @@
  * also leaves the mode and the cursor as it found them. What survives the measurement is
  * why this file still exists, and it is two things rather than one:
  *
- *   - THE NORMAL RETURN IS NOT AN EXIT. `.exit` and the end of input close the SESSION
+ *   - THE NORMAL RETURN IS NOT AN EXIT. The word that leaves and the end of input close
  *     and the process goes on — commander returns, the entry finishes, and anything
  *     after it runs in a terminal that must already be the caller's again. No hook of a
  *     library's fires there, because nothing is exiting.
