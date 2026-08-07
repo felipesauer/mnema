@@ -21,10 +21,36 @@
  * kind and it is the newest: the ways this process can stop, which the console hooks so
  * that the terminal is given back on every one of them. A module that reached for the
  * global `process` to hook them would be a module no test could arm twice.
+ *
+ * AND THE WORDS THE SESSION ANSWERS TO ARE READ RATHER THAN TYPED. This help used to
+ * spell them out, which is the one way a declaration can be wrong about the thing it
+ * declares: the gate holds the list, this printed a copy of it, and nothing compared the
+ * two. They now come from the module both sides read (`session-words.ts`), which is above
+ * the session precisely because this file may not reach it — the whole reason the session
+ * is a lazy import is that a `mnema --version` must not pay for it.
  */
 
 import type { Command } from 'commander';
+import { WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
+
+/** How deep the words sit in the help, and how far the gloss is from the widest of them. */
+const INDENT = 2;
+const AFTER_THE_WORD = 3;
+
+/**
+ * The words the session answers to, one to a line, as the help lists them.
+ *
+ * The column is as wide as the WIDEST word rather than a number, so a word longer than
+ * the ones here today lines the block up instead of breaking it.
+ */
+function theWordsItAnswersTo(): string[] {
+  const words = Object.entries(WHAT_EACH_WORD_DOES);
+  const widest = Math.max(...words.map(([word]) => word.length));
+  return words.map(
+    ([word, does]) => ' '.repeat(INDENT) + word.padEnd(widest + AFTER_THE_WORD) + does,
+  );
+}
 
 /**
  * The name this verb is registered under, in one place.
@@ -54,8 +80,7 @@ export function registerRepl(program: Command, wiring: Wiring): Declared {
         'with the line to run outside the session — and it is refused because the verb',
         'itself declares what it can do, so one added tomorrow is refused too.',
         '',
-        '  .help   what this session runs',
-        '  .exit   leave (so does Ctrl-D; Ctrl-C clears the line you are typing)',
+        ...theWordsItAnswersTo(),
         '',
         'It needs a terminal at both ends and refuses without one: reading commands from a',
         'pipe would be a second way to run the same verbs. The history lives in this',

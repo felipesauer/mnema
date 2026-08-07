@@ -61,21 +61,14 @@ import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { ABOUT, CLEAR, LEAVE, SESSION_WORDS } from '../session-words.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, treeHeadline } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
-import {
-  ABOUT,
-  type AfterLine,
-  argvOf,
-  dispositionOf,
-  LEAVE,
-  SESSION_WORDS,
-  verbsOffered,
-} from './gate.js';
+import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { panelFor, panelLines } from './panel.js';
 import { type Standing, standing } from './standing.js';
@@ -89,7 +82,7 @@ import { type Standing, standing } from './standing.js';
  */
 const PROMPT = 'mnema> ';
 
-/** How wide the verb column of `.help` is — the longest verb, and a space after it. */
+/** How wide the verb column of {@link ABOUT} is — the longest verb, and a space after it. */
 const VERB_WIDTH = 16;
 
 /**
@@ -216,6 +209,14 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdin: input,
     stdout: output,
     prompt: PROMPT,
+    // WHAT THE PAGE OPENS WITH, as a value rather than as three lines written once. The
+    // console lands it when it opens the page and lands it again whenever the caller
+    // clears one, so an opened page and a cleared page are the same page by
+    // construction — see `console.ts`.
+    opening: [
+      ...(panel.form === 'bare' ? panelLines(panel) : []),
+      ...whatItRefuses(offered.length).map(render),
+    ],
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
     tips: render(tips()),
@@ -227,11 +228,6 @@ export async function openSession(request: SessionRequest): Promise<void> {
     leaving,
   });
   land = page.land;
-
-  writeLines(onThePage, [
-    ...(panel.form === 'bare' ? panelLines(panel) : []),
-    ...opening(offered.length).map(render),
-  ]);
   await page.closed;
 }
 
@@ -307,6 +303,10 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
     case 'about':
       writeLines(io, about(built.verbs, self).map(render));
       return 'go on';
+    case 'clear':
+      // What a clean page IS belongs to the console: nothing here is read, said or
+      // composed for it, which is the whole of why it costs nothing.
+      return 'clear';
     case 'refuse':
       reportUsage({ io, render }, what.sentence, what.detail);
       return 'go on';
@@ -333,9 +333,10 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
  *
  * LIKE THE PANEL IT IS STATIC, and that is the difference from the tips below: it lands in
  * the scrollback and stays there, so a caller who scrolls to the top of a long session
- * finds the drawing, this sentence and the project the whole thing was about.
+ * finds the drawing, this sentence and the project the whole thing was about. It is part
+ * of what the page OPENS with, so a caller who clears the page finds it there too.
  */
-function opening(reads: number): readonly Line[] {
+function whatItRefuses(reads: number): readonly Line[] {
   return [
     fact(`It runs the ${reads} verbs that read the record, and refuses the ones that write.`),
   ];
@@ -378,14 +379,18 @@ function standingLine(where: Standing): readonly Line[] {
  */
 export function tips(): Line {
   return aside(
-    [WHAT_IT_RUNS, `\`${LEAVE}\` or Ctrl-D leaves`, 'Ctrl-C clears the line', 'Tab completes'].join(
-      BETWEEN_CLAUSES,
-    ),
+    [
+      WHAT_IT_RUNS,
+      `\`${CLEAR}\` starts the page over`,
+      `\`${LEAVE}\` or Ctrl-D leaves`,
+      'Ctrl-C clears the line',
+      'Tab completes',
+    ].join(BETWEEN_CLAUSES),
   );
 }
 
 /**
- * What `.help` answers: the verbs this session runs, and how to leave it.
+ * What {@link ABOUT} answers: the verbs this session runs, and how to leave it.
  *
  * Composed from the DECLARATIONS, so a read added tomorrow is listed the day it exists
  * and its one-line description is the same one `--help` prints. It is the session's
@@ -404,5 +409,8 @@ function about(verbs: readonly Declared[], self: string): readonly Line[] {
     subjectLine('And it does not write'),
     fact('A verb that can change the record is refused, and named, and told where to run.'),
     fact(`Leave with \`${LEAVE}\`, or Ctrl-D. Ctrl-C clears the line you are typing.`),
+    fact(
+      `\`${CLEAR}\` starts the page over. What was on it is one scroll up, and the record is not read again.`,
+    ),
   ];
 }

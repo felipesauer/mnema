@@ -48,6 +48,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openSession, tips } from '../src/repl/session.js';
+import { CLEAR, LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
@@ -201,7 +202,7 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
       still = 0;
     }
   }
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return terminal.bytes();
 }
@@ -249,7 +250,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
   // Whatever was typed is abandoned before the word that leaves is: half a verb still on
   // the row would swallow it, and the session would never come back.
   terminal.type(CLEARS_THE_LINE);
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return paths;
 }
@@ -336,7 +337,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
 
   it('says what the caller can do, and says the words a session answers to', () => {
     const said = renderPlain(tips());
-    for (const word of ['.help', '.exit', 'Ctrl-D', 'Ctrl-C', 'Tab']) {
+    for (const word of [...SESSION_WORDS, 'Ctrl-D', 'Ctrl-C', 'Tab']) {
       expect(said).toContain(word);
     }
     // And it is an ASIDE rather than a fact: dim when the renderer paints, and the same
@@ -415,6 +416,26 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // so what it sees is what TYPING caused and nothing the opening paid for.
     expect(ofTheRecord(await readingWhileTyping('sear'))).toEqual([]);
   }, 120_000);
+
+  it('reads nothing at all when the caller asks for a clean page, however many times', async () => {
+    // THE DECISION, MEASURED. A clean page is the page the session opened with, and the
+    // panel on it was paid for with the one read this surface declares. Asking for it
+    // again could have been a second `verify` — and worse than costing one, it could have
+    // made the panel say something different halfway through a session. So the opening is
+    // a VALUE the console keeps, and this is what says so: three clean pages read exactly
+    // what no clean page reads.
+    const thrice = await reading(async () => {
+      await openedAt(200, [CLEAR, CLEAR, CLEAR]);
+    });
+    const once = await reading(async () => {
+      await openedAt(200);
+    });
+    expect(ofTheRecord(once).length, 'the opening read nothing at all').toBeGreaterThan(0);
+    expect(ofTheRecord(thrice)).toEqual(ofTheRecord(once));
+    // And nothing at all while the page is being cleared, on the watch that only sees
+    // what typing caused.
+    expect(ofTheRecord(await readingWhileTyping(`${CLEAR}\r`))).toEqual([]);
+  }, 180_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
     // THE TEETH, in the same window as the case above: one verb typed at the prompt, and
