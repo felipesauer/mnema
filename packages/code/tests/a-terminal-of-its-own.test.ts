@@ -35,7 +35,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
 import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
-import { openSession, typedLine } from '../src/repl/session.js';
+import { openSession, theSessionsOwnWords, typedLine } from '../src/repl/session.js';
 import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import type { Declared } from '../src/wiring/verb.js';
@@ -372,15 +372,16 @@ describe('tab offers what the session runs, over the real tree', () => {
     const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const { program } = buildProgram(quiet);
     const offered = verbsOffered(DECLARED, REPL_VERB);
-    const [hits] = completerFor(completionTree(program), offered, SESSION_WORDS)('');
+    const complete = completerFor(completionTree(program), offered, theSessionsOwnWords());
+    // The WORDS of what is offered — each offer also carries what it is, which is what the
+    // palette draws its second column from and is asserted where the palette is
+    // (`tests/a-palette-for-the-words.test.ts`).
+    const hits = complete('')[0].map((hit) => hit.word);
     expect(hits).toEqual([...offered, ...SESSION_WORDS].sort());
     for (const write of verbsThat('mutates')) expect(hits, write).not.toContain(write);
     // And it does not descend into one either: the level under a write is a level this
     // session cannot reach, so offering its subcommands would be a menu of nothing.
-    expect(completerFor(completionTree(program), offered, SESSION_WORDS)('task ')).toEqual([
-      [],
-      '',
-    ]);
+    expect(complete('task ')).toEqual([[], '']);
   });
 });
 

@@ -119,8 +119,7 @@ export function completerFor(
 
     // At the top level the offer is the session's: the reads, and the words the session
     // answers to itself. Below it, whatever the declaration says goes there.
-    const words =
-      node === root ? top : [...node.commands, ...unexplained(node.values)];
+    const words = node === root ? top : [...node.commands, ...unexplained(node.values)];
     return [matching(words, word), word];
   };
 }

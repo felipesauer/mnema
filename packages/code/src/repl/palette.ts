@@ -129,8 +129,8 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
   // The left column is as wide as the widest word IN THIS PALETTE rather than in the
   // whole vocabulary, so a list narrowed to one word does not sit under a gap left by the
   // words it excluded.
-  const width = offers.reduce((most, offer) => Math.max(most, offer.word.length), 0) +
-    AFTER_THE_WORD;
+  const width =
+    offers.reduce((most, offer) => Math.max(most, offer.word.length), 0) + AFTER_THE_WORD;
   const said = (word: string, description: string): Line =>
     description.length === 0 ? itemLine([word]) : itemLine([column(word, width), description]);
 

@@ -588,9 +588,7 @@ function Present({
  * cut (`palette.ts`), and all this does is put each on a row of its own.
  */
 function dimmed(rows: readonly string[]): ReactNode[] {
-  return rows.map((row, index) =>
-    node(Text, { key: String(index), dimColor: true }, row),
-  );
+  return rows.map((row, index) => node(Text, { key: String(index), dimColor: true }, row));
 }
 
 /**

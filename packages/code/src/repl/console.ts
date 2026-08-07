@@ -66,8 +66,8 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
-import { offeredBy, paletteFor } from './palette.js';
 import { carriedIntoTheScrollback } from './page.js';
+import { offeredBy, paletteFor } from './palette.js';
 import type { Opening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 

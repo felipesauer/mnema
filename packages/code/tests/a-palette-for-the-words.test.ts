@@ -30,7 +30,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, buildProgram, run } from '../src/cli.js';
+import { buildProgram, type CliIo, run } from '../src/cli.js';
 import type { CompletionWord } from '../src/completion/tree.js';
 import { completionTree } from '../src/completion/tree.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
@@ -41,7 +41,7 @@ import { badgeLine, theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
-import { type Fixture, inPty as drive, type Ran, type Step } from './support/pty.js';
+import { inPty as drive, type Fixture, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -232,9 +232,10 @@ describe('the palette is two columns, and the only thing it cuts is a descriptio
       offer.description.length > most.description.length ? offer : most,
     );
     const wide = rowsFor(offers, offers.length, NOTHING_IS_CUT);
-    expect(wide.some((row) => row.includes(CUT)), 'something was cut at a width that fits').toBe(
-      false,
-    );
+    expect(
+      wide.some((row) => row.includes(CUT)),
+      'something was cut at a width that fits',
+    ).toBe(false);
 
     const narrow = rowsFor(offers, offers.length, 60);
     const cut = narrow.filter((row) => row.endsWith(CUT));
@@ -279,7 +280,8 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
         }
         drew += 1;
         // Every row fits, so nothing the arithmetic counted as one row is two.
-        for (const row of rows) expect([...row].length, `${room}/${columns}`).toBeLessThanOrEqual(columns);
+        for (const row of rows)
+          expect([...row].length, `${room}/${columns}`).toBeLessThanOrEqual(columns);
         // And it never draws more rows than it was given room for.
         expect(rows.length, `${room}/${columns}`).toBeLessThanOrEqual(room);
         const missing = saidToBeMissing(rows);
@@ -652,9 +654,7 @@ describe('opening the palette does not move the height the library erases at', (
           leaves,
         ],
       });
-      expect(taller.bytes, `${rows} rows with the palette open`).not.toContain(
-        ERASES_THE_HISTORY,
-      );
+      expect(taller.bytes, `${rows} rows with the palette open`).not.toContain(ERASES_THE_HISTORY);
       expect(taller.bytes, `${rows} rows never opened`).toContain(PROMPT);
     }
   }, 300_000);

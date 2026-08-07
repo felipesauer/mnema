@@ -85,16 +85,26 @@ const ALTERNATE_SCREEN = `${ESC}[?1049`;
 const THEIRS = 'A-LINE-THE-CALLER-HAD';
 
 /**
- * THE HEIGHT AT WHICH THE LAYOUT LIBRARY STOPS REDRAWING PART OF THE PAGE, at sixty
- * columns — measured, and re-measured whenever the redrawn region changes shape.
+ * THE HEIGHT AT WHICH THE LAYOUT LIBRARY STOPS REDRAWING PART OF THE PAGE — measured, and
+ * re-measured whenever the redrawn region changes shape.
  *
  * It was THREE while the region was the row being typed and two rows under it. The input
- * has its own place now and the region is five rows, which would have raised this; the
- * arrangement chosen by height is what stopped it, and the boundary came out at TWO. The
- * width matters because the hint folds below eighty columns, so the number is stated with
- * the width it was taken at.
+ * has its own place now, which would have raised this; the arrangement chosen by height is
+ * what stopped it, and the boundary came down to TWO.
+ *
+ * ⚠️ AND THEN TO ONE, at a DIFFERENT WIDTH, and the width is why the number moved. The
+ * area learned to leave out a row the terminal would FOLD, and the hint is seventy-four
+ * columns wide — so at the sixty columns this constant used to be taken at, the hint is
+ * not drawn, the region is one row, and the library does not reach the boundary at any
+ * height there is. The measurement moved to a hundred columns, where the hint IS one row,
+ * and there the boundary is one. Both halves are pinned in
+ * `tests/the-input-has-its-own-place.test.ts`, and it is measured again with the palette
+ * open in `tests/a-palette-for-the-words.test.ts`.
  */
-const TOO_SHORT_TO_REDRAW_IN_PART = 2;
+const TOO_SHORT_TO_REDRAW_IN_PART = 1;
+
+/** The width the number above was taken at: one with room for the hint on a single row. */
+const WIDE_ENOUGH_FOR_THE_HINT = 100;
 
 /**
  * Ctrl-C, which abandons the row being typed and leaves the session alive.
@@ -357,16 +367,17 @@ describe('the page opens clean, and what was on it is one scroll up', () => {
     // never appears. Pinned in both directions so the boundary cannot move in silence: if
     // a future version of the library stops doing it, this case goes red and gets deleted.
     //
-    // THE HEIGHT USED TO BE THREE ROWS and it is {@link TOO_SHORT_TO_REDRAW_IN_PART} now.
-    // What moved it is the input having its own place: the region went from three rows to
-    // five, which would have raised this boundary, and the arrangement chosen by height
-    // (`repl/area.ts`) is what stopped it — the number came out one row LOWER than it was.
-    // Measured again for this delivery rather than carried over, at the same width, in
-    // `tests/the-input-has-its-own-place.test.ts`.
-    const tall = await inPty({ columns: 60, rows: 24, steps: [opens, leaves] });
+    // THE HEIGHT AND THE WIDTH ARE BOTH MEASURED, and both have moved — see
+    // {@link TOO_SHORT_TO_REDRAW_IN_PART} for which delivery moved which. Measured again
+    // rather than carried over, in `tests/the-input-has-its-own-place.test.ts`.
+    const tall = await inPty({
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
+      rows: 24,
+      steps: [opens, leaves],
+    });
     expect(tall.bytes, 'an ordinary terminal saw it').not.toContain(ERASES_THE_HISTORY);
     const short = await inPty({
-      columns: 60,
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
@@ -439,7 +450,7 @@ describe('the word that clears gives back the page the session opened with', () 
     // buffer, and on a terminal too short for the region the library writes that buffer
     // out again. A page cleared without emptying it is a page whose cleared lines return —
     // later, on a frame nobody connected to the clearing.
-    const columns = 60;
+    const columns = WIDE_ENOUGH_FOR_THE_HINT;
     const rows = TOO_SHORT_TO_REDRAW_IN_PART;
     const ran = await inPty({
       columns,

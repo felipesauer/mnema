@@ -56,7 +56,7 @@ import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
-import { completionTree, type CompletionWord } from '../completion/tree.js';
+import { type CompletionWord, completionTree } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
