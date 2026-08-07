@@ -689,14 +689,18 @@ describe('the caret is left on the row being typed, under everything drawn over 
     const row = screen.rows.findIndex((line) => line.includes(`${PROMPT} ${typed}`));
     expect(row, 'the caller’s row is not on the screen').toBeGreaterThanOrEqual(0);
     expect(screen.cursor.row, 'the caret is not on the row being typed').toBe(row);
-    // ON THE ROW, AND INSIDE WHAT WAS TYPED — and the second half is a RANGE rather than an
-    // offset on purpose. The library applies a cursor position on the frame AFTER the one
-    // that moved it, so the column trails the last keystroke by one character. Measured on
-    // this delivery and on the one before it, three characters typed one at a time, and
-    // both answered with the same column — so it is the library's, it is older than this
-    // area, and it is not what this case is about.
-    expect(screen.cursor.column).toBeGreaterThanOrEqual([...`${PROMPT} `].length);
-    expect(screen.cursor.column).toBeLessThanOrEqual([...`${PROMPT} ${typed}`].length);
+    // ON THE ROW, AND AT THE END OF WHAT WAS TYPED.
+    //
+    // ⚠️ THIS WAS A RANGE, and the doc here said why: "the library applies a cursor position
+    // on the frame AFTER the one that moved it, so the column trails the last keystroke by
+    // one character… it is the library's, it is older than this area". The measurement was
+    // right and the attribution was wrong. It was OURS: the position was handed over in a
+    // passive effect, which runs after the frame it belongs to has been written, so every
+    // frame carried the position of the one before it. Handed over while the frame is being
+    // composed (`repl/region.ts`), the caret is where the caller's next character goes —
+    // and the range becomes an exact column, which is what the opening frame needed too
+    // (`tests/the-opening-fits-the-screen.test.ts`).
+    expect(screen.cursor.column).toBe([...`${PROMPT} ${typed}`].length);
     // Not vacuous: there really is something drawn above that row inside the region, so a
     // caret put at the top of it would have landed somewhere else.
     expect(rulesOn(screen)).toHaveLength(2);
