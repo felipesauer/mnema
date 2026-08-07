@@ -62,13 +62,14 @@ import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { statement } from '../presentation/verdict.js';
 import { ABOUT, CLEAR, LEAVE, SESSION_WORDS } from '../session-words.js';
 import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
-import { DEFAULT_REQUIREMENT, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
+import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
@@ -501,17 +502,37 @@ export function tips(): Line {
  * the day the shape changes — which is exactly the case that compares what a verb says
  * inside the console to what it says at a shell (`tests/the-console-on-ink.test.ts`).
  *
- * IT CARRIES NO HUE, and that is a decision rather than an omission. Where a level is
- * RULED ON — the panel's line per tree, and `verify`'s own — it is painted by the one
- * function that says how a level reads as news (`wiring/verify.ts`, `levelSeverity`). This
- * row is on the screen for the whole session and is redrawn on every keystroke, and a hue
- * that is on every frame of every session is a hue nobody reads any more; it is also the
- * one row of this surface where plain and painted are the same bytes, which is what makes
- * a screenshot of it and a pipe of it the same claim. The words are the carrier here, as
- * they are everywhere else on this surface.
+ * ⚠️ THIS USED TO SAY *IT CARRIES NO HUE, AND THAT IS A DECISION RATHER THAN AN OMISSION*,
+ * on three arguments: that a row redrawn on every keystroke and sitting in the corner of
+ * every session would be a hue that is always on, that the level is painted where it is
+ * RULED ON and this row only names it, and that leaving it unpainted made it the one line
+ * about the record whose plain and painted bytes are the same.
+ *
+ * WHAT FALSIFIED IT IS WHAT THIS PRODUCT IS FOR. The first argument holds for GREEN and
+ * does not hold for RED: this is a tool for making tampering evident, so the cost of a
+ * reader NOT noticing a broken record is not the cost of a constant green, and the badge is
+ * the PERSISTENT ASSERTION of the proven level rather than a decoration beside one. A
+ * corner that stays quiet while the record is broken is the one failure this surface may
+ * not have. The second argument was answered by its own premise: where a level is ruled on
+ * it is painted, and this row states a level, so not painting it made it the EXCEPTION to
+ * "data is painted by severity and by nothing else" — painting REMOVES an exception instead
+ * of adding one. The third survived as a fact and stopped being a reason: the words are
+ * still the whole carrier, and stripping the escapes still gives this exact line back, byte
+ * for byte (`tests/the-input-has-its-own-place.test.ts`).
+ *
+ * THE HUE IS THE ONE FUNCTION'S, and this row has no rule of its own. `levelSeverity` is
+ * the table that says how each rung of the scale reads as news, total over the chain's
+ * levels by type, and it is what `verify` and the panel already paint by. A condition here
+ * — paint only when it is bad news — would be a second opinion about which levels are news
+ * at all, which is exactly what one table exists to prevent.
  */
 export function badgeLine(level: ProvenLevel): Line {
-  return fact(`${LEVEL_MARK} ${level}${BETWEEN_CLAUSES}${VERIFY_VERB}`, AT_THE_EDGE);
+  return statement(
+    `${LEVEL_MARK} ${level}${BETWEEN_CLAUSES}${VERIFY_VERB}`,
+    undefined,
+    levelSeverity(level),
+    AT_THE_EDGE,
+  );
 }
 
 /**

@@ -35,17 +35,21 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { ProvenLevel } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { runVerify } from '../src/commands/verify.js';
+import { SEVERITIES, type Severity } from '../src/presentation/line.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
+import { renderStyled } from '../src/presentation/styled.js';
+import { statement } from '../src/presentation/verdict.js';
 import { areaFor } from '../src/repl/area.js';
-import { openSession, tips } from '../src/repl/session.js';
+import { badgeLine, openSession, tips } from '../src/repl/session.js';
 import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { DEFAULT_REQUIREMENT, VERIFY_VERB } from '../src/wiring/verify.js';
-import { ESC, fakeTerminal, hooksNothing, until } from './support/console.js';
+import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
+import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -227,7 +231,7 @@ async function openedAt(columns: number, rows = 40): Promise<string> {
 }
 
 /** The one verdict over every tree, asked of the function the whole surface asks. */
-function foldedLevel(): string {
+function foldedLevel(): ProvenLevel {
   const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
   if (!verdict.ok) throw new Error('the fixture has no project');
   return verdict.record.level;
@@ -251,6 +255,47 @@ function rowHolding(page: string, what: string): string {
 function sgrIn(text: string): string[] {
   return text.match(new RegExp(`${ESC}\\[[0-9;]*m`, 'g')) ?? [];
 }
+
+/** The same line with every style sequence off — what a pipe would have received. */
+function withoutSgr(text: string): string {
+  return text.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
+}
+
+/**
+ * WHAT A SEVERITY PAINTS AND NO OTHER ONE DOES, asked of the RENDERER rather than written
+ * down.
+ *
+ * Two subtractions, and the second one is what the first draft got wrong. A severity adds
+ * to a line that carries none, so the first subtraction is the bare line's own escapes —
+ * that is the only way to name a hue without naming a colour, and it survives a renderer
+ * that changes which red it writes (the shape `tests/the-panel.test.ts` uses to keep the
+ * chrome's accent apart from the three). But what it adds is an opener AND A CLOSER, and
+ * the closer is the SAME for all three: `39` gives the terminal's own foreground back
+ * whichever hue was opened. Left in, "this badge carries no other outcome's hue" was false
+ * of every badge there is. So the second subtraction is whatever the other severities also
+ * add, and what is left is the code that IDENTIFIES this outcome.
+ *
+ * A severity that came to share its whole hue with another comes out EMPTY here, which is
+ * why the case below asserts each of them is not — that is the non-vacuity, rather than a
+ * count of distinct sets, which after this subtraction is true by construction.
+ */
+function hueOf(severity: Severity): string[] {
+  const bare = new Set(sgrIn(renderStyled(statement('LABEL'))));
+  const added = (which: Severity): string[] =>
+    sgrIn(renderStyled(statement('LABEL', undefined, which))).filter((code) => !bare.has(code));
+  const shared = new Set(SEVERITIES.filter((other) => other !== severity).flatMap(added));
+  return added(severity).filter((code) => !shared.has(code));
+}
+
+/**
+ * One level per outcome the surface distinguishes — and the case that uses them asserts
+ * the set is COMPLETE against {@link SEVERITIES} rather than trusting this list.
+ *
+ * They are values the product produces: `fully-signed` is what a healthy record answers,
+ * `hash-chain-only` is a tree between its first event and its first checkpoint, and
+ * `broken` is what a truncated tail answers. Typed, so a renamed rung does not build.
+ */
+const OUTCOMES: readonly ProvenLevel[] = ['fully-signed', 'hash-chain-only', 'broken'];
 
 /** The private tree's checkpoints file for a project, or nothing when it has no tree. */
 function privateCheckpoints(root: string): string | undefined {
@@ -340,14 +385,52 @@ describe('the badge says what the record proved, and the verb that says the rest
     }
   }, 120_000);
 
-  it('carries no style at all, which no other line about the record can say', async () => {
-    // THE CONSEQUENCE OF CARRYING NO HUE, said as the property rather than as an absence: a
-    // screenshot of this row and a pipe of it are the same bytes. It is the one row of the
-    // record on this surface where that is true, which is what makes a corner redrawn on
-    // every keystroke cheap and honest at the same time.
+  it('carries the hue its level reads as, in each of the three outcomes', () => {
+    // ⚠️ THIS CASE USED TO ASSERT THE OPPOSITE — that the badge carries no style at all —
+    // and it is renamed rather than edited, because a conserto that inverts an observable
+    // leaves every device built on the old name asserting the new behaviour by accident.
+    // What fell is in `repl/session.ts`, `badgeLine`: an unpainted corner is quiet while
+    // the record is broken, and this is a tool for making tampering evident.
+    //
+    // ASSERTED AGAINST THE FUNCTION AND NEVER AGAINST A COLOUR. The hue of a severity is
+    // taken from the RENDERER — what a severity adds to a line that carries none — so no
+    // escape and no colour word is written down here, and the case survives a renderer
+    // that changes which red it writes.
+    //
+    // THE CHOICE OF LEVELS IS COMPLETE rather than a sample: the three named below are
+    // asserted to produce every outcome the surface HAS, against the closed tuple of them.
+    // A fourth severity, or a level moving between two of them, makes that line red.
+    expect(new Set(OUTCOMES.map(levelSeverity))).toEqual(new Set(SEVERITIES));
+    // And each outcome really has a hue of its OWN, or the loop below discriminates
+    // nothing: an outcome painted like another one comes out of {@link hueOf} empty.
+    for (const level of OUTCOMES) {
+      expect(
+        hueOf(levelSeverity(level)).length,
+        `${level} is painted like another`,
+      ).toBeGreaterThan(0);
+    }
+
+    for (const level of OUTCOMES) {
+      const painted = renderStyled(badgeLine(level));
+      // THE PROMISE: the badge is wrapped in the hue its own level reads as.
+      for (const hue of hueOf(levelSeverity(level))) expect(painted, level).toContain(hue);
+      // And in no other outcome's, so a badge that painted everything red would be red.
+      for (const other of OUTCOMES) {
+        if (levelSeverity(other) === levelSeverity(level)) continue;
+        for (const hue of hueOf(levelSeverity(other))) expect(painted, level).not.toContain(hue);
+      }
+      // AND THE WORDS ARE UNTOUCHED, which is the half of the old premise that survived as
+      // a fact: strip the escapes and it is the plain badge, byte for byte. The hue never
+      // carries anything the words do not already say.
+      expect(withoutSgr(painted), level).toBe(renderPlain(badgeLine(level)));
+    }
+  });
+
+  it('carries it on the page too, at the level this record is at', async () => {
+    // THE ELO. The case above is about a line; this is about the row a caller looks at,
+    // painted by the renderer a terminal gets, over the level THIS record folded to.
     const terminal = fakeTerminal({ columns: 120, rows: 40 });
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
-    const { renderStyled } = await import('../src/presentation/styled.js');
     const closed = openSession({
       io,
       render: renderStyled,
@@ -361,13 +444,15 @@ describe('the badge says what the record proved, and the verb that says the rest
     terminal.type(CLEARS_THE_LINE);
     terminal.type(`${LEAVE}\r`);
     await closed;
-    const painted = terminal.bytes();
-    // THE INSTRUMENT FIRST: the session really is painting, and the line that RULES on a
-    // level really carries a hue — so the absence below is a decision and not a renderer
-    // that was switched off.
-    expect(sgrIn(painted).length, 'nothing on the page is painted').toBeGreaterThan(0);
-    expect(sgrIn(rowHolding(painted, 'The record')).length).toBeGreaterThan(0);
-    expect(sgrIn(rowHolding(painted, MARK)), 'the badge is painted').toEqual([]);
+    // Read off the page with everything a LAYOUT writes taken out, and only that: the
+    // sequence that hides the caret opens the frame the badge is redrawn in, and it is not
+    // style. What is left on the row is what a renderer put there.
+    const row = rowHolding(withoutLayout(terminal.bytes()), MARK);
+    for (const hue of hueOf(levelSeverity(foldedLevel()))) expect(row).toContain(hue);
+    // Not vacuous: the level this fixture is at really has a hue to carry, and the row
+    // still says the same words a pipe would have received.
+    expect(hueOf(levelSeverity(foldedLevel())).length).toBeGreaterThan(0);
+    expect(withoutSgr(row).trim()).toBe(renderPlain(badgeLine(foldedLevel())));
   }, 120_000);
 });
 
