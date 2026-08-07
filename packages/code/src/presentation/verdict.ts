@@ -52,8 +52,16 @@ import type { Line, Part, Severity } from './line.js';
  * what the news was about. Where the answer is NOT the label — `verify`'s label is a
  * tree's name, and painting it would say the tree was bad — the news rides the clause
  * that carries it instead (see {@link clauseStatement}).
+ *
+ * `depth` IS THE LINE'S, exactly as it is on form B's `fact`, and zero is what every
+ * reading of this surface asks for: a verdict is the answer, and an answer sits at the
+ * left edge. The one caller that asks for a level is the console's opening panel, where
+ * the verdict of each tree is written UNDER a heading that names the section — which is
+ * form B's nesting and not a rank of its own. Passed rather than decided here, because
+ * how deep a line sits is a property of the report it is in, and a primitive that chose
+ * would be choosing for both.
  */
-export function statement(label: string, detail?: string, severity?: Severity): Line {
+export function statement(label: string, detail?: string, severity?: Severity, depth = 0): Line {
   const head: Part = {
     role: 'label',
     text: label,
@@ -61,7 +69,7 @@ export function statement(label: string, detail?: string, severity?: Severity): 
   };
   const parts: Line['parts'] =
     detail === undefined ? [head] : [head, { role: 'detail', text: detail }];
-  return { indent: 0, parts };
+  return { indent: depth, parts };
 }
 
 /**
@@ -102,10 +110,18 @@ export interface Clause {
  * The list is non-empty BY TYPE. A verdict with no clause would be a label alone, which
  * is what {@link statement} already is; asking this function for one would be asking it
  * to invent the sentence.
+ *
+ * `depth` is {@link statement}'s and it is handed straight through, which is the point
+ * of taking it at all: the two shapes are ONE form, so a caller that indents a verdict
+ * must not have to know which of the two functions built the line it indented.
  */
-export function clauseStatement(label: string, said: readonly [Clause, ...Clause[]]): Line {
+export function clauseStatement(
+  label: string,
+  said: readonly [Clause, ...Clause[]],
+  depth = 0,
+): Line {
   const [lead, ...rest] = said;
-  const head = statement(label);
+  const head = statement(label, undefined, undefined, depth);
   return {
     indent: head.indent,
     parts: [

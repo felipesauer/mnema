@@ -32,8 +32,18 @@
  * THE ROWS TAKE THE ROLE A HEADING TAKES, and no role or hue was invented for them. A
  * banner is the heading of the session — the styled renderer emboldens it exactly as it
  * emboldens `show`'s subject line, and the plain renderer writes the drawing and nothing
- * else. Colour on this surface means severity and nothing else (`styled.ts`), and a banner
- * is the most tempting place there is to spend a hue on decoration.
+ * else.
+ *
+ * IT DOES CARRY A HUE NOW, AND NOT ONE OF THIS FILE'S. The sentence here used to end
+ * "colour on this surface means severity and nothing else, and a banner is the most
+ * tempting place there is to spend a hue on decoration" — the temptation was named
+ * correctly and the rule it appealed to has since gained an axis. Colour means severity
+ * wherever it says something about the RECORD, which is every line `presentation/`
+ * produces; the console's opening panel paints its border, its title and this drawing in
+ * one accent, and that accent is CHROME — it is the layout's, it is spent in one place,
+ * and it is a hue no severity uses (`repl/region.ts`, and the guard in
+ * `tests/the-panel.test.ts`). Nothing in this module knows about it: the drawing is the
+ * same parts either way, and a caller that puts it anywhere else gets a heading.
  */
 
 import { subjectLine } from './detail.js';

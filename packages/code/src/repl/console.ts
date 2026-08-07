@@ -38,6 +38,7 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
+import type { Panel } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 
 /** What separates two words a Tab could not choose between. */
@@ -59,6 +60,15 @@ export interface ConsoleRequest {
    * a tip any more. Empty means the console offers none and draws no row for it.
    */
   readonly tips: string;
+  /**
+   * The box the session opens with, already composed and already measured, or none when
+   * the terminal is too narrow for a box and the same lines are landed instead.
+   *
+   * It goes into what is KEPT rather than into what is redrawn: it is written once and a
+   * caller scrolls back to the top to find it, which is the same argument the opening
+   * lines have always been kept by.
+   */
+  readonly panel: Panel | undefined;
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -84,7 +94,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, tips, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, tips, panel, complete, answer, leaving } = request;
 
   let past: readonly string[] = [];
   let editing: Editing = NOTHING_TYPED;
@@ -200,7 +210,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     pressed,
   };
 
-  const app = render(createElement(Region, { watched, tips }), {
+  const app = render(createElement(Region, { watched, tips, panel }), {
     stdin,
     stdout,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the
